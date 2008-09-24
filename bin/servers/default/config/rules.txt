@@ -1,0 +1,18 @@
+WARNMESSAGE Please don't use rude words
+SHOWWORDSTORC true
+
+RULE
+CHECK pm chat nick toall
+MATCH f?ck
+WORDPOSITION start
+ACTION replace tellrc
+RULEEND
+
+RULE
+CHECK pm chat nick toall
+MATCH b?tch
+PRECISION 80%
+WORDPOSITION full
+ACTION replace tellrc
+WARNMESSAGE Keep calm please!
+RULEEND

@@ -1,0 +1,2 @@
+premake --target gnu
+pause
