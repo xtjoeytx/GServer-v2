@@ -74,7 +74,7 @@ class CSocket
 		int connect();
 		int disconnect();
 		int reconnect(long delay = 0, int tries = 1);
-		CSocket* accept();
+		CSocket* accept(long delay_sec, long delay_usec);
 
 		int sendData(CString& data);
 		int getData();

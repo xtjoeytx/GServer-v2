@@ -23,9 +23,6 @@ statusMsg(0)
 {
 	// Other Defaults
 	memset((void*)&colors, 0, 5);
-
-	// Load Account Defaults
-	// loadAccount(pAccount); // not needed -- see above :p
 }
 
 TAccount::~TAccount()

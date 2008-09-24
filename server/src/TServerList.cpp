@@ -147,7 +147,7 @@ bool TServerList::connectServer()
 	setName(settings->getStr("name"));
 	setDesc(settings->getStr("description"));
 	setUrl(settings->getStr("url"));
-	setVersion(settings->getStr("version"));
+	setVersion(GSERVER_VERSION);
 	setIp(settings->getStr("serverip", "AUTO"));
 	setPort(settings->getStr("serverport", "14900"));
 	sendCompress();

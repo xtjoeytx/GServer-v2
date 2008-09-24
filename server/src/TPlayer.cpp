@@ -158,11 +158,11 @@ void createPLFunctions()
 /*
 	Constructor - Deconstructor
 */
-TPlayer::TPlayer(TServer* pServer, CSocket *pSocket)
+TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), iterator(0x04A80B38), key(0),
 PLE_POST22(false), os("wind"), codepage(1252), level(0),
-id(0), type(CLIENTTYPE_AWAIT), server(pServer), allowBomb(false), hadBomb(false),
+id(pId), type(CLIENTTYPE_AWAIT), server(pServer), allowBomb(false), hadBomb(false),
 pmap(0)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastSave = time(0);
@@ -171,7 +171,7 @@ pmap(0)
 
 TPlayer::~TPlayer()
 {
-	if (id >= 0)
+	if (id >= 0 && server != 0)
 	{
 		// Save account.
 		if (type == CLIENTTYPE_CLIENT)
@@ -198,6 +198,18 @@ TPlayer::~TPlayer()
 		printf("Destroyed for: %s\n", playerSock->tcpIp());
 		delete playerSock;
 	}
+}
+
+void TPlayer::operator()()
+{
+	while (true)
+	{
+		if (doMain() == false)
+			break;
+	}
+
+	// Remove the player from the server.
+	server->deletePlayer(this);
 }
 
 

@@ -172,8 +172,9 @@ class TPlayer : public TAccount
 {
 	public:
 		// Constructor - Deconstructor
-		TPlayer(TServer* pServer, CSocket *pSocket = 0);
+		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
 		~TPlayer();
+		void operator()();
 
 		// Manage Account
 		inline bool isLoggedIn();
@@ -285,7 +286,6 @@ class TPlayer : public TAccount
 		TLevel *level;
 		int id, type;
 		time_t lastData, lastMovement, lastChat, lastMessage, lastSave;
-		TServer* server;
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;
 		bool hadBomb;

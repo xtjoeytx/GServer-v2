@@ -1,6 +1,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <map>
+#include <boost/thread.hpp>
 #include "main.h"
 #include "ICommon.h"
 #include "IUtil.h"
@@ -15,6 +16,7 @@ typedef void (*sighandler_t)(int);
 
 bool running = true;
 std::map<CString, TServer *> serverList;
+std::map<CString, boost::thread> serverThreads;
 CLog serverlog("logs/serverlog.txt");
 
 // Home path of the gserver.
@@ -33,20 +35,28 @@ int main(int argc, char* argv[])
 	// Grab the base path to the server executable.
 	getBasePath();
 
-	serverlog.out("Starting server\n");
+	// Create Packet-Functions
+	createPLFunctions();
+	createSLFunctions();
+
+	// Program announcements.
+	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
+	serverlog.out("Programmed by Joey and Nalin.\n\n");
 
 	// Load Server Settings
+	serverlog.out(":: Loading servers.txt... ");
 	CSettings serversettings(CString() << homepath << "servers.txt");
 	if (!serversettings.isOpened())
 	{
-		serverlog.out("[Error] Could not open settings.txt.\n");
+		serverlog.out("FAILED!\n");
 		return ERR_SETTINGS;
 	}
+	serverlog.out("success\n");
 
 	// Make sure we actually have a server.
 	if (serversettings.getInt("servercount", 0) == 0)
 	{
-		serverlog.out("[Error] Incorrect settings.txt file.\n");
+		serverlog.out("[Error] Incorrect settings.txt file.  servercount not found.\n");
 		return ERR_SETTINGS;
 	}
 
@@ -59,23 +69,25 @@ int main(int argc, char* argv[])
 		// Make sure doubles don't exist.
 		if (serverList.find(name) != serverList.end())
 		{
-			serverlog.out("[WARNING] Duplicate server found, deleting old server.\n");
+			serverlog.out("[WARNING] Server %s already found, deleting old server.\n", name.text());
 			delete serverList[name];
 		}
 
 		// Initialize the server.
+		serverlog.out(":: Starting server: %s... ", name.text());
 		if (server->init() != 0)
 		{
-			serverlog.out("[WARNING] server->init() failed.  Deleting server.\n");
+			serverlog.out("FAILED!\n");
 			delete server;
 			continue;
 		}
 		serverList[name] = server;
-	}
+		printf("success\n");
 
-	// Create Packet-Functions
-	createPLFunctions();
-	createSLFunctions();
+		// Put the server in its own thread.
+		serverThreads[name] = boost::thread(boost::ref(server));
+
+	}
 
 	// Main Loop
 	serverlog.out("Main loop\n");

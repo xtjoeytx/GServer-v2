@@ -1,3 +1,4 @@
+#include <boost/thread.hpp>
 #include "ICommon.h"
 #include "CSocket.h"
 #include "CSettings.h"
@@ -158,36 +159,39 @@ int TServer::init()
 	return 0;
 }
 
+// Called when the TServer is put into its own thread.
+void TServer::operator()()
+{
+	while (true)
+	{
+		if (doMain() == false)
+			break;
+	}
+}
+
 bool TServer::doMain()
 {
-	// Serverlist-Main -- Reconnect if Disconnected
+	// If we aren't connected to the serverlist, reconnect.
 	if (!serverlist.main())
 		serverlist.connectServer();
 
-	// Serverlist Connection -> Connected
+	// Accept new player connections.
+	// Will block for 1 second.
 	acceptSock(playerSock);
 
-	// Iterate Players
-	for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end();)
+	// Check for terminated threads.
+	if (terminatedThreads.size() != 0)
 	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
+		for (std::vector<boost::thread::id>::iterator i = terminatedThreads.begin(); i != terminatedThreads.end(); )
 		{
-			i = playerList.erase(i);
-			continue;
+			std::map<boost::thread::id, boost::thread*>::iterator j = playerThreads.find(*i);
+			if (j != playerThreads.end())
+			{
+				delete j->second;
+				playerThreads.erase(j);
+			}
+			i = terminatedThreads.erase(i);
 		}
-
-		if (!player->doMain())
-		{
-			// Remove the player from the serverlist.
-			serverlist.remPlayer(player->getProp(PLPROP_ACCOUNTNAME).removeI(0,1), player->getType());
-
-			// Get rid of the player now.
-			playerIds[player->getId()] = 0;
-			delete player;
-			i = playerList.erase(i);
-		}
-		else ++i;
 	}
 
 	// Every second, do some events.
@@ -232,28 +236,29 @@ bool TServer::doTimedEvents()
 
 void TServer::acceptSock(CSocket& pSocket)
 {
-	// Create Sock
-	CSocket *newSock = pSocket.accept();
+	// Create socket.
+	CSocket *newSock = pSocket.accept(1, 0/*50000*/);	// 1 second
 	if (newSock == 0)
 		return;
 
-	// New Player
-	TPlayer *newPlayer = new TPlayer(this, newSock);
-	playerList.push_back(newPlayer);
-
-	// Assign Player Id
+	// Get a free id to be assigned to the new player.
+	unsigned int newId = 0;
 	for (unsigned int i = 2; i < playerIds.size(); ++i)
 	{
 		if (playerIds[i] == 0)
 		{
-			playerIds[i] = newPlayer;
-			newPlayer->setId(i);
-			return;
+			newId = i;
+			i = playerIds.size();
 		}
 	}
+	if (newId == 0) newId = playerIds.size();
 
-	newPlayer->setId(playerIds.size());
-	playerIds.push_back(newPlayer);
+	// Create the new player.
+	TPlayer* newPlayer = new TPlayer(this, newSock, newId);
+	playerIds[newId] = newPlayer;
+	playerList.push_back(newPlayer);
+	boost::thread* pthread = new boost::thread(boost::ref(newPlayer));
+	playerThreads[pthread->get_id()] = pthread;
 }
 
 /////////////////////////////////////////////////////
@@ -385,10 +390,6 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	//sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCPROPS >> (int)npc->getId()
-	//	>> (short)NPCPROP_SCRIPT >> (char)0 >> (char)NPCPROP_VISFLAGS >> (char)0
-	//	>> (char)NPCPROP_BLOCKFLAGS >> (char)0 >> (char)NPCPROP_MESSAGE >> (char)0);
-	//sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
 	sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
 
 	// Delete the NPC from memory.
@@ -453,6 +454,29 @@ bool TServer::deleteFlag(const CString& pFlag)
 		}
 	}
 	return false;
+}
+
+bool TServer::deletePlayer(TPlayer* player)
+{
+	// Add thread to the list of threads to terminate.
+	terminatedThreads.push_back(boost::this_thread::get_id());
+
+	// Remove the player from the serverlist.
+	serverlist.remPlayer(player->getProp(PLPROP_ACCOUNTNAME).removeI(0,1), player->getType());
+
+	// Get rid of the player now.
+	playerIds[player->getId()] = 0;
+	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		if (*i == player)
+		{
+			playerList.erase(i);
+			break;
+		}
+	}
+	delete player;
+
+	return true;
 }
 
 unsigned int TServer::getNWTime()
