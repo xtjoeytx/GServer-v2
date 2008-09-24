@@ -2,6 +2,8 @@
 #define TSERVER_H
 
 #include <vector>
+#include <map>
+#include <boost/thread.hpp>
 #include "ICommon.h"
 #include "CSettings.h"
 #include "CSocket.h"
@@ -27,6 +29,7 @@ class TServer
 	public:
 		TServer(CString pName);
 		~TServer();
+		void operator()();
 
 		int init();
 		bool doMain();
@@ -62,6 +65,7 @@ class TServer
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0);
 		bool addFlag(const CString& pFlag);
 		bool deleteFlag(const CString& pFlag);
+		bool deletePlayer(TPlayer* player);
 
 		// Packet sending.
 		void sendPacketToAll(CString pPacket) const;
@@ -79,11 +83,13 @@ class TServer
 
 		CSettings settings;
 		std::vector<TPlayer*> playerIds, playerList;
+		std::map<boost::thread::id, boost::thread*> playerThreads;
 		std::vector<TNPC*> npcIds, npcList;
 		std::vector<TLevel*> levelList;
 		std::vector<TMap*> mapList;
 		std::vector<TWeapon*> weaponList;
 		std::vector<CString> serverFlags;
+		std::vector<boost::thread::id> terminatedThreads;
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
 		CFileSystem filesystem;

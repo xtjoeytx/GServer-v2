@@ -342,7 +342,7 @@ int CSocket::reconnect(long delay, int tries)
 	return SOCKET_CONNECT_ERROR;
 }
 
-CSocket* CSocket::accept()
+CSocket* CSocket::accept(long delay_sec, long delay_usec)
 {
 	// Make sure the socket is connected!
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
@@ -351,6 +351,20 @@ CSocket* CSocket::accept()
 	// Only server type TCP sockets can accept new connections.
 	if (properties.type != SOCKET_TYPE_SERVER || properties.protocol != SOCKET_PROTOCOL_TCP)
 		return 0;
+
+	// If we have a delay, do a wait.
+	if (delay_sec != 0 && delay_usec != 0)
+	{
+		fd_set set;
+		struct timeval tm;
+		tm.tv_sec = delay_sec;
+		tm.tv_usec = delay_usec;
+		FD_ZERO(&set);
+		FD_SET(properties.handle, &set);
+		select(properties.handle + 1, &set, 0, 0, &tm);
+		if (!FD_ISSET(properties.handle, &set))
+			return 0;
+	}
 
 	sockaddr_storage addr;
 	int addrlen = sizeof(addr);
