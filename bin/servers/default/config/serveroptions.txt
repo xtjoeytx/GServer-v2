@@ -1,0 +1,152 @@
+# Specifies where players go when they say "unstick me".
+unstickmelevel = onlinestartlocal.nw
+unstickmex = 30
+unstickmey = 30.5
+
+# Players in these levels can't warp out nor can they PM other players.
+jaillevels = police2.graal,police4.graal
+
+# Enable/disable explosions.
+noexplosions = false
+
+# Enable/disable the ability of the player to change their look.
+setbodyallowed = true
+setheadallowed = true
+setshieldallowed = true
+setswordallowed = true
+
+# Defines the amount of Gralats a player drops with they die.
+mindeathgralats = 1
+maxdeathgralats = 50
+
+# If set to false, only players with the Change Staff Accounts right can alter gralats.
+normaladminscanchangegralats = true
+
+# These guilds appear in the "Staff" section of the player list.
+staffguilds = Server,Manager,Owner,Admin,FAQ,LAT,NAT,GAT,GP,GP Chief,Bugs Admin,NPC Admin,Gani Team,GFX Admin,Events Team,Events Admin,Guild Admin
+
+# Accounts which are recognized by the server as staff.  To be allowed access to RC, your account must be here.
+# (Manager) and the like are just placeholders to organize the list.  They are not guilds.
+staff = (Manager),YOURACCOUNT
+
+# Enables/disables item dropping from various sources.
+# bushitems also affects certain tiles other than bushes.
+# tiledroprate affects bushitems only.
+bushitems = true
+vasesdrop = true
+baddyitems = false
+dropitemsdead = true
+tiledroprate = 50
+
+# If enabled, it will allow negative power swords which will heal players when used.
+healswords = false
+
+# Timeout in seconds for respawning objects.
+# respawntime affects tile changes.
+respawntime = 15
+horselifetime = 10
+baddyrespawntime = 60
+
+# Allows any player to use the warpto command.
+warptoforall = false
+
+# Alters the possible status options in the player list.
+playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
+
+# Selects what is displayed in the player's profile.
+# Name:=variable, where variable can also be a flag on the player's account.
+profilevars = Kills:=playerkills,Deaths:=playerdeaths,Maxpower:=playerfullhearts,Rating:=playerrating,Alignment:=playerap,Gralat:=playerrupees,Swordpower:=playerswordpower,Spin Attack:=canspin
+
+# Global guild settings.
+# If globalguilds is true, global guilds are allowed.  If false, allowedglobalguilds specifies which guilds are allowed.
+globalguilds = true
+allowedglobalguilds = 
+
+# AP system settings.
+# If apsystem is set to true, it activates some restrictions regarding hearts for low AP players.
+# For the aptime# options, the values are the time in seconds it takes to recharge one point of AP for the given range.
+#   aptime4 is used for AP values between 80 and 100.  aptime 3 for 60 through 80.  And so on until 0 is between 0 and 20.
+apsystem = true
+aptime0 = 30
+aptime1 = 90
+aptime2 = 300
+aptime3 = 600
+aptime4 = 1200
+
+# Defines limits to hearts, swords, and shields.
+heartlimit = 3
+swordlimit = 3
+shieldlimit = 3
+
+# Enables or disables the putnpc script command.
+putnpcenabled = true
+
+# If true, disable the ability.
+dontchangekills = false
+dontaddserverflags = false
+
+# If true, idle players are removed after maxnomovement seconds.
+disconnectifnotmoved = true
+maxnomovement = 1200
+
+# If true, moved push/pull blocks aren't sent to other players.
+clientsidepushpull = true
+
+# If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
+defaultweapons = true
+
+# If true, it will trim NPC code to try to save space.
+trimnpccode = false
+
+# List of bigmap.txt type maps used by the server.  It lets the server know the level layout
+# so you can see players move and talk in adjacent levels.
+maps = newmainmap.txt
+
+# List of gmaps to be used by the server.
+gmaps = 
+
+# The head used by RCs on the server.
+staffhead = head25.png
+
+# --------------------------------------------------------------------------------------
+# --- Private server options.  The changestaffacct right is required to alter these. ---
+# --------------------------------------------------------------------------------------
+# The server details seen from the server list.
+name = My Server
+description = My Server
+url = http://www.graal.in/
+
+# Maximum number of players allowed on the server.
+maxplayers = 128
+
+# Enables/disables staff only.  If true, only accounts in the staff option are allowed on.
+onlystaff = false
+
+# If true, the server doesn't show up in the server list.
+underconstruction = false
+
+# Set to true to disable the folder configuration.
+nofoldersconfig = true
+
+# If folders config is disabled, put additional search directories besides "world" here.
+# Comma delimited array.
+sharefolder = 
+
+# Sets the language.  Currently not implemented.
+language = English
+
+# The information of the computer hosting the gserver.  This gets sent to people wanting to connect.
+# If myip is set to AUTO, it uses the IP address exposed to the list server.
+serverip = AUTO
+serverport = 14802
+
+# Specifies the location of the list server.
+# DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
+listip = listserver.graal.in
+listport = 14900
+
+# Console settings.
+detailedconsole = false
+showconsolepackets = false
+
+version = 1.0

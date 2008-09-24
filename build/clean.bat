@@ -1,0 +1,2 @@
+premake --clean
+pause
