@@ -13,7 +13,7 @@ class TLevelChest
 		TLevelChest(const std::vector<CString>& pChest);
 
 		// functions
-		CString getChestStr(const CString& pLevelName) const;
+		CString getChestStr(const CString pLevelName) const;
 		void parseChestStr(const std::vector<CString>& pChest);
 
 		// get private variables
@@ -24,6 +24,7 @@ class TLevelChest
 
 	private:
 		int itemIndex, signIndex, x, y;
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 /*
@@ -31,21 +32,25 @@ class TLevelChest
 */
 inline int TLevelChest::getItemIndex()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return itemIndex;
 }
 
 inline int TLevelChest::getSignIndex()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return signIndex;
 }
 
 inline int TLevelChest::getX()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return x;
 }
 
 inline int TLevelChest::getY()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return y;
 }
 

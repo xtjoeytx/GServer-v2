@@ -14,6 +14,7 @@ TLevelLink::TLevelLink(const std::vector<CString>& pLink)
 
 CString TLevelLink::getLinkStr()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	static char retVal[500];
 	sprintf(retVal, "%s %i %i %i %i %s %s", newLevel.text(), x, y, width, height, newX.text(), newY.text());
 	return retVal;
@@ -21,6 +22,7 @@ CString TLevelLink::getLinkStr()
 
 void TLevelLink::parseLinkStr(const std::vector<CString>& pLink)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	newLevel = pLink[1];
 	x = strtoint(pLink[2]);
 	y = strtoint(pLink[3]);

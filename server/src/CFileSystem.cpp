@@ -25,6 +25,7 @@ CFileSystem::CFileSystem(TServer* pServer)
 
 void CFileSystem::init(const CString& dir)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (server == 0) return;
 	CSettings* settings = server->getSettings();
 
@@ -55,6 +56,7 @@ void CFileSystem::init(const CString& dir)
 
 CString CFileSystem::find(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	std::map<CString, CString>::const_iterator i = fileList.find(file);
 	if (i == fileList.end()) return CString();
 	return CString(i->second);
@@ -122,6 +124,8 @@ void loadAllDirectories(std::map<CString, CString>& fileList, const CString& dir
 
 CString CFileSystem::load(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return CString();
@@ -135,6 +139,8 @@ CString CFileSystem::load(const CString& file) const
 
 time_t CFileSystem::getModTime(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
@@ -147,6 +153,8 @@ time_t CFileSystem::getModTime(const CString& file) const
 
 int CFileSystem::getFileSize(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;

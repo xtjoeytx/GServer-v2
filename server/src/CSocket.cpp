@@ -123,7 +123,7 @@ int CSocket::init(const CString& host, const CString& port)
 	memset((void*)&hints, 0, sizeof(hints));
 	if (properties.protocol == SOCKET_PROTOCOL_TCP) hints.ai_socktype = SOCK_STREAM;
 	if (properties.protocol == SOCKET_PROTOCOL_UDP) hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_family = AF_INET;
+	hints.ai_family = PF_INET;
 
 	// Create the host.
 	int error;
@@ -337,7 +337,7 @@ int CSocket::reconnect(long delay, int tries)
 				// Do nothing.
 				break;
 		}
-		if (delay != 0) wait(delay);
+		if (delay != 0) sleep(delay);
 	}
 	return SOCKET_CONNECT_ERROR;
 }
@@ -353,7 +353,7 @@ CSocket* CSocket::accept(long delay_sec, long delay_usec)
 		return 0;
 
 	// If we have a delay, do a wait.
-	if (delay_sec != 0 && delay_usec != 0)
+	if (delay_sec != 0 || delay_usec != 0)
 	{
 		fd_set set;
 		struct timeval tm;
@@ -401,7 +401,7 @@ CSocket* CSocket::accept(long delay_sec, long delay_usec)
 	return sock;
 }
 
-int CSocket::sendData(CString& data)
+int CSocket::sendData(CString& data, long delay_sec, long delay_usec)
 {
 	int intError = 0;
 	int size = 0;
@@ -416,7 +416,8 @@ int CSocket::sendData(CString& data)
 		// If we can't, return how many bytes we did send.
 		fd_set set;
 		struct timeval tm;
-		tm.tv_sec = tm.tv_usec = 0;
+		tm.tv_sec = delay_sec;
+		tm.tv_usec = delay_usec;
 		FD_ZERO(&set);
 		FD_SET(properties.handle, &set);
 		select(properties.handle + 1, 0, &set, 0, &tm);
@@ -463,7 +464,7 @@ int CSocket::sendData(CString& data)
 	return size;
 }
 
-int CSocket::getData()
+int CSocket::getData(long delay_sec, long delay_usec)
 {
 	int size = 0;
 	int intError = 0;
@@ -485,7 +486,8 @@ int CSocket::getData()
 		{
 			fd_set set;
 			struct timeval tm;
-			tm.tv_sec = tm.tv_usec = 0;
+			tm.tv_sec = delay_sec;
+			tm.tv_usec = delay_usec;
 			FD_ZERO(&set);
 			FD_SET(properties.handle, &set);
 			select(properties.handle + 1, &set, 0, 0, &tm);
@@ -528,6 +530,7 @@ int CSocket::getData()
 					break;
 			}
 		}
+		if (delay_sec != 0 || delay_usec != 0) intError = 1;
 	} while (size > 0 && intError == 0);
 
 	// If size is 0, the socket was disconnected.
@@ -753,7 +756,7 @@ void CSocket::socketSystemDestroy()
 	{
 		if (WSACleanup() == SOCKET_ERROR)
 			serverlog.out(CString() << "[CSocket::socketSystemDestroy] WSACleanup() returned error: " << errorMessage(identifyError()) << "\n");
-		wait(1000);
+		sleep(1000);
 	}
 #endif
 }

@@ -2,6 +2,7 @@
 #define CFILESYSTEM_H
 
 #include <map>
+#include "ICommon.h"
 #include "CString.h"
 //#include "TServer.h"
 
@@ -24,6 +25,7 @@ class CFileSystem
 	private:
 		TServer* server;
 		std::map<CString, CString> fileList;
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif

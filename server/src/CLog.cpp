@@ -6,6 +6,7 @@
 #include <unistd.h>
 #endif
 
+#include <boost/thread.hpp>
 #include "CLog.h"
 #include "CString.h"
 
@@ -33,6 +34,7 @@ CLog::CLog(const CString& _file, bool _enabled)
 
 CLog::~CLog()
 {
+	boost::recursive_mutex::scoped_lock lock(m_write);
 	if (file)
 	{
 		fflush(file);
@@ -44,6 +46,8 @@ void CLog::out(const CString format, ...)
 {
 	va_list s_format_v;
 	va_start(s_format_v, format);
+
+	boost::recursive_mutex::scoped_lock lock(m_write);
 
 	// Log output to file.
 	if (true == enabled && 0 != file)
@@ -60,6 +64,7 @@ void CLog::out(const CString format, ...)
 
 void CLog::clear()
 {
+	boost::recursive_mutex::scoped_lock lock(m_write);
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "w");

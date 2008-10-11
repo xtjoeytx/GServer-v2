@@ -43,6 +43,7 @@ CString getSignCode(CString& pText)
 
 CString TLevelSign::getSignStr() const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	std::vector<CString> signText = text.tokenize("\n");
 	CString outText;
 
