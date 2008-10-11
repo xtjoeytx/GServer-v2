@@ -154,6 +154,7 @@ enum
 enum
 {
 	PLSTATUS_PAUSED			= 0x01,
+	PLSTATUS_HIDDEN			= 0x02,
 	PLSTATUS_MALE			= 0x04,
 	PLSTATUS_DEAD			= 0x08,
 	PLSTATUS_ALLOWWEAPONS	= 0x10,
@@ -177,7 +178,7 @@ class TPlayer : public TAccount
 		void operator()();
 
 		// Manage Account
-		inline bool isLoggedIn();
+		inline bool isLoggedIn() const;
 		bool sendLogin();
 
 		// Get Properties
@@ -201,8 +202,8 @@ class TPlayer : public TAccount
 		// Prop-Manipulation
 		CString getProp(int pPropId);
 		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false);
-		void sendProps(bool *pProps, int pCount);
-		CString getProps(bool *pProps, int pCount);
+		void sendProps(const bool *pProps, int pCount);
+		CString getProps(const bool *pProps, int pCount);
 
 		// Socket-Functions
 		bool doMain();
@@ -212,7 +213,7 @@ class TPlayer : public TAccount
 		// Misc functions.
 		bool doTimedEvents();
 		void disconnect();
-		void processChat(CString& pChat);
+		void processChat(CString pChat);
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
@@ -290,9 +291,15 @@ class TPlayer : public TAccount
 		bool allowBomb;
 		bool hadBomb;
 		TMap* pmap;
+		int carryNpcId;
+		bool carryNpcThrown;
+
+		// Mutexes
+		boost::mutex m_sendPacket, m_sendCompress;
+		mutable boost::recursive_mutex m_preventChange;
 };
 
-inline bool TPlayer::isLoggedIn()
+inline bool TPlayer::isLoggedIn() const
 {
 	return (type != CLIENTTYPE_AWAIT && id > 0);
 }
@@ -309,6 +316,7 @@ inline int TPlayer::getType() const
 
 inline void TPlayer::setId(int pId)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	id = pId;
 }
 

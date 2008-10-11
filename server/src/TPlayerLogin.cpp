@@ -17,6 +17,8 @@ extern bool __getLoginRC[propscount];
 */
 bool TPlayer::sendLogin()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Load Player-Account
 	// TODO: We actually need to check if it fails because accounts can be banned.
 	loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
@@ -31,23 +33,26 @@ bool TPlayer::sendLogin()
 	//sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 	// Check if the account is already in use.
-	std::vector<TPlayer*>* playerList = server->getPlayerList();
-	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 	{
-		TPlayer* player = *i;
-		CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
-		unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
-		if (oacc == accountName && player->getType() == type && oid != id)
+		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			if ((int)difftime(time(0), player->getLastData()) > 30)
+			TPlayer* player = *i;
+			CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
+			unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
+			if (oacc == accountName && player->getType() == type && oid != id)
 			{
-				player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
-				player->disconnect();
-			}
-			else
-			{
-				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
-				return false;
+				if ((int)difftime(time(0), player->getLastData()) > 30)
+				{
+					player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
+					player->disconnect();
+				}
+				else
+				{
+					sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
+					return false;
+				}
 			}
 		}
 	}
@@ -59,34 +64,38 @@ bool TPlayer::sendLogin()
 	if (succeeded == false) return false;
 
 	// Exchange props with everybody on the server.
-	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 	{
-		TPlayer* player = (TPlayer*)*i;
-		if (player == this) continue;
-
-		// Get the other player's props.
-		if (player->getType() == CLIENTTYPE_CLIENT)
+		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			// Send my props to the player.
-			player->sendPacket(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			TPlayer* player = (TPlayer*)*i;
+			if (player == this) continue;
 
-			// Get their props.
-			this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-		}
-		else if (player->getType() == CLIENTTYPE_RC)
-		{
-			// Send my props to the player.
-			// Send the RC login props since they don't need anything else.
-			player->sendPacket(this->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool)));
+			// Get the other player's props.
+			if (player->getType() == CLIENTTYPE_CLIENT)
+			{
+				// Send my props to the player.
+				player->sendPacket(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 
-			// Get their props.
-			CString packet = player->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool));
-			if (packet.length() == 0) continue;
+				// Get their props.
+				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			}
+			else if (player->getType() == CLIENTTYPE_RC)
+			{
+				// Send my props to the player.
+				// Send the RC login props since they don't need anything else.
+				player->sendPacket(this->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool)));
 
-			// RCs send PLO_ADDPLAYER instead of PLO_OTHERPLPROPS.
-			// getProps() writes in PLO_OTHERPLPROPS so we alter it here.
-			packet[0] = PLO_ADDPLAYER + 32;
-			this->sendPacket(packet);
+				// Get their props.
+				CString packet = player->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool));
+				if (packet.length() == 0) continue;
+
+				// RCs send PLO_ADDPLAYER instead of PLO_OTHERPLPROPS.
+				// getProps() writes in PLO_OTHERPLPROPS so we alter it here.
+				packet[0] = PLO_ADDPLAYER + 32;
+				this->sendPacket(packet);
+			}
 		}
 	}
 
@@ -99,6 +108,7 @@ bool TPlayer::sendLogin()
 
 bool TPlayer::sendLoginClient()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 
 	// Send the player his login props.
@@ -108,6 +118,7 @@ bool TPlayer::sendLoginClient()
 	// So, just send them all the maps loaded into the server.
 	if (PLE_POST22)
 	{
+		boost::recursive_mutex::scoped_lock lock_mapList(server->m_mapList);
 		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
 		{
 			TMap* map = *i;
@@ -200,6 +211,8 @@ bool TPlayer::sendLoginClient()
 
 bool TPlayer::sendLoginRC()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
 		nickName = accountName;

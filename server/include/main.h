@@ -16,6 +16,7 @@
 /*
 	Define Functions
 */
+const CString getHomePath();
 void shutdownServer(int signal);
 
 #endif // MAIN_H

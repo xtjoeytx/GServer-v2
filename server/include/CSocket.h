@@ -74,10 +74,10 @@ class CSocket
 		int connect();
 		int disconnect();
 		int reconnect(long delay = 0, int tries = 1);
-		CSocket* accept(long delay_sec, long delay_usec);
+		CSocket* accept(long delay_sec = 0, long delay_usec = 0);
 
-		int sendData(CString& data);
-		int getData();
+		int sendData(CString& data, long delay_sec = 0, long delay_usec = 0);
+		int getData(long delay_sec = 0, long delay_usec = 0);
 		char* peekData();
 
 		SOCKET getHandle();

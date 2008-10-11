@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <map>
-#include <boost/thread.hpp>
 #include "ICommon.h"
 #include "CSettings.h"
 #include "CSocket.h"
@@ -50,7 +49,17 @@ class TServer
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
 		CString* getServerMessage()				{ return &servermessage; }
-		unsigned int getNWTime();
+		unsigned int getNWTime() const;
+
+		// Yay public mutexes.
+		mutable boost::recursive_mutex m_playerList;
+		mutable boost::recursive_mutex m_playerIds;
+		mutable boost::recursive_mutex m_npcList;
+		mutable boost::recursive_mutex m_npcIds;
+		mutable boost::recursive_mutex m_levelList;
+		mutable boost::recursive_mutex m_mapList;
+		mutable boost::recursive_mutex m_weaponList;
+		mutable boost::recursive_mutex m_serverFlags;
 
 		TPlayer* getPlayer(const unsigned short id) const;
 		TNPC* getNPC(const unsigned int id) const;
@@ -101,6 +110,9 @@ class TServer
 		CLog rclog;//("logs/rclog.txt");
 
 		time_t lastTimer, lastNWTimer;
+
+		boost::recursive_mutex m_preventChange;
+		boost::recursive_mutex m_playerThreads;
 };
 
 #endif
