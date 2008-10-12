@@ -198,6 +198,8 @@ TPlayer::~TPlayer()
 
 void TPlayer::operator()()
 {
+	srand((unsigned int)time(0));
+
 	while (true)
 	{
 		if (doMain() == false)
@@ -1178,7 +1180,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		float oldStats[4] = { rating, deviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
-		if (this->getProp(PLPROP_LASTIP).readGInt5() == player->getProp(PLPROP_LASTIP).readGInt5()) return true;
+		if (this->getProp(PLPROP_IPADDR).readGInt5() == player->getProp(PLPROP_IPADDR).readGInt5()) return true;
 
 		float gSpar[2] = {1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[3],2))/pow(3.14159265f,2)),0.5f),	//Winner
 					  	  1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[1],2))/pow(3.14159265f,2)),0.5f)};	//Loser

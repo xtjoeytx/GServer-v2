@@ -39,7 +39,7 @@ enum
 	PLPROP_KILLSCOUNT		= 27,
 	PLPROP_DEATHSCOUNT		= 28,
 	PLPROP_ONLINESECS		= 29,
-	PLPROP_LASTIP			= 30,
+	PLPROP_IPADDR			= 30,
 	PLPROP_UDPPORT			= 31,
 	PLPROP_ALIGNMENT		= 32,
 	PLPROP_ADDITFLAGS		= 33,
@@ -108,7 +108,7 @@ class TAccount
 
 		// Load/Save Account
 		bool loadAccount(const CString& pAccount);
-		bool saveAccount(bool pOnlyAccount = false);
+		bool saveAccount();
 
 		// Attribute-Managing
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
