@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
 	// Shut down the server if we get a kill signal.
 	signal(SIGINT, (sighandler_t) shutdownServer);
 	signal(SIGTERM, (sighandler_t) shutdownServer);
+	signal(SIGBREAK, (sighandler_t) shutdownServer);
 	signal(SIGABRT, (sighandler_t) shutdownServer);
 
 	// Seed the random number generator with the current time.

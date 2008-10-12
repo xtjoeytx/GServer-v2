@@ -45,6 +45,7 @@ class TServer
 		std::vector<CString>* getServerFlags()	{ return &serverFlags; }
 		TServerList* getServerList()			{ return &serverlist; }
 		CFileSystem* getFileSystem()			{ return &filesystem; }
+		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
 		CString getServerPath()					{ return serverpath; }
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
@@ -102,6 +103,7 @@ class TServer
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
 		CFileSystem filesystem;
+		CFileSystem filesystem_accounts;
 		CString name;
 		CString serverpath;
 		CString servermessage;

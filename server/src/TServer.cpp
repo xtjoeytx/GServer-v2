@@ -22,6 +22,7 @@ TServer::TServer(CString pName)
 
 	serverlist.setServer(this);
 	filesystem.setServer(this);
+	filesystem_accounts.setServer(this);
 }
 
 TServer::~TServer()
@@ -75,7 +76,14 @@ int TServer::init()
 	}
 
 	// Load file system.
-	filesystem.init("world");
+	filesystem.addDir("world");
+	if (settings.getStr("sharefolder").length() > 0)
+	{
+		std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
+		for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
+			filesystem.addDir(i->trim());
+	}
+	filesystem_accounts.addDir("accounts");
 
 	// Load server message.
 	servermessage.load(CString() << serverpath << "config/servermessage.html");
@@ -85,7 +93,7 @@ int TServer::init()
 	// Load weapons.
 	{
 		CFileSystem weaponFS(this);
-		weaponFS.init("weapons");
+		weaponFS.addDir("weapons");
 		std::map<CString, CString>* weaponFileList = weaponFS.getFileList();
 		for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
 		{

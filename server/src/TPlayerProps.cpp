@@ -120,7 +120,7 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_ONLINESECS:
 		return CString() >> (int)onlineTime;
 
-		case PLPROP_LASTIP:
+		case PLPROP_IPADDR:
 		return CString().writeGInt5(accountIp);
 
 		case PLPROP_UDPPORT:
@@ -518,12 +518,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				pPacket.readGInt();
 			break;
 
-			case PLPROP_LASTIP:
+			case PLPROP_IPADDR:
 				pPacket.readGInt5();
 			break;
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
+				server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport);
 				// TODO: udp support.
 			break;
 

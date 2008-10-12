@@ -1,4 +1,5 @@
 #include <memory.h>
+#include "CFileSystem.h"
 #include "TServer.h"
 #include "TAccount.h"
 #include "ICommon.h"
@@ -36,24 +37,28 @@ bool TAccount::loadAccount(const CString& pAccount)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
-	// Load File
-	std::vector<CString> fileData = CString::loadToken(CString() << server->getServerPath() << "accounts/" << pAccount << ".txt", "\n");
-	if (fileData.size() < 1 || fileData[0].trim() != "GRACC001")
+	// Find the account in the file system.
+	bool loadedFromDefault = false;
+	CFileSystem* accfs = server->getAccountsFileSystem();
+	CString accpath(accfs->findi(pAccount));
+	if (accpath.length() == 0)
 	{
-		if (pAccount != "defaultaccount")
-			return loadAccount("defaultaccount");
-		return false;
+		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
+		CFileSystem::fixPathSeparators(&accpath);
+		loadedFromDefault = true;
 	}
-	
+
+	// Load file.
+	std::vector<CString> fileData = CString::loadToken(accpath, "\n");
+	if (fileData.size() == 0 || fileData[0].trim() != "GRACC001")
+		return false;
+
 	// Clear Lists
 	for (int i = 0; i < 30; ++i) attrList[i].clear();
 	chestList.clear();
 	flagList.clear();
 	folderList.clear();
 	weaponList.clear();
-
-	// Save Account
-	//accountName = pAccount;
 
 	// Parse File
 	for (unsigned int i = 0; i < fileData.size(); i++)
@@ -150,10 +155,17 @@ bool TAccount::loadAccount(const CString& pAccount)
 	// Comment out this line if you are actually going to use community names.
 	communityName = accountName;
 
+	// If we loaded from the default account, save our account now and add it to the file system.
+	if (loadedFromDefault)
+	{
+		saveAccount();
+		accfs->addFile(CString() << pAccount << ".txt");
+	}
+
 	return true;
 }
 
-bool TAccount::saveAccount(bool pOnlyAccount)
+bool TAccount::saveAccount()
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
@@ -161,95 +173,79 @@ bool TAccount::saveAccount(bool pOnlyAccount)
 	if (isLoadOnly)
 		return false;
 
-	// If the player is on, why just save their account information..?
-	//if (pOnlyAccount && id >= 0)
-	//	pOnlyAccount = false;
+	CString newFile = "GRACC001\r\n";
+	newFile << "NAME " << accountName << "\r\n";
+	newFile << "NICK " << nickName << "\r\n";
+	newFile << "COMMUNITYNAME " << accountName /*communityName*/ << "\r\n";
+	newFile << "LEVEL " << levelName << "\r\n";
+	newFile << "X " << CString(x) << "\r\n";
+	newFile << "Y " << CString(y) << "\r\n";
+	newFile << "Z " << CString(z) << "\r\n";
+	newFile << "MAXHP " << CString(maxPower) << "\r\n";
+	newFile << "HP " << CString(power) << "\r\n";
+	newFile << "RUPEES " << CString(gralatc) << "\r\n";
+	newFile << "ANI " << gAni << "\r\n";
+	newFile << "ARROWS " << CString(arrowc) << "\r\n";
+	newFile << "BOMBS " << CString(bombc) << "\r\n";
+	newFile << "GLOVEP " << CString(glovePower) << "\r\n";
+	newFile << "SHIELDP " << CString(shieldPower) << "\r\n";
+	newFile << "SWORDP " << CString(swordPower) << "\r\n";
+	newFile << "HEAD " << headImg << "\r\n";
+	newFile << "BODY " << bodyImg << "\r\n";
+	newFile << "SWORD " << swordImg << "\r\n";
+	newFile << "SHIELD " << shieldImg << "\r\n";
+	newFile << "COLORS " << CString(colors[0]) << "," << CString(colors[1]) << "," << CString(colors[2]) << "," << CString(colors[3]) << "," << CString(colors[4]) << "\r\n";
+	newFile << "SPRITE " << CString(sprite) << "\r\n";
+	newFile << "STATUS " << CString(status) << "\r\n";
+	newFile << "MP " << CString(mp) << "\r\n";
+	newFile << "AP " << CString(ap) << "\r\n";
+	newFile << "APCOUNTER " << CString(apCounter) << "\r\n";
+	newFile << "ONSECS " << CString(onlineTime) << "\r\n";
+	newFile << "IP " << CString(accountIp) << "\r\n";
+	newFile << "LANGUAGE " << language << "\r\n";
+	newFile << "KILLS " << CString(kills) << "\r\n";
+	newFile << "DEATHS " << CString(deaths) << "\r\n";
+	newFile << "RATING " << CString(rating) << "\r\n";
+	newFile << "DEVIATION " << CString(deviation) << "\r\n";
+	newFile << "OLDDEVIATION " << CString(oldDeviation) << "\r\n";
+	newFile << "LASTSPARTIME " << CString((unsigned long)lastSparTime) << "\r\n";
 
-	// Only-Account Saves
-	if (pOnlyAccount)
+	// Attributes
+	for (unsigned int i = 0; i < 30; i++)
 	{
-		TAccount newAccount(server, accountName);
-			newAccount.isBanned = isBanned;
-			newAccount.banReason = banReason;
-			newAccount.accountComments = accountComments;
-			newAccount.adminRights = adminRights;
-			newAccount.adminIp = adminIp;
-			newAccount.lastFolder = lastFolder;
-			std::copy(folderList.begin(), folderList.end(), newAccount.folderList.begin());
-		newAccount.saveAccount(false);
+		if (attrList[i].length() > 0)
+			newFile << "ATTR" << CString(i+1) << " " << attrList[i] << "\r\n";
 	}
-	else
-	{
-		CString newFile = "GRACC001\r\n";
-		newFile << "NAME " << accountName << "\r\n";
-		newFile << "NICK " << nickName << "\r\n";
-		newFile << "COMMUNITYNAME " << accountName /*communityName*/ << "\r\n";
-		newFile << "LEVEL " << levelName << "\r\n";
-		newFile << "X " << CString(x) << "\r\n";
-		newFile << "Y " << CString(y) << "\r\n";
-		newFile << "Z " << CString(z) << "\r\n";
-		newFile << "MAXHP " << CString(maxPower) << "\r\n";
-		newFile << "HP " << CString(power) << "\r\n";
-		newFile << "RUPEES " << CString(gralatc) << "\r\n";
-		newFile << "ANI " << gAni << "\r\n";
-		newFile << "ARROWS " << CString(arrowc) << "\r\n";
-		newFile << "BOMBS " << CString(bombc) << "\r\n";
-		newFile << "GLOVEP " << CString(glovePower) << "\r\n";
-		newFile << "SHIELDP " << CString(shieldPower) << "\r\n";
-		newFile << "SWORDP " << CString(swordPower) << "\r\n";
-		newFile << "HEAD " << headImg << "\r\n";
-		newFile << "BODY " << bodyImg << "\r\n";
-		newFile << "SWORD " << swordImg << "\r\n";
-		newFile << "SHIELD " << shieldImg << "\r\n";
-		newFile << "COLORS " << CString(colors[0]) << "," << CString(colors[1]) << "," << CString(colors[2]) << "," << CString(colors[3]) << "," << CString(colors[4]) << "\r\n";
-		newFile << "SPRITE " << CString(sprite) << "\r\n";
-		newFile << "STATUS " << CString(status) << "\r\n";
-		newFile << "MP " << CString(mp) << "\r\n";
-		newFile << "AP " << CString(ap) << "\r\n";
-		newFile << "APCOUNTER " << CString(apCounter) << "\r\n";
-		newFile << "ONSECS " << CString(onlineTime) << "\r\n";
-		newFile << "IP " << CString(accountIp) << "\r\n";
-		newFile << "LANGUAGE " << language << "\r\n";
-		newFile << "KILLS " << CString(kills) << "\r\n";
-		newFile << "DEATHS " << CString(deaths) << "\r\n";
-		newFile << "RATING " << CString(rating) << "\r\n";
-		newFile << "DEVIATION " << CString(deviation) << "\r\n";
-		newFile << "OLDDEVIATION " << CString(oldDeviation) << "\r\n";
-		newFile << "LASTSPARTIME " << CString((unsigned long)lastSparTime) << "\r\n";
 
-		// Attributes
-		for (unsigned int i = 0; i < 30; i++)
-		{
-			if (attrList[i].length() > 0)
-				newFile << "ATTR" << CString(i+1) << " " << attrList[i] << "\r\n";
-		}
+	// Chests
+	for (unsigned int i = 0; i < chestList.size(); i++)
+		newFile << "CHEST " << chestList[i] << "\r\n";
 
-		// Chests
-		for (unsigned int i = 0; i < chestList.size(); i++)
-			newFile << "CHEST " << chestList[i] << "\r\n";
+	// Weapons
+	for (unsigned int i = 0; i < weaponList.size(); i++)
+		newFile << "WEAPON " << weaponList[i] << "\r\n";
 
-		// Weapons
-		for (unsigned int i = 0; i < weaponList.size(); i++)
-			newFile << "WEAPON " << weaponList[i] << "\r\n";
+	// Flags
+	for (unsigned int i = 0; i < flagList.size(); i++)
+		newFile << "FLAG " << flagList[i] << "\r\n";
 
-		// Flags
-		for (unsigned int i = 0; i < flagList.size(); i++)
-			newFile << "FLAG " << flagList[i] << "\r\n";
+	// Folder Rights
+	for (unsigned int i = 0; i < folderList.size(); i++)
+		newFile << "FOLDERRIGHT " << folderList[i] << "\r\n";
 
-		// Folder Rights
-		for (unsigned int i = 0; i < folderList.size(); i++)
-			newFile << "FOLDERRIGHT " << folderList[i] << "\r\n";
+	// Account Settings
+	newFile << "\r\n";
+	newFile << "BANNED " << isBanned << "\r\n";
+	newFile << "BANREASON " << banReason << "\r\n";
+	newFile << "COMMENTS " << accountComments << "\r\n";
+	newFile << "LOCALRIGHTS " << adminRights << "\r\n";
+	newFile << "IPRANGE " << adminIp << "\r\n";
+	newFile << "LASTFOLDER " << lastFolder << "\r\n";
 
-		// Account Settings
-		newFile << "\r\n";
-		newFile << "BANNED " << isBanned << "\r\n";
-		newFile << "BANREASON " << banReason << "\r\n";
-		newFile << "COMMENTS " << accountComments << "\r\n";
-		newFile << "LOCALRIGHTS " << adminRights << "\r\n";
-		newFile << "IPRANGE " << adminIp << "\r\n";
-		newFile << "LASTFOLDER " << lastFolder << "\r\n";
-		newFile.save(CString() << server->getServerPath() << "accounts/" << accountName << ".txt");
-	}
+	// Save the account now.
+	CString accpath = CString() << server->getServerPath() << "accounts/" << accountName << ".txt";
+	CFileSystem::fixPathSeparators(&accpath);
+	newFile.save(accpath);
 
 	return true;
 }
