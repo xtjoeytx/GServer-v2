@@ -226,9 +226,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 /*
 	printf("\n");
 	printf("%s\n", pPacket.text());
-	for (int i = 0; i < pPacket.length(); ++i)
-		printf("%02x ", (unsigned char)((pPacket.text())[i]));
-	printf("\n");
+	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 */
 	while (pPacket.bytesLeft() > 0)
 	{

@@ -95,16 +95,11 @@ int main(int argc, char* argv[])
 	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
 	{
 		boost::thread* t = i->second;
-		try
+		if (t == 0) i = serverThreads.erase(i);
+		else
 		{
 			t->join();
 			++i;
-		}
-		catch (boost::thread_interrupted e)
-		{
-			t->detach();
-			delete t;
-			i = serverThreads.erase(i);
 		}
 	}
 
@@ -135,11 +130,13 @@ void shutdownServer(int signal)
 	serverlog.out(":: The server is now shutting down...\n");
 
 	// Interrupt each thread.  We are shutting down the server.
-	// TODO: server shutdown function.
 	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end(); ++i)
 	{
 		boost::thread* t = i->second;
 		t->interrupt();
+		t->join();
+		t->detach();
+		serverThreads[i->first] = 0;
 	}
 }
 

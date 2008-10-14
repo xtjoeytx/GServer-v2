@@ -204,6 +204,8 @@ void TPlayer::operator()()
 	{
 		if (doMain() == false)
 			break;
+
+		boost::this_thread::interruption_point();
 	}
 
 	// Remove the player from the server.
