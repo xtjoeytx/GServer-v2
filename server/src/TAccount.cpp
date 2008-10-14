@@ -40,7 +40,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 	// Find the account in the file system.
 	bool loadedFromDefault = false;
 	CFileSystem* accfs = server->getAccountsFileSystem();
-	CString accpath(accfs->findi(pAccount));
+	CString accpath(accfs->findi(CString() << pAccount << ".txt"));
 	if (accpath.length() == 0)
 	{
 		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";

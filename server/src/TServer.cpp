@@ -173,11 +173,24 @@ int TServer::init()
 // Called when the TServer is put into its own thread.
 void TServer::operator()()
 {
-	while (true)
+	bool running = true;
+	while (running)
 	{
 		// TODO: If something happens, attempt to restart the server.
 		if (doMain() == false)
 			break;
+
+		try
+		{
+			boost::this_thread::interruption_point();
+		}
+		catch (boost::thread_interrupted e)
+		{
+			boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
+			for (std::map<boost::thread::id, boost::thread*>::iterator i = playerThreads.begin(); i != playerThreads.end(); ++i)
+				i->second->interrupt();
+			running = false;
+		}
 	}
 }
 
