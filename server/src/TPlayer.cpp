@@ -163,13 +163,18 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), iterator(0x04A80B38), key(0),
 PLE_POST22(false), os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
-pmap(0)
+pmap(0), fileQueue(pSocket, false)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastSave = time(0);
+	fileQueueThread = new boost::thread(boost::ref(fileQueue));
 }
 
 TPlayer::~TPlayer()
 {
+	fileQueue.setSocket(0);
+	fileQueueThread->join();
+	delete fileQueueThread;
+
 	if (id >= 0 && server != 0)
 	{
 		// Save account.
@@ -223,8 +228,8 @@ bool TPlayer::doMain()
 	// definitions
 	CString unBuffer;
 
-	// Try to get data stored in the socket.  Maximum wait time of 1 second.
-	if (playerSock->getData(0, 5000) == -1)
+	// Try to get data stored in the socket.  Will block the thread (good thing.)
+	if (playerSock->getData() == -1)
 		return false;
 
 	// grab the data now
@@ -257,9 +262,6 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
-
-	// send out buffer
-	sendCompress();
 	return true;
 }
 
@@ -401,66 +403,8 @@ void TPlayer::sendPacket(CString pPacket)
 	if (pPacket[pPacket.length()-1] != '\n')
 		pPacket.writeChar('\n');
 
-	// Send the stored buffer if the new packet will put it over 64KB.
-	// We don't want to keep compressing packets over and over if we can avoid it.
-	if (sBuffer.length() + pPacket.length() > 0x10000)
-		sendCompress();
-
 	// append buffer
-	boost::mutex::scoped_lock lock(m_sendPacket);
-	sBuffer.write(pPacket.text(), pPacket.length());
-}
-
-void TPlayer::sendCompress()
-{
-	boost::mutex::scoped_lock lock_sendPacket(m_sendPacket);
-	boost::mutex::scoped_lock lock_sendCompress(m_sendCompress);
-
-	// empty buffer?
-	if (sBuffer.isEmpty())
-	{
-		// If we still have some data in the out buffer, try sending it again.
-		if (oBuffer.isEmpty() == false)
-			playerSock->sendData(oBuffer);
-		return;
-	}
-
-	// compress buffer
-	if (PLE_POST22)
-	{
-		// Choose which compression to use and apply it.
-		int compressionType = ENCRYPT22_UNCOMPRESSED;
-		if (sBuffer.length() > 0x2000)	// 8KB
-		{
-			compressionType = ENCRYPT22_BZ2;
-			sBuffer.bzcompressI();
-		}
-		else if (sBuffer.length() > 40)
-		{
-			compressionType = ENCRYPT22_ZLIB;
-			sBuffer.zcompressI();
-		}
-
-		// Encrypt the packet and add it to the out buffer.
-		out_codec.limitfromtype(compressionType);
-		out_codec.apply(reinterpret_cast<uint8_t*>(sBuffer.text()), sBuffer.length());
-		oBuffer << (short)(sBuffer.length() + 1) << (char)compressionType << sBuffer;
-
-		// Send oBuffer.
-		playerSock->sendData(oBuffer, 0, 5000);
-	}
-	else
-	{
-		// Compress the packet and add it to the out buffer.
-		sBuffer.zcompressI();
-		oBuffer << (short)sBuffer.length() << sBuffer;
-
-		// Send oBuffer.
-		playerSock->sendData(oBuffer, 0, 5000);
-	}
-
-	// Clear the send buffer.
-	sBuffer.clear();
+	fileQueue.addPacket(pPacket);
 }
 
 void TPlayer::processChat(CString pChat)
@@ -662,8 +606,6 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	server->sendPacketToAll(this->getProps(0,0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
 
-	sendCompress();
-
 	return true;
 }
 
@@ -684,7 +626,6 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
 		}
-		sendCompress();
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
@@ -900,7 +841,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
-		out_codec.reset(key);
+		if (PLE_POST22) fileQueue.setCodecKey(key);
 	}
 
 	// Read Client-Version
@@ -1462,8 +1403,6 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 
 	// If we had sent a large file, let the client know we finished sending it.
 	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << file);
-
-	sendCompress();
 
 	return true;
 }

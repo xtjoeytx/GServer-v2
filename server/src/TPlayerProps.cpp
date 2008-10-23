@@ -726,7 +726,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
-		sendCompress();
 	}
 }
 
