@@ -370,7 +370,6 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (message != "SUCCESS")
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
-		player->sendCompress();
 		player->disconnect();
 		return;
 	}

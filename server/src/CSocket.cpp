@@ -410,19 +410,24 @@ int CSocket::sendData(CString& data, long delay_sec, long delay_usec)
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
 		return SOCKET_INVALID;
 
+	bool isBlocking = (properties.options & SOCKET_OPTION_NONBLOCKING ? false : true);
+
 	do
 	{
 		// See if we can send data.
 		// If we can't, return how many bytes we did send.
-		fd_set set;
-		struct timeval tm;
-		tm.tv_sec = delay_sec;
-		tm.tv_usec = delay_usec;
-		FD_ZERO(&set);
-		FD_SET(properties.handle, &set);
-		select(properties.handle + 1, 0, &set, 0, &tm);
-		if (!FD_ISSET(properties.handle, &set))
-			return size;
+		if (!isBlocking)
+		{
+			fd_set set;
+			struct timeval tm;
+			tm.tv_sec = delay_sec;
+			tm.tv_usec = delay_usec;
+			FD_ZERO(&set);
+			FD_SET(properties.handle, &set);
+			select(properties.handle + 1, 0, &set, 0, &tm);
+			if (!FD_ISSET(properties.handle, &set))
+				return size;
+		}
 
 		// Send our data, yay!
 		int sent = 0;
@@ -458,7 +463,7 @@ int CSocket::sendData(CString& data, long delay_sec, long delay_usec)
 		size += sent;
 
 	// Repeat while data is still left.
-	} while (data.length() > 0 && intError == 0);
+	} while (data.length() > 0 && intError == 0 && !isBlocking);
 
 	// Return how much data was ultimately sent.
 	return size;
@@ -477,22 +482,26 @@ int CSocket::getData(long delay_sec, long delay_usec)
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
 		return SOCKET_ERROR;
 
+	bool isBlocking = (properties.options & SOCKET_OPTION_NONBLOCKING ? false : true);
+
 	do
 	{
 		// Make sure there is data to be read.
-		// If size == bufflen, that means there may be more data.  Just in case,
-		// call select so blocking sockets don't block.
-		if (size == 0 || size == bufflen)
+		// If size == bufflen, that means there may be more data.
+		if (!isBlocking)
 		{
-			fd_set set;
-			struct timeval tm;
-			tm.tv_sec = delay_sec;
-			tm.tv_usec = delay_usec;
-			FD_ZERO(&set);
-			FD_SET(properties.handle, &set);
-			select(properties.handle + 1, &set, 0, 0, &tm);
-			if (!FD_ISSET(properties.handle, &set))
-				return temp.length();
+			if (size == 0 || size == bufflen)
+			{
+				fd_set set;
+				struct timeval tm;
+				tm.tv_sec = delay_sec;
+				tm.tv_usec = delay_usec;
+				FD_ZERO(&set);
+				FD_SET(properties.handle, &set);
+				select(properties.handle + 1, &set, 0, 0, &tm);
+				if (!FD_ISSET(properties.handle, &set))
+					return temp.length();
+			}
 		}
 
 		// Allocate buff.
@@ -531,7 +540,7 @@ int CSocket::getData(long delay_sec, long delay_usec)
 			}
 		}
 		if (delay_sec != 0 || delay_usec != 0) intError = 1;
-	} while (size > 0 && intError == 0);
+	} while (size > 0 && intError == 0 && !isBlocking);
 
 	// If size is 0, the socket was disconnected.
 	if (size == 0)

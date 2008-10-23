@@ -6,6 +6,7 @@
 #include "ICommon.h"
 #include "IUtil.h"
 #include "CSocket.h"
+#include "CFileQueue.h"
 #include "TServer.h"
 #include "TAccount.h"
 #include "TLevel.h"
@@ -207,7 +208,6 @@ class TPlayer : public TAccount
 
 		// Socket-Functions
 		bool doMain();
-		void sendCompress();
 		void sendPacket(CString pPacket);
 
 		// Misc functions.
@@ -270,7 +270,7 @@ class TPlayer : public TAccount
 
 		// Socket Variables
 		CSocket *playerSock;
-		CString rBuffer, sBuffer, oBuffer;
+		CString rBuffer;
 
 		// Pre 2.2 encryption.
 		int iterator;
@@ -279,7 +279,6 @@ class TPlayer : public TAccount
 		// Post 2.2 encryption.
 		bool PLE_POST22;
 		codec in_codec;
-		codec out_codec;
 
 		// Variables
 		CString version, os;
@@ -294,8 +293,11 @@ class TPlayer : public TAccount
 		int carryNpcId;
 		bool carryNpcThrown;
 
+		// File queue.
+		CFileQueue fileQueue;
+		boost::thread* fileQueueThread;
+
 		// Mutexes
-		boost::mutex m_sendPacket, m_sendCompress;
 		mutable boost::recursive_mutex m_preventChange;
 };
 

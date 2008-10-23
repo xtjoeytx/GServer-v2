@@ -102,7 +102,6 @@ bool TPlayer::sendLogin()
 	// Tell the serverlist that the player connected.
 	server->getServerList()->addPlayer(this);
 
-	sendCompress();
 	return true;
 }
 

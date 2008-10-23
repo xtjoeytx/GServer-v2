@@ -276,6 +276,9 @@ void TServer::acceptSock(CSocket& pSocket)
 	if (newSock == 0)
 		return;
 
+	// Make the new socket blocking.
+	newSock->setOptions(0);
+
 	// Get a free id to be assigned to the new player.
 	boost::recursive_mutex::scoped_lock lock_playerIds(m_playerIds);
 	unsigned int newId = 0;

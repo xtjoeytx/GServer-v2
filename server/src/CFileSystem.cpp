@@ -65,7 +65,7 @@ void CFileSystem::removeDir(const CString& dir)
 	for (std::map<CString, CString>::iterator i = fileList.begin(); i != fileList.end();)
 	{
 		if (i->second.findi(searchDir))
-			i = fileList.erase(i);
+			fileList.erase(i++);
 		else ++i;
 	}
 
@@ -73,7 +73,7 @@ void CFileSystem::removeDir(const CString& dir)
 	for (std::map<CString, CString>::iterator i = dirList.begin(); i != dirList.end();)
 	{
 		if (i->second.findi(searchDir))
-			i = fileList.erase(i);
+			fileList.erase(i++);
 		else ++i;
 	}
 }
