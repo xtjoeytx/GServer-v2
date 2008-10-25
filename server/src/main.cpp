@@ -10,6 +10,13 @@
 #include "TPlayer.h"
 #include "TServerList.h"
 
+// Linux specific stuff.
+#if !(defined(_WIN32) || defined(_WIN64))
+	#ifndef SIGBREAK
+		#define SIGBREAK SIGQUIT
+	#endif
+#endif
+
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
 
