@@ -8,17 +8,17 @@ const char* baddyImages[baddytypes] = {
 	"baddygray.png", "baddyblue.png", "baddyred.png", "baddyblue.png", "baddygray.png",
 	"baddyhare.png", "baddyoctopus.png", "baddygold.png", "baddylizardon.png", "baddydragon.png"
 };
-char baddyStartMode[baddytypes] = {
+const char baddyStartMode[baddytypes] = {
 	BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK,	BDMODE_SWAMPSHOT,
 	BDMODE_HAREJUMP, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK
 };
-int baddyPower[baddytypes] = {
+const int baddyPower[baddytypes] = {
 	2, 3, 4, 3, 2,
 	1, 1, 6, 12 ,8
 };
 
 const int baddypropcount = 11;
-bool baddyPropsReinit[baddypropcount] = {
+const bool baddyPropsReinit[baddypropcount] = {
 	false, true, true, true, true,
 	true, true, true, false, false, false
 };
@@ -34,6 +34,7 @@ respawn(true)
 
 void TLevelBaddy::reset()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	mode = baddyStartMode[type];
 	x = startX;
 	y = startY;
@@ -43,8 +44,9 @@ void TLevelBaddy::reset()
 	ani = 0;
 }
 
-CString TLevelBaddy::getProp(int propId) const
+CString TLevelBaddy::getProp(const int propId) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	switch (propId)
 	{
 		case BDPROP_ID:
@@ -85,6 +87,7 @@ CString TLevelBaddy::getProp(int propId) const
 
 CString TLevelBaddy::getProps() const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (int i = 1; i < baddypropcount; i++)
 		retVal >> (char)i << getProp(i);
@@ -93,6 +96,7 @@ CString TLevelBaddy::getProps() const
 
 void TLevelBaddy::setProps(CString &pProps)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	int len = 0;
 	while (pProps.bytesLeft())
 	{

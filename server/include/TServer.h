@@ -2,6 +2,7 @@
 #define TSERVER_H
 
 #include <vector>
+#include <map>
 #include "ICommon.h"
 #include "CSettings.h"
 #include "CSocket.h"
@@ -27,6 +28,7 @@ class TServer
 	public:
 		TServer(CString pName);
 		~TServer();
+		void operator()();
 
 		int init();
 		bool doMain();
@@ -43,11 +45,22 @@ class TServer
 		std::vector<CString>* getServerFlags()	{ return &serverFlags; }
 		TServerList* getServerList()			{ return &serverlist; }
 		CFileSystem* getFileSystem()			{ return &filesystem; }
+		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
 		CString getServerPath()					{ return serverpath; }
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
 		CString* getServerMessage()				{ return &servermessage; }
-		unsigned int getNWTime();
+		unsigned int getNWTime() const;
+
+		// Yay public mutexes.
+		mutable boost::recursive_mutex m_playerList;
+		mutable boost::recursive_mutex m_playerIds;
+		mutable boost::recursive_mutex m_npcList;
+		mutable boost::recursive_mutex m_npcIds;
+		mutable boost::recursive_mutex m_levelList;
+		mutable boost::recursive_mutex m_mapList;
+		mutable boost::recursive_mutex m_weaponList;
+		mutable boost::recursive_mutex m_serverFlags;
 
 		TPlayer* getPlayer(const unsigned short id) const;
 		TNPC* getNPC(const unsigned int id) const;
@@ -62,6 +75,7 @@ class TServer
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0);
 		bool addFlag(const CString& pFlag);
 		bool deleteFlag(const CString& pFlag);
+		bool deletePlayer(TPlayer* player);
 
 		// Packet sending.
 		void sendPacketToAll(CString pPacket) const;
@@ -79,14 +93,17 @@ class TServer
 
 		CSettings settings;
 		std::vector<TPlayer*> playerIds, playerList;
+		std::map<boost::thread::id, boost::thread*> playerThreads;
 		std::vector<TNPC*> npcIds, npcList;
 		std::vector<TLevel*> levelList;
 		std::vector<TMap*> mapList;
 		std::vector<TWeapon*> weaponList;
 		std::vector<CString> serverFlags;
+		std::vector<boost::thread::id> terminatedThreads;
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
 		CFileSystem filesystem;
+		CFileSystem filesystem_accounts;
 		CString name;
 		CString serverpath;
 		CString servermessage;
@@ -95,6 +112,9 @@ class TServer
 		CLog rclog;//("logs/rclog.txt");
 
 		time_t lastTimer, lastNWTimer;
+
+		boost::recursive_mutex m_preventChange;
+		boost::recursive_mutex m_playerThreads;
 };
 
 #endif

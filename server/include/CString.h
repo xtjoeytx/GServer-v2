@@ -14,7 +14,7 @@
 	#define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 #define clip(a, b, c) MAX(MIN((a), (c)), (b))
-#define in(a, b, c) ((a) >= (b) && (a) <= (c))
+#define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
 #define strtofloat(a) atof(a.text())
 #define strtoint(a) atoi(a.text())
@@ -83,6 +83,7 @@ class CString
 		CString gtokenize() const;
 		CString guntokenize() const;
 		bool match(const CString& pMask) const;
+		bool comparei(const CString& pOther) const;
 
 		/* In-Functions */
 		inline CString& escapeI();

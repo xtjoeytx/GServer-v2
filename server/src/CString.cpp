@@ -308,7 +308,7 @@ CString CString::toLower() const
 	CString retVal(*this);
 	for (int i = 0; i < retVal.length(); i++)
 	{
-		if (in(retVal[i], 'A', 'Z'))
+		if (inrange(retVal[i], 'A', 'Z'))
 			retVal[i] += 32;
 	}
 
@@ -320,7 +320,7 @@ CString CString::toUpper() const
 	CString retVal(*this);
 	for (int i = 0; i < retVal.length(); i++)
 	{
-		if (in(retVal[i], 'a', 'z'))
+		if (inrange(retVal[i], 'a', 'z'))
 			retVal[i] -= 32;
 	}
 
@@ -689,6 +689,13 @@ bool CString::match(const CString& pMask) const
 	search.removeAllI("*");
 	search.removeAllI("?");
 	if (search.length() == 0) return true;
+	return false;
+}
+
+bool CString::comparei(const CString& pOther) const
+{
+	if (strncasecmp(buffer, pOther.text(), MAX(sizec, pOther.length())) == 0)
+		return true;
 	return false;
 }
 

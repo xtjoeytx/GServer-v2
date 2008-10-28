@@ -106,14 +106,14 @@ class TNPC
 		void setProps(CString& pProps);
 
 		// set functions
-		void setId(unsigned int pId)	{ id = pId; }
+		void setId(unsigned int pId)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); id = pId; }
 
 		// get functions
-		unsigned int getId() const		{ return id; }
-		TLevel* getLevel()				{ return level; }
-		CString getWeaponName() const	{ return weaponName; }
-		CString getServerScript() const	{ return serverScript; }
-		CString getClientScript() const	{ return clientScript; }
+		unsigned int getId() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return id; }
+		TLevel* getLevel()				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return level; }
+		CString getWeaponName() const	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return weaponName; }
+		CString getServerScript() const	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return serverScript; }
+		CString getClientScript() const	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return clientScript; }
 		time_t getPropModTime(unsigned char pId);
 
 	private:
@@ -132,11 +132,14 @@ class TNPC
 		CString serverScript, clientScript;
 		unsigned char saves[10];
 		TLevel* level;
+
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 inline
 time_t TNPC::getPropModTime(unsigned char pId)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (pId < npcpropcount) return modTime[pId];
 	return 0;
 }

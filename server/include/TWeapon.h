@@ -2,6 +2,7 @@
 #define TWEAPON_H
 
 #include <time.h>
+#include "ICommon.h"
 #include "TNPC.h"
 #include "CString.h"
 
@@ -17,15 +18,15 @@ public:
 
 	CString getWeaponPacket() const;
 
-	char getWeaponId() const			{ return defaultWeaponId; }
-	time_t getModTime() const			{ return modTime; }
+	char getWeaponId() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return defaultWeaponId; }
+	time_t getModTime() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return modTime; }
 	CString getName() const;
-	CString getImage() const			{ return image; }
-	CString getServerScript() const		{ return serverScript; }
-	CString getClientScript() const		{ return clientScript; }
+	CString getImage() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return image; }
+	CString getServerScript() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return serverScript; }
+	CString getClientScript() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return clientScript; }
 
-	void setServerScript(const CString& pScript)	{ serverScript = pScript; }
-	void setClientScript(const CString& pScript)	{ clientScript = pScript; }
+	void setServerScript(const CString& pScript)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); serverScript = pScript; }
+	void setClientScript(const CString& pScript)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); clientScript = pScript; }
 
 private:
 	CString name;
@@ -35,6 +36,8 @@ private:
 	time_t modTime;
 	bool defaultWeapon;
 	char defaultWeaponId;
+
+	mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif
