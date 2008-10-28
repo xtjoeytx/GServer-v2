@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	// Make sure we actually have a server.
 	if (serversettings.getInt("servercount", 0) == 0)
 	{
-		serverlog.out("[Error] Incorrect settings.txt file.  servercount not found.\n");
+		serverlog.out("** [Error] Incorrect settings.txt file.  servercount not found.\n");
 		return ERR_SETTINGS;
 	}
 
@@ -76,15 +76,15 @@ int main(int argc, char* argv[])
 		// Make sure doubles don't exist.
 		if (serverList.find(name) != serverList.end())
 		{
-			serverlog.out("[WARNING] Server %s already found, deleting old server.\n", name.text());
+			serverlog.out("-- [WARNING] Server %s already found, deleting old server.\n", name.text());
 			delete serverList[name];
 		}
 
 		// Initialize the server.
-		serverlog.out(":: Starting server: %s...\n", name.text());
+		serverlog.out(":: Starting server: %s.\n", name.text());
 		if (server->init() != 0)
 		{
-			serverlog.out("[Error] Failed to start server: %s\n", name.text());
+			serverlog.out("** [Error] Failed to start server: %s\n", name.text());
 			delete server;
 			continue;
 		}

@@ -148,6 +148,7 @@ void createPLFunctions()
 	TPLFunc[PLI_ITEMTAKE] = &TPlayer::msgPLI_ITEMDEL;			// Shared with PLI_ITEMDEL
 	TPLFunc[PLI_UPDATEFILE] = &TPlayer::msgPLI_UPDATEFILE;
 	TPLFunc[PLI_ADJACENTLEVEL] = &TPlayer::msgPLI_ADJACENTLEVEL;
+	TPLFunc[PLI_HITOBJECTS] = &TPlayer::msgPLI_HITOBJECTS;
 	TPLFunc[PLI_LANGUAGE] = &TPlayer::msgPLI_LANGUAGE;
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
@@ -171,6 +172,7 @@ pmap(0), fileQueue(pSocket, false)
 
 TPlayer::~TPlayer()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	fileQueue.setSocket(0);
 	fileQueueThread->join();
 	delete fileQueueThread;
@@ -723,7 +725,7 @@ bool TPlayer::leaveLevel()
 
 	// Save the time we left the level for the client-side caching.
 	bool found = false;
-	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end();)
 	{
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
@@ -731,7 +733,7 @@ bool TPlayer::leaveLevel()
 			cl->modTime = time(0);
 			found = true;
 			i = cachedLevels.end();
-		}
+		} else ++i;
 	}
 	if (found == false) cachedLevels.push_back(new SCachedLevel(level, time(0)));
 
@@ -811,6 +813,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
 	printf("Unknown Player Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text()+1);
+	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 	return true;
 }
 
@@ -1181,7 +1184,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (ap / 20));
 				if (oAp < 0) oAp = 0;
 				player->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
-				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, true, true);
 			}
 		}
 	}
@@ -1661,6 +1664,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	if (adjacentLevel == 0)
 		return true;
 
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	bool alreadyVisited = false;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
@@ -1681,6 +1685,26 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)
 		sendPacket(CString() >> (char)PLO_ISLEADER);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
+{
+	float power = (float)pPacket.readGChar() / 2.0f;
+	float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
+	int nid = (pPacket.bytesLeft() != 0) ? pPacket.readGUInt() : -1;
+
+	// Construct the packet.
+	// {46}{SHORT player_id / 0 for NPC}{CHAR power}{CHAR x}{CHAR y}[{INT npc_id}]
+	CString nPacket;
+	nPacket >> (char)PLO_HITOBJECTS;
+	nPacket >> (short)((nid == -1) ? id : 0);	// If it came from an NPC, send 0 for the id.
+	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
+	if (nid != -1) nPacket >> (int)nid;
+
+	if (pmap && pmap->getType() == MAPTYPE_GMAP) server->sendPacketToLevel(nPacket, pmap, this);
+	else server->sendPacketToLevel(nPacket, level, this);
 
 	return true;
 }

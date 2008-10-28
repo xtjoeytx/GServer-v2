@@ -56,7 +56,7 @@ enum
 	PLI_WEAPONADD		= 33,
 	PLI_UPDATEFILE		= 34,
 	PLI_ADJACENTLEVEL	= 35,
-	PLI_HITOBJECTS		= 36,	// TODO
+	PLI_HITOBJECTS		= 36,
 	PLI_LANGUAGE		= 37,
 	PLI_TRIGGERACTION	= 38,
 	PLI_MAPINFO			= 39,
@@ -113,7 +113,7 @@ enum
 	PLO_DEFAULTWEAPON	= 43,
 	PLO_HASNPCSERVER	= 44,	// If sent, the client won't update npc props.
 	PLO_FILEUPTODATE	= 45,
-
+	PLO_HITOBJECTS		= 46,
 	PLO_STAFFGUILDS		= 47,
 	PLO_TRIGGERACTION	= 48,
 	PLO_PLAYERWARP2		= 49,	// Bytes 1-3 are x/y/z. 4 = level x in gmap, 5 = level y in gmap.
@@ -254,6 +254,7 @@ class TPlayer : public TAccount
 		bool msgPLI_WEAPONADD(CString& pPacket);
 		bool msgPLI_UPDATEFILE(CString& pPacket);
 		bool msgPLI_ADJACENTLEVEL(CString& pPacket);
+		bool msgPLI_HITOBJECTS(CString& pPacket);
 		bool msgPLI_LANGUAGE(CString& pPacket);
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
