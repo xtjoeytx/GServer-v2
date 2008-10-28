@@ -15,6 +15,7 @@ extern int __attrPackets[30];
 */
 CString TPlayer::getProp(int pPropId)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 	switch (pPropId)
 	{
@@ -102,7 +103,7 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)0;
 
 		case PLPROP_CARRYNPC:
-		return CString() >> (int)0;
+		return CString() >> (int)carryNpcId;
 
 		case PLPROP_APCOUNTER:
 		return CString() >> (short)(apCounter+1);
@@ -119,7 +120,7 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_ONLINESECS:
 		return CString() >> (int)onlineTime;
 
-		case PLPROP_LASTIP:
+		case PLPROP_IPADDR:
 		return CString().writeGInt5(accountIp);
 
 		case PLPROP_UDPPORT:
@@ -218,15 +219,14 @@ CString TPlayer::getProp(int pPropId)
 
 void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	int len = 0;
 /*
 	printf("\n");
 	printf("%s\n", pPacket.text());
-	for (int i = 0; i < pPacket.length(); ++i)
-		printf("%02x ", (unsigned char)((pPacket.text())[i]));
-	printf("\n");
+	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 */
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -320,7 +320,29 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			break;
 
 			case PLPROP_GANI:
+			{
 				gAni = pPacket.readChars(pPacket.readGUChar());
+				if (gAni == "spin")
+				{
+					CString nPacket;
+					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
+					char hx = (char)((x + 1.5f) * 2);
+					char hy = (char)((y + 2.0f) * 2);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
+					if (sprite % 4 == 0 || sprite % 4 == 2)
+					{
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+					}
+					else
+					{
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
+					}
+				}
+			}
 			break;
 
 			case PLPROP_HEADGIF:
@@ -456,7 +478,43 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			break;
 
 			case PLPROP_CARRYNPC:
-				pPacket.readGInt();
+			{
+				carryNpcId = pPacket.readGInt();
+
+				// TODO: Remove when an npcserver is created.
+				if (server->getSettings()->getBool("duplicatecanbecarried", false) == false)
+				{
+					bool isOwner = true;
+					{
+						boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+						std::vector<TPlayer*>* playerList = server->getPlayerList();
+						for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+						{
+							TPlayer* other = *i;
+							if (other == this) continue;
+							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == carryNpcId)
+							{
+								// Somebody else got this NPC first.  Force the player to throw his down
+								// and tell the player to remove the NPC from memory.
+								carryNpcId = 0;
+								isOwner = false;
+								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
+								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
+								if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, pmap, this);
+								else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, level, this);
+								i = playerList->end();
+							}
+						}
+					}
+					if (isOwner)
+					{
+						// We own this NPC now so remove it from the level and have everybody else delete it.
+						TNPC* npc = server->getNPC(carryNpcId);
+						level->removeNPC(npc);
+						server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
+					}
+				}
+			}
 			break;
 
 			case PLPROP_APCOUNTER:
@@ -480,12 +538,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				pPacket.readGInt();
 			break;
 
-			case PLPROP_LASTIP:
+			case PLPROP_IPADDR:
 				pPacket.readGInt5();
 			break;
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
+				server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport);
 				// TODO: udp support.
 			break;
 
@@ -689,11 +748,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
-		sendCompress();
 	}
 }
 
-void TPlayer::sendProps(bool *pProps, int pCount)
+void TPlayer::sendProps(const bool *pProps, int pCount)
 {
 	// Definition
 	CString propPacket;
@@ -709,7 +767,7 @@ void TPlayer::sendProps(bool *pProps, int pCount)
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString TPlayer::getProps(bool *pProps, int pCount)
+CString TPlayer::getProps(const bool *pProps, int pCount)
 {
 	CString propPacket;
 

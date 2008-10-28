@@ -23,6 +23,7 @@ class TLevelSign
 	private:
 		int x, y;
 		CString text;
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif // TLEVELSIGN_H

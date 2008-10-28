@@ -148,5 +148,3 @@ listport = 14900
 # Console settings.
 detailedconsole = false
 showconsolepackets = false
-
-version = 1.0

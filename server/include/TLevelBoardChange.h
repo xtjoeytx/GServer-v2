@@ -21,15 +21,15 @@ class TLevelBoardChange
 		void swapTiles();
 
 		// get private variables
-		int getX() const				{ return x; }
-		int getY() const				{ return y; }
-		int getWidth() const			{ return width; }
-		int getHeight() const			{ return height; }
-		CString getTiles() const		{ return tiles; }
-		time_t getModTime() const		{ return modTime; }
+		int getX() const				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return x; }
+		int getY() const				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return y; }
+		int getWidth() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return width; }
+		int getHeight() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return height; }
+		CString getTiles() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return tiles; }
+		time_t getModTime() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return modTime; }
 
 		// set private variables
-		void setModTime(time_t ntime)	{ modTime = ntime; }
+		void setModTime(time_t ntime)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); modTime = ntime; }
 
 		CTimeout timeout;
 
@@ -37,6 +37,8 @@ class TLevelBoardChange
 		int x, y, width, height;
 		CString tiles, oldTiles;
 		time_t modTime;
+
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif // TLEVELBOARDCHANGE_H

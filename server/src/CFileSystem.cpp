@@ -11,9 +11,11 @@
 //nofoldersconfig 
 
 #if defined(_WIN32) || defined(_WIN64)
-	#define fSep "\\"
+	const char fSep = '\\';
+	const char fSep_O = '/';
 #else
-	#define fSep "/"
+	const char fSep = '/';
+	const char fSep_O = '\\';
 #endif
 
 static void loadAllDirectories(std::map<CString, CString>& fileList, const CString& directory);
@@ -23,41 +25,143 @@ CFileSystem::CFileSystem(TServer* pServer)
 {
 }
 
-void CFileSystem::init(const CString& dir)
+void CFileSystem::addDir(const CString& dir)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (server == 0) return;
-	CSettings* settings = server->getSettings();
 
-	// Load every directory if we aren't using folders config.
-	if (settings->getBool("nofoldersconfig", false) == true)
-	{
-		fileList.clear();
-		loadAllDirectories(fileList, CString() << server->getServerPath() << dir << fSep);
-
-		// Load extra folders.
-		if (settings->getStr("sharefolder").length() > 0)
-		{
-			std::vector<CString> folders = settings->getStr("sharefolder").tokenize(",");
-			for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
-			{
-				CString f = CString() << server->getServerPath() << (*i).trim();
-				if (f[f.length() - 1] != '/' || f[f.length() - 1] != '\\') f << fSep;
-				loadAllDirectories(fileList, f);
-			}
-		}
-	}
+	// Format the directory.
+	CString newDir(dir);
+	if (newDir[newDir.length() - 1] == '/' || newDir[newDir.length() - 1] == '\\')
+		CFileSystem::fixPathSeparators(&newDir);
 	else
+		newDir << fSep;
+
+	// See if the directory already exists.
+	// If it does, first remove it before re-adding it.
+	if (finddiri(newDir).length() != 0)
+		removeDir(newDir);
+
+	// Add the directory to the directory list.
+	dirList[newDir] = CString() << server->getServerPath() << newDir;
+
+	// Load up the files in the directory.
+	loadAllDirectories(fileList, dirList[newDir]);
+}
+
+void CFileSystem::removeDir(const CString& dir)
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	if (server == 0) return;
+
+	// Format the search directory.
+	CString searchDir(CString() << server->getServerPath() << dir);
+	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
+		CFileSystem::fixPathSeparators(&searchDir);
+	else
+		searchDir << fSep;
+
+	// Remove every file that belongs to the specified root directory.
+	for (std::map<CString, CString>::iterator i = fileList.begin(); i != fileList.end();)
 	{
-		// TODO: folders config
-		printf( "TODO: CFileSystem::load, Do folders config.\n" );
+		if (i->second.findi(searchDir))
+			fileList.erase(i++);
+		else ++i;
 	}
+
+	// Remove the directory from the directory list.
+	for (std::map<CString, CString>::iterator i = dirList.begin(); i != dirList.end();)
+	{
+		if (i->second.findi(searchDir))
+			fileList.erase(i++);
+		else ++i;
+	}
+}
+
+void CFileSystem::addFile(const CString& file)
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Grab the file name and directory.
+	CString filename(file.subString(file.findl(fSep) + 1));
+	CString directory(file.subString(0, file.find(filename)));
+
+	// Fix directory path separators.
+	CFileSystem::fixPathSeparators(&directory);
+
+	// Add to the map.
+	fileList[filename] = CString() << server->getServerPath() << directory << filename;
+}
+
+void CFileSystem::removeFile(const CString& file)
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Grab the file name and directory.
+	CString filename(file.subString(file.findl(fSep) + 1));
+	CString directory(file.subString(0, file.find(filename)));
+
+	// Fix directory path separators.
+	CFileSystem::fixPathSeparators(&directory);
+
+	// Remove it from the map.
+	fileList.erase(filename);
+}
+
+void CFileSystem::resync()
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Clear the file list.
+	fileList.clear();
+
+	// Iterate through all the directories, reloading their file list.
+	for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
+		loadAllDirectories(fileList, i->second);
 }
 
 CString CFileSystem::find(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	std::map<CString, CString>::const_iterator i = fileList.find(file);
 	if (i == fileList.end()) return CString();
 	return CString(i->second);
+}
+
+CString CFileSystem::findi(const CString& file) const
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
+		if (i->first.comparei(file)) return CString(i->second);
+	return CString();
+}
+
+CString CFileSystem::finddir(const CString& dir) const
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	CString searchDir(dir);
+	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
+		CFileSystem::fixPathSeparators(&searchDir);
+	else
+		searchDir << fSep;
+
+	std::map<CString, CString>::const_iterator i = dirList.find(searchDir);
+	if (i == fileList.end()) return CString();
+	return CString(i->second);
+}
+
+CString CFileSystem::finddiri(const CString& dir) const
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	CString searchDir(dir);
+	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
+		CFileSystem::fixPathSeparators(&searchDir);
+	else
+		searchDir << fSep;
+
+	for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
+		if (i->first.comparei(searchDir)) return CString(i->second);
+	return CString();
 }
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -80,7 +184,7 @@ void loadAllDirectories(std::map<CString, CString>& fileList, const CString& dir
 			{
 				// Grab the file name.
 				CString file(filedata.cFileName);
-				fileList[file] = CString() << directory << filedata.cFileName;
+				fileList[file] = CString(directory) << filedata.cFileName;
 			}
 		} while (FindNextFileA(hFind, &filedata));
 	}
@@ -114,7 +218,7 @@ void loadAllDirectories(std::map<CString, CString>& fileList, const CString& dir
 
 		// Grab the file name.
 		CString file(ent->d_name);
-		fileList[file] = CString() << directory << ent->d_name;
+		fileList[file] = CString(directory) << ent->d_name;
 	}
 	closedir(dir);
 }
@@ -122,6 +226,8 @@ void loadAllDirectories(std::map<CString, CString>& fileList, const CString& dir
 
 CString CFileSystem::load(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return CString();
@@ -135,6 +241,8 @@ CString CFileSystem::load(const CString& file) const
 
 time_t CFileSystem::getModTime(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
@@ -147,6 +255,8 @@ time_t CFileSystem::getModTime(const CString& file) const
 
 int CFileSystem::getFileSize(const CString& file) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Get the full path to the file.
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
@@ -155,4 +265,9 @@ int CFileSystem::getFileSize(const CString& file) const
 	if (stat(fileName.text(), &fileStat) != -1)
 		return fileStat.st_size;
 	return 0;
+}
+
+void CFileSystem::fixPathSeparators(CString* pPath)
+{
+	pPath->replaceAllI(fSep_O, fSep);
 }

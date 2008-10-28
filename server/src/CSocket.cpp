@@ -123,7 +123,7 @@ int CSocket::init(const CString& host, const CString& port)
 	memset((void*)&hints, 0, sizeof(hints));
 	if (properties.protocol == SOCKET_PROTOCOL_TCP) hints.ai_socktype = SOCK_STREAM;
 	if (properties.protocol == SOCKET_PROTOCOL_UDP) hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_family = AF_INET;
+	hints.ai_family = PF_INET;
 
 	// Create the host.
 	int error;
@@ -337,12 +337,12 @@ int CSocket::reconnect(long delay, int tries)
 				// Do nothing.
 				break;
 		}
-		if (delay != 0) wait(delay);
+		if (delay != 0) sleep(delay);
 	}
 	return SOCKET_CONNECT_ERROR;
 }
 
-CSocket* CSocket::accept()
+CSocket* CSocket::accept(long delay_sec, long delay_usec)
 {
 	// Make sure the socket is connected!
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
@@ -351,6 +351,20 @@ CSocket* CSocket::accept()
 	// Only server type TCP sockets can accept new connections.
 	if (properties.type != SOCKET_TYPE_SERVER || properties.protocol != SOCKET_PROTOCOL_TCP)
 		return 0;
+
+	// If we have a delay, do a wait.
+	if (delay_sec != 0 || delay_usec != 0)
+	{
+		fd_set set;
+		struct timeval tm;
+		tm.tv_sec = delay_sec;
+		tm.tv_usec = delay_usec;
+		FD_ZERO(&set);
+		FD_SET(properties.handle, &set);
+		select(properties.handle + 1, &set, 0, 0, &tm);
+		if (!FD_ISSET(properties.handle, &set))
+			return 0;
+	}
 
 	sockaddr_storage addr;
 	int addrlen = sizeof(addr);
@@ -387,7 +401,7 @@ CSocket* CSocket::accept()
 	return sock;
 }
 
-int CSocket::sendData(CString& data)
+int CSocket::sendData(CString& data, long delay_sec, long delay_usec)
 {
 	int intError = 0;
 	int size = 0;
@@ -396,18 +410,24 @@ int CSocket::sendData(CString& data)
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
 		return SOCKET_INVALID;
 
+	bool isBlocking = (properties.options & SOCKET_OPTION_NONBLOCKING ? false : true);
+
 	do
 	{
 		// See if we can send data.
 		// If we can't, return how many bytes we did send.
-		fd_set set;
-		struct timeval tm;
-		tm.tv_sec = tm.tv_usec = 0;
-		FD_ZERO(&set);
-		FD_SET(properties.handle, &set);
-		select(properties.handle + 1, 0, &set, 0, &tm);
-		if (!FD_ISSET(properties.handle, &set))
-			return size;
+		if (!isBlocking)
+		{
+			fd_set set;
+			struct timeval tm;
+			tm.tv_sec = delay_sec;
+			tm.tv_usec = delay_usec;
+			FD_ZERO(&set);
+			FD_SET(properties.handle, &set);
+			select(properties.handle + 1, 0, &set, 0, &tm);
+			if (!FD_ISSET(properties.handle, &set))
+				return size;
+		}
 
 		// Send our data, yay!
 		int sent = 0;
@@ -443,13 +463,13 @@ int CSocket::sendData(CString& data)
 		size += sent;
 
 	// Repeat while data is still left.
-	} while (data.length() > 0 && intError == 0);
+	} while (data.length() > 0 && intError == 0 && !isBlocking);
 
 	// Return how much data was ultimately sent.
 	return size;
 }
 
-int CSocket::getData()
+int CSocket::getData(long delay_sec, long delay_usec)
 {
 	int size = 0;
 	int intError = 0;
@@ -462,21 +482,26 @@ int CSocket::getData()
 	if (properties.state == SOCKET_STATE_DISCONNECTED)
 		return SOCKET_ERROR;
 
+	bool isBlocking = (properties.options & SOCKET_OPTION_NONBLOCKING ? false : true);
+
 	do
 	{
 		// Make sure there is data to be read.
-		// If size == bufflen, that means there may be more data.  Just in case,
-		// call select so blocking sockets don't block.
-		if (size == 0 || size == bufflen)
+		// If size == bufflen, that means there may be more data.
+		if (!isBlocking)
 		{
-			fd_set set;
-			struct timeval tm;
-			tm.tv_sec = tm.tv_usec = 0;
-			FD_ZERO(&set);
-			FD_SET(properties.handle, &set);
-			select(properties.handle + 1, &set, 0, 0, &tm);
-			if (!FD_ISSET(properties.handle, &set))
-				return temp.length();
+			if (size == 0 || size == bufflen)
+			{
+				fd_set set;
+				struct timeval tm;
+				tm.tv_sec = delay_sec;
+				tm.tv_usec = delay_usec;
+				FD_ZERO(&set);
+				FD_SET(properties.handle, &set);
+				select(properties.handle + 1, &set, 0, 0, &tm);
+				if (!FD_ISSET(properties.handle, &set))
+					return temp.length();
+			}
 		}
 
 		// Allocate buff.
@@ -514,7 +539,8 @@ int CSocket::getData()
 					break;
 			}
 		}
-	} while (size > 0 && intError == 0);
+		if (delay_sec != 0 || delay_usec != 0) intError = 1;
+	} while (size > 0 && intError == 0 && !isBlocking);
 
 	// If size is 0, the socket was disconnected.
 	if (size == 0)
@@ -739,7 +765,7 @@ void CSocket::socketSystemDestroy()
 	{
 		if (WSACleanup() == SOCKET_ERROR)
 			serverlog.out(CString() << "[CSocket::socketSystemDestroy] WSACleanup() returned error: " << errorMessage(identifyError()) << "\n");
-		wait(1000);
+		sleep(1000);
 	}
 #endif
 }
