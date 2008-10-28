@@ -320,7 +320,29 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			break;
 
 			case PLPROP_GANI:
+			{
 				gAni = pPacket.readChars(pPacket.readGUChar());
+				if (gAni == "spin")
+				{
+					CString nPacket;
+					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
+					char hx = (char)((x + 1.5f) * 2);
+					char hy = (char)((y + 2.0f) * 2);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
+					if (sprite % 4 == 0 || sprite % 4 == 2)
+					{
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+					}
+					else
+					{
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
+					}
+				}
+			}
 			break;
 
 			case PLPROP_HEADGIF:

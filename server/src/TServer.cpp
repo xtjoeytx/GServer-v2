@@ -71,7 +71,7 @@ int TServer::init()
 	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
 	if (!settings.isOpened())
 	{
-		serverlog.out("[Error] Could not open config/serveroptions.txt\n");
+		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
 		return ERR_SETTINGS;
 	}
 
@@ -114,7 +114,7 @@ int TServer::init()
 		TMap* gmap = new TMap(MAPTYPE_GMAP);
 		if (gmap->load(CString() << *i << ".gmap", this) == false)
 		{
-			serverlog.out(CString() << "[Error] Could not load " << *i << ".gmap" << "\n");
+			serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
 			delete gmap;
 			continue;
 		}
@@ -133,7 +133,7 @@ int TServer::init()
 		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
 		if (bigmap->load(*i, this) == false)
 		{
-			serverlog.out(CString() << "[Error] Could not load " << *i << "\n");
+			serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
 			delete bigmap;
 			continue;
 		}
@@ -150,19 +150,19 @@ int TServer::init()
 	// Start listening on the player socket.
 	if (playerSock.init("", settings.getStr("serverport")))
 	{
-		serverlog.out("[Error] Could not initialize listening socket.\n");
+		serverlog.out("** [Error] Could not initialize listening socket.\n");
 		return ERR_LISTEN;
 	}
 	if (playerSock.connect())
 	{
-		serverlog.out("[Error] Could not connect listening socket.\n");
+		serverlog.out("** [Error] Could not connect listening socket.\n");
 		return ERR_LISTEN;
 	}
 
 	// Connect to the serverlist.
 	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
 	{
-		serverlog.out("[Error] Cound not initialize serverlist socket.\n");
+		serverlog.out("** [Error] Cound not initialize serverlist socket.\n");
 		return ERR_LISTEN;
 	}
 	serverlist.connectServer();
