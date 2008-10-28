@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <boost/thread.hpp>
 
 #include "CString.h"
 
@@ -31,7 +32,7 @@ class CLog
 
 		//! Gets the enabled state of the class.
 		//! \return True if logging is enabled.
-		bool getEnabled();
+		bool getEnabled() const;
 
 		//! Sets the enabled state of the logger class.
 		/*!
@@ -43,7 +44,7 @@ class CLog
 
 		//! Gets the name of the log file.
 		//! \return Name of the log file.
-		const CString& getFilename();
+		const CString& getFilename() const;
 
 		//! Sets the name of the file to write to.
 		//! \param filename Name of the file to write to.
@@ -61,16 +62,19 @@ class CLog
 
 		//! File handle.
 		FILE* file;
+
+		//! Mutex
+		boost::recursive_mutex m_write;
 };
 
 inline
-bool CLog::getEnabled()
+bool CLog::getEnabled() const
 {
 	return enabled;
 }
 
 inline
-const CString& CLog::getFilename()
+const CString& CLog::getFilename() const
 {
 	return filename;
 }

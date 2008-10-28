@@ -6,9 +6,9 @@
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
 #if defined(_WIN32)
-	#define wait(a) Sleep(a)
+	#define sleep(a) Sleep(a)
 #else
-	#define wait(a) usleep(a*1000)
+	#define sleep(a) usleep(a*1000)
 #endif
 
 /*

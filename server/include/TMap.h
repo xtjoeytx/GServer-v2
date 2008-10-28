@@ -2,6 +2,7 @@
 #define TGMAP_H
 
 #include <map>
+#include "ICommon.h"
 #include "CString.h"
 
 enum
@@ -40,8 +41,8 @@ class TMap
 		CString getLevelAt(int x, int y) const;
 		int getLevelX(const CString& level) const;
 		int getLevelY(const CString& level) const;
-		CString getMapName() const			{ return mapName; }
-		int getType() const					{ return type; }
+		CString getMapName() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return mapName; }
+		int getType() const					{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return type; }
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
@@ -56,6 +57,8 @@ class TMap
 		CString miniMapImage;
 		//bool loadFullMap;
 		std::map<CString, SMapLevel> levels;
+
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif
