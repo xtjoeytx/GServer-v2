@@ -138,6 +138,11 @@ class TLevel
 		//! \return The gmap this level belongs to.
 		TMap* getMap() const;
 
+		//! Adds an NPC to the level.
+		//! \param npc NPC to add to the level.
+		//! \return True if the NPC was successfully added or false if it already exists in the level.
+		bool addNPC(TNPC* npc);
+
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
 		void removeNPC(TNPC* npc);
@@ -169,6 +174,8 @@ class TLevel
 		std::vector<TLevelSign *> levelSigns;
 		std::vector<TNPC *> levelNPCs;
 		std::vector<TPlayer *> levelPlayerList;
+
+		boost::recursive_mutex m_preventChange;
 };
 
 #endif // TLEVEL_H

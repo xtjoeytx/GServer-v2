@@ -14,8 +14,9 @@ TLevelChest::TLevelChest(const std::vector<CString>& pChest)
 	TLevelChest: Functions
 */
 
-CString TLevelChest::getChestStr(const CString& pLevelName)  const
+CString TLevelChest::getChestStr(const CString pLevelName)  const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	static char retVal[500];
 	sprintf(retVal, "%i:%i:%s", x, y, pLevelName.text());
 	return retVal;
@@ -23,6 +24,7 @@ CString TLevelChest::getChestStr(const CString& pLevelName)  const
 
 void TLevelChest::parseChestStr(const std::vector<CString>& pChest)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	x = strtoint(pChest[1]);
 	y = strtoint(pChest[2]);
 	itemIndex = strtoint(pChest[3]);

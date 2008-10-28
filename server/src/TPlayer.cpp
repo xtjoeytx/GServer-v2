@@ -71,7 +71,7 @@ bool __getLoginRC[propscount] =
 	false, false, false, false, false, false, // 12-17
 	false, false, true,  false, false, false, // 18-23
 	false, false, false, false, false, false, // 24-29
-	false, false, false, false, true,  false,  // 30-35
+	false, false, false, false, true,  false, // 30-35
 	false, false, false, false, false, false, // 36-41
 	false, false, false, false, false, false, // 42-47
 	false, false, false, false, false, false, // 48-53
@@ -88,7 +88,7 @@ bool __sendLocal[propscount] =
 	false, false, true,  true,  true,  true,  // 6-11
 	true,  true,  false, true,  true,  true,  // 12-17
 	true,  true,  true,  true,  false, false, // 18-23
-	false, true,  false, false, false, false, // 24-29
+	true,  true,  false, false, false, false, // 24-29
 	true,  true,  true,  false, true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
 	false, true,  true,  true,  false, false, // 42-47
@@ -148,6 +148,7 @@ void createPLFunctions()
 	TPLFunc[PLI_ITEMTAKE] = &TPlayer::msgPLI_ITEMDEL;			// Shared with PLI_ITEMDEL
 	TPLFunc[PLI_UPDATEFILE] = &TPlayer::msgPLI_UPDATEFILE;
 	TPLFunc[PLI_ADJACENTLEVEL] = &TPlayer::msgPLI_ADJACENTLEVEL;
+	TPLFunc[PLI_HITOBJECTS] = &TPlayer::msgPLI_HITOBJECTS;
 	TPLFunc[PLI_LANGUAGE] = &TPlayer::msgPLI_LANGUAGE;
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
@@ -158,20 +159,25 @@ void createPLFunctions()
 /*
 	Constructor - Deconstructor
 */
-TPlayer::TPlayer(TServer* pServer, CSocket *pSocket)
+TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), iterator(0x04A80B38), key(0),
 PLE_POST22(false), os("wind"), codepage(1252), level(0),
-id(0), type(CLIENTTYPE_AWAIT), server(pServer), allowBomb(false), hadBomb(false),
-pmap(0)
+id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
+pmap(0), fileQueue(pSocket, false)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastSave = time(0);
-	printf("Created for: %s\n", playerSock->tcpIp());
+	fileQueueThread = new boost::thread(boost::ref(fileQueue));
 }
 
 TPlayer::~TPlayer()
 {
-	if (id >= 0)
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	fileQueue.setSocket(0);
+	fileQueueThread->join();
+	delete fileQueueThread;
+
+	if (id >= 0 && server != 0)
 	{
 		// Save account.
 		if (type == CLIENTTYPE_CLIENT)
@@ -194,12 +200,24 @@ TPlayer::~TPlayer()
 	}
 
 	if (playerSock)
-	{
-		printf("Destroyed for: %s\n", playerSock->tcpIp());
 		delete playerSock;
-	}
 }
 
+void TPlayer::operator()()
+{
+	srand((unsigned int)time(0));
+
+	while (true)
+	{
+		if (doMain() == false)
+			break;
+
+		boost::this_thread::interruption_point();
+	}
+
+	// Remove the player from the server.
+	server->deletePlayer(this);
+}
 
 /*
 	Socket-Control Functions
@@ -212,7 +230,7 @@ bool TPlayer::doMain()
 	// definitions
 	CString unBuffer;
 
-	// receive
+	// Try to get data stored in the socket.  Will block the thread (good thing.)
 	if (playerSock->getData() == -1)
 		return false;
 
@@ -246,14 +264,13 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
-
-	// send out buffer
-	sendCompress();
 	return true;
 }
 
 bool TPlayer::doTimedEvents()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	time_t currTime = time(0);
 
 	// Only run for clients.
@@ -320,29 +337,27 @@ void TPlayer::disconnect()
 
 bool TPlayer::parsePacket(CString& pPacket)
 {
-	// first packet.. maybe
+	// First packet is always unencrypted zlib.  Read it in a special way.
 	if (type == CLIENTTYPE_AWAIT)
 		msgPLI_LOGIN(CString() << pPacket.readString("\n"));
 
 	while (pPacket.bytesLeft() > 0)
 	{
-		// grab packet
+		// Grab a packet out of the input stream.
 		CString curPacket = pPacket.readString("\n");
-		//if (curPacket[curPacket.length()-1] == '\n')
-		//	curPacket.removeI(curPacket.length() - 1, 1);
 
-		// decrypt packet
+		// If it is a pre-2.2 client, decrypt the packet.
 		if (!PLE_POST22)
 			decryptPacket(curPacket);
 
-		// read id & packet
+		// Get the packet id.
 		int id = curPacket.readGUChar();
 
-		// check lengths
+		// Check if it is a valid packet id.
 		if (id >= (unsigned char)TPLFunc.size())
 			return false;
 
-		// valid packet, call function
+		// Call the function assigned to the packet id.
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -390,66 +405,14 @@ void TPlayer::sendPacket(CString pPacket)
 	if (pPacket[pPacket.length()-1] != '\n')
 		pPacket.writeChar('\n');
 
-	// Send the stored buffer if the new packet will put it over 64KB.
-	// We don't want to keep compressing packets over and over if we can avoid it.
-	if (sBuffer.length() + pPacket.length() > 0x10000)
-		sendCompress();
-
 	// append buffer
-	sBuffer.write(pPacket.text(), pPacket.length());
+	fileQueue.addPacket(pPacket);
 }
 
-void TPlayer::sendCompress()
+void TPlayer::processChat(CString pChat)
 {
-	// empty buffer?
-	if (sBuffer.isEmpty())
-	{
-		// If we still have some data in the out buffer, try sending it again.
-		if (oBuffer.isEmpty() == false)
-			playerSock->sendData(oBuffer);
-		return;
-	}
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
-	// compress buffer
-	if (PLE_POST22)
-	{
-		// Choose which compression to use and apply it.
-		int compressionType = ENCRYPT22_UNCOMPRESSED;
-		if (sBuffer.length() > 0x2000)	// 8KB
-		{
-			compressionType = ENCRYPT22_BZ2;
-			sBuffer.bzcompressI();
-		}
-		else if (sBuffer.length() > 40)
-		{
-			compressionType = ENCRYPT22_ZLIB;
-			sBuffer.zcompressI();
-		}
-
-		// Encrypt the packet and add it to the out buffer.
-		out_codec.limitfromtype(compressionType);
-		out_codec.apply(reinterpret_cast<uint8_t*>(sBuffer.text()), sBuffer.length());
-		oBuffer << (short)(sBuffer.length() + 1) << (char)compressionType << sBuffer;
-
-		// Send oBuffer.
-		playerSock->sendData(oBuffer);
-	}
-	else
-	{
-		// Compress the packet and add it to the out buffer.
-		sBuffer.zcompressI();
-		oBuffer << (short)sBuffer.length() << sBuffer;
-
-		// Send oBuffer.
-		playerSock->sendData(oBuffer);
-	}
-
-	// Clear the send buffer.
-	sBuffer.clear();
-}
-
-void TPlayer::processChat(CString& pChat)
-{
 	std::vector<CString> chatParse = pChat.tokenize();
 	if (chatParse.size() == 0) return;
 
@@ -496,6 +459,7 @@ void TPlayer::processChat(CString& pChat)
 		// To player
 		if (chatParse.size() == 2)
 		{
+			boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
@@ -541,6 +505,8 @@ void TPlayer::processChat(CString& pChat)
 bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 {
 	CSettings* settings = server->getSettings();
+
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
 	// Save our current level.
 	TLevel* currentLevel = level;
@@ -595,6 +561,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 
 bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Open Level
 	level = TLevel::findLevel(pLevelName, server);
 	if (level == 0)
@@ -640,14 +608,14 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	server->sendPacketToAll(this->getProps(0,0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
 
-	sendCompress();
-
 	return true;
 }
 
 bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 {
 	if (pLevel == 0) return false;
+
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
 	// Send Level
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
@@ -660,7 +628,6 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
 		}
-		sendCompress();
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
@@ -709,8 +676,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	// Maps send to players in adjacent levels too.
 	if (pmap)
 	{
-		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
+		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
 			TPlayer* player = (TPlayer*)*i;
@@ -734,8 +702,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	}
 	else
 	{
-		std::vector<TPlayer*>* playerList = level->getPlayerList();
 		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), this->level, this);
+		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+		std::vector<TPlayer*>* playerList = level->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
 			TPlayer* player = (TPlayer*)*i;
@@ -749,21 +718,22 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 
 bool TPlayer::leaveLevel()
 {
-	std::vector<TPlayer*>* playerList = server->getPlayerList();
-
 	// Make sure we are on a level first.
 	if (level == 0) return true;
 
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
 	// Save the time we left the level for the client-side caching.
 	bool found = false;
-	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end();)
 	{
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
 		{
 			cl->modTime = time(0);
 			found = true;
-		}
+			i = cachedLevels.end();
+		} else ++i;
 	}
 	if (found == false) cachedLevels.push_back(new SCachedLevel(level, time(0)));
 
@@ -776,8 +746,11 @@ bool TPlayer::leaveLevel()
 
 	// Tell everyone I left.
 //	if (pmap && pmap->getType() != MAPTYPE_GMAP)
-//	{
+	{
 		server->sendPacketToLevel(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, level, this);
+
+		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
 			TPlayer* player = (TPlayer*)*i;
@@ -785,7 +758,7 @@ bool TPlayer::leaveLevel()
 			if (player->getLevel() != level) continue;
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
-//	}
+	}
 
 	// Set the level pointer to 0.
 	level = 0;
@@ -795,6 +768,7 @@ bool TPlayer::leaveLevel()
 
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
 		SCachedLevel* cl = *i;
@@ -812,6 +786,8 @@ void TPlayer::setNick(CString& pNickName)
 
 	// If a player has put a * before his nick, remove it.
 	if (nick[0] == '*') nick.removeI(0,1);
+
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
 	// If the nickname is equal to the account name, add the *.
 	if (nick == accountName)
@@ -837,6 +813,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
 	printf("Unknown Player Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text()+1);
+	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 	return true;
 }
 
@@ -867,7 +844,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
-		out_codec.reset(key);
+		if (PLE_POST22) fileQueue.setCodecKey(key);
 	}
 
 	// Read Client-Version
@@ -1032,6 +1009,7 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 	CString message = pPacket.readString("");
 	// TODO: word filter.
 
+	boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 	std::vector<TPlayer*>* playerList = server->getPlayerList();
 	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 	{
@@ -1085,6 +1063,20 @@ bool TPlayer::msgPLI_FIRESPY(CString& pPacket)
 
 bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 {
+	// TODO: Remove when an npcserver is created.
+	if (server->getSettings()->getBool("duplicatecanbecarried", false) == false)
+	{
+		TNPC* npc = 0;
+		if (carryNpcId != 0) npc = server->getNPC(carryNpcId);
+		if (npc != 0)
+		{
+			carryNpcThrown = true;
+
+			// Add the NPC back to the level if it never left.
+			if (npc->getLevel() == level)
+				level->addNPC(npc);
+		}
+	}
 	server->sendPacketToLevel(CString() >> (char)PLO_THROWCARRIED >> (short)id << pPacket.text() + 1, level, this);
 	return true;
 }
@@ -1126,7 +1118,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 	// Sparring zone rating code.
 	// Uses the glicko rating system.
 	if (level == 0) return true;
-	if ( level->getSparringZone() )
+	if (level->getSparringZone())
 	{
 		// Get some stats we are going to use.
 		// Need to parse the other player's PLPROP_RATING.
@@ -1134,7 +1126,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		float oldStats[4] = { rating, deviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
-		if (this->getProp(PLPROP_LASTIP).readGInt5() == player->getProp(PLPROP_LASTIP).readGInt5()) return true;
+		if (this->getProp(PLPROP_IPADDR).readGInt5() == player->getProp(PLPROP_IPADDR).readGInt5()) return true;
 
 		float gSpar[2] = {1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[3],2))/pow(3.14159265f,2)),0.5f),	//Winner
 					  	  1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[1],2))/pow(3.14159265f,2)),0.5f)};	//Loser
@@ -1157,12 +1149,12 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		// Update the Ratings.
 		// setProps will cause it to grab the new rating and send it to everybody in the level.
 		// Therefore, just pass a dummy value.  setProps doesn't alter your rating for packet hacking reasons.
-		if ( oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation )
+		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			setRating((int)tLoseRating, (int)tLoseDeviation);
 			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true);
 		}
-		if ( oldStats[2] != tWinRating || oldStats[3] != tWinDeviation )
+		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			player->setRating((int)tWinRating, (int)tWinDeviation);
 			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true);
@@ -1192,7 +1184,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (ap / 20));
 				if (oAp < 0) oAp = 0;
 				player->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
-				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, true, true);
 			}
 		}
 	}
@@ -1415,8 +1407,6 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 	// If we had sent a large file, let the client know we finished sending it.
 	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << file);
 
-	sendCompress();
-
 	return true;
 }
 
@@ -1614,6 +1604,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		{
 			newWeapon = true;		// Lets the new code get saved.
 			weapon->setClientScript(npc->getClientScript());
+			boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
@@ -1673,6 +1664,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	if (adjacentLevel == 0)
 		return true;
 
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	bool alreadyVisited = false;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
@@ -1693,6 +1685,26 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)
 		sendPacket(CString() >> (char)PLO_ISLEADER);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
+{
+	float power = (float)pPacket.readGChar() / 2.0f;
+	float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
+	int nid = (pPacket.bytesLeft() != 0) ? pPacket.readGUInt() : -1;
+
+	// Construct the packet.
+	// {46}{SHORT player_id / 0 for NPC}{CHAR power}{CHAR x}{CHAR y}[{INT npc_id}]
+	CString nPacket;
+	nPacket >> (char)PLO_HITOBJECTS;
+	nPacket >> (short)((nid == -1) ? id : 0);	// If it came from an NPC, send 0 for the id.
+	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
+	if (nid != -1) nPacket >> (int)nid;
+
+	if (pmap && pmap->getType() == MAPTYPE_GMAP) server->sendPacketToLevel(nPacket, pmap, this);
+	else server->sendPacketToLevel(nPacket, level, this);
 
 	return true;
 }

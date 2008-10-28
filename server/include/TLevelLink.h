@@ -28,6 +28,7 @@ class TLevelLink
 	private:
 		CString newLevel, newX, newY;
 		int x, y, width, height;
+		mutable boost::recursive_mutex m_preventChange;
 };
 
 /*
@@ -35,36 +36,43 @@ class TLevelLink
 */
 inline CString TLevelLink::getNewLevel()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return newLevel;
 }
 
 inline CString TLevelLink::getNewX()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return newX;
 }
 
 inline CString TLevelLink::getNewY()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return newY;
 }
 
 inline int TLevelLink::getX()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return x;
 }
 
 inline int TLevelLink::getY()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return y;
 }
 
 inline int TLevelLink::getWidth()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return width;
 }
 
 inline int TLevelLink::getHeight()
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return height;
 }
 

@@ -6,6 +6,7 @@
 #include "ICommon.h"
 #include "IUtil.h"
 #include "CSocket.h"
+#include "CFileQueue.h"
 #include "TServer.h"
 #include "TAccount.h"
 #include "TLevel.h"
@@ -55,7 +56,7 @@ enum
 	PLI_WEAPONADD		= 33,
 	PLI_UPDATEFILE		= 34,
 	PLI_ADJACENTLEVEL	= 35,
-	PLI_HITOBJECTS		= 36,	// TODO
+	PLI_HITOBJECTS		= 36,
 	PLI_LANGUAGE		= 37,
 	PLI_TRIGGERACTION	= 38,
 	PLI_MAPINFO			= 39,
@@ -112,7 +113,7 @@ enum
 	PLO_DEFAULTWEAPON	= 43,
 	PLO_HASNPCSERVER	= 44,	// If sent, the client won't update npc props.
 	PLO_FILEUPTODATE	= 45,
-
+	PLO_HITOBJECTS		= 46,
 	PLO_STAFFGUILDS		= 47,
 	PLO_TRIGGERACTION	= 48,
 	PLO_PLAYERWARP2		= 49,	// Bytes 1-3 are x/y/z. 4 = level x in gmap, 5 = level y in gmap.
@@ -154,6 +155,7 @@ enum
 enum
 {
 	PLSTATUS_PAUSED			= 0x01,
+	PLSTATUS_HIDDEN			= 0x02,
 	PLSTATUS_MALE			= 0x04,
 	PLSTATUS_DEAD			= 0x08,
 	PLSTATUS_ALLOWWEAPONS	= 0x10,
@@ -172,11 +174,12 @@ class TPlayer : public TAccount
 {
 	public:
 		// Constructor - Deconstructor
-		TPlayer(TServer* pServer, CSocket *pSocket = 0);
+		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
 		~TPlayer();
+		void operator()();
 
 		// Manage Account
-		inline bool isLoggedIn();
+		inline bool isLoggedIn() const;
 		bool sendLogin();
 
 		// Get Properties
@@ -200,18 +203,17 @@ class TPlayer : public TAccount
 		// Prop-Manipulation
 		CString getProp(int pPropId);
 		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false);
-		void sendProps(bool *pProps, int pCount);
-		CString getProps(bool *pProps, int pCount);
+		void sendProps(const bool *pProps, int pCount);
+		CString getProps(const bool *pProps, int pCount);
 
 		// Socket-Functions
 		bool doMain();
-		void sendCompress();
 		void sendPacket(CString pPacket);
 
 		// Misc functions.
 		bool doTimedEvents();
 		void disconnect();
-		void processChat(CString& pChat);
+		void processChat(CString pChat);
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
@@ -252,6 +254,7 @@ class TPlayer : public TAccount
 		bool msgPLI_WEAPONADD(CString& pPacket);
 		bool msgPLI_UPDATEFILE(CString& pPacket);
 		bool msgPLI_ADJACENTLEVEL(CString& pPacket);
+		bool msgPLI_HITOBJECTS(CString& pPacket);
 		bool msgPLI_LANGUAGE(CString& pPacket);
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
@@ -268,7 +271,7 @@ class TPlayer : public TAccount
 
 		// Socket Variables
 		CSocket *playerSock;
-		CString rBuffer, sBuffer, oBuffer;
+		CString rBuffer;
 
 		// Pre 2.2 encryption.
 		int iterator;
@@ -277,7 +280,6 @@ class TPlayer : public TAccount
 		// Post 2.2 encryption.
 		bool PLE_POST22;
 		codec in_codec;
-		codec out_codec;
 
 		// Variables
 		CString version, os;
@@ -285,14 +287,22 @@ class TPlayer : public TAccount
 		TLevel *level;
 		int id, type;
 		time_t lastData, lastMovement, lastChat, lastMessage, lastSave;
-		TServer* server;
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;
 		bool hadBomb;
 		TMap* pmap;
+		int carryNpcId;
+		bool carryNpcThrown;
+
+		// File queue.
+		CFileQueue fileQueue;
+		boost::thread* fileQueueThread;
+
+		// Mutexes
+		mutable boost::recursive_mutex m_preventChange;
 };
 
-inline bool TPlayer::isLoggedIn()
+inline bool TPlayer::isLoggedIn() const
 {
 	return (type != CLIENTTYPE_AWAIT && id > 0);
 }
@@ -309,6 +319,7 @@ inline int TPlayer::getType() const
 
 inline void TPlayer::setId(int pId)
 {
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	id = pId;
 }
 

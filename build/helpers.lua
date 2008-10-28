@@ -44,7 +44,7 @@ function project_dynamic(name, lang, kind)
 	{
 		"native-char",
 		"unicode",
-		"no-rtti"
+--		"no-rtti"
 	}
 	package.includepaths =
 	{
