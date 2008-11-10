@@ -62,6 +62,7 @@ enum
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
+	PLI_RC_CHAT			= 79,
 	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
 };
 
@@ -123,6 +124,7 @@ enum
 	PLO_LARGEFILEEND	= 69,
 	PLO_EMPTY73			= 73,
 	PLO_RCMESSAGE		= 74,
+	PLO_NPCSERVERADDR	= 79,
 	PLO_LARGEFILESIZE	= 84,
 	PLO_RAWDATA			= 100,
 	PLO_BOARDPACKET		= 101,
@@ -248,8 +250,6 @@ class TPlayer : public TAccount
 		bool msgPLI_HURTPLAYER(CString& pPacket);
 		bool msgPLI_EXPLOSION(CString& pPacket);
 		bool msgPLI_PRIVATEMESSAGE(CString& pPacket);
-		bool msgPLI_SHOOT(CString& pPacket);
-
 		bool msgPLI_NPCWEAPONDEL(CString& pPacket);
 		bool msgPLI_WEAPONADD(CString& pPacket);
 		bool msgPLI_UPDATEFILE(CString& pPacket);
@@ -259,6 +259,8 @@ class TPlayer : public TAccount
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
+		bool msgPLI_RC_CHAT(CString& pPacket);
+		bool msgPLI_SHOOT(CString& pPacket);
 
 	private:
 		// Login functions.
@@ -273,12 +275,8 @@ class TPlayer : public TAccount
 		CSocket *playerSock;
 		CString rBuffer;
 
-		// Pre 2.2 encryption.
-		int iterator;
+		// Encryption
 		unsigned char key;
-
-		// Post 2.2 encryption.
-		bool PLE_POST22;
 		codec in_codec;
 
 		// Variables
