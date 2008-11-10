@@ -119,24 +119,24 @@ void CFileQueue::sendCompress()
 	if (fileBuffer.empty()) bytesSentWithoutFile = 0;
 
 	// compress buffer
-	if (PLE_POST22)
+	if (out_codec.getGen() >= ENCRYPT_GEN_4)
 	{
 		// Choose which compression to use and apply it.
-		int compressionType = ENCRYPT22_UNCOMPRESSED;
+		int compressionType = COMPRESS_UNCOMPRESSED;
 		if (pSend.length() > 0x2000)	// 8KB
 		{
-			compressionType = ENCRYPT22_BZ2;
+			compressionType = COMPRESS_BZ2;
 			pSend.bzcompressI();
 		}
 		else if (pSend.length() > 40)
 		{
-			compressionType = ENCRYPT22_ZLIB;
+			compressionType = COMPRESS_ZLIB;
 			pSend.zcompressI();
 		}
 
 		// Encrypt the packet and add it to the out buffer.
-		out_codec.limitfromtype(compressionType);
-		out_codec.apply(reinterpret_cast<uint8_t*>(pSend.text()), pSend.length());
+		out_codec.limitFromType(compressionType);
+		out_codec.apply(pSend);
 		sock->sendData(CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend);
 	}
 	else

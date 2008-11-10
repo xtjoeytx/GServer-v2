@@ -743,8 +743,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
 		if (levelBuff.length() > 0)
 		{
-			if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!PLE_POST22 ? levelBuff : levelBuff2) << (!PLE_POST22 ? levelBuff2 : levelBuff), pmap, this, false);
-			else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!PLE_POST22 ? levelBuff : levelBuff2) << (!PLE_POST22 ? levelBuff2 : levelBuff), getLevel(), this);
+			// We need to arrange the props packet in a certain way depending
+			// on if our client supports precise movement or not.  Versions 2.3+
+			// support precise movement.
+			bool MOVE_PRECISE = false;
+			if (getVersionID(version) >= CLVER_2_3) MOVE_PRECISE = true;
+
+			if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
+			else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), getLevel(), this);
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);

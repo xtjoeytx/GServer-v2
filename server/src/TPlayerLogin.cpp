@@ -113,9 +113,10 @@ bool TPlayer::sendLoginClient()
 	// Send the player his login props.
 	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
 
-	// Workaround for 2.2+ clients.  They don't request the map file when used with setmap.
+	// Workaround for 2.19+ clients.  They don't request the map file when used with setmap.
 	// So, just send them all the maps loaded into the server.
-	if (PLE_POST22)
+	// TODO: Client version specific instead of encryption era specific?
+	if (in_codec.getGen() == ENCRYPT_GEN_4)
 	{
 		boost::recursive_mutex::scoped_lock lock_mapList(server->m_mapList);
 		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)

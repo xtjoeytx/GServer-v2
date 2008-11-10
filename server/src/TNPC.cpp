@@ -397,7 +397,7 @@ void TNPC::setProps(CString& pProps)
 				pProps.readChars(pProps.readGShort());
 			break;
 
-			// Location, in pixels, of the npc on the level in 2.2+ clients.
+			// Location, in pixels, of the npc on the level in 2.3+ clients.
 			// Bit 0x0001 controls if it is negative or not.
 			// Bits 0xFFFE are the actual value.
 			case NPCPROP_X2:
@@ -407,7 +407,7 @@ void TNPC::setProps(CString& pProps)
 				x2 >>= 1;
 				if ((short)len & 0x0001) x2 = -x2;
 
-				// Let pre-2.2+ clients see 2.2+ movement.
+				// Let pre-2.3+ clients see 2.3+ movement.
 				x = (float)x2 / 16.0f;
 				break;
 
@@ -418,7 +418,7 @@ void TNPC::setProps(CString& pProps)
 				y2 >>= 1;
 				if ((short)len & 0x0001) y2 = -y2;
 
-				// Let pre-2.2+ clients see 2.2+ movement.
+				// Let pre-2.3+ clients see 2.3+ movement.
 				y = (float)y2 / 16.0f;
 				break;
 
