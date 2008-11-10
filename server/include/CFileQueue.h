@@ -10,12 +10,28 @@
 class CFileQueue
 {
 	public:
-		CFileQueue(CSocket* pSock, bool isPost22) : sock(pSock), prev100(false), PLE_POST22(isPost22), bytesSentWithoutFile(0) {}
+		CFileQueue(CSocket* pSock) : sock(pSock), prev100(false), bytesSentWithoutFile(0) {}
 		void operator()();
 
-		void setSocket(CSocket* pSock)		{ boost::mutex::scoped_lock lock_preventChange(m_preventChange); sock = pSock; }
-		void setCodecKey(unsigned char key)	{ boost::mutex::scoped_lock lock_preventChange(m_preventChange); PLE_POST22 = true; out_codec.reset(key); }
 		void addPacket(CString pPacket);
+		void setSocket(CSocket* pSock)
+		{
+			boost::mutex::scoped_lock lock_preventChange(m_preventChange);
+			sock = pSock;
+		}
+		void setCodec(unsigned int gen, unsigned char key)
+		{
+			boost::mutex::scoped_lock lock_preventChange(m_preventChange);
+			out_codec.setGen(gen);
+			out_codec.reset(key);
+		}
+
+		void forceSend()
+		{
+			boost::mutex::scoped_lock lock_preventChange(m_preventChange);
+			if (normalBuffer.empty() && fileBuffer.empty()) return;
+			sendCompress();
+		}
 
 	private:
 		void sendCompress();
@@ -28,7 +44,6 @@ class CFileQueue
 		unsigned int size100;
 		CString pack100;
 
-		bool PLE_POST22;
 		codec out_codec;
 
 		int bytesSentWithoutFile;

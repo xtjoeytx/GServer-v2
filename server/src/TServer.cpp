@@ -188,7 +188,10 @@ void TServer::operator()()
 		{
 			boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 			for (std::map<boost::thread::id, boost::thread*>::iterator i = playerThreads.begin(); i != playerThreads.end(); ++i)
+			{
 				i->second->interrupt();
+				i->second->join();
+			}
 			running = false;
 		}
 	}
