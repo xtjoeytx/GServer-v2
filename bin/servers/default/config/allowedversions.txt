@@ -1,0 +1,9 @@
+// List of version strings.
+// Use a colon to specify a range of versions.
+// For example, to allow 2.171 through 2.31, use:   GNW22122:GNW28015
+
+// GNW22122	- 2.171
+// GNW28015	- 2.31
+// G3D14097	- 5.12 (no support)
+
+GNW22122

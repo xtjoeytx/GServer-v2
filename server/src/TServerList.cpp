@@ -146,7 +146,7 @@ bool TServerList::connectServer()
 	else
 		return false;
 
-	server->getServerLog().out("%s - Connected.\n", sock.getDescription());
+	server->getServerLog().out(":: %s - Connected.\n", sock.getDescription());
 
 	// Set Some Stuff
 	setName(settings->getStr("name"));

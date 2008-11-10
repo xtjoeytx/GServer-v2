@@ -163,10 +163,10 @@ void createPLFunctions()
 */
 TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
-playerSock(pSocket), iterator(0x04A80B38), key(0),
-PLE_POST22(false), os("wind"), codepage(1252), level(0),
+playerSock(pSocket), key(0),
+os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
-pmap(0), fileQueue(pSocket, false)
+pmap(0), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastSave = time(0);
 	fileQueueThread = new boost::thread(boost::ref(fileQueue));
@@ -175,6 +175,11 @@ pmap(0), fileQueue(pSocket, false)
 TPlayer::~TPlayer()
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Send all unset data (for disconnect messages and whatnot).
+	// Setting the socket to 0 will cause the thread to terminate.
+	// Then we wait for the thread to terminate to prevent resource conflicts.
+	fileQueue.forceSend();
 	fileQueue.setSocket(0);
 	fileQueueThread->join();
 	delete fileQueueThread;
@@ -214,7 +219,16 @@ void TPlayer::operator()()
 		if (doMain() == false)
 			break;
 
-		boost::this_thread::interruption_point();
+		try
+		{
+			boost::this_thread::interruption_point();
+		}
+		catch (boost::thread_interrupted e)
+		{
+			// Delete ourself to save our account and re-throw.
+			delete this;
+			throw;
+		}
 	}
 
 	// Remove the player from the server.
@@ -257,10 +271,24 @@ bool TPlayer::doMain()
 		rBuffer.removeI(0, len+2);
 
 		// decrypt packet
-		if (PLE_POST22)
-			decryptPacket(unBuffer);
-		else
-			unBuffer.zuncompressI();
+		switch (in_codec.getGen())
+		{
+			case ENCRYPT_GEN_1:		// Gen 1 is not encrypted or compressed.
+				break;
+
+			// Gen 2 and 3 are zlib compressed.  Gen 3 encrypts individual packets
+			// Uncompress so we can properly decrypt later on.
+			case ENCRYPT_GEN_2:
+			case ENCRYPT_GEN_3:
+				unBuffer.zuncompressI();
+				break;
+
+			// Gen 4 and up encrypt the whole combined and compressed packet.
+			// Decrypt and decompress.
+			default:
+				decryptPacket(unBuffer);
+				break;
+		}
 
 		// well theres your buffer
 		if (!parsePacket(unBuffer))
@@ -348,8 +376,8 @@ bool TPlayer::parsePacket(CString& pPacket)
 		// Grab a packet out of the input stream.
 		CString curPacket = pPacket.readString("\n");
 
-		// If it is a pre-2.2 client, decrypt the packet.
-		if (!PLE_POST22)
+		// Generation 3 encrypts individual packets so decrypt it now.
+		if (in_codec.getGen() == ENCRYPT_GEN_3)
 			decryptPacket(curPacket);
 
 		// Get the packet id.
@@ -369,32 +397,35 @@ bool TPlayer::parsePacket(CString& pPacket)
 
 void TPlayer::decryptPacket(CString& pPacket)
 {
-	// Version 2.01 - 2.18 Encryption
-	if (!PLE_POST22)
+	// Version 2.01 - 2.18 encryption
+	// Was already decompressed so just decrypt the packet.
+	if (in_codec.getGen() == ENCRYPT_GEN_3)
 	{
 		if (type != CLIENTTYPE_CLIENT)
 			return;
 
-		iterator *= 0x8088405;
-		iterator += key;
-		int pos  = ((iterator & 0x0FFFF) % pPacket.length());
-		pPacket.removeI(pos, 1);
-		return;
+		in_codec.apply(pPacket);
 	}
 
-	// Version 2.19 - 2.31 Encryption
-	int pType = pPacket.readChar();
-	pPacket.removeI(0, 1);
+	// Version 2.19+ encryption.
+	// Encryption happens before compression and depends on the compression used so
+	// first decrypt and then decompress.
+	if (in_codec.getGen() >= ENCRYPT_GEN_4)
+	{
+		// Find the compression type and remove it.
+		int pType = pPacket.readChar();
+		pPacket.removeI(0, 1);
 
-	// Decrypt Packet
-	in_codec.limitfromtype(pType);
-	in_codec.apply(reinterpret_cast<uint8_t*>(pPacket.text()), pPacket.length());
+		// Decrypt the packet.
+		in_codec.limitFromType(pType);		// Encryption is partially related to compression.
+		in_codec.apply(pPacket);
 
-	// Uncompress Packet
-	if (pType == ENCRYPT22_ZLIB)
-		pPacket.zuncompressI();
-	else if (pType == ENCRYPT22_BZ2)
-		pPacket.bzuncompressI();
+		// Uncompress Packet
+		if (pType == COMPRESS_ZLIB)
+			pPacket.zuncompressI();
+		else if (pType == COMPRESS_BZ2)
+			pPacket.bzuncompressI();
+	}
 }
 
 void TPlayer::sendPacket(CString pPacket)
@@ -825,28 +856,43 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	accountIp = inet_addr(playerSock->tcpIp());
 
 	// Read Client-Type
+	serverlog.out(":: New login:\t");
 	type = pPacket.readGChar();
+	bool getKey = false;
 	switch (type)
 	{
 		case CLIENTTYPE_CLIENT:
-			serverlog.out("2.171 client logging in.\n");
-			break;
-		case CLIENTTYPE_CLIENT22:
-			serverlog.out("Post 2.2 client logging in.\n");
-			PLE_POST22 = true;
-			type = CLIENTTYPE_CLIENT;
+			serverlog.out("Client (2.171)\n");
+			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case CLIENTTYPE_RC:
-			serverlog.out("RC logging in.\n");
+			serverlog.out("RC (2.171)\n");
+			in_codec.setGen(ENCRYPT_GEN_3);
+			break;
+		case CLIENTTYPE_CLIENT2:
+			serverlog.out("Client (2.19+)\n");
+			type = CLIENTTYPE_CLIENT;
+			in_codec.setGen(ENCRYPT_GEN_4);
+			break;
+		case CLIENTTYPE_RC2:
+			serverlog.out("RC (2.19+)\n");
+			type = CLIENTTYPE_RC;
+			in_codec.setGen(ENCRYPT_GEN_4);
+			getKey = true;
+			break;
+		default:
+			serverlog.out("Unknown (%d)\n", type);
 			break;
 	}
 
 	// Get Iterator-Key
-	if (type == CLIENTTYPE_CLIENT)
+	// 2.19+ RC and any client should get the key.
+	if ((type == CLIENTTYPE_CLIENT) || getKey)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
-		if (PLE_POST22) fileQueue.setCodecKey(key);
+		if (in_codec.getGen() > ENCRYPT_GEN_3)
+			fileQueue.setCodec(in_codec.getGen(), key);
 	}
 
 	// Read Client-Version
@@ -857,8 +903,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	CString password = pPacket.readChars(pPacket.readGUChar());
 
 	//serverlog.out("Key: %d\n", key);
-	serverlog.out("Version: %s\n", version.text());
-	serverlog.out("Account: %s\n", accountName.text());
+	serverlog.out("   Version:\t%s\n", version.text());
+	serverlog.out("   Account:\t%s\n", accountName.text());
 	//serverlog.out("Password: %s\n", password.text());
 
 	// Check for available slots on the server.
@@ -871,9 +917,10 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Check if they are ip-banned or not.
 	printf("TODO: TPlayer::msgPLI_LOGIN(), Check if player is ip-banned.\n");
 
+	// TODO: Check if the specified client is allowed access.
+
 	// Verify login details with the serverlist.
-	// TODO: Don't forget localhost mode.  Need to global-ify the serverlist
-	// class to do this.
+	// TODO: localhost mode.
 	if (server->getServerList()->getConnected() == false)
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
