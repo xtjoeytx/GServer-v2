@@ -80,7 +80,7 @@ bool TServerList::main()
 
 	// do we have enough data to parse?
 	rBuffer.setRead(0);
-	if (rBuffer.length() > 0)
+	while (rBuffer.length() != 0)
 	{
 		// parse data
 		if ((lineEnd = rBuffer.findl('\n')) == -1)
