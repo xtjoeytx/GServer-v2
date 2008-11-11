@@ -256,7 +256,7 @@ bool TPlayer::doMain()
 
 	// parse data
 	rBuffer.setRead(0);
-	while (rBuffer.length() >= 2)
+	while (rBuffer.length() > 1)
 	{
 		// New data.
 		lastData = time(0);
