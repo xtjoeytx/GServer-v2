@@ -62,8 +62,12 @@ enum
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
+	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
 	PLI_RC_CHAT			= 79,
+	PLI_UNKNOWN152		= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
+	PLI_UNKNOWN154		= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
+	PLI_UPDATESCRIPT	= 158,	// {158}{script} Requests a script from the server.
 };
 
 enum
@@ -125,6 +129,7 @@ enum
 	PLO_EMPTY73			= 73,
 	PLO_RCMESSAGE		= 74,
 	PLO_NPCSERVERADDR	= 79,
+	PLO_UNKNOWN82		= 82,	// Answers PLI_UNKNOWN152's request.
 	PLO_LARGEFILESIZE	= 84,
 	PLO_RAWDATA			= 100,
 	PLO_BOARDPACKET		= 101,
@@ -145,7 +150,10 @@ enum
 	PLO_LISTPROCESSES	= 182,
 	PLO_EMPTY190		= 190,	// Was blank.  Sent before weapon list.
 	PLO_EMPTY194		= 194,	// Was blank.  Sent before weapon list.
-	PLO_EMPTY197		= 197,	// Related to npcserver.  Seems to register npcs on the client.
+
+	// Seems to register NPCs or something on the client.
+	// Also is related to PLI_UPDATESCRIPT as it sends the last modification time of the NPC/weapon.  The v5 client stores weapon scripts offline.
+	PLO_EMPTY197		= 197,	// Seems to register npcs on the client.  Also is used by client to see if it needs to get a newer version of the offline cache of the NPC.
 };
 
 enum
@@ -192,7 +200,7 @@ class TPlayer : public TAccount
 		time_t getLastData() const	{ return lastData; }
 
 		// Set Properties
-		void setNick(CString& pNickName);
+		void setNick(CString& pNickName, bool force = false);
 		void setId(int pId);
 
 		// Level manipulation
