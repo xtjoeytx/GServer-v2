@@ -316,7 +316,22 @@ void TServerList::msgSVI_VERIACC(CString& pPacket)
 
 void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 {
-	server->getServerLog().out("TODO: TServerList::msgSVI_VERIGUILD\n");
+	unsigned short playerID = pPacket.readGUShort();
+	CString nickname = pPacket.readChars(pPacket.readGUChar());
+
+	TPlayer* p = server->getPlayer(playerID);
+	if (p)
+	{
+		// Create the prop packet.
+		CString prop = CString() >> (char)PLPROP_NICKNAME >> (char)nickname.length() << nickname;
+
+		// Assign the nickname to the player.
+		p->setNick(nickname, true);
+		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
+
+		// Tell everybody else the new nickname.
+		server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop);
+	}
 }
 
 void TServerList::msgSVI_FILESTART(CString& pPacket)
