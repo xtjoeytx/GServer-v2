@@ -20,7 +20,7 @@ const char* __defaultfiles[] = {
 	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani", "grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani", "idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani",
 	"sword?.png",
 	"shield?.png",
-	// TODO: sounds
+	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav", 
 };
 
 // Enum per Attr
@@ -811,11 +811,18 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 	return 0;
 }
 
-void TPlayer::setNick(CString& pNickName)
+void TPlayer::setNick(CString& pNickName, bool force)
 {
+	if (force)
+	{
+		nickName = pNickName;
+		return;
+	}
+
 	CString newNick;
 	CString nick = pNickName.readString("(").trim();
-	CString guild = CString("(") << pNickName.readString(")") << ")";
+	CString guild = pNickName.readString(")");
+//	CString guild = CString("(") << pNickName.readString(")") << ")";
 
 	// If a player has put a * before his nick, remove it.
 	if (nick[0] == '*') nick.removeI(0,1);
@@ -832,10 +839,50 @@ void TPlayer::setNick(CString& pNickName)
 	// If a guild was specified, add the guild.
 	// TODO: guild verification.
 	if (guild.length() > 2)
-		newNick << " " << guild;
+	{
+		// Read the guild list.
+		CFileSystem guildFS(server);
+		guildFS.addDir("guilds");
+		CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
-	// Save it.
-	nickName = newNick;
+		// Find the account in the guild list.
+		// Will also return -1 if the guild does not exist.
+		if (guildList.findi(accountName) != -1)
+		{
+			guildList.setRead(guildList.findi(accountName));
+			CString line = guildList.readString("\n");
+			if (line.find(":") != -1)
+			{
+				std::vector<CString> line2 = line.tokenize(":");
+				if ((line2[1])[0] == '*') line2[1].removeI(0, 1);
+				if (line2[1] == nick)	// Use nick instead of newNick because nick doesn't include the *
+				{
+					nickName = newNick;
+					nickName << " (" << guild << ")";
+					return;
+				}
+			}
+			else
+			{
+				nickName = newNick;
+				nickName << " (" << guild << ")";
+				return;
+			}
+		}
+
+		// See if it is a global guild.
+		server->getServerList()->sendPacket(
+			CString() >> (char)SVO_VERIGUILD >> (short)id
+			>> (char)accountName.length() << accountName
+			>> (char)newNick.length() << newNick
+			>> (char)guild.length() << guild
+			);
+	}
+	else
+	{
+		// Save it.
+		nickName = newNick;
+	}
 }
 
 
