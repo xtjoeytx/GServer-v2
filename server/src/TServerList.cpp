@@ -336,17 +336,56 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	server->getServerLog().out("TODO: TServerList::msgSVI_FILESTART\n");
+	CString blank, filename = CString() << "global/" << pPacket.readChars(pPacket.readGUChar());
+	CFileSystem::fixPathSeparators(&filename);
+	blank.save(filename);
+	server->getFileSystem()->addFile(filename);
 }
 
 void TServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	server->getServerLog().out("TODO: TServerList::msgSVI_FILEDATA\n");
+	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	if (filename.length() == 0) return;
+	CString filedata;
+	filedata.load(filename);
+	filedata << pPacket.readString("").B64_Decode();
+	filedata.save(filename);
 }
 
 void TServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	server->getServerLog().out("TODO: TServerList::msgSVI_FILEEND\n");
+	CString filename = pPacket.readChars(pPacket.readGUChar());
+	unsigned short pid = pPacket.readGUShort();
+	unsigned char type = pPacket.readGUChar();
+
+	TPlayer* p = server->getPlayer(pid);
+	if (p)
+	{
+		switch (type)
+		{
+			case 0:	// head
+				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(filename.length() + 100) << filename, true, true);
+				break;
+
+			case 1:	// body
+				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)filename.length() << filename, true, true);
+				break;
+
+			case 2:	// sword
+			{
+				CString prop = p->getProp(PLPROP_SWORDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
+				break;
+			}
+
+			case 3:	// shield
+			{
+				CString prop = p->getProp(PLPROP_SHIELDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
+				break;
+			}
+		}
+	}
 }
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
