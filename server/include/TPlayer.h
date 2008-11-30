@@ -298,7 +298,7 @@ class TPlayer : public TAccount
 		int codepage;
 		TLevel *level;
 		int id, type;
-		time_t lastData, lastMovement, lastChat, lastMessage, lastSave;
+		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;
 		bool hadBomb;
