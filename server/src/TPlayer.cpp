@@ -460,7 +460,7 @@ void TPlayer::processChat(CString pChat)
 			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
 		}
 		else
-			setProps(CString() >> (char)PLPROP_CURCHAT >> (char)48 << "Wait 10 seconds before changing your nick again!", true, true);
+			setChat("Wait 10 seconds before changing your nick again!");
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -537,10 +537,10 @@ void TPlayer::processChat(CString pChat)
 				float unstickX = server->getSettings()->getFloat("unstickmex", 30.0f);
 				float unstickY = server->getSettings()->getFloat("unstickmey", 30.5f);
 				warp(unstickLevel, unstickX, unstickY);
-				setProps(CString() >> (char)PLPROP_CURCHAT >> (char)7 << "Warped!", true, true);
+				setChat("Warped!");
 			}
 			else
-				setProps(CString() >> (char)PLPROP_CURCHAT >> (char)51 << "Dont move for 30 seconds before doing '" << pChat << "'!", true, true);
+				setChat(CString() << "Dont move for 30 seconds before doing '" << pChat << "'!");
 		}
 	}
 }
@@ -835,6 +835,11 @@ CString TPlayer::getFlag(const CString& flag) const
 			return val.readString("").trim();
 	}
 	return CString();
+}
+
+void TPlayer::setChat(const CString& pChat)
+{
+	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
 }
 
 void TPlayer::setNick(CString& pNickName, bool force)
