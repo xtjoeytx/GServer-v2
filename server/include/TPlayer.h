@@ -313,6 +313,8 @@ class TPlayer : public TAccount
 
 		// Mutexes
 		mutable boost::recursive_mutex m_preventChange;
+
+		bool disconnectPlayer;
 };
 
 inline bool TPlayer::isLoggedIn() const
