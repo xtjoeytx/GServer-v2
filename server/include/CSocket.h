@@ -96,6 +96,7 @@ class CSocket
 		int setState(int iState);
 
 		const char* tcpIp();
+		const char* getLocalIp();
 
 		static void socketSystemDestroy();
 };

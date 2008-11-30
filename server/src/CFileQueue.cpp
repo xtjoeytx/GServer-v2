@@ -21,7 +21,8 @@ void CFileQueue::operator()()
 		{
 			boost::xtime xt;
 			boost::xtime_get(&xt, boost::TIME_UTC);
-			xt.nsec += 10000000;		// 10 milliseconds
+			xt.nsec += 5000000;		// 5 milliseconds
+			//xt.nsec += 10000000;		// 10 milliseconds
 			boost::thread::sleep(xt); 
 			//boost::this_thread::yield();
 		}
