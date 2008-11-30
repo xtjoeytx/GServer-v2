@@ -154,7 +154,11 @@ bool TServerList::connectServer()
 	setUrl(settings->getStr("url"));
 	setVersion(GSERVER_VERSION);
 	setIp(settings->getStr("serverip", "AUTO"));
-	this->sendPacket(CString() >> (char)SVO_SETLOCALIP << sock.getLocalIp());
+	CString localip = sock.getLocalIp();
+	if (localip == "127.0.1.1" || localip == "127.0.0.1")
+		server->getServerLog().out(CString() << "** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.");
+	else
+		sendPacket(CString() >> (char)SVO_SETLOCALIP << sock.getLocalIp());
 	setPort(settings->getStr("serverport", "14900"));
 	sendCompress();
 
