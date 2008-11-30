@@ -155,6 +155,8 @@ void createPLFunctions()
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
+	TPLFunc[PLI_PROFILEGET] = &TPlayer::msgPLI_PROFILEGET;
+	TPLFunc[PLI_PROFILESET] = &TPlayer::msgPLI_PROFILESET;
 }
 
 
@@ -809,6 +811,19 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 			return cl->modTime;
 	}
 	return 0;
+}
+
+CString TPlayer::getFlag(const CString& flag) const
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	for (std::vector<CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+	{
+		CString val = *i;
+		CString name = val.readString("=").trim();
+		if (name == flag)
+			return val.readString("").trim();
+	}
+	return CString();
 }
 
 void TPlayer::setNick(CString& pNickName, bool force)
@@ -1836,5 +1851,23 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	printf("TODO: TPlayer::msgPLI_UNKNOWN46: ");
 	CString packet = pPacket.readString("");
 	for (int i = 0; i < packet.length(); ++i) printf( "%02x ", (unsigned char)packet[i] ); printf( "\n" );
+	return true;
+}
+
+bool TPlayer::msgPLI_PROFILEGET(CString& pPacket)
+{
+	// Send the packet ID for backwards compatibility.
+	server->getServerList()->sendPacket(CString() >> (char)SVO_GETPROF >> (short)id << pPacket);
+	return true;
+}
+
+bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
+{
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc != accountName) return true;
+
+	// Old gserver would send the packet ID with pPacket so, for
+	// backwards compatibility, do that here.
+	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
 	return true;
 }

@@ -63,6 +63,7 @@ class TServer
 		mutable boost::recursive_mutex m_serverFlags;
 
 		TPlayer* getPlayer(const unsigned short id) const;
+		TPlayer* getPlayer(const CString& account) const;
 		TNPC* getNPC(const unsigned int id) const;
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
