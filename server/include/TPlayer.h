@@ -64,6 +64,8 @@ enum
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
 	PLI_RC_CHAT			= 79,
+	PLI_PROFILEGET		= 80,
+	PLI_PROFILESET		= 81,
 	PLI_UNKNOWN152		= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN154		= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
@@ -128,6 +130,7 @@ enum
 	PLO_LARGEFILEEND	= 69,
 	PLO_EMPTY73			= 73,
 	PLO_RCMESSAGE		= 74,
+	PLO_PROFILE			= 75,
 	PLO_NPCSERVERADDR	= 79,
 	PLO_UNKNOWN82		= 82,	// Answers PLI_UNKNOWN152's request.
 	PLO_LARGEFILESIZE	= 84,
@@ -198,6 +201,7 @@ class TPlayer : public TAccount
 		int getId() const;
 		int getType() const;
 		time_t getLastData() const	{ return lastData; }
+		CString getFlag(const CString& flag) const;
 
 		// Set Properties
 		void setNick(CString& pNickName, bool force = false);
@@ -268,6 +272,8 @@ class TPlayer : public TAccount
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
 		bool msgPLI_RC_CHAT(CString& pPacket);
+		bool msgPLI_PROFILEGET(CString& pPacket);
+		bool msgPLI_PROFILESET(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
 
 	private:

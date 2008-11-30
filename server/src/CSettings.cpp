@@ -53,6 +53,13 @@ bool CSettings::loadFile(const CString& pStr)
 		line[0].toLowerI();
 		if (line.size() == 1) continue;
 
+		// Fix problem involving settings with an = in the value.
+		if (line.size() > 2)
+		{
+			for (unsigned int j = 2; j < line.size(); ++j)
+				line[1] << "=" << line[j];
+		}
+
 		// Trim
 		for (unsigned int j = 0; j < line.size(); j++)
 			line[j].trimI();

@@ -401,7 +401,89 @@ void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
 
 void TServerList::msgSVI_PROFILE(CString& pPacket)
 {
-	server->getServerLog().out("TODO: TServerList::msgSVI_PROFILE\n");
+	TPlayer* p1 = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p2 = server->getPlayer(pPacket.readChars(pPacket.readGUChar()));
+	if (p1 == 0 || p2 == 0) return;
+
+	// Start the profile string.
+	CString profile;
+	profile << p2->getProp(PLPROP_ACCOUNTNAME) << pPacket.readString("");
+
+	// Add the time to the profile string.
+	int time = p2->getProp(PLPROP_ONLINESECS).readGInt();
+	CString line = CString() << CString((int)time/3600) << " hrs "
+		<< CString((int)(time/60)%60) << " mins "
+		<< CString((int)time%60) << " secs";
+	profile >> (char)line.length() << line;
+
+	// Add all the specified variables to the profile string.
+	CString profileVars = server->getSettings()->getStr("profilevars");
+	if (profileVars.length() != 0)
+	{
+		std::vector<CString> vars = profileVars.tokenize(",");
+		for (std::vector<CString>::iterator i = vars.begin(); i != vars.end(); ++i)
+		{
+			CString name = i->readString(":=").trim();
+			CString val = i->readString("").trim();
+
+			// Built-in values.
+			if (val == "playerkills")
+				val = CString((unsigned int)(p2->getProp(PLPROP_KILLSCOUNT).readGUInt()));
+			else if (val == "playerdeaths")
+				val = CString((unsigned int)(p2->getProp(PLPROP_DEATHSCOUNT).readGUInt()));
+			else if (val == "playerfullhearts")
+				val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
+			else if (val == "playerrating")
+			{
+				int rating = p2->getProp(PLPROP_RATING).readGUInt();
+				val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+			}
+			else if (val == "playerap")
+				val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGChar());
+			else if (val == "playerrupees")
+				val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
+			else if (val == "playerswordpower")
+			{
+				char sp = p2->getProp(PLPROP_SWORDPOWER).readGChar();
+				if (sp > 4) sp -= 30;
+				val = CString((int)sp);
+			}
+			else if (val == "canspin")
+				val = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
+			else if (val == "playerhearts")
+			{
+				unsigned char power = p2->getProp(PLPROP_CURPOWER).readGUChar();
+				val = CString((int)(power / 2));
+				if (power % 2 == 1) val << ".5";
+			}
+			else if (val == "playerdarts")
+				val = CString((int)p2->getProp(PLPROP_ARROWSCOUNT).readGUChar());
+			else if (val == "playerbombs")
+				val = CString((int)p2->getProp(PLPROP_BOMBSCOUNT).readGUChar());
+			else if (val == "playermp")
+				val = CString((int)p2->getProp(PLPROP_MAGICPOINTS).readGUChar());
+			else if (val == "playershieldpower")
+			{
+				char sp = p2->getProp(PLPROP_SHIELDPOWER).readGChar();
+				if (sp > 3) sp -= 10;
+				val = CString((int)sp);
+			}
+			else if (val == "playerglovepower")
+				val = CString((int)p2->getProp(PLPROP_GLOVEPOWER).readGUChar());
+			else
+			{
+				// Flag values.
+				CString flag = p2->getFlag(val);
+				if (flag.length() != 0) val = flag;
+			}
+
+			// Add it to the profile now.
+			profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
+		}
+	}
+
+	// Send the profiles.
+	p1->sendPacket(CString() >> (char)PLO_PROFILE << profile);
 }
 
 void TServerList::msgSVI_ERRMSG(CString& pPacket)
