@@ -319,9 +319,25 @@ void TServer::acceptSock(CSocket& pSocket)
 
 TPlayer* TServer::getPlayer(const unsigned short id) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerIds(m_playerIds);
+	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	if (id >= (unsigned short)playerIds.size()) return 0;
 	return playerIds[id];
+}
+
+TPlayer* TServer::getPlayer(const CString& account) const
+{
+	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
+	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer *player = (TPlayer*)*i;
+		if (player == 0)
+			continue;
+
+		// Compare account names.
+		if (player->getProp(PLPROP_ACCOUNTNAME).subString(1) == account)
+			return player;
+	}
+	return 0;
 }
 
 TNPC* TServer::getNPC(const unsigned int id) const
