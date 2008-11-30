@@ -242,7 +242,8 @@ bool TServer::doTimedEvents()
 				continue;
 
 			lock_playerList.unlock();
-			player->doTimedEvents();
+			if (!player->doTimedEvents())
+				player->disconnect();
 			lock_playerList.lock();
 		}
 	}
