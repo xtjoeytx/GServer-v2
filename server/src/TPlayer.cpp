@@ -168,7 +168,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
-pmap(0), fileQueue(pSocket)
+pmap(0), fileQueue(pSocket), disconnectPlayer(false)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	fileQueueThread = new boost::thread(boost::ref(fileQueue));
@@ -242,7 +242,7 @@ void TPlayer::operator()()
 */
 bool TPlayer::doMain()
 {
-	if (playerSock == 0)
+	if (disconnectPlayer || playerSock == 0)
 		return false;
 
 	// definitions
@@ -363,8 +363,9 @@ bool TPlayer::doTimedEvents()
 
 void TPlayer::disconnect()
 {
-	delete playerSock;
-	playerSock = 0;
+	disconnectPlayer = true;
+//	delete playerSock;
+//	playerSock = 0;
 }
 
 bool TPlayer::parsePacket(CString& pPacket)
