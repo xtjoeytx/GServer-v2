@@ -170,7 +170,7 @@ os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
 pmap(0), fileQueue(pSocket)
 {
-	lastData = lastMovement = lastChat = lastMessage = lastSave = time(0);
+	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	fileQueueThread = new boost::thread(boost::ref(fileQueue));
 }
 
@@ -453,9 +453,14 @@ void TPlayer::processChat(CString pChat)
 
 	if (chatParse[0] == "setnick")
 	{
-		// TODO: nick change timeout.
-		CString newName = pChat.subString(8).trim();
-		setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
+		if ((int)difftime(time(0), lastNick) >= 10)
+		{
+			lastNick = time(0);
+			CString newName = pChat.subString(8).trim();
+			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
+		}
+		else
+			setProps(CString() >> (char)PLPROP_CURCHAT >> (char)48 << "Wait 10 seconds before changing your nick again!", true, true);
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -523,13 +528,19 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
-		// TODO: unstickme timeout
 		if (chatParse.size() == 2 && chatParse[1] == "me")
 		{
-			CString unstickLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
-			float unstickX = server->getSettings()->getFloat("unstickmex", 30.0f);
-			float unstickY = server->getSettings()->getFloat("unstickmey", 30.5f);
-			warp(unstickLevel, unstickX, unstickY);
+			if ((int)difftime(time(0), lastMovement) >= 30)
+			{
+				lastMovement = time(0);
+				CString unstickLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
+				float unstickX = server->getSettings()->getFloat("unstickmex", 30.0f);
+				float unstickY = server->getSettings()->getFloat("unstickmey", 30.5f);
+				warp(unstickLevel, unstickX, unstickY);
+				setProps(CString() >> (char)PLPROP_CURCHAT >> (char)7 << "Warped!", true, true);
+			}
+			else
+				setProps(CString() >> (char)PLPROP_CURCHAT >> (char)51 << "Dont move for 30 seconds before doing '" << pChat << "'!", true, true);
 		}
 	}
 }
