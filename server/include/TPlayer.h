@@ -204,6 +204,7 @@ class TPlayer : public TAccount
 		CString getFlag(const CString& flag) const;
 
 		// Set Properties
+		void setChat(const CString& pChat);
 		void setNick(CString& pNickName, bool force = false);
 		void setId(int pId);
 
