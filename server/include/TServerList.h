@@ -32,6 +32,7 @@ enum
 	SVO_PLYRREM		= 15,
 	SVO_PING		= 16,
 	SVO_VERIACC2	= 17,
+	SVO_SETLOCALIP	= 18,
 };
 
 enum

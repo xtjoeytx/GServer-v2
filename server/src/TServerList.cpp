@@ -154,6 +154,7 @@ bool TServerList::connectServer()
 	setUrl(settings->getStr("url"));
 	setVersion(GSERVER_VERSION);
 	setIp(settings->getStr("serverip", "AUTO"));
+	this->sendPacket(CString() >> (char)SVO_SETLOCALIP << sock.getLocalIp());
 	setPort(settings->getStr("serverport", "14900"));
 	sendCompress();
 

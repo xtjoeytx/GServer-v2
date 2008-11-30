@@ -706,6 +706,38 @@ const char* CSocket::tcpIp()
 	return hostret;
 }
 
+const char* CSocket::getLocalIp()
+{
+	char* hostret;
+	static char host[1025];
+	char host2[1025];
+
+	struct sockaddr *sa;
+	int salen;
+	struct addrinfo hints;
+	struct addrinfo *res;
+	int error;
+
+	// Get the local host name.
+	error = gethostname(host2, sizeof(host2));
+	if (error) return 0;
+
+	// Get a sockaddr for the local host.
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_INET;
+	error = getaddrinfo(host2, 0, &hints, &res);
+	if (error) return 0;
+
+	// Translate into an IP address.
+	sa = res->ai_addr;
+	salen = res->ai_addrlen;
+	error = getnameinfo(sa, salen, host, 1025, 0, 0, NI_NUMERICHOST);
+	if (error) return 0;
+
+	hostret = host;
+	return hostret;
+}
+
 int CSocket::socketSystemInit()
 {
 //	errorOut("debuglog.txt", ":: Initializing socket system...");
