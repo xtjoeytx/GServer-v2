@@ -10,7 +10,7 @@ class TLevelSign
 	public:
 		// constructor - destructor
 		TLevelSign() : x(0), y(0) { }
-		TLevelSign(const int pX, const int pY, const CString& pSign) : x(pX), y(pY), text(pSign) { }
+		TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 		// functions
 		CString getSignStr() const;
