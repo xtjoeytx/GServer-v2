@@ -78,6 +78,8 @@ class TServer
 		bool deleteFlag(const CString& pFlag);
 		bool deletePlayer(TPlayer* player);
 
+		bool isIpBanned(const CString& ip);
+
 		// Packet sending.
 		void sendPacketToAll(CString pPacket) const;
 		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
@@ -100,6 +102,7 @@ class TServer
 		std::vector<TMap*> mapList;
 		std::vector<TWeapon*> weaponList;
 		std::vector<CString> serverFlags;
+		std::vector<CString> ipBans;
 		std::vector<boost::thread::id> terminatedThreads;
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
