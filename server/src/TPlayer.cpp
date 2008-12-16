@@ -372,7 +372,10 @@ bool TPlayer::parsePacket(CString& pPacket)
 {
 	// First packet is always unencrypted zlib.  Read it in a special way.
 	if (type == CLIENTTYPE_AWAIT)
-		msgPLI_LOGIN(CString() << pPacket.readString("\n"));
+	{
+		if (msgPLI_LOGIN(CString() << pPacket.readString("\n")) == false)
+			return false;
+	}
 
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -996,7 +999,11 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	}
 
 	// Check if they are ip-banned or not.
-	printf("TODO: TPlayer::msgPLI_LOGIN(), Check if player is ip-banned.\n");
+	if (server->isIpBanned(playerSock->tcpIp()))
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned from this server.");
+		return false;
+	}
 
 	// TODO: Check if the specified client is allowed access.
 

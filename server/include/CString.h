@@ -78,7 +78,7 @@ class CString
 		int findi(const CString& pString, int pStart = 0) const;
 		int findl(char pChar) const;
 		std::vector<CString> tokenize(const CString& pString = " ") const;
-		static std::vector<CString> loadToken(const CString& pFile, const CString& pToken = "\n");
+		static std::vector<CString> loadToken(const CString& pFile, const CString& pToken = "\n", bool removeCR = false);
 		CString replaceAll(const CString& pString, const CString& pNewString) const;
 		CString gtokenize() const;
 		CString guntokenize() const;
