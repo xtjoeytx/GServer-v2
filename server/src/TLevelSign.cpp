@@ -41,6 +41,18 @@ CString getSignCode(CString& pText)
 	return retVal;
 }
 
+TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
+ : x(pX), y(pY), text(pSign)
+{
+	if (!encoded)
+	{
+		std::vector<CString> signText = text.tokenize("\n");
+		text.clear(text.length() / 2);
+		for (std::vector<CString>::iterator i = signText.begin(); i != signText.end(); ++i)
+			text << getSignCode(CString() << *i << "\n");
+	}
+}
+
 CString TLevelSign::getSignStr() const
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
@@ -51,9 +63,8 @@ CString TLevelSign::getSignStr() const
 	outText.writeGChar(x);
 	outText.writeGChar(y);
 
-	// Format the sign text and add to the packet.
-	for (std::vector<CString>::iterator i = signText.begin(); i != signText.end(); ++i)
-		outText << getSignCode(CString() << *i << "\n");
+	// Write the text to the packet.
+	outText << text;
 
 	return outText;
 }
