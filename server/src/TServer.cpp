@@ -90,6 +90,9 @@ int TServer::init()
 	servermessage.removeAllI("\r");
 	servermessage.replaceAllI("\n", " ");
 
+	// Load IP bans.
+	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+
 	// Load weapons.
 	{
 		CFileSystem weaponFS(this);
@@ -590,6 +593,16 @@ bool TServer::deletePlayer(TPlayer* player)
 unsigned int TServer::getNWTime() const
 {
 	return ((unsigned int)time(0) - 11078 * 24 * 60 * 60) * 2 / 10;
+}
+
+bool TServer::isIpBanned(const CString& ip)
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+	for (std::vector<CString>::const_iterator i = ipBans.begin(); i != ipBans.end(); ++i)
+	{
+		if (ip.match(*i)) return true;
+	}
+	return false;
 }
 
 /*

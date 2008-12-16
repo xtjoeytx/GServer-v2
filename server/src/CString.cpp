@@ -458,11 +458,12 @@ std::vector<CString> CString::tokenize(const CString& pString) const
 	return strList;
 }
 
-std::vector<CString> CString::loadToken(const CString& pFile, const CString& pToken)
+std::vector<CString> CString::loadToken(const CString& pFile, const CString& pToken, bool removeCR)
 {
 	CString fileData;
 	if (!fileData.load(pFile))
 		return std::vector<CString>();
+	if (removeCR) fileData.removeAllI("\r");
 	return fileData.tokenize(pToken);
 }
 
