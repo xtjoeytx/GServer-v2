@@ -114,6 +114,10 @@ class TAccount
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
 		bool hasWeapon(const CString& pWeapon);
 
+		// get functinos
+		float getX()			{ return x; }
+		float getY()			{ return y; }
+
 		// set functions
 		void setLastSparTime(time_t newTime)		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); lastSparTime = newTime; }
 		void setApCounter(int newTime)				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); apCounter = newTime; }

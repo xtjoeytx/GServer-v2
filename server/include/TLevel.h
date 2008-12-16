@@ -29,6 +29,10 @@ class TLevel
 		//! \return A pointer to the level found.
 		static TLevel* findLevel(const CString& pLevelName, TServer* server);
 
+		//! Re-loads the level.
+		//! \return True if it succeeds in re-loading the level.
+		bool reload();
+		
 		// get crafted packets
 		CString getBaddyPacket();
 		CString getBoardPacket();
