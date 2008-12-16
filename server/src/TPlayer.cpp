@@ -228,7 +228,7 @@ void TPlayer::operator()()
 		catch (boost::thread_interrupted e)
 		{
 			// Delete ourself to save our account and re-throw.
-			delete this;
+			server->deletePlayer(this);
 			throw;
 		}
 	}
@@ -508,7 +508,7 @@ void TPlayer::processChat(CString pChat)
 				if (player == this) continue;
 				if (player->getProp(PLPROP_ACCOUNTNAME).subString(1) == chatParse[1])
 				{
-					warp(player->getLevel()->getLevelName(), (float)(player->getProp(PLPROP_X).readGChar()) / 2.0f, (float)(player->getProp(PLPROP_Y).readGChar()) / 2.0f);
+					warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 					break;
 				}
 			}
@@ -524,8 +524,10 @@ void TPlayer::processChat(CString pChat)
 			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
 		}
 	}
-	else if (chatParse[0] == "updatelevel")
+	else if (pChat == "update level")
 	{
+		// TODO: permission check.
+		level->reload();
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -541,7 +543,7 @@ void TPlayer::processChat(CString pChat)
 				setChat("Warped!");
 			}
 			else
-				setChat(CString() << "Dont move for 30 seconds before doing '" << pChat << "'!");
+				setChat(CString() << "Don't move for 30 seconds before doing '" << pChat << "'!");
 		}
 	}
 }
@@ -729,7 +731,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
 			TPlayer* player = (TPlayer*)*i;
-			if (player == this) continue;
+			if (player == this || player->getMap() != pmap) continue;
 
 			if (pmap->getType() == MAPTYPE_GMAP)
 			{
@@ -763,7 +765,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	return true;
 }
 
-bool TPlayer::leaveLevel()
+bool TPlayer::leaveLevel(bool resetCache)
 {
 	// Make sure we are on a level first.
 	if (level == 0) return true;
@@ -777,7 +779,7 @@ bool TPlayer::leaveLevel()
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
 		{
-			cl->modTime = time(0);
+			cl->modTime = (resetCache ? 0 : time(0));
 			found = true;
 			i = cachedLevels.end();
 		} else ++i;

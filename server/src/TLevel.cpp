@@ -147,6 +147,98 @@ CString TLevel::getSignsPacket()
 /*
 	TLevel: Level-Loading Functions
 */
+bool TLevel::reload()
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Delete NPCs.
+	{
+		// Get some pointers.
+		boost::recursive_mutex::scoped_lock lock2(server->m_npcList);
+		boost::recursive_mutex::scoped_lock lock3(server->m_npcIds);
+		std::vector<TNPC*>* npcList = server->getNPCList();
+		std::vector<TNPC*>* npcIds = server->getNPCIdList();
+
+		// Remove every NPC in the level.
+		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
+		{
+			TNPC* n = *i;
+
+			// Remove the NPC from the global lists.
+			(*npcIds)[n->getId()] = 0;
+			for (std::vector<TNPC*>::iterator j = npcList->begin(); j != npcList->end(); )
+			{
+				if ((*j) == n)
+					j = npcList->erase(j);
+				else ++j;
+			}
+
+			// Inform all the clients that the NPC has been deleted.
+			server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
+
+			delete n;
+		}
+		levelNPCs.clear();
+	}
+
+	// Delete baddies.
+	for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i) delete *i;
+	levelBaddies.clear();
+	levelBaddyIds.clear();
+
+	// Delete chests.
+	for (std::vector<TLevelChest*>::iterator i = levelChests.begin(); i != levelChests.end(); ++i) delete *i;
+	levelChests.clear();
+
+	// Delete links.
+	for (std::vector<TLevelLink*>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i) delete *i;
+	levelLinks.clear();
+
+	// Delete signs.
+	for (std::vector<TLevelSign*>::iterator i = levelSigns.begin(); i != levelSigns.end(); ++i) delete *i;
+	levelSigns.clear();
+
+	// Delete items.
+	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
+	{
+		TLevelItem* item = *i;
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item->getX() * 2) >> (char)(item->getY() * 2);
+		for (std::vector<TPlayer*>::iterator j = levelPlayerList.begin(); j != levelPlayerList.end(); ++j) (*j)->sendPacket(packet);
+		delete item;
+	}
+	levelItems.clear();
+
+	// Delete board changes.
+	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
+	levelBoardChanges.clear();
+
+	// Clean up the rest.
+	levelSpar = false;
+
+	// Remove all the players from the level.
+	std::vector<TPlayer*> oldplayers = levelPlayerList;
+	for (std::vector<TPlayer*>::iterator i = oldplayers.begin(); i != oldplayers.end(); ++i)
+	{
+		TPlayer* p = *i;
+		p->leaveLevel(true);
+	}
+
+	// Re-load the level now.
+	bool ret = loadLevel(levelName);
+
+	// Warp all players back to the level (or to unstick me if loadLevel failed).
+	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
+	float uX = server->getSettings()->getFloat("unstickmex", 30.0f);
+	float uY = server->getSettings()->getFloat("unstickmey", 35.0f);
+	for (std::vector<TPlayer*>::iterator i = oldplayers.begin(); i != oldplayers.end(); ++i)
+	{
+		TPlayer* p = *i;
+		p->warp((ret ? levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
+	}
+
+	return ret;
+}
+
 bool TLevel::loadLevel(const CString& pLevelName)
 {
 	return (getExtension(pLevelName) == ".nw" ? loadNW(pLevelName) : loadGraal(pLevelName));
