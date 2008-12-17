@@ -335,7 +335,7 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
 
 		// Tell everybody else the new nickname.
-		server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop);
+		server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, p);
 	}
 }
 
