@@ -67,6 +67,7 @@ TServer::~TServer()
 int TServer::init()
 {
 	// Load Settings
+	serverlog.out("     Loading settings...\n");
 	settings.setSeparator("=");
 	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
 	if (!settings.isOpened())
@@ -76,6 +77,7 @@ int TServer::init()
 	}
 
 	// Load file system.
+	serverlog.out("     Loading file system...\n");
 	filesystem.addDir("world");
 	if (settings.getStr("sharefolder").length() > 0)
 	{
@@ -86,14 +88,17 @@ int TServer::init()
 	filesystem_accounts.addDir("accounts");
 
 	// Load server message.
+	serverlog.out("     Loading config/servermessage.html...\n");
 	servermessage.load(CString() << serverpath << "config/servermessage.html");
 	servermessage.removeAllI("\r");
 	servermessage.replaceAllI("\n", " ");
 
 	// Load IP bans.
+	serverlog.out("     Loading config/ipbans.txt...\n");
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
 
 	// Load weapons.
+	serverlog.out("     Loading weapons...\n");
 	{
 		CFileSystem weaponFS(this);
 		weaponFS.addDir("weapons");
@@ -102,11 +107,15 @@ int TServer::init()
 		{
 			TWeapon* weapon = TWeapon::loadWeapon(i->first.removeAll(".txt"), this);
 			if (weapon != 0)
+			{
+				serverlog.out("       %s\n", weapon->getName().text());
 				weaponList.push_back(weapon);
+			}
 		}
 	}
 
 	// Load gmaps.
+	serverlog.out("     Loading gmaps...\n");
 	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
 	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
 	{
@@ -122,10 +131,12 @@ int TServer::init()
 			continue;
 		}
 
+		serverlog.out("       %s\n", i->text());
 		mapList.push_back(gmap);
 	}
 
 	// Load bigmaps.
+	serverlog.out("     Loading bigmaps...\n");
 	std::vector<CString> bigmaps = settings.getStr("maps").guntokenize().tokenize("\n");
 	for (std::vector<CString>::iterator i = bigmaps.begin(); i != bigmaps.end(); ++i)
 	{
@@ -141,6 +152,7 @@ int TServer::init()
 			continue;
 		}
 
+		serverlog.out("       %s\n", i->text());
 		mapList.push_back(bigmap);
 	}
 
@@ -151,18 +163,20 @@ int TServer::init()
 	playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
+	serverlog.out("     Initializing player listen socket.\n");
 	if (playerSock.init("", settings.getStr("serverport")))
 	{
-		serverlog.out("** [Error] Could not initialize listening socket.\n");
+		serverlog.out("** [Error] Could not initialize listening socket...\n");
 		return ERR_LISTEN;
 	}
 	if (playerSock.connect())
 	{
-		serverlog.out("** [Error] Could not connect listening socket.\n");
+		serverlog.out("** [Error] Could not connect listening socket...\n");
 		return ERR_LISTEN;
 	}
 
 	// Connect to the serverlist.
+	serverlog.out("     Initializing serverlist socket.\n");
 	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
 	{
 		serverlog.out("** [Error] Cound not initialize serverlist socket.\n");
