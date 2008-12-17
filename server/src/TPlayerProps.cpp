@@ -544,7 +544,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
-				server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport);
+				server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
 				printf("udp_port: %d\n", udpport);
 				// TODO: udp support.
 			break;
