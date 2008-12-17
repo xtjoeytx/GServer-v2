@@ -148,6 +148,8 @@ enum
 	PLO_BIGMAP			= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
 	PLO_GHOSTICON		= 174,	// Pass 1 to enable the ghost icon
 	PLO_SHOOT			= 175,
+	PLO_FULLSTOP		= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
+	PLO_FULLSTOP2		= 177,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
 	PLO_RPGWINDOW		= 179,
 	PLO_STATUSLIST		= 180,
 	PLO_LISTPROCESSES	= 182,
