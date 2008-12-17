@@ -874,7 +874,6 @@ void TPlayer::setNick(CString& pNickName, bool force)
 	newNick << nick;
 
 	// If a guild was specified, add the guild.
-	// TODO: guild verification.
 	if (guild.length() > 2)
 	{
 		// Read the guild list.
