@@ -85,7 +85,7 @@ CString TNPC::getProp(unsigned char pId) const
 		return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
-		return CString() >> (short)clientScript.length() << clientScript;
+		return CString() >> (short)clientScript.length() << clientScript.subString(0, 0x3FFF);
 
 		case NPCPROP_X:
 		return CString() >> (char)(x * 2);
