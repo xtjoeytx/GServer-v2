@@ -793,7 +793,7 @@ void CSocket::socketSystemDestroy()
 #if defined(_WIN32) || defined(_WIN64)
 	int intTimeCheck = 0;
 
-	while (intTimeCheck++ < 10)
+	while (intTimeCheck++ < 3)
 	{
 		if (WSACleanup() == SOCKET_ERROR)
 			serverlog.out(CString() << "[CSocket::socketSystemDestroy] WSACleanup() returned error: " << errorMessage(identifyError()) << "\n");
