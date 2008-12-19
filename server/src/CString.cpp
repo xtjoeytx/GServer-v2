@@ -355,59 +355,79 @@ CString CString::trimRight() const
 	return CString(*this);
 }
 
-CString CString::bzcompress() const
+CString CString::bzcompress(unsigned int buffSize) const
 {
 	CString retVal;
-	char buf[65536];
+	char* buf = new char[buffSize];
+	memset((void*)buf, 0, buffSize);
 	int error = 0;
-	unsigned int clen = sizeof(buf);
+	unsigned int clen = buffSize;
 
 	if ((error = BZ2_bzBuffToBuffCompress(buf, &clen, buffer, length(), 1, 0, 30)) != BZ_OK)
+	{
+		delete [] buf;
 		return retVal;
+	}
 
 	retVal.write(buf, clen);
+	delete [] buf;
 	return retVal;
 }
 
-CString CString::bzuncompress() const
+CString CString::bzuncompress(unsigned int buffSize) const
 {
 	CString retVal;
-	char buf[65536];
+	char* buf = new char[buffSize];
+	memset((void*)buf, 0, buffSize);
 	int error = 0;
-	unsigned int clen = sizeof(buf);
+	unsigned int clen = buffSize;
 
 	if ((error = BZ2_bzBuffToBuffDecompress(buf, &clen, buffer, length(), 0, 0)) != BZ_OK)
+	{
+		delete [] buf;
 		return retVal;
+	}
 
 	retVal.write(buf, clen);
+	delete [] buf;
 	return retVal;
 }
 
-CString CString::zcompress() const
+CString CString::zcompress(unsigned int buffSize) const
 {
 	CString retVal;
-	char buf[65536];
+	char* buf = new char[buffSize];
+	memset((void*)buf, 0, buffSize);
 	int error = 0;
-	unsigned long clen = sizeof(buf);
+	unsigned long clen = buffSize;
 
 	if ((error = compress((Bytef *)buf, (uLongf *)&clen, (const Bytef *)buffer, length())) != Z_OK)
+	{
+		delete [] buf;
 		return retVal;
+	}
 
 	retVal.write(buf, clen);
+	delete [] buf;
 	return retVal;
 }
 
-CString CString::zuncompress() const
+CString CString::zuncompress(unsigned int buffSize) const
 {
 	CString retVal;
-	char buf[65536];
+	char* buf = new char[buffSize];
+	memset((void*)buf, 0, buffSize);
 	int error = 0;
-	unsigned long clen = sizeof(buf);
+	unsigned long clen = buffSize;
 
 	if ((error = uncompress((Bytef *)buf, (uLongf *)&clen, (const Bytef *)buffer, length())) != Z_OK)
+	{
+		delete [] buf;
 		return retVal;
+	}
 
 	retVal.write(buf, clen);
+	delete [] buf;
 	return retVal;
 }
 
@@ -625,9 +645,19 @@ bool CString::match(const CString& pMask) const
 {
 	int sloc = 0, mloc = 0;
 
+	// Check to see if they are equal.
+	if (length() == pMask.length())
+	{
+		if (memcmp(buffer, pMask.text(), length()) == 0)
+			return true;
+	}
+
 	// Check for a blank string.
-	if (buffer[sloc] == 0 && (pMask.text())[mloc] != '*') return false;
-	else return true;
+	if (buffer[sloc] == 0)
+	{
+		if ((pMask.text())[mloc] != '*') return false;
+		else return true;
+	}
 
 	// Check just for a single *.
 	if (pMask == "*") return true;

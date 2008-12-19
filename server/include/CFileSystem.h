@@ -27,6 +27,7 @@ class CFileSystem
 		CString finddiri(const CString& file) const;
 		CString load(const CString& file) const;
 		time_t getModTime(const CString& file) const;
+		bool setModTime(const CString& file, time_t modTime) const;
 		int getFileSize(const CString& file) const;
 		std::map<CString, CString>* getFileList()	{ return &fileList; }
 		std::map<CString, CString>* getDirList()	{ return &dirList; }
