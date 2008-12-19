@@ -14,7 +14,7 @@ std::vector<TSLSock> TSLFunc;
 void createSLFunctions()
 {
 	// kinda like a memset-ish thing y'know
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < 101; i++)
 		TSLFunc.push_back(&TServerList::msgSVI_NULL);
 
 	// now set non-nulls
@@ -28,14 +28,19 @@ void createSLFunctions()
 	TSLFunc[SVI_PROFILE] = &TServerList::msgSVI_PROFILE;
 	TSLFunc[SVI_ERRMSG] = &TServerList::msgSVI_ERRMSG;
 	TSLFunc[SVI_VERIACC2] = &TServerList::msgSVI_VERIACC2;
+	TSLFunc[SVI_FILESTART2] = &TServerList::msgSVI_FILESTART2;
+	TSLFunc[SVI_FILEEND2] = &TServerList::msgSVI_FILEEND2;
+	TSLFunc[SVI_FILEDATA2] = &TServerList::msgSVI_FILEDATA2;
 	TSLFunc[SVI_PING] = &TServerList::msgSVI_PING;
+	TSLFunc[SVI_RAWDATA] = &TServerList::msgSVI_RAWDATA;
 }
 
 /*
 	Constructor - Deconstructor
 */
 TServerList::TServerList()
-: isConnected(false)
+: isConnected(false), nextIsRaw(false), rawPacketSize(0)
+
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
@@ -82,17 +87,26 @@ bool TServerList::main()
 	rBuffer.setRead(0);
 	while (rBuffer.length() != 0)
 	{
-		// parse data
-		if ((lineEnd = rBuffer.findl('\n')) == -1)
-			return getConnected();
+		// Read a packet.
+		if (!nextIsRaw)
+		{
+			if ((lineEnd = rBuffer.find("\n")) == -1) break;
+			line = rBuffer.readString("\n");
+			rBuffer.removeI(0, line.length() + 1);	// +1 for \n
+		}
+		else
+		{
+			if (rBuffer.length() < rawPacketSize) break;
 
-		line = rBuffer.subString(0, lineEnd + 1);
-		rBuffer.removeI(0, line.length());
+			// Read the packet in and remove the terminating \n.
+			line = rBuffer.readChars(rawPacketSize);
+			rBuffer.removeI(0, line.length());
+			line.removeI(line.length() - 1, 1);
+			nextIsRaw = false;
+		}
 
-		// parse each packet seperately
-		std::vector<CString> lines = line.tokenize("\n");
-		for (unsigned int i = 0; i < lines.size(); i++)
-			parsePacket(lines[i]);
+		// Parse the packet.
+		parsePacket(line);
 
 		// update last data
 		lastData = time(0);
@@ -347,16 +361,6 @@ void TServerList::msgSVI_FILESTART(CString& pPacket)
 	server->getFileSystem()->addFile(filename);
 }
 
-void TServerList::msgSVI_FILEDATA(CString& pPacket)
-{
-	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
-	if (filename.length() == 0) return;
-	CString filedata;
-	filedata.load(filename);
-	filedata << pPacket.readString("").B64_Decode();
-	filedata.save(filename);
-}
-
 void TServerList::msgSVI_FILEEND(CString& pPacket)
 {
 	CString filename = pPacket.readChars(pPacket.readGUChar());
@@ -391,6 +395,16 @@ void TServerList::msgSVI_FILEEND(CString& pPacket)
 			}
 		}
 	}
+}
+
+void TServerList::msgSVI_FILEDATA(CString& pPacket)
+{
+	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	if (filename.length() == 0) return;
+	CString filedata;
+	filedata.load(filename);
+	filedata << pPacket.readString("").B64_Decode();
+	filedata.save(filename);
 }
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
@@ -523,7 +537,85 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	}
 }
 
+void TServerList::msgSVI_FILESTART2(CString& pPacket)
+{
+	CString blank, filename = CString() << "global/" << pPacket.readString("");
+	CFileSystem::fixPathSeparators(&filename);
+	blank.save(filename);
+	server->getFileSystem()->addFile(filename);
+}
+
+void TServerList::msgSVI_FILEDATA2(CString& pPacket)
+{
+	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	if (filename.length() == 0) return;
+	CString filedata;
+	filedata.load(filename);
+	filedata << pPacket.readChars(pPacket.bytesLeft());	// Read the rest of the packet.
+	filedata.save(filename);
+}
+
+void TServerList::msgSVI_FILEEND2(CString& pPacket)
+{
+	unsigned short pid = pPacket.readGUShort();
+	unsigned char type = pPacket.readGUChar();
+	unsigned char doCompress = pPacket.readGUChar();
+	time_t modTime = pPacket.readGUInt5();
+	unsigned int fileLength = pPacket.readGUInt();
+	CString shortName = pPacket.readString("");
+	CString fileName = server->getFileSystem()->find(shortName);
+
+	// Uncompress the file if compressed.
+	if (doCompress == 1)
+	{
+		CString fileData;
+		fileData.load(fileName);
+		fileData.zuncompressI(fileLength);
+		fileData.save(fileName);
+	}
+
+	// Set the file mod time.
+	if (server->getFileSystem()->setModTime(fileName, modTime) == false)
+		server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
+
+	// Set the player props.
+	TPlayer* p = server->getPlayer(pid);
+	if (p)
+	{
+		switch (type)
+		{
+			case 0:	// head
+				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, true, true);
+				break;
+
+			case 1:	// body
+				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, true, true);
+				break;
+
+			case 2:	// sword
+			{
+				CString prop = p->getProp(PLPROP_SWORDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				break;
+			}
+
+			case 3:	// shield
+			{
+				CString prop = p->getProp(PLPROP_SHIELDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				break;
+			}
+		}
+	}
+}
+
 void TServerList::msgSVI_PING(CString& pPacket)
 {
 	// Sent every 60 seconds.  Do nothing.
+}
+
+void TServerList::msgSVI_RAWDATA(CString& pPacket)
+{
+	nextIsRaw = true;
+	rawPacketSize = pPacket.readGInt();
 }
