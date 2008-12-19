@@ -1,6 +1,11 @@
 #include <sys/stat.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <dirent.h>
+	#include <utime.h>
+#else
+	#include <sys/utime.h>
+	#define _utime utime
+	#define _utimbuf utimbuf;
 #endif
 #include <map>
 #include "ICommon.h"
@@ -251,6 +256,24 @@ time_t CFileSystem::getModTime(const CString& file) const
 	if (stat(fileName.text(), &fileStat) != -1)
 		return (time_t)fileStat.st_mtime;
 	return 0;
+}
+
+bool CFileSystem::setModTime(const CString& file, time_t modTime) const
+{
+	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Get the full path to the file.
+	CString fileName = find(file);
+	if (fileName.length() == 0) return false;
+
+	// Set the times.
+	struct utimbuf ut;
+	ut.actime = modTime;
+	ut.modtime = modTime;
+
+	// Change the file.
+	if (utime(fileName.text(), &ut) == 0) return true;
+	return false;
 }
 
 int CFileSystem::getFileSize(const CString& file) const

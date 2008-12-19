@@ -14,25 +14,27 @@
 */
 enum
 {
-	SVO_SETNAME		= 0,
-	SVO_SETDESC		= 1,
-	SVO_SETLANG		= 2,
-	SVO_SETVERS		= 3,
-	SVO_SETURL		= 4,
-	SVO_SETIP		= 5,
-	SVO_SETPORT		= 6,
-	SVO_SETPLYR		= 7,
-	SVO_VERIACC		= 8,	// deprecated
-	SVO_VERIGUILD	= 9,
-	SVO_GETFILE		= 10,
-	SVO_NICKNAME	= 11,
-	SVO_GETPROF		= 12,
-	SVO_SETPROF		= 13,
-	SVO_PLYRADD		= 14,
-	SVO_PLYRREM		= 15,
-	SVO_PING		= 16,
-	SVO_VERIACC2	= 17,
-	SVO_SETLOCALIP	= 18,
+	SVO_SETNAME			= 0,
+	SVO_SETDESC			= 1,
+	SVO_SETLANG			= 2,
+	SVO_SETVERS			= 3,
+	SVO_SETURL			= 4,
+	SVO_SETIP			= 5,
+	SVO_SETPORT			= 6,
+	SVO_SETPLYR			= 7,
+	SVO_VERIACC			= 8,	// deprecated
+	SVO_VERIGUILD		= 9,
+	SVO_GETFILE			= 10,
+	SVO_NICKNAME		= 11,
+	SVO_GETPROF			= 12,
+	SVO_SETPROF			= 13,
+	SVO_PLYRADD			= 14,
+	SVO_PLYRREM			= 15,
+	SVO_PING			= 16,
+	SVO_VERIACC2		= 17,
+	SVO_SETLOCALIP		= 18,
+	SVO_GETFILE2		= 19,
+	SVO_UPDATEFILE		= 20,
 };
 
 enum
@@ -40,8 +42,8 @@ enum
 	SVI_VERIACC			= 0,
 	SVI_VERIGUILD		= 1,
 	SVI_FILESTART		= 2,
-	SVI_FILEDATA		= 3,
-	SVI_FILEEND			= 4,
+	SVI_FILEEND			= 3,
+	SVI_FILEDATA		= 4,
 	SVI_VERSIONOLD		= 5,
 	SVI_VERSIONCURRENT	= 6,
 	SVI_PROFILE			= 7,
@@ -49,7 +51,11 @@ enum
 	SVI_NULL4			= 9,
 	SVI_NULL5			= 10,
 	SVI_VERIACC2		= 11,
-	SVI_PING			= 99
+	SVI_FILESTART2		= 12,
+	SVI_FILEDATA2		= 13,
+	SVI_FILEEND2		= 14,
+	SVI_PING			= 99,
+	SVI_RAWDATA			= 100,
 };
 
 class TPlayer;
@@ -87,8 +93,8 @@ class TServerList
 		void msgSVI_VERIACC(CString& pPacket);
 		void msgSVI_VERIGUILD(CString& pPacket);
 		void msgSVI_FILESTART(CString& pPacket);
-		void msgSVI_FILEDATA(CString& pPacket);
 		void msgSVI_FILEEND(CString& pPacket);
+		void msgSVI_FILEDATA(CString& pPacket);
 		void msgSVI_VERSIONOLD(CString& pPacket);
 		void msgSVI_VERSIONCURRENT(CString& pPacket);
 		void msgSVI_PROFILE(CString& pPacket);
@@ -96,7 +102,11 @@ class TServerList
 		//void msgSVI_NULL4(CString& pPacket);
 		//void msgSVI_NULL5(CString& pPacket);
 		void msgSVI_VERIACC2(CString& pPacket);
+		void msgSVI_FILESTART2(CString& pPacket);
+		void msgSVI_FILEDATA2(CString& pPacket);
+		void msgSVI_FILEEND2(CString& pPacket);
 		void msgSVI_PING(CString& pPacket);
+		void msgSVI_RAWDATA(CString& pPacket);
 
 	protected:
 		// Packet Functions
@@ -107,6 +117,8 @@ class TServerList
 
 		// Socket Variables
 		bool isConnected;
+		bool nextIsRaw;
+		int rawPacketSize;
 		CString rBuffer, sBuffer;
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer;
