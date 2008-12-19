@@ -70,10 +70,10 @@ class CString
 		CString trim() const;
 		CString trimLeft() const;
 		CString trimRight() const;
-		CString bzcompress() const;
-		CString bzuncompress() const;
-		CString zcompress() const;
-		CString zuncompress() const;
+		CString bzcompress(unsigned int buffSize = 65536) const;
+		CString bzuncompress(unsigned int buffSize = 65536) const;
+		CString zcompress(unsigned int buffSize = 65536) const;
+		CString zuncompress(unsigned int buffSize = 65536) const;
 		int find(const CString& pString, int pStart = 0) const;
 		int findi(const CString& pString, int pStart = 0) const;
 		int findl(char pChar) const;
@@ -92,10 +92,10 @@ class CString
 		inline CString& toLowerI();
 		inline CString& toUpperI();
 		inline CString& trimI();
-		inline CString& bzcompressI();
-		inline CString& bzuncompressI();
-		inline CString& zcompressI();
-		inline CString& zuncompressI();
+		inline CString& bzcompressI(unsigned int buffSize = 65536);
+		inline CString& bzuncompressI(unsigned int buffSize = 65536);
+		inline CString& zcompressI(unsigned int buffSize = 65536);
+		inline CString& zuncompressI(unsigned int buffSize = 65536);
 		inline CString& replaceAllI(const CString& pString, const CString& pNewString);
 		inline CString& gtokenizeI();
 		inline CString& guntokenizeI();
@@ -311,27 +311,27 @@ inline CString& CString::trimI()
 	return *this;
 }
 
-inline CString& CString::bzcompressI()
+inline CString& CString::bzcompressI(unsigned int buffSize)
 {
-	*this = bzcompress();
+	*this = bzcompress(buffSize);
 	return *this;
 }
 
-inline CString& CString::bzuncompressI()
+inline CString& CString::bzuncompressI(unsigned int buffSize)
 {
-	*this = bzuncompress();
+	*this = bzuncompress(buffSize);
 	return *this;
 }
 
-inline CString& CString::zcompressI()
+inline CString& CString::zcompressI(unsigned int buffSize)
 {
-	*this = zcompress();
+	*this = zcompress(buffSize);
 	return *this;
 }
 
-inline CString& CString::zuncompressI()
+inline CString& CString::zuncompressI(unsigned int buffSize)
 {
-	*this = zuncompress();
+	*this = zuncompress(buffSize);
 	return *this;
 }
 
