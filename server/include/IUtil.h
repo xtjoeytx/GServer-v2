@@ -80,6 +80,30 @@ enum
 
 enum
 {
+	COLOR_WHITE			= 0,
+	COLOR_YELLOW		= 1,
+	COLOR_ORANGE		= 2,
+	COLOR_PINK			= 3,
+	COLOR_RED			= 4,
+	COLOR_DARKRED		= 5,
+	COLOR_LIGHTGREEN	= 6,
+	COLOR_GREEN			= 7,
+	COLOR_DARKGREEN		= 8,
+	COLOR_LIGHTBLUE		= 9,
+	COLOR_BLUE			= 10,
+	COLOR_DARKBLUE		= 11,
+	COLOR_BROWN			= 12,
+	COLOR_CYNOBER		= 13,
+	COLOR_PURPLE		= 14,
+	COLOR_DARKPURPLE	= 15,
+	COLOR_LIGHTGRAY		= 16,
+	COLOR_GRAY			= 17,
+	COLOR_BLACK			= 18,
+	COLOR_TRANSPARENT	= 19,
+};
+
+enum
+{
 	CLVER_1_32,
 	CLVER_1_322,
 	CLVER_1_323,
@@ -148,5 +172,6 @@ enum
 };
 
 int getVersionID(const CString& version);
+unsigned char getColor(const CString& color);
 
 #endif
