@@ -1,6 +1,31 @@
 #include "IUtil.h"
 #include "CString.h"
 
+static const char* colors[] =
+{
+	"white",
+	"yellow",
+	"orange",
+	"pink",
+	"red",
+	"darkred",
+	"lightgreen",
+	"green",
+	"darkgreen",
+	"lightblue",
+	"blue",
+	"darkblue",
+	"brown",
+	"cynober",
+	"purple",
+	"darkpurple",
+	"lightgray",
+	"gray",
+	"black",
+	"transparent",
+	0
+};
+
 static const char* const clientVersions[] =
 {
 	"",		// CLVER_1_32,
@@ -81,4 +106,16 @@ int getVersionID(const CString& version)
 		++i;
 	}
 	return -1;
+}
+
+unsigned char getColor(const CString& color)
+{
+	int i = 0;
+	while (colors[i] != 0)
+	{
+		if (color.comparei(CString(colors[i])))
+			return i;
+		++i;
+	}
+	return 0;
 }
