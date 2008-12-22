@@ -204,6 +204,7 @@ class TPlayer : public TAccount
 		int getType() const;
 		time_t getLastData() const	{ return lastData; }
 		CString getFlag(const CString& flag) const;
+		CString getGuild() const	{ return guild; }
 
 		// Set Properties
 		void setChat(const CString& pChat);
@@ -308,6 +309,7 @@ class TPlayer : public TAccount
 		TMap* pmap;
 		int carryNpcId;
 		bool carryNpcThrown;
+		CString guild;
 
 		// File queue.
 		CFileQueue fileQueue;
