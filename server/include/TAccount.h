@@ -114,9 +114,11 @@ class TAccount
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
 		bool hasWeapon(const CString& pWeapon);
 
-		// get functinos
-		float getX()			{ return x; }
-		float getY()			{ return y; }
+		// get functions
+		float getX() const				{ return x; }
+		float getY() const				{ return y; }
+		CString getAccountName() const	{ return accountName; }
+		CString getNickname() const		{ return nickName; }
 
 		// set functions
 		void setLastSparTime(time_t newTime)		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); lastSparTime = newTime; }

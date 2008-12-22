@@ -542,11 +542,6 @@ void TPlayer::processChat(CString pChat)
 			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
 		}
 	}
-	else if (pChat == "update level")
-	{
-		// TODO: permission check.
-		level->reload();
-	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
 		if (chatParse.size() == 2 && chatParse[1] == "me")
@@ -563,6 +558,78 @@ void TPlayer::processChat(CString pChat)
 			else
 				setChat(CString() << "Don't move for 30 seconds before doing '" << pChat << "'!");
 		}
+	}
+	else if (pChat == "update level")
+	{
+		// TODO: permission check.
+		level->reload();
+	}
+	else if (pChat == "showadmins")
+	{
+		// Search through the player list for all RC's.
+		CString msg;
+		{
+			boost::recursive_mutex::scoped_lock lock2(server->m_playerList);
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* p = *i;
+
+				// If an RC was found, add it to our string.
+				if (p->getType() == CLIENTTYPE_RC)
+					msg << (msg.length() == 0 ? "" : ", ") << p->getAccountName();
+			}
+		}
+		if (msg.length() == 0)
+			msg << "(no one)";
+		setChat(CString("admins: ") << msg);
+	}
+	else if (chatParse[0] == "showguild")
+	{
+		CString g = guild;
+
+		// If a guild was specified, overwrite our guild with it.
+		if (chatParse.size() == 2)
+			g = chatParse[1];
+
+		if (g.length() != 0)
+		{
+			CString msg;
+			{
+				boost::recursive_mutex::scoped_lock lock2(server->m_playerList);
+				std::vector<TPlayer*>* playerList = server->getPlayerList();
+				for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+				{
+					TPlayer* p = *i;
+
+					// If our guild matches, add it to our string.
+					if (p->getGuild() == g)
+						msg << (msg.length() == 0 ? "" : ", ") << p->getNickname().subString(0, p->getNickname().find('(')).trimI();
+				}
+			}
+			if (msg.length() == 0)
+				msg << "(no one)";
+			setChat(CString("members of '") << g << "': " << msg);
+		}
+	}
+	else if (pChat == "showkills")
+	{
+		setChat(CString() << "kills: " << CString((int)kills));
+	}
+	else if (pChat == "showdeaths")
+	{
+		setChat(CString() << "deaths: " << CString((int)deaths));
+	}
+	else if (pChat == "showonlinetime")
+	{
+		int seconds = onlineTime % 60;
+		int minutes = (onlineTime / 60) % 60;
+		int hours = onlineTime / 3600;
+		CString msg;
+		if (hours != 0) msg << CString(hours) << "h ";
+		if (minutes != 0 || hours != 0) msg << CString(minutes) << "m ";
+		msg << CString(seconds) << "s";
+		setChat(CString() << "onlinetime: " << msg);
 	}
 }
 
@@ -868,6 +935,9 @@ void TPlayer::setNick(CString& pNickName, bool force)
 	if (force)
 	{
 		nickName = pNickName;
+		CString nick = pNickName.readString("(").trim();
+		CString guild = pNickName.readString(")");
+		this->guild = guild;
 		return;
 	}
 
@@ -889,7 +959,7 @@ void TPlayer::setNick(CString& pNickName, bool force)
 	newNick << nick;
 
 	// If a guild was specified, add the guild.
-	if (guild.length() > 2)
+	if (guild.length() != 0)
 	{
 		// Read the guild list.
 		CFileSystem guildFS(server);
@@ -910,6 +980,7 @@ void TPlayer::setNick(CString& pNickName, bool force)
 				{
 					nickName = newNick;
 					nickName << " (" << guild << ")";
+					this->guild = guild;
 					return;
 				}
 			}
@@ -917,6 +988,7 @@ void TPlayer::setNick(CString& pNickName, bool force)
 			{
 				nickName = newNick;
 				nickName << " (" << guild << ")";
+				this->guild = guild;
 				return;
 			}
 		}
