@@ -468,19 +468,127 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
-		setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
-	}
-	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
-	{
-		setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
-	}
-	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
-	{
-		setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+		if (server->getSettings()->getBool("setheadallowed", true) == false) return;
+
+		// Try to find the file.
+		CString file = server->getFileSystem()->findi(chatParse[1]);
+		if (file.length() == 0)
+		{
+			int i = 0;
+			char* ext[] = {".png", ".mng", ".gif"};
+			while (i < 3)
+			{
+				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				if (file.length() != 0)
+				{
+					chatParse[1] << ext[i];
+					break;
+				}
+				++i;
+			}
+		}
+
+		// Try to load the file.
+		if (file.length() != 0)
+		{
+			// TODO: foldersconfig
+			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
+		}
+		else
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
-		setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+		if (server->getSettings()->getBool("setbodyallowed", true) == false) return;
+
+		// Try to find the file.
+		CString file = server->getFileSystem()->findi(chatParse[1]);
+		if (file.length() == 0)
+		{
+			int i = 0;
+			char* ext[] = {".png", ".mng", ".gif"};
+			while (i < 3)
+			{
+				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				if (file.length() != 0)
+				{
+					chatParse[1] << ext[i];
+					break;
+				}
+				++i;
+			}
+		}
+
+		// Try to load the file.
+		if (file.length() != 0)
+		{
+			// TODO: foldersconfig
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+		}
+		else
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
+	}
+	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
+	{
+		if (server->getSettings()->getBool("setswordallowed", true) == false) return;
+
+		// Try to find the file.
+		CString file = server->getFileSystem()->findi(chatParse[1]);
+		if (file.length() == 0)
+		{
+			int i = 0;
+			char* ext[] = {".png", ".mng", ".gif"};
+			while (i < 3)
+			{
+				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				if (file.length() != 0)
+				{
+					chatParse[1] << ext[i];
+					break;
+				}
+				++i;
+			}
+		}
+
+		// Try to load the file.
+		if (file.length() != 0)
+		{
+			// TODO: foldersconfig
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+		}
+		else
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
+	}
+	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
+	{
+		if (server->getSettings()->getBool("setshieldallowed", true) == false) return;
+
+		// Try to find the file.
+		CString file = server->getFileSystem()->findi(chatParse[1]);
+		if (file.length() == 0)
+		{
+			int i = 0;
+			char* ext[] = {".png", ".mng", ".gif"};
+			while (i < 3)
+			{
+				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				if (file.length() != 0)
+				{
+					chatParse[1] << ext[i];
+					break;
+				}
+				++i;
+			}
+		}
+
+		// Try to load the file.
+		if (file.length() != 0)
+		{
+			// TODO: foldersconfig
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+		}
+		else
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
 	{
@@ -541,6 +649,12 @@ void TPlayer::processChat(CString pChat)
 		{
 			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
 		}
+	}
+	else if (chatParse[0] == "summon" && chatParse.size() == 2)
+	{
+		// TODO: permission check
+		TPlayer* p = server->getPlayer(chatParse[1]);
+		if (p) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -630,6 +744,37 @@ void TPlayer::processChat(CString pChat)
 		if (minutes != 0 || hours != 0) msg << CString(minutes) << "m ";
 		msg << CString(seconds) << "s";
 		setChat(CString() << "onlinetime: " << msg);
+	}
+	else if (chatParse[0] == "toguild:")
+	{
+		if (guild.length() == 0) return;
+
+		// Get the PM.
+		CString pm = pChat.text() + 8;
+		pm.trimI();
+		if (pm.length() == 0) return;
+
+		// Send PM to guild members.
+		int num = 0;
+		{
+			boost::recursive_mutex::scoped_lock lock2(server->m_playerList);
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* p = *i;
+				if (p == this) continue;
+
+				// If our guild matches, send the PM.
+				if (p->getGuild() == guild)
+				{
+					p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << "\"\",\"Guild message:\",\"" << pm << "\"");
+					++num;
+				}
+			}
+		}
+
+		// Tell the player how many guild members received his message.
+		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "") << " received your message)");
 	}
 }
 
