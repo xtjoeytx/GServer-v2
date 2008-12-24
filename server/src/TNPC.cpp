@@ -221,8 +221,10 @@ CString TNPC::getProps(time_t newTime) const
 	CString retVal;
 	for (int i = 0; i < npcpropcount; i++)
 	{
-		if ( modTime[i] >= newTime && modTime[i] > 0 )
+		if (modTime[i] != 0 && modTime[i] >= newTime)
 			retVal >> (char)i << getProp(i);
+		if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
+			retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
 	}
 	return retVal;
 }
