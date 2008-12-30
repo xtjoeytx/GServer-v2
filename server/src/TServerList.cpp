@@ -521,10 +521,14 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	TPlayer* player = server->getPlayer(id);
 	if (player == 0) return;
 
+	// Overwrite the player's account name with the one from the gserver.
+	player->setAccountName(account);
+
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
+		player->setId(0);	// Prevent saving of the account.
 		player->disconnect();
 		return;
 	}
@@ -533,6 +537,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player->sendLogin() == false)
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
+		player->setId(0);	// Prevent saving of the account.
 		player->disconnect();
 	}
 }

@@ -125,6 +125,7 @@ class TAccount
 		void setApCounter(int newTime)				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); apCounter = newTime; }
 		void setKills(int newKills)					{ boost::recursive_mutex::scoped_lock lock(m_preventChange); kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); rating = (float)newRate; deviation = (float)newDeviate; }
+		void setAccountName(CString account)		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); accountName = account; }
 
 	protected:
 		TServer* server;
