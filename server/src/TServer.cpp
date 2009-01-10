@@ -15,6 +15,7 @@ TServer::TServer(CString pName)
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
+	CFileSystem::fixPathSeparators(&serverpath);
 
 	// Set up the log files.
 	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
