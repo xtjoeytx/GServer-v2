@@ -77,16 +77,53 @@ int TServer::init()
 		return ERR_SETTINGS;
 	}
 
+	// Load folders config.
+	// Load before file system.
+	serverlog.out("     Folder config: ");
+	if (settings.getBool("nofoldersconfig", false) == false)
+	{
+		foldersConfig = CString::loadToken(CString() << serverpath << "config/foldersconfig.txt", "\n", true);
+		serverlog.out("ENABLED\n");
+	} else serverlog.out("disabled\n");
+
 	// Load file system.
 	serverlog.out("     Loading file system...\n");
-	filesystem.addDir("world");
-	if (settings.getStr("sharefolder").length() > 0)
-	{
-		std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
-		for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
-			filesystem.addDir(i->trim());
-	}
 	filesystem_accounts.addDir("accounts");
+	if (settings.getBool("nofoldersconfig", false) == true)
+	{
+		filesystem.addDir("world");
+		if (settings.getStr("sharefolder").length() > 0)
+		{
+			std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
+			for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
+				filesystem.addDir(i->trim());
+		}
+	}
+	// Folders config.
+	else
+	{
+		for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
+		{
+			// No comments.
+			if ((*i)[0] == '#') continue;
+
+			// Parse the line.
+			CString type = i->readString(" ");
+			CString config = i->readString("");
+			type.trimI();
+			config.trimI();
+			CFileSystem::fixPathSeparators(&config);
+
+			// Load the directory.
+			CString dirNoWild;
+			int pos = -1;
+			if ((pos = config.findl(CFileSystem::getPathSeparator())) != -1)
+				dirNoWild = config.remove(pos + 1);
+			CString dir = CString("world/") << dirNoWild;
+			CString wildcard = config.remove(0, dirNoWild.length());
+			filesystem.addDir(dir, wildcard);
+		}
+	}
 
 	// Load server message.
 	serverlog.out("     Loading config/servermessage.html...\n");

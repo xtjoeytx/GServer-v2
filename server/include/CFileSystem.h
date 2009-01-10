@@ -35,6 +35,7 @@ class CFileSystem
 		mutable boost::recursive_mutex m_preventChange;
 
 		static void fixPathSeparators(CString* pPath);
+		static char getPathSeparator();
 
 	private:
 		void loadAllDirectories(const CString& directory, bool recursive = false);
