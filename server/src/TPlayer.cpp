@@ -178,7 +178,7 @@ TPlayer::~TPlayer()
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
-	// Send all unset data (for disconnect messages and whatnot).
+	// Send all unsent data (for disconnect messages and whatnot).
 	// Setting the socket to 0 will cause the thread to terminate.
 	// Then we wait for the thread to terminate to prevent resource conflicts.
 	fileQueue.forceSend();
@@ -660,6 +660,11 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (chatParse.size() == 2 && chatParse[1] == "me")
 		{
+			// Check if the player is in a jailed level.
+			std::vector<CString> jailList = server->getSettings()->getStr("jaillevels").tokenize(",");
+			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
+				if (i->trim() == levelName) return;
+
 			if ((int)difftime(time(0), lastMovement) >= 30)
 			{
 				lastMovement = time(0);
@@ -1373,7 +1378,11 @@ bool TPlayer::msgPLI_BOMBDEL(CString& pPacket)
 
 bool TPlayer::msgPLI_TOALL(CString& pPacket)
 {
-	// TODO: jail levels.
+	// Check if the player is in a jailed level.
+	std::vector<CString> jailList = server->getSettings()->getStr("jaillevels").tokenize(",");
+	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
+		if (i->trim() == levelName) return true;
+
 	CString message = pPacket.readString("");
 	// TODO: word filter.
 
@@ -1833,7 +1842,17 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 	lastMessage = time(0);
 
-	// TODO: jailed levels.
+	// Check if the player is in a jailed level.
+	std::vector<CString> jailList = server->getSettings()->getStr("jaillevels").tokenize(",");
+	bool jailed = false;
+	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
+	{
+		if (i->trim() == levelName)
+		{
+			jailed = true;
+			i = jailList.end();
+		}
+	}
 
 	// Get the players this message was addressed to.
 	std::vector<unsigned short> pmPlayers;
@@ -1868,7 +1887,13 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 			continue;
 
-		// TODO: jailed people.
+		// Jailed people cannot send PMs to normal players.
+		// TODO: staff check
+		if (jailed)
+		{
+			sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
+			continue;
+		}
 
 		// Send the message.
 		sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
