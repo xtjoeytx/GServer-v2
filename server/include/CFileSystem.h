@@ -15,7 +15,7 @@ class CFileSystem
 
 		void setServer(TServer* pServer) { server = pServer; }
 
-		void addDir(const CString& dir);
+		void addDir(const CString& dir, const CString& wildcard = "*");
 		void removeDir(const CString& dir);
 		void addFile(const CString& file);
 		void removeFile(const CString& file);
@@ -37,6 +37,8 @@ class CFileSystem
 		static void fixPathSeparators(CString* pPath);
 
 	private:
+		void loadAllDirectories(const CString& directory, bool recursive = false);
+
 		TServer* server;
 		CString basedir;
 		std::map<CString, CString> fileList;
