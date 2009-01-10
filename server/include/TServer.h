@@ -103,6 +103,7 @@ class TServer
 		std::vector<TWeapon*> weaponList;
 		std::vector<CString> serverFlags;
 		std::vector<CString> ipBans;
+		std::vector<CString> foldersConfig;
 		std::vector<boost::thread::id> terminatedThreads;
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
