@@ -144,7 +144,3 @@ serverport = 14802
 # DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
 listip = listserver.graal.in
 listport = 14900
-
-# Console settings.
-detailedconsole = false
-showconsolepackets = false
