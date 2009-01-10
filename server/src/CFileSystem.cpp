@@ -79,7 +79,7 @@ void CFileSystem::removeDir(const CString& dir)
 	for (std::map<CString, CString>::iterator i = dirList.begin(); i != dirList.end();)
 	{
 		if (i->second.findi(searchDir))
-			fileList.erase(i++);
+			dirList.erase(i++);
 		else ++i;
 	}
 }
@@ -179,7 +179,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	WIN32_FIND_DATAA filedata;
 	HANDLE hFind = FindFirstFileA(directory.text(), &filedata);
 
-	if (hFind != 0)
+	if (hFind != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
@@ -331,4 +331,9 @@ int CFileSystem::getFileSize(const CString& file) const
 void CFileSystem::fixPathSeparators(CString* pPath)
 {
 	pPath->replaceAllI(fSep_O, fSep);
+}
+
+char CFileSystem::getPathSeparator()
+{
+	return fSep;
 }
