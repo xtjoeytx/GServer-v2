@@ -1397,7 +1397,7 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 		unsigned char flags = strtoint(player->getProp(PLPROP_ADDITFLAGS));
 		if (flags & PLFLAG_NOTOALL) continue;
 
-		player->sendPacket(CString() >> (char)PLO_TOALL << message);
+		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)id << message);
 	}
 	return true;
 }
@@ -1896,7 +1896,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		}
 
 		// Send the message.
-		sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
+		pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
 	}
 
 	return true;
