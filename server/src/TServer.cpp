@@ -732,6 +732,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) con
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf) const
 {
 	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
+	if (pPlayer->getLevel() == 0) return;
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
@@ -740,6 +741,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			if (sendToSelf) pPlayer->sendPacket(pPacket);
 			continue;
 		}
+		if ((*i)->getLevel() == 0) continue;
 		if ((*i)->getMap() == pMap)
 		{
 			int ogmap[2], sgmap[2];
