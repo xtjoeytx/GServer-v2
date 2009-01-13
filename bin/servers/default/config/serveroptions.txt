@@ -126,7 +126,7 @@ onlystaff = false
 underconstruction = false
 
 # Set to true to disable the folder configuration.
-nofoldersconfig = true
+nofoldersconfig = false
 
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.

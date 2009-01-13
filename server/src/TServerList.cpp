@@ -367,21 +367,29 @@ void TServerList::msgSVI_FILEEND(CString& pPacket)
 	unsigned short pid = pPacket.readGUShort();
 	unsigned char type = pPacket.readGUChar();
 
+	// If we have folder config enabled, we need to add the file to the appropriate
+	// file system.
+	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
+	CFileSystem* fileSystem = 0;
+
 	TPlayer* p = server->getPlayer(pid);
 	if (p)
 	{
 		switch (type)
 		{
 			case 0:	// head
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
 				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(filename.length() + 100) << filename, true, true);
 				break;
 
 			case 1:	// body
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
 				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)filename.length() << filename, true, true);
 				break;
 
 			case 2:	// sword
 			{
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
 				CString prop = p->getProp(PLPROP_SWORDPOWER);
 				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
 				break;
@@ -389,12 +397,16 @@ void TServerList::msgSVI_FILEEND(CString& pPacket)
 
 			case 3:	// shield
 			{
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
 				CString prop = p->getProp(PLPROP_SHIELDPOWER);
 				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
 				break;
 			}
 		}
 	}
+
+	// Add the file to the filesystem.
+	if (fileSystem) fileSystem->addFile(CString() << "global/" << filename);
 }
 
 void TServerList::msgSVI_FILEDATA(CString& pPacket)
@@ -583,6 +595,11 @@ void TServerList::msgSVI_FILEEND2(CString& pPacket)
 	if (server->getFileSystem()->setModTime(fileName, modTime) == false)
 		server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
 
+	// If we have folder config enabled, we need to add the file to the appropriate
+	// file system.
+	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
+	CFileSystem* fileSystem = 0;
+
 	// Set the player props.
 	TPlayer* p = server->getPlayer(pid);
 	if (p)
@@ -590,15 +607,18 @@ void TServerList::msgSVI_FILEEND2(CString& pPacket)
 		switch (type)
 		{
 			case 0:	// head
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
 				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, true, true);
 				break;
 
 			case 1:	// body
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
 				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, true, true);
 				break;
 
 			case 2:	// sword
 			{
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
 				CString prop = p->getProp(PLPROP_SWORDPOWER);
 				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
 				break;
@@ -606,12 +626,16 @@ void TServerList::msgSVI_FILEEND2(CString& pPacket)
 
 			case 3:	// shield
 			{
+				if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
 				CString prop = p->getProp(PLPROP_SHIELDPOWER);
 				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
 				break;
 			}
 		}
 	}
+
+	// Add the file to the filesystem.
+	if (fileSystem) fileSystem->addFile(CString() << "global/" << fileName);
 }
 
 void TServerList::msgSVI_PING(CString& pPacket)

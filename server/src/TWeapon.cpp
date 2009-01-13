@@ -22,7 +22,6 @@ TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pSc
 
 TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 {
-	CFileSystem* fileSystem = server->getFileSystem();
 	CString fileName = server->getServerPath() << "weapons/" << pWeapon << ".txt";
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
