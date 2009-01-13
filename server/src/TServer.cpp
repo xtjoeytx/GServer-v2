@@ -5,6 +5,18 @@
 #include "CFileSystem.h"
 #include "TServer.h"
 
+static const char* const filesystemTypes[] =
+{
+	"all",
+	"file",
+	"level",
+	"head",
+	"body",
+	"sword",
+	"shield",
+	0
+};
+
 TServer::TServer(CString pName)
 : name(pName), lastTimer(time(0)), lastNWTimer(time(0))
 {
@@ -22,7 +34,8 @@ TServer::TServer(CString pName)
 	rclog.setFilename(CString() << serverpath << "logs/rclog.txt");
 
 	serverlist.setServer(this);
-	filesystem.setServer(this);
+	for (int i = 0; i < FS_COUNT; ++i)
+		filesystem[i].setServer(this);
 	filesystem_accounts.setServer(this);
 }
 
@@ -91,12 +104,12 @@ int TServer::init()
 	filesystem_accounts.addDir("accounts");
 	if (settings.getBool("nofoldersconfig", false) == true)
 	{
-		filesystem.addDir("world");
+		filesystem[0].addDir("world");
 		if (settings.getStr("sharefolder").length() > 0)
 		{
 			std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
 			for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
-				filesystem.addDir(i->trim());
+				filesystem[0].addDir(i->trim());
 		}
 	}
 	// Folders config.
@@ -114,14 +127,30 @@ int TServer::init()
 			config.trimI();
 			CFileSystem::fixPathSeparators(&config);
 
-			// Load the directory.
+			// Get the directory.
 			CString dirNoWild;
 			int pos = -1;
 			if ((pos = config.findl(CFileSystem::getPathSeparator())) != -1)
 				dirNoWild = config.remove(pos + 1);
 			CString dir = CString("world/") << dirNoWild;
 			CString wildcard = config.remove(0, dirNoWild.length());
-			filesystem.addDir(dir, wildcard);
+
+			// Find out which file system to add it to.
+			int fs = -1;
+			int j = 0;
+			while (filesystemTypes[j] != 0)
+			{
+				if (type.comparei(CString(filesystemTypes[j])))
+				{
+					fs = j;
+					break;
+				}
+				++j;
+			}
+
+			// Add it to the appropriate file system.
+			if (fs != -1) { filesystem[fs].addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), filesystemTypes[fs]); }
+			filesystem[0].addDir(dir, wildcard);
 		}
 	}
 

@@ -64,7 +64,12 @@ int TMap::getLevelY(const CString& level) const
 bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
+	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = pServer->getFileSystem(FS_FILE);
+
 	CString fileName = fileSystem->find(pFileName);
 	modTime = fileSystem->getModTime(pFileName);
 	mapName = pFileName;
@@ -116,7 +121,12 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
+	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = pServer->getFileSystem(FS_LEVEL);
+
 	CString fileName = fileSystem->find(pFileName);
 	modTime = fileSystem->getModTime(pFileName);
 	mapName = pFileName;

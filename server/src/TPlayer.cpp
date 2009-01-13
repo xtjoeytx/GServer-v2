@@ -470,15 +470,20 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setheadallowed", true) == false) return;
 
+		// Get the appropriate filesystem.
+		CFileSystem* filesystem = server->getFileSystem();
+		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+			filesystem = server->getFileSystem(FS_HEAD);
+
 		// Try to find the file.
-		CString file = server->getFileSystem()->findi(chatParse[1]);
+		CString file = filesystem->findi(chatParse[1]);
 		if (file.length() == 0)
 		{
 			int i = 0;
 			char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
-				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
 				if (file.length() != 0)
 				{
 					chatParse[1] << ext[i];
@@ -490,10 +495,7 @@ void TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-		{
-			// TODO: foldersconfig
 			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
-		}
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -501,15 +503,20 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setbodyallowed", true) == false) return;
 
+		// Get the appropriate filesystem.
+		CFileSystem* filesystem = server->getFileSystem();
+		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+			filesystem = server->getFileSystem(FS_BODY);
+
 		// Try to find the file.
-		CString file = server->getFileSystem()->findi(chatParse[1]);
+		CString file = filesystem->findi(chatParse[1]);
 		if (file.length() == 0)
 		{
 			int i = 0;
 			char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
-				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
 				if (file.length() != 0)
 				{
 					chatParse[1] << ext[i];
@@ -521,10 +528,7 @@ void TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-		{
-			// TODO: foldersconfig
 			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
-		}
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -532,15 +536,20 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setswordallowed", true) == false) return;
 
+		// Get the appropriate filesystem.
+		CFileSystem* filesystem = server->getFileSystem();
+		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+			filesystem = server->getFileSystem(FS_SWORD);
+
 		// Try to find the file.
-		CString file = server->getFileSystem()->findi(chatParse[1]);
+		CString file = filesystem->findi(chatParse[1]);
 		if (file.length() == 0)
 		{
 			int i = 0;
 			char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
-				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
 				if (file.length() != 0)
 				{
 					chatParse[1] << ext[i];
@@ -552,10 +561,7 @@ void TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-		{
-			// TODO: foldersconfig
 			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
-		}
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -563,15 +569,20 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setshieldallowed", true) == false) return;
 
+		// Get the appropriate filesystem.
+		CFileSystem* filesystem = server->getFileSystem();
+		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+			filesystem = server->getFileSystem(FS_SHIELD);
+
 		// Try to find the file.
-		CString file = server->getFileSystem()->findi(chatParse[1]);
+		CString file = filesystem->findi(chatParse[1]);
 		if (file.length() == 0)
 		{
 			int i = 0;
 			char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
-				file = server->getFileSystem()->findi(CString() << chatParse[1] << ext[i]);
+				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
 				if (file.length() != 0)
 				{
 					chatParse[1] << ext[i];
@@ -583,10 +594,7 @@ void TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-		{
-			// TODO: foldersconfig
 			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
-		}
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
