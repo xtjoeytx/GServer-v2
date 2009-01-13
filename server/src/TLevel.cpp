@@ -247,7 +247,11 @@ bool TLevel::loadLevel(const CString& pLevelName)
 bool TLevel::loadGraal(const CString& pLevelName)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
 	levelName = pLevelName;
@@ -443,7 +447,11 @@ bool TLevel::loadGraal(const CString& pLevelName)
 bool TLevel::loadNW(const CString& pLevelName)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
+
+	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
 	levelName = pLevelName;

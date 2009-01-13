@@ -21,6 +21,18 @@ enum // Socket Type
 	SOCK_SERVER = 1,
 };
 
+enum
+{
+	FS_ALL		= 0,
+	FS_FILE		= 1,
+	FS_LEVEL	= 2,
+	FS_HEAD		= 3,
+	FS_BODY		= 4,
+	FS_SWORD	= 5,
+	FS_SHIELD	= 6,
+};
+#define FS_COUNT	6
+
 //class TPlayer;
 //class TLevel;
 class TServer
@@ -44,7 +56,7 @@ class TServer
 		std::vector<TWeapon*>* getWeaponList()	{ return &weaponList; }
 		std::vector<CString>* getServerFlags()	{ return &serverFlags; }
 		TServerList* getServerList()			{ return &serverlist; }
-		CFileSystem* getFileSystem()			{ return &filesystem; }
+		CFileSystem* getFileSystem(int c = 0)	{ return &(filesystem[c]); }
 		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
 		CString getServerPath()					{ return serverpath; }
 		CLog& getServerLog()					{ return serverlog; }
@@ -107,7 +119,7 @@ class TServer
 		std::vector<boost::thread::id> terminatedThreads;
 		CSocket playerSock, serverSock;
 		TServerList serverlist;
-		CFileSystem filesystem;
+		CFileSystem filesystem[FS_COUNT];
 		CFileSystem filesystem_accounts;
 		CString name;
 		CString serverpath;
