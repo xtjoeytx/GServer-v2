@@ -497,7 +497,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
@@ -530,7 +530,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
@@ -563,7 +563,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
@@ -596,7 +596,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE2 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
 	{
