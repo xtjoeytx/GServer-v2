@@ -1,18 +1,13 @@
 # Folder Configuration
-body    bodies/*.png
 head    heads/*
+body    bodies/*.png
+sword   swords/*
+shield  shields/*
 file    ganis/*.gani
 file    hats/*.png
 file    images/*.png
 file    images/*.gif
 file    images/*.mng
-shield  shields/*
-sword   swords/*
-body    global/*.png
-file    global/*
-head    global/*
-shield  global/*
-sword   global/*
 file    sounds/*.mid
 file    sounds/*.mp3
 file    sounds/*.wav
@@ -28,3 +23,8 @@ file    *.gmap
 level   *.graal
 level   *.nw
 level   *.gmap
+file    global/*
+head    global/heads/*
+body    global/bodies/*.png
+sword   global/swords/*
+shield  global/shields/*

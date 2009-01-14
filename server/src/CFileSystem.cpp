@@ -94,7 +94,7 @@ void CFileSystem::addFile(const CString& file)
 
 	// Fix directory path separators.
 	CFileSystem::fixPathSeparators(&directory);
-	if (directory.find(server->getServerPath()))
+	if (directory.find(server->getServerPath()) != -1)
 		directory.removeI(0, server->getServerPath().length());
 
 	// Add to the map.

@@ -35,6 +35,7 @@ enum
 	SVO_SETLOCALIP		= 18,
 	SVO_GETFILE2		= 19,
 	SVO_UPDATEFILE		= 20,
+	SVO_GETFILE3		= 21,
 };
 
 enum
@@ -54,8 +55,20 @@ enum
 	SVI_FILESTART2		= 12,
 	SVI_FILEDATA2		= 13,
 	SVI_FILEEND2		= 14,
+	SVI_FILESTART3		= 15,
+	SVI_FILEDATA3		= 16,
+	SVI_FILEEND3		= 17,
 	SVI_PING			= 99,
 	SVI_RAWDATA			= 100,
+};
+
+enum
+{
+	SVF_HEAD			= 0,
+	SVF_BODY			= 1,
+	SVF_SWORD			= 2,
+	SVF_SHIELD			= 3,
+	SVF_FILE			= 4,
 };
 
 class TPlayer;
@@ -107,6 +120,9 @@ class TServerList
 		void msgSVI_FILEEND2(CString& pPacket);
 		void msgSVI_PING(CString& pPacket);
 		void msgSVI_RAWDATA(CString& pPacket);
+		void msgSVI_FILESTART3(CString& pPacket);
+		void msgSVI_FILEDATA3(CString& pPacket);
+		void msgSVI_FILEEND3(CString& pPacket);
 
 	protected:
 		// Packet Functions
