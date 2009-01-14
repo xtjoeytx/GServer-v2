@@ -29,10 +29,13 @@ void createSLFunctions()
 	TSLFunc[SVI_ERRMSG] = &TServerList::msgSVI_ERRMSG;
 	TSLFunc[SVI_VERIACC2] = &TServerList::msgSVI_VERIACC2;
 	TSLFunc[SVI_FILESTART2] = &TServerList::msgSVI_FILESTART2;
-	TSLFunc[SVI_FILEEND2] = &TServerList::msgSVI_FILEEND2;
 	TSLFunc[SVI_FILEDATA2] = &TServerList::msgSVI_FILEDATA2;
+	TSLFunc[SVI_FILEEND2] = &TServerList::msgSVI_FILEEND2;
 	TSLFunc[SVI_PING] = &TServerList::msgSVI_PING;
 	TSLFunc[SVI_RAWDATA] = &TServerList::msgSVI_RAWDATA;
+	TSLFunc[SVI_FILESTART3] = &TServerList::msgSVI_FILESTART3;
+	TSLFunc[SVI_FILEDATA3] = &TServerList::msgSVI_FILEDATA3;
+	TSLFunc[SVI_FILEEND3] = &TServerList::msgSVI_FILEEND3;
 }
 
 /*
@@ -355,68 +358,17 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	CString blank, filename = CString() << "global/" << pPacket.readChars(pPacket.readGUChar());
-	CFileSystem::fixPathSeparators(&filename);
-	blank.save(filename);
-	server->getFileSystem()->addFile(filename);
+	server->getServerLog().out("** SVI_FILESTART is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	CString filename = pPacket.readChars(pPacket.readGUChar());
-	unsigned short pid = pPacket.readGUShort();
-	unsigned char type = pPacket.readGUChar();
-
-	// If we have folder config enabled, we need to add the file to the appropriate
-	// file system.
-	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
-	CFileSystem* fileSystem = 0;
-
-	TPlayer* p = server->getPlayer(pid);
-	if (p)
-	{
-		switch (type)
-		{
-			case 0:	// head
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
-				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(filename.length() + 100) << filename, true, true);
-				break;
-
-			case 1:	// body
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
-				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)filename.length() << filename, true, true);
-				break;
-
-			case 2:	// sword
-			{
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
-				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
-				break;
-			}
-
-			case 3:	// shield
-			{
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
-				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)filename.length() << filename, true, true);
-				break;
-			}
-		}
-	}
-
-	// Add the file to the filesystem.
-	if (fileSystem) fileSystem->addFile(CString() << "global/" << filename);
+	server->getServerLog().out("** SVI_FILEEND is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
-	if (filename.length() == 0) return;
-	CString filedata;
-	filedata.load(filename);
-	filedata << pPacket.readString("").B64_Decode();
-	filedata.save(filename);
+	server->getServerLog().out("** SVI_FILEDATA is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
@@ -556,86 +508,17 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	CString blank, filename = CString() << "global/" << pPacket.readString("");
-	CFileSystem::fixPathSeparators(&filename);
-	blank.save(filename);
-	server->getFileSystem()->addFile(filename);
+	server->getServerLog().out("** SVI_FILESTART2 is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
-	if (filename.length() == 0) return;
-	CString filedata;
-	filedata.load(filename);
-	filedata << pPacket.readChars(pPacket.bytesLeft());	// Read the rest of the packet.
-	filedata.save(filename);
+	server->getServerLog().out("** SVI_FILEDATA2 is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	unsigned short pid = pPacket.readGUShort();
-	unsigned char type = pPacket.readGUChar();
-	unsigned char doCompress = pPacket.readGUChar();
-	time_t modTime = pPacket.readGUInt5();
-	unsigned int fileLength = pPacket.readGUInt();
-	CString shortName = pPacket.readString("");
-	CString fileName = server->getFileSystem()->find(shortName);
-
-	// Uncompress the file if compressed.
-	if (doCompress == 1)
-	{
-		CString fileData;
-		fileData.load(fileName);
-		fileData.zuncompressI(fileLength);
-		fileData.save(fileName);
-	}
-
-	// Set the file mod time.
-	if (server->getFileSystem()->setModTime(fileName, modTime) == false)
-		server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
-
-	// If we have folder config enabled, we need to add the file to the appropriate
-	// file system.
-	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
-	CFileSystem* fileSystem = 0;
-
-	// Set the player props.
-	TPlayer* p = server->getPlayer(pid);
-	if (p)
-	{
-		switch (type)
-		{
-			case 0:	// head
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
-				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, true, true);
-				break;
-
-			case 1:	// body
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
-				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, true, true);
-				break;
-
-			case 2:	// sword
-			{
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
-				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
-				break;
-			}
-
-			case 3:	// shield
-			{
-				if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
-				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
-				break;
-			}
-		}
-	}
-
-	// Add the file to the filesystem.
-	if (fileSystem) fileSystem->addFile(CString() << "global/" << fileName);
+	server->getServerLog().out("** SVI_FILEEND2 is deprecated.  It should not be used.\n");
 }
 
 void TServerList::msgSVI_PING(CString& pPacket)
@@ -647,4 +530,123 @@ void TServerList::msgSVI_RAWDATA(CString& pPacket)
 {
 	nextIsRaw = true;
 	rawPacketSize = pPacket.readGInt();
+}
+
+void TServerList::msgSVI_FILESTART3(CString& pPacket)
+{
+	unsigned char pTy = pPacket.readGUChar();
+	CString blank, filename = CString() << "world/global/";
+	switch (pTy)
+	{
+		case SVF_HEAD:
+			filename << "heads/";
+			break;
+		case SVF_BODY:
+			filename << "bodies/";
+			break;
+		case SVF_SWORD:
+			filename << "swords/";
+			break;
+		case SVF_SHIELD:
+			filename << "shields/";
+			break;
+	}
+	filename << pPacket.readChars(pPacket.readGUChar());
+	CFileSystem::fixPathSeparators(&filename);
+	blank.save(CString() << server->getServerPath() << filename);
+	server->getFileSystem()->addFile(filename);
+}
+
+void TServerList::msgSVI_FILEDATA3(CString& pPacket)
+{
+	unsigned char pTy = pPacket.readGUChar();
+	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	if (filename.length() == 0) return;
+	CString filedata;
+	filedata.load(filename);
+	filedata << pPacket.readChars(pPacket.bytesLeft());	// Read the rest of the packet.
+	filedata.save(filename);
+}
+
+void TServerList::msgSVI_FILEEND3(CString& pPacket)
+{
+	unsigned short pid = pPacket.readGUShort();
+	unsigned char type = pPacket.readGUChar();
+	unsigned char doCompress = pPacket.readGUChar();
+	time_t modTime = pPacket.readGUInt5();
+	unsigned int fileLength = pPacket.readGUInt5();
+	CString shortName = pPacket.readString("");
+
+	// If we have folder config enabled, we need to add the file to the appropriate
+	// file system.
+	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
+	CFileSystem* fileSystem = 0;
+	CString typeString;
+	switch (type)
+	{
+		case SVF_HEAD:
+			typeString = "heads/";
+			if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
+			break;
+		case SVF_BODY:
+			typeString = "bodies/";
+			if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
+			break;
+		case SVF_SWORD:
+			typeString = "swords/";
+			if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
+			break;
+		case SVF_SHIELD:
+			typeString = "shields/";
+			if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
+			break;
+	}
+	CString fileName = server->getFileSystem()->find(shortName);
+
+	// Add the file to the filesystem.
+	if (fileSystem)
+		fileSystem->addFile(CString() << "world/global/" << typeString << shortName);
+
+	// Uncompress the file if compressed.
+	if (doCompress == 1)
+	{
+		CString fileData;
+		fileData.load(fileName);
+		fileData.zuncompressI(fileLength);
+		fileData.save(fileName);
+	}
+
+	// Set the file mod time.
+	if (server->getFileSystem()->setModTime(shortName, modTime) == false)
+		server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
+
+	// Set the player props.
+	TPlayer* p = server->getPlayer(pid);
+	if (p)
+	{
+		switch (type)
+		{
+			case SVF_HEAD:
+				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, true, true);
+				break;
+
+			case SVF_BODY:
+				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, true, true);
+				break;
+
+			case SVF_SWORD:
+			{
+				CString prop = p->getProp(PLPROP_SWORDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				break;
+			}
+
+			case SVF_SHIELD:
+			{
+				CString prop = p->getProp(PLPROP_SHIELDPOWER);
+				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				break;
+			}
+		}
+	}
 }
