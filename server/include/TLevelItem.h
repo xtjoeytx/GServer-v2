@@ -22,10 +22,10 @@ class TLevelItem
 		static CString getItemPlayerProp(const CString& pItemName, TPlayer* player);
 
 		// Get functions.
-		float getX() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return x; }
-		float getY() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return y; }
-		char getItem() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return item; }
-		time_t getModTime() const	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return modTime; }
+		float getX() const			{ return x; }
+		float getY() const			{ return y; }
+		char getItem() const		{ return item; }
+		time_t getModTime() const	{ return modTime; }
 
 		CTimeout timeout;
 
@@ -34,7 +34,6 @@ class TLevelItem
 		float y;
 		char item;
 		time_t modTime;
-		mutable boost::recursive_mutex m_preventChange;
 };
 
 

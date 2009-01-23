@@ -34,7 +34,6 @@ respawn(true)
 
 void TLevelBaddy::reset()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	mode = baddyStartMode[type];
 	x = startX;
 	y = startY;
@@ -46,7 +45,6 @@ void TLevelBaddy::reset()
 
 CString TLevelBaddy::getProp(const int propId) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	switch (propId)
 	{
 		case BDPROP_ID:
@@ -87,7 +85,6 @@ CString TLevelBaddy::getProp(const int propId) const
 
 CString TLevelBaddy::getProps() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (int i = 1; i < baddypropcount; i++)
 		retVal >> (char)i << getProp(i);
@@ -96,7 +93,6 @@ CString TLevelBaddy::getProps() const
 
 void TLevelBaddy::setProps(CString &pProps)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	int len = 0;
 	while (pProps.bytesLeft())
 	{

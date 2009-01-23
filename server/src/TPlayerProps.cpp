@@ -15,7 +15,6 @@ extern int __attrPackets[30];
 */
 CString TPlayer::getProp(int pPropId)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 	switch (pPropId)
 	{
@@ -219,7 +218,6 @@ CString TPlayer::getProp(int pPropId)
 
 void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	int len = 0;
@@ -486,7 +484,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				{
 					bool isOwner = true;
 					{
-						boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 						std::vector<TPlayer*>* playerList = server->getPlayerList();
 						for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 						{

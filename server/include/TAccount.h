@@ -121,11 +121,11 @@ class TAccount
 		CString getNickname() const		{ return nickName; }
 
 		// set functions
-		void setLastSparTime(time_t newTime)		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); lastSparTime = newTime; }
-		void setApCounter(int newTime)				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); apCounter = newTime; }
-		void setKills(int newKills)					{ boost::recursive_mutex::scoped_lock lock(m_preventChange); kills = newKills; }
-		void setRating(int newRate, int newDeviate)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); rating = (float)newRate; deviation = (float)newDeviate; }
-		void setAccountName(CString account)		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); accountName = account; }
+		void setLastSparTime(time_t newTime)		{ lastSparTime = newTime; }
+		void setApCounter(int newTime)				{ apCounter = newTime; }
+		void setKills(int newKills)					{ kills = newKills; }
+		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
+		void setAccountName(CString account)		{ accountName = account; }
 
 	protected:
 		TServer* server;
@@ -147,9 +147,6 @@ class TAccount
 		time_t lastSparTime;
 		unsigned char statusMsg;
 		std::vector<CString> chestList, flagList, folderList, weaponList;
-
-		// Mutexes
-		boost::recursive_mutex m_preventChange;
 };
 
 #endif // TACCOUNT_H

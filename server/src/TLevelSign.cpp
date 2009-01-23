@@ -55,7 +55,6 @@ TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool en
 
 CString TLevelSign::getSignStr() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	std::vector<CString> signText = text.tokenize("\n");
 	CString outText;
 

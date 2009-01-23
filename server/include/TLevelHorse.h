@@ -14,11 +14,11 @@ class TLevelHorse
 		CString getHorseStr() const;
 
 		// get private variables
-		CString getImage() const	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return image; }
-		float getX() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return x; }
-		float getY() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return y; }
-		char getDir() const			{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return dir; }
-		char getBushes() const		{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return bushes; }
+		CString getImage() const	{ return image; }
+		float getX() const			{ return x; }
+		float getY() const			{ return y; }
+		char getDir() const			{ return dir; }
+		char getBushes() const		{ return bushes; }
 
 		CTimeout timeout;
 
@@ -26,7 +26,6 @@ class TLevelHorse
 		CString image;
 		float x, y;
 		char dir, bushes;
-		mutable boost::recursive_mutex m_preventChange;
 };
 
 
