@@ -269,12 +269,13 @@ void TServer::operator()()
 		{
 			running = false;
 		}
-
+/*
 		boost::xtime xt;
 		boost::xtime_get(&xt, boost::TIME_UTC);
 		xt.nsec += 5000000;		// 5 milliseconds
-		boost::this_thread::sleep(xt); 
-		//boost::this_thread::yield();
+		boost::this_thread::sleep(xt);
+*/
+		boost::this_thread::yield();
 	}
 }
 
@@ -599,6 +600,11 @@ bool TServer::deletePlayer(TPlayer* player)
 			break;
 		}
 	}
+
+	// Remove the player from the socket manager.
+	sockManager.unregisterSocket((CSocketStub*)player);
+
+	// Clean up.
 	delete player;
 
 	return true;

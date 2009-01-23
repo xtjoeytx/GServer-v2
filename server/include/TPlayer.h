@@ -192,6 +192,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool onRecv();
 		bool onSend();
 		SOCKET getSocketHandle()	{ return playerSock->getHandle(); }
+		bool canSend();
 
 		// Constructor - Deconstructor
 		TPlayer(TServer* pServer, CSocket* pSocket, int pId);

@@ -20,6 +20,8 @@ class CFileQueue
 			out_codec.reset(key);
 		}
 
+		bool canSend();
+
 		void sendCompress();
 
 	private:
