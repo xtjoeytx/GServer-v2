@@ -1,5 +1,4 @@
 #include "ICommon.h"
-#include <boost/thread.hpp>
 #include "CSocket.h"
 #include "CSettings.h"
 #include "CFileSystem.h"
@@ -41,35 +40,30 @@ TServer::TServer(CString pName)
 
 TServer::~TServer()
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
 		delete *i;
 		i = playerList.erase(i);
 	}
 
-	boost::recursive_mutex::scoped_lock lock_npcList(m_npcList);
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		delete *i;
 		i = npcList.erase(i);
 	}
 
-	boost::recursive_mutex::scoped_lock lock_levelList(m_levelList);
 	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
 	{
 		delete *i;
 		i = levelList.erase(i);
 	}
 
-	boost::recursive_mutex::scoped_lock lock_mapList(m_mapList);
 	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
 	{
 		delete *i;
 		i = mapList.erase(i);
 	}
 
-	boost::recursive_mutex::scoped_lock lock_weaponList(m_weaponList);
 	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
 		(*i)->saveWeapon(this);
@@ -226,12 +220,11 @@ int TServer::init()
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
 	playerSock.setProtocol(SOCKET_PROTOCOL_TCP);
-	//playerSock.setOptions(SOCKET_OPTION_NONBLOCKING);
 	playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
 	serverlog.out("     Initializing player listen socket.\n");
-	if (playerSock.init("", settings.getStr("serverport")))
+	if (playerSock.init("", settings.getStr("serverport").text()))
 	{
 		serverlog.out("** [Error] Could not initialize listening socket...\n");
 		return ERR_LISTEN;
@@ -250,6 +243,10 @@ int TServer::init()
 		return ERR_LISTEN;
 	}
 	serverlist.connectServer();
+
+	// Register ourself with the socket manager.
+	sockManager.registerSocket((CSocketStub*)this);
+	sockManager.registerSocket((CSocketStub*)&serverlist);
 
 	return 0;
 }
@@ -270,14 +267,14 @@ void TServer::operator()()
 		}
 		catch (boost::thread_interrupted e)
 		{
-			for (std::map<boost::thread::id, boost::thread*>::iterator i = playerThreads.begin(); i != playerThreads.end(); ++i)
-			{
-				i->second->interrupt();
-				i->second->join();
-				i->second->detach();
-			}
 			running = false;
 		}
+
+		boost::xtime xt;
+		boost::xtime_get(&xt, boost::TIME_UTC);
+		xt.nsec += 5000000;		// 5 milliseconds
+		boost::this_thread::sleep(xt); 
+		//boost::this_thread::yield();
 	}
 }
 
@@ -287,24 +284,8 @@ bool TServer::doMain()
 	if (!serverlist.main())
 		serverlist.connectServer();
 
-	// Accept new player connections.
-	// Will block for 1 second.
-	acceptSock(playerSock);
-
-	// Check for terminated threads.
-	if (terminatedThreads.size() != 0)
-	{
-		for (std::vector<boost::thread::id>::iterator i = terminatedThreads.begin(); i != terminatedThreads.end(); )
-		{
-			std::map<boost::thread::id, boost::thread*>::iterator j = playerThreads.find(*i);
-			if (j != playerThreads.end())
-			{
-				delete j->second;
-				playerThreads.erase(j);
-			}
-			i = terminatedThreads.erase(i);
-		}
-	}
+	// Update our socket manager.
+	sockManager.update(1, 0);
 
 	// Every second, do some events.
 	if (time(0) != lastTimer) doTimedEvents();
@@ -316,34 +297,31 @@ bool TServer::doTimedEvents()
 {
 	lastTimer = time(0);
 
+	// Do serverlist events.
+	serverlist.doTimedEvents();
+
 	// Do player events.
 	{
-		boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 		for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 		{
 			TPlayer *player = (TPlayer*)*i;
 			if (player == 0)
 				continue;
 
-			lock_playerList.unlock();
 			if (!player->doTimedEvents())
 				player->disconnect();
-			lock_playerList.lock();
 		}
 	}
 
 	// Do level events.
 	{
-		boost::recursive_mutex::scoped_lock lock_levelList(m_levelList);
 		for (std::vector<TLevel *>::iterator i = levelList.begin(); i != levelList.end(); ++i)
 		{
 			TLevel* level = *i;
 			if (level == 0)
 				continue;
 
-			lock_levelList.unlock();
 			level->doTimedEvents();
-			lock_levelList.lock();
 		}
 	}
 
@@ -357,18 +335,14 @@ bool TServer::doTimedEvents()
 	return true;
 }
 
-void TServer::acceptSock(CSocket& pSocket)
+bool TServer::onRecv()
 {
 	// Create socket.
-	CSocket *newSock = pSocket.accept(1, 0/*50000*/);	// 1 second
+	CSocket *newSock = playerSock.accept();	// 1 second
 	if (newSock == 0)
-		return;
-
-	// Make the new socket blocking.
-	newSock->setOptions(0);
+		return true;
 
 	// Get a free id to be assigned to the new player.
-	boost::recursive_mutex::scoped_lock lock_playerIds(m_playerIds);
 	unsigned int newId = 0;
 	for (unsigned int i = 2; i < playerIds.size(); ++i)
 	{
@@ -389,29 +363,24 @@ void TServer::acceptSock(CSocket& pSocket)
 	playerIds[newId] = newPlayer;
 
 	// Add them to the player list.
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	playerList.push_back(newPlayer);
 
-	// Keep a record of the player's thread.
-	boost::thread* pthread = new boost::thread(boost::ref(*newPlayer));
-	{
-		boost::recursive_mutex::scoped_lock lock_playerThreads(m_playerThreads);
-		playerThreads[pthread->get_id()] = pthread;
-	}
+	// Add them to the socket manager.
+	sockManager.registerSocket((CSocketStub*)newPlayer);
+
+	return true;
 }
 
 /////////////////////////////////////////////////////
 
 TPlayer* TServer::getPlayer(const unsigned short id) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	if (id >= (unsigned short)playerIds.size()) return 0;
 	return playerIds[id];
 }
 
 TPlayer* TServer::getPlayer(const CString& account) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
@@ -427,7 +396,6 @@ TPlayer* TServer::getPlayer(const CString& account) const
 
 TNPC* TServer::getNPC(const unsigned int id) const
 {
-	boost::recursive_mutex::scoped_lock lock_npcIds(m_npcIds);
 	if (id >= npcIds.size()) return 0;
 	return npcIds[id];
 }
@@ -439,7 +407,6 @@ TLevel* TServer::getLevel(const CString& pLevel)
 
 TMap* TServer::getMap(const CString& name) const
 {
-	boost::recursive_mutex::scoped_lock lock_mapList(m_mapList);
 	for (std::vector<TMap*>::const_iterator i = mapList.begin(); i != mapList.end(); ++i)
 	{
 		TMap* map = *i;
@@ -453,7 +420,6 @@ TMap* TServer::getMap(const TLevel* pLevel) const
 {
 	if (pLevel == 0) return 0;
 
-	boost::recursive_mutex::scoped_lock lock_mapList(m_mapList);
 	for (std::vector<TMap*>::const_iterator i = mapList.begin(); i != mapList.end(); ++i)
 	{
 		TMap* pMap = *i;
@@ -465,7 +431,6 @@ TMap* TServer::getMap(const TLevel* pLevel) const
 
 TWeapon* TServer::getWeapon(const CString& name) const
 {
-	boost::recursive_mutex::scoped_lock lock_weaponList(m_weaponList);
 	for (std::vector<TWeapon*>::const_iterator i = weaponList.begin(); i != weaponList.end(); ++i)
 	{
 		TWeapon* weapon = *i;
@@ -477,7 +442,6 @@ TWeapon* TServer::getWeapon(const CString& name) const
 
 CString TServer::getFlag(const CString& pName) const
 {
-	boost::recursive_mutex::scoped_lock lock_serverFlags(m_serverFlags);
 	for (std::vector<CString>::const_iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 	{
 		if (*i == pName)
@@ -488,18 +452,12 @@ CString TServer::getFlag(const CString& pName) const
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// New Npc
 	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, pLevel, pLevelNPC, settings.getBool("trimnpccode", false));
-	{
-		boost::recursive_mutex::scoped_lock lock_npcList(m_npcList);
-		npcList.push_back(newNPC);
-	}
+	npcList.push_back(newNPC);
 
 	// Assign NPC Id
 	bool assignedId = false;
-	boost::recursive_mutex::scoped_lock lock_npcIds(m_npcIds);
 	for (unsigned int i = 1; i < npcIds.size(); ++i)
 	{
 		if (npcIds[i] == 0)
@@ -516,7 +474,6 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		newNPC->setId(npcIds.size());
 		npcIds.push_back(newNPC);
 	}
-	lock_npcIds.unlock();
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
@@ -544,26 +501,19 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// If pLevel == 0, then it is an npc-server NPC.
 	// Not currently supported so just exit.
 	if (pLevel == 0) return false;
 
 	// Remove the NPC from all the lists.
 	pLevel->removeNPC(npc);
+	npcIds[npc->getId()] = 0;
+
+	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
-		boost::recursive_mutex::scoped_lock lock_npcIds(m_npcIds);
-		npcIds[npc->getId()] = 0;
-	}
-	{
-		boost::recursive_mutex::scoped_lock lock_npcList(m_npcList);
-		for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
-		{
-			if ((*i) == npc)
-				i = npcList.erase(i);
-			else ++i;
-		}
+		if ((*i) == npc)
+			i = npcList.erase(i);
+		else ++i;
 	}
 
 	// Tell the client to delete the NPC.
@@ -580,14 +530,11 @@ bool TServer::addFlag(const CString& pFlag)
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
 
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	CString flag(pFlag);
 	CString flagName = flag.readString("=").trim();
 	CString flagValue = flag.readString("").trim();
 	CString flagNew = CString() << flagName << "=" << flagValue;
 
-	boost::recursive_mutex::scoped_lock lock_serverFlags(m_serverFlags);
 	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 	{
 		CString tflagName = i->readString("=").trim();
@@ -620,13 +567,10 @@ bool TServer::deleteFlag(const CString& pFlag)
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
 
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	CString flag(pFlag);
 	CString flagName = flag.readString("=").trim();
 
 	// Loop for flags now.
-	boost::recursive_mutex::scoped_lock lock_serverFlags(m_serverFlags);
 	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); )
 	{
 		CString tflagName = i->readString("=").trim();
@@ -642,20 +586,11 @@ bool TServer::deleteFlag(const CString& pFlag)
 
 bool TServer::deletePlayer(TPlayer* player)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
-	// Add thread to the list of threads to terminate.
-	terminatedThreads.push_back(boost::this_thread::get_id());
-
 	// Remove the player from the serverlist.
 	serverlist.remPlayer(player->getProp(PLPROP_ACCOUNTNAME).removeI(0,1), player->getType());
 
 	// Get rid of the player now.
-	{
-		boost::recursive_mutex::scoped_lock lock_playerIds(m_playerIds);
-		playerIds[player->getId()] = 0;
-	}
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
+	playerIds[player->getId()] = 0;
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (*i == player)
@@ -664,8 +599,6 @@ bool TServer::deletePlayer(TPlayer* player)
 			break;
 		}
 	}
-	lock_playerList.unlock();
-
 	delete player;
 
 	return true;
@@ -678,7 +611,6 @@ unsigned int TServer::getNWTime() const
 
 bool TServer::isIpBanned(const CString& ip)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<CString>::const_iterator i = ipBans.begin(); i != ipBans.end(); ++i)
 	{
 		if (ip.match(*i)) return true;
@@ -691,14 +623,12 @@ bool TServer::isIpBanned(const CString& ip)
 */
 void TServer::sendPacketToAll(CString pPacket) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 		(*i)->sendPacket(pPacket);
 }
 
 void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
@@ -708,7 +638,6 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 
 void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
@@ -719,7 +648,6 @@ void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel) const
 
 void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel, TPlayer *pPlayer) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer || (*i)->getType() != CLIENTTYPE_CLIENT) continue;
@@ -730,7 +658,6 @@ void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel, TPlayer *pPlaye
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
@@ -760,7 +687,6 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) con
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	if (pPlayer->getLevel() == 0) return;
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
@@ -800,7 +726,6 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 
 void TServer::sendPacketTo(int who, CString pPacket) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i)->getType() == who)
@@ -810,7 +735,6 @@ void TServer::sendPacketTo(int who, CString pPacket) const
 
 void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 {
-	boost::recursive_mutex::scoped_lock lock_playerList(m_playerList);
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;

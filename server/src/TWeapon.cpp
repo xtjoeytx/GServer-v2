@@ -58,7 +58,6 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 
 bool TWeapon::saveWeapon(TServer* server)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (name.length() == 0) return false;
 	CString filename = server->getServerPath() << "weapons/" << name << ".txt";
 	CString output;
@@ -89,8 +88,6 @@ bool TWeapon::saveWeapon(TServer* server)
 
 CString TWeapon::getWeaponPacket() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	if (defaultWeapon)
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)defaultWeaponId;
 
@@ -106,8 +103,6 @@ CString TWeapon::getWeaponPacket() const
 
 CString TWeapon::getName() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	if (defaultWeapon)
 		return TLevelItem::getItemName(defaultWeaponId);
 	return name;

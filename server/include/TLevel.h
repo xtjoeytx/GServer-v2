@@ -178,8 +178,6 @@ class TLevel
 		std::vector<TLevelSign *> levelSigns;
 		std::vector<TNPC *> levelNPCs;
 		std::vector<TPlayer *> levelPlayerList;
-
-		boost::recursive_mutex m_preventChange;
 };
 
 #endif // TLEVEL_H
