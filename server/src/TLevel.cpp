@@ -37,7 +37,6 @@ TLevel::~TLevel()
 */
 CString TLevel::getBaddyPacket()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
 	{
@@ -51,7 +50,6 @@ CString TLevel::getBaddyPacket()
 
 CString TLevel::getBoardPacket()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
 	retVal.write((char *)levelTiles, sizeof(levelTiles));
@@ -61,7 +59,6 @@ CString TLevel::getBoardPacket()
 
 CString TLevel::getBoardChangesPacket(time_t time)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	retVal >> (char)PLO_LEVELBOARD;
 	for (std::vector<TLevelBoardChange*>::const_iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
@@ -80,7 +77,6 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 
 	CString retVal;
 
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TLevelChest *>::iterator i = levelChests.begin(); i != levelChests.end(); ++i)
 	{
 		TLevelChest *chest = *i;
@@ -96,7 +92,6 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 
 CString TLevel::getHorsePacket()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
 	{
@@ -109,7 +104,6 @@ CString TLevel::getHorsePacket()
 
 CString TLevel::getLinksPacket()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (std::vector<TLevelLink *>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i)
 	{
@@ -122,7 +116,6 @@ CString TLevel::getLinksPacket()
 
 CString TLevel::getNpcsPacket(time_t time)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (std::vector<TNPC *>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 	{
@@ -134,7 +127,6 @@ CString TLevel::getNpcsPacket(time_t time)
 
 CString TLevel::getSignsPacket()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CString retVal;
 	for (std::vector<TLevelSign*>::const_iterator i = levelSigns.begin(); i != levelSigns.end(); ++i)
 	{
@@ -149,13 +141,9 @@ CString TLevel::getSignsPacket()
 */
 bool TLevel::reload()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Delete NPCs.
 	{
 		// Get some pointers.
-		boost::recursive_mutex::scoped_lock lock2(server->m_npcList);
-		boost::recursive_mutex::scoped_lock lock3(server->m_npcIds);
 		std::vector<TNPC*>* npcList = server->getNPCList();
 		std::vector<TNPC*>* npcIds = server->getNPCIdList();
 
@@ -246,8 +234,6 @@ bool TLevel::loadLevel(const CString& pLevelName)
 
 bool TLevel::loadGraal(const CString& pLevelName)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
 	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -446,8 +432,6 @@ bool TLevel::loadGraal(const CString& pLevelName)
 
 bool TLevel::loadNW(const CString& pLevelName)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
 	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -608,7 +592,6 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	std::vector<TLevel*>* levelList = server->getLevelList();
 
 	// Find Appropriate Level by Name
-	boost::recursive_mutex::scoped_lock lock_levelList(server->m_levelList);
 	for (std::vector<TLevel *>::iterator i = levelList->begin(); i != levelList->end(); )
 	{
 		if ((*i) == 0)
@@ -638,7 +621,6 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 
 bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, TPlayer* player)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if( pX < 0 || pY < 0 || pX > 63 || pY > 63 ||
 		pWidth < 1 || pHeight < 1 ||
 		pX + pWidth > 64 || pY + pHeight > 64 )
@@ -741,14 +723,12 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 bool TLevel::addItem(float pX, float pY, char pItem)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	levelItems.push_back(new TLevelItem(pX, pY, pItem));
 	return true;
 }
 
 char TLevel::removeItem(float pX, float pY)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
 	{
 		TLevelItem* item = *i;
@@ -764,14 +744,12 @@ char TLevel::removeItem(float pX, float pY)
 
 bool TLevel::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	levelHorses.push_back(new TLevelHorse(pImage, pX, pY, pDir, pBushes));
 	return true;
 }
 
 void TLevel::removeHorse(float pX, float pY)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
 	{
 		TLevelHorse* horse = *i;
@@ -785,8 +763,6 @@ void TLevel::removeHorse(float pX, float pY)
 
 TLevelBaddy* TLevel::addBaddy(float pX, float pY, char pType)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Limit of 50 baddies per level.
 	if (levelBaddies.size() > 50) return 0;
 
@@ -817,8 +793,6 @@ void TLevel::removeBaddy(char pId)
 	// Don't allow us to remove id 0 or any id over 50.
 	if (pId < 1 || pId > 50) return;
 
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	TLevelBaddy* baddy = levelBaddyIds[pId];
 	delete baddy;
 	levelBaddyIds[pId] = 0;
@@ -826,21 +800,18 @@ void TLevel::removeBaddy(char pId)
 
 TLevelBaddy* TLevel::getBaddy(char id)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if ((unsigned char)id >= levelBaddyIds.size()) return 0;
 	return levelBaddyIds[id];
 }
 
 int TLevel::addPlayer(TPlayer* player)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	levelPlayerList.push_back(player);
 	return levelPlayerList.size() - 1;
 }
 
 void TLevel::removePlayer(TPlayer* player)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TPlayer *>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); )
 	{
 		TPlayer* search = *i;
@@ -852,7 +823,6 @@ void TLevel::removePlayer(TPlayer* player)
 
 TPlayer* TLevel::getPlayer(unsigned int id)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (id >= levelPlayerList.size()) return 0;
 	return levelPlayerList[id];
 }
@@ -864,7 +834,6 @@ TMap* TLevel::getMap() const
 
 bool TLevel::addNPC(TNPC* npc)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 	{
 		TNPC* search = *i;
@@ -876,7 +845,6 @@ bool TLevel::addNPC(TNPC* npc)
 
 void TLevel::removeNPC(TNPC* npc)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); )
 	{
 		TNPC* search = *i;
@@ -888,8 +856,6 @@ void TLevel::removeNPC(TNPC* npc)
 
 bool TLevel::doTimedEvents()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Check if we should revert any board changes.
 	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
 	{

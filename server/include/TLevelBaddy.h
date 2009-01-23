@@ -45,14 +45,14 @@ class TLevelBaddy
 		void reset();
 
 		// get functions
-		char getId() const						{ boost::recursive_mutex::scoped_lock lock(m_preventChange); return id; }
+		char getId() const						{ return id; }
 		CString getProp(const int propId) const;
 		CString getProps() const;
 
 		// set functions
 		void setProps(CString& pProps);
-		void setRespawn(const bool pRespawn)	{ boost::recursive_mutex::scoped_lock lock(m_preventChange); respawn = pRespawn; }
-		void setId(const char pId)				{ boost::recursive_mutex::scoped_lock lock(m_preventChange); id = pId; }
+		void setRespawn(const bool pRespawn)	{ respawn = pRespawn; }
+		void setId(const char pId)				{ id = pId; }
 
 		CTimeout timeout;
 
@@ -65,8 +65,6 @@ class TLevelBaddy
 		CString image;
 		std::vector<CString> verses;
 		bool respawn;
-
-		mutable boost::recursive_mutex m_preventChange;
 };
 
 #endif // TLEVELBADDY_H

@@ -5,7 +5,6 @@ const char *__itemList[] = {"greenrupee", "bluerupee", "redrupee", "bombs", "dar
 
 CString TLevelItem::getItemStr() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return CString() >> (char)PLO_ITEMADD >> (char)x >> (char)y >> (char)item;
 }
 

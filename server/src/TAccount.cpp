@@ -35,8 +35,6 @@ TAccount::~TAccount()
 */
 bool TAccount::loadAccount(const CString& pAccount)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Find the account in the file system.
 	bool loadedFromDefault = false;
 	CFileSystem* accfs = server->getAccountsFileSystem();
@@ -167,8 +165,6 @@ bool TAccount::loadAccount(const CString& pAccount)
 
 bool TAccount::saveAccount()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Don't save 'Load Only' or RC Accounts
 	if (isLoadOnly)
 		return false;
@@ -255,8 +251,6 @@ bool TAccount::saveAccount()
 */
 bool TAccount::hasChest(const TLevelChest *pChest, const CString& pLevel)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Definitions
 	CString chestStr = pChest->getChestStr((pLevel.length() > 1 ? pLevel : levelName));
 
@@ -272,8 +266,6 @@ bool TAccount::hasChest(const TLevelChest *pChest, const CString& pLevel)
 
 bool TAccount::hasWeapon(const CString& pWeapon)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Iterate Weapon List
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
 	{

@@ -5,38 +5,8 @@
 #include "CSocket.h"
 #include "TPlayer.h"
 
-void CFileQueue::operator()()
-{
-	while (sock != 0)
-	{
-		// Check for data to be sent.
-		bool canSend = true;
-		{
-			boost::mutex::scoped_lock lock_preventChange(m_preventChange);
-			if (normalBuffer.empty() && fileBuffer.empty()) canSend = false;
-		}
-
-		// If we have nothing to send, just yield this thread.
-		if (!canSend)
-		{
-			boost::xtime xt;
-			boost::xtime_get(&xt, boost::TIME_UTC);
-			xt.nsec += 5000000;		// 5 milliseconds
-			boost::thread::sleep(xt); 
-			//boost::this_thread::yield();
-		}
-		else
-		{
-			boost::mutex::scoped_lock lock_preventChange(m_preventChange);
-			sendCompress();
-		}
-	}
-}
-
 void CFileQueue::addPacket(CString pPacket)
 {
-	boost::mutex::scoped_lock lock_preventChange(m_preventChange);
-
 	while (pPacket.bytesLeft() != 0)
 	{
 		unsigned char pId = pPacket.readGUChar();
@@ -118,6 +88,10 @@ void CFileQueue::sendCompress()
 	// Reset this if we have no files to send.
 	if (fileBuffer.empty()) bytesSentWithoutFile = 0;
 
+	// If we have no data, just return.
+	if (pSend.length() == 0)
+		return;
+
 	// compress buffer
 	if (out_codec.getGen() >= ENCRYPT_GEN_4)
 	{
@@ -137,12 +111,18 @@ void CFileQueue::sendCompress()
 		// Encrypt the packet and add it to the out buffer.
 		out_codec.limitFromType(compressionType);
 		out_codec.apply(pSend);
-		sock->sendData(CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend);
+		CString data = CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend;
+		oBuffer << data;
+		unsigned int dsize = oBuffer.length();
+		oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
 	}
 	else
 	{
 		// Compress the packet and add it to the out buffer.
 		pSend.zcompressI();
-		sock->sendData(CString() << (short)pSend.length() << pSend);
+		CString data = CString() << (short)pSend.length() << pSend;
+		oBuffer << data;
+		unsigned int dsize = oBuffer.length();
+		oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
 	}
 }

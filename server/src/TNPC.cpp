@@ -78,7 +78,6 @@ TNPC::~TNPC()
 
 CString TNPC::getProp(unsigned char pId) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	switch(pId)
 	{
 		case NPCPROP_IMAGE:
@@ -231,7 +230,6 @@ CString TNPC::getProps(time_t newTime) const
 
 void TNPC::setProps(CString& pProps)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
 	{

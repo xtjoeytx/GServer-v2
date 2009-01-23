@@ -17,8 +17,6 @@ extern bool __getLoginRC[propscount];
 */
 bool TPlayer::sendLogin()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Load Player-Account
 	// TODO: We actually need to check if it fails because accounts can be banned.
 	loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
@@ -34,7 +32,6 @@ bool TPlayer::sendLogin()
 
 	// Check if the account is already in use.
 	{
-		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -65,7 +62,6 @@ bool TPlayer::sendLogin()
 
 	// Exchange props with everybody on the server.
 	{
-		boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -107,7 +103,6 @@ bool TPlayer::sendLogin()
 
 bool TPlayer::sendLoginClient()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 
 	// Send the player his login props.
@@ -118,7 +113,6 @@ bool TPlayer::sendLoginClient()
 	// TODO: Client version specific instead of encryption era specific?
 	if (in_codec.getGen() == ENCRYPT_GEN_4)
 	{
-		boost::recursive_mutex::scoped_lock lock_mapList(server->m_mapList);
 		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
 		{
 			TMap* map = *i;
@@ -211,8 +205,6 @@ bool TPlayer::sendLoginClient()
 
 bool TPlayer::sendLoginRC()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
 		nickName = accountName;

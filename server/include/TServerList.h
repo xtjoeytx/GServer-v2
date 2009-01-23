@@ -24,7 +24,7 @@ enum
 	SVO_SETPLYR			= 7,
 	SVO_VERIACC			= 8,	// deprecated
 	SVO_VERIGUILD		= 9,
-	SVO_GETFILE			= 10,
+	SVO_GETFILE			= 10,	// deprecated
 	SVO_NICKNAME		= 11,
 	SVO_GETPROF			= 12,
 	SVO_SETPROF			= 13,
@@ -33,18 +33,18 @@ enum
 	SVO_PING			= 16,
 	SVO_VERIACC2		= 17,
 	SVO_SETLOCALIP		= 18,
-	SVO_GETFILE2		= 19,
+	SVO_GETFILE2		= 19,	// deprecated
 	SVO_UPDATEFILE		= 20,
 	SVO_GETFILE3		= 21,
 };
 
 enum
 {
-	SVI_VERIACC			= 0,
+	SVI_VERIACC			= 0,	// deprecated
 	SVI_VERIGUILD		= 1,
-	SVI_FILESTART		= 2,
-	SVI_FILEEND			= 3,
-	SVI_FILEDATA		= 4,
+	SVI_FILESTART		= 2,	// deprecated
+	SVI_FILEEND			= 3,	// deprecated
+	SVI_FILEDATA		= 4,	// deprecated
 	SVI_VERSIONOLD		= 5,
 	SVI_VERSIONCURRENT	= 6,
 	SVI_PROFILE			= 7,
@@ -52,9 +52,9 @@ enum
 	SVI_NULL4			= 9,
 	SVI_NULL5			= 10,
 	SVI_VERIACC2		= 11,
-	SVI_FILESTART2		= 12,
-	SVI_FILEDATA2		= 13,
-	SVI_FILEEND2		= 14,
+	SVI_FILESTART2		= 12,	// deprecated
+	SVI_FILEDATA2		= 13,	// deprecated
+	SVI_FILEEND2		= 14,	// deprecated
 	SVI_FILESTART3		= 15,
 	SVI_FILEDATA3		= 16,
 	SVI_FILEEND3		= 17,
@@ -73,13 +73,20 @@ enum
 
 class TPlayer;
 class TServer;
-class TServerList
+class TServerList : public CSocketStub
 {
 	public:
+		// Required by CSocketStub.
+		bool onRecv();
+		bool onSend();
+		SOCKET getSocketHandle()	{ return sock.getHandle(); }
+
 		// Constructor - Deconstructor
 		TServerList();
 		~TServerList();
-		void setServer(TServer* pServer) { boost::recursive_mutex::scoped_lock lock(m_preventChange); server = pServer; }
+		void setServer(TServer* pServer) { server = pServer; }
+
+		bool doTimedEvents();
 
 		// Socket-Control Functions
 		bool getConnected() const;
@@ -129,8 +136,6 @@ class TServerList
 		void parsePacket(CString& pPacket);
 		void sendCompress();
 
-		bool doTimedEvents();
-
 		// Socket Variables
 		bool isConnected;
 		bool nextIsRaw;
@@ -139,9 +144,6 @@ class TServerList
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer;
 		TServer* server;
-
-		boost::mutex m_sendPacket, m_sendCompress;
-		mutable boost::recursive_mutex m_preventChange;
 };
 
 // Packet-Functions
