@@ -35,9 +35,14 @@ enum
 
 //class TPlayer;
 //class TLevel;
-class TServer
+class TServer : public CSocketStub
 {
 	public:
+		// Required by CSocketStub.
+		bool onRecv();
+		bool onSend()				{ return true; }
+		SOCKET getSocketHandle()	{ return playerSock.getHandle(); }
+
 		TServer(CString pName);
 		~TServer();
 		void operator()();
@@ -63,16 +68,6 @@ class TServer
 		CLog& getRCLog()						{ return rclog; }
 		CString* getServerMessage()				{ return &servermessage; }
 		unsigned int getNWTime() const;
-
-		// Yay public mutexes.
-		mutable boost::recursive_mutex m_playerList;
-		mutable boost::recursive_mutex m_playerIds;
-		mutable boost::recursive_mutex m_npcList;
-		mutable boost::recursive_mutex m_npcIds;
-		mutable boost::recursive_mutex m_levelList;
-		mutable boost::recursive_mutex m_mapList;
-		mutable boost::recursive_mutex m_weaponList;
-		mutable boost::recursive_mutex m_serverFlags;
 
 		TPlayer* getPlayer(const unsigned short id) const;
 		TPlayer* getPlayer(const CString& account) const;
@@ -108,7 +103,6 @@ class TServer
 
 		CSettings settings;
 		std::vector<TPlayer*> playerIds, playerList;
-		std::map<boost::thread::id, boost::thread*> playerThreads;
 		std::vector<TNPC*> npcIds, npcList;
 		std::vector<TLevel*> levelList;
 		std::vector<TMap*> mapList;
@@ -116,8 +110,8 @@ class TServer
 		std::vector<CString> serverFlags;
 		std::vector<CString> ipBans;
 		std::vector<CString> foldersConfig;
-		std::vector<boost::thread::id> terminatedThreads;
-		CSocket playerSock, serverSock;
+		CSocket playerSock;
+		CSocketManager sockManager;
 		TServerList serverlist;
 		CFileSystem filesystem[FS_COUNT];
 		CFileSystem filesystem_accounts;
@@ -129,9 +123,6 @@ class TServer
 		CLog rclog;//("logs/rclog.txt");
 
 		time_t lastTimer, lastNWTimer;
-
-		boost::recursive_mutex m_preventChange;
-		boost::recursive_mutex m_playerThreads;
 };
 
 #endif

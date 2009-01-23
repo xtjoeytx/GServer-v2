@@ -185,9 +185,14 @@ struct SCachedLevel
 };
 
 class TMap;
-class TPlayer : public TAccount
+class TPlayer : public TAccount, public CSocketStub
 {
 	public:
+		// Required by CSocketStub.
+		bool onRecv();
+		bool onSend();
+		SOCKET getSocketHandle()	{ return playerSock->getHandle(); }
+
 		// Constructor - Deconstructor
 		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
 		~TPlayer();
@@ -313,12 +318,6 @@ class TPlayer : public TAccount
 
 		// File queue.
 		CFileQueue fileQueue;
-		boost::thread* fileQueueThread;
-
-		// Mutexes
-		mutable boost::recursive_mutex m_preventChange;
-
-		bool disconnectPlayer;
 };
 
 inline bool TPlayer::isLoggedIn() const
@@ -338,7 +337,6 @@ inline int TPlayer::getType() const
 
 inline void TPlayer::setId(int pId)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	id = pId;
 }
 

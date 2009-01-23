@@ -27,7 +27,6 @@ bool TMap::load(const CString& pFileName, TServer* pServer)
 
 bool TMap::isLevelOnMap(const CString& level) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
 	{
 		if (i->first == level)
@@ -38,7 +37,6 @@ bool TMap::isLevelOnMap(const CString& level) const
 
 CString TMap::getLevelAt(int x, int y) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
 	{
 		if (i->second.mapx == x && i->second.mapy == y)
@@ -49,22 +47,18 @@ CString TMap::getLevelAt(int x, int y) const
 
 int TMap::getLevelX(const CString& level) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	SMapLevel lvl = levels.find(level)->second;
 	return lvl.mapx;
 }
 
 int TMap::getLevelY(const CString& level) const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	SMapLevel lvl = levels.find(level)->second;
 	return lvl.mapy;
 }
 
 bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
 	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -120,8 +114,6 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 
 bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
 	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)

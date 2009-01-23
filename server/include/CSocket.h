@@ -1,8 +1,6 @@
 #ifndef CSOCKET_H
 #define CSOCKET_H
 
-#include "CString.h"
-
 // Defines
 //#define SOCK_BUFFER						8192
 //#define SEND_BUFFER						4096
@@ -13,8 +11,6 @@
 #define SOCKET_PROTOCOL_TCP				1
 #define SOCKET_TYPE_CLIENT				0
 #define SOCKET_TYPE_SERVER				1
-
-#define SOCKET_OPTION_NONBLOCKING		(unsigned int)0x0001
 
 #define SOCKET_STATE_DISCONNECTED		0
 #define SOCKET_STATE_CONNECTING			1
@@ -40,6 +36,59 @@
 
 	typedef unsigned int SOCKET;
 #endif
+#include <vector>
+
+
+//! Base class that handles socket functions.
+//! Derive from this class and define the functions.
+//! Then, pass the class to CSocketManager::registerSocket().
+class CSocketStub
+{
+	public:
+		virtual bool onRecv() = 0;
+		virtual bool onSend() = 0;
+		virtual SOCKET getSocketHandle() = 0;
+};
+
+//! Socket manager class.
+class CSocketManager
+{
+	public:
+		//! Constructor.
+		CSocketManager() : fd_max(0), blockStubs(false) {}
+
+		//! Updates the state of the sockets.
+		//! Calls the functions of all the registered CSocketStub classes.
+		//! \param sec Seconds to wait.
+		//! \param usec Nanoseconds to wait.
+		//! \return False if select() returned nothing, true otherwise.
+		bool update(long sec = 0, long usec = 0);
+
+		//! Registers a class derived from CSocketStub into the management system.
+		//! \param stub The class to add to the system.
+		//! \return true.
+		bool registerSocket(CSocketStub* stub);
+
+		//! Unregisters a class.
+		//! \param stub The class to remove from the system.
+		//! \return False if stub is not found
+		//! \return True if it is successfully removed.
+		bool unregisterSocket(CSocketStub* stub);
+
+	private:
+		//! List of classes registered with the socket manager.
+		std::vector<CSocketStub*> stubList;
+		std::vector<CSocketStub*> newStubs;
+
+		//! Max socket descriptor.
+		SOCKET fd_max;
+
+		//! Are we accessing stubList?
+		bool blockStubs;
+};
+
+
+
 
 //! Properties to pass to the socket.
 struct sock_properties
@@ -47,7 +96,6 @@ struct sock_properties
 	SOCKET handle;
 	int protocol;
 	int type;
-	int options;
 	int state;
 	char description[ SOCKET_MAX_DESCRIPTION ];
 	sockaddr_storage address;
@@ -58,39 +106,35 @@ class CSocket
 {
 	private:
 		sock_properties properties;
-		CString buffer;
 		static int was_initiated;
 
 		static int socketSystemInit();
 
 	public:
 		CSocket();
-		CSocket(const CString& host, const CString& port, sock_properties* properties = 0);
+		CSocket(const char* host, const char* port, sock_properties* properties = 0);
 		~CSocket();
 
-		int init(const CString& host, const CString& port);
+		int init(const char* host, const char* port);
 		void destroy();
 
 		int connect();
 		int disconnect();
 		int reconnect(long delay = 0, int tries = 1);
-		CSocket* accept(long delay_sec = 0, long delay_usec = 0);
+		CSocket* accept();
 
-		int sendData(CString& data, long delay_sec = 0, long delay_usec = 0);
-		int getData(long delay_sec = 0, long delay_usec = 0);
-		char* peekData();
+		int sendData(char* data, unsigned int* dsize);
+		char* getData(unsigned int* dsize);
+		char* peekData(unsigned int* dsize);
 
 		SOCKET getHandle();
 		int getProtocol();
 		int getType();
-		int getOptions();
 		const char *getDescription();
 		int getState();
-		CString& getBuffer();
 
 		int setProtocol(int sock_proto);
 		int setType(int sock_type);
-		int setOptions(int iOptions);
 		int setDescription(const char *strDescription);
 		int setProperties(sock_properties newprop);
 		int setState(int iState);
@@ -120,12 +164,6 @@ int CSocket::getType()
 }
 
 inline
-int CSocket::getOptions()
-{
-	return properties.options;
-}
-
-inline
 const char *CSocket::getDescription()
 {
 	return properties.description;
@@ -136,12 +174,5 @@ int CSocket::getState()
 {
 	return properties.state;
 }
-
-inline
-CString& CSocket::getBuffer()
-{
-	return buffer;
-}
-
 
 #endif

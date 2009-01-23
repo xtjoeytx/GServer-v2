@@ -47,7 +47,6 @@ TServerList::TServerList()
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
-	sock.setOptions(SOCKET_OPTION_NONBLOCKING);
 	sock.setDescription("listserver");
 
 	lastData = lastPing = lastTimer = time(0);
@@ -62,8 +61,27 @@ TServerList::~TServerList()
 */
 bool TServerList::getConnected() const
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	return isConnected;
+}
+
+bool TServerList::onRecv()
+{
+	// Grab the data from the socket and put it into our receive buffer.
+	unsigned int size = 0;
+	char* data = sock.getData(&size);
+	if (size != 0)
+		rBuffer.write(data, size);
+
+	if (!main())
+		connectServer();
+
+	return true;
+}
+
+bool TServerList::onSend()
+{
+	sendCompress();
+	return true;
 }
 
 bool TServerList::main()
@@ -74,17 +92,6 @@ bool TServerList::main()
 	// definitions
 	CString line;
 	int lineEnd;
-
-	// receive
-	if (sock.getData() == -1)
-	{
-		isConnected = false;
-		return getConnected();
-	}
-
-	// grab the data now
-	rBuffer.write(sock.getBuffer());
-	sock.getBuffer().clear();
 
 	// do we have enough data to parse?
 	rBuffer.setRead(0);
@@ -115,17 +122,11 @@ bool TServerList::main()
 		lastData = time(0);
 	}
 
-	// Every second, do some events.
-	if (time(0) != lastTimer) doTimedEvents();
-
-	// send out buffer
-	sendCompress();
 	return getConnected();
 }
 
 bool TServerList::doTimedEvents()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	lastTimer = time(0);
 
 	// Send a ping every 30 seconds.
@@ -140,10 +141,8 @@ bool TServerList::doTimedEvents()
 
 bool TServerList::init(const CString& pServerIp, const CString& pServerPort)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Initialize the socket.
-	if (sock.init(pServerIp, pServerPort) != 0)
+	if (sock.init(pServerIp.text(), pServerPort.text()) != 0)
 		return false;
 
 	return true;
@@ -151,7 +150,6 @@ bool TServerList::init(const CString& pServerIp, const CString& pServerPort)
 
 bool TServerList::connectServer()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	CSettings* settings = server->getSettings();
 
 	if (isConnected == true)
@@ -177,7 +175,6 @@ bool TServerList::connectServer()
 	else
 		sendPacket(CString() >> (char)SVO_SETLOCALIP << sock.getLocalIp());
 	setPort(settings->getStr("serverport", "14900"));
-	sendCompress();
 
 	// Send Players
 	sendPlayers();
@@ -197,7 +194,6 @@ void TServerList::sendPacket(CString& pPacket)
 		pPacket.writeChar('\n');
 
 	// append buffer
-	boost::mutex::scoped_lock lock_sendPacket(m_sendPacket);
 	sBuffer.write(pPacket);
 }
 
@@ -223,14 +219,11 @@ void TServerList::remPlayer(const CString& pAccountName, int pType)
 
 void TServerList::sendPlayers()
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-
 	// Definition
 	CString playerPacket;
 	int playerCount = 0;
 
 	// Iterate Playerlist
-	boost::recursive_mutex::scoped_lock lock_playerList(server->m_playerList);
 	for (std::vector<TPlayer *>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end();)
 	{
 		TPlayer *pPlayer = (TPlayer*)*i;
@@ -258,38 +251,32 @@ void TServerList::sendPlayers()
 */
 void TServerList::setDesc(const CString& pServerDesc)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	sendPacket(CString() >> (char)SVO_SETDESC << pServerDesc);
 }
 
 void TServerList::setIp(const CString& pServerIp)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	sendPacket(CString() >> (char)SVO_SETIP << pServerIp);
 }
 
 void TServerList::setName(const CString& pServerName)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	bool uc = server->getSettings()->getBool("underconstruction", false);
 	sendPacket(CString() >> (char)SVO_SETNAME << (uc ? "U " : "") << pServerName);
 }
 
 void TServerList::setPort(const CString& pServerPort)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	sendPacket(CString() >> (char)SVO_SETPORT << pServerPort);
 }
 
 void TServerList::setUrl(const CString& pServerUrl)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	sendPacket(CString() >> (char)SVO_SETURL << pServerUrl);
 }
 
 void TServerList::setVersion(const CString& pServerVersion)
 {
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	sendPacket(CString() >> (char)SVO_SETVERS << pServerVersion);
 }
 
@@ -311,18 +298,13 @@ void TServerList::parsePacket(CString& pPacket)
 
 void TServerList::sendCompress()
 {
-	boost::mutex::scoped_lock lock_sendPacket(m_sendPacket);
-	boost::mutex::scoped_lock lock_sendCompress(m_sendCompress);
-
 	// empty buffer?
 	if (sBuffer.isEmpty())
 		return;
 
 	// send buffer
-	sock.sendData(sBuffer);
-
-	// clear buffer
-	sBuffer.clear();
+	unsigned int size = sBuffer.length();
+	sBuffer.removeI(0, sock.sendData(sBuffer.text(), &size));
 }
 
 void TServerList::msgSVI_NULL(CString& pPacket)
