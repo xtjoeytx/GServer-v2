@@ -209,12 +209,19 @@ bool TPlayer::onRecv()
 {
 	if (playerSock == 0)
 		return false;
+	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+		return false;
 
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
 	char* data = playerSock->getData(&size);
 	if (size != 0)
 		rBuffer.write(data, size);
+	else if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		server->deletePlayer(this);
+		return false;
+	}
 
 	// Do the main function.
 	if (doMain() == false)
@@ -230,11 +237,18 @@ bool TPlayer::onSend()
 {
 	if (playerSock == 0)
 		return false;
+	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+		return false;
 
 	// Send data.
 	fileQueue.sendCompress();
 
 	return true;
+}
+
+bool TPlayer::canSend()
+{
+	return fileQueue.canSend();
 }
 
 /*
@@ -1145,7 +1159,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 {
 	// Read Player-Ip
-	accountIp = inet_addr(playerSock->tcpIp());
+	accountIp = inet_addr(playerSock->getRemoteIp());
 
 	// Read Client-Type
 	serverlog.out(":: New login:\t");
@@ -1207,7 +1221,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	}
 
 	// Check if they are ip-banned or not.
-	if (server->isIpBanned(playerSock->tcpIp()))
+	if (server->isIpBanned(playerSock->getRemoteIp()))
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned from this server.");
 		return false;
