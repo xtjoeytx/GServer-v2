@@ -84,6 +84,12 @@ bool TServerList::onSend()
 	return true;
 }
 
+bool TServerList::canSend()
+{
+	if (sBuffer.isEmpty()) return false;
+	return true;
+}
+
 bool TServerList::main()
 {
 	if (!getConnected())

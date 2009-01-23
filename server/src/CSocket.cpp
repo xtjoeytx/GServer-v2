@@ -65,6 +65,7 @@
 #define SLOG	serverlog.out
 //////
 
+// Function declarations.
 static char* errorMessage(int error);
 static int identifyError(int source = 0);
 
@@ -84,14 +85,21 @@ bool CSocketManager::update(long sec, long usec)
 	FD_ZERO(&set_write);
 
 	// Put all the socket handles into the set.
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
-		SOCKET sock = (*i)->getSocketHandle();
+		CSocketStub* stub = *i;
+		if (stub == 0)
+		{
+			i = stubList.erase(i);
+			continue;
+		}
+		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
 			FD_SET(sock, &set_read);
-			FD_SET(sock, &set_write);
+			if (stub->canSend()) FD_SET(sock, &set_write);
 		}
+		++i;
 	}
 
 	// Do the select.
@@ -102,8 +110,13 @@ bool CSocketManager::update(long sec, long usec)
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
+		if (stub == 0)
+		{
+			i = stubList.erase(i);
+			continue;
+		}
 		bool erased = false;
-		SOCKET sock = (*i)->getSocketHandle();
+		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
 			if (FD_ISSET(sock, &set_read))
@@ -138,6 +151,24 @@ bool CSocketManager::update(long sec, long usec)
 		newStubs.clear();
 	}
 
+	// If any stubs were removed while parsing data, remove them now.
+	if (removeStubs.size() != 0)
+	{
+		for (std::vector<CSocketStub*>::iterator i = removeStubs.begin(); i != removeStubs.end();)
+		{
+			CSocketStub* stub = *i;
+			for (std::vector<CSocketStub*>::iterator j = stubList.begin(); j != stubList.end();)
+			{
+				CSocketStub* search = *j;
+				if (stub == search)
+					j = stubList.erase(j);
+				else ++j;
+			}
+			i = removeStubs.erase(i);
+		}
+		removeStubs.clear();
+	}
+
 	return true;
 }
 
@@ -165,7 +196,12 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 		if (findNewMax && sock2 != sock && sock2 > max) max = sock2;
 		if (sock2 == sock)
 		{
-			i = stubList.erase(i);
+			if (blockStubs)
+			{
+				removeStubs.push_back(stub);
+				++i;
+			}
+			else i = stubList.erase(i);
 			found = true;
 			if (!findNewMax) break;
 		}
@@ -257,7 +293,7 @@ int CSocket::init(const char* host, const char* port)
 	else
 		memcpy((void*)&properties.address, res->ai_addr, res->ai_addrlen);
 
-	return 0;
+	return SOCKET_OK;
 }
 
 void CSocket::destroy()
@@ -277,8 +313,12 @@ void CSocket::destroy()
 		while ( true )
 		{
 			size = recv( properties.handle, buff, 0x2000, 0 );
-			if (size == 0 || size != EWOULDBLOCK || size != EINPROGRESS)
-				break;
+			if (size == 0) break;
+			if (size == SOCKET_ERROR)
+			{
+				int e = identifyError();
+				if (!(e == EWOULDBLOCK || e == EINPROGRESS)) break;
+			}
 		}
 	}
 
@@ -393,13 +433,12 @@ int CSocket::connect()
 			properties.state = SOCKET_STATE_LISTENING;
 		}
 	}
-	return 0;
+	return SOCKET_OK;
 }
 
-int CSocket::disconnect()
+void CSocket::disconnect()
 {
 	destroy();
-	return 0;
 }
 
 int CSocket::reconnect(long delay, int tries)
@@ -416,9 +455,9 @@ int CSocket::reconnect(long delay, int tries)
 	{
 		switch (this->connect())
 		{
-			case 0:
+			case SOCKET_OK:
 			case SOCKET_ALREADY_CONNECTED:
-				return 0;
+				return SOCKET_OK;
 				break;
 			case SOCKET_INVALID:
 			case SOCKET_BIND_ERROR:
@@ -467,7 +506,7 @@ CSocket* CSocket::accept()
 	props.state = SOCKET_STATE_CONNECTED;
 	props.handle = handle;
 	sock->setProperties(props);
-	sock->setDescription(sock->tcpIp());
+	sock->setDescription(sock->getRemoteIp());
 
 	// Accept the connection by calling getsockopt.
 	int type, typeSize = sizeof(int);
@@ -570,10 +609,7 @@ char* CSocket::getData(unsigned int* dsize)
 
 	// If size is 0, the socket was disconnected.
 	if (size == 0)
-	{
-		SLOG("%s - Connection lost!\n", properties.description);
 		disconnect();
-	}
 
 	// Set dsize to how much data was returned.
 	*dsize = size;
@@ -642,7 +678,7 @@ int CSocket::setProtocol(int sock_proto)
 		properties.protocol = sock_proto;
 	else
 		return SOCKET_INVALID;
-	return 0;
+	return SOCKET_OK;
 }
 
 int CSocket::setType(int sock_type)
@@ -651,14 +687,14 @@ int CSocket::setType(int sock_type)
 		properties.type = sock_type;
 	else
 		return SOCKET_INVALID;
-	return 0;
+	return SOCKET_OK;
 }
 
 int CSocket::setDescription(const char *strDescription)
 {
 	memset((void*)&properties.description, 0, SOCKET_MAX_DESCRIPTION);
 	memcpy((void*)&properties.description, strDescription, SOCKET_MAX_DESCRIPTION - 1);
-	return 0;
+	return SOCKET_OK;
 }
 
 int CSocket::setProperties(sock_properties newprop)
@@ -666,16 +702,16 @@ int CSocket::setProperties(sock_properties newprop)
 	// Set the socket properties.
 	memcpy((void*)&this->properties, (void *)&newprop, sizeof(sock_properties));
 
-	return 0;
+	return SOCKET_OK;
 }
 
 int CSocket::setState(int iState)
 {
 	this->properties.state = iState;
-	return 0;
+	return SOCKET_OK;
 }
 
-const char* CSocket::tcpIp()
+const char* CSocket::getRemoteIp()
 {
 	char* hostret;
 	static char host[1025];

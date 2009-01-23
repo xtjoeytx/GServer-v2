@@ -57,9 +57,18 @@ void CFileQueue::addPacket(CString pPacket)
 	}
 }
 
+bool CFileQueue::canSend()
+{
+	if (fileBuffer.size() != 0 || normalBuffer.size() != 0) return true;
+	return false;
+}
+
 void CFileQueue::sendCompress()
 {
 	CString pSend;
+
+	if (sock->getState() == SOCKET_STATE_DISCONNECTED)
+		return;
 
 	// If we haven't sent a file in a while, forcibly send one now.
 	if (bytesSentWithoutFile > 0x7FFF && !fileBuffer.empty())	// 32KB
