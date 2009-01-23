@@ -42,6 +42,7 @@ class TServer : public CSocketStub
 		bool onRecv();
 		bool onSend()				{ return true; }
 		SOCKET getSocketHandle()	{ return playerSock.getHandle(); }
+		bool canSend()				{ return false; }
 
 		TServer(CString pName);
 		~TServer();
