@@ -220,10 +220,6 @@ int CSocket::was_initiated = 0;
 CSocket::CSocket()
 {
 	if (CSocket::was_initiated == 0) CSocket::socketSystemInit();
-	properties.handle = 0;
-	properties.protocol = 0;
-	properties.type = 0;
-	properties.state = SOCKET_STATE_DISCONNECTED;
 	memset((char *)&properties.description, 0, SOCKET_MAX_DESCRIPTION);
 }
 
@@ -234,10 +230,6 @@ CSocket::CSocket(const char* host, const char* port, sock_properties* properties
 		memcpy((void*)&this->properties, properties, sizeof(sock_properties));
 	else
 	{
-		this->properties.handle = 0;
-		this->properties.protocol = SOCKET_PROTOCOL_TCP;
-		this->properties.type = SOCKET_TYPE_CLIENT;
-		this->properties.state = SOCKET_STATE_DISCONNECTED;
 		memset((char *)&this->properties.description, 0, SOCKET_MAX_DESCRIPTION);
 	}
 	this->init(host, port);
@@ -250,7 +242,7 @@ CSocket::~CSocket()
 		disconnect();
 }
 
-int CSocket::init(const char* host, const char* port)
+int CSocket::init(const char* host, const char* port, int protocol)
 {
 	struct addrinfo hints;
 	struct addrinfo* res;
@@ -267,7 +259,20 @@ int CSocket::init(const char* host, const char* port)
 	memset((void*)&hints, 0, sizeof(hints));
 	if (properties.protocol == SOCKET_PROTOCOL_TCP) hints.ai_socktype = SOCK_STREAM;
 	if (properties.protocol == SOCKET_PROTOCOL_UDP) hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_family = PF_INET;
+
+	// Choose the protocol we want.
+	switch (protocol)
+	{
+		case SOCKET_PROTOCOL_ANY:
+			hints.ai_family = AF_UNSPEC;
+			break;
+		case SOCKET_PROTOCOL_IPV4:
+			hints.ai_family = AF_INET;
+			break;
+		case SOCKET_PROTOCOL_IPV6:
+			hints.ai_family = AF_INET6;
+			break;
+	}
 
 	// Create the host.
 	int error;
@@ -296,7 +301,104 @@ int CSocket::init(const char* host, const char* port)
 	return SOCKET_OK;
 }
 
-void CSocket::destroy()
+int CSocket::connect()
+{
+	// Make sure the socket is disconnected.
+	if (properties.state != SOCKET_STATE_DISCONNECTED)
+		return SOCKET_ALREADY_CONNECTED;
+
+	// Flag the socket as connecting.
+	properties.state = SOCKET_STATE_CONNECTING;
+
+	// Create socket.
+	if (properties.protocol == SOCKET_PROTOCOL_TCP)
+		properties.handle = socket(AF_INET, SOCK_STREAM, 0);
+	else
+		properties.handle = socket(AF_INET, SOCK_DGRAM, 0);
+
+	// Make sure the socket was created correctly.
+	if (properties.handle == INVALID_SOCKET)
+	{
+		SLOG("[CSocket::connect] socket() returned INVALID_SOCKET.\n");
+		properties.state = SOCKET_STATE_DISCONNECTED;
+		return SOCKET_INVALID;
+	}
+
+	// Bind the socket if it is a server-type socket.
+	if (properties.type == SOCKET_TYPE_SERVER)
+	{
+		// Let us reuse the address.  Freaking bind.
+		int value = 1;
+		setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
+
+		// Bind the socket.
+		if (::bind(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
+		{
+			SLOG("[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()));
+			disconnect();
+			/*
+			#if defined(_WIN32) || defined(_WIN64)
+				closesocket(properties.handle);
+			#else
+				close(properties.handle);
+			#endif
+			properties.state = SOCKET_STATE_DISCONNECTED;
+			*/
+			return SOCKET_BIND_ERROR;
+		}
+	}
+
+	// Connect the socket.
+	if (properties.type != SOCKET_TYPE_SERVER)
+	{
+		if (::connect(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
+		{
+			SLOG("[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()));
+			disconnect();
+			/*
+			#if defined(WIN32) || defined(WIN64)
+				closesocket(properties.handle);
+			#else
+				close(properties.handle);
+			#endif
+			properties.state = SOCKET_STATE_DISCONNECTED;
+			*/
+			return SOCKET_CONNECT_ERROR;
+		}
+	}
+
+	// Socket connected!
+	properties.state = SOCKET_STATE_CONNECTED;
+
+	// Listening sockets.
+	if (properties.type == SOCKET_TYPE_SERVER)
+	{
+		if (properties.protocol == SOCKET_PROTOCOL_UDP)
+			properties.state = SOCKET_STATE_LISTENING;
+		else if (properties.protocol == SOCKET_PROTOCOL_TCP)
+		{
+			if (::listen(properties.handle, SOMAXCONN) == SOCKET_ERROR)
+			{
+				SLOG("[CSocket::connect] listen() returned error: %s\n", errorMessage(identifyError()));
+				disconnect();
+				/*
+				#if defined(WIN32) || defined(WIN64)
+					closesocket(properties.handle);
+				#else
+					close(properties.handle);
+				#endif
+				properties.state = SOCKET_STATE_DISCONNECTED;
+				*/
+				return SOCKET_CONNECT_ERROR;
+			}
+
+			properties.state = SOCKET_STATE_LISTENING;
+		}
+	}
+	return SOCKET_OK;
+}
+
+void CSocket::disconnect()
 {
 	// Shut down the socket.
 	if (shutdown(properties.handle, SHUT_WR) == SOCKET_ERROR)
@@ -337,108 +439,6 @@ void CSocket::destroy()
 
 	// Reset the socket state.
 	properties.state = SOCKET_STATE_DISCONNECTED;
-}
-
-int CSocket::connect()
-{
-	// Make sure the socket is disconnected.
-	if (properties.state != SOCKET_STATE_DISCONNECTED)
-		return SOCKET_ALREADY_CONNECTED;
-
-	// Flag the socket as connecting.
-	properties.state = SOCKET_STATE_CONNECTING;
-
-	// Create socket.
-	if (properties.protocol == SOCKET_PROTOCOL_TCP)
-		properties.handle = socket(AF_INET, SOCK_STREAM, 0);
-	else
-		properties.handle = socket(AF_INET, SOCK_DGRAM, 0);
-
-	// Make sure the socket was created correctly.
-	if (properties.handle == INVALID_SOCKET)
-	{
-		SLOG("[CSocket::connect] socket() returned INVALID_SOCKET.\n");
-		properties.state = SOCKET_STATE_DISCONNECTED;
-		return SOCKET_INVALID;
-	}
-
-	// Bind the socket if it is a server-type socket.
-	if (properties.type == SOCKET_TYPE_SERVER)
-	{
-		// Let us reuse the address.  Freaking bind.
-		int value = 1;
-		setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
-
-		// Bind the socket.
-		if (::bind(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
-		{
-			SLOG("[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()));
-			destroy();
-			/*
-			#if defined(_WIN32) || defined(_WIN64)
-				closesocket(properties.handle);
-			#else
-				close(properties.handle);
-			#endif
-			properties.state = SOCKET_STATE_DISCONNECTED;
-			*/
-			return SOCKET_BIND_ERROR;
-		}
-	}
-
-	// Connect the socket.
-	if (properties.type != SOCKET_TYPE_SERVER)
-	{
-		if (::connect(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
-		{
-			SLOG("[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()));
-			destroy();
-			/*
-			#if defined(WIN32) || defined(WIN64)
-				closesocket(properties.handle);
-			#else
-				close(properties.handle);
-			#endif
-			properties.state = SOCKET_STATE_DISCONNECTED;
-			*/
-			return SOCKET_CONNECT_ERROR;
-		}
-	}
-
-	// Socket connected!
-	properties.state = SOCKET_STATE_CONNECTED;
-
-	// Listening sockets.
-	if (properties.type == SOCKET_TYPE_SERVER)
-	{
-		if (properties.protocol == SOCKET_PROTOCOL_UDP)
-			properties.state = SOCKET_STATE_LISTENING;
-		else if (properties.protocol == SOCKET_PROTOCOL_TCP)
-		{
-			if (::listen(properties.handle, SOMAXCONN) == SOCKET_ERROR)
-			{
-				SLOG("[CSocket::connect] listen() returned error: %s\n", errorMessage(identifyError()));
-				destroy();
-				/*
-				#if defined(WIN32) || defined(WIN64)
-					closesocket(properties.handle);
-				#else
-					close(properties.handle);
-				#endif
-				properties.state = SOCKET_STATE_DISCONNECTED;
-				*/
-				return SOCKET_CONNECT_ERROR;
-			}
-
-			properties.state = SOCKET_STATE_LISTENING;
-		}
-	}
-	return SOCKET_OK;
-}
-
-void CSocket::disconnect()
-{
-	destroy();
 }
 
 int CSocket::reconnect(long delay, int tries)
@@ -902,3 +902,5 @@ int identifyError(int source)
 		return errno;
 #endif
 }
+
+#undef SLOG
