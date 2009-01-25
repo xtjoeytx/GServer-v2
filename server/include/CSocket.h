@@ -27,6 +27,10 @@
 #define SOCKET_SEND_FAILED				6
 #define SOCKET_UNKNOWN_DESC				7
 
+#define SOCKET_PROTOCOL_ANY				0
+#define SOCKET_PROTOCOL_IPV4			1
+#define SOCKET_PROTOCOL_IPV6			2
+
 #if defined(_WIN32) || defined(_WIN64)
 	#include <winsock2.h>
 #else
@@ -96,6 +100,9 @@ class CSocketManager
 //! Properties to pass to the socket.
 struct sock_properties
 {
+	sock_properties() : handle(0), protocol(SOCKET_PROTOCOL_TCP),
+		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED) {}
+
 	SOCKET handle;
 	int protocol;
 	int type;
@@ -121,17 +128,18 @@ class CSocket
 		CSocket(const char* host, const char* port, sock_properties* properties = 0);
 		~CSocket();
 
-		//! Initializes a socket.  Does not connect to it.
+		//! Initializes a socket (does not connect to it.)
+		/*! If SOCKET_PROTOCOL_ANY is used on Windows Vista and up, and we are a server
+			type socket, there is a good chance we will end up binding to the ipv6
+			localhost.  Take caution as the socket won't be reachable via an ipv4 address. */
 		//! \param host The host to connect to.
 		//! \param port The port to connect to on the host.
+		//! \param protocol The protocol of the socket.
 		//! \return SOCKET_OK if everything went fine.
 		//! \return SOCKET_ALREADY_CONNECTED if the socket is already connected.
 		//! \return SOCKET_HOST_UNKNOWN if getaddrinfo() errored.
 		//! \return SOCKET_ERROR if the socket's properties are malformed.
-		int init(const char* host, const char* port);
-
-		//! Disconnects the socket.
-		void destroy();
+		int init(const char* host, const char* port, int protocol = SOCKET_PROTOCOL_IPV4);
 
 		//! Connects the socket.
 		//! \return SOCKET_OK if everything went fine.
@@ -141,7 +149,7 @@ class CSocket
 		//! \return SOCKET_CONNECT_ERROR if connect() or listen() failed.
 		int connect();
 
-		//! Disconnects the socket.  Same as destroy().
+		//! Disconnects the socket.
 		void disconnect();
 
 		//! Reconnects a socket.
@@ -192,14 +200,14 @@ class CSocket
 		int getState();
 
 		//! Sets the socket protocol.
-		//! Can only be used when the socket is disconnected.
+		/*! Sets the socket protocol.  Can only be used when the socket is disconnected. */
 		//! \param sock_proto The protocol to set the socket to.
 		//! \return SOCKET_OK if the protocol was successfully changed.
 		//! \return SOCKET_INVALID if the socket is not disconnected.
 		int setProtocol(int sock_proto);
 
 		//! Sets the socket type.
-		//! Can only be used when the socket is disconnected.
+		/*! Sets the socket type.  Can only be used when the socket is disconnected. */
 		//! \param sock_type The type to set the socket to.
 		//! \return SOCKET_OK if the type was successfully changed.
 		//! \return SOCKET_INVALID if the socket is not disconnected.
@@ -225,12 +233,14 @@ class CSocket
 		const char* getRemoteIp();
 
 		//! Gets the IP address of the current device.
-		//! Linux beware.  It will return whatever is in /etc/hosts
+		/*! Gets the IP address of the current device.
+			Linux beware.  It will return the IP address in /etc/hosts that corresponds
+			to the hostname in /etc/hostname. */
 		//! \return The IP address.
 		const char* getLocalIp();
 
 		//! Destroys the socket subsystems.
-		//! Windows specific.
+		/*! Windows specific. */
 		static void socketSystemDestroy();
 };
 
