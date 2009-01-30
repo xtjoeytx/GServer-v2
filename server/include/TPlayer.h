@@ -238,6 +238,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool doTimedEvents();
 		void disconnect();
 		void processChat(CString pChat);
+		bool isStaff();
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
