@@ -148,6 +148,10 @@ int TServer::init()
 		}
 	}
 
+	// Load status list.
+	serverlog.out("     Loading status list...\n");
+	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+
 	// Load server message.
 	serverlog.out("     Loading config/servermessage.html...\n");
 	servermessage.load(CString() << serverpath << "config/servermessage.html");

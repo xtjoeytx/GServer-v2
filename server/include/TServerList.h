@@ -36,6 +36,7 @@ enum
 	SVO_GETFILE2		= 19,	// deprecated
 	SVO_UPDATEFILE		= 20,
 	SVO_GETFILE3		= 21,
+	SVO_NEWSERVER		= 22,
 };
 
 enum

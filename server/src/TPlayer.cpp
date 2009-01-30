@@ -598,39 +598,50 @@ void TPlayer::processChat(CString pChat)
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
 	{
 		// id: 0
+		if (chatParse[1] == "grey") chatParse[1] = "gray";
 		colors[0] = getColor(chatParse[1]);
 		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2)
 	{
 		// id: 1
+		if (chatParse[1] == "grey") chatParse[1] = "gray";
 		colors[1] = getColor(chatParse[1]);
 		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2)
 	{
 		// id: 2
+		if (chatParse[1] == "grey") chatParse[1] = "gray";
 		colors[2] = getColor(chatParse[1]);
 		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2)
 	{
 		// id: 3
+		if (chatParse[1] == "grey") chatParse[1] = "gray";
 		colors[3] = getColor(chatParse[1]);
 		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2)
 	{
 		// id: 4
+		if (chatParse[1] == "grey") chatParse[1] = "gray";
 		colors[4] = getColor(chatParse[1]);
 		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 	}
 	else if (chatParse[0] == "warpto")
 	{
-		// TODO: warp permission check.
 		// To player
 		if (chatParse.size() == 2)
 		{
+			// Permission check.
+			if (!hasRight(PLPERM_WARPTOPLAYER) && !server->getSettings()->getBool("warptoforall", false))
+			{
+				setChat("(not authorized to warp)");
+				return;
+			}
+
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
@@ -646,17 +657,37 @@ void TPlayer::processChat(CString pChat)
 		// To x/y location
 		else if (chatParse.size() == 3)
 		{
+			// Permission check.
+			if (!hasRight(PLPERM_WARPTO) && !server->getSettings()->getBool("warptoforall", false))
+			{
+				setChat("(not authorized to warp)");
+				return;
+			}
+
 			setProps(CString() >> (char)PLPROP_X >> (char)(strtoint(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtoint(chatParse[2]) * 2), true, true);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
 		{
+			// Permission check.
+			if (!hasRight(PLPERM_WARPTO) && !server->getSettings()->getBool("warptoforall", false))
+			{
+				setChat("(not authorized to warp)");
+				return;
+			}
+
 			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
 		}
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
 	{
-		// TODO: permission check
+		// Permission check.
+		if (!hasRight(PLPERM_SUMMON))
+		{
+			setChat("(not authorized to summon)");
+			return;
+		}
+
 		TPlayer* p = server->getPlayer(chatParse[1]);
 		if (p) p->warp(levelName, x, y);
 	}
@@ -682,9 +713,8 @@ void TPlayer::processChat(CString pChat)
 				setChat(CString() << "Don't move for 30 seconds before doing '" << pChat << "'!");
 		}
 	}
-	else if (pChat == "update level")
+	else if (pChat == "update level" && hasRight(PLPERM_UPDATELEVEL))
 	{
-		// TODO: permission check.
 		level->reload();
 	}
 	else if (pChat == "showadmins")
@@ -782,6 +812,17 @@ void TPlayer::processChat(CString pChat)
 		// Tell the player how many guild members received his message.
 		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "") << " received your message)");
 	}
+}
+
+bool TPlayer::isStaff()
+{
+	CString staff(server->getSettings()->getStr("staff"));
+	std::vector<CString> staffList = staff.tokenize(",");
+	for (std::vector<CString>::iterator i = staffList.begin(); i != staffList.end(); ++i)
+	{
+		if (accountName == (*i).trim()) return true;
+	}
+	return false;
 }
 
 /*
@@ -1159,7 +1200,8 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 {
 	// Read Player-Ip
-	accountIp = inet_addr(playerSock->getRemoteIp());
+	accountIpStr = playerSock->getRemoteIp();
+	accountIp = inet_addr(accountIpStr.text());
 
 	// Read Client-Type
 	serverlog.out(":: New login:\t");
@@ -1221,7 +1263,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	}
 
 	// Check if they are ip-banned or not.
-	if (server->isIpBanned(playerSock->getRemoteIp()))
+	if (server->isIpBanned(playerSock->getRemoteIp()) && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned from this server.");
 		return false;
@@ -1873,8 +1915,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			continue;
 
 		// Jailed people cannot send PMs to normal players.
-		// TODO: staff check
-		if (jailed)
+		if (jailed && !isStaff() && !pmPlayer->isStaff())
 		{
 			sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
 			continue;
