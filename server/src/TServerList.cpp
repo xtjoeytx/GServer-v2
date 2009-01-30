@@ -169,18 +169,35 @@ bool TServerList::connectServer()
 
 	server->getServerLog().out(":: %s - Connected.\n", sock.getDescription());
 
-	// Set Some Stuff
-	setName(settings->getStr("name"));
-	setDesc(settings->getStr("description"));
-	setUrl(settings->getStr("url"));
-	setVersion(GSERVER_VERSION);
-	setIp(settings->getStr("serverip", "AUTO"));
+	// Get Some Stuff
+	// TODO: localip server option
+	bool uc = server->getSettings()->getBool("underconstruction", false);
+	CString name;
+	if (uc) name << "U ";
+	name << settings->getStr("name");
+	CString desc(settings->getStr("description"));
+	CString language(settings->getStr("language", "English"));
+	CString version(GSERVER_VERSION);
+	CString url(settings->getStr("url", "http://www.graal.in/"));
+	CString ip(settings->getStr("serverip", "AUTO"));
+	CString port(settings->getStr("serverport", "14900"));
 	CString localip = sock.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
+	{
 		server->getServerLog().out(CString() << "** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.");
-	else
-		sendPacket(CString() >> (char)SVO_SETLOCALIP << sock.getLocalIp());
-	setPort(settings->getStr("serverport", "14900"));
+		localip.clear();
+	}
+
+	// Send server info.
+	sendPacket(CString() >> (char)SVO_NEWSERVER
+		>> (char)name.length() << name
+		>> (char)desc.length() << desc
+		>> (char)language.length() << language
+		>> (char)version.length() << version
+		>> (char)url.length() << url
+		>> (char)ip.length() << ip
+		>> (char)port.length() << port
+		>> (char)localip.length() << localip);
 
 	// Send Players
 	sendPlayers();

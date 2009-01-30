@@ -156,9 +156,15 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)language.length() << language;
 
 		case PLPROP_PSTATUSMSG:
-			// TODO: statusList.
-		//if (statusMsg > statusList.count() - 1)  retVal.writeByte1(0);
-		return CString() >> (char)0;
+		{
+			if (id == -1)
+				break;
+
+			if (statusMsg > server->getStatusList()->size() - 1)
+				return CString() >> (char)0;
+			else
+				return CString() >> (char)statusMsg;
+		}
 
 		// OS type.
 		// Windows: wind
@@ -285,11 +291,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				{
 					sp -= 30;
 					len = pPacket.readGUChar();
-					if (len > 0)
-					{
-						// TODO: foldersconfig stuff.
-						swordImg = pPacket.readChars(len);
-					}
+					if (len > 0) swordImg = pPacket.readChars(len);
 					else swordImg = "";
 				}
 				swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
@@ -306,11 +308,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 					sp -= 10;
 					if (sp < 0) break;
 					len = pPacket.readGUChar();
-					if (len > 0)
-					{
-						// TODO: foldersconfig stuff.
-						shieldImg = pPacket.readChars(len);
-					}
+					if (len > 0) shieldImg = pPacket.readChars(len);
 					else shieldImg = "";
 				}
 				shieldPower = clip(sp, 0, settings->getInt("shieldlimit", 3));
@@ -352,7 +350,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				}
 				else if (len > 100)
 				{
-					// TODO: Foldersconfig stuff.
 					headImg = pPacket.readChars(len-100);
 					globalBuff >> (char)propId << getProp(propId);
 				}
@@ -457,12 +454,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			case PLPROP_HORSEGIF:
 				len = pPacket.readGUChar();
 				if (len >= 0)
-				{
-					CString temp(pPacket.readChars(len));
-					// TODO: foldersconfig
-					//if (noFoldersConfig || isValidFile(temp, -1))
-						horseImg = temp;
-				}
+					horseImg = pPacket.readChars(len);
 			break;
 
 			case PLPROP_HORSEBUSHES:
@@ -565,7 +557,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 				len = pPacket.readGUChar();
 				if (len >= 0)
 					bodyImg = pPacket.readChars(len);
-				// TODO: foldersconfig
 			break;
 
 			case PLPROP_RATING:
