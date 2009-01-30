@@ -9,6 +9,30 @@
 
 enum
 {
+	PLPERM_WARPTO				= 0x00001,
+	PLPERM_WARPTOPLAYER			= 0x00002,
+	PLPERM_SUMMON				= 0x00004,
+	PLPERM_UPDATELEVEL			= 0x00008,
+	PLPERM_DISCONNECT			= 0x00010,
+	PLPERM_VIEWATTRIBUTES		= 0x00020,
+	PLPERM_SETATTRIBUTES		= 0x00040,
+	PLPERM_SETSELFATTRIBUTES	= 0x00080,
+	PLPERM_RESETATTRIBUTES		= 0x00100,
+	PLPERM_ADMINMSG				= 0x00200,
+	PLPERM_SETRIGHTS			= 0x00400,
+	PLPERM_BAN					= 0x00800,
+	PLPERM_SETCOMMENTS			= 0x01000,
+	PLPERM_INVISIBLE			= 0x02000,
+	PLPERM_MODIFYSTAFFACCOUNT	= 0x04000,
+	PLPERM_SETSERVERFLAGS		= 0x08000,
+	PLPERM_SETSERVEROPTIONS		= 0x10000,
+	PLPERM_SETFOLDEROPTIONS		= 0x20000,
+	PLPERM_SETFOLDERRIGHTS		= 0x40000,
+	PLPERM_NPCCONTROL			= 0x80000,
+};
+
+enum
+{
 	PLPROP_NICKNAME			= 0,
 	PLPROP_MAXPOWER			= 1,
 	PLPROP_CURPOWER			= 2,
@@ -127,12 +151,15 @@ class TAccount
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
 
+		bool hasRight(int mask)		{ return ((adminRights & mask) && accountIpStr.match(adminIp)); }
+
 	protected:
 		TServer* server;
 
 		// Player-Account
 		bool isBanned, isFtp, isLoadOnly;
 		CString adminIp, accountComments, accountName, communityName, banReason, lastFolder;
+		CString accountIpStr;
 		int accountIp, adminRights;
 
 		// Player-Attributes

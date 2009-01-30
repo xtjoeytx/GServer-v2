@@ -61,6 +61,7 @@ class TServer : public CSocketStub
 		std::vector<TMap*>* getMapList()		{ return &mapList; }
 		std::vector<TWeapon*>* getWeaponList()	{ return &weaponList; }
 		std::vector<CString>* getServerFlags()	{ return &serverFlags; }
+		std::vector<CString>* getStatusList()	{ return &statusList; }
 		TServerList* getServerList()			{ return &serverlist; }
 		CFileSystem* getFileSystem(int c = 0)	{ return &(filesystem[c]); }
 		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
@@ -111,6 +112,7 @@ class TServer : public CSocketStub
 		std::vector<CString> serverFlags;
 		std::vector<CString> ipBans;
 		std::vector<CString> foldersConfig;
+		std::vector<CString> statusList;
 		CSocket playerSock;
 		CSocketManager sockManager;
 		TServerList serverlist;

@@ -152,9 +152,9 @@ bool TPlayer::sendLoginClient()
 	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
-	std::vector<CString> plicons = settings->getStr("playerlisticons").tokenize(",");
+	std::vector<CString>* plicons = server->getStatusList();
 	CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-	for (std::vector<CString>::iterator i = plicons.begin(); i != plicons.end(); ++i)
+	for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
 		pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
 	sendPacket(pliconPacket);
 
