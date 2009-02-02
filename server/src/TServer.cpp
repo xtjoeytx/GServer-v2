@@ -84,6 +84,14 @@ int TServer::init()
 		return ERR_SETTINGS;
 	}
 
+	// Load allowed versions.
+	serverlog.out("     Loading allowed client versions...\n");
+	CString versions;
+	versions.load(CString() << serverpath << "config/allowedversions.txt");
+	versions = removeComments(versions);
+	versions.removeAllI("\r");
+	allowedVersions = versions.tokenize("\n");
+
 	// Load folders config.
 	// Load before file system.
 	serverlog.out("     Folder config: ");

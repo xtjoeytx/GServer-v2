@@ -317,6 +317,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int carryNpcId;
 		bool carryNpcThrown;
 		CString guild;
+		bool loaded;
 
 		// File queue.
 		CFileQueue fileQueue;
