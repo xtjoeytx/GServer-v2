@@ -168,7 +168,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
-pmap(0), fileQueue(pSocket)
+pmap(0), loaded(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -182,7 +182,7 @@ TPlayer::~TPlayer()
 	if (id >= 0 && server != 0)
 	{
 		// Save account.
-		if (type == CLIENTTYPE_CLIENT)
+		if (type == CLIENTTYPE_CLIENT && loaded)
 			saveAccount();
 
 		// Remove from the level.
@@ -1269,7 +1269,39 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		return false;
 	}
 
-	// TODO: Check if the specified client is allowed access.
+	// Check if the specified client is allowed access.
+	std::vector<CString>* allowedVersions = server->getAllowedVersions();
+	int cVersion = getVersionID(version);
+	bool allowed = false;
+	for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
+	{
+		CString ver = *i;
+		if (ver.find(":") != -1)
+		{
+			CString ver1 = ver.readString(":").trim();
+			CString ver2 = ver.readString("").trim();
+			int aVersion[2] = { getVersionID(ver1), getVersionID(ver2) };
+			if (cVersion >= aVersion[0] && cVersion <= aVersion[1])
+			{
+				allowed = true;
+				break;
+			}
+		}
+		else
+		{
+			int aVersion = getVersionID(ver);
+			if (cVersion == aVersion)
+			{
+				allowed = true;
+				break;
+			}
+		}
+	}
+	if (!allowed)
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.");
+		return false;
+	}
 
 	// Verify login details with the serverlist.
 	// TODO: localhost mode.

@@ -51,14 +51,31 @@ level(pLevel)
 	if (pScript.subString(0, 12) == "sparringzone") pLevel->setSparringZone(true);
 
 	// Remove comments and separate clientside and serverside scripts.
-	std::vector<CString> parsedCode = TNPC::removeComments(pScript, trimCode);
-	if (parsedCode.size() == 1) clientScript = CString("//#CLIENTSIDE\xa7") << parsedCode[0];
-	else if (parsedCode.size() > 1)
+	CString nocomments = removeComments(pScript, "\xa7");
+	if (nocomments.find("//#CLIENTSIDE") != -1)
 	{
-		serverScript = parsedCode[0];
-		clientScript = "//#CLIENTSIDE\xa7";
-		for (unsigned int i = 1; i < parsedCode.size(); ++i)
-			clientScript << parsedCode[i];
+		serverScript = nocomments.readString("//#CLIENTSIDE");
+		clientScript = CString("//#CLIENTSIDE\xa7") << nocomments.readString("");
+	}
+	else clientScript = nocomments;
+
+	// Trim the code if specified.
+	if (trimCode)
+	{
+		if (!serverScript.isEmpty())
+		{
+			std::vector<CString> code = serverScript.tokenize("\xa7");
+			serverScript.clear();
+			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+				serverScript << (*i).trim() << "\xa7";
+		}
+		if (!clientScript.isEmpty())
+		{
+			std::vector<CString> code = clientScript.tokenize("\xa7");
+			clientScript.clear();
+			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+				clientScript << (*i).trim() << "\xa7";
+		}
 	}
 
 	// Search for toweapons in the clientside code and extract the name of the weapon.
@@ -482,101 +499,6 @@ void TNPC::setProps(CString& pProps)
 				modTime[propId] = time(0);
 		}
 	}
-}
-
-std::vector<CString> TNPC::removeComments(const CString& code, bool trimCode)
-{
-	CString outLine;
-	std::vector<CString> retVal;
-	std::vector<CString> script = code.tokenize("\xa7");
-	bool multiLine = false;
-	for (std::vector<CString>::iterator i = script.begin(); i != script.end(); ++i)
-	{
-		CString line = *i;
-
-		// Loop until every comment is removed from the line.
-		bool doLoop = true;
-		while (doLoop)
-		{
-			// First, we check for multi-line comments.
-			// If multiLine is true, search for the end of the multi-line comment.
-			if (multiLine)
-			{
-				int mlc_end = line.find("*/");
-		
-				// If not found, we can discard this entire line.
-				if (mlc_end == -1)
-				{
-					doLoop = false;
-					line.clear();
-				}
-				else
-				{
-					// If found, erase up to it.
-					line.removeI(0, mlc_end + 2);
-					multiLine = false;
-				}
-				continue;
-			}
-
-			// Check for the start of a multi-line comment.
-			int mlc_start = line.find("/*");
-			if (mlc_start != -1)
-			{
-				multiLine = true;
-				int mlc_end = line.find("*/");
-				if (mlc_end == -1)
-				{
-					// If no end was found, remove the rest of the line and break the loop.
-					line.removeI(mlc_start, line.length());
-					doLoop = false;
-				}
-				else
-				{
-					multiLine = false;
-					line.removeI(mlc_start, (mlc_end + 2) - mlc_start);
-				}
-				continue;
-			}
-
-			// Check for a single line comment.
-			int slc_start = -1;
-			int slc_loop = 0;
-			bool slc_doloop = true;
-			do
-			{
-				slc_start = line.find("//", slc_loop);
-				if (slc_start != -1 && line.find("http:") == slc_start - 5)
-				{
-					slc_loop = slc_start + 1;
-					slc_start = 0;
-				}
-				else slc_doloop = false;
-			} while (slc_doloop);
-			if (slc_start != -1)
-			{
-				// If //#CLIENTSIDE is found, add the current code read as serverside script.
-				if (line.subString(slc_start, 13) == "//#CLIENTSIDE")
-				{
-					retVal.push_back(outLine);
-					outLine.clear();
-				}
-				line.removeI(slc_start, line.length());
-				doLoop = false;
-				continue;
-			}
-
-			doLoop = false;
-		}
-
-		// If line has any data left in it, add it to the retVal;
-		if (line.length() != 0)
-			outLine << (trimCode ? line.trimI() : line) << "\xa7";
-	}
-
-	// Add our code to the vector.  If serverside code was added, the size should now be 2.
-	retVal.push_back(outLine);
-	return retVal;
 }
 
 CString toWeaponName(const CString& code)

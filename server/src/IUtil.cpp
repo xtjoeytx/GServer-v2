@@ -119,3 +119,35 @@ unsigned char getColor(const CString& color)
 	}
 	return 0;
 }
+
+CString removeComments(const CString& code, const CString& newLine)
+{
+	CString ret(code);
+	int pos = -1;
+
+	// Remove // comments.
+	while ((pos = ret.find("//", pos + 1)) != -1)
+	{
+		//check for urls (http://)
+		if (pos > 0 && ret[pos - 1] == ':')
+			continue;
+
+		// check for //#CLIENTSIDE
+		if (ret.subString(pos, 13) == "//#CLIENTSIDE")
+			continue;
+
+		int len = ret.find(newLine, pos) - pos;
+		if (len < 0) len = -1;
+		ret.removeI(pos, len);
+	}
+
+	// Remove /* ... */ comments.
+	while ((pos = ret.find("/*", pos + 1)) != -1)
+	{
+		int len = ret.find("*/", pos) - pos;
+		if (len < 0) len = -1;
+		ret.removeI(pos, len + 2);
+	}
+
+	return ret;
+}

@@ -98,8 +98,6 @@ class TNPC
 		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
 		~TNPC();
 
-		static std::vector<CString> removeComments(const CString& code, bool trimCode = false);
-
 		// prop functions
 		CString getProp(unsigned char pId) const;
 		CString getProps(time_t newTime) const;

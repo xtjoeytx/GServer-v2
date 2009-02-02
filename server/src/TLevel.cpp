@@ -229,7 +229,39 @@ bool TLevel::reload()
 
 bool TLevel::loadLevel(const CString& pLevelName)
 {
-	return (getExtension(pLevelName) == ".nw" ? loadNW(pLevelName) : loadGraal(pLevelName));
+	CString ext(getExtension(pLevelName));
+	if (ext == ".nw") return loadNW(pLevelName);
+	else if (ext == ".graal") return loadGraal(pLevelName);
+	else if (ext == ".zelda") return loadZelda(pLevelName);
+	return false;
+}
+
+bool TLevel::loadZelda(const CString& pLevelName)
+{
+	// Get the appropriate filesystem.
+	CFileSystem* fileSystem = server->getFileSystem();
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = server->getFileSystem(FS_LEVEL);
+
+	// Path-To-File
+	levelName = pLevelName;
+	fileName = fileSystem->find(pLevelName);
+	modTime = fileSystem->getModTime(pLevelName);
+
+	// Load file
+	CString fileData;
+	if (fileData.load(fileName) == false) return false;
+
+	// Grab file version.
+	fileVersion = fileData.readChars(8);
+
+	// Check if it is actually a .graal level.  The 1.39-1.41r1 client actually
+	// saved .zelda as .graal.
+	if (fileVersion.subString(0, 2) == "GR")
+		return loadGraal(pLevelName);
+
+	int v = 0;
+	return false;
 }
 
 bool TLevel::loadGraal(const CString& pLevelName)
@@ -251,13 +283,14 @@ bool TLevel::loadGraal(const CString& pLevelName)
 	// Grab file version.
 	fileVersion = fileData.readChars(8);
 	int v = 0;
-	if (fileVersion == "GR-V1.01") v = 1;
+	if (fileVersion == "GR-V1.00") v = 0;
+	else if (fileVersion == "GR-V1.01") v = 1;
 	else if (fileVersion == "GR-V1.02") v = 2;
 	else if (fileVersion == "GR-V1.03") v = 3;
 
 	// Load tiles.
 	{
-		int bits = (v > 1 ? 13 : 12);
+		int bits = (v > 0 ? 13 : 12);
 		int read = 0;
 		unsigned int buffer = 0;
 		unsigned short code = 0;

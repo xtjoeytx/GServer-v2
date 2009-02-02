@@ -98,6 +98,9 @@ bool TPlayer::sendLogin()
 	// Tell the serverlist that the player connected.
 	server->getServerList()->addPlayer(this);
 
+	// Set loaded to true so our account is saved when we leave.
+	loaded = true;
+
 	return true;
 }
 
