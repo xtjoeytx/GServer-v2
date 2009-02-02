@@ -71,7 +71,8 @@ bool TAccount::loadAccount(const CString& pAccount)
 		// Seperate Section & Value
 		sep = fileData[i].find(' ');
 		section = fileData[i].subString(0, sep);
-		val = fileData[i].subString(sep + 1);
+		if (sep != -1)
+			val = fileData[i].subString(sep + 1);
 
 		if (section == "NAME") continue;
 		else if (section == "NICK") continue;
@@ -225,17 +226,17 @@ bool TAccount::saveAccount()
 	for (unsigned int i = 0; i < flagList.size(); i++)
 		newFile << "FLAG " << flagList[i] << "\r\n";
 
+	// Account Settings
+	newFile << "\r\n";
+	newFile << "BANNED " << CString((int)(isBanned == true ? 1 : 0)) << "\r\n";
+	newFile << "BANREASON " << banReason << "\r\n";
+	newFile << "COMMENTS " << accountComments << "\r\n";
+	newFile << "LOCALRIGHTS " << CString(adminRights) << "\r\n";
+	newFile << "IPRANGE " << adminIp << "\r\n";
+
 	// Folder Rights
 	for (unsigned int i = 0; i < folderList.size(); i++)
 		newFile << "FOLDERRIGHT " << folderList[i] << "\r\n";
-
-	// Account Settings
-	newFile << "\r\n";
-	newFile << "BANNED " << isBanned << "\r\n";
-	newFile << "BANREASON " << banReason << "\r\n";
-	newFile << "COMMENTS " << accountComments << "\r\n";
-	newFile << "LOCALRIGHTS " << adminRights << "\r\n";
-	newFile << "IPRANGE " << adminIp << "\r\n";
 	newFile << "LASTFOLDER " << lastFolder << "\r\n";
 
 	// Save the account now.

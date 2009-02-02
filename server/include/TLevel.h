@@ -161,6 +161,7 @@ class TLevel
 		// level-loading functions
 		bool loadLevel(const CString& pLevelName);
 		bool loadGraal(const CString& pLevelName);
+		bool loadZelda(const CString& pLevelName);
 		bool loadNW(const CString& pLevelName);
 
 		TServer* server;

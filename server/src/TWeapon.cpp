@@ -9,14 +9,32 @@ TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pSc
 {
 	if (pModTime == 0) modTime = time(0);
 
-	// Remove comments.
-	std::vector<CString> parsedCode = TNPC::removeComments(pScript, trimCode);
-	if (parsedCode.size() == 1) clientScript = parsedCode[0];
-	else if (parsedCode.size() > 1)
+	// Remove comments and separate clientside and serverside scripts.
+	CString nocomments = removeComments(pScript, "\xa7");
+	if (nocomments.find("//#CLIENTSIDE") != -1)
 	{
-		serverScript = parsedCode[0];
-		for (unsigned int i = 1; i < parsedCode.size(); ++i)
-			clientScript << parsedCode[i];
+		serverScript = nocomments.readString("//#CLIENTSIDE");
+		clientScript = CString("//#CLIENTSIDE\xa7") << nocomments.readString("");
+	}
+	else clientScript = nocomments;
+
+	// Trim the code if specified.
+	if (trimCode)
+	{
+		if (!serverScript.isEmpty())
+		{
+			std::vector<CString> code = serverScript.tokenize("\xa7");
+			serverScript.clear();
+			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+				serverScript << (*i).trim() << "\xa7";
+		}
+		if (!clientScript.isEmpty())
+		{
+			std::vector<CString> code = clientScript.tokenize("\xa7");
+			clientScript.clear();
+			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+				clientScript << (*i).trim() << "\xa7";
+		}
 	}
 }
 
