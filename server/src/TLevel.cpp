@@ -261,7 +261,144 @@ bool TLevel::loadZelda(const CString& pLevelName)
 		return loadGraal(pLevelName);
 
 	int v = 0;
-	return false;
+	if (fileVersion == "Z3-V1.03") v = 3;
+
+	// Load tiles.
+	{
+		int bits = (v > 3 ? 13 : 12);
+		int read = 0;
+		unsigned int buffer = 0;
+		unsigned short code = 0;
+		short tiles[2] = {-1,-1};
+		int boardIndex = 0;
+		int count = 1;
+		bool doubleMode = false;
+
+		// Read the tiles.
+		while (boardIndex < 64*64 && fileData.bytesLeft() != 0)
+		{
+			// Every control code/tile is either 12 or 13 bits.  WTF.
+			// Read in the bits.
+			while (read < bits)
+			{
+				buffer += ((unsigned char)fileData.readChar()) << read;
+				read += 8;
+			}
+
+			// Pull out a single 12/13 bit code from the buffer.
+			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
+			buffer >>= bits;
+			read -= bits;
+
+			// See if we have an RLE control code.
+			// Control codes determine how the RLE scheme works.
+			if (code & (bits == 12 ? 0x800 : 0x1000))
+			{
+				// If the 0x100 bit is set, we are in a double repeat mode.
+				// {double 4}56 = 56565656
+				if (code & 0x100) doubleMode = true;
+
+				// How many tiles do we count?
+				count = code & 0xFF;
+				continue;
+			}
+
+			// If our count is 1, just read in a tile.  This is the default mode.
+			if (count == 1)
+			{
+				levelTiles[boardIndex++] = (short)code;
+				continue;
+			}
+
+			// If we reach here, we have an RLE scheme.
+			// See if we are in double repeat mode or not.
+			if (doubleMode)
+			{
+				// Read in our first tile.
+				if (tiles[0] == -1)
+				{
+					tiles[0] = (short)code;
+					continue;
+				}
+
+				// Read in our second tile.
+				tiles[1] = (short)code;
+
+				// Add the tiles now.
+				for (int i = 0; i < count && boardIndex < 64*64-1; ++i)
+				{
+					levelTiles[boardIndex++] = tiles[0];
+					levelTiles[boardIndex++] = tiles[1];
+				}
+
+				// Clean up.
+				tiles[0] = tiles[1] = -1;
+				doubleMode = false;
+				count = 1;
+			}
+			// Regular RLE scheme.
+			else
+			{
+				for (int i = 0; i < count && boardIndex < 64*64; ++i)
+					levelTiles[boardIndex++] = (short)code;
+				count = 1;
+			}
+		}
+	}
+
+	// Load the links.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0 || line == "#") break;
+
+			std::vector<CString> vline = line.tokenize();
+			if (fileSystem->find(vline[1]).length() < 1)
+				continue;
+
+			levelLinks.push_back(new TLevelLink(vline));
+		}
+	}
+
+	// Load the baddies.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() < 3 || line[0] < 0) break;
+
+			char x = line.readChar();
+			char y = line.readChar();
+			char type = line.readChar();
+
+			// Ends with an invalid baddy.
+			if (x == -1 && y == -1 && type == -1)
+				break;
+
+			// Add the baddy.
+			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
+			if (baddy == 0)
+				continue;
+		}
+	}
+
+	// Load signs.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0) break;
+
+			char x = line.readGChar();
+			char y = line.readGChar();
+			CString text = line.readString("");
+
+			levelSigns.push_back(new TLevelSign(x, y, text, true));
+		}
+	}
+
+	return true;
 }
 
 bool TLevel::loadGraal(const CString& pLevelName)
