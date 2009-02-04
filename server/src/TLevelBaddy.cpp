@@ -78,6 +78,7 @@ CString TLevelBaddy::getProp(const int propId) const
 			unsigned int verseId = propId - BDPROP_VERSESIGHT;
 			if (verseId < verses.size())
 				return CString() >> (char)verses[verseId].length() << verses[verseId];
+			else return CString() >> (char)0;
 		}
 	}
 	return CString();

@@ -20,9 +20,6 @@ void codec::reset(uint8_t key) {
 }
 
 void codec::apply(CString& pBuf) {
-	// The first two eras had no encryption.
-	if (m_gen == ENCRYPT_GEN_1 || m_gen == ENCRYPT_GEN_2) return;
-
 	// Apply the correct decryption algorithm.
 	switch (m_gen)
 	{
