@@ -49,7 +49,12 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
 
 		case PLPROP_GANI:
-		return CString() >> (char)gAni.length() << gAni;
+		{
+			if (getVersionID(version) < CLVER_2)
+				return gAni;
+			else
+				return CString() >> (char)gAni.length() << gAni;
+		}
 
 		case PLPROP_HEADGIF:
 		return CString() >> (char)(headImg.length()+100) << headImg;
@@ -317,25 +322,40 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 
 			case PLPROP_GANI:
 			{
-				gAni = pPacket.readChars(pPacket.readGUChar());
-				if (gAni == "spin")
+				if (getVersionID(version) < CLVER_2)
 				{
-					CString nPacket;
-					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
-					char hx = (char)((x + 1.5f) * 2);
-					char hy = (char)((y + 2.0f) * 2);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
-					if (sprite % 4 == 0 || sprite % 4 == 2)
-					{
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
-					}
+					int sp = pPacket.readGUChar();
+					if (sp < 10)
+						gAni = CString() >> (char)sp;
 					else
 					{
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
+						sp -= 10;
+						if (sp < 0) break;
+						gAni = CString() >> (char)sp << pPacket.readChars(sp);
+					}
+				}
+				else
+				{
+					gAni = pPacket.readChars(pPacket.readGUChar());
+					if (gAni == "spin")
+					{
+						CString nPacket;
+						nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
+						char hx = (char)((x + 1.5f) * 2);
+						char hy = (char)((y + 2.0f) * 2);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
+						if (sprite % 4 == 0 || sprite % 4 == 2)
+						{
+							server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+						}
+						else
+						{
+							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
+							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
+						}
 					}
 				}
 			}

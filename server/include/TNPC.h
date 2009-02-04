@@ -99,9 +99,9 @@ class TNPC
 		~TNPC();
 
 		// prop functions
-		CString getProp(unsigned char pId) const;
-		CString getProps(time_t newTime) const;
-		void setProps(CString& pProps);
+		CString getProp(unsigned char pId, int clientVersion = CLVER_2_171) const;
+		CString getProps(time_t newTime, int clientVersion = CLVER_2_171) const;
+		void setProps(CString& pProps, int clientVersion = CLVER_2_171);
 
 		// set functions
 		void setId(unsigned int pId)	{ id = pId; }
