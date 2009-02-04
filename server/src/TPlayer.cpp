@@ -402,7 +402,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 
 void TPlayer::decryptPacket(CString& pPacket)
 {
-	// Version 2.01 - 2.18 encryption
+	// Version 1.41 - 2.18 encryption
 	// Was already decompressed so just decrypt the packet.
 	if (in_codec.getGen() == ENCRYPT_GEN_3)
 	{
@@ -1210,20 +1210,20 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	switch (type)
 	{
 		case CLIENTTYPE_CLIENT:
-			serverlog.out("Client (2.171)\n");
+			serverlog.out("Client\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case CLIENTTYPE_RC:
-			serverlog.out("RC (2.171)\n");
+			serverlog.out("RC\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case CLIENTTYPE_CLIENT2:
-			serverlog.out("Client (2.19+)\n");
+			serverlog.out("New Client (2.19+)\n");
 			type = CLIENTTYPE_CLIENT;
 			in_codec.setGen(ENCRYPT_GEN_4);
 			break;
 		case CLIENTTYPE_RC2:
-			serverlog.out("RC (2.19+)\n");
+			serverlog.out("New RC (2.19+)\n");
 			type = CLIENTTYPE_RC;
 			in_codec.setGen(ENCRYPT_GEN_4);
 			getKey = true;
@@ -1412,7 +1412,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		server->sendPacketToLevel(packet, pmap, this, false);
 	else server->sendPacketToLevel(packet, level, this);
-	npc->setProps(npcProps);
+	npc->setProps(npcProps, getVersionID(version));
 
 	return true;
 }

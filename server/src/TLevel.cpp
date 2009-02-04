@@ -114,13 +114,13 @@ CString TLevel::getLinksPacket()
 	return retVal;
 }
 
-CString TLevel::getNpcsPacket(time_t time)
+CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 {
 	CString retVal;
 	for (std::vector<TNPC *>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 	{
 		TNPC* npc = *i;
-		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time) << "\n";
+		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
 	}
 	return retVal;
 }

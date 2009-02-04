@@ -90,10 +90,9 @@ level(pLevel)
 
 TNPC::~TNPC()
 {
-	// TODO: Remove from npcIds
 }
 
-CString TNPC::getProp(unsigned char pId) const
+CString TNPC::getProp(unsigned char pId, int clientVersion) const
 {
 	switch(pId)
 	{
@@ -140,7 +139,11 @@ CString TNPC::getProp(unsigned char pId) const
 			return CString() >> (char)0;
 
 		case NPCPROP_GANI:
-		return CString() >> (char)gani.length() << gani;
+		{
+			// Old clients don't use ganis.  Instead, this is the bow power and image.
+			if (clientVersion < CLVER_2) return gani;
+			else return CString() >> (char)gani.length() << gani;
+		}
 
 		case NPCPROP_VISFLAGS:
 		return CString() >> (char)visFlags;
@@ -160,7 +163,10 @@ CString TNPC::getProp(unsigned char pId) const
 		// Sprite is deprecated and has been replaced by def.gani.
 		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
 		case NPCPROP_SPRITE:
-		return CString() >> (char)(sprite % 4);
+		{
+			if (clientVersion < CLVER_2) return CString() >> (char)sprite;
+			else return CString() >> (char)(sprite % 4);
+		}
 
 		case NPCPROP_COLORS:
 		return CString() >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
@@ -232,20 +238,20 @@ CString TNPC::getProp(unsigned char pId) const
 	return CString();
 }
 
-CString TNPC::getProps(time_t newTime) const
+CString TNPC::getProps(time_t newTime, int clientVersion) const
 {
 	CString retVal;
 	for (int i = 0; i < npcpropcount; i++)
 	{
 		if (modTime[i] != 0 && modTime[i] >= newTime)
-			retVal >> (char)i << getProp(i);
+			retVal >> (char)i << getProp(i, clientVersion);
 		if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
 			retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
 	}
 	return retVal;
 }
 
-void TNPC::setProps(CString& pProps)
+void TNPC::setProps(CString& pProps, int clientVersion)
 {
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
@@ -307,10 +313,7 @@ void TNPC::setProps(CString& pProps)
 					sp -= 30;
 					len = pProps.readGUChar();
 					if (len > 0)
-					{
-						// TODO: foldersconfig stuff.
 						swordImage = pProps.readChars(len);
-					}
 					else swordImage = "";
 					//swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
@@ -328,10 +331,7 @@ void TNPC::setProps(CString& pProps)
 					sp -= 10;
 					len = pProps.readGUChar();
 					if (len > 0)
-					{
-						// TODO: foldersconfig stuff.
 						shieldImage = pProps.readChars(len);
-					}
 					else shieldImage = "";
 				}
 				shieldPower = sp;
@@ -339,7 +339,23 @@ void TNPC::setProps(CString& pProps)
 			break;
 
 			case NPCPROP_GANI:
-				gani = pProps.readChars(pProps.readGUChar());
+			{
+				// Older clients don't use ganis.  This is the bow power and image instead.
+				if (clientVersion < CLVER_2)
+				{
+					int sp = pProps.readGUChar();
+					if (sp < 10)
+						gani = CString() >> (char)sp;
+					else
+					{
+						sp -= 10;
+						if (sp < 0) break;
+						gani = CString() >> (char)sp << pProps.readChars(sp);
+					}
+				}
+				else
+					gani = pProps.readChars(pProps.readGUChar());
+			}
 			break;
 
 			case NPCPROP_VISFLAGS:
@@ -355,7 +371,6 @@ void TNPC::setProps(CString& pProps)
 			break;
 
 			case NPCPROP_HURTDXDY:
-				// TODO: Might have the same formatting as the player GMAPX/Y props.
 				hurtX = ((float)(pProps.readGUChar()-32))/32;
 				hurtY = ((float)(pProps.readGUChar()-32))/32;
 			break;
