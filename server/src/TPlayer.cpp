@@ -18,8 +18,8 @@
 */
 const char* __defaultfiles[] = {
 	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani", "grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani", "idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani",
-	"sword?.png",
-	"shield?.png",
+	"sword?.png", "sword?.gif",
+	"shield?.png", "shield?.gif",
 	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav", 
 };
 
@@ -167,7 +167,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(CLIENTTYPE_AWAIT), allowBomb(false), hadBomb(false),
+id(pId), type(CLIENTTYPE_AWAIT), versionID(0), allowBomb(false), hadBomb(false),
 pmap(0), loaded(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
@@ -467,6 +467,19 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setheadallowed", true) == false) return;
 
+		// Make sure it isn't one of the default files.
+		bool isDefault = false;
+		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+
+		// Don't search for the file if it is one of the defaults.  This protects against
+		// malicious gservers.
+		if (isDefault)
+		{
+			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
+			return;
+		}
+
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
 		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -499,6 +512,19 @@ void TPlayer::processChat(CString pChat)
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
 		if (server->getSettings()->getBool("setbodyallowed", true) == false) return;
+
+		// Make sure it isn't one of the default files.
+		bool isDefault = false;
+		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+
+		// Don't search for the file if it is one of the defaults.  This protects against
+		// malicious gservers.
+		if (isDefault)
+		{
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+			return;
+		}
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
@@ -533,6 +559,19 @@ void TPlayer::processChat(CString pChat)
 	{
 		if (server->getSettings()->getBool("setswordallowed", true) == false) return;
 
+		// Make sure it isn't one of the default files.
+		bool isDefault = false;
+		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+
+		// Don't search for the file if it is one of the defaults.  This protects against
+		// malicious gservers.
+		if (isDefault)
+		{
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			return;
+		}
+
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
 		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -565,6 +604,19 @@ void TPlayer::processChat(CString pChat)
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
 		if (server->getSettings()->getBool("setshieldallowed", true) == false) return;
+
+		// Make sure it isn't one of the default files.
+		bool isDefault = false;
+		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+
+		// Don't search for the file if it is one of the defaults.  This protects against
+		// malicious gservers.
+		if (isDefault)
+		{
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			return;
+		}
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
@@ -898,7 +950,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	levelName = level->getLevelName();
 
 	// Tell the client their new level.
-	if (modTime == 0)
+	if (modTime == 0 || versionID < CLVER_2)
 	{
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		{
@@ -943,7 +995,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time == 0)
 	{
-		if (modTime != pLevel->getModTime())
+		if (modTime != pLevel->getModTime() || versionID < CLVER_2)
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
@@ -981,6 +1033,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
+
+	// NPCs like to cause 1.41 to crash for some reason.
+	//if (versionID < CLVER_2) skipActors = true;
 
 	if (skipActors == false)
 	{
@@ -1083,6 +1138,8 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
+	// 1.41r1 and below don't cache links/signs.
+	if (versionID < CLVER_2) return 0;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
 		SCachedLevel* cl = *i;
@@ -1245,6 +1302,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Read Client-Version
 	version = pPacket.readChars(8);
+	versionID = getVersionID(version);
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
@@ -1271,7 +1329,6 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Check if the specified client is allowed access.
 	std::vector<CString>* allowedVersions = server->getAllowedVersions();
-	int cVersion = getVersionID(version);
 	bool allowed = false;
 	for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
 	{
@@ -1281,7 +1338,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			CString ver1 = ver.readString(":").trim();
 			CString ver2 = ver.readString("").trim();
 			int aVersion[2] = { getVersionID(ver1), getVersionID(ver2) };
-			if (cVersion >= aVersion[0] && cVersion <= aVersion[1])
+			if (versionID >= aVersion[0] && versionID <= aVersion[1])
 			{
 				allowed = true;
 				break;
@@ -1290,7 +1347,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		else
 		{
 			int aVersion = getVersionID(ver);
-			if (cVersion == aVersion)
+			if (versionID == aVersion)
 			{
 				allowed = true;
 				break;
@@ -1412,7 +1469,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		server->sendPacketToLevel(packet, pmap, this, false);
 	else server->sendPacketToLevel(packet, level, this);
-	npc->setProps(npcProps, getVersionID(version));
+	npc->setProps(npcProps, versionID);
 
 	return true;
 }
