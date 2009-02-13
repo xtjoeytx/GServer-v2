@@ -28,6 +28,9 @@ level(pLevel)
 	memset((void*)saves, 0, sizeof(saves));
 	memset((void*)modTime, 0, sizeof(modTime));
 
+	// bowImage for pre-2.x clients.
+	bowImage >> (char)0;
+
 	// imagePart needs to be Graal-packed.
 	for (int i = 0; i < 6; i++)
 		imagePart.writeGChar(0);
@@ -139,11 +142,9 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)0;
 
 		case NPCPROP_GANI:
-		{
-			// Old clients don't use ganis.  Instead, this is the bow power and image.
-			if (clientVersion < CLVER_2) return gani;
-			else return CString() >> (char)gani.length() << gani;
-		}
+		if (clientVersion < CLVER_2)
+			return bowImage;
+		return CString() >> (char)gani.length() << gani;
 
 		case NPCPROP_VISFLAGS:
 		return CString() >> (char)visFlags;
@@ -245,8 +246,11 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	{
 		if (modTime[i] != 0 && modTime[i] >= newTime)
 			retVal >> (char)i << getProp(i, clientVersion);
-		if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
-			retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
+		if (clientVersion > CLVER_1_411)
+		{
+			if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
+				retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
+		}
 	}
 	return retVal;
 }
@@ -339,23 +343,21 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			break;
 
 			case NPCPROP_GANI:
-			{
-				// Older clients don't use ganis.  This is the bow power and image instead.
 				if (clientVersion < CLVER_2)
 				{
+					// Older clients don't use ganis.  This is the bow power and image instead.
 					int sp = pProps.readGUChar();
 					if (sp < 10)
-						gani = CString() >> (char)sp;
+						bowImage = CString() >> (char)sp;
 					else
 					{
 						sp -= 10;
 						if (sp < 0) break;
-						gani = CString() >> (char)sp << pProps.readChars(sp);
+						bowImage = CString() >> (char)(sp + 10) << pProps.readChars(sp);
 					}
+					break;
 				}
-				else
-					gani = pProps.readChars(pProps.readGUChar());
-			}
+				gani = pProps.readChars(pProps.readGUChar());
 			break;
 
 			case NPCPROP_VISFLAGS:

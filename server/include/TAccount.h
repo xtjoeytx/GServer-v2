@@ -43,7 +43,7 @@ enum
 	PLPROP_BOMBPOWER		= 7,
 	PLPROP_SWORDPOWER		= 8,
 	PLPROP_SHIELDPOWER		= 9,
-	PLPROP_GANI				= 10,
+	PLPROP_GANI				= 10,	// PLPROP_BOWGIF in pre-2.x
 	PLPROP_HEADGIF			= 11,
 	PLPROP_CURCHAT			= 12,
 	PLPROP_COLORS			= 13,
@@ -163,7 +163,7 @@ class TAccount
 		int accountIp, adminRights;
 
 		// Player-Attributes
-		CString attrList[30], bodyImg, chatMsg, headImg, horseImg, gAni, language;
+		CString attrList[30], bodyImg, chatMsg, headImg, horseImg, gani, bowImage, language;
 		CString levelName, nickName, shieldImg, swordImg;
 		float deviation, oldDeviation, power, rating, x, y, z;
 		int x2, y2, z2, gmaplevelx, gmaplevely;

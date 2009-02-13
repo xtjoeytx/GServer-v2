@@ -12,7 +12,7 @@ TAccount::TAccount(TServer* pServer, const CString& pAccount)
 isBanned(false), isFtp(false), isLoadOnly(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
-bodyImg("body.png"), headImg("head0.png"), gAni("idle"), language("English"),
+bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
 nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
 deviation(350.0f), oldDeviation(350.0f), power(3.0), rating(1500.0f), x(0), y(0), z(0),
 x2(0), y2(0), z2(0), gmaplevelx(0), gmaplevely(0),
@@ -24,6 +24,7 @@ statusMsg(0)
 {
 	// Other Defaults
 	memset((void*)&colors, 0, 5);
+	bowImage >> (char)0;
 }
 
 TAccount::~TAccount()
@@ -84,7 +85,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 		else if (section == "MAXHP") maxPower = (int)strtoint(val);
 		else if (section == "HP") power = (float)strtofloat(val);
 		else if (section == "RUPEES") gralatc = strtoint(val);
-		else if (section == "ANI") gAni = val;
+		else if (section == "ANI") gani = val;
 		else if (section == "ARROWS") arrowc = strtoint(val);
 		else if (section == "BOMBS") bombc = strtoint(val);
 		else if (section == "GLOVEP") glovePower = strtoint(val);
@@ -181,7 +182,7 @@ bool TAccount::saveAccount()
 	newFile << "MAXHP " << CString(maxPower) << "\r\n";
 	newFile << "HP " << CString(power) << "\r\n";
 	newFile << "RUPEES " << CString(gralatc) << "\r\n";
-	newFile << "ANI " << gAni << "\r\n";
+	newFile << "ANI " << gani << "\r\n";
 	newFile << "ARROWS " << CString(arrowc) << "\r\n";
 	newFile << "BOMBS " << CString(bombc) << "\r\n";
 	newFile << "GLOVEP " << CString(glovePower) << "\r\n";
