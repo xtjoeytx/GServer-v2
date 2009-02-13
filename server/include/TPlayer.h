@@ -208,9 +208,11 @@ class TPlayer : public TAccount, public CSocketStub
 		TMap* getMap()			{ return pmap; }
 		int getId() const;
 		int getType() const;
-		time_t getLastData() const	{ return lastData; }
+		time_t getLastData() const		{ return lastData; }
 		CString getFlag(const CString& flag) const;
-		CString getGuild() const	{ return guild; }
+		CString getGuild() const		{ return guild; }
+		int getVersion() const			{ return versionID; }
+		CString getVersionStr() const	{ return version; }
 
 		// Set Properties
 		void setChat(const CString& pChat);
@@ -308,7 +310,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CString version, os;
 		int codepage;
 		TLevel *level;
-		int id, type;
+		int id, type, versionID;
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;

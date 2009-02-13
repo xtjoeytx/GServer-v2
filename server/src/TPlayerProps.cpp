@@ -49,12 +49,9 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
 
 		case PLPROP_GANI:
-		{
-			if (getVersionID(version) < CLVER_2)
-				return gAni;
-			else
-				return CString() >> (char)gAni.length() << gAni;
-		}
+		if (versionID < CLVER_2)
+			return bowImage;
+		return CString() >> (char)gani.length() << gani;
 
 		case PLPROP_HEADGIF:
 		return CString() >> (char)(headImg.length()+100) << headImg;
@@ -322,40 +319,39 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 
 			case PLPROP_GANI:
 			{
-				if (getVersionID(version) < CLVER_2)
+				if (versionID < CLVER_2)
 				{
 					int sp = pPacket.readGUChar();
 					if (sp < 10)
-						gAni = CString() >> (char)sp;
+						bowImage = CString() >> (char)sp;
 					else
 					{
 						sp -= 10;
 						if (sp < 0) break;
-						gAni = CString() >> (char)sp << pPacket.readChars(sp);
+						bowImage = CString() >> (char)(sp + 10) << pPacket.readChars(sp);
 					}
+					break;
 				}
-				else
+
+				gani = pPacket.readChars(pPacket.readGUChar());
+				if (gani == "spin")
 				{
-					gAni = pPacket.readChars(pPacket.readGUChar());
-					if (gAni == "spin")
+					CString nPacket;
+					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
+					char hx = (char)((x + 1.5f) * 2);
+					char hy = (char)((y + 2.0f) * 2);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
+					if (sprite % 4 == 0 || sprite % 4 == 2)
 					{
-						CString nPacket;
-						nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
-						char hx = (char)((x + 1.5f) * 2);
-						char hy = (char)((y + 2.0f) * 2);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
-						if (sprite % 4 == 0 || sprite % 4 == 2)
-						{
-							server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
-							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
-						}
-						else
-						{
-							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
-							server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
-						}
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+					}
+					else
+					{
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
 					}
 				}
 			}
@@ -756,7 +752,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			// on if our client supports precise movement or not.  Versions 2.3+
 			// support precise movement.
 			bool MOVE_PRECISE = false;
-			if (getVersionID(version) >= CLVER_2_3) MOVE_PRECISE = true;
+			if (versionID >= CLVER_2_3) MOVE_PRECISE = true;
 
 			if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
 			else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), getLevel(), this);

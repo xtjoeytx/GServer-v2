@@ -19,7 +19,7 @@ enum
 	NPCPROP_BOMBPOWER		= 9,
 	NPCPROP_SWORDIMAGE		= 10,
 	NPCPROP_SHIELDIMAGE		= 11,
-	NPCPROP_GANI			= 12,
+	NPCPROP_GANI			= 12,	// NPCPROP_BOWGIF in pre-2.x
 	NPCPROP_VISFLAGS		= 13,
 	NPCPROP_BLOCKFLAGS		= 14,
 	NPCPROP_MESSAGE			= 15,
@@ -125,7 +125,7 @@ class TNPC
 		unsigned char darts, bombs, glovePower, bombPower, swordPower, shieldPower;
 		unsigned char visFlags, blockFlags, sprite, colors[5], power, ap;
 		CString gAttribs[30];
-		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, gani;
+		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage, gani;
 		CString nickName, imagePart, chatMsg, weaponName;
 		CString serverScript, clientScript;
 		unsigned char saves[10];
