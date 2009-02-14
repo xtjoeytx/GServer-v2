@@ -28,6 +28,12 @@ CFileSystem::CFileSystem(TServer* pServer)
 {
 }
 
+void CFileSystem::clear()
+{
+	fileList.clear();
+	dirList.clear();
+}
+
 void CFileSystem::addDir(const CString& dir, const CString& wildcard)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);

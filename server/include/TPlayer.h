@@ -63,9 +63,52 @@ enum
 	PLI_SHOOT			= 40,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
-	PLI_RC_CHAT			= 79,
+	PLI_RC_SERVEROPTIONSGET		= 51,
+	PLI_RC_SERVEROPTIONSSET		= 52,
+	PLI_RC_FOLDERCONFIGGET		= 53,
+	PLI_RC_FOLDERCONFIGSET		= 54,
+	PLI_RC_RESPAWNSET			= 55,
+	PLI_RC_HORSELIFESET			= 56,
+	PLI_RC_APINCREMENTSET		= 57,
+	PLI_RC_BADDYRESPAWNSET		= 58,
+	PLI_RC_PLAYERPROPSGET		= 59,
+	PLI_RC_PLAYERPROPSSET		= 60,
+	PLI_RC_DISCONNECTPLAYER		= 61,
+	PLI_RC_UPDATELEVELS			= 62,
+	PLI_RC_ADMINMESSAGE			= 63,
+	PLI_RC_PRIVADMINMESSAGE		= 64,
+	PLI_RC_LISTRCS				= 65,
+	PLI_RC_DISCONNECTRC			= 66,
+	PLI_RC_APPLYREASON			= 67,
+	PLI_RC_SERVERFLAGSGET		= 68,
+	PLI_RC_SERVERFLAGSSET		= 69,
+	PLI_RC_ACCOUNTADD			= 70,
+	PLI_RC_ACCOUNTDEL			= 71,
+	PLI_RC_ACCOUNTLISTGET		= 72,
+	PLI_RC_PLAYERPROPSGET2		= 73,	// Gets by player ID
+	PLI_RC_PLAYERPROPSGET3		= 74,	// Gets by player account name.
+	PLI_RC_PLAYERPROPSRESET		= 75,
+	PLI_RC_PLAYERPROPSSET2		= 76,
+	PLI_RC_ACCOUNTGET			= 77,
+	PLI_RC_ACCOUNTSET			= 78,
+	PLI_RC_CHAT					= 79,
 	PLI_PROFILEGET		= 80,
 	PLI_PROFILESET		= 81,
+	PLI_RC_WARPPLAYER			= 82,
+	PLI_RC_PLAYERRIGHTSGET		= 83,
+	PLI_RC_PLAYERRIGHTSSET		= 84,
+	PLI_RC_PLAYERCOMMENTSGET	= 85,
+	PLI_RC_PLAYERCOMMENTSSET	= 86,
+	PLI_RC_PLAYERBANGET			= 87,
+	PLI_RC_PLAYERBANSET			= 88,
+	PLI_RC_FILEBROWSER_START	= 89,
+	PLI_RC_FILEBROWSER_CD		= 90,
+	PLI_RC_FILEBROWSER_END		= 91,
+	PLI_RC_FILEBROWSER_DOWN		= 92,
+	PLI_RC_FILEBROWSER_UP		= 93,
+	PLI_RC_FILEBROWSER_MOVE		= 96,
+	PLI_RC_FILEBROWSER_DELETE	= 97,
+	PLI_RC_FILEBROWSER_RENAME	= 98,
 	PLI_UNKNOWN152		= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN154		= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
@@ -109,7 +152,7 @@ enum
 	PLO_SHOWIMG			= 32,
 	PLO_NPCWEAPONADD	= 33,
 	PLO_NPCWEAPONDEL	= 34,
-	PLO_ADMINMESSAGE	= 35,
+	PLO_RC_ADMINMESSAGE	= 35,
 	PLO_EXPLOSION		= 36,
 	PLO_PRIVATEMESSAGE	= 37,
 	PLO_PUSHAWAY		= 38,	// What does this do?
@@ -128,9 +171,13 @@ enum
 	PLO_DELPLAYER		= 56,
 	PLO_LARGEFILESTART	= 68,
 	PLO_LARGEFILEEND	= 69,
+	PLO_RC_ACCOUNTLISTGET		= 70,
+	PLO_RC_PLAYERPROPSGET		= 72,
 	PLO_EMPTY73			= 73,
-	PLO_RCMESSAGE		= 74,
+	PLO_RC_CHAT			= 74,
 	PLO_PROFILE			= 75,
+	PLO_RC_SERVEROPTIONSGET		= 76,
+	PLO_RC_FOLDERCONFIGGET		= 77,
 	PLO_NPCSERVERADDR	= 79,
 	PLO_UNKNOWN82		= 82,	// Answers PLI_UNKNOWN152's request.
 	PLO_LARGEFILESIZE	= 84,
@@ -228,9 +275,11 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Prop-Manipulation
 		CString getProp(int pPropId);
-		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false);
+		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer* rc = 0);
 		void sendProps(const bool *pProps, int pCount);
 		CString getProps(const bool *pProps, int pCount);
+		void setPropsRC(CString& pPacket, TPlayer* rc);
+		CString getPropsRC();
 
 		// Socket-Functions
 		bool doMain();
@@ -241,6 +290,8 @@ class TPlayer : public TAccount, public CSocketStub
 		void disconnect();
 		void processChat(CString pChat);
 		bool isStaff();
+		bool isRC()				{ return (type == CLIENTTYPE_RC || type == CLIENTTYPE_RC2); }
+		bool isClient()			{ return (type == CLIENTTYPE_CLIENT || type == CLIENTTYPE_CLIENT2); }
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
@@ -283,11 +334,55 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_LANGUAGE(CString& pPacket);
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
+		bool msgPLI_SHOOT(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
+
+		bool msgPLI_RC_SERVEROPTIONSGET(CString& pPacket);
+		bool msgPLI_RC_SERVEROPTIONSSET(CString& pPacket);
+		bool msgPLI_RC_FOLDERCONFIGGET(CString& pPacket);
+		bool msgPLI_RC_FOLDERCONFIGSET(CString& pPacket);
+		bool msgPLI_RC_RESPAWNSET(CString& pPacket);
+		bool msgPLI_RC_HORSELIFESET(CString& pPacket);
+		bool msgPLI_RC_APINCREMENTSET(CString& pPacket);
+		bool msgPLI_RC_BADDYRESPAWNSET(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSGET(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSSET(CString& pPacket);
+		bool msgPLI_RC_DISCONNECTPLAYER(CString& pPacket);
+		bool msgPLI_RC_UPDATELEVELS(CString& pPacket);
+		bool msgPLI_RC_ADMINMESSAGE(CString& pPacket);
+		bool msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket);
+		bool msgPLI_RC_LISTRCS(CString& pPacket);
+		bool msgPLI_RC_DISCONNECTRC(CString& pPacket);
+		bool msgPLI_RC_APPLYREASON(CString& pPacket);
+		bool msgPLI_RC_SERVERFLAGSGET(CString& pPacket);
+		bool msgPLI_RC_SERVERFLAGSSET(CString& pPacket);
+		bool msgPLI_RC_ACCOUNTADD(CString& pPacket);
+		bool msgPLI_RC_ACCOUNTDEL(CString& pPacket);
+		bool msgPLI_RC_ACCOUNTLISTGET(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSGET2(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSGET3(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSRESET(CString& pPacket);
+		bool msgPLI_RC_PLAYERPROPSSET2(CString& pPacket);
+		bool msgPLI_RC_ACCOUNTGET(CString& pPacket);
+		bool msgPLI_RC_ACCOUNTSET(CString& pPacket);
 		bool msgPLI_RC_CHAT(CString& pPacket);
 		bool msgPLI_PROFILEGET(CString& pPacket);
 		bool msgPLI_PROFILESET(CString& pPacket);
-		bool msgPLI_SHOOT(CString& pPacket);
+		bool msgPLI_RC_WARPPLAYER(CString& pPacket);
+		bool msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket);
+		bool msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket);
+		bool msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket);
+		bool msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket);
+		bool msgPLI_RC_PLAYERBANGET(CString& pPacket);
+		bool msgPLI_RC_PLAYERBANSET(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_START(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_CD(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_END(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_UP(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket);
+		bool msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket);
 
 	private:
 		// Login functions.
@@ -314,7 +409,6 @@ class TPlayer : public TAccount, public CSocketStub
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;
-		bool hadBomb;
 		TMap* pmap;
 		int carryNpcId;
 		bool carryNpcThrown;

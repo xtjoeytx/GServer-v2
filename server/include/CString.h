@@ -84,6 +84,7 @@ class CString
 		CString guntokenize() const;
 		bool match(const CString& pMask) const;
 		bool comparei(const CString& pOther) const;
+		bool isNumber();
 
 		/* In-Functions */
 		inline CString& escapeI();
