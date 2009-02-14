@@ -97,7 +97,6 @@ int TServer::init()
 	serverlog.out("     Folder config: ");
 	if (settings.getBool("nofoldersconfig", false) == false)
 	{
-		foldersConfig = CString::loadToken(CString() << serverpath << "config/foldersconfig.txt", "\n", true);
 		serverlog.out("ENABLED\n");
 	} else serverlog.out("disabled\n");
 
@@ -105,56 +104,9 @@ int TServer::init()
 	serverlog.out("     Loading file system...\n");
 	filesystem_accounts.addDir("accounts");
 	if (settings.getBool("nofoldersconfig", false) == true)
-	{
-		filesystem[0].addDir("world");
-		if (settings.getStr("sharefolder").length() > 0)
-		{
-			std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
-			for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
-				filesystem[0].addDir(i->trim());
-		}
-	}
-	// Folders config.
+		loadAllFolders();
 	else
-	{
-		for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
-		{
-			// No comments.
-			if ((*i)[0] == '#') continue;
-
-			// Parse the line.
-			CString type = i->readString(" ");
-			CString config = i->readString("");
-			type.trimI();
-			config.trimI();
-			CFileSystem::fixPathSeparators(&config);
-
-			// Get the directory.
-			CString dirNoWild;
-			int pos = -1;
-			if ((pos = config.findl(CFileSystem::getPathSeparator())) != -1)
-				dirNoWild = config.remove(pos + 1);
-			CString dir = CString("world/") << dirNoWild;
-			CString wildcard = config.remove(0, dirNoWild.length());
-
-			// Find out which file system to add it to.
-			int fs = -1;
-			int j = 0;
-			while (filesystemTypes[j] != 0)
-			{
-				if (type.comparei(CString(filesystemTypes[j])))
-				{
-					fs = j;
-					break;
-				}
-				++j;
-			}
-
-			// Add it to the appropriate file system.
-			if (fs != -1) { filesystem[fs].addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), filesystemTypes[fs]); }
-			filesystem[0].addDir(dir, wildcard);
-		}
-	}
+		loadFolderConfig();
 
 	// Load status list.
 	serverlog.out("     Loading status list...\n");
@@ -185,6 +137,15 @@ int TServer::init()
 				weaponList.push_back(weapon);
 			}
 		}
+
+		// Add the default weapons.
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bow")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bomb")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("superbomb")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireball")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireblast")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("nukeshot")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("joltbomb")));
 	}
 
 	// Load gmaps.
@@ -236,7 +197,7 @@ int TServer::init()
 
 	// Start listening on the player socket.
 	serverlog.out("     Initializing player listen socket.\n");
-	if (playerSock.init("", settings.getStr("serverport").text()))
+	if (playerSock.init(0, settings.getStr("serverport").text()))
 	{
 		serverlog.out("** [Error] Could not initialize listening socket...\n");
 		return ERR_LISTEN;
@@ -382,6 +343,71 @@ bool TServer::onRecv()
 	sockManager.registerSocket((CSocketStub*)newPlayer);
 
 	return true;
+}
+
+/////////////////////////////////////////////////////
+
+void TServer::loadAllFolders()
+{
+	for (int i = 0; i < FS_COUNT; ++i)
+		filesystem[i].clear();
+
+	filesystem[0].addDir("world");
+	if (settings.getStr("sharefolder").length() > 0)
+	{
+		std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
+		for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
+			filesystem[0].addDir(i->trim());
+	}
+}
+
+void TServer::loadFolderConfig()
+{
+	for (int i = 0; i < FS_COUNT; ++i)
+		filesystem[i].clear();
+
+	foldersConfig = CString::loadToken(CString() << serverpath << "config/foldersconfig.txt", "\n", true);
+	for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
+	{
+		// No comments.
+		int cLoc = -1;
+		if ((cLoc = (*i).find("#")) != -1)
+			(*i).removeI(cLoc);
+		(*i).trimI();
+		if ((*i).length() == 0) continue;
+
+		// Parse the line.
+		CString type = i->readString(" ");
+		CString config = i->readString("");
+		type.trimI();
+		config.trimI();
+		CFileSystem::fixPathSeparators(&config);
+
+		// Get the directory.
+		CString dirNoWild;
+		int pos = -1;
+		if ((pos = config.findl(CFileSystem::getPathSeparator())) != -1)
+			dirNoWild = config.remove(pos + 1);
+		CString dir = CString("world/") << dirNoWild;
+		CString wildcard = config.remove(0, dirNoWild.length());
+
+		// Find out which file system to add it to.
+		int fs = -1;
+		int j = 0;
+		while (filesystemTypes[j] != 0)
+		{
+			if (type.comparei(CString(filesystemTypes[j])))
+			{
+				fs = j;
+				break;
+			}
+			++j;
+		}
+
+		// Add it to the appropriate file system.
+		if (fs != -1) { filesystem[fs].addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), filesystemTypes[fs]); }
+		filesystem[0].addDir(dir, wildcard);
+	}
 }
 
 /////////////////////////////////////////////////////
@@ -746,7 +772,9 @@ void TServer::sendPacketTo(int who, CString pPacket) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i)->getType() == who)
+		if ((*i)->isRC() && (who == CLIENTTYPE_RC || who == CLIENTTYPE_RC2))
+			(*i)->sendPacket(pPacket);
+		if ((*i)->isClient() && (who == CLIENTTYPE_CLIENT || who == CLIENTTYPE_CLIENT2))
 			(*i)->sendPacket(pPacket);
 	}
 }

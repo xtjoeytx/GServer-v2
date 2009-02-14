@@ -130,6 +130,8 @@ class TAccount
 		TAccount(TServer* pServer, const CString& pAccount = "defaultaccount");
 		~TAccount();
 
+		static bool meetsConditions(CString fileName, CString conditions);
+
 		// Load/Save Account
 		bool loadAccount(const CString& pAccount);
 		bool saveAccount();

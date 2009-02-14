@@ -56,41 +56,47 @@ bool TPlayer::sendLogin()
 
 	// Player's load different than RCs.
 	bool succeeded = false;
-	if (type == CLIENTTYPE_CLIENT) succeeded = sendLoginClient();
-	else if (type == CLIENTTYPE_RC) succeeded = sendLoginRC();
+	if (isClient()) succeeded = sendLoginClient();
+	else if (isRC()) succeeded = sendLoginRC();
 	if (succeeded == false) return false;
 
 	// Exchange props with everybody on the server.
 	{
+		// RC props are sent in a "special" way.  As in retarded.
+		CString myRCProps;
+		myRCProps >> (char)PLO_ADDPLAYER >> (short)id
+			>> (char)accountName.length() << accountName
+			>> (char)PLPROP_CURLEVEL << getProp(PLPROP_CURLEVEL)
+			>> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME)
+			>> (char)PLPROP_HEADGIF << getProp(PLPROP_HEADGIF)
+			>> (char)PLPROP_BODYIMG << getProp(PLPROP_BODYIMG);
+
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
 
-			// Get the other player's props.
-			if (player->getType() == CLIENTTYPE_CLIENT)
-			{
-				// Send my props to the player.
+			// Send the other player my props.
+			if (player->isClient())
 				player->sendPacket(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			else
+				player->sendPacket(myRCProps);
 
-				// Get their props.
+			// Get my props now.
+			if (isClient())
 				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-			}
-			else if (player->getType() == CLIENTTYPE_RC)
+			else
 			{
-				// Send my props to the player.
-				// Send the RC login props since they don't need anything else.
-				player->sendPacket(this->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool)));
-
-				// Get their props.
-				CString packet = player->getProps(__getLoginRC, sizeof(__getLoginRC)/sizeof(bool));
-				if (packet.length() == 0) continue;
-
-				// RCs send PLO_ADDPLAYER instead of PLO_OTHERPLPROPS.
-				// getProps() writes in PLO_OTHERPLPROPS so we alter it here.
-				packet[0] = PLO_ADDPLAYER + 32;
-				this->sendPacket(packet);
+				// Get the other player's RC props.
+				CString otherRCProps;
+				otherRCProps >> (char)PLO_ADDPLAYER >> (short)player->getId()
+					>> (char)player->getAccountName().length() << player->getAccountName()
+					>> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL)
+					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
+					>> (char)PLPROP_HEADGIF << player->getProp(PLPROP_HEADGIF)
+					>> (char)PLPROP_BODYIMG << player->getProp(PLPROP_BODYIMG);
+				this->sendPacket(otherRCProps);
 			}
 		}
 	}
@@ -217,8 +223,8 @@ bool TPlayer::sendLoginRC()
 
 	// Send the RC join message to the RC.
 	// TODO: Custom RC join message (rcmessage.txt)
-	sendPacket(CString() >> (char)PLO_RCMESSAGE << "Welcome to RC.");
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RCMESSAGE << "New RC: " << nickName << " (" << accountName << ")");
+	sendPacket(CString() >> (char)PLO_RC_CHAT << "Welcome to RC.");
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
 
 	return true;
 }
