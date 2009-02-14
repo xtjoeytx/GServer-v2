@@ -67,7 +67,7 @@ void CFileQueue::sendCompress()
 {
 	CString pSend;
 
-	if (sock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (sock == 0 || sock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
 
 	// If we haven't sent a file in a while, forcibly send one now.

@@ -12,6 +12,7 @@ class CFileSystem
 	public:
 		CFileSystem() : server(0) { }
 		CFileSystem(TServer* pServer);
+		void clear();
 
 		void setServer(TServer* pServer) { server = pServer; }
 
