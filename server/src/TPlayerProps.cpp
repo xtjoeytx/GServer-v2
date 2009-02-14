@@ -84,7 +84,7 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)carrySprite;
 
 		case PLPROP_CURLEVEL:
-		if (type == CLIENTTYPE_CLIENT)
+		if (isClient() || type == CLIENTTYPE_AWAIT)
 		{
 			if (pmap && pmap->getType() == MAPTYPE_GMAP)
 				return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
@@ -224,7 +224,7 @@ CString TPlayer::getProp(int pPropId)
 	return CString();
 }
 
-void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
+void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer* rc)
 {
 	CSettings* settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
@@ -260,8 +260,22 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf)
 			break;
 
 			case PLPROP_RUPEESCOUNT:
-				gralatc = pPacket.readGUInt();
-				gralatc = clip(gralatc, 0, 9999999);
+				if (rc != 0)
+				{
+					if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_MODIFYSTAFFACCOUNT)))
+					{
+						gralatc = pPacket.readGUInt();
+						gralatc = clip(gralatc, 0, 9999999);
+					}
+					else
+						pPacket.readGUInt();
+
+				}
+				else
+				{
+					gralatc = pPacket.readGUInt();
+					gralatc = clip(gralatc, 0, 9999999);
+				}
 			break;
 
 			case PLPROP_ARROWSCOUNT:

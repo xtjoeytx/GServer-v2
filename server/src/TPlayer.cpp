@@ -20,7 +20,7 @@ const char* __defaultfiles[] = {
 	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani", "grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani", "idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani",
 	"sword?.png", "sword?.gif",
 	"shield?.png", "shield?.gif",
-	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav", 
+	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
 };
 
 // Enum per Attr
@@ -63,25 +63,6 @@ bool __getLogin[propscount] =
 	true,  true,  true,  false, true, // 78-82
 };
 
-bool __getLoginRC[propscount] =
-{
-	// Account, level, nickname, headimg, bodyimg
-	true,  false, false, false, false, false, // 0-5
-	false, false, false, false, false, true,  // 6-11
-	false, false, false, false, false, false, // 12-17
-	false, false, true,  false, false, false, // 18-23
-	false, false, false, false, false, false, // 24-29
-	false, false, false, false, true,  false, // 30-35
-	false, false, false, false, false, false, // 36-41
-	false, false, false, false, false, false, // 42-47
-	false, false, false, false, false, false, // 48-53
-	false, false, false, false, false, false, // 54-59
-	false, false, false, false, false, false, // 60-65
-	false, false, false, false, false, false, // 66-71
-	false, false, false, false, false, false, // 72-77
-	false, false, false, false, true, // 78-82
-};
-
 bool __sendLocal[propscount] =
 {
 	false, false, true,  false, false, false, // 0-5
@@ -93,6 +74,24 @@ bool __sendLocal[propscount] =
 	true,  true,  true,  true,  true,  true,  // 36-41
 	false, true,  true,  true,  false, false, // 42-47
 	false, false, true,  false, false, false, // 48-53
+	true,  true,  true,  true,  true,  true,  // 54-59
+	true,  true,  true,  true,  true,  true,  // 60-65
+	true,  true,  true,  true,  true,  true,  // 66-71
+	true,  true,  true,  false, false, false, // 72-77
+	true,  true,  true,  false, true, // 78-82
+};
+
+bool __playerPropsRC[propscount] =
+{
+	true,  true,  true,  true,  true,  true,  // 0-5
+	true,  true,  true,  true,  true,  true,  // 6-11
+	false, true,  false, true,  true,  true,  // 12-17
+	true,  false, true,  true,  true,  true,  // 18-23
+	false, false, true,  true,  true,  true,  // 24-29
+	true,  false, true,  false, true,  true,  // 30-35
+	true,  false, false, false, false, false, // 36-41
+	false, false, false, false, false, false, // 42-47
+	false, false, false, false, false, false, // 48-53
 	true,  true,  true,  true,  true,  true,  // 54-59
 	true,  true,  true,  true,  true,  true,  // 60-65
 	true,  true,  true,  true,  true,  true,  // 66-71
@@ -155,8 +154,53 @@ void createPLFunctions()
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
+
+	TPLFunc[PLI_RC_SERVEROPTIONSGET] = &TPlayer::msgPLI_RC_SERVEROPTIONSGET;
+	TPLFunc[PLI_RC_SERVEROPTIONSSET] = &TPlayer::msgPLI_RC_SERVEROPTIONSSET;
+	TPLFunc[PLI_RC_FOLDERCONFIGGET] = &TPlayer::msgPLI_RC_FOLDERCONFIGGET;
+	TPLFunc[PLI_RC_FOLDERCONFIGSET] = &TPlayer::msgPLI_RC_FOLDERCONFIGSET;
+	TPLFunc[PLI_RC_RESPAWNSET] = &TPlayer::msgPLI_RC_RESPAWNSET;
+	TPLFunc[PLI_RC_HORSELIFESET] = &TPlayer::msgPLI_RC_HORSELIFESET;
+	TPLFunc[PLI_RC_APINCREMENTSET] = &TPlayer::msgPLI_RC_APINCREMENTSET;
+	TPLFunc[PLI_RC_BADDYRESPAWNSET] = &TPlayer::msgPLI_RC_BADDYRESPAWNSET;
+	TPLFunc[PLI_RC_PLAYERPROPSGET] = &TPlayer::msgPLI_RC_PLAYERPROPSGET;
+	TPLFunc[PLI_RC_PLAYERPROPSSET] = &TPlayer::msgPLI_RC_PLAYERPROPSSET;
+	TPLFunc[PLI_RC_DISCONNECTPLAYER] = &TPlayer::msgPLI_RC_DISCONNECTPLAYER;
+	TPLFunc[PLI_RC_UPDATELEVELS] = &TPlayer::msgPLI_RC_UPDATELEVELS;
+	TPLFunc[PLI_RC_ADMINMESSAGE] = &TPlayer::msgPLI_RC_ADMINMESSAGE;
+	TPLFunc[PLI_RC_PRIVADMINMESSAGE] = &TPlayer::msgPLI_RC_PRIVADMINMESSAGE;
+	TPLFunc[PLI_RC_LISTRCS] = &TPlayer::msgPLI_RC_LISTRCS;
+	TPLFunc[PLI_RC_DISCONNECTRC] = &TPlayer::msgPLI_RC_DISCONNECTRC;
+	TPLFunc[PLI_RC_APPLYREASON] = &TPlayer::msgPLI_RC_APPLYREASON;
+	TPLFunc[PLI_RC_SERVERFLAGSGET] = &TPlayer::msgPLI_RC_SERVERFLAGSGET;
+	TPLFunc[PLI_RC_SERVERFLAGSSET] = &TPlayer::msgPLI_RC_SERVERFLAGSSET;
+	TPLFunc[PLI_RC_ACCOUNTADD] = &TPlayer::msgPLI_RC_ACCOUNTADD;
+	TPLFunc[PLI_RC_ACCOUNTDEL] = &TPlayer::msgPLI_RC_ACCOUNTDEL;
+	TPLFunc[PLI_RC_ACCOUNTLISTGET] = &TPlayer::msgPLI_RC_ACCOUNTLISTGET;
+	TPLFunc[PLI_RC_PLAYERPROPSGET2] = &TPlayer::msgPLI_RC_PLAYERPROPSGET2;
+	TPLFunc[PLI_RC_PLAYERPROPSGET3] = &TPlayer::msgPLI_RC_PLAYERPROPSGET3;
+	TPLFunc[PLI_RC_PLAYERPROPSRESET] = &TPlayer::msgPLI_RC_PLAYERPROPSRESET;
+	TPLFunc[PLI_RC_PLAYERPROPSSET2] = &TPlayer::msgPLI_RC_PLAYERPROPSSET2;
+	TPLFunc[PLI_RC_ACCOUNTGET] = &TPlayer::msgPLI_RC_ACCOUNTGET;
+	TPLFunc[PLI_RC_ACCOUNTSET] = &TPlayer::msgPLI_RC_ACCOUNTSET;
+	TPLFunc[PLI_RC_CHAT] = &TPlayer::msgPLI_RC_CHAT;
 	TPLFunc[PLI_PROFILEGET] = &TPlayer::msgPLI_PROFILEGET;
 	TPLFunc[PLI_PROFILESET] = &TPlayer::msgPLI_PROFILESET;
+	TPLFunc[PLI_RC_WARPPLAYER] = &TPlayer::msgPLI_RC_WARPPLAYER;
+	TPLFunc[PLI_RC_PLAYERRIGHTSGET] = &TPlayer::msgPLI_RC_PLAYERRIGHTSGET;
+	TPLFunc[PLI_RC_PLAYERRIGHTSSET] = &TPlayer::msgPLI_RC_PLAYERRIGHTSSET;
+	TPLFunc[PLI_RC_PLAYERCOMMENTSGET] = &TPlayer::msgPLI_RC_PLAYERCOMMENTSGET;
+	TPLFunc[PLI_RC_PLAYERCOMMENTSSET] = &TPlayer::msgPLI_RC_PLAYERCOMMENTSSET;
+	TPLFunc[PLI_RC_PLAYERBANGET] = &TPlayer::msgPLI_RC_PLAYERBANGET;
+	TPLFunc[PLI_RC_PLAYERBANSET] = &TPlayer::msgPLI_RC_PLAYERBANSET;
+	TPLFunc[PLI_RC_FILEBROWSER_START] = &TPlayer::msgPLI_RC_FILEBROWSER_START;
+	TPLFunc[PLI_RC_FILEBROWSER_CD] = &TPlayer::msgPLI_RC_FILEBROWSER_CD;
+	TPLFunc[PLI_RC_FILEBROWSER_END] = &TPlayer::msgPLI_RC_FILEBROWSER_END;
+	TPLFunc[PLI_RC_FILEBROWSER_DOWN] = &TPlayer::msgPLI_RC_FILEBROWSER_DOWN;
+	TPLFunc[PLI_RC_FILEBROWSER_UP] = &TPlayer::msgPLI_RC_FILEBROWSER_UP;
+	TPLFunc[PLI_RC_FILEBROWSER_MOVE] = &TPlayer::msgPLI_RC_FILEBROWSER_MOVE;
+	TPLFunc[PLI_RC_FILEBROWSER_DELETE] = &TPlayer::msgPLI_RC_FILEBROWSER_DELETE;
+	TPLFunc[PLI_RC_FILEBROWSER_RENAME] = &TPlayer::msgPLI_RC_FILEBROWSER_RENAME;
 }
 
 
@@ -167,7 +211,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(CLIENTTYPE_AWAIT), versionID(0), allowBomb(false), hadBomb(false),
+id(pId), type(CLIENTTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
 pmap(0), loaded(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
@@ -182,7 +226,7 @@ TPlayer::~TPlayer()
 	if (id >= 0 && server != 0)
 	{
 		// Save account.
-		if (type == CLIENTTYPE_CLIENT && loaded)
+		if (isClient() && loaded)
 			saveAccount();
 
 		// Remove from the level.
@@ -1276,12 +1320,10 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			break;
 		case CLIENTTYPE_CLIENT2:
 			serverlog.out("New Client (2.19+)\n");
-			type = CLIENTTYPE_CLIENT;
 			in_codec.setGen(ENCRYPT_GEN_4);
 			break;
 		case CLIENTTYPE_RC2:
 			serverlog.out("New RC (2.19+)\n");
-			type = CLIENTTYPE_RC;
 			in_codec.setGen(ENCRYPT_GEN_4);
 			getKey = true;
 			break;
@@ -1292,7 +1334,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Get Iterator-Key
 	// 2.19+ RC and any client should get the key.
-	if ((type == CLIENTTYPE_CLIENT) || getKey)
+	if (isClient() || getKey)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
@@ -1328,36 +1370,39 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	}
 
 	// Check if the specified client is allowed access.
-	std::vector<CString>* allowedVersions = server->getAllowedVersions();
-	bool allowed = false;
-	for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
+	if (isClient())
 	{
-		CString ver = *i;
-		if (ver.find(":") != -1)
+		std::vector<CString>* allowedVersions = server->getAllowedVersions();
+		bool allowed = false;
+		for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
 		{
-			CString ver1 = ver.readString(":").trim();
-			CString ver2 = ver.readString("").trim();
-			int aVersion[2] = { getVersionID(ver1), getVersionID(ver2) };
-			if (versionID >= aVersion[0] && versionID <= aVersion[1])
+			CString ver = *i;
+			if (ver.find(":") != -1)
 			{
-				allowed = true;
-				break;
+				CString ver1 = ver.readString(":").trim();
+				CString ver2 = ver.readString("").trim();
+				int aVersion[2] = { getVersionID(ver1), getVersionID(ver2) };
+				if (versionID >= aVersion[0] && versionID <= aVersion[1])
+				{
+					allowed = true;
+					break;
+				}
+			}
+			else
+			{
+				int aVersion = getVersionID(ver);
+				if (versionID == aVersion)
+				{
+					allowed = true;
+					break;
+				}
 			}
 		}
-		else
+		if (!allowed)
 		{
-			int aVersion = getVersionID(ver);
-			if (versionID == aVersion)
-			{
-				allowed = true;
-				break;
-			}
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.");
+			return false;
 		}
-	}
-	if (!allowed)
-	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.");
-		return false;
 	}
 
 	// Verify login details with the serverlist.
@@ -1952,7 +1997,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	int sendLimit = 4;
 	if ((int)difftime(time(0), lastMessage) <= 4)
 	{
-		sendPacket(CString() >> (char)PLO_ADMINMESSAGE <<
+		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
 			"Server message:\xa7You can only send messages once every " << CString((int)sendLimit) << " seconds.");
 		return true;
 	}
@@ -1986,7 +2031,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	int messageLimit = 1024;
 	if (pmMessage.length() > messageLimit)
 	{
-		sendPacket(CString() >> (char)PLO_ADMINMESSAGE <<
+		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
 			"Server message:\xa7There is a message limit of " << CString((int)messageLimit) << " characters.");
 		return true;
 	}
@@ -2014,25 +2059,6 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
 	}
 
-	return true;
-}
-
-bool TPlayer::msgPLI_SHOOT(CString& pPacket)
-{
-	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server.
-	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	CString sgani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char unknown2 = pPacket.readGUChar();
-
-	// Send data now.
-	if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, pmap, this, false);
-	else server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, level, this);
-
-//	printf("shoot: %s\n", pPacket.text());
-//	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
 	return true;
 }
 
@@ -2238,6 +2264,25 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 {
 	// Don't know what this does exactly.  Might be gmap related.
 	pPacket.readString("");
+	return true;
+}
+
+bool TPlayer::msgPLI_SHOOT(CString& pPacket)
+{
+	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server.
+	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
+	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
+	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	CString sgani = pPacket.readChars(pPacket.readGUChar());
+	unsigned char unknown2 = pPacket.readGUChar();
+
+	// Send data now.
+	if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, pmap, this, false);
+	else server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, level, this);
+
+//	printf("shoot: %s\n", pPacket.text());
+//	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
 	return true;
 }
 

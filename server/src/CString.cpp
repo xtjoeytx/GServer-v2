@@ -512,16 +512,17 @@ CString CString::replaceAll(const CString& pString, const CString& pNewString) c
 
 CString CString::gtokenize() const
 {
+	CString self(*this);
 	CString retVal;
 	int pos[] = {0, 0};
 
 	// Add a trailing \n to the line if one doesn't already exist.
-	if (buffer[sizec - 1] != '\n') retVal.writeChar('\n');
+	if (buffer[sizec - 1] != '\n') self.writeChar('\n');
 
 	// Do the tokenization stuff.
-	while ((pos[0] = find("\n", pos[1])) != -1)
+	while ((pos[0] = self.find("\n", pos[1])) != -1)
 	{
-		CString temp(subString(pos[1], pos[0] - pos[1]));
+		CString temp(self.subString(pos[1], pos[0] - pos[1]));
 		temp.replaceAllI( "\"", "\"\"" );	// Change all " to ""
 		temp.removeAllI("\r");
 		if (temp.length() != 0)
@@ -729,6 +730,29 @@ bool CString::comparei(const CString& pOther) const
 		return true;
 	return false;
 }
+
+bool CString::isNumber()
+{
+	const char numbers[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };
+	char periodCount = 0;
+	for (int i = 0; i < sizec; ++i)
+	{
+		bool isNum = false;
+		for (int j = 0; j < 11; ++j)
+		{
+			if (buffer[i] == numbers[j])
+			{
+				if (j == 10) periodCount++;
+				isNum = true;
+				j = 11;
+			}
+		}
+		if (isNum == false || periodCount > 1)
+			return false;
+	}
+	return true;
+}
+
 
 /*
 	Operators

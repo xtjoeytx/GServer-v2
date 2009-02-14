@@ -51,6 +51,9 @@ class TServer : public CSocketStub
 		int init();
 		bool doMain();
 
+		void loadAllFolders();
+		void loadFolderConfig();
+
 		// Get functions.
 		CSettings* getSettings()				{ return &settings; }
 		std::vector<TPlayer*>* getPlayerList()	{ return &playerList; }

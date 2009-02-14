@@ -151,3 +151,11 @@ CString removeComments(const CString& code, const CString& newLine)
 
 	return ret;
 }
+
+CString removeExtension(const CString& ext)
+{
+	int ePos = ext.findl('.');
+	if (ePos == -1) return ext;
+
+	return ext.subString(0, ePos);
+}
