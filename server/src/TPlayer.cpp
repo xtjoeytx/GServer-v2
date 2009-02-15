@@ -213,7 +213,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
-pmap(0), loaded(false), nextIsRaw(false), rawPacketSize(0), fileQueue(pSocket)
+pmap(0), loaded(false), nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -401,7 +401,7 @@ bool TPlayer::doTimedEvents()
 	if ((int)difftime(currTime, lastSave) > 300)
 	{
 		lastSave = currTime;
-		saveAccount();
+		if (isClient() && loaded && !isLoadOnly) saveAccount();
 	}
 
 	return true;
