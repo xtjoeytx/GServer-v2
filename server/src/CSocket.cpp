@@ -198,6 +198,7 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 		{
 			if (blockStubs)
 			{
+				(*i) = 0;
 				removeStubs.push_back(stub);
 				++i;
 			}

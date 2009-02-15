@@ -7,7 +7,7 @@
 /*
 	TAccount: Constructor - Deconstructor
 */
-TAccount::TAccount(TServer* pServer, const CString& pAccount)
+TAccount::TAccount(TServer* pServer)
 : server(pServer),
 isBanned(false), isFtp(false), isLoadOnly(false),
 adminIp("0.0.0.0"),
@@ -34,6 +34,17 @@ TAccount::~TAccount()
 /*
 	TAccount: Load/Save Account
 */
+void TAccount::reset()
+{
+	if (!accountName.isEmpty())
+	{
+		CString acc(accountName);
+		loadAccount("defaultaccount");
+		accountName = acc;
+		saveAccount();
+	}
+}
+
 bool TAccount::loadAccount(const CString& pAccount)
 {
 	// Just in case this account was loaded offline through RC.
@@ -148,7 +159,9 @@ bool TAccount::loadAccount(const CString& pAccount)
 		else if (section == "CHEST") chestList.push_back(val);
 		else if (section == "BANNED") isBanned = (strtoint(val) == 0 ? false : true);
 		else if (section == "BANREASON") banReason = val;
+		else if (section == "BANLENGTH") banLength = val;
 		else if (section == "COMMENTS") accountComments = val;
+		else if (section == "EMAIL") email = val;
 		else if (section == "LOCALRIGHTS") adminRights = strtoint(val);
 		else if (section == "IPRANGE") adminIp = val;
 		else if (section == "FOLDERRIGHT") folderList.push_back(val);
@@ -234,7 +247,9 @@ bool TAccount::saveAccount()
 	newFile << "\r\n";
 	newFile << "BANNED " << CString((int)(isBanned == true ? 1 : 0)) << "\r\n";
 	newFile << "BANREASON " << banReason << "\r\n";
+	newFile << "BANLENGTH " << banLength << "\r\n";
 	newFile << "COMMENTS " << accountComments << "\r\n";
+	newFile << "EMAIL " << email << "\r\n";
 	newFile << "LOCALRIGHTS " << CString(adminRights) << "\r\n";
 	newFile << "IPRANGE " << adminIp << "\r\n";
 
@@ -335,7 +350,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 
 			// Now, do a case-insensitive comparison of the section name.
 #ifdef WIN32
-			if (stricmp(section.text(), cname.text()) == 0)
+			if (_stricmp(section.text(), cname.text()) == 0)
 #else
 			if (strcasecmp(section.text(), cname.text()) == 0)
 #endif
