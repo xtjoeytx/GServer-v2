@@ -154,6 +154,7 @@ void createPLFunctions()
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
+	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
 	TPLFunc[PLI_RC_SERVEROPTIONSGET] = &TPlayer::msgPLI_RC_SERVEROPTIONSGET;
 	TPLFunc[PLI_RC_SERVEROPTIONSSET] = &TPlayer::msgPLI_RC_SERVEROPTIONSSET;
@@ -212,7 +213,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(CLIENTTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
-pmap(0), loaded(false), fileQueue(pSocket)
+pmap(0), loaded(false), nextIsRaw(false), rawPacketSize(0), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -226,7 +227,7 @@ TPlayer::~TPlayer()
 	if (id >= 0 && server != 0)
 	{
 		// Save account.
-		if (isClient() && loaded)
+		if (isClient() && loaded && !isLoadOnly)
 			saveAccount();
 
 		// Remove from the level.
@@ -311,8 +312,8 @@ bool TPlayer::doMain()
 		lastData = time(0);
 
 		// packet length
-		unsigned int len = (unsigned int)rBuffer.readShort();
-		if (len > (unsigned int)rBuffer.length()-2)
+		unsigned short len = (unsigned short)rBuffer.readShort();
+		if ((unsigned int)len > (unsigned int)rBuffer.length()-2)
 			break;
 
 		// get packet
@@ -423,7 +424,13 @@ bool TPlayer::parsePacket(CString& pPacket)
 	while (pPacket.bytesLeft() > 0)
 	{
 		// Grab a packet out of the input stream.
-		CString curPacket = pPacket.readString("\n");
+		CString curPacket;
+		if (nextIsRaw)
+		{
+			nextIsRaw = false;
+			curPacket = pPacket.readChars(rawPacketSize);
+		}
+		else curPacket = pPacket.readString("\n");
 
 		// Generation 3 encrypts individual packets so decrypt it now.
 		if (in_codec.getGen() == ENCRYPT_GEN_3)
@@ -2291,6 +2298,13 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	printf("TODO: TPlayer::msgPLI_UNKNOWN46: ");
 	CString packet = pPacket.readString("");
 	for (int i = 0; i < packet.length(); ++i) printf( "%02x ", (unsigned char)packet[i] ); printf( "\n" );
+	return true;
+}
+
+bool TPlayer::msgPLI_RAWDATA(CString& pPacket)
+{
+	nextIsRaw = true;
+	rawPacketSize = pPacket.readGUInt();
 	return true;
 }
 

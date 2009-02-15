@@ -63,6 +63,7 @@ enum
 	PLI_SHOOT			= 40,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
+	PLI_RAWDATA			= 50,
 	PLI_RC_SERVEROPTIONSGET		= 51,
 	PLI_RC_SERVEROPTIONSSET		= 52,
 	PLI_RC_FOLDERCONFIGGET		= 53,
@@ -169,11 +170,18 @@ enum
 	PLO_PLAYERWARP2		= 49,	// Bytes 1-3 are x/y/z. 4 = level x in gmap, 5 = level y in gmap.
 	PLO_ADDPLAYER		= 55,
 	PLO_DELPLAYER		= 56,
+	PLO_RC_SERVERFLAGSGET		= 61,
+	PLO_RC_PLAYERRIGHTSGET		= 62,
+	PLO_RC_PLAYERCOMMENTSGET	= 63,
+	PLO_RC_PLAYERBANGET			= 64,
+	PLO_RC_FILEBROWSER_DIRLIST	= 65,
+	PLO_RC_FILEBROWSER_DIR		= 66,
+	PLO_RC_FILEBROWSER_MESSAGE	= 67,
 	PLO_LARGEFILESTART	= 68,
 	PLO_LARGEFILEEND	= 69,
 	PLO_RC_ACCOUNTLISTGET		= 70,
 	PLO_RC_PLAYERPROPSGET		= 72,
-	PLO_EMPTY73			= 73,
+	PLO_RC_ACCOUNTGET			= 73,
 	PLO_RC_CHAT			= 74,
 	PLO_PROFILE			= 75,
 	PLO_RC_SERVEROPTIONSGET		= 76,
@@ -265,6 +273,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setChat(const CString& pChat);
 		void setNick(CString& pNickName, bool force = false);
 		void setId(int pId);
+		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
@@ -336,6 +345,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
+		bool msgPLI_RAWDATA(CString& pPacket);
 
 		bool msgPLI_RC_SERVEROPTIONSGET(CString& pPacket);
 		bool msgPLI_RC_SERVEROPTIONSSET(CString& pPacket);
@@ -414,6 +424,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool carryNpcThrown;
 		CString guild;
 		bool loaded;
+		bool nextIsRaw;
+		int rawPacketSize;
 
 		// File queue.
 		CFileQueue fileQueue;

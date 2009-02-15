@@ -1,4 +1,7 @@
 #include <vector>
+#include <map>
+#include <sys/stat.h>
+#include <stdio.h>
 #include "ICommon.h"
 #include "main.h"
 #include "TPlayer.h"
@@ -398,21 +401,106 @@ bool TPlayer::msgPLI_RC_APPLYREASON(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to view the server flags.\n", accountName.text());
+		return true;
+	}
+	CString ret;
+	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)server->getServerFlags()->size();
+	for (std::vector<CString>::iterator i = server->getServerFlags()->begin(); i != server->getServerFlags()->end(); ++i)
+		ret >> (char)(*i).length() << (*i);
+	sendPacket(ret);
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 {
+	if (!isRC() || !hasRight(PLPERM_SETSERVERFLAGS))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to set the server flags.\n");
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set the server flags.");
+		return true;
+	}
+
+	unsigned short count = pPacket.readGUShort();
+	std::vector<CString>* serverFlags = server->getServerFlags();
+	serverFlags->clear();
+
+	// TODO: Make it only send flag changes.
+	// Assemble the new server flags.
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		CString flag = pPacket.readChars(pPacket.readGUChar());
+		serverFlags->push_back(flag);
+
+		// Send the flag to all the players.
+		server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_FLAGSET << flag);
+	}
+
+	rclog.out("%s has updated the server flags.\n", accountName.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server flags.");
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 {
+	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to add a new account.\n", accountName.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to create new accounts.");
+		return true;
+	}
+
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+	CString pass = pPacket.readChars(pPacket.readGUChar());
+	CString email = pPacket.readChars(pPacket.readGUChar());
+	bool banned = (pPacket.readGUChar() != 0);
+	bool onlyLoad = (pPacket.readGUChar() != 0);
+	pPacket.readGUChar();		// Admin level, deprecated.
+
+	TAccount newAccount(server);
+	newAccount.loadAccount(acc);
+	newAccount.setBanned(banned);
+	newAccount.setLoadOnly(onlyLoad);
+	newAccount.setEmail(email);
+	newAccount.saveAccount();
+
+	rclog.out("%s has created a new account: %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has created a new account: " << acc);
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 {
+	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to delete an account.\n", accountName.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to delete accounts.");
+		return true;
+	}
+
+	// Get the account.
+	// Prevent the defaultaccount from being deleted.
+	CString acc = pPacket.readString("");
+	if (acc == "defaultaccount")
+	{
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not allowed to delete the default account.");
+		return true;
+	}
+
+	// See if the account exists.
+	CString accfile = CString(acc) << ".txt";
+	CString accpath = server->getAccountsFileSystem()->find(accfile);
+	if (accpath.isEmpty()) return true;
+
+	// Remove the account from the file system.
+	server->getAccountsFileSystem()->removeFile(accfile);
+
+	// Delete the file now.
+	remove(accpath.text());
+	rclog.out("%s has deleted the account: %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has deleted the account: " << acc);
 	return true;
 }
 
@@ -480,7 +568,11 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 	{
 		offline = true;
 		p = new TPlayer(server, 0, -1);
-		p->loadAccount(acc);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
 	}
 
 	if (!isRC() || !hasRight(PLPERM_VIEWATTRIBUTES))
@@ -498,6 +590,47 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 {
+	CString acc = pPacket.readString("");
+
+	if (!isRC() || !hasRight(PLPERM_RESETATTRIBUTES))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to reset the account: %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to reset accounts.\n");
+		return true;
+	}
+
+	// Get the player.  Create a new player if they are offline.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	// Reset the player.
+	p->reset();
+
+	// If the player is online, boot him from the server.
+	if (!offline)
+	{
+		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your account was reset by " << accountName);
+		p->setLoaded(false);	// Don't save the account when the player quits.
+		server->deletePlayer(p);
+	}
+
+	// Log it.
+	rclog.out("%s has reset the attributes of account: %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has reset the attributes of account: " << acc);
+
+	// Clean up.
+	if (offline) delete p;
+
 	return true;
 }
 
@@ -510,7 +643,11 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	{
 		offline = true;
 		p = new TPlayer(server, 0, -1);
-		p->loadAccount(acc);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
 	}
 
 	if (!isRC() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
@@ -541,90 +678,707 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 {
+	CString acc = pPacket.readString("");
+
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to view the account: %s\n", accountName.text(), acc.text());
+		return true;
+	}
+
+	// Get the player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	sendPacket(CString() >> (char)PLO_RC_ACCOUNTGET >> (char)acc.length() << acc
+		>> (char)0 /*>> (char)password_length << password*/
+		>> (char)p->getEmail().length() << p->getEmail()
+		>> (char)(p->getBanned() ? 1 : 0)
+		>> (char)(p->getLoadOnly() ? 1 : 0)
+		>> (char)0 /*admin level*/
+		>> (char)4 << "main"
+		>> (char)p->getBanLength().length() << p->getBanLength()
+		>> (char)p->getBanReason().length() << p->getBanReason());
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 {
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+
+	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to edit the account: %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to edit accounts.\n");
+		return true;
+	}
+
+	CString pass = pPacket.readChars(pPacket.readGUChar());
+	CString email = pPacket.readChars(pPacket.readGUChar());
+	bool banned = (pPacket.readGUChar() != 0 ? true : false);
+	bool loadOnly = (pPacket.readGUChar() != 0 ? true : false);
+	pPacket.readGUChar();						// admin level
+	pPacket.readChars(pPacket.readGUChar());	// world
+	CString banreason = pPacket.readChars(pPacket.readGUChar());
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	// Set the new account stuff.
+	p->setEmail(email);
+	p->setLoadOnly(loadOnly);
+	if (hasRight(PLPERM_BAN))
+	{
+		p->setBanned(banned);
+		p->setBanReason(banreason);
+	}
+	p->saveAccount();
+
+	// If the player was just now banned, kick him off the server.
+	if (hasRight(PLPERM_BAN) && banned && !offline)
+	{
+		p->setLoaded(false);
+		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << accountName << " has banned you.  Reason: " << banreason.guntokenize().replaceAll("\n", "\r"));
+		server->deletePlayer(p);
+	}
+
+	rclog.out("%s has modified the account: %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has modified the account: " << acc);
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to send a message to RC.\n", accountName.text());
+		return true;
+	}
+
+	CString message = pPacket.readString("");
+	if (message.isEmpty()) return true;
+	std::vector<CString> words = message.tokenize();
+
+	if (words[0].text()[0] != '/')
+	{
+		server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << message);
+		return true;
+	}
+
+	// TODO: RC chat commands.
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
 {
+	if (!isRC() || !hasRight(PLPERM_WARPTOPLAYER))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to warp a player.\n", accountName.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to warp players.\n");
+		return true;
+	}
+
+	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	if (p == 0) return true;
+
+	float loc[2] = { (float)(pPacket.readGChar())/2.0f, (float)(pPacket.readGChar())/2.0f };
+	CString wLevel = pPacket.readString("");
+	p->warp(wLevel, loc[0], loc[1]);
+
+	rclog.out("%s has warped %s to %s (%.2f, %.2f)\n", accountName.text(), p->getAccountName().text(), wLevel.text(), loc[0], loc[1]);
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 {
+	CString acc = pPacket.readString("");
+
+	if (!isRC() || (acc != accountName && !hasRight(PLPERM_SETRIGHTS)))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to get the rights of %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view that player's rights.");
+		return true;
+	}
+
+	int rights = 0;
+	CString folders, ip;
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	// Get the folder list.
+	for (std::vector<CString>::iterator i = p->getFolderList()->begin(); i != p->getFolderList()->end(); ++i)
+		folders << *i << "\n";
+	folders.gtokenizeI();
+
+	// Send the packet.
+	sendPacket(CString() >> (char)PLO_RC_PLAYERRIGHTSGET >> (char)acc.length() << acc
+		>> (long long)p->getAdminRights()
+		>> (char)p->getAdminIp().length() << p->getAdminIp()
+		>> (short)folders.length() << folders);
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 {
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+
+	if (!isRC() || !hasRight(PLPERM_SETRIGHTS))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to set the rights of %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player rights.");
+		return true;
+	}
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	// Don't allow RCs to give rights that they don't have.
+	// Only affect people who don't have PLPERM_MODIFYSTAFFACCOUNT.
+	int n_adminRights = (int)pPacket.readGUInt5();
+	if (!hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		for (int i = 0; i < 20; ++i)
+		{
+			if ((adminRights & (1 << i)) == 0)
+				n_adminRights &= ~(1 << i);
+		}
+	}
+
+	// Don't allow you to remove your own PLPERM_MODIFYSTAFFACCOUNT or PLPERM_SETRIGHTS.
+	if (p == this)
+	{
+		if ((n_adminRights & PLPERM_MODIFYSTAFFACCOUNT) == 0)
+			n_adminRights |= PLPERM_MODIFYSTAFFACCOUNT;
+		if ((n_adminRights & PLPERM_SETRIGHTS) == 0)
+			n_adminRights |= PLPERM_SETRIGHTS;
+	}
+
+	p->setAdminRights(n_adminRights);
+	p->setAdminIp(pPacket.readChars(pPacket.readGUChar()));
+
+	// Untokenize and load the directories.
+	CString folders = pPacket.readChars(pPacket.readGUShort());
+	folders.guntokenizeI();
+	std::vector<CString>* fList = p->getFolderList();
+	fList->clear();
+	*fList = folders.tokenize("\n");
+
+	// Remove any invalid directories.
+	for (std::vector<CString>::iterator i = fList->begin(); i != fList->end();)
+	{
+		if ((*i).find(":") != -1 || (*i).find("..") != -1 || (*i).find(" /*") != -1)
+			i = fList->erase(i);
+		else ++i;
+	}
+
+	// TODO: Close filebrowser.
+
+	p->saveAccount();
+
+	// TODO: Synchronize client/rc.
+
+	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 {
+	CString acc = pPacket.readString("");
+
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to get the comments of %s\n", accountName.text(), acc.text());
+		return true;
+	}
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	sendPacket(CString() >> (char)PLO_RC_PLAYERCOMMENTSGET >> (char)acc.length() << acc << p->getComments());
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 {
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+
+	if (!isRC() || !hasRight(PLPERM_SETCOMMENTS))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to set the comments of %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player comments.");
+		return true;
+	}
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	CString comment = pPacket.readString("");
+	p->setComments(comment);
+	p->saveAccount();
+
+	rclog.out("%s has set the comments of %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the comments of " << acc);
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 {
+	CString acc = pPacket.readString("");
+
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to view the ban of %s\n", accountName.text(), acc.text());
+		return true;
+	}
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	sendPacket(CString() >> (char)PLO_RC_PLAYERBANGET >> (char)acc.length() << acc >> (char)(p->getBanned() ? 1 : 0) << p->getBanReason());
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 {
+	CString acc = pPacket.readChars(pPacket.readGUChar());
+
+	if (!isRC() || !hasRight(PLPERM_BAN))
+	{
+		if (!isRC()) rclog.out("[Hack] %s attempted to set the ban of %s\n", accountName.text(), acc.text());
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player bans.");
+		return true;
+	}
+
+	// Get player.
+	bool offline = false;
+	TPlayer* p = server->getPlayer(acc);
+	if (p == 0)
+	{
+		offline = true;
+		p = new TPlayer(server, 0, -1);
+		if (!p->loadAccount(acc))
+		{
+			delete p;
+			return true;
+		}
+	}
+
+	bool banned = (pPacket.readGUChar() == 0 ? false : true);
+	CString reason = pPacket.readString("");
+
+	p->setBanned(banned);
+	p->setBanReason(reason);
+	p->saveAccount();
+
+	// If the player was just now banned, kick him off the server.
+	if (banned && !offline)
+	{
+		p->setLoaded(false);
+		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << accountName << " has banned you.  Reason: " << reason.guntokenize().replaceAll("\n", "\r"));
+		server->deletePlayer(p);
+	}
+
+	rclog.out("%s has set the ban of %s\n", accountName.text(), acc.text());
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the ban of " << acc);
+
+	if (offline) delete p;
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to open the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	// If the player has no folder rights, don't open the File Browser.
+	if (folderList.size() == 0)
+		return true;
+
+	// Get folder list.
+	CString folders;
+	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
+		folders << *i << "\n";
+
+	// Send the folder list and the welcome message.
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIRLIST << folders.gtokenize());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Welcome to the File Browser.");
+
+	// Grab the first rights and folder for use as our default view, just in case
+	// the player doesn't have the ability to view their lastFolder anymore.
+	CString viewFolder, viewRights, viewWild;
+	CString rights = folderList[0].readString(" ");
+	CString folder = folderList[0].readString("");
+	folder.replaceAllI("\\", "/");
+	folderList[0].setRead(0);
+
+	// Create the defaults.
+	viewRights = rights;
+	int wcl = folder.findl('/');
+	if (wcl == -1) viewWild = "*";
+	else viewWild = folder.subString(wcl + 1);
+	viewFolder = CString() << folder.remove(wcl) << "/";
+
+	// Try to find our last folder.
+	if (lastFolder.length() != 0)
+	{
+		for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
+		{
+			CString rights = (*i).readString(" ");
+			CString folder = (*i).readString("");
+			folder.replaceAllI("\\", "/");
+			CString wild;
+			int wcl = folder.findl('/');
+			if (wcl == -1) wild = "*";
+			else wild = folder.subString(wcl + 1);
+			folder.removeI(wcl);
+			folder << "/";
+			(*i).setRead(0);
+
+			if (lastFolder == folder)
+			{
+				viewRights = rights;
+				viewFolder = folder;
+				viewWild = wild;
+				break;
+			}
+		}
+	}
+	else lastFolder = viewFolder;
+
+	// Construct our file list.
+	CString files;
+	CFileSystem fs(server);
+	fs.addDir(viewFolder, viewWild);
+	for (std::map<CString, CString>::iterator i = fs.getFileList()->begin(); i != fs.getFileList()->end(); ++i)
+	{
+		CString name = i->first;
+		CString dir;
+		int size = fs.getFileSize(i->first);
+		time_t mod = fs.getModTime(i->first);
+		dir >> (char)i->first.length() << i->first >> (char)viewRights.length() << viewRights >> (long long)size >> (long long)mod;
+		files << " " >> (char)dir.length() << dir;
+	}
+
+	// Send packet.
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIR >> (char)viewFolder.length() << viewFolder << files);
+	isFtp = true;
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 {
+	if (!isRC()) return true;
+
+	CString newFolder = pPacket.readString("");
+	CString newRights, wildcard;
+	newFolder.setRead(0);
+
+	bool found = false;
+	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
+	{
+		CString rights = (*i).readString(" ");
+		CString folder = (*i).readString("");
+		folder.replaceAllI("\\", "/");
+		CString wild;
+		int wcl = folder.findl('/');
+		if (wcl == -1) wild = "*";
+		else wild = folder.subString(wcl + 1);
+		folder.removeI(wcl);
+		folder << "/";
+		(*i).setRead(0);
+
+		if (newFolder == folder)
+		{
+			newFolder = folder;
+			newRights = rights;
+			wildcard = wild;
+			found = true;
+			break;
+		}
+	}
+	if (!found) return true;
+
+	lastFolder = newFolder;
+
+	// Construct our file list.
+	CString files;
+	CFileSystem fs(server);
+	fs.addDir(lastFolder, wildcard);
+	for (std::map<CString, CString>::iterator i = fs.getFileList()->begin(); i != fs.getFileList()->end(); ++i)
+	{
+		CString dir;
+		int size = fs.getFileSize(i->first);
+		time_t mod = fs.getModTime(i->first);
+		dir >> (char)i->first.length() << i->first >> (char)newRights.length() << newRights >> (long long)size >> (long long)mod;
+		files << " " >> (char)dir.length() << dir;
+	}
+
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder changed to " << lastFolder);
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIR >> (char)lastFolder.length() << lastFolder << files);
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
 {
+	if (!isRC()) return true;
+	isFtp = false;
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to download a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	// Load file.
+	CString file = pPacket.readString("");
+	CString filepath = CString() << server->getServerPath() << lastFolder << file;
+	CString fileData;
+	fileData.load(filepath);
+
+	time_t modTime = 0;
+	struct stat fileStat;
+	if (stat(filepath.text(), &fileStat) != -1)
+		modTime = fileStat.st_mtime;
+
+	if (fileData.length() == 0) return true;
+
+	// See if we have enough room in the packet for the file.
+	// If not, we need to send it as a big file.
+	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
+	bool isBigFile = false;
+	int packetLength = 1 + 5 + 1 + file.length() + 1;
+	if (fileData.length() > 32000)
+		isBigFile = true;
+
+	// If we are sending a big file, let the client know now.
+	if (isBigFile)
+	{
+		sendPacket(CString() >> (char)PLO_LARGEFILESTART << file);
+		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+	}
+
+	// Send the file now.
+	while (fileData.length() != 0)
+	{
+		int sendSize = clip(32000, 0, fileData.length());
+		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
+		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize));
+		fileData.removeI(0, sendSize);
+	}
+
+	// If we had sent a large file, let the client know we finished sending it.
+	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << file);
+
+	rclog.out("%s downloaded file %s\n", accountName.text(), file.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file);
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to opload a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString file = pPacket.readChars(pPacket.readGUChar());
+	CString filepath = CString() << server->getServerPath() << lastFolder << file;
+	CString fileData = pPacket.subString(pPacket.readPos());
+	fileData.save(filepath);
+
+	rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+
+	// TODO: update server files.
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to move a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString f1, f2, f3, f4;
+	f1 = pPacket.readChars(pPacket.readGUChar());
+	f2 = pPacket.readString("");
+	f2.removeAllI("\"");
+
+	f1 << f2;
+	f4 << lastFolder << f2;
+
+	rclog.out("%s moved file %s to %s\n", accountName.text(), f4.text(), f1.text());
+
+	f4 = CString() << server->getServerPath() << f4;
+	f3.load(f4);
+	f3.save(f1);
+	remove(f4.text());
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to delete a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString file = pPacket.readString("");
+	CString filePath = CString() << server->getServerPath() << lastFolder << file;
+	CFileSystem::fixPathSeparators(&filePath);
+
+	// Don't let us delete defaultaccount.
+	if (file == "defaultaccount.txt")
+	{
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete defaultaccount.txt");
+		return true;
+	}
+
+	// Remove the file.
+	remove(filePath.text());
+
+	rclog.out("%s deleted file %s\n", accountName.text(), file.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Deleted file " << file);
+
 	return true;
 }
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 {
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to rename a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString f1 = pPacket.readChars(pPacket.readGUChar());
+	CString f2 = pPacket.readChars(pPacket.readGUChar());
+	CString f1path = CString() << server->getServerPath() << lastFolder << f1;
+	CString f2path = CString() << server->getServerPath() << lastFolder << f2;
+	CFileSystem::fixPathSeparators(&f1path);
+	CFileSystem::fixPathSeparators(&f2path);
+
+	// Don't let us rename defaultaccount.
+	if (f1 == "defaultaccount.txt" || f2 == "defaultaccount.txt")
+	{
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete defaultaccount.txt");
+		return true;
+	}
+
+	// Do the renaming.
+	rename(f1path.text(), f2path.text());
+	rclog.out("%s renamed file %s to %s\n", accountName.text(), f1.text(), f2.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);
+
 	return true;
 }
