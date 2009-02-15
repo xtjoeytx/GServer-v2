@@ -505,7 +505,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	// Send the player his account.  If it fails, disconnect him.
 	if (player->sendLogin() == false)
 	{
-		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
+		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
 		player->setId(0);	// Prevent saving of the account.
 		player->disconnect();
 	}

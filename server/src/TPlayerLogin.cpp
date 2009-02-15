@@ -21,6 +21,13 @@ bool TPlayer::sendLogin()
 	// TODO: We actually need to check if it fails because accounts can be banned.
 	loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
 
+	// Check to see if the player is banned or not.
+	if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
+		return false;
+	}
+
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.

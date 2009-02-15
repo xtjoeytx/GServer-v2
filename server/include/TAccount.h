@@ -127,12 +127,13 @@ class TAccount
 {
 	public:
 		// Constructor - Deconstructor
-		TAccount(TServer* pServer, const CString& pAccount = "defaultaccount");
+		TAccount(TServer* pServer);
 		~TAccount();
 
 		static bool meetsConditions(CString fileName, CString conditions);
 
 		// Load/Save Account
+		void reset();
 		bool loadAccount(const CString& pAccount);
 		bool saveAccount();
 
@@ -145,6 +146,16 @@ class TAccount
 		float getY() const				{ return y; }
 		CString getAccountName() const	{ return accountName; }
 		CString getNickname() const		{ return nickName; }
+		bool getBanned() const			{ return isBanned; }
+		CString getBanReason() const	{ return banReason; }
+		CString getBanLength() const	{ return banLength; }
+		bool getLoadOnly() const		{ return isLoadOnly; }
+		CString getEmail() const		{ return email; }
+		int getAdminRights() const		{ return adminRights; }
+		CString getAdminIp() const		{ return adminIp; }
+		CString getIpStr() const		{ return accountIpStr; }
+		CString getComments() const		{ return accountComments; }
+		std::vector<CString>* getFolderList()	{ return &folderList; }
 
 		// set functions
 		void setLastSparTime(time_t newTime)		{ lastSparTime = newTime; }
@@ -152,6 +163,14 @@ class TAccount
 		void setKills(int newKills)					{ kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
+		void setBanned(bool banned)					{ isBanned = banned; }
+		void setBanReason(CString reason)			{ banReason = reason; }
+		void setBanLength(CString length)			{ banLength = length; }
+		void setLoadOnly(bool loadOnly)				{ isLoadOnly = loadOnly; }
+		void setEmail(CString email)				{ this->email = email; }
+		void setAdminRights(int rights)				{ adminRights = rights; }
+		void setAdminIp(CString ip)					{ adminIp = ip; }
+		void setComments(CString comments)			{ accountComments = comments; }
 
 		bool hasRight(int mask)		{ return ((adminRights & mask) && accountIpStr.match(adminIp)); }
 
@@ -160,7 +179,7 @@ class TAccount
 
 		// Player-Account
 		bool isBanned, isFtp, isLoadOnly;
-		CString adminIp, accountComments, accountName, communityName, banReason, lastFolder;
+		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
 		int accountIp, adminRights;
 

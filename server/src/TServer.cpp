@@ -17,7 +17,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), lastTimer(time(0)), lastNWTimer(time(0))
+: name(pName), lastTimer(time(0)), lastNWTimer(time(0)), last5mTimer(time(0))
 {
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
@@ -40,6 +40,12 @@ TServer::TServer(CString pName)
 
 TServer::~TServer()
 {
+	// Save server flags.
+	CString out;
+	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
+		out << *i << "\r\n";
+	out.save(CString() << serverpath << "serverflags.txt");
+
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
 		delete *i;
@@ -111,6 +117,10 @@ int TServer::init()
 	// Load status list.
 	serverlog.out("     Loading status list...\n");
 	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+
+	// Load server flags.
+	serverlog.out("     Loading serverflags.txt...\n");
+	serverFlags = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
 
 	// Load server message.
 	serverlog.out("     Loading config/servermessage.html...\n");
@@ -304,6 +314,18 @@ bool TServer::doTimedEvents()
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+	}
+
+	// Save stuff every 5 minutes.
+	if ((int)difftime(lastTimer, last5mTimer) >= 300)
+	{
+		last5mTimer = lastTimer;
+
+		// Save server flags.
+		CString out;
+		for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
+			out << *i << "\r\n";
+		out.save(CString() << serverpath << "serverflags.txt");
 	}
 
 	return true;
