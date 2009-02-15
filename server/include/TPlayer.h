@@ -268,6 +268,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CString getGuild() const		{ return guild; }
 		int getVersion() const			{ return versionID; }
 		CString getVersionStr() const	{ return version; }
+		bool isUsingFileBrowser() const	{ return isFtp; }
 
 		// Set Properties
 		void setChat(const CString& pChat);
@@ -426,6 +427,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool loaded;
 		bool nextIsRaw;
 		int rawPacketSize;
+		bool isFtp;
 
 		// File queue.
 		CFileQueue fileQueue;

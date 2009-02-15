@@ -30,7 +30,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	CString props = pPacket.readChars(pPacket.readGUChar());
 
 	// Send props out.
-	setProps(props, true, true, rc);
+	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
 
 	// Clear flags and weapons.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
@@ -49,7 +49,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		if ((*i) == "Bomb")
 			hadBomb = true;
 	}
-	sendPacket(outPacket);
+	if (id != -1) sendPacket(outPacket);
 
 	// If we never had the bomb, don't let it come back.
 	if (hadBomb == false) allowBomb = false;
@@ -62,8 +62,11 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		if (len != 0)
 			flagList.push_back(pPacket.readChars(len));
 	}
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	if (id != -1)
+	{
+		for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
+			sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	}
 
 	// Clear the chests and re-populate the chest list.
 	chestList.clear();
@@ -94,16 +97,19 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		if (weapon)
 		{
 			weaponList.push_back(weapon->getName());
-			sendPacket(CString() << weapon->getWeaponPacket());
+			if (id != -1) sendPacket(CString() << weapon->getWeaponPacket());
 		}
 	}
 
 	// KILL THE BOMB DEAD
-	if (hadBomb == false)
-		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+	if (id != -1)
+	{
+		if (hadBomb == false)
+			sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+	}
 
 	// Warp the player to his new location now.
-	warp(levelName, x, y, 0);
+	if (id != -1) warp(levelName, x, y, 0);
 }
 
 CString TPlayer::getPropsRC()
@@ -563,7 +569,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 {
 	bool offline = false;
 	CString acc = pPacket.readChars(pPacket.readGUChar());
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -601,7 +607,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 
 	// Get the player.  Create a new player if they are offline.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -638,7 +644,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 {
 	bool offline = false;
 	CString acc = pPacket.readChars(pPacket.readGUChar());
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -688,7 +694,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 
 	// Get the player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -735,7 +741,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -789,8 +795,85 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << message);
 		return true;
 	}
-
-	// TODO: RC chat commands.
+	else
+	{
+		if (words[0] == "/open" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_PLAYERPROPSGET3(CString() >> (char)acc.length() << acc);
+		}
+		else if (words[0] == "/openacc" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_ACCOUNTGET(CString() << acc);
+		}
+		else if (words[0] == "/opencomments" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_PLAYERCOMMENTSGET(CString() << acc);
+		}
+		else if (words[0] == "/openban" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_PLAYERBANGET(CString() << acc);
+		}
+		else if (words[0] == "/openrights" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_PLAYERRIGHTSGET(CString() << acc);
+		}
+		else if (words[0] == "/reset" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+			CString acc = message.readString("");
+			return msgPLI_RC_PLAYERPROPSRESET(CString() << acc);
+		}
+		else if (words[0] == "/refreshservermessage")
+		{
+			CString* servermessage = server->getServerMessage();
+			servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
+			servermessage->removeAllI("\r");
+			servermessage->replaceAllI("\n", " ");
+		}
+		else if (words[0] == "/updatelevel")
+		{
+			for (unsigned int i = 1; i < words.size(); ++i)
+			{
+				TLevel* level = server->getLevel(words[i]);
+				if (level) level->reload();
+			}
+		}
+		else if (words[0] == "/updatelevelall")
+		{
+			std::vector<TLevel*>* levels = server->getLevelList();
+			for (std::vector<TLevel*>::iterator i = levels->begin(); i != levels->end(); ++i)
+			{
+				(*i)->reload();
+			}
+		}
+		else if (words[0] == "/help")
+		{
+			CString rchelp;
+			rchelp.load(CString() << server->getServerPath() << "config/rchelp.txt");
+			rchelp.removeAllI("\r");
+			std::vector<CString> rchelplist = rchelp.tokenize("\n");
+			for (std::vector<CString>::iterator i = rchelplist.begin(); i != rchelplist.end(); ++i)
+			{
+				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
+			}
+		}
+	}
 
 	return true;
 }
@@ -831,7 +914,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -871,7 +954,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -922,11 +1005,12 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		else ++i;
 	}
 
-	// TODO: Close filebrowser.
+	// If they are using the File Browser, reload it.
+	if (p->isRC() && p->isUsingFileBrowser())
+		p->msgPLI_RC_FILEBROWSER_START(CString() << "");
 
+	// Save the account.
 	p->saveAccount();
-
-	// TODO: Synchronize client/rc.
 
 	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
 	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
@@ -947,7 +1031,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -978,7 +1062,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -1013,7 +1097,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;
@@ -1044,7 +1128,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc);
+	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
 		offline = true;

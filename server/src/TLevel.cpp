@@ -262,10 +262,11 @@ bool TLevel::loadZelda(const CString& pLevelName)
 
 	int v = 0;
 	if (fileVersion == "Z3-V1.03") v = 3;
+	else if (fileVersion == "Z3-V1.04") v = 4;
 
 	// Load tiles.
 	{
-		int bits = (v > 3 ? 13 : 12);
+		int bits = (v > 4 ? 13 : 12);
 		int read = 0;
 		unsigned int buffer = 0;
 		unsigned short code = 0;
@@ -380,6 +381,17 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
 			if (baddy == 0)
 				continue;
+
+			// Only v1.04+ baddies have verses.
+			if (v > 3)
+			{
+				// Load the verses.
+				std::vector<CString> bverse = line.readString("").tokenize("\\");
+				CString props;
+				for (char j = 0; j < (char)bverse.size(); ++j)
+					props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+				if (props.length() != 0) baddy->setProps(props);
+			}
 		}
 	}
 

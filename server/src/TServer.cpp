@@ -434,18 +434,22 @@ void TServer::loadFolderConfig()
 
 /////////////////////////////////////////////////////
 
-TPlayer* TServer::getPlayer(const unsigned short id) const
+TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
+	if (!includeRC && playerIds[id]->isRC()) return 0;
 	return playerIds[id];
 }
 
-TPlayer* TServer::getPlayer(const CString& account) const
+TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
 		if (player == 0)
+			continue;
+
+		if (!includeRC && player->isRC())
 			continue;
 
 		// Compare account names.
@@ -706,7 +710,7 @@ void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
+		if (!(*i)->isClient()) continue;
 		if ((*i)->getLevel() == pLevel)
 			(*i)->sendPacket(pPacket);
 	}
@@ -716,7 +720,7 @@ void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel, TPlayer *pPlaye
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i) == pPlayer || (*i)->getType() != CLIENTTYPE_CLIENT) continue;
+		if ((*i) == pPlayer || !(*i)->isClient()) continue;
 		if ((*i)->getLevel() == pLevel)
 			(*i)->sendPacket(pPacket);
 	}
@@ -726,7 +730,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) con
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
+		if (!(*i)->isClient()) continue;
 		if ((*i)->getMap() == pMap)
 		{
 			int sgmap[2] = {pMap->getLevelX(pLevel->getLevelName()), pMap->getLevelY(pLevel->getLevelName())};
@@ -756,7 +760,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 	if (pPlayer->getLevel() == 0) return;
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i)->getType() != CLIENTTYPE_CLIENT) continue;
+		if (!(*i)->isClient()) continue;
 		if ((*i) == pPlayer)
 		{
 			if (sendToSelf) pPlayer->sendPacket(pPacket);
@@ -806,7 +810,9 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
-		if ((*i)->getType() == who)
+		if ((*i)->isRC() && (who == CLIENTTYPE_RC || who == CLIENTTYPE_RC2))
+			(*i)->sendPacket(pPacket);
+		if ((*i)->isClient() && (who == CLIENTTYPE_CLIENT || who == CLIENTTYPE_CLIENT2))
 			(*i)->sendPacket(pPacket);
 	}
 }
