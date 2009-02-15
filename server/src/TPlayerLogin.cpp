@@ -229,9 +229,10 @@ bool TPlayer::sendLoginRC()
 	headImg = server->getSettings()->getStr("staffhead", "head25.png");
 
 	// Send the RC join message to the RC.
-	// TODO: Custom RC join message (rcmessage.txt)
-	sendPacket(CString() >> (char)PLO_RC_CHAT << "Welcome to RC.");
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
+	CString rcmessage;
+	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
+	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
+	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
 	return true;
 }

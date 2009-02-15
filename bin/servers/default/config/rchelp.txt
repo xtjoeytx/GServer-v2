@@ -6,6 +6,5 @@ Available commands for GServer:
 /openrights accountname: opens the rights
 /reset accountname: resets the account
 /refreshservermessage: Reloads the file servermessage.html
-/shutdown: Shuts down the server
 /updatelevel level[,level]: reloads levels form hard disk
 /updatelevelall: updates all loaded levels

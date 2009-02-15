@@ -178,7 +178,7 @@ class TAccount
 		TServer* server;
 
 		// Player-Account
-		bool isBanned, isFtp, isLoadOnly;
+		bool isBanned, isLoadOnly;
 		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
 		int accountIp, adminRights;

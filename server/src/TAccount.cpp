@@ -9,7 +9,7 @@
 */
 TAccount::TAccount(TServer* pServer)
 : server(pServer),
-isBanned(false), isFtp(false), isLoadOnly(false),
+isBanned(false), isLoadOnly(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
