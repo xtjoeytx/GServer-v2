@@ -75,8 +75,8 @@ class TServer : public CSocketStub
 		CString* getServerMessage()				{ return &servermessage; }
 		unsigned int getNWTime() const;
 
-		TPlayer* getPlayer(const unsigned short id) const;
-		TPlayer* getPlayer(const CString& account) const;
+		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
+		TPlayer* getPlayer(const CString& account, bool includeRC = true) const;
 		TNPC* getNPC(const unsigned int id) const;
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
