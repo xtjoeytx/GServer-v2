@@ -477,14 +477,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_CURLEVEL:
 				len = pPacket.readGUChar();
-				if (len >= 0)
-					levelName = pPacket.readChars(len);
+				levelName = pPacket.readChars(len);
 			break;
 
 			case PLPROP_HORSEGIF:
 				len = pPacket.readGUChar();
-				if (len >= 0)
-					horseImg = pPacket.readChars(len);
+				horseImg = pPacket.readChars(len);
 			break;
 
 			case PLPROP_HORSEBUSHES:
@@ -579,14 +577,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_ACCOUNTNAME:
 				len = pPacket.readGUChar();
-				if (len >= 0)
-					pPacket.readChars(len);
+				pPacket.readChars(len);
 			break;
 
 			case PLPROP_BODYIMG:
 				len = pPacket.readGUChar();
-				if (len >= 0)
-					bodyImg = pPacket.readChars(len);
+				bodyImg = pPacket.readChars(len);
 			break;
 
 			case PLPROP_RATING:
@@ -608,8 +604,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_PLANGUAGE:
 				len = pPacket.readGUChar();
-				if (len >= 0)
-					language = pPacket.readChars(len);
+				language = pPacket.readChars(len);
 			break;
 
 			case PLPROP_PSTATUSMSG:
