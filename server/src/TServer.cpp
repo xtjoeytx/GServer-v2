@@ -286,14 +286,21 @@ bool TServer::doTimedEvents()
 
 	// Do player events.
 	{
-		for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+		for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end();)
 		{
 			TPlayer *player = (TPlayer*)*i;
 			if (player == 0)
+			{
+				++i;
 				continue;
+			}
 
 			if (!player->doTimedEvents())
-				player->disconnect();
+			{
+				this->deletePlayer(player);
+				i = playerList.begin();
+			}
+			else ++i;
 		}
 	}
 
@@ -544,9 +551,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	if (sendToPlayers)
 	{
 		TMap* map = getMap(pLevel);
-		if (map && map->getType() == MAPTYPE_GMAP)
-			sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0), map, pLevel);
-		else sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0), pLevel);
+		sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0), map, pLevel, 0, true);
 	}
 
 	return newNPC;
@@ -582,7 +587,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
 
 	// Delete the NPC from memory.
 	delete npc;
@@ -691,12 +696,6 @@ bool TServer::isIpBanned(const CString& ip)
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-		(*i)->sendPacket(pPacket);
-}
-
 void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
@@ -706,31 +705,22 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 	}
 }
 
-void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel) const
+void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
 	{
-		if (!(*i)->isClient()) continue;
-		if ((*i)->getLevel() == pLevel)
-			(*i)->sendPacket(pPacket);
+		for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+		{
+			if ((*i) == pPlayer || !(*i)->isClient()) continue;
+			if ((*i)->getLevel() == pLevel)
+				(*i)->sendPacket(pPacket);
+		}
+		return;
 	}
-}
 
-void TServer::sendPacketToLevel(CString pPacket, TLevel *pLevel, TPlayer *pPlayer) const
-{
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if ((*i) == pPlayer || !(*i)->isClient()) continue;
-		if ((*i)->getLevel() == pLevel)
-			(*i)->sendPacket(pPacket);
-	}
-}
-
-void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		if (!(*i)->isClient()) continue;
+		if (!(*i)->isClient() || (*i) == pPlayer) continue;
 		if ((*i)->getMap() == pMap)
 		{
 			int sgmap[2] = {pMap->getLevelX(pLevel->getLevelName()), pMap->getLevelY(pLevel->getLevelName())};
@@ -755,9 +745,22 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) con
 	}
 }
 
-void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf) const
+void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (pPlayer->getLevel() == 0) return;
+	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
+	{
+		TLevel* level = pPlayer->getLevel();
+		if (level == 0) return;
+		for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+		{
+			if (((*i) == pPlayer && !sendToSelf) || !(*i)->isClient()) continue;
+			if ((*i)->getLevel() == level)
+				(*i)->sendPacket(pPacket);
+		}
+		return;
+	}
+
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient()) continue;
@@ -794,25 +797,12 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 	}
 }
 
-void TServer::sendPacketTo(int who, CString pPacket) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		if ((*i)->isRC() && (who == CLIENTTYPE_RC || who == CLIENTTYPE_RC2))
-			(*i)->sendPacket(pPacket);
-		if ((*i)->isClient() && (who == CLIENTTYPE_CLIENT || who == CLIENTTYPE_CLIENT2))
-			(*i)->sendPacket(pPacket);
-	}
-}
-
 void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
-		if ((*i)->isRC() && (who == CLIENTTYPE_RC || who == CLIENTTYPE_RC2))
-			(*i)->sendPacket(pPacket);
-		if ((*i)->isClient() && (who == CLIENTTYPE_CLIENT || who == CLIENTTYPE_CLIENT2))
+		if ((*i)->getType() & who)
 			(*i)->sendPacket(pPacket);
 	}
 }

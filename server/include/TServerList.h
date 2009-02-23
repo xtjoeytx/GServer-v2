@@ -99,7 +99,7 @@ class TServerList : public CSocketStub
 
 		// Altering Player Information
 		void addPlayer(TPlayer *pPlayer);
-		void remPlayer(const CString& pAccountName, int pType = CLIENTTYPE_CLIENT);
+		void remPlayer(const CString& pAccountName, int pType = ((int)(1 << 0) | (int)(1 << 5)));
 		void sendPlayers();
 
 		// Send New Server-Info
