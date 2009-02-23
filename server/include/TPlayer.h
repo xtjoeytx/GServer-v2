@@ -232,6 +232,18 @@ enum
 	PLSTATUS_HASSPIN		= 0x40,
 };
 
+enum
+{
+	PLTYPE_AWAIT		= (int)(-1),
+	PLTYPE_CLIENT		= (int)(1 << 0),
+	PLTYPE_RC			= (int)(1 << 1),
+	PLTYPE_NC			= (int)(1 << 3),
+	PLTYPE_CLIENT2		= (int)(1 << 5),
+	PLTYPE_RC2			= (int)(1 << 6),
+	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2),
+	PLTYPE_ANYRC		= (int)(PLTYPE_RC | PLTYPE_RC2),
+};
+
 struct SCachedLevel
 {
 	SCachedLevel(TLevel* pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) { }
@@ -300,8 +312,8 @@ class TPlayer : public TAccount, public CSocketStub
 		void disconnect();
 		void processChat(CString pChat);
 		bool isStaff();
-		bool isRC()				{ return (type == CLIENTTYPE_RC || type == CLIENTTYPE_RC2); }
-		bool isClient()			{ return (type == CLIENTTYPE_CLIENT || type == CLIENTTYPE_CLIENT2); }
+		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
+		bool isClient()			{ return (type & PLTYPE_ANYCLIENT ? true : false); }
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
@@ -435,7 +447,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 inline bool TPlayer::isLoggedIn() const
 {
-	return (type != CLIENTTYPE_AWAIT && id > 0);
+	return (type != PLTYPE_AWAIT && id > 0);
 }
 
 inline int TPlayer::getId() const

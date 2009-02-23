@@ -84,7 +84,7 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)carrySprite;
 
 		case PLPROP_CURLEVEL:
-		if (isClient() || type == CLIENTTYPE_AWAIT)
+		if (isClient() || type == PLTYPE_AWAIT)
 		{
 			if (pmap && pmap->getType() == MAPTYPE_GMAP)
 				return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
@@ -354,18 +354,18 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
 					char hx = (char)((x + 1.5f) * 2);
 					char hy = (char)((y + 2.0f) * 2);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : ((sprite % 4 == 3) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 0) ? 4 : ((sprite % 4 == 2) ? -4 : 0))), 0, level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? -5 : ((sprite % 4 == 2) ? 5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? 4 : ((sprite % 4 == 3) ? -4 : 0))), 0, level, this);
+					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 0) ? 5 : ((sprite % 4 == 2) ? -5 : 0))) >> (char)(hy + ((sprite % 4 == 1) ? -4 : ((sprite % 4 == 3) ? 4 : 0))), 0, level, this);
 					if (sprite % 4 == 0 || sprite % 4 == 2)
 					{
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), 0, level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 5) >> (char)(hy + ((sprite % 4 == 0) ? 4 : -4)), 0, level, this);
 					}
 					else
 					{
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), level, this);
-						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy - 4), 0, level, this);
+						server->sendPacketToLevel(CString() << nPacket >> (char)(hx + ((sprite % 4 == 1) ? 5 : -5)) >> (char)(hy + 4), 0, level, this);
 					}
 				}
 			}
@@ -517,8 +517,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 								isOwner = false;
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
-								if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, pmap, this);
-								else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, level, this);
+								server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, pmap, this);
 								i = playerList->end();
 							}
 						}
@@ -561,7 +560,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
-				server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
+				server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
 				printf("udp_port: %d\n", udpport);
 				// TODO: udp support.
 			break;
@@ -763,8 +762,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			bool MOVE_PRECISE = false;
 			if (versionID >= CLVER_2_3) MOVE_PRECISE = true;
 
-			if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
-			else server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), getLevel(), this);
+			server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
