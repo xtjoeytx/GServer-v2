@@ -162,7 +162,7 @@ bool TLevel::reload()
 			}
 
 			// Inform all the clients that the NPC has been deleted.
-			server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
+			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
 
 			delete n;
 		}
@@ -1050,7 +1050,7 @@ bool TLevel::doTimedEvents()
 			// change, the client won't get the new data.
 			change->swapTiles();
 			change->setModTime(time(0));
-			server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change->getBoardStr(), this);
+			server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change->getBoardStr(), 0, this);
 		}
 	}
 
@@ -1075,7 +1075,7 @@ bool TLevel::doTimedEvents()
 		int deleteTimer = horse->timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse->getX() * 2) >> (char)(horse->getY() * 2), this);
+			server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse->getX() * 2) >> (char)(horse->getY() * 2), 0, this);
 			delete horse;
 			i = levelHorses.erase(i);
 		}
@@ -1090,7 +1090,7 @@ bool TLevel::doTimedEvents()
 		if (respawnTimer == 0)
 		{
 			baddy->reset();
-			server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), this);
+			server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), 0, this);
 		}
 	}
 	return true;

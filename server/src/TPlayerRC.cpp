@@ -219,7 +219,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
 
 	rclog.out("%s has updated the server options.\n", accountName.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.");
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.");
 
 	return true;
 }
@@ -263,7 +263,7 @@ bool TPlayer::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 		server->loadFolderConfig();
 
 	rclog.out("%s updated the folder config.\n", accountName.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " updated the folder config.");
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " updated the folder config.");
 	return true;
 }
 
@@ -315,7 +315,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 	p->setPropsRC(pPacket, this);
 	p->saveAccount();
 	rclog.out("%s set the attributes of player %s\n", accountName.text(), p->getAccountName().text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " set the attributes of player " << p->getAccountName());
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " set the attributes of player " << p->getAccountName());
 
 	return true;
 }
@@ -333,7 +333,7 @@ bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 	}
 
 	rclog.out("%s disconnected %s.\n", accountName.text(), p->getAccountName().text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " disconnected " << p->getAccountName());
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " disconnected " << p->getAccountName());
 
 	p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "One of the server administrators, " << accountName << ", has disconnected you.");
 	server->deletePlayer(p);
@@ -441,11 +441,11 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		serverFlags->push_back(flag);
 
 		// Send the flag to all the players.
-		server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_FLAGSET << flag);
+		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
 	}
 
 	rclog.out("%s has updated the server flags.\n", accountName.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server flags.");
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server flags.");
 	return true;
 }
 
@@ -473,7 +473,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	newAccount.saveAccount();
 
 	rclog.out("%s has created a new account: %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has created a new account: " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has created a new account: " << acc);
 	return true;
 }
 
@@ -506,7 +506,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 	// Delete the file now.
 	remove(accpath.text());
 	rclog.out("%s has deleted the account: %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has deleted the account: " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has deleted the account: " << acc);
 	return true;
 }
 
@@ -632,7 +632,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 
 	// Log it.
 	rclog.out("%s has reset the attributes of account: %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has reset the attributes of account: " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has reset the attributes of account: " << acc);
 
 	// Clean up.
 	if (offline) delete p;
@@ -676,7 +676,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	p->setPropsRC(pPacket, this);
 	p->saveAccount();
 	rclog.out("%s set the attributes of player %s\n", accountName.text(), p->getAccountName().text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " set the attributes of player " << p->getAccountName());
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " set the attributes of player " << p->getAccountName());
 	if (offline) delete p;
 
 	return true;
@@ -772,7 +772,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	}
 
 	rclog.out("%s has modified the account: %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has modified the account: " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has modified the account: " << acc);
 
 	if (offline) delete p;
 	return true;
@@ -792,7 +792,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 
 	if (words[0].text()[0] != '/')
 	{
-		server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << message);
+		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << message);
 		return true;
 	}
 	else
@@ -1013,7 +1013,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	p->saveAccount();
 
 	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
 
 	if (offline) delete p;
 	return true;
@@ -1079,7 +1079,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	p->saveAccount();
 
 	rclog.out("%s has set the comments of %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the comments of " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the comments of " << acc);
 
 	if (offline) delete p;
 	return true;
@@ -1156,7 +1156,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	}
 
 	rclog.out("%s has set the ban of %s\n", accountName.text(), acc.text());
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the ban of " << acc);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the ban of " << acc);
 
 	if (offline) delete p;
 	return true;

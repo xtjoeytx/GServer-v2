@@ -212,7 +212,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(CLIENTTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
 pmap(0), loaded(false), nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
@@ -234,8 +234,8 @@ TPlayer::~TPlayer()
 		if (level) level->removePlayer(this);
 
 		// Announce our departure to other clients.
-		server->sendPacketTo(CLIENTTYPE_CLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
-		server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
+		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 	}
 
 	// Clean up.
@@ -352,7 +352,7 @@ bool TPlayer::doTimedEvents()
 	time_t currTime = time(0);
 
 	// Only run for clients.
-	if (type != CLIENTTYPE_CLIENT) return true;
+	if (!isClient()) return true;
 
 	// Increase online time.
 	onlineTime++;
@@ -415,7 +415,7 @@ void TPlayer::disconnect()
 bool TPlayer::parsePacket(CString& pPacket)
 {
 	// First packet is always unencrypted zlib.  Read it in a special way.
-	if (type == CLIENTTYPE_AWAIT)
+	if (type == PLTYPE_AWAIT)
 	{
 		if (msgPLI_LOGIN(CString() << pPacket.readString("\n")) == false)
 			return false;
@@ -457,7 +457,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 	// Was already decompressed so just decrypt the packet.
 	if (in_codec.getGen() == ENCRYPT_GEN_3)
 	{
-		if (type != CLIENTTYPE_CLIENT)
+		if (!isClient())
 			return;
 
 		in_codec.apply(pPacket);
@@ -831,7 +831,7 @@ void TPlayer::processChat(CString pChat)
 				TPlayer* p = *i;
 
 				// If an RC was found, add it to our string.
-				if (p->getType() == CLIENTTYPE_RC)
+				if (p->getType() & PLTYPE_ANYRC)
 					msg << (msg.length() == 0 ? "" : ", ") << p->getAccountName();
 			}
 		}
@@ -1127,7 +1127,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	}
 	else
 	{
-		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), this->level, this);
+		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
 		std::vector<TPlayer*>* playerList = level->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -1169,7 +1169,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 	// Tell everyone I left.
 //	if (pmap && pmap->getType() != MAPTYPE_GMAP)
 	{
-		server->sendPacketToLevel(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, level, this);
+		server->sendPacketToLevel(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, 0, level, this);
 
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -1313,23 +1313,23 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Read Client-Type
 	serverlog.out(":: New login:\t");
-	type = pPacket.readGChar();
+	type = (1 << pPacket.readGChar());
 	bool getKey = false;
 	switch (type)
 	{
-		case CLIENTTYPE_CLIENT:
+		case PLTYPE_CLIENT:
 			serverlog.out("Client\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
-		case CLIENTTYPE_RC:
+		case PLTYPE_RC:
 			serverlog.out("RC\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
-		case CLIENTTYPE_CLIENT2:
+		case PLTYPE_CLIENT2:
 			serverlog.out("New Client (2.19+)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
 			break;
-		case CLIENTTYPE_RC2:
+		case PLTYPE_RC2:
 			serverlog.out("New RC (2.19+)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
 			getKey = true;
@@ -1450,7 +1450,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 	// Alter level data.
 	if (level->alterBoard(tiles, loc[0], loc[1], dim[0], dim[1], this))
-		server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << pPacket.text() + 1, level);
+		server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << pPacket.text() + 1, pmap, level);
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63) return true;
 
@@ -1518,9 +1518,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 		return true;
 
 	CString packet = CString() >> (char)PLO_NPCPROPS << pPacket.text() + 1;
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
-		server->sendPacketToLevel(packet, pmap, this, false);
-	else server->sendPacketToLevel(packet, level, this);
+	server->sendPacketToLevel(packet, pmap, this, false, true);
 	npc->setProps(npcProps, versionID);
 
 	return true;
@@ -1535,13 +1533,13 @@ bool TPlayer::msgPLI_BOMBADD(CString& pPacket)
 	unsigned char timeToExplode = pPacket.readGUChar();		// How many 0.05 sec increments until it explodes.  Defaults to 55 (2.75 seconds.)
 
 	for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
-	server->sendPacketToLevel(CString() >> (char)PLO_BOMBADD >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_BOMBADD >> (short)id << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
 bool TPlayer::msgPLI_BOMBDEL(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_BOMBDEL << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_BOMBDEL << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
@@ -1572,7 +1570,7 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 
 bool TPlayer::msgPLI_HORSEADD(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_HORSEADD << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_HORSEADD << pPacket.text() + 1, 0, level, this);
 
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char dir_bush = pPacket.readGUChar();
@@ -1586,7 +1584,7 @@ bool TPlayer::msgPLI_HORSEADD(CString& pPacket)
 
 bool TPlayer::msgPLI_HORSEDEL(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL << pPacket.text() + 1, 0, level, this);
 
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 
@@ -1596,13 +1594,13 @@ bool TPlayer::msgPLI_HORSEDEL(CString& pPacket)
 
 bool TPlayer::msgPLI_ARROWADD(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_ARROWADD >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_ARROWADD >> (short)id << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
 bool TPlayer::msgPLI_FIRESPY(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_FIRESPY >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_FIRESPY >> (short)id << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
@@ -1622,7 +1620,7 @@ bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 				level->addNPC(npc);
 		}
 	}
-	server->sendPacketToLevel(CString() >> (char)PLO_THROWCARRIED >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_THROWCARRIED >> (short)id << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
@@ -1632,13 +1630,13 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 	unsigned char item = pPacket.readGUChar();
 
 	level->addItem(loc[0], loc[1], item);
-	server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << pPacket.text() + 1, 0, level, this);
 	return true;
 }
 
 bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_ITEMDEL << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_ITEMDEL << pPacket.text() + 1, 0, level, this);
 
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 
@@ -1748,7 +1746,7 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 
 	// Set the props and send to everybody in the level.
 	baddy->setProps(props);
-	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, level);
+	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, 0, level);
 	return true;
 }
 
@@ -1777,7 +1775,7 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 	baddy->setProps(CString() >> (char)BDPROP_POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
 
 	// Send the props to everybody in the level.
-	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), level);
+	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), 0, level);
 	return true;
 }
 
@@ -1957,7 +1955,7 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 
 bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 {
-	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << pPacket.text() + 1, pmap, level, this);
 	return true;
 }
 
@@ -1993,8 +1991,7 @@ bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 
 	// Send the packet out.
 	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-	if (pmap) server->sendPacketToLevel(packet, pmap, this, false);
-	else server->sendPacketToLevel(packet, level, this);
+	server->sendPacketToLevel(packet, pmap, this, false);
 
 	return true;
 }
@@ -2242,9 +2239,7 @@ bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
 	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
-	if (pmap && pmap->getType() == MAPTYPE_GMAP) server->sendPacketToLevel(nPacket, pmap, this);
-	else server->sendPacketToLevel(nPacket, level, this);
-
+	server->sendPacketToLevel(nPacket, pmap, this, true);
 	return true;
 }
 
@@ -2263,7 +2258,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	// We don't have an NPCserver, so, for now, just pass it along.
 	CString packet;
 	packet >> (char)PLO_TRIGGERACTION >> (short)id << pPacket.text() + 1;
-	server->sendPacketToLevel(packet, this->level, this);
+	server->sendPacketToLevel(packet, 0, level, this);
 	return true;
 }
 
@@ -2285,8 +2280,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	unsigned char unknown2 = pPacket.readGUChar();
 
 	// Send data now.
-	if (pmap) server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, pmap, this, false);
-	else server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, level, this);
+	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << pPacket.text() + 1, pmap, this, false);
 
 //	printf("shoot: %s\n", pPacket.text());
 //	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
