@@ -94,14 +94,10 @@ class TServer : public CSocketStub
 		bool isIpBanned(const CString& ip);
 
 		// Packet sending.
-		void sendPacketToAll(CString pPacket) const;
-		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
-		void sendPacketToLevel(CString pPacket, TLevel *pLevel) const;
-		void sendPacketToLevel(CString pPacket, TLevel *pLevel, TPlayer *pPlayer) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false) const;
-		void sendPacketTo(int who, CString pPacket) const;
-		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const;
+		void sendPacketToAll(CString pPacket, TPlayer *pPlayer = 0) const;
+		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
+		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 	private:
 		bool doTimedEvents();

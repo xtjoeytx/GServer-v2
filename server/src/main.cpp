@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
 	{
 		boost::thread* t = i->second;
-		if (t == 0) i = serverThreads.erase(i);
+		if (t == 0) serverThreads.erase(i++);
 		else
 		{
 			t->join();

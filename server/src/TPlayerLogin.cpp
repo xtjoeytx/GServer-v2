@@ -45,7 +45,9 @@ bool TPlayer::sendLogin()
 			TPlayer* player = *i;
 			CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
 			unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
-			if (oacc == accountName && player->getType() == type && oid != id)
+			bool meClient = ((type & PLTYPE_ANYCLIENT) ? true : false);
+			bool themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? true : false);
+			if (oacc == accountName && meClient == themClient && oid != id)
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{
@@ -233,6 +235,6 @@ bool TPlayer::sendLoginRC()
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
-	server->sendPacketTo(CLIENTTYPE_RC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
 	return true;
 }
