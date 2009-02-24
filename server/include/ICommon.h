@@ -14,9 +14,9 @@
 	#include <windows.h>
 #endif
 
+#include <boost/thread.hpp>
 #include "main.h"
 #undef wait
-#include <boost/thread.hpp>
 
 #define GSERVER_VERSION		"0.1.0"
 
