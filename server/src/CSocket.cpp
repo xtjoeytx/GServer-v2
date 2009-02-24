@@ -66,7 +66,7 @@
 //////
 
 // Function declarations.
-static char* errorMessage(int error);
+static const char* errorMessage(int error);
 static int identifyError(int source = 0);
 
 // From main.cpp
@@ -821,7 +821,7 @@ void CSocket::socketSystemDestroy()
 #endif
 }
 
-char* errorMessage(int error)
+const char* errorMessage(int error)
 {
 	// These can happen a lot.  Don't display any errors about them.
 	if (error == EWOULDBLOCK || error == EINPROGRESS)
