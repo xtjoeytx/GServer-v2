@@ -781,7 +781,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 					sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
 					sgmap[1] = pPlayer->getProp(PLPROP_GMAPLEVELY).readGUChar();
 					break;
-				
+
 				default:
 				case MAPTYPE_BIGMAP:
 					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getLevelName());

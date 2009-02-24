@@ -431,17 +431,46 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 
 	unsigned short count = pPacket.readGUShort();
 	std::vector<CString>* serverFlags = server->getServerFlags();
+
+	// Save server flags.
+	std::vector<CString> oldFlags = *serverFlags;
+
+	// Delete server flags.
 	serverFlags->clear();
 
-	// TODO: Make it only send flag changes.
 	// Assemble the new server flags.
 	for (unsigned int i = 0; i < count; ++i)
 	{
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		serverFlags->push_back(flag);
+	}
 
-		// Send the flag to all the players.
-		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
+	// Send flag changes to all players.
+	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+	{
+		bool found = false;
+		for (std::vector<CString>::iterator j = oldFlags.begin(); j != oldFlags.end();)
+		{
+			if (*i == *j)
+			{
+				found = true;
+				j = oldFlags.erase(j);
+				break;
+			}
+			else ++j;
+		}
+
+		// If we didn't find a match, this is either a new flag, or a changed flag.
+		if (!found)
+		{
+			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << *i);
+		}
+	}
+
+	// If any flags were deleted, tell that to the players now.
+	for (std::vector<CString>::iterator i = oldFlags.begin(); i != oldFlags.end(); ++i)
+	{
+		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << (*i).readString("=").trim());
 	}
 
 	rclog.out("%s has updated the server flags.\n", accountName.text());
@@ -1366,7 +1395,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 {
 	if (!isRC())
 	{
-		rclog.out("[Hack] %s attempted to opload a file through the File Browser.\n", accountName.text());
+		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", accountName.text());
 		return true;
 	}
 
