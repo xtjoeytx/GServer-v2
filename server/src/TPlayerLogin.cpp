@@ -18,7 +18,6 @@ extern bool __getLoginRC[propscount];
 bool TPlayer::sendLogin()
 {
 	// Load Player-Account
-	// TODO: We actually need to check if it fails because accounts can be banned.
 	loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
 
 	// Check to see if the player is banned or not.
@@ -126,10 +125,9 @@ bool TPlayer::sendLoginClient()
 	// Send the player his login props.
 	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
 
-	// Workaround for 2.19+ clients.  They don't request the map file when used with setmap.
+	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
 	// So, just send them all the maps loaded into the server.
-	// TODO: Client version specific instead of encryption era specific?
-	if (in_codec.getGen() == ENCRYPT_GEN_4)
+	if (versionID == CLVER_2_31)
 	{
 		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
 		{
