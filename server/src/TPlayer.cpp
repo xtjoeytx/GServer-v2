@@ -541,7 +541,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() == 0)
 		{
 			int i = 0;
-			char* ext[] = {".png", ".mng", ".gif"};
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
@@ -587,7 +587,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() == 0)
 		{
 			int i = 0;
-			char* ext[] = {".png", ".mng", ".gif"};
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
@@ -633,7 +633,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() == 0)
 		{
 			int i = 0;
-			char* ext[] = {".png", ".mng", ".gif"};
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
@@ -679,7 +679,7 @@ void TPlayer::processChat(CString pChat)
 		if (file.length() == 0)
 		{
 			int i = 0;
-			char* ext[] = {".png", ".mng", ".gif"};
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
