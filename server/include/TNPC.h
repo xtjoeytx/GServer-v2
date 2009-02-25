@@ -91,11 +91,12 @@ enum
 	NPCSTATUS_DRAWOVERPLAYER	= 0x02,
 };
 
+class TServer;
 class TLevel;
 class TNPC
 {
 	public:
-		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
+		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
 		~TNPC();
 
 		// prop functions
@@ -130,6 +131,7 @@ class TNPC
 		CString serverScript, clientScript;
 		unsigned char saves[10];
 		TLevel* level;
+		TServer* server;
 };
 
 inline

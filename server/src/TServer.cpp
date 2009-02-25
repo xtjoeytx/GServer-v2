@@ -525,7 +525,7 @@ CString TServer::getFlag(const CString& pName) const
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, pLevel, pLevelNPC, settings.getBool("trimnpccode", false));
+	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC, settings.getBool("trimnpccode", false));
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
