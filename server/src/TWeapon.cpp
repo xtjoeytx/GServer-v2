@@ -40,7 +40,9 @@ TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pSc
 
 TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 {
-	CString fileName = server->getServerPath() << "weapons/" << pWeapon << ".txt";
+	CString w(pWeapon);
+	w.replaceAllI("/", "_");
+	CString fileName = server->getServerPath() << "weapons/" << w << ".txt";
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
 	CString name;
@@ -55,11 +57,13 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 		// See if it is the NEWWEAPON line.
 		if (line.find("NEWWEAPON ") != -1)
 		{
-			std::vector<CString> explode = line.tokenize();
-			if (explode.size() != 4) return 0;
-			name = explode[1];
-			image = explode[2];
-			modTime = (time_t)strtolong(explode[3]);
+			line.readString("NEWWEAPON ");
+			CString s = line.readString("");
+			std::vector<CString> explode = s.tokenize(",");
+			if (explode.size() != 3) return 0;
+			name = explode[0];
+			image = explode[1];
+			modTime = (time_t)strtolong(explode[2]);
 			continue;
 		}
 
@@ -77,11 +81,13 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 bool TWeapon::saveWeapon(TServer* server)
 {
 	if (name.length() == 0) return false;
-	CString filename = server->getServerPath() << "weapons/" << name << ".txt";
+	CString w(name);
+	w.replaceAllI("/", "_");
+	CString filename = server->getServerPath() << "weapons/" << w << ".txt";
 	CString output;
 
 	// Write the header.
-	output << "NEWWEAPON " << name << " " << image << " " << CString((unsigned long)modTime) << "\r\n";
+	output << "NEWWEAPON " << name << "," << image << "," << CString((unsigned long)modTime) << "\r\n";
 
 	// Write the serverside code.
 	std::vector<CString> explode = serverScript.tokenize("\xa7");
