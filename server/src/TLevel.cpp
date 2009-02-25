@@ -1086,6 +1086,41 @@ bool TLevel::doTimedEvents()
 	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
 	{
 		TLevelBaddy* baddy = *i;
+
+		// Check if we need to drop a baddy item.
+		if (baddy->timeout.getTimeout() == server->getSettings()->getInt("baddyrespawntime", 60) && server->getSettings()->getBool("baddyitems", false) == true)
+		{
+			// 41.66...% chance of a green gralat.
+			// 41.66...% chance of something else.
+			// 16.66...% chance of nothing.
+			int itemId = rand()%12;
+			bool valid = true;
+
+			switch (itemId)
+			{
+				case 0:	//GREENRUPEE
+				case 1:	//BLUERUPEE
+				case 2:	//REDRUPEE
+				case 3:	//BOMBS
+				case 4:	//DARTS
+				case 5:	//HEART
+					break;
+				break;
+
+				default:
+					if (itemId > 5 && itemId < 10) itemId = 0;	//GREENRUPEE
+					else valid = false;
+					break;
+			}
+
+			if (valid)
+			{
+				addItem(baddy->getX(), baddy->getY(), itemId);
+				server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(baddy->getX()*2) >> (char)(baddy->getY()*2) >> (char)itemId, 0, this);
+			}
+		}
+
+		// See if we can respawn him.
 		int respawnTimer = baddy->timeout.doTimeout();
 		if (respawnTimer == 0)
 		{
