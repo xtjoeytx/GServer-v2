@@ -40,8 +40,11 @@ TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pSc
 
 TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 {
+	// Prevent the loading/saving of filenames with illegal characters.
 	CString w(pWeapon);
 	w.replaceAllI("/", "_");
+	w.replaceAllI("*", "@");
+
 	CString fileName = server->getServerPath() << "weapons/" << w << ".txt";
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
@@ -81,8 +84,12 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 bool TWeapon::saveWeapon(TServer* server)
 {
 	if (name.length() == 0) return false;
+
+	// Prevent the loading/saving of filenames with illegal characters.
 	CString w(name);
 	w.replaceAllI("/", "_");
+	w.replaceAllI("*", "@");
+
 	CString filename = server->getServerPath() << "weapons/" << w << ".txt";
 	CString output;
 
@@ -94,8 +101,9 @@ bool TWeapon::saveWeapon(TServer* server)
 	for (std::vector<CString>::iterator i = explode.begin(); i != explode.end(); ++i)
 		output << *i << "\r\n";
 
-	// Write the clientside separator.
-	output << "\r\n//#CLIENTSIDE\r\n";
+	// Write the clientside separator if it does not exist.
+	if (clientScript.find("//#CLIENTSIDE") == -1)
+		output << "\r\n//#CLIENTSIDE\r\n";
 
 	// Write the clientside code.
 	explode.clear();
