@@ -9,7 +9,7 @@ class TLevelChest
 {
 	public:
 		// constructor - destructor
-		TLevelChest(char nx, char ny, char nitemIndex, char nsignIndex) : x(nx), y(ny), itemIndex(nitemIndex), signIndex(nsignIndex) {}
+		TLevelChest(char nx, char ny, char nitemIndex, char nsignIndex) : itemIndex(nitemIndex), signIndex(nsignIndex), x(nx), y(ny) {}
 		TLevelChest(const std::vector<CString>& pChest);
 
 		// functions

@@ -433,7 +433,7 @@ class TPlayer : public TAccount, public CSocketStub
 		std::vector<SCachedLevel*> cachedLevels;
 		bool allowBomb;
 		TMap* pmap;
-		int carryNpcId;
+		unsigned int carryNpcId;
 		bool carryNpcThrown;
 		CString guild;
 		bool loaded;

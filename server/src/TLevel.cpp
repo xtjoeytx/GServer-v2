@@ -12,7 +12,7 @@
 CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 short respawningTiles[10] = {
 	0x1ff, 0x3ff, 0x2ac, 0x002, 0x200,
-	0x022, 0x3de, 0x1a4, 0x14a, 0x674
+	0x022, 0x3de, 0x1a4, 0x14a, 0x674,
 };
 
 /*
@@ -625,7 +625,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 	modTime = fileSystem->getModTime(pLevelName);
 
 	// Load File
-	std::vector<CString> fileData = CString::loadToken(fileName);
+	std::vector<CString> fileData = CString::loadToken(fileName, "\n", true);
 	if (fileData.size() == 0)
 		return false;
 
@@ -636,7 +636,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
 	{
 		// Tokenize
-		std::vector<CString> curLine = i->removeAll("\r").tokenize();
+		std::vector<CString> curLine = i->tokenize();
 		if (curLine.size() < 1)
 			continue;
 
@@ -700,9 +700,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 			++i;
 			while (i != fileData.end())
 			{
-				CString line = i->removeAll("\r");
-				if (line == "NPCEND") break;
-				code << line << "\xa7";
+				if (*i == "NPCEND") break;
+				code << *i << "\xa7";
 				++i;
 			}
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
@@ -723,9 +722,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 			++i;
 			while (i != fileData.end())
 			{
-				CString line = i->removeAll("\r");
-				if (line == "SIGNEND") break;
-				text << line << "\n";
+				if (*i == "SIGNEND") break;
+				text << *i << "\n";
 				++i;
 			}
 
@@ -751,9 +749,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 			++i;
 			while (i != fileData.end())
 			{
-				CString line = i->removeAll("\r");
-				if (line == "BADDYEND") break;
-				bverse.push_back(line);
+				if (*i == "BADDYEND") break;
+				bverse.push_back(*i);
 				++i;
 			}
 			CString props;
