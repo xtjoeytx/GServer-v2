@@ -184,7 +184,7 @@ bool TServerList::connectServer()
 	CString localip = sock.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		server->getServerLog().out(CString() << "** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.");
+		server->getServerLog().out(CString() << "** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 

@@ -433,14 +433,16 @@ CString CString::zuncompress(unsigned int buffSize) const
 
 int CString::find(const CString& pString, int pStart) const
 {
-	for (int i = pStart; i <= sizec - pString.length(); ++i)
+	const char* obuffer = pString.text();
+	const int olen = pString.length();
+	for (int i = pStart; i <= sizec - olen; ++i)
 	{
 		if (buffer[i] == 0)
 		{
-			if (pString.length() == 0) return i;
+			if (olen == 0) return i;
 			else continue;
 		}
-		if (strncmp(buffer + i, pString.text(), pString.length()) == 0)
+		if (memcmp(buffer + i, obuffer, olen) == 0)
 			return i;
 	}
 	return -1;
@@ -989,19 +991,19 @@ CString CString::B64_Encode()
 		char pCode;
 
 		pCode = (buffer[i] >> 2) & 0x3f;
-		retVal.writeChar(EncodeTable[pCode]);
+		retVal.writeChar(EncodeTable[(int)pCode]);
 
 		pCode = (buffer[i] << 4) & 0x3f;
 		if (i++ < sizec)
 			pCode |= (buffer[i] >> 4) & 0x0f;
-		retVal.writeChar(EncodeTable[pCode]);
+		retVal.writeChar(EncodeTable[(int)pCode]);
 
 		if (i < sizec)
 		{
 			pCode = (buffer[i] << 2) & 0x3f;
 			if (i++ < sizec)
 				pCode |= (buffer[i] >> 6) & 0x03;
-			retVal.writeChar(EncodeTable[pCode]);
+			retVal.writeChar(EncodeTable[(int)pCode]);
 		}
 		else
 		{
@@ -1012,7 +1014,7 @@ CString CString::B64_Encode()
 		if (i < sizec)
 		{
 			pCode = buffer[i] & 0x3f;
-			retVal.writeChar(EncodeTable[pCode]);
+			retVal.writeChar(EncodeTable[(int)pCode]);
 		}
 		else
 		{

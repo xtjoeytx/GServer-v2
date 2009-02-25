@@ -34,11 +34,11 @@ respawn(true)
 
 void TLevelBaddy::reset()
 {
-	mode = baddyStartMode[type];
+	mode = baddyStartMode[(int)type];
 	x = startX;
 	y = startY;
-	power = baddyPower[type];
-	image = baddyImages[type];
+	power = baddyPower[(int)type];
+	image = baddyImages[(int)type];
 	dir = (2 << 2) | 2;			// Both head/body direction is encoded in dir.
 	ani = 0;
 }

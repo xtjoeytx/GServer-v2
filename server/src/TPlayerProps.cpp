@@ -15,6 +15,7 @@ extern int __attrPackets[30];
 */
 CString TPlayer::getProp(int pPropId)
 {
+	// TODO: is there a reason for this?  Check serveroptions.
 	CSettings* settings = server->getSettings();
 	switch (pPropId)
 	{
@@ -497,7 +498,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_CARRYNPC:
 			{
-				carryNpcId = pPacket.readGInt();
+				carryNpcId = pPacket.readGUInt();
 
 				// TODO: Remove when an npcserver is created.
 				if (server->getSettings()->getBool("duplicatecanbecarried", false) == false)

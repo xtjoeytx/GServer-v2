@@ -27,7 +27,7 @@ CString TLevelItem::getItemName(const unsigned char id)
 
 CString TLevelItem::getItemPlayerProp(const char pItemId, TPlayer* player)
 {
-	return TLevelItem::getItemPlayerProp(__itemList[pItemId], player);
+	return TLevelItem::getItemPlayerProp(__itemList[(int)pItemId], player);
 }
 
 CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
@@ -59,7 +59,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			bombCount = clip(bombCount, 0, 99);
 			return CString() >> (char)PLPROP_BOMBSCOUNT >> (char)bombCount;
 		}
-		
+
 		case 4:		// darts
 		{
 			CString playerProp = player->getProp(PLPROP_ARROWSCOUNT);
