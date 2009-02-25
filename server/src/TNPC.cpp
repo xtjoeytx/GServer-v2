@@ -6,13 +6,15 @@
 #include "TNPC.h"
 #include "TLevel.h"
 #include "TMap.h"
+#include "TServer.h"
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68 };
 
 static CString toWeaponName(const CString& code);
+static CString doJoins(const CString& code, CFileSystem* fs);
 
-TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool trimCode)
+TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC, bool trimCode)
 :
 levelNPC(pLevelNPC),
 x(pX), y(pY), hurtX(32.0f), hurtY(32.0f),
@@ -22,7 +24,7 @@ id(0), rupees(0),
 darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
-level(pLevel)
+level(pLevel), server(pServer)
 {
 	memset((void*)colors, 0, sizeof(colors));
 	memset((void*)saves, 0, sizeof(saves));
@@ -80,6 +82,10 @@ level(pLevel)
 				clientScript << (*i).trim() << "\xa7";
 		}
 	}
+
+	// Do joins.
+	if (!serverScript.isEmpty()) serverScript = doJoins(serverScript, server->getFileSystem());
+	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
 
 	// Search for toweapons in the clientside code and extract the name of the weapon.
 	weaponName = toWeaponName(clientScript);
@@ -528,4 +534,34 @@ CString toWeaponName(const CString& code)
 	if (name_end == -1) return CString();
 
 	return code.subString(name_start, name_end - name_start).trim();
+}
+
+CString doJoins(const CString& code, CFileSystem* fs)
+{
+	CString ret;
+	CString c(code);
+	std::vector<CString> joinList;
+
+	// Parse out all the joins.
+	while (c.bytesLeft())
+	{
+		ret << c.readString("join ");
+		if (c.bytesLeft())
+		{
+			ret << ";\xa7";
+			joinList.push_back(CString() << c.readString(";") << ".txt");
+		}
+	}
+
+	// Add the files now.
+	for (std::vector<CString>::iterator i = joinList.begin(); i != joinList.end(); ++i)
+	{
+		//printf("file: %s\n", (*i).text());
+		c = fs->load(*i);
+		c.removeAllI("\r");
+		c.replaceAllI("\n", "\xa7");
+		ret << removeComments(c, "\xa7");
+	}
+
+	return ret;
 }

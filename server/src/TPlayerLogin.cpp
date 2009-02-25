@@ -199,6 +199,7 @@ bool TPlayer::sendLoginClient()
 				msgPLI_WEAPONADD(defWeapPacket);
 				continue;
 			}
+			continue;
 		}
 		sendPacket(weapon->getWeaponPacket());
 	}
