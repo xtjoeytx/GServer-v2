@@ -46,6 +46,8 @@ class TLevelBaddy
 
 		// get functions
 		char getId() const						{ return id; }
+		float getX() const						{ return x; }
+		float getY() const						{ return y; }
 		CString getProp(const int propId) const;
 		CString getProps() const;
 
