@@ -213,7 +213,8 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
-pmap(0), loaded(false), nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
+pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
+nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -1840,6 +1841,7 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	if (flagName.find("serverr.") != -1) return true;
 
 	// Server flags are handled differently than client flags.
+	// TODO: check serveroptions
 	if (flagName.find("server.") != -1)
 	{
 		server->deleteFlag(flagName);

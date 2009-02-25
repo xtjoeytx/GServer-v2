@@ -938,7 +938,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 		return true;
 	}
 
-	int rights = 0;
+//	int rights = 0;
 	CString folders, ip;
 
 	// Get player.

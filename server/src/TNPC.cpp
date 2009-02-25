@@ -162,7 +162,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		return CString() >> (char)chatMsg.subString(0, 200).length() << chatMsg.subString(0, 200);
 
 		case NPCPROP_HURTDXDY:
-		return CString() >> (char)(hurtX*32)+32 >> (char)(hurtY*32)+32;
+		return CString() >> (char)((hurtX*32)+32 )>> (char)((hurtY*32)+32);
 
 		case NPCPROP_ID:
 		return CString() >> (int)id;
