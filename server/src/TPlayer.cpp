@@ -751,9 +751,10 @@ void TPlayer::processChat(CString pChat)
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
 				TPlayer* player = *i;
-				if (player == this) continue;
+				if (player == this || player == 0) continue;
 				if (player->getProp(PLPROP_ACCOUNTNAME).subString(1) == chatParse[1])
 				{
+					if (player->getLevel() == 0) break;
 					warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 					break;
 				}
@@ -794,7 +795,7 @@ void TPlayer::processChat(CString pChat)
 		}
 
 		TPlayer* p = server->getPlayer(chatParse[1]);
-		if (p) p->warp(levelName, x, y);
+		if (p->isClient()) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
