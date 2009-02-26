@@ -30,19 +30,19 @@ int __attrPackets[30] = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58
 bool __sendLogin[propscount] =
 {
 	false, true,  true,  true,  true,  true,  // 0-5
-	true , true,  true,  true,  true,  true,  // 6-11
-	false, true,  false, true,  true,  true,  // 12-17
-	true , true,  true,  true,  true,  false, // 18-23
-	false, true,  true,  true,  false, false, // 24-29
-	false, false, true,  false, false, true,  // 30-35
+	true,  false, true,  true,  true,  true,  // 6-11
+	false, true,  false, false, false, true,  // 12-17
+	true,  false, false, true,  true,  true, // 18-23
+	false, true,  true,  false, false, false, // 24-29
+	false, false, true,  false, true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
-	false, true,  true,  true,  false, false, // 42-47
-	false, false, false, false, false, false, // 48-53
+	false, false, false, false, true,  true, // 42-47
+	true,  true,  false, false, false, false, // 48-53
 	true,  true,  true,  true,  true,  true,  // 54-59
 	true,  true,  true,  true,  true,  true,  // 60-65
 	true,  true,  true,  true,  true,  true,  // 66-71
 	true,  true,  true,  false, false, false, // 72-77
-	true,  true,  true,  false, true, // 78-82
+	false, false, false, false, true, // 78-82
 };
 
 bool __getLogin[propscount] =
@@ -345,6 +345,7 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
+	server->getSocketManager()->updateSingle(this);
 	return true;
 }
 
@@ -1045,7 +1046,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time == 0)
+	if (l_time == 0 || versionID < CLVER_2)
 	{
 		if (modTime != pLevel->getModTime() || versionID < CLVER_2)
 		{
@@ -1074,7 +1075,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 
 	// Tell the client if there are any ghost players in the level.
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
-	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
+	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	if (skipActors == false)
 	{
@@ -1094,9 +1095,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 		// Send NPCs.
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
-		else
+		else if (versionID > CLVER_1_411)
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
-		sendPacket(CString() << pLevel->getNpcsPacket(l_time));
+		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
 	}
 
 	// Do props stuff.
@@ -1190,7 +1191,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
-	// 1.41r1 and below don't cache links/signs.
+	// 1.41r1 and below don't cache things (probably).
 	if (versionID < CLVER_2) return 0;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
@@ -1933,6 +1934,17 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 	if (fileData.length() > 32000)
 		isBigFile = true;
 
+	// Clients before 2.14 didn't support large files.
+	if (versionID < CLVER_2_14)
+	{
+		if (fileData.length() > 64000)
+		{
+			sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
+			return true;
+		}
+		isBigFile = false;
+	}
+
 	// If we are sending a big file, let the client know now.
 	if (isBigFile)
 	{
@@ -1944,6 +1956,7 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 	while (fileData.length() != 0)
 	{
 		int sendSize = clip(32000, 0, fileData.length());
+		if (versionID < CLVER_2_14) sendSize = fileData.length();
 		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
 		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize));
 		fileData.removeI(0, sendSize);
@@ -2218,9 +2231,9 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	sendLevel(adjacentLevel, modTime, (pmap ? false : true));
 
 	// Set our old level back to normal.
+	sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
-	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)
 		sendPacket(CString() >> (char)PLO_ISLEADER);
 

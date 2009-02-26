@@ -100,7 +100,7 @@ bool TPlayer::sendLogin()
 				CString otherRCProps;
 				otherRCProps >> (char)PLO_ADDPLAYER >> (short)player->getId()
 					>> (char)player->getAccountName().length() << player->getAccountName()
-					>> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL)
+					>> (char)PLPROP_CURLEVEL >> player->getLevel()->getLevelName().length() << player->getLevel()->getLevelName()
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
 					>> (char)PLPROP_HEADGIF << player->getProp(PLPROP_HEADGIF)
 					>> (char)PLPROP_BODYIMG << player->getProp(PLPROP_BODYIMG);
@@ -121,30 +121,6 @@ bool TPlayer::sendLogin()
 bool TPlayer::sendLoginClient()
 {
 	CSettings* settings = server->getSettings();
-
-	// Send the player his login props.
-	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
-
-	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
-	// So, just send them all the maps loaded into the server.
-	if (versionID == CLVER_2_31)
-	{
-		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
-		{
-			TMap* map = *i;
-			if (map->getType() == MAPTYPE_BIGMAP)
-				msgPLI_WANTFILE(CString() << map->getMapName());
-		}
-	}
-
-	// Send the level to the player.
-	// warp will call sendCompress() for us.
-	if (warp(levelName, x, y) == false)
-	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		serverlog.out(CString() << "Cannot find level for " << accountName << "\n");
-		return false;
-	}
 
 	// Recalculate player spar deviation.
 	{
@@ -174,11 +150,40 @@ bool TPlayer::sendLoginClient()
 		pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
 	sendPacket(pliconPacket);
 
-	// Send out RPG Window greeting.
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
+	// PLO_BIGMAP (minimap?)
 
-	// Send the start message to the player.
-	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
+	// Send the player his login props.
+	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
+
+	// Send the player's flags.
+	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
+		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+
+	// Send the server's flags to the player.
+	std::vector<CString>* serverFlags = server->getServerFlags();
+	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+
+	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
+	// So, just send them all the maps loaded into the server.
+	if (versionID == CLVER_2_31)
+	{
+		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
+		{
+			TMap* map = *i;
+			if (map->getType() == MAPTYPE_BIGMAP)
+				msgPLI_WANTFILE(CString() << map->getMapName());
+		}
+	}
+
+	// Send the level to the player.
+	// warp will call sendCompress() for us.
+	if (warp(levelName, x, y) == false)
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
+		serverlog.out(CString() << "Cannot find level for " << accountName << "\n");
+		return false;
+	}
 
 	// Delete the bomb.  It gets automagically added by the client for
 	// God knows which reason.  Bomb must be capitalized.
@@ -204,14 +209,11 @@ bool TPlayer::sendLoginClient()
 		sendPacket(weapon->getWeaponPacket());
 	}
 
-	// Send the player's flags.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	// Send out RPG Window greeting.
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
 
-	// Send the server's flags to the player.
-	std::vector<CString>* serverFlags = server->getServerFlags();
-	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	// Send the start message to the player.
+	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
 
 	//sendPacket(CString() >> (char)195 >> (char)4 << "idle" << "\"SETBACKTO \"");
 	//sendPacket(CString() >> (char)195 >> (char)4 << "walk" << "\"SETBACKTO \"");

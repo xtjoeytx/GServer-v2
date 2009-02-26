@@ -69,6 +69,7 @@ class TServer : public CSocketStub
 		TServerList* getServerList()			{ return &serverlist; }
 		CFileSystem* getFileSystem(int c = 0)	{ return &(filesystem[c]); }
 		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
+		CSocketManager* getSocketManager()		{ return &sockManager; }
 		CString getServerPath()					{ return serverpath; }
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
