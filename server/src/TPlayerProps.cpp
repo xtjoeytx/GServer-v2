@@ -712,7 +712,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					leaveLevel();
 					setLevel(levelName, -1);
 				}
-				printf( "map level x: %d\n", gmaplevelx );
+				printf("gmap level x: %d\n", gmaplevelx);
 				break;
 			}
 
@@ -725,7 +725,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					leaveLevel();
 					setLevel(levelName, -1);
 				}
-				printf( "gmap level y: %d\n", gmaplevely );
+				printf("gmap level y: %d\n", gmaplevely);
 				break;
 			}
 
@@ -800,6 +800,7 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 			propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
 
 		// Create Props
+		if (versionID < CLVER_2) pCount = 37;
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;
