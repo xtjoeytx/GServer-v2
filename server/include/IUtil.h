@@ -18,7 +18,8 @@
 template <class T>
 int vecSearch(std::vector<T>& a, T b)
 {
-	for (std::vector<T>::iterator i = a.begin(); i != a.end(); ++i)
+	typename std::vector<T>::iterator i;
+	for (i = a.begin(); i != a.end(); ++i)
 	{
 		if (*i == b)
 			return i;
@@ -30,7 +31,8 @@ int vecSearch(std::vector<T>& a, T b)
 template <class T>
 void vecRemove(std::vector<T>& a, T b)
 {
-	for (std::vector<T>::iterator i = a.begin(); i != a.end(); ++i)
+	typename std::vector<T>::iterator i;
+	for (i = a.begin(); i != a.end(); ++i)
 	{
 		if (*i == b)
 		{
