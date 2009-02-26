@@ -70,6 +70,13 @@ class CSocketManager
 		//! \return False if select() returned nothing, true otherwise.
 		bool update(long sec = 0, long usec = 0);
 
+		//! Updates a single socket.
+		//! Calls the functions of the CSocketStub class.
+		//! \param sec Seconds to wait.
+		//! \param usec Nanoseconds to wait.
+		//! \return False if select() returned nothing, true otherwise.
+		bool updateSingle(CSocketStub* stub, long sec = 0, long usec = 0);
+
 		//! Registers a class derived from CSocketStub into the management system.
 		//! \param stub The class to add to the system.
 		//! \return true.
