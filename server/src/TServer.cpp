@@ -269,7 +269,7 @@ bool TServer::doMain()
 		serverlist.connectServer();
 
 	// Update our socket manager.
-	sockManager.update(1, 0);
+	sockManager.update(0, 50000);		// 50ms
 
 	// Every second, do some events.
 	if (time(0) != lastTimer) doTimedEvents();
