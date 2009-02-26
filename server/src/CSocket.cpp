@@ -69,10 +69,10 @@
 static const char* errorMessage(int error);
 static int identifyError(int source = 0);
 
-#include "IUtil.h"
 // From main.cpp
 #include "CLog.h"
 extern CLog serverlog;
+#include "IUtil.h"
 
 bool CSocketManager::update(long sec, long usec)
 {
