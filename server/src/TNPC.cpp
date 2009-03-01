@@ -254,7 +254,12 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	for (int i = 0; i < pmax; i++)
 	{
 		if (modTime[i] != 0 && modTime[i] >= newTime)
-			retVal >> (char)i << getProp(i, clientVersion);
+		{
+			if (i == NPCPROP_VISFLAGS && newTime == 0)
+				retVal >> (char)i >> (char)1;
+			else
+				retVal >> (char)i << getProp(i, clientVersion);
+		}
 		if (clientVersion > CLVER_1_411)
 		{
 			if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
