@@ -211,6 +211,13 @@ bool TLevel::reload()
 		p->leaveLevel(true);
 	}
 
+	// Reset the level cache for all the players on the server.
+	std::vector<TPlayer*>* playerList = server->getPlayerList();
+	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+	{
+		(*i)->resetLevelCache(this);
+	}
+
 	// Re-load the level now.
 	bool ret = loadLevel(levelName);
 
@@ -758,6 +765,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
 			if (props.length() != 0) baddy->setProps(props);
 		}
+		if (i == fileData.end()) break;
 	}
 
 	return true;

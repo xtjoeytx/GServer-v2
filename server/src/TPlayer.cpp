@@ -1203,6 +1203,19 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 	return 0;
 }
 
+void TPlayer::resetLevelCache(const TLevel* level)
+{
+	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	{
+		SCachedLevel* cl = *i;
+		if (cl->level == level)
+		{
+			cl->modTime = 0;
+			return;
+		}
+	}
+}
+
 CString TPlayer::getFlag(const CString& flag) const
 {
 	for (std::vector<CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)

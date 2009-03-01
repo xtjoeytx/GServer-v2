@@ -294,6 +294,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool sendLevel(TLevel* pLevel, time_t modTime, bool skipActors = false);
 		bool leaveLevel(bool resetCache = false);
 		time_t getCachedLevelModTime(const TLevel* level) const;
+		void resetLevelCache(const TLevel* level);
 
 		// Prop-Manipulation
 		CString getProp(int pPropId);
