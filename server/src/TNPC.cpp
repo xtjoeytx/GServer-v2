@@ -247,13 +247,14 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 CString TNPC::getProps(time_t newTime, int clientVersion) const
 {
+	bool oldcreated = server->getSettings()->getBool("oldcreated", "false");
 	CString retVal;
 	int pmax = npcpropcount;
 	if (clientVersion < CLVER_2) pmax = 36;
 
 	for (int i = 0; i < pmax; i++)
 	{
-		if (modTime[i] != 0 && modTime[i] >= newTime)
+		if (oldcreated && modTime[i] != 0 && modTime[i] >= newTime)
 		{
 			if (i == NPCPROP_VISFLAGS && newTime == 0)
 				retVal >> (char)i >> (char)1;
