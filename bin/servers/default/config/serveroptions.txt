@@ -116,6 +116,16 @@ name = My Server
 description = My Server
 url = http://www.graal.in/
 
+# The information of the computer hosting the gserver.  This gets sent to people wanting to connect.
+# If myip is set to AUTO, it uses the IP address exposed to the list server.
+serverip = AUTO
+serverport = 14802
+
+# Specifies the location of the list server.
+# DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
+listip = listserver.graal.in
+listport = 14900
+
 # Maximum number of players allowed on the server.
 maxplayers = 128
 
@@ -128,19 +138,13 @@ underconstruction = false
 # Set to true to disable the folder configuration.
 nofoldersconfig = false
 
+# Determines whether or not to use the old "if (created)" style.
+# In the old style, "if (created)" is called for each player that enters the level for their first time.
+oldcreated = false
+
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
 sharefolder = 
 
 # Sets the language.  Currently not implemented.
 language = English
-
-# The information of the computer hosting the gserver.  This gets sent to people wanting to connect.
-# If myip is set to AUTO, it uses the IP address exposed to the list server.
-serverip = AUTO
-serverport = 14802
-
-# Specifies the location of the list server.
-# DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
-listip = listserver.graal.in
-listport = 14900
