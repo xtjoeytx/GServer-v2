@@ -78,7 +78,7 @@ CString codec::encrypt(CString pBuf)
 		{
 			m_iterator *= 0x8088405;
 			m_iterator += m_key;
-			int pos  = ((m_iterator & 0x0FFFF) % (pBuf.length() + 1));
+			int pos  = ((m_iterator & 0x0FFFF) % pBuf.length());
 			return CString() << pBuf.subString(0, pos) << ")" << pBuf.subString(pos);
 			break;
 		}
