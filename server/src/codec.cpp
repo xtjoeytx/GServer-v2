@@ -19,7 +19,7 @@ void codec::reset(uint8_t key) {
 	m_limit = -1;
 }
 
-void codec::apply(CString& pBuf) {
+void codec::decrypt(CString& pBuf) {
 	// Apply the correct decryption algorithm.
 	switch (m_gen)
 	{
@@ -42,7 +42,7 @@ void codec::apply(CString& pBuf) {
 		case ENCRYPT_GEN_4:
 		{
 			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
-		 
+
 			for (int32_t i = 0; i < pBuf.length(); ++i) {
 				const uint32_t i_ = i + m_offset;
 				if (i_ % 4 == 0) {
@@ -52,7 +52,7 @@ void codec::apply(CString& pBuf) {
 					m_offset = 0;
 					if (m_limit > 0) m_limit--;
 				}
-		 
+
 				pBuf[i] ^= iterator[i_%4];
 			}
 		}
@@ -62,6 +62,49 @@ void codec::apply(CString& pBuf) {
 		case ENCRYPT_GEN_5:
 			return;
 	}
+}
+
+CString codec::encrypt(CString pBuf)
+{
+	switch (m_gen)
+	{
+		// No encryption.
+		case ENCRYPT_GEN_1:
+		case ENCRYPT_GEN_2:
+			break;
+
+		// Single byte insertion.
+		case ENCRYPT_GEN_3:
+		{
+			m_iterator *= 0x8088405;
+			m_iterator += m_key;
+			int pos  = ((m_iterator & 0x0FFFF) % (pBuf.length() + 1));
+			return CString() << pBuf.subString(0, pos) << ")" << pBuf.subString(pos);
+			break;
+		}
+
+		// Partial packet encryption/none, zlib, bz2 compression methods.
+		case ENCRYPT_GEN_4:
+		{
+			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
+
+			for (int32_t i = 0; i < pBuf.length(); ++i) {
+				const uint32_t i_ = i + m_offset;
+				if (i_ % 4 == 0) {
+					if (m_limit == 0) return pBuf;
+					m_iterator *= 0x8088405;
+					m_iterator += m_key;
+					m_offset = 0;
+					if (m_limit > 0) m_limit--;
+				}
+
+				pBuf[i] ^= iterator[i_%4];
+			}
+			return pBuf;
+			break;
+		}
+	}
+	return pBuf;
 }
 
 void codec::limit(int32_t limit)

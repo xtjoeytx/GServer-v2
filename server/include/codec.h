@@ -36,7 +36,8 @@ class codec {
 
 		static const uint32_t ITERATOR_START[5];
 		void reset(uint8_t key);
-		void apply(CString& pBuf);
+		void decrypt(CString& pBuf);
+		CString encrypt(CString pBuf);
 		void limit(int32_t limit);
 		int limitFromType(uint8_t type);
 		void setGen(uint32_t gen)		{ m_gen = gen; if (m_gen > 4) m_gen = 4; }
