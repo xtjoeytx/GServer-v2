@@ -119,7 +119,7 @@ void CFileQueue::sendCompress()
 
 		// Encrypt the packet and add it to the out buffer.
 		out_codec.limitFromType(compressionType);
-		out_codec.apply(pSend);
+		pSend = out_codec.encrypt(pSend);
 		CString data = CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend;
 		oBuffer << data;
 		unsigned int dsize = oBuffer.length();

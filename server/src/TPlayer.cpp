@@ -462,7 +462,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 		if (!isClient())
 			return;
 
-		in_codec.apply(pPacket);
+		in_codec.decrypt(pPacket);
 	}
 
 	// Version 2.19+ encryption.
@@ -476,7 +476,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 
 		// Decrypt the packet.
 		in_codec.limitFromType(pType);		// Encryption is partially related to compression.
-		in_codec.apply(pPacket);
+		in_codec.decrypt(pPacket);
 
 		// Uncompress Packet
 		if (pType == COMPRESS_ZLIB)
