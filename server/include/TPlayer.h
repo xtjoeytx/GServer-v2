@@ -210,6 +210,7 @@ enum
 	PLO_LISTPROCESSES	= 182,
 	PLO_EMPTY190		= 190,	// Was blank.  Sent before weapon list.
 	PLO_EMPTY194		= 194,	// Was blank.  Sent before weapon list.
+	PLO_EMPTY195		= 195,	// Something to do with ganis.  [195] )twiz-icon"SETBACKTO "
 
 	// Seems to register NPCs or something on the client.
 	// Also is related to PLI_UPDATESCRIPT as it sends the last modification time of the NPC/weapon.  The v5 client stores weapon scripts offline.
