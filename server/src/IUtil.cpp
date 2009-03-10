@@ -88,7 +88,7 @@ static const char* const clientVersions[] =
 	"",		// CLVER_2_191,
 	"",		// CLVER_2_2,
 	"",		// CLVER_2_21,
-	"",		// CLVER_2_22,
+	"GNW03014",		// CLVER_2_22,
 	"",		// CLVER_2_3,
 	"GNW28015",		// CLVER_2_31,
 
