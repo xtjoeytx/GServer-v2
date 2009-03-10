@@ -280,6 +280,7 @@ CString CString::removeAll(const CString& pString) const
 		pStart += (pRead + pLen);
 	}
 	while ((pLoc = find(pString, pStart)) != -1);
+	retVal << subString(pStart);
 
 	// Done!
 	return retVal;
