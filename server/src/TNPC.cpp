@@ -254,9 +254,9 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 
 	for (int i = 0; i < pmax; i++)
 	{
-		if (oldcreated && modTime[i] != 0 && modTime[i] >= newTime)
+		if (modTime[i] != 0 && modTime[i] >= newTime)
 		{
-			if (i == NPCPROP_VISFLAGS && newTime == 0)
+			if (oldcreated && i == NPCPROP_VISFLAGS && newTime == 0)
 				retVal >> (char)i >> (char)1;
 			else
 				retVal >> (char)i << getProp(i, clientVersion);
