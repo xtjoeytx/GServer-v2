@@ -1936,7 +1936,11 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 	CString fileData = fileSystem->load(file);
 	time_t modTime = fileSystem->getModTime(file);
 
-	if (fileData.length() == 0) return true;
+	if (fileData.length() == 0)
+	{
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
+		return true;
+	}
 
 	printf( "msgPLI_WANTFILE: %s\n", file.text() );
 
@@ -2210,7 +2214,13 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	// Make sure it isn't one of the default files.
 	bool isDefault = false;
 	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-		if (file.match(CString(__defaultfiles[i])) == true) isDefault = true;
+	{
+		if (file.match(CString(__defaultfiles[i])) == true)
+		{
+			isDefault = true;
+			break;
+		}
+	}
 
 	// If the file on disk is different, send it to the player.
 	if (isDefault == false && fModTime > modTime)

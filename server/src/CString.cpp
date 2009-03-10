@@ -714,7 +714,7 @@ bool CString::match(const CString& pMask) const
 		if ((loc2 = find(search, sloc)) == -1) return false;
 
 		// Update our locations.
-		sloc = loc2 + search.length();
+		sloc = loc2 + search.length() + 1;
 		mloc = loc + 1;
 	}
 

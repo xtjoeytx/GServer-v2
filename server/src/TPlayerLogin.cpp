@@ -136,6 +136,21 @@ bool TPlayer::sendLoginClient()
 		deviation = deviate;
 	}
 
+	// Send the player his login props.
+	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
+
+	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
+	// So, just send them all the maps loaded into the server.
+	if (versionID == CLVER_2_31)
+	{
+		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
+		{
+			TMap* map = *i;
+			if (map->getType() == MAPTYPE_BIGMAP)
+				msgPLI_WANTFILE(CString() << map->getMapName());
+		}
+	}
+
 	// Send out what guilds should be placed in the Staff section of the playerlist.
 	std::vector<CString> guilds = settings->getStr("staffguilds").tokenize(",");
 	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
@@ -152,9 +167,6 @@ bool TPlayer::sendLoginClient()
 
 	// PLO_BIGMAP (minimap?)
 
-	// Send the player his login props.
-	sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
-
 	// Send the player's flags.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
@@ -164,26 +176,8 @@ bool TPlayer::sendLoginClient()
 	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
 
-	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
-	// So, just send them all the maps loaded into the server.
-	if (versionID == CLVER_2_31)
-	{
-		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
-		{
-			TMap* map = *i;
-			if (map->getType() == MAPTYPE_BIGMAP)
-				msgPLI_WANTFILE(CString() << map->getMapName());
-		}
-	}
-
-	// Send the level to the player.
-	// warp will call sendCompress() for us.
-	if (warp(levelName, x, y) == false)
-	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		serverlog.out(CString() << "Cannot find level for " << accountName << "\n");
-		return false;
-	}
+	sendPacket(CString() >> (char)PLO_EMPTY190);
+	sendPacket(CString() >> (char)PLO_EMPTY194);
 
 	// Delete the bomb.  It gets automagically added by the client for
 	// God knows which reason.  Bomb must be capitalized.
@@ -207,6 +201,15 @@ bool TPlayer::sendLoginClient()
 			continue;
 		}
 		sendPacket(weapon->getWeaponPacket());
+	}
+
+	// Send the level to the player.
+	// warp will call sendCompress() for us.
+	if (warp(levelName, x, y) == false)
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
+		serverlog.out(CString() << "Cannot find level for " << accountName << "\n");
+		return false;
 	}
 
 	// Send out RPG Window greeting.

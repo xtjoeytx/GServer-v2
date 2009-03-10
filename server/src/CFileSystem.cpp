@@ -49,44 +49,16 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard)
 		CFileSystem::fixPathSeparators(&newDir);
 	}
 
-	// See if the directory already exists.
-	// If it does, first remove it before re-adding it.
-	if (finddiri(newDir).length() != 0)
-		removeDir(newDir);
-
 	// Add the directory to the directory list.
-	dirList[newDir] = CString() << server->getServerPath() << newDir << wildcard;
-
-	// Load up the files in the directory.
-	loadAllDirectories(dirList[newDir], server->getSettings()->getBool("nofoldersconfig", false));
-}
-
-void CFileSystem::removeDir(const CString& dir)
-{
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-	if (server == 0) return;
-
-	// Format the search directory.
-	CString searchDir(CString() << server->getServerPath() << dir);
-	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
-		CFileSystem::fixPathSeparators(&searchDir);
+	CString ndir = CString() << server->getServerPath() << newDir << wildcard;
+	if (vecSearch<CString>(dirList, ndir) != -1)	// Already exists?  Resync.
+		resync();
 	else
-		searchDir << fSep;
-
-	// Remove every file that belongs to the specified root directory.
-	for (std::map<CString, CString>::iterator i = fileList.begin(); i != fileList.end();)
 	{
-		if (i->second.findi(searchDir))
-			fileList.erase(i++);
-		else ++i;
-	}
+		dirList.push_back(ndir);
 
-	// Remove the directory from the directory list.
-	for (std::map<CString, CString>::iterator i = dirList.begin(); i != dirList.end();)
-	{
-		if (i->second.findi(searchDir))
-			dirList.erase(i++);
-		else ++i;
+		// Load up the files in the directory.
+		loadAllDirectories(ndir, server->getSettings()->getBool("nofoldersconfig", false));
 	}
 }
 
@@ -130,8 +102,8 @@ void CFileSystem::resync()
 	fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
-	for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
-		loadAllDirectories(i->second, server->getSettings()->getBool("nofoldersconfig", false));
+	for (std::vector<CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
+		loadAllDirectories(*i, server->getSettings()->getBool("nofoldersconfig", false));
 }
 
 CString CFileSystem::find(const CString& file) const
@@ -147,34 +119,6 @@ CString CFileSystem::findi(const CString& file) const
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 		if (i->first.comparei(file)) return CString(i->second);
-	return CString();
-}
-
-CString CFileSystem::finddir(const CString& dir) const
-{
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-	CString searchDir(dir);
-	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
-		CFileSystem::fixPathSeparators(&searchDir);
-	else
-		searchDir << fSep;
-
-	std::map<CString, CString>::const_iterator i = dirList.find(searchDir);
-	if (i == fileList.end()) return CString();
-	return CString(i->second);
-}
-
-CString CFileSystem::finddiri(const CString& dir) const
-{
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-	CString searchDir(dir);
-	if (searchDir[searchDir.length() - 1] == '/' || searchDir[searchDir.length() - 1] == '\\')
-		CFileSystem::fixPathSeparators(&searchDir);
-	else
-		searchDir << fSep;
-
-	for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
-		if (i->first.comparei(searchDir)) return CString(i->second);
 	return CString();
 }
 
@@ -194,21 +138,9 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				if (filedata.cFileName[0] != '.' && recursive)
 				{
 					// We need to add the directory to the directory list.
-					CString newDir(filedata.cFileName);
-					for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end();)
-					{
-						// We found a match for the previous directory.
-						CString sDir = CString() << i->second.remove(i->second.findl(fSep)) << fSep;
-						if (sDir == dir)
-						{
-							CString firstDir = i->first;
-							if (firstDir[firstDir.length() - 1] != CString(fSep))
-								firstDir << fSep;
-							firstDir << newDir;
-							addDir(firstDir);	// Add the directory to the directory list.
-							i = dirList.end();
-						} else ++i;
-					}
+					CString newDir = CString() << dir << filedata.cFileName << fSep;
+					newDir.removeI(0, server->getServerPath().length());
+					addDir(newDir);
 				}
 			}
 			else
@@ -244,21 +176,9 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 			if ((statx.st_mode & S_IFDIR) && recursive)
 			{
 				// We need to add the directory to the directory list.
-				CString newDir(ent->d_name);
-				for (std::map<CString, CString>::const_iterator i = dirList.begin(); i != dirList.end();)
-				{
-					// We found a match for the previous directory.
-					CString sDir = CString() << i->second.remove(i->second.findl(fSep)) << fSep;
-					if (sDir == path)
-					{
-						CString firstDir = i->first;
-						if (firstDir[firstDir.length() - 1] != CString(fSep))
-							firstDir << fSep;
-						firstDir << newDir;
-						addDir(firstDir);	// Add the directory to the directory list.
-						i = dirList.end();
-					} else ++i;
-				}
+				CString newDir = CString() << path << ent->d_name << fSep;
+				newDir.removeI(0, server->getServerPath().length());
+				addDir(newDir);
 				continue;
 			}
 		}

@@ -6,7 +6,7 @@
 
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 	#define sleep(a) Sleep(a)
 #else
 	#define sleep(a) usleep(a*1000)
@@ -18,13 +18,11 @@
 template <class T>
 int vecSearch(std::vector<T>& a, T b)
 {
-	typename std::vector<T>::iterator i;
-	for (i = a.begin(); i != a.end(); ++i)
+	for (unsigned int i = 0; i < a.size(); ++i)
 	{
-		if (*i == b)
+		if (a[i] == b)
 			return i;
 	}
-
 	return -1;
 }
 
