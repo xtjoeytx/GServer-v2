@@ -212,7 +212,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_171), allowBomb(false),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
 {
