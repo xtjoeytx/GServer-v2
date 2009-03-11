@@ -148,7 +148,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)0;
 
 		case NPCPROP_GANI:
-		if (clientVersion < CLVER_2)
+		if (clientVersion < CLVER_2_1)
 			return bowImage;
 		return CString() >> (char)gani.length() << gani;
 
@@ -171,7 +171,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
 		case NPCPROP_SPRITE:
 		{
-			if (clientVersion < CLVER_2) return CString() >> (char)sprite;
+			if (clientVersion < CLVER_2_1) return CString() >> (char)sprite;
 			else return CString() >> (char)(sprite % 4);
 		}
 
@@ -250,7 +250,7 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	bool oldcreated = server->getSettings()->getBool("oldcreated", "false");
 	CString retVal;
 	int pmax = npcpropcount;
-	if (clientVersion < CLVER_2) pmax = 36;
+	if (clientVersion < CLVER_2_1) pmax = 36;
 
 	for (int i = 0; i < pmax; i++)
 	{
@@ -358,7 +358,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			break;
 
 			case NPCPROP_GANI:
-				if (clientVersion < CLVER_2)
+				if (clientVersion < CLVER_2_1)
 				{
 					// Older clients don't use ganis.  This is the bow power and image instead.
 					int sp = pProps.readGUChar();
