@@ -1976,7 +1976,7 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 		int sendSize = clip(32000, 0, fileData.length());
 		if (versionID < CLVER_2_14) sendSize = fileData.length();
 		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize));
+		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize) << "\n");
 		fileData.removeI(0, sendSize);
 	}
 
