@@ -45,16 +45,16 @@ Graal 2.1.7.0.exe		 - GNW22122
 Graal 2.1.7.1.exe		 - GNW22122
 Graal 2.1.8.0.exe		 - GNW21033
 Graal 2.1.8.1.exe		 - GNW21033
-Graal 2.1.9.0.exe		 - ???????? // First version to use the new serverlist gfx & compression
-Graal 2.1.9.1.exe		 - ???????? // Versions 1.9.0 -> 2.2.0.0 use the new compression
-Graal 2.2.0.0.exe		 - ???????? // Version 3.0.0.0 & 3.0.1.0 also use it..
-Graal 2.2.1.1.exe		 - GNW01113
+Graal 2.1.9.0.exe		 - GNW15053 // First version to use the new serverlist gfx.  Uses bz2 compression and the new encryption.
+Graal 2.1.9.1.exe		 - GNW15053
+Graal 2.2.0.0.exe		 - GNW28063
+Graal 2.2.1.1.exe		 - GNW01113 // Adds plaintext and zlib compression.  Packets have an extra byte to specify compression.
 Graal 2.2.2.0.exe		 - GNW03014
 Graal 2.3.0.0.exe		 - GNW14015
 Graal 2.3.1.0.exe		 - GNW28015
 
-Graal 3.0.0.0.exe		 - Serverlist does not load
-Graal 3.0.1.0.exe		 - Serverlist does not load
+Graal 3.0.0.0.exe		 - G3D16053
+Graal 3.0.1.0.exe		 - G3D27063
 Graal 3.0.4.1.exe		 - G3D03014
 
 Graal 4.0.2.11.exe 		 - G3D28095

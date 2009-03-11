@@ -96,6 +96,8 @@ int TServer::init()
 	versions.load(CString() << serverpath << "config/allowedversions.txt");
 	versions = removeComments(versions);
 	versions.removeAllI("\r");
+	versions.removeAllI("\t");
+	versions.removeAllI(" ");
 	allowedVersions = versions.tokenize("\n");
 
 	// Load folders config.

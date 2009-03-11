@@ -102,36 +102,61 @@ void CFileQueue::sendCompress()
 		return;
 
 	// compress buffer
-	if (out_codec.getGen() >= ENCRYPT_GEN_4)
+	switch (out_codec.getGen())
 	{
-		// Choose which compression to use and apply it.
-		int compressionType = COMPRESS_UNCOMPRESSED;
-		if (pSend.length() > 0x2000)	// 8KB
+		case ENCRYPT_GEN_1:
+		case ENCRYPT_GEN_2:
+			printf("** Generations 1 and 2 are not supported!\n");
+			break;
+
+		case ENCRYPT_GEN_3:
 		{
-			compressionType = COMPRESS_BZ2;
-			pSend.bzcompressI();
-		}
-		else if (pSend.length() > 40)
-		{
-			compressionType = COMPRESS_ZLIB;
+			// Compress the packet and add it to the out buffer.
 			pSend.zcompressI();
+			CString data = CString() << (short)pSend.length() << pSend;
+			oBuffer << data;
+			unsigned int dsize = oBuffer.length();
+			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
+			break;
 		}
 
-		// Encrypt the packet and add it to the out buffer.
-		out_codec.limitFromType(compressionType);
-		pSend = out_codec.encrypt(pSend);
-		CString data = CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend;
-		oBuffer << data;
-		unsigned int dsize = oBuffer.length();
-		oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
-	}
-	else
-	{
-		// Compress the packet and add it to the out buffer.
-		pSend.zcompressI();
-		CString data = CString() << (short)pSend.length() << pSend;
-		oBuffer << data;
-		unsigned int dsize = oBuffer.length();
-		oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
+		case ENCRYPT_GEN_4:
+		{
+			pSend.bzcompressI();
+
+			// Encrypt the packet and add it to the out buffer.
+			out_codec.limitFromType(COMPRESS_BZ2);
+			pSend = out_codec.encrypt(pSend);
+			CString data = CString() << (short)pSend.length() << pSend;
+			oBuffer << data;
+			unsigned int dsize = oBuffer.length();
+			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
+			break;
+		}
+
+		case ENCRYPT_GEN_5:
+		{
+			// Choose which compression to use and apply it.
+			int compressionType = COMPRESS_UNCOMPRESSED;
+			if (pSend.length() > 0x2000)	// 8KB
+			{
+				compressionType = COMPRESS_BZ2;
+				pSend.bzcompressI();
+			}
+			else if (pSend.length() > 40)
+			{
+				compressionType = COMPRESS_ZLIB;
+				pSend.zcompressI();
+			}
+
+			// Encrypt the packet and add it to the out buffer.
+			out_codec.limitFromType(compressionType);
+			pSend = out_codec.encrypt(pSend);
+			CString data = CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend;
+			oBuffer << data;
+			unsigned int dsize = oBuffer.length();
+			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
+			break;
+		}
 	}
 }

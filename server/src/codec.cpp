@@ -4,7 +4,7 @@
 #include "CString.h"
 #include "codec.h"
 
-const uint32_t codec::ITERATOR_START[5] = {0, 0, 0x04A80B38, 0x4A80B38, 0};
+const uint32_t codec::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x4A80B38, 0};
 
 codec::codec()
 : m_key(0), m_offset(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
@@ -39,7 +39,9 @@ void codec::decrypt(CString& pBuf) {
 		break;
 
 		// Partial packet encryption/none, zlib, bz2 compression methods.
+		// Gen 4 is only bz2.
 		case ENCRYPT_GEN_4:
+		case ENCRYPT_GEN_5:
 		{
 			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
@@ -59,7 +61,7 @@ void codec::decrypt(CString& pBuf) {
 		break;
 
 		// Future encryption method.
-		case ENCRYPT_GEN_5:
+		case ENCRYPT_GEN_6:
 			return;
 	}
 }
@@ -84,7 +86,9 @@ CString codec::encrypt(CString pBuf)
 		}
 
 		// Partial packet encryption/none, zlib, bz2 compression methods.
+		// Gen 4 is only bz2.
 		case ENCRYPT_GEN_4:
+		case ENCRYPT_GEN_5:
 		{
 			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 

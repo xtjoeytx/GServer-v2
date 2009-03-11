@@ -239,9 +239,10 @@ enum
 	PLTYPE_CLIENT		= (int)(1 << 0),
 	PLTYPE_RC			= (int)(1 << 1),
 	PLTYPE_NC			= (int)(1 << 3),
-	PLTYPE_CLIENT2		= (int)(1 << 5),
+	PLTYPE_CLIENT2		= (int)(1 << 4),
+	PLTYPE_CLIENT3		= (int)(1 << 5),
 	PLTYPE_RC2			= (int)(1 << 6),
-	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2),
+	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2 | PLTYPE_CLIENT3),
 	PLTYPE_ANYRC		= (int)(PLTYPE_RC | PLTYPE_RC2),
 };
 
