@@ -1,0 +1,67 @@
+Leaked Versions
+---------------
+Graal_2002ver9.exe  	 - GNW03081
+Graal_2002ver13.exe 	 - GNW31101 // Note, Graal_2002ver10.exe uses the same version string
+
+Public Versions
+---------------
+Graal 1.2.5.0.exe		 - SERV009
+Graal 1.2.7.0.exe		 - SERV011
+Graal 1.2.8.exe			 - SERV013
+Graal 1.3.1.exe			 - SERV016
+Graal 1.3.2.exe			 - SERV018
+Graal 1.3.3.exe			 - NW20020
+Graal 1.3.4.exe			 - NW22030
+Graal 1.3.5.exe			 - NW13040
+Graal 1.3.6.exe			 - NW10050
+Graal 1.3.7.exe			 - NW21050
+Graal 1.3.8.exe			 - NW22060
+Graal 1.3.9.exe			 - NW07080
+
+Graal 2.1.0.0.exe 		 - GNW31101
+Graal 2.1.0.1.exe 		 - GNW31101 // And so the version repeating begins, dammit stefan - He didn't change the version string in properties either
+Graal 2.1.0.2.exe 		 - GNW31101 // All this update fixed was the setminimap command so makes sense it's same version
+Graal 2.1.0.3.exe 		 - GNW31101
+Graal 2.1.2.0.exe		 - GNW01012
+Graal 2.1.2.1.exe		 - GNW01012
+Graal 2.1.3.2.exe		 - GNW23012
+Graal 2.1.3.3.exe		 - GNW23012
+Graal 2.1.3.3 (rev4).exe - GNW23012
+Graal 2.1.4.0.exe		 - GNW30042 // First version to have tabs on the serverlist and hides the UC servers.
+Graal 2.1.4.1.exe		 - GNW30042
+Graal 2.1.4.2.exe		 - GNW30042
+Graal 2.1.4.4.exe		 - GNW30042
+Graal 2.1.5.0.exe		 - GNW19052
+Graal 2.1.5.1.exe 		 - GNW20052 // Doesnt even have an entry in newfeatures2002.txt but still got a new version number :o
+Graal 2.1.5.2.exe		 - GNW20052
+Graal 2.1.6.0.exe		 - GNW12102 // First version to have box on serverlist, how the hell did you get to UC servers before that?
+Graal 2.1.6.1.exe		 - GNW12102
+Graal 2.1.6.3.exe		 - GNW12102
+Graal 2.1.6.4.exe		 - My pack file is corrupt, hpmh
+Graal 2.1.6.5.exe		 - GNW12102
+Graal 2.1.6.6.exe		 - GNW12102
+Graal 2.1.6.7.exe		 - GNW12102
+Graal 2.1.7.0.exe		 - GNW22122
+Graal 2.1.7.1.exe		 - GNW22122
+Graal 2.1.8.0.exe		 - GNW21033
+Graal 2.1.8.1.exe		 - GNW21033
+Graal 2.1.9.0.exe		 - ???????? // First version to use the new serverlist gfx & compression
+Graal 2.1.9.1.exe		 - ???????? // Versions 1.9.0 -> 2.2.0.0 use the new compression
+Graal 2.2.0.0.exe		 - ???????? // Version 3.0.0.0 & 3.0.1.0 also use it..
+Graal 2.2.1.1.exe		 - GNW01113
+Graal 2.2.2.0.exe		 - GNW03014
+Graal 2.3.0.0.exe		 - GNW14015
+Graal 2.3.1.0.exe		 - GNW28015
+
+Graal 3.0.0.0.exe		 - Serverlist does not load
+Graal 3.0.1.0.exe		 - Serverlist does not load
+Graal 3.0.4.1.exe		 - G3D03014
+
+Graal 4.0.2.11.exe 		 - G3D28095
+Graal 4.0.3.4.exe  		 - G3D09125
+Graal 4.0.4.2.exe  		 - G3D17026
+Graal 4.1.1.0.exe  		 - G3D26076
+Graal 4.2.0.8.exe  		 - G3D20126
+
+Graal 5.0.0.7.exe		 - G3D22067
+Graal 5.1.2.0.exe		 - G3D14097

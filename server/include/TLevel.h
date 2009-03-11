@@ -40,7 +40,7 @@ class TLevel
 		CString getChestPacket(TPlayer *pPlayer);
 		CString getHorsePacket();
 		CString getLinksPacket();
-		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_171);
+		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
 		CString getSignsPacket();
 
 		//! Gets the level name.
