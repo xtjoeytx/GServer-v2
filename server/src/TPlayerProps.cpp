@@ -50,7 +50,7 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
 
 		case PLPROP_GANI:
-		if (versionID < CLVER_2)
+		if (versionID < CLVER_2_1)
 			return bowImage;
 		return CString() >> (char)gani.length() << gani;
 
@@ -334,7 +334,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_GANI:
 			{
-				if (versionID < CLVER_2)
+				if (versionID < CLVER_2_1)
 				{
 					int sp = pPacket.readGUChar();
 					if (sp < 10)
@@ -800,7 +800,7 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 			propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
 
 		// Create Props
-		if (versionID < CLVER_2) pCount = 37;
+		if (versionID < CLVER_2_1) pCount = 37;
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;

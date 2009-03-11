@@ -468,7 +468,16 @@ void TPlayer::decryptPacket(CString& pPacket)
 	// Version 2.19+ encryption.
 	// Encryption happens before compression and depends on the compression used so
 	// first decrypt and then decompress.
-	if (in_codec.getGen() >= ENCRYPT_GEN_4)
+	if (in_codec.getGen() == ENCRYPT_GEN_4)
+	{
+		// Decrypt the packet.
+		in_codec.limitFromType(COMPRESS_BZ2);
+		in_codec.decrypt(pPacket);
+
+		// Uncompress packet.
+		pPacket.bzuncompressI();
+	}
+	else if (in_codec.getGen() >= ENCRYPT_GEN_5)
 	{
 		// Find the compression type and remove it.
 		int pType = pPacket.readChar();
@@ -478,7 +487,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 		in_codec.limitFromType(pType);		// Encryption is partially related to compression.
 		in_codec.decrypt(pPacket);
 
-		// Uncompress Packet
+		// Uncompress packet
 		if (pType == COMPRESS_ZLIB)
 			pPacket.zuncompressI();
 		else if (pType == COMPRESS_BZ2)
@@ -1004,7 +1013,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	levelName = level->getLevelName();
 
 	// Tell the client their new level.
-	if (modTime == 0 || versionID < CLVER_2)
+	if (modTime == 0 || versionID < CLVER_2_1)
 	{
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		{
@@ -1047,9 +1056,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time == 0 || versionID < CLVER_2)
+	if (l_time == 0 || versionID < CLVER_2_1)
 	{
-		if (modTime != pLevel->getModTime() || versionID < CLVER_2)
+		if (modTime != pLevel->getModTime() || versionID < CLVER_2_1)
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
@@ -1089,7 +1098,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
 
 	// NPCs like to cause 1.41 to crash for some reason.
-	//if (versionID < CLVER_2) skipActors = true;
+	//if (versionID < CLVER_2_1) skipActors = true;
 
 	if (skipActors == false)
 	{
@@ -1193,7 +1202,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
 	// 1.41r1 and below don't cache things (probably).
-	if (versionID < CLVER_2) return 0;
+	if (versionID < CLVER_2_1) return 0;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
 		SCachedLevel* cl = *i;
@@ -1342,16 +1351,22 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case PLTYPE_CLIENT2:
-			serverlog.out("New Client (2.19+)\n");
+			serverlog.out("New Client (2.19 - 2.21, 3 - 3.01)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
 			break;
+		case PLTYPE_CLIENT3:
+			serverlog.out("New Client (2.22+)\n");
+			in_codec.setGen(ENCRYPT_GEN_5);
+			break;
 		case PLTYPE_RC2:
-			serverlog.out("New RC (2.19+)\n");
-			in_codec.setGen(ENCRYPT_GEN_4);
+			serverlog.out("New RC (2.22+)\n");
+			in_codec.setGen(ENCRYPT_GEN_5);
 			getKey = true;
 			break;
 		default:
 			serverlog.out("Unknown (%d)\n", type);
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the Graal Reborn staff.  Type: " << CString((int)type) << ".");
+			return false;
 			break;
 	}
 
