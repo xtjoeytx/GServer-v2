@@ -17,6 +17,7 @@ public:
 	bool saveWeapon(TServer* server);
 
 	CString getWeaponPacket() const;
+	bool isDefault() const				{ return defaultWeapon; }
 
 	char getWeaponId() const			{ return defaultWeaponId; }
 	time_t getModTime() const			{ return modTime; }
@@ -25,6 +26,7 @@ public:
 	CString getServerScript() const		{ return serverScript; }
 	CString getClientScript() const		{ return clientScript; }
 
+	void setImage(const CString& pImage)			{ image = pImage; }
 	void setServerScript(const CString& pScript)	{ serverScript = pScript; }
 	void setClientScript(const CString& pScript)	{ clientScript = pScript; }
 

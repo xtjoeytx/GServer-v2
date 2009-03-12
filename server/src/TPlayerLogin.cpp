@@ -243,7 +243,7 @@ bool TPlayer::sendLoginRC()
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
-	/*
+	
 	// Send the details about the NPC-Server.
 	// second 0 = ID.
 	CString npcServer;
@@ -254,7 +254,7 @@ bool TPlayer::sendLoginRC()
 	npcServer >> (char)PLPROP_NICKNAME      >> (char)19 << "NPC-Server (Server)";
 	npcServer >> (char)PLPROP_COMMUNITYNAME >> (char)11 << "(npcserver)";
 	sendPacket(npcServer);
-	*/
+	
 
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;

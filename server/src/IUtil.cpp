@@ -87,6 +87,7 @@ static const char* const rcVersions[] =
 {
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
+	"GSERV025",		// RCVER_2,
 	0
 };
 
