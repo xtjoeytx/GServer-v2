@@ -446,7 +446,7 @@ void TServer::loadFolderConfig()
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includeRC && playerIds[id]->isRC()) return 0;
+	if (!includeRC && (playerIds[id]->isRC() || playerIds[id]->isNC())) return 0;
 	return playerIds[id];
 }
 
@@ -458,7 +458,32 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRC())
+		if (!includeRC && (player->isRC() || player->isNC()))
+			continue;
+
+		// Compare account names.
+		if (player->getProp(PLPROP_ACCOUNTNAME).subString(1) == account)
+			return player;
+	}
+	return 0;
+}
+
+TPlayer* TServer::getRC(const unsigned short id, bool includePlayer) const
+{
+	if (id >= (unsigned short)playerIds.size()) return 0;
+	if (!includePlayer && playerIds[id]->isClient()) return 0;
+	return playerIds[id];
+}
+
+TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
+{
+	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer *player = (TPlayer*)*i;
+		if (player == 0)
+			continue;
+
+		if (!includePlayer && player->isClient())
 			continue;
 
 		// Compare account names.

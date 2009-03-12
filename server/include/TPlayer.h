@@ -93,8 +93,8 @@ enum
 	PLI_RC_ACCOUNTGET			= 77,
 	PLI_RC_ACCOUNTSET			= 78,
 	PLI_RC_CHAT					= 79,
-	PLI_PROFILEGET		= 80,
-	PLI_PROFILESET		= 81,
+	PLI_PROFILEGET				= 80,
+	PLI_PROFILESET				= 81,
 	PLI_RC_WARPPLAYER			= 82,
 	PLI_RC_PLAYERRIGHTSGET		= 83,
 	PLI_RC_PLAYERRIGHTSSET		= 84,
@@ -107,20 +107,31 @@ enum
 	PLI_RC_FILEBROWSER_END		= 91,
 	PLI_RC_FILEBROWSER_DOWN		= 92,
 	PLI_RC_FILEBROWSER_UP		= 93,
-	PLI_RC_EMPTY94				= 94,	// NC related?
+	PLI_RC_EMPTY94				= 94,	// NC related
 	PLI_RC_FILEBROWSER_MOVE		= 96,
 	PLI_RC_FILEBROWSER_DELETE	= 97,
 	PLI_RC_FILEBROWSER_RENAME	= 98,
 	PLI_NC_NPCADD				= 111,	// {111}{GSTRING info}  - (info) name,id,type,scripter,starting level,x,y
+	PLI_NC_CLASSEDIT			= 112,	// {112}{class}
 	PLI_NC_CLASSADD				= 113,	// {113}{CHAR name length}{name}{GSTRING script}
 	PLI_NC_LOCALNPCSGET			= 114,	// {114}{level}
-	PLI_NC_WEAPONSGET			= 115,	// {115}
-	PLI_NC_NPCLISTGET			= 150,	// {150}
+	PLI_NC_WEAPONLISTGET		= 115,	// {115}
+	PLI_NC_WEAPONGET			= 116,	// {116}{weapon}
+	PLI_NC_WEAPONADD			= 117,	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
+	PLI_NC_WEAPONDELETE			= 118,	// {118}{weapon}
+	PLI_NC_CLASSDELETE			= 119,	// 
+	PLI_NC_LEVELLISTGET			= 150,	// {150}
+	PLI_NC_LEVELLISTSET			= 151,	// {151}{GSTRING levels}
 
-	PLI_UNKNOWN152		= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
-	PLI_UNKNOWN154		= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
-	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
-	PLI_UPDATESCRIPT	= 158,	// {158}{script} Requests a script from the server.
+	PLI_UNKNOWN152				= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
+	PLI_UNKNOWN154				= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
+
+	PLI_RC_LARGEFILESTART		= 155,
+	PLI_RC_LARGEFILEEND			= 156,
+
+	PLI_UNKNOWN157				= 157,	// Something to do with ganis.
+	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
+	PLI_RC_FOLDERDELETE			= 160,
 };
 
 enum
@@ -184,44 +195,56 @@ enum
 	PLO_RC_FILEBROWSER_DIRLIST	= 65,
 	PLO_RC_FILEBROWSER_DIR		= 66,
 	PLO_RC_FILEBROWSER_MESSAGE	= 67,
-	PLO_LARGEFILESTART	= 68,
-	PLO_LARGEFILEEND	= 69,
+	PLO_LARGEFILESTART			= 68,
+	PLO_LARGEFILEEND			= 69,
 	PLO_RC_ACCOUNTLISTGET		= 70,
 	PLO_RC_PLAYERPROPSGET		= 72,
 	PLO_RC_ACCOUNTGET			= 73,
-	PLO_RC_CHAT			= 74,
-	PLO_PROFILE			= 75,
+	PLO_RC_CHAT					= 74,
+	PLO_PROFILE					= 75,
 	PLO_RC_SERVEROPTIONSGET		= 76,
 	PLO_RC_FOLDERCONFIGGET		= 77,
-	PLO_NPCSERVERADDR	= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
-	PLO_UNKNOWN82		= 82,	// Answers PLI_UNKNOWN152's request.
-	PLO_LARGEFILESIZE	= 84,
-	PLO_RAWDATA			= 100,
-	PLO_BOARDPACKET		= 101,
-	PLO_FILE			= 102,
-	PLO_NPCBYTECODE		= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
-	PLO_NPCDEL2			= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
-	PLO_HIDENPCS		= 151,
-	PLO_SAY				= 153,	// {153}{text}
-	PLO_FREEZEPLAYER2	= 154,	// Blank.
-	PLO_UNFREEZEPLAYER	= 155,	// Blank.
-	PLO_SETACTIVELEVEL	= 156,	// Sets the level to receive chests, baddies, NPCs, etc.
-	PLO_GHOSTMODE		= 170,
-	PLO_BIGMAP			= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
-	PLO_GHOSTICON		= 174,	// Pass 1 to enable the ghost icon
-	PLO_SHOOT			= 175,
-	PLO_FULLSTOP		= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
-	PLO_FULLSTOP2		= 177,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
-	PLO_RPGWINDOW		= 179,
-	PLO_STATUSLIST		= 180,
-	PLO_LISTPROCESSES	= 182,
-	PLO_EMPTY190		= 190,	// Was blank.  Sent before weapon list.
-	PLO_EMPTY194		= 194,	// Was blank.  Sent before weapon list.
-	PLO_EMPTY195		= 195,	// Something to do with ganis.  [195] )twiz-icon"SETBACKTO "
+	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
+	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}
+	PLO_UNKNOWN82				= 82,	// Answers PLI_UNKNOWN152's request.
+	PLO_LARGEFILESIZE			= 84,
+	PLO_RAWDATA					= 100,
+	PLO_BOARDPACKET				= 101,
+	PLO_FILE					= 102,
+	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
+	PLO_NPCDEL2					= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
+	PLO_HIDENPCS				= 151,
+	PLO_SAY						= 153,	// {153}{text}
+	PLO_FREEZEPLAYER2			= 154,	// Blank.
+	PLO_UNFREEZEPLAYER			= 155,	// Blank.
+	PLO_SETACTIVELEVEL			= 156,	// Sets the level to receive chests, baddies, NPCs, etc.
+	PLO_NC_NPC_ATTRIBUTES		= 157,
+	PLO_NC_NPC_ADDNAME			= 158,
+	PLO_NC_NPC_REMOVE			= 159,
+	PLO_NC_NPC_SCRIPT			= 160,
+	PLO_NC_NPC_FLAGS			= 161,
+	PLO_NC_CLASSGET				= 162,	// {162}{CHAR name length}{name}{GSTRING script}
+	PLO_NC_CLASSADD				= 163,
+	PLO_NC_LEVELDUMP			= 164,
+	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...
+	PLO_GHOSTMODE				= 170,
+	PLO_BIGMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
+	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
+	PLO_SHOOT					= 175,
+	PLO_FULLSTOP				= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
+	PLO_FULLSTOP2				= 177,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
+	PLO_RPGWINDOW				= 179,
+	PLO_STATUSLIST				= 180,
+	PLO_LISTPROCESSES			= 182,
+	PLO_NC_CLASSREMOVE			= 188,
+	PLO_EMPTY190				= 190,	// Was blank.  Sent before weapon list.
+	PLO_NC_WEAPONGET			= 192,	// {192}{CHAR name length}{name}{CHAR image length}{image}{script}
+	PLO_EMPTY194				= 194,	// Was blank.  Sent before weapon list.
+	PLO_EMPTY195				= 195,	// Something to do with ganis.  [195] )twiz-icon"SETBACKTO "
 
 	// Seems to register NPCs or something on the client.
 	// Also is related to PLI_UPDATESCRIPT as it sends the last modification time of the NPC/weapon.  The v5 client stores weapon scripts offline.
-	PLO_EMPTY197		= 197,	// Seems to register npcs on the client.  Also is used by client to see if it needs to get a newer version of the offline cache of the NPC.
+	PLO_EMPTY197				= 197,	// Seems to register npcs on the client.  Also is used by client to see if it needs to get a newer version of the offline cache of the NPC.
 };
 
 enum
@@ -419,6 +442,14 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket);
+		bool msgPLI_RC_LARGEFILESTART(CString& pPacket);
+		bool msgPLI_RC_LARGEFILEEND(CString& pPacket);
+		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
+
+		bool msgPLI_NC_WEAPONLISTGET(CString& pPacket);
+		bool msgPLI_NC_WEAPONGET(CString& pPacket);
+		bool msgPLI_NC_WEAPONADD(CString& pPacket);
+		bool msgPLI_NC_WEAPONDELETE(CString& pPacket);
 
 	private:
 		// Login functions.
@@ -444,6 +475,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int id, type, versionID;
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
 		std::vector<SCachedLevel*> cachedLevels;
+		std::map<CString, CString> rcLargeFiles;
 		bool allowBomb;
 		TMap* pmap;
 		unsigned int carryNpcId;
