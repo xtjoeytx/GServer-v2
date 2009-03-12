@@ -1303,6 +1303,7 @@ void TPlayer::setNick(CString& pNickName, bool force)
 				return;
 			}
 		}
+		else nickName = newNick;
 
 		// See if it is a global guild.
 		server->getServerList()->sendPacket(
