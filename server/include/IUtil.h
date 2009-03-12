@@ -151,6 +151,7 @@ enum
 {
 	RCVER_1_010,
 	RCVER_1_1,
+	RCVER_2,
 };
 
 int getVersionID(const CString& version);

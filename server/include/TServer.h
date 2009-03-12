@@ -78,6 +78,8 @@ class TServer : public CSocketStub
 
 		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
 		TPlayer* getPlayer(const CString& account, bool includeRC = true) const;
+		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
+		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 		TNPC* getNPC(const unsigned int id) const;
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
