@@ -1,6 +1,12 @@
 #include <vector>
 #include <map>
 #include <sys/stat.h>
+#if defined(_WIN32) || defined(_WIN64)
+	#include <direct.h>
+	#define rmdir _rmdir
+#else
+	#include <unistd.h>
+#endif
 #include <stdio.h>
 #include "ICommon.h"
 #include "main.h"
@@ -792,6 +798,13 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	}
 	p->saveAccount();
 
+	// If the account is currently on RC, reload it.
+	TPlayer* pRC = server->getRC(acc);
+	if (pRC)
+	{
+		pRC->loadAccount(acc);
+	}
+
 	// If the player was just now banned, kick him off the server.
 	if (hasRight(PLPERM_BAN) && banned && !offline)
 	{
@@ -1034,12 +1047,19 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		else ++i;
 	}
 
-	// If they are using the File Browser, reload it.
-	if (p->isRC() && p->isUsingFileBrowser())
-		p->msgPLI_RC_FILEBROWSER_START(CString() << "");
-
 	// Save the account.
 	p->saveAccount();
+
+	// If the account is currently on RC, reload it.
+	TPlayer* pRC = server->getRC(acc);
+	if (pRC)
+	{
+		pRC->loadAccount(acc);
+
+		// If they are using the File Browser, reload it.
+		if (pRC->isUsingFileBrowser())
+			pRC->msgPLI_RC_FILEBROWSER_START(CString() << "");
+	}
 
 	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
@@ -1106,6 +1126,13 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	CString comment = pPacket.readString("");
 	p->setComments(comment);
 	p->saveAccount();
+
+	// If the account is currently on RC, reload it.
+	TPlayer* pRC = server->getRC(acc);
+	if (pRC)
+	{
+		pRC->loadAccount(acc);
+	}
 
 	rclog.out("%s has set the comments of %s\n", accountName.text(), acc.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the comments of " << acc);
@@ -1176,6 +1203,13 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	p->setBanReason(reason);
 	p->saveAccount();
 
+	// If the account is currently on RC, reload it.
+	TPlayer* pRC = server->getRC(acc);
+	if (pRC)
+	{
+		pRC->loadAccount(acc);
+	}
+
 	// If the player was just now banned, kick him off the server.
 	if (banned && !offline)
 	{
@@ -1210,7 +1244,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 
 	// Send the folder list and the welcome message.
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIRLIST << folders.gtokenize());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Welcome to the File Browser.");
+	if (!isFtp) sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Welcome to the File Browser.");
 
 	// Grab the first rights and folder for use as our default view, just in case
 	// the player doesn't have the ability to view their lastFolder anymore.
@@ -1402,10 +1436,21 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	CString file = pPacket.readChars(pPacket.readGUChar());
 	CString filepath = CString() << server->getServerPath() << lastFolder << file;
 	CString fileData = pPacket.subString(pPacket.readPos());
-	fileData.save(filepath);
 
-	rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+	// See if we are uploading a large file or not.
+	if (rcLargeFiles.find(file) == rcLargeFiles.end())
+	{
+		// Normal file.  Save it and display our message.
+		fileData.save(filepath);
+
+		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+	}
+	else
+	{
+		// Large file.  Store the data in memory.
+		rcLargeFiles[file] << fileData;
+	}
 
 	// TODO: update server files.
 
@@ -1504,6 +1549,83 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	rename(f1path.text(), f2path.text());
 	rclog.out("%s renamed file %s to %s\n", accountName.text(), f1.text(), f2.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
+{
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s is attempting to upload a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString file = pPacket.readString("");
+	rcLargeFiles[file] = CString();
+
+	return true;
+}
+
+bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
+{
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString file = pPacket.readString("");
+	CString filepath = CString() << server->getServerPath() << lastFolder << file;
+
+	// Save the file.
+	rcLargeFiles[file].save(filepath);
+
+	// Remove the data from memory.
+	for (std::map<CString, CString>::iterator i = rcLargeFiles.begin(); i != rcLargeFiles.end(); ++i)
+	{
+		if (i->first == file)
+		{
+			rcLargeFiles.erase(i);
+			break;
+		}
+	}
+
+	rclog.out("%s uploaded large file %s\n", accountName.text(), file.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
+{
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to delete a folder through the File Browser.\n", accountName.text());
+		return true;
+	}
+
+	CString folder = pPacket.readString("");
+	CString folderpath = CString() << server->getServerPath() << folder;
+	CFileSystem::fixPathSeparators(&folderpath);
+	folderpath.removeI(folderpath.length() -1);
+	if (!isRC())
+	{
+		rclog.out("[Hack] %s attempted to delete a folder through the File Browser: %s\n", accountName.text(), folder.text());
+		return true;
+	}
+
+	// Try to remove folder.
+	if (rmdir(folderpath.text()))
+	{
+		perror("Error removing folder");
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder << ".  Folder may not exist or may not be empty.");
+		return true;
+	}
+
+	rclog.out("%s removed folder %s\n", accountName.text(), folder.text());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder << " has been removed.\n");
+	msgPLI_RC_FILEBROWSER_START(CString() << "");
 
 	return true;
 }
