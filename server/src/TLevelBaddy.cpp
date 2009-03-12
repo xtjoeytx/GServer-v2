@@ -14,7 +14,7 @@ const char baddyStartMode[baddytypes] = {
 };
 const int baddyPower[baddytypes] = {
 	2, 3, 4, 3, 2,
-	1, 1, 6, 12 ,8
+	1, 1, 6, 12, 8
 };
 
 const int baddypropcount = 11;
@@ -109,12 +109,12 @@ void TLevelBaddy::setProps(CString &pProps)
 
 			case BDPROP_X:
 				x = (float)pProps.readGChar() / 2.0f;
-				x = clip(x, 0, 63);
+				x = clip(x, 0.0f, 63.5f);
 			break;
 
 			case BDPROP_Y:
 				y = (float)pProps.readGChar() / 2.0f;
-				y = clip(y, 0, 63);
+				y = clip(y, 0.0f, 63.5f);
 			break;
 
 			case BDPROP_TYPE:
