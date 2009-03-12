@@ -20,6 +20,7 @@ end
 if (linux or target == "cb-gcc" or target == "gnu") then
 	library("z")
 	library("bz2")
+	library("boost_thread")
 else
 	library("libz")
 	library("libbz2")
