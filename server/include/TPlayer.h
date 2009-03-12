@@ -107,9 +107,16 @@ enum
 	PLI_RC_FILEBROWSER_END		= 91,
 	PLI_RC_FILEBROWSER_DOWN		= 92,
 	PLI_RC_FILEBROWSER_UP		= 93,
+	PLI_RC_EMPTY94				= 94,	// NC related?
 	PLI_RC_FILEBROWSER_MOVE		= 96,
 	PLI_RC_FILEBROWSER_DELETE	= 97,
 	PLI_RC_FILEBROWSER_RENAME	= 98,
+	PLI_NC_NPCADD				= 111,	// {111}{GSTRING info}  - (info) name,id,type,scripter,starting level,x,y
+	PLI_NC_CLASSADD				= 113,	// {113}{CHAR name length}{name}{GSTRING script}
+	PLI_NC_LOCALNPCSGET			= 114,	// {114}{level}
+	PLI_NC_WEAPONSGET			= 115,	// {115}
+	PLI_NC_NPCLISTGET			= 150,	// {150}
+
 	PLI_UNKNOWN152		= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN154		= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
 	PLI_UNKNOWN157		= 157,	// Something to do with ganis.
@@ -186,13 +193,13 @@ enum
 	PLO_PROFILE			= 75,
 	PLO_RC_SERVEROPTIONSGET		= 76,
 	PLO_RC_FOLDERCONFIGGET		= 77,
-	PLO_NPCSERVERADDR	= 79,
+	PLO_NPCSERVERADDR	= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
 	PLO_UNKNOWN82		= 82,	// Answers PLI_UNKNOWN152's request.
 	PLO_LARGEFILESIZE	= 84,
 	PLO_RAWDATA			= 100,
 	PLO_BOARDPACKET		= 101,
 	PLO_FILE			= 102,
-	PLO_NPCBYTECODE		= 131,	// Compiled Torque-script for an NPC.
+	PLO_NPCBYTECODE		= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
 	PLO_NPCDEL2			= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
 	PLO_HIDENPCS		= 151,
 	PLO_SAY				= 153,	// {153}{text}
@@ -244,6 +251,7 @@ enum
 	PLTYPE_RC2			= (int)(1 << 6),
 	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2 | PLTYPE_CLIENT3),
 	PLTYPE_ANYRC		= (int)(PLTYPE_RC | PLTYPE_RC2),
+	PLTYPE_ANYNC		= (int)(PLTYPE_NC),
 };
 
 struct SCachedLevel
@@ -316,6 +324,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void processChat(CString pChat);
 		bool isStaff();
 		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
+		bool isNC()				{ return (type & PLTYPE_ANYNC ? true : false); }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT ? true : false); }
 
 		// Packet-Functions
@@ -406,6 +415,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_FILEBROWSER_END(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_UP(CString& pPacket);
+		bool msgPLI_RC_EMPTY94(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket);

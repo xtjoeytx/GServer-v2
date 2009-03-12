@@ -199,6 +199,7 @@ void createPLFunctions()
 	TPLFunc[PLI_RC_FILEBROWSER_END] = &TPlayer::msgPLI_RC_FILEBROWSER_END;
 	TPLFunc[PLI_RC_FILEBROWSER_DOWN] = &TPlayer::msgPLI_RC_FILEBROWSER_DOWN;
 	TPLFunc[PLI_RC_FILEBROWSER_UP] = &TPlayer::msgPLI_RC_FILEBROWSER_UP;
+	TPLFunc[PLI_RC_EMPTY94] = &TPlayer::msgPLI_RC_EMPTY94;
 	TPLFunc[PLI_RC_FILEBROWSER_MOVE] = &TPlayer::msgPLI_RC_FILEBROWSER_MOVE;
 	TPLFunc[PLI_RC_FILEBROWSER_DELETE] = &TPlayer::msgPLI_RC_FILEBROWSER_DELETE;
 	TPLFunc[PLI_RC_FILEBROWSER_RENAME] = &TPlayer::msgPLI_RC_FILEBROWSER_RENAME;
@@ -1350,6 +1351,11 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			serverlog.out("RC\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
+		case PLTYPE_NC:
+			serverlog.out("NC\n");
+			in_codec.setGen(ENCRYPT_GEN_3);
+			getKey = false;
+			break;
 		case PLTYPE_CLIENT2:
 			serverlog.out("New Client (2.19 - 2.21, 3 - 3.01)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
@@ -1372,7 +1378,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Get Iterator-Key
 	// 2.19+ RC and any client should get the key.
-	if (isClient() || getKey)
+	if (isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
@@ -1445,16 +1451,19 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Verify login details with the serverlist.
 	// TODO: localhost mode.
-	if (server->getServerList()->getConnected() == false)
+	if (!isNC())
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
-		return false;
+		if (server->getServerList()->getConnected() == false)
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
+			return false;
+		}
+		server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
+			>> (char)accountName.length() << accountName
+			>> (char)password.length() << password
+			>> (short)id >> (char)type
+			);
 	}
-	server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
-		>> (char)accountName.length() << accountName
-		>> (char)password.length() << password
-		>> (short)id >> (char)type
-		);
 	return true;
 }
 
