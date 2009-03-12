@@ -44,8 +44,8 @@ bool TPlayer::sendLogin()
 			TPlayer* player = *i;
 			CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
 			unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
-			bool meClient = ((type & PLTYPE_ANYCLIENT) ? true : false);
-			bool themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? true : false);
+			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
+			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
 			if (oacc == accountName && meClient == themClient && oid != id)
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
@@ -75,9 +75,11 @@ bool TPlayer::sendLogin()
 		myRCProps >> (char)PLO_ADDPLAYER >> (short)id
 			>> (char)accountName.length() << accountName
 			>> (char)PLPROP_CURLEVEL << getProp(PLPROP_CURLEVEL)
+			>> (char)PLPROP_PSTATUSMSG << getProp(PLPROP_PSTATUSMSG)
 			>> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME)
-			>> (char)PLPROP_HEADGIF << getProp(PLPROP_HEADGIF)
-			>> (char)PLPROP_BODYIMG << getProp(PLPROP_BODYIMG);
+			>> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
+			//>> (char)PLPROP_HEADGIF << getProp(PLPROP_HEADGIF)
+			//>> (char)PLPROP_BODYIMG << getProp(PLPROP_BODYIMG);
 
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -101,9 +103,11 @@ bool TPlayer::sendLogin()
 				otherRCProps >> (char)PLO_ADDPLAYER >> (short)player->getId()
 					>> (char)player->getAccountName().length() << player->getAccountName()
 					>> (char)PLPROP_CURLEVEL >> player->getLevel()->getLevelName().length() << player->getLevel()->getLevelName()
+					>> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG)
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
-					>> (char)PLPROP_HEADGIF << player->getProp(PLPROP_HEADGIF)
-					>> (char)PLPROP_BODYIMG << player->getProp(PLPROP_BODYIMG);
+					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME);
+					//>> (char)PLPROP_HEADGIF << player->getProp(PLPROP_HEADGIF)
+					//>> (char)PLPROP_BODYIMG << player->getProp(PLPROP_BODYIMG);
 				this->sendPacket(otherRCProps);
 			}
 		}
@@ -239,6 +243,19 @@ bool TPlayer::sendLoginRC()
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
-	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << nickName << " (" << accountName << ")");
+	/*
+	// Send the details about the NPC-Server.
+	// second 0 = ID.
+	CString npcServer;
+	npcServer >> (char)PLO_ADDPLAYER        >> (short)1;
+	npcServer >> (char)11 << "(npcserver)";
+	npcServer >> (char)PLPROP_CURLEVEL		>> (char)0;
+	npcServer >> (char)PLPROP_PSTATUSMSG    >> (char)0;
+	npcServer >> (char)PLPROP_NICKNAME      >> (char)19 << "NPC-Server (Server)";
+	npcServer >> (char)PLPROP_COMMUNITYNAME >> (char)11 << "(npcserver)";
+	sendPacket(npcServer);
+	*/
+
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;
 }

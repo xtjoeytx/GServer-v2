@@ -1412,6 +1412,18 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::msgPLI_RC_EMPTY94(CString& pPacket)
+{
+	unsigned short pid = pPacket.readGUShort();
+	CString message = pPacket.readString("");
+
+	if (message == "location")
+	{
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << "127.0.0.1,14702");
+	}
+	return true;
+}
+
 bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 {
 	if (!isRC())

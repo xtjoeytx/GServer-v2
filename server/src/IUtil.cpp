@@ -83,12 +83,30 @@ static const char* const clientVersions[] =
 	0
 };
 
+static const char* const rcVersions[] =
+{
+	"GSERV023",		// RCVER_1_010,
+	"GSERV024",		// RCVER_1_1,
+	0
+};
+
+// ncVersions
+// NCL11012
+
 int getVersionID(const CString& version)
 {
 	int i = 0;
 	while (clientVersions[i] != 0)
 	{
 		if (version == CString(clientVersions[i]))
+			return i;
+		++i;
+	}
+
+	i = 0;
+	while (rcVersions[i] != 0)
+	{
+		if (version == CString(rcVersions[i]))
 			return i;
 		++i;
 	}
