@@ -147,6 +147,12 @@ enum
 	CLVER_5_12,
 };
 
+enum
+{
+	RCVER_1_010,
+	RCVER_1_1,
+};
+
 int getVersionID(const CString& version);
 unsigned char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
