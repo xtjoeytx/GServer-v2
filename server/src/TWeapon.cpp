@@ -47,6 +47,7 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 
 	CString fileName = server->getServerPath() << "weapons/" << w << ".txt";
 	std::vector<CString> fileData = CString::loadToken(fileName);
+	if (fileData.size() == 0) return 0;
 
 	CString name;
 	CString image;
@@ -76,6 +77,10 @@ TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
 		// Anything else weapon script.
 		script << line << "\xa7";
 	}
+
+	// Don't allow weapons with no name.
+	if (name.length() == 0)
+		return 0;
 
 	CSettings* settings = server->getSettings();
 	return new TWeapon(name, image, script, modTime, settings->getBool("trimnpccode", false));

@@ -81,6 +81,7 @@ class TServerList : public CSocketStub
 		bool onRecv();
 		bool onSend();
 		SOCKET getSocketHandle()	{ return sock.getHandle(); }
+		bool canRecv();
 		bool canSend();
 
 		// Constructor - Deconstructor
