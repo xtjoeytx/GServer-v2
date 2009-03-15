@@ -267,7 +267,7 @@ void TServer::operator()()
 bool TServer::doMain()
 {
 	// If we aren't connected to the serverlist, reconnect.
-	if (!serverlist.main())
+	if (!serverlist.getConnected())
 		serverlist.connectServer();
 
 	// Update our socket manager.
