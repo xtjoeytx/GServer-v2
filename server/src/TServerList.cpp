@@ -42,7 +42,7 @@ void createSLFunctions()
 	Constructor - Deconstructor
 */
 TServerList::TServerList()
-: isConnected(false), nextIsRaw(false), rawPacketSize(0)
+: nextIsRaw(false), rawPacketSize(0)
 
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
@@ -61,7 +61,7 @@ TServerList::~TServerList()
 */
 bool TServerList::getConnected() const
 {
-	return isConnected;
+	return (sock.getState() == SOCKET_STATE_CONNECTED);
 }
 
 bool TServerList::onRecv()
@@ -92,7 +92,7 @@ bool TServerList::canSend()
 
 bool TServerList::main()
 {
-	if (!getConnected())
+	if (getConnected())
 		return false;
 
 	// definitions
@@ -158,13 +158,11 @@ bool TServerList::connectServer()
 {
 	CSettings* settings = server->getSettings();
 
-	if (isConnected == true)
+	if (getConnected())
 		return true;
 
 	// Connect to Server
-	if (sock.connect() == 0)
-		isConnected = true;
-	else
+	if (sock.connect() != 0)
 		return false;
 
 	server->getServerLog().out(":: %s - Connected.\n", sock.getDescription());
