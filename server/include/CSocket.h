@@ -188,23 +188,23 @@ class CSocket
 
 		//! Gets the socket handle.
 		//! \return The socket handle.
-		SOCKET getHandle();
+		SOCKET getHandle() const;
 
 		//! Gets the socket protocol.
 		//! \return The socket protocol.
-		int getProtocol();
+		int getProtocol() const;
 
 		//! Gets the socket type.
 		//! \return The socket type.
-		int getType();
+		int getType() const;
 
 		//! Gets the socket description.
 		//! \return The socket description.
-		const char *getDescription();
+		const char *getDescription() const;
 
 		//! Gets the socket state.
 		//! \return The socket state.
-		int getState();
+		int getState() const;
 
 		//! Sets the socket protocol.
 		/*! Sets the socket protocol.  Can only be used when the socket is disconnected. */
@@ -252,31 +252,31 @@ class CSocket
 };
 
 inline
-SOCKET CSocket::getHandle()
+SOCKET CSocket::getHandle() const
 {
 	return properties.handle;
 }
 
 inline
-int CSocket::getProtocol()
+int CSocket::getProtocol() const
 {
 	return properties.protocol;
 }
 
 inline
-int CSocket::getType()
+int CSocket::getType() const
 {
 	return properties.type;
 }
 
 inline
-const char *CSocket::getDescription()
+const char *CSocket::getDescription() const
 {
 	return properties.description;
 }
 
 inline
-int CSocket::getState()
+int CSocket::getState() const
 {
 	return properties.state;
 }

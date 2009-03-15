@@ -139,7 +139,6 @@ class TServerList : public CSocketStub
 		void sendCompress();
 
 		// Socket Variables
-		bool isConnected;
 		bool nextIsRaw;
 		int rawPacketSize;
 		CString rBuffer, sBuffer;
