@@ -1461,10 +1461,11 @@ bool TPlayer::msgPLI_RC_EMPTY94(CString& pPacket)
 {
 	unsigned short pid = pPacket.readGUShort();
 	CString message = pPacket.readString("");
+	CSettings* settings = server->getSettings();
 
 	if (message == "location")
 	{
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << "127.0.0.1,14702");
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << settings->getStr("serverip") << "," << settings->getStr("serverport"));
 	}
 	return true;
 }
