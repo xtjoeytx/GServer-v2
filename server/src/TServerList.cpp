@@ -84,6 +84,12 @@ bool TServerList::onSend()
 	return true;
 }
 
+bool TServerList::canRecv()
+{
+	if (sock.getState() == SOCKET_STATE_DISCONNECTED) return false;
+	return true;
+}
+
 bool TServerList::canSend()
 {
 	if (sBuffer.isEmpty()) return false;
