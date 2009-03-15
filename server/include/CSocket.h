@@ -39,6 +39,7 @@
 	#include <sys/types.h>
 	#include <arpa/inet.h>
 
+	#define INVALID_SOCKET	(unsigned int)-1
 	typedef unsigned int SOCKET;
 #endif
 #include <vector>
