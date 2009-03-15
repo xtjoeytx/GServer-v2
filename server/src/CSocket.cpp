@@ -97,7 +97,7 @@ bool CSocketManager::update(long sec, long usec)
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
-			FD_SET(sock, &set_read);
+			if (stub->canRecv()) FD_SET(sock, &set_read);
 			if (stub->canSend()) FD_SET(sock, &set_write);
 		}
 		++i;
@@ -413,14 +413,6 @@ int CSocket::connect()
 		{
 			SLOG("[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
-			/*
-			#if defined(_WIN32) || defined(_WIN64)
-				closesocket(properties.handle);
-			#else
-				close(properties.handle);
-			#endif
-			properties.state = SOCKET_STATE_DISCONNECTED;
-			*/
 			return SOCKET_BIND_ERROR;
 		}
 	}
@@ -432,14 +424,6 @@ int CSocket::connect()
 		{
 			SLOG("[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
-			/*
-			#if defined(WIN32) || defined(WIN64)
-				closesocket(properties.handle);
-			#else
-				close(properties.handle);
-			#endif
-			properties.state = SOCKET_STATE_DISCONNECTED;
-			*/
 			return SOCKET_CONNECT_ERROR;
 		}
 	}
@@ -458,14 +442,6 @@ int CSocket::connect()
 			{
 				SLOG("[CSocket::connect] listen() returned error: %s\n", errorMessage(identifyError()));
 				disconnect();
-				/*
-				#if defined(WIN32) || defined(WIN64)
-					closesocket(properties.handle);
-				#else
-					close(properties.handle);
-				#endif
-				properties.state = SOCKET_STATE_DISCONNECTED;
-				*/
 				return SOCKET_CONNECT_ERROR;
 			}
 
@@ -515,6 +491,7 @@ void CSocket::disconnect()
 	}
 
 	// Reset the socket state.
+	properties.handle = INVALID_SOCKET;
 	properties.state = SOCKET_STATE_DISCONNECTED;
 }
 

@@ -1,10 +1,13 @@
 Available commands for GServer:
-/open accountname: opens the player attributes window
-/openacc accountname: opens the account
-/opencomments accountname: opens the comments
-/openban accountname: opens the ban info
-/openrights accountname: opens the rights
-/reset accountname: resets the account
-/refreshservermessage: Reloads the file servermessage.html
-/updatelevel level[,level]: reloads levels form hard disk
-/updatelevelall: updates all loaded levels
+/help: This message.
+/open accountname: Opens the player's attributes window.
+/openacc accountname: Opens the player's account window.
+/opencomments accountname: Opens the player's comments window.
+/openban accountname: Opens the player's ban info.
+/openrights accountname: Opens the player's rights window.
+/reset accountname: Resets the account.
+/refreshservermessage: Reloads servermessage.html.
+/updatelevel level[,level]: Reloads levels from hard disk.
+/updatelevelall: updates all loaded levels.
+
+/reloadserver: Reloads many server configuration files.

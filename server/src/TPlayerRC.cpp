@@ -839,7 +839,13 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 	}
 	else
 	{
-		if (words[0] == "/open" && words.size() != 1)
+		if (words[0] == "/help" && words.size() == 1)
+		{
+			std::vector<CString> commands = CString::loadToken(CString() << server->getServerPath() << "config/rchelp.txt", "\n", true);
+			for (std::vector<CString>::iterator i = commands.begin(); i != commands.end(); ++i)
+				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
+		}
+		else if (words[0] == "/open" && words.size() != 1)
 		{
 			message.setRead(0);
 			message.readString(" ");
@@ -881,14 +887,14 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			CString acc = message.readString("");
 			return msgPLI_RC_PLAYERPROPSRESET(CString() << acc);
 		}
-		else if (words[0] == "/refreshservermessage")
+		else if (words[0] == "/refreshservermessage" && words.size() == 1)
 		{
 			CString* servermessage = server->getServerMessage();
 			servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
 			servermessage->removeAllI("\r");
 			servermessage->replaceAllI("\n", " ");
 		}
-		else if (words[0] == "/updatelevel")
+		else if (words[0] == "/updatelevel" && words.size() != 1)
 		{
 			for (unsigned int i = 1; i < words.size(); ++i)
 			{
@@ -896,7 +902,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (level) level->reload();
 			}
 		}
-		else if (words[0] == "/updatelevelall")
+		else if (words[0] == "/updatelevelall" && words.size() == 1)
 		{
 			std::vector<TLevel*>* levels = server->getLevelList();
 			for (std::vector<TLevel*>::iterator i = levels->begin(); i != levels->end(); ++i)
@@ -904,16 +910,9 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				(*i)->reload();
 			}
 		}
-		else if (words[0] == "/help")
+		else if (words[0] == "/reloadserver" && words.size() == 1)
 		{
-			CString rchelp;
-			rchelp.load(CString() << server->getServerPath() << "config/rchelp.txt");
-			rchelp.removeAllI("\r");
-			std::vector<CString> rchelplist = rchelp.tokenize("\n");
-			for (std::vector<CString>::iterator i = rchelplist.begin(); i != rchelplist.end(); ++i)
-			{
-				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
-			}
+			server->loadConfigFiles();
 		}
 	}
 

@@ -80,127 +80,8 @@ TServer::~TServer()
 
 int TServer::init()
 {
-	// Load Settings
-	serverlog.out("     Loading settings...\n");
-	settings.setSeparator("=");
-	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
-	if (!settings.isOpened())
-	{
-		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
-		return ERR_SETTINGS;
-	}
-
-	// Load allowed versions.
-	serverlog.out("     Loading allowed client versions...\n");
-	CString versions;
-	versions.load(CString() << serverpath << "config/allowedversions.txt");
-	versions = removeComments(versions);
-	versions.removeAllI("\r");
-	versions.removeAllI("\t");
-	versions.removeAllI(" ");
-	allowedVersions = versions.tokenize("\n");
-
-	// Load folders config.
-	// Load before file system.
-	serverlog.out("     Folder config: ");
-	if (settings.getBool("nofoldersconfig", false) == false)
-	{
-		serverlog.out("ENABLED\n");
-	} else serverlog.out("disabled\n");
-
-	// Load file system.
-	serverlog.out("     Loading file system...\n");
-	filesystem_accounts.addDir("accounts");
-	if (settings.getBool("nofoldersconfig", false) == true)
-		loadAllFolders();
-	else
-		loadFolderConfig();
-
-	// Load status list.
-	serverlog.out("     Loading status list...\n");
-	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
-
-	// Load server flags.
-	serverlog.out("     Loading serverflags.txt...\n");
-	serverFlags = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
-
-	// Load server message.
-	serverlog.out("     Loading config/servermessage.html...\n");
-	servermessage.load(CString() << serverpath << "config/servermessage.html");
-	servermessage.removeAllI("\r");
-	servermessage.replaceAllI("\n", " ");
-
-	// Load IP bans.
-	serverlog.out("     Loading config/ipbans.txt...\n");
-	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
-
-	// Load weapons.
-	serverlog.out("     Loading weapons...\n");
-	{
-		CFileSystem weaponFS(this);
-		weaponFS.addDir("weapons");
-		std::map<CString, CString>* weaponFileList = weaponFS.getFileList();
-		for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
-		{
-			TWeapon* weapon = TWeapon::loadWeapon(i->first.removeAll(".txt"), this);
-			if (weapon != 0)
-			{
-				serverlog.out("       %s\n", weapon->getName().text());
-				weaponList.push_back(weapon);
-			}
-		}
-
-		// Add the default weapons.
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bow")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bomb")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("superbomb")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireball")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireblast")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("nukeshot")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("joltbomb")));
-	}
-
-	// Load gmaps.
-	serverlog.out("     Loading gmaps...\n");
-	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
-	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
-	{
-		// Check for blank lines.
-		if (*i == "\r") continue;
-
-		// Load the gmap.
-		TMap* gmap = new TMap(MAPTYPE_GMAP);
-		if (gmap->load(CString() << *i << ".gmap", this) == false)
-		{
-			serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
-			delete gmap;
-			continue;
-		}
-
-		serverlog.out("       %s\n", i->text());
-		mapList.push_back(gmap);
-	}
-
-	// Load bigmaps.
-	serverlog.out("     Loading bigmaps...\n");
-	std::vector<CString> bigmaps = settings.getStr("maps").guntokenize().tokenize("\n");
-	for (std::vector<CString>::iterator i = bigmaps.begin(); i != bigmaps.end(); ++i)
-	{
-		// Check for blank lines.
-		if (*i == "\r") continue;
-
-		// Load the bigmap.
-		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
-		if (bigmap->load(*i, this) == false)
-		{
-			serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
-			delete bigmap;
-			continue;
-		}
-
-		serverlog.out("       %s\n", i->text());
-		mapList.push_back(bigmap);
-	}
+	int ret = loadConfigFiles();
+	if (ret) return ret;
 
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
@@ -335,6 +216,23 @@ bool TServer::doTimedEvents()
 		for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 			out << *i << "\r\n";
 		out.save(CString() << serverpath << "serverflags.txt");
+
+		// Load allowed versions.
+		CString versions;
+		versions.load(CString() << serverpath << "config/allowedversions.txt");
+		versions = removeComments(versions);
+		versions.removeAllI("\r");
+		versions.removeAllI("\t");
+		versions.removeAllI(" ");
+		allowedVersions = versions.tokenize("\n");
+
+		// Load server message.
+		servermessage.load(CString() << serverpath << "config/servermessage.html");
+		servermessage.removeAllI("\r");
+		servermessage.replaceAllI("\n", " ");
+
+		// Load IP bans.
+		ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
 	}
 
 	return true;
@@ -439,6 +337,153 @@ void TServer::loadFolderConfig()
 		if (fs != -1) { filesystem[fs].addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), filesystemTypes[fs]); }
 		filesystem[0].addDir(dir, wildcard);
 	}
+}
+
+int TServer::loadConfigFiles()
+{
+	serverlog.out(":: Loading server configuration...\n");
+
+	// Load Settings
+	serverlog.out("     Loading settings...\n");
+	settings.setSeparator("=");
+	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
+	if (!settings.isOpened())
+	{
+		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
+		return ERR_SETTINGS;
+	}
+
+	// Load allowed versions.
+	serverlog.out("     Loading allowed client versions...\n");
+	CString versions;
+	versions.load(CString() << serverpath << "config/allowedversions.txt");
+	versions = removeComments(versions);
+	versions.removeAllI("\r");
+	versions.removeAllI("\t");
+	versions.removeAllI(" ");
+	allowedVersions = versions.tokenize("\n");
+
+	// Load folders config.
+	// Load before file system.
+	serverlog.out("     Folder config: ");
+	if (settings.getBool("nofoldersconfig", false) == false)
+	{
+		serverlog.out("ENABLED\n");
+	} else serverlog.out("disabled\n");
+
+	// Load file system.
+	serverlog.out("     Loading file system...\n");
+	for (int i = 0; i < FS_COUNT; ++i)
+		filesystem[i].clear();
+	filesystem_accounts.clear();
+	filesystem_accounts.addDir("accounts");
+	if (settings.getBool("nofoldersconfig", false) == true)
+		loadAllFolders();
+	else
+		loadFolderConfig();
+
+	// Load status list.
+	serverlog.out("     Loading status list...\n");
+	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+
+	// Load server flags.
+	serverlog.out("     Loading serverflags.txt...\n");
+	serverFlags = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
+
+	// Load server message.
+	serverlog.out("     Loading config/servermessage.html...\n");
+	servermessage.load(CString() << serverpath << "config/servermessage.html");
+	servermessage.removeAllI("\r");
+	servermessage.replaceAllI("\n", " ");
+
+	// Load IP bans.
+	serverlog.out("     Loading config/ipbans.txt...\n");
+	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+
+	// Delete existing weapons.
+	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
+	{
+		(*i)->saveWeapon(this);
+		delete *i;
+		i = weaponList.erase(i);
+	}
+
+	// Load weapons.
+	serverlog.out("     Loading weapons...\n");
+	{
+		CFileSystem weaponFS(this);
+		weaponFS.addDir("weapons");
+		std::map<CString, CString>* weaponFileList = weaponFS.getFileList();
+		for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
+		{
+			TWeapon* weapon = TWeapon::loadWeapon(i->first.removeAll(".txt"), this);
+			if (weapon != 0)
+			{
+				serverlog.out("       %s\n", weapon->getName().text());
+				weaponList.push_back(weapon);
+			}
+		}
+
+		// Add the default weapons.
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bow")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bomb")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("superbomb")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireball")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireblast")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("nukeshot")));
+		weaponList.push_back(new TWeapon(TLevelItem::getItemId("joltbomb")));
+	}
+
+	// Remove existing maps.
+	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
+	{
+		delete *i;
+		i = mapList.erase(i);
+	}
+
+	// Load gmaps.
+	serverlog.out("     Loading gmaps...\n");
+	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
+	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
+	{
+		// Check for blank lines.
+		if (*i == "\r") continue;
+
+		// Load the gmap.
+		TMap* gmap = new TMap(MAPTYPE_GMAP);
+		if (gmap->load(CString() << *i << ".gmap", this) == false)
+		{
+			serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
+			delete gmap;
+			continue;
+		}
+
+		serverlog.out("       %s\n", i->text());
+		mapList.push_back(gmap);
+	}
+
+	// Load bigmaps.
+	serverlog.out("     Loading bigmaps...\n");
+	std::vector<CString> bigmaps = settings.getStr("maps").guntokenize().tokenize("\n");
+	for (std::vector<CString>::iterator i = bigmaps.begin(); i != bigmaps.end(); ++i)
+	{
+		// Check for blank lines.
+		if (*i == "\r") continue;
+
+		// Load the bigmap.
+		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
+		if (bigmap->load(*i, this) == false)
+		{
+			serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
+			delete bigmap;
+			continue;
+		}
+
+		serverlog.out("       %s\n", i->text());
+		mapList.push_back(bigmap);
+	}
+
+	return 0;
 }
 
 /////////////////////////////////////////////////////

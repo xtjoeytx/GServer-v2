@@ -301,6 +301,12 @@ bool TPlayer::onSend()
 	return true;
 }
 
+bool TPlayer::canRecv()
+{
+	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED) return false;
+	return true;
+}
+
 bool TPlayer::canSend()
 {
 	return fileQueue.canSend();
