@@ -92,7 +92,7 @@ bool TServerList::canSend()
 
 bool TServerList::main()
 {
-	if (getConnected())
+	if (!getConnected())
 		return false;
 
 	// definitions
@@ -127,6 +127,7 @@ bool TServerList::main()
 		// update last data
 		lastData = time(0);
 	}
+	server->getSocketManager()->updateSingle(this);
 
 	return getConnected();
 }
