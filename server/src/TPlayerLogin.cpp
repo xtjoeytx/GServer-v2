@@ -86,6 +86,7 @@ bool TPlayer::sendLogin()
 		{
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
+			if (player->isNC()) continue;
 
 			// Send the other player my props.
 			if (player->isClient())
