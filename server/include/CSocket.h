@@ -53,6 +53,7 @@ class CSocketStub
 		virtual bool onRecv() = 0;
 		virtual bool onSend() = 0;
 		virtual SOCKET getSocketHandle() = 0;
+		virtual bool canRecv() = 0;
 		virtual bool canSend() = 0;
 };
 
@@ -107,7 +108,7 @@ class CSocketManager
 //! Properties to pass to the socket.
 struct sock_properties
 {
-	sock_properties() : handle(0), protocol(SOCKET_PROTOCOL_TCP),
+	sock_properties() : handle(INVALID_SOCKET), protocol(SOCKET_PROTOCOL_TCP),
 		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED) {}
 
 	SOCKET handle;

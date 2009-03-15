@@ -23,7 +23,11 @@ lastSparTime(0),
 statusMsg(0)
 {
 	// Other Defaults
-	memset((void*)&colors, 0, 5);
+	colors[0] = 2;	// c
+	colors[1] = 0;	// a
+	colors[2] = 10;	// k
+	colors[3] = 4;	// e
+	colors[4] = 18;	// s
 	bowImage >> (char)0;
 }
 

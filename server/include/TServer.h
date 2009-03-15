@@ -42,6 +42,7 @@ class TServer : public CSocketStub
 		bool onRecv();
 		bool onSend()				{ return true; }
 		SOCKET getSocketHandle()	{ return playerSock.getHandle(); }
+		bool canRecv()				{ return true; }
 		bool canSend()				{ return false; }
 
 		TServer(CString pName);
@@ -53,6 +54,7 @@ class TServer : public CSocketStub
 
 		void loadAllFolders();
 		void loadFolderConfig();
+		int loadConfigFiles();
 
 		// Get functions.
 		CSettings* getSettings()				{ return &settings; }

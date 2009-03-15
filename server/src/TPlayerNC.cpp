@@ -29,8 +29,10 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 	{
 		CString weapon;
 		weapon.load(i->second);
+		if (weapon.find("NEWWEAPON") == -1) continue;
 		weapon.setRead(weapon.find("NEWWEAPON ") + 10);
 		CString weaponName = weapon.readString(",");
+		if (weaponName.length() == 0) continue;
 
 		retVal >> (char)weaponName.length() << weaponName;
 	}
