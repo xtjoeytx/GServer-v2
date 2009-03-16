@@ -1859,7 +1859,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Loop for flags now.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); )
+	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		CString tflagName = i->readString("=").trim();
 		if (tflagName == flagName)
@@ -1905,7 +1905,7 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	}
 
 	// Loop for flags now.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); )
+	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		CString tflagName = i->readString("=").trim();
 		if (tflagName == flagName)
