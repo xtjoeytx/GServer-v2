@@ -84,19 +84,19 @@ bool __sendLocal[propscount] =
 bool __playerPropsRC[propscount] =
 {
 	true,  true,  true,  true,  true,  true,  // 0-5
-	true,  true,  true,  true,  true,  true,  // 6-11
-	false, true,  false, true,  true,  true,  // 12-17
-	true,  false, true,  true,  true,  true,  // 18-23
+	true,  false, true,  true,  true,  true,  // 6-11
+	false, true,  false, true,  true,  false, // 12-17
+	true,  false, true,  false, false, false, // 18-23
 	false, false, true,  true,  true,  true,  // 24-29
 	true,  false, true,  false, true,  true,  // 30-35
 	true,  false, false, false, false, false, // 36-41
 	false, false, false, false, false, false, // 42-47
 	false, false, false, false, false, false, // 48-53
-	true,  true,  true,  true,  true,  true,  // 54-59
-	true,  true,  true,  true,  true,  true,  // 60-65
-	true,  true,  true,  true,  true,  true,  // 66-71
-	true,  true,  true,  false, false, false, // 72-77
-	true,  true,  true,  false, true, // 78-82
+	false, false, false, false, false, false, // 54-59
+	false, false, false, false, false, false, // 60-65
+	false, false, false, false, false, false, // 66-71
+	false, false, false, false, false, false, // 72-77
+	false, false, false, false, false, // 78-82
 };
 
 /*
@@ -1870,10 +1870,9 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	// Loop for flags now.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		CString tflagName;
+		CString tflagName = *i;
 		if (i->find("=") != -1)
-			tflagName = i->readString("=");
-		else tflagName = *i;
+			tflagName.removeI(i->find("="));
 
 		if (tflagName == flagName)
 		{
@@ -1923,10 +1922,9 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	// Loop for flags now.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		CString tflagName;
+		CString tflagName = *i;
 		if (i->find("=") != -1)
-			tflagName = i->readString("=");
-		else tflagName = *i;
+			tflagName.removeI(i->find("="));
 
 		if (tflagName == flagName)
 		{
