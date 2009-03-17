@@ -787,7 +787,7 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 			continue;
 		}
 
-		if ((*i)->getLevelName() == pLevelName)
+		if ((*i)->getLevelName().toLower() == pLevelName.toLower())
 			return (*i);
 
 		++i;
