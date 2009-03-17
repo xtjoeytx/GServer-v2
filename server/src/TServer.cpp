@@ -713,7 +713,7 @@ bool TServer::deleteFlag(const CString& pFlag)
 	CString flagName = flag.readString("=").trim();
 
 	// Loop for flags now.
-	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); )
+	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 	{
 		CString tflagName = i->readString("=").trim();
 		if (tflagName == flagName)

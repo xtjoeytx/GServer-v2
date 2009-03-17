@@ -1839,9 +1839,18 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 {
 	CString flagPacket = pPacket.readString("");
-	CString flagName = flagPacket.readString("=").trim();
-	CString flagValue = flagPacket.readString("").trim();
-	CString flagNew = CString() << flagName << "=" << flagValue;
+	CString flagName, flagValue, flagNew;
+	if (flagPacket.find("=") != -1)
+	{
+		flagName = flagPacket.readString("=").trim();
+		flagValue = flagPacket.readString("").trim();
+		flagNew = CString() << flagName << "=" << flagValue;
+	}
+	else
+	{
+		flagName = flagPacket;
+		flagNew = flagPacket;
+	}
 
 	// 2.171 clients didn't support this.strings and tried to set them as a
 	// normal flag.  Don't allow that.
@@ -1861,7 +1870,11 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	// Loop for flags now.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		CString tflagName = i->readString("=").trim();
+		CString tflagName;
+		if (i->find("=") != -1)
+			tflagName = i->readString("=");
+		else tflagName = *i;
+
 		if (tflagName == flagName)
 		{
 			// A flag with a value of 0 means we should unset it.
@@ -1887,7 +1900,10 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	CSettings* settings = server->getSettings();
 
 	CString flagPacket = pPacket.readString("");
-	CString flagName = flagPacket.readString("=").trim();
+	CString flagName;
+	if (flagPacket.find("=") != -1)
+		flagName = flagPacket.readString("=").trim();
+	else flagName = flagPacket;
 
 	// this.flags should never be in any server flag list, so just exit.
 	if (flagName.find("this.") != -1) return true;
@@ -1907,7 +1923,11 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	// Loop for flags now.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		CString tflagName = i->readString("=").trim();
+		CString tflagName;
+		if (i->find("=") != -1)
+			tflagName = i->readString("=");
+		else tflagName = *i;
+
 		if (tflagName == flagName)
 		{
 			flagList.erase(i);
