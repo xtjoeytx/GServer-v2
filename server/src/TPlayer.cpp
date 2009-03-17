@@ -820,8 +820,8 @@ void TPlayer::processChat(CString pChat)
 			return;
 		}
 
-		TPlayer* p = server->getPlayer(chatParse[1]);
-		if (p->isClient()) p->warp(levelName, x, y);
+		TPlayer* p = server->getPlayer(chatParse[1], false);
+		if (p != 0 && p->isClient()) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
