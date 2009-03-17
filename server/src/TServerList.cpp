@@ -394,9 +394,15 @@ void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
 
 void TServerList::msgSVI_PROFILE(CString& pPacket)
 {
+	CString target = pPacket.readChars(pPacket.readGUChar());
 	TPlayer* p1 = server->getPlayer(pPacket.readGUShort());
-	TPlayer* p2 = server->getPlayer(pPacket.readChars(pPacket.readGUChar()));
-	if (p1 == 0 || p2 == 0) return;
+	TPlayer* p2 = server->getPlayer(target, false);
+	if (p1 == 0) return;
+	if (p2 == 0)
+	{
+		p2 = server->getRC(target);
+		if (p2 == 0) return;
+	}
 
 	// Start the profile string.
 	CString profile;
