@@ -107,10 +107,18 @@ enum
 	PLI_RC_FILEBROWSER_END		= 91,
 	PLI_RC_FILEBROWSER_DOWN		= 92,
 	PLI_RC_FILEBROWSER_UP		= 93,
-	PLI_RC_EMPTY94				= 94,	// NC related
+	PLI_NPCSERVERQUERY			= 94,
 	PLI_RC_FILEBROWSER_MOVE		= 96,
 	PLI_RC_FILEBROWSER_DELETE	= 97,
 	PLI_RC_FILEBROWSER_RENAME	= 98,
+	PLI_NC_NPCGET				= 103,	// {103}{INT id}
+	PLI_NC_NPCDELETE			= 104,	// {104}{INT id}
+	PLI_NC_NPCRESET				= 105,	// {105}{INT id}
+	PLI_NC_NPCSCRIPTGET			= 106,	// {106}{INT id}
+	PLI_NC_NPCWARP				= 107,	// {107}{INT id}{CHAR x*2}{CHAR y*2}{level}
+	PLI_NC_NPCFLAGSGET			= 108,	// {108}{INT id}
+	PLI_NC_NPCSCRIPTSET			= 109,	// {109}{INT id}{GSTRING script}
+	PLI_NC_NPCFLAGSSET			= 110,	// {110}{INT id}{GSTRING flags}
 	PLI_NC_NPCADD				= 111,	// {111}{GSTRING info}  - (info) name,id,type,scripter,starting level,x,y
 	PLI_NC_CLASSEDIT			= 112,	// {112}{class}
 	PLI_NC_CLASSADD				= 113,	// {113}{CHAR name length}{name}{GSTRING script}
@@ -119,7 +127,7 @@ enum
 	PLI_NC_WEAPONGET			= 116,	// {116}{weapon}
 	PLI_NC_WEAPONADD			= 117,	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
 	PLI_NC_WEAPONDELETE			= 118,	// {118}{weapon}
-	PLI_NC_CLASSDELETE			= 119,	// 
+	PLI_NC_CLASSDELETE			= 119,	// {119}{class}
 	PLI_NC_LEVELLISTGET			= 150,	// {150}
 	PLI_NC_LEVELLISTSET			= 151,	// {151}{GSTRING levels}
 
@@ -218,15 +226,16 @@ enum
 	PLO_FREEZEPLAYER2			= 154,	// Blank.
 	PLO_UNFREEZEPLAYER			= 155,	// Blank.
 	PLO_SETACTIVELEVEL			= 156,	// Sets the level to receive chests, baddies, NPCs, etc.
-	PLO_NC_NPC_ATTRIBUTES		= 157,
-	PLO_NC_NPC_ADDNAME			= 158,
-	PLO_NC_NPC_REMOVE			= 159,
-	PLO_NC_NPC_SCRIPT			= 160,
-	PLO_NC_NPC_FLAGS			= 161,
+	PLO_NC_NPCATTRIBUTES		= 157,	// {157}{GSTRING attributes}
+	PLO_NC_NPCADD				= 158,	// {158}{INT id}{CHAR 50}{CHAR name length}{name}{CHAR 51}{CHAR type length}{type}{CHAR 52}{CHAR level length}{level}
+	PLO_NC_NPCDELETE			= 159,	// {159}{INT id}
+	PLO_NC_NPCSCRIPT			= 160,	// {160}{INT id}{GSTRING script}
+	PLO_NC_NPCFLAGS				= 161,	// {161}{INT id}{GSTRING flags}
 	PLO_NC_CLASSGET				= 162,	// {162}{CHAR name length}{name}{GSTRING script}
-	PLO_NC_CLASSADD				= 163,
+	PLO_NC_CLASSADD				= 163,	// {163}{class}
 	PLO_NC_LEVELDUMP			= 164,
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...
+	PLO_EMPTY168				= 168,	// Login server sends this.  Blank packet.
 	PLO_GHOSTMODE				= 170,
 	PLO_BIGMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
 	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
@@ -236,7 +245,7 @@ enum
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
 	PLO_LISTPROCESSES			= 182,
-	PLO_NC_CLASSREMOVE			= 188,
+	PLO_NC_CLASSDELETE			= 188,	// {188}{class}
 	PLO_EMPTY190				= 190,	// Was blank.  Sent before weapon list.
 	PLO_NC_WEAPONGET			= 192,	// {192}{CHAR name length}{name}{CHAR image length}{image}{script}
 	PLO_EMPTY194				= 194,	// Was blank.  Sent before weapon list.
@@ -439,7 +448,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_FILEBROWSER_END(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_UP(CString& pPacket);
-		bool msgPLI_RC_EMPTY94(CString& pPacket);
+		bool msgPLI_NPCSERVERQUERY(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket);
 		bool msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket);

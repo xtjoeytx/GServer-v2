@@ -19,7 +19,7 @@
 extern bool __playerPropsRC[propscount];
 
 const char* __admin[] = {
-	"name", "description", "url", "maxplayers", "onlystaff", "underconstruction", "nofoldersconfig",
+	"name", "description", "url", "maxplayers", "onlystaff", "nofoldersconfig",
 	"sharefolder", "language", "serverip", "serverport", "listip", "listport",
 };
 
@@ -895,7 +895,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			servermessage->replaceAllI("\n", " ");
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Refreshed server message.");
 		}
-		else if (words[0] == "/updatelevel" && words.size() != 1)
+		else if (words[0] == "/updatelevel" && words.size() != 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
 			for (unsigned int i = 1; i < words.size(); ++i)
 			{
@@ -904,7 +904,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			}
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated level.");
 		}
-		else if (words[0] == "/updatelevelall" && words.size() == 1)
+		else if (words[0] == "/updatelevelall" && words.size() == 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
 			std::vector<TLevel*>* levels = server->getLevelList();
 			for (std::vector<TLevel*>::iterator i = levels->begin(); i != levels->end(); ++i)
@@ -913,12 +913,12 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			}
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels.");
 		}
-		else if (words[0] == "/reloadserver" && words.size() == 1)
+		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->loadConfigFiles();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded server configuration files.");
 		}
-		else if (words[0] == "/updateserverhq" && words.size() == 1)
+		else if (words[0] == "/updateserverhq" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->getServerList()->sendServerHQ();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Sent ServerHQ updates.");
@@ -1462,19 +1462,6 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 	// TODO: update server files.
 
-	return true;
-}
-
-bool TPlayer::msgPLI_RC_EMPTY94(CString& pPacket)
-{
-	unsigned short pid = pPacket.readGUShort();
-	CString message = pPacket.readString("");
-	CSettings* settings = server->getSettings();
-
-	if (message == "location")
-	{
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << settings->getStr("serverip") << "," << settings->getStr("serverport"));
-	}
 	return true;
 }
 
