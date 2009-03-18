@@ -199,7 +199,7 @@ void createPLFunctions()
 	TPLFunc[PLI_RC_FILEBROWSER_END] = &TPlayer::msgPLI_RC_FILEBROWSER_END;
 	TPLFunc[PLI_RC_FILEBROWSER_DOWN] = &TPlayer::msgPLI_RC_FILEBROWSER_DOWN;
 	TPLFunc[PLI_RC_FILEBROWSER_UP] = &TPlayer::msgPLI_RC_FILEBROWSER_UP;
-	TPLFunc[PLI_RC_EMPTY94] = &TPlayer::msgPLI_RC_EMPTY94;
+	TPLFunc[PLI_NPCSERVERQUERY] = &TPlayer::msgPLI_NPCSERVERQUERY;
 	TPLFunc[PLI_RC_FILEBROWSER_MOVE] = &TPlayer::msgPLI_RC_FILEBROWSER_MOVE;
 	TPLFunc[PLI_RC_FILEBROWSER_DELETE] = &TPlayer::msgPLI_RC_FILEBROWSER_DELETE;
 	TPLFunc[PLI_RC_FILEBROWSER_RENAME] = &TPlayer::msgPLI_RC_FILEBROWSER_RENAME;
@@ -2415,5 +2415,21 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
+	return true;
+}
+
+bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
+{
+	unsigned short pid = pPacket.readGUShort();
+	CString message = pPacket.readString("");
+	CSettings* settings = server->getSettings();
+
+	// TODO: Check if player is the NPC Server.
+
+	// Enact upon the message.
+	if (message == "location")
+	{
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << settings->getStr("serverip") << "," << settings->getStr("serverport"));
+	}
 	return true;
 }
