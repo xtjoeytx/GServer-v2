@@ -78,8 +78,6 @@ bool TPlayer::sendLogin()
 			>> (char)PLPROP_PSTATUSMSG << getProp(PLPROP_PSTATUSMSG)
 			>> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME)
 			>> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
-			//>> (char)PLPROP_HEADGIF << getProp(PLPROP_HEADGIF)
-			//>> (char)PLPROP_BODYIMG << getProp(PLPROP_BODYIMG);
 
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -100,10 +98,12 @@ bool TPlayer::sendLogin()
 			else
 			{
 				// Get the other player's RC props.
+				CString lvl;
+				if (player->getLevel()) lvl = player->getLevel()->getLevelName();
 				CString otherRCProps;
 				otherRCProps >> (char)PLO_ADDPLAYER >> (short)player->getId()
 					>> (char)player->getAccountName().length() << player->getAccountName()
-					>> (char)PLPROP_CURLEVEL >> player->getLevel()->getLevelName().length() << player->getLevel()->getLevelName()
+					>> (char)PLPROP_CURLEVEL >> lvl.length() << lvl
 					>> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG)
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
 					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME);
