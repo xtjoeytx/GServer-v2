@@ -2107,7 +2107,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		if (i->trim() == levelName)
 		{
 			jailed = true;
-			i = jailList.end();
+			break;
 		}
 	}
 
