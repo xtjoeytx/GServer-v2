@@ -1507,7 +1507,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 	// Alter level data.
 	if (level->alterBoard(tiles, loc[0], loc[1], dim[0], dim[1], this))
-		server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << pPacket.text() + 1, pmap, level);
+		server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << pPacket.text() + 1, 0, level);
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63) return true;
 
