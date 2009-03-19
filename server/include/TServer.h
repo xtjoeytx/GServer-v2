@@ -31,7 +31,7 @@ enum
 	FS_SWORD	= 5,
 	FS_SHIELD	= 6,
 };
-#define FS_COUNT	6
+#define FS_COUNT	7
 
 //class TPlayer;
 //class TLevel;

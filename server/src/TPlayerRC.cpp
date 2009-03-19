@@ -1558,7 +1558,6 @@ bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	rclog.out("%s is started a large file upload: %s.\n", accountName.text(), file.text());	// TODO: Debug
 	rcLargeFiles[file] = CString();
 
 	return true;
@@ -1574,7 +1573,6 @@ bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 
 	CString file = pPacket.readString("");
 	CString filepath = CString() << server->getServerPath() << lastFolder << file;
-	rclog.out("%s is finishing a large file upload: %s.\n", accountName.text(), (CString() << lastFolder << file).text());	// TODO: Debug
 
 	// Save the file.
 	rcLargeFiles[file].save(filepath);
