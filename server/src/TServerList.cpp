@@ -272,7 +272,7 @@ void TServerList::sendPlayers()
 		<< pPlayer->getProp(PLPROP_X)
 		<< pPlayer->getProp(PLPROP_Y)
 		<< pPlayer->getProp(PLPROP_ALIGNMENT)
-		>> (char)pPlayer->getType());
+		>> (char)pPlayer->getType();
 	}
 
 	// Write Playercount
