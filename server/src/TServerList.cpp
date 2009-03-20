@@ -266,12 +266,13 @@ void TServerList::sendPlayers()
 		playerCount++;
 
 		// Write Player-Packet
-		playerPacket.write(pPlayer->getProp(PLPROP_ACCOUNTNAME)
+		playerPacket << pPlayer->getProp(PLPROP_ACCOUNTNAME)
 		<< pPlayer->getProp(PLPROP_NICKNAME)
 		<< pPlayer->getProp(PLPROP_CURLEVEL)
 		<< pPlayer->getProp(PLPROP_X)
 		<< pPlayer->getProp(PLPROP_Y)
-		<< pPlayer->getProp(PLPROP_ALIGNMENT));
+		<< pPlayer->getProp(PLPROP_ALIGNMENT)
+		>> (char)pPlayer->getType());
 	}
 
 	// Write Playercount
