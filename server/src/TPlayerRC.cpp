@@ -758,6 +758,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.length() == 0) return true;
 
 	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{

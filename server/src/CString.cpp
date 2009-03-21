@@ -337,7 +337,7 @@ CString CString::trimLeft() const
 {
 	for (int i = 0; i < length(); ++i)
 	{
-		if (buffer[i] > ' ')
+		if ((unsigned char)buffer[i] > (unsigned char)' ')
 			return subString(i, length() - i);
 	}
 
@@ -349,7 +349,7 @@ CString CString::trimRight() const
 {
 	for (int i = length() - 1; i >= 0; --i)
 	{
-		if (buffer[i] > ' ')
+		if ((unsigned char)buffer[i] > (unsigned char)' ')
 			return subString(0, i+1);
 	}
 
