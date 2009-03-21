@@ -961,13 +961,13 @@ bool TPlayer::isAllowedIp()
 {
 	CString allowedIps(getAdminIp());
 
-	if(allowedIps == "*.*.*.*") return true;
+	if(allowedIps == "0.0.0.0") return true;
 
 	std::vector<CString> ipList = allowedIps.tokenize(",");
 
 	for (std::vector<CString>::iterator i = ipList.begin(); i != ipList.end(); ++i)
 	{
-		if (getIpStr() == (*i).trim()) return true;
+		if (getIpStr().match((*i).trim())) return true;
 	}
 	return false;
 }
