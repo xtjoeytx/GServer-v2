@@ -27,27 +27,6 @@ bool TPlayer::sendLogin()
 		return false;
 	}
 
-	// Check and see if we are allowed in.
-	if (!isStaff() || accountIpStr.match(adminIp) == false)
-	{
-		if (server->getSettings()->getBool("onlystaff", false))
-		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
-			return false;
-		}
-		if (isRC())
-		{
-			rclog.out("Attempted RC login by %s.\n", accountName.text());
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
-			return false;
-		}
-	}
-	if (adminIp != "0.0.0.0" && !accountIpStr.match(adminIp))
-	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match the allowed IP for the account.");
-		return false;
-	}
-
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
@@ -253,6 +232,20 @@ bool TPlayer::sendLoginClient()
 
 bool TPlayer::sendLoginRC()
 {
+	// If the account is not in the staff list, tell them so, and disconnect them.
+	if (!isStaff())
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You are not a staff member!");
+		return false;
+	}
+
+	// If the account is being used by a non-permitted IP, tell them so, and disconnect them.
+	else if (!isAllowedIp())
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP is not in range!");
+		return false;
+	}
+
 	// If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
 		nickName = accountName;
