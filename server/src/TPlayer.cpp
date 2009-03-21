@@ -957,21 +957,6 @@ bool TPlayer::isStaff()
 	return false;
 }
 
-bool TPlayer::isAllowedIp()
-{
-	CString allowedIps(getAdminIp());
-
-	if(allowedIps == "0.0.0.0") return true;
-
-	std::vector<CString> ipList = allowedIps.tokenize(",");
-
-	for (std::vector<CString>::iterator i = ipList.begin(); i != ipList.end(); ++i)
-	{
-		if (getIpStr().match((*i).trim())) return true;
-	}
-	return false;
-}
-
 /*
 	TPlayer: Set Properties
 */
