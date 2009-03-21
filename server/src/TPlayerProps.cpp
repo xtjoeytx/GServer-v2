@@ -58,7 +58,10 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)(headImg.length()+100) << headImg;
 
 		case PLPROP_CURCHAT:
-		return CString() >> (char)chatMsg.length() << chatMsg;
+		{
+			if (chatMsg.length() > 223) chatMsg = chatMsg.subString(0, 223);
+			return CString() >> (char)chatMsg.length() << chatMsg;
+		}
 
 		case PLPROP_COLORS:
 		return CString() >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
@@ -387,9 +390,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_CURCHAT:
-				len = pPacket.readGUChar();
-				len = clip(len, 0, 220);
-				chatMsg = pPacket.readChars(len);
+				chatMsg = pPacket.readChars(pPacket.readGUChar());
 				processChat(chatMsg);
 			break;
 
