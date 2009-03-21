@@ -27,6 +27,27 @@ bool TPlayer::sendLogin()
 		return false;
 	}
 
+	// Check and see if we are allowed in.
+	if (!isStaff() || accountIpStr.match(adminIp) == false)
+	{
+		if (server->getSettings()->getBool("onlystaff", false))
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
+			return false;
+		}
+		if (isRC())
+		{
+			rclog.out("Attempted RC login by %s.\n", accountName.text());
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
+			return false;
+		}
+	}
+	if (adminIp != "0.0.0.0" && !accountIpStr.match(adminIp))
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match the allowed IP for the account.");
+		return false;
+	}
+
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
