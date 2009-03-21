@@ -17,8 +17,10 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), lastTimer(time(0)), lastNWTimer(time(0)), last5mTimer(time(0))
+: name(pName)
 {
+	lastTimer = lastNWTimer = last5mTimer = last3mTimer = time(0);
+
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
 	playerIds.resize(2);
@@ -204,6 +206,17 @@ bool TServer::doTimedEvents()
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+	}
+
+	// Stuff that happens every 3 minutes.
+	if ((int)difftime(lastTimer, last3mTimer) >= 180)
+	{
+		last3mTimer = lastTimer;
+
+		// Resynchronize the file systems.
+		filesystem_accounts.resync();
+		for (int i = 0; i < FS_COUNT; ++i)
+			filesystem[i].resync();
 	}
 
 	// Save stuff every 5 minutes.
@@ -679,7 +692,8 @@ bool TServer::addFlag(const CString& pFlag)
 
 	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 	{
-		CString tflagName = i->readString("=").trim();
+		CString tflag = *i;
+		CString tflagName = tflag.readString("=").trim();
 		if (tflagName == flagName)
 		{
 			// A flag with a value of 0 means we should unset it.
@@ -715,7 +729,8 @@ bool TServer::deleteFlag(const CString& pFlag)
 	// Loop for flags now.
 	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
 	{
-		CString tflagName = i->readString("=").trim();
+		CString tflag = *i;
+		CString tflagName = tflag.readString("=").trim();
 		if (tflagName == flagName)
 		{
 			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
