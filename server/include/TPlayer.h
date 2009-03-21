@@ -356,6 +356,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void disconnect();
 		void processChat(CString pChat);
 		bool isStaff();
+		bool isAllowedIp();
 		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
 		bool isNC()				{ return (type & PLTYPE_ANYNC ? true : false); }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT ? true : false); }
