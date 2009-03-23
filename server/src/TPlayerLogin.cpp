@@ -27,25 +27,61 @@ bool TPlayer::sendLogin()
 		return false;
 	}
 
-	// Check and see if we are allowed in.
-	if (!isStaff() || accountIpStr.match(adminIp) == false)
+	// If we are an RC, check to see if we can log in.
+	if (isRC())
 	{
-		if (server->getSettings()->getBool("onlystaff", false))
+		// Check and see if we are allowed in.
+		std::vector<CString> adminIps = adminIp.tokenize(",");
+		bool failed = true;
+		if (isStaff())
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
-			return false;
+			for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+			{
+				if (accountIpStr.match(*i))
+				{
+					failed = false;
+					break;
+				}
+			}
 		}
-		if (isRC())
+		if (failed)
 		{
 			rclog.out("Attempted RC login by %s.\n", accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 			return false;
 		}
 	}
-	if (adminIp != "0.0.0.0" && !accountIpStr.match(adminIp))
+
+	// Check to see if we can log in if we are a client.
+	if (isClient())
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match the allowed IP for the account.");
-		return false;
+		// Staff only.
+		if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
+			return false;
+		}
+
+		// Check and see if we are allowed in.
+		std::vector<CString> adminIps = adminIp.tokenize(",");
+		bool failed = true;
+		if (adminIp == "0.0.0.0") failed = false;
+		if (failed)
+		{
+			for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+			{
+				if (*i == "0.0.0.0" || accountIpStr.match(*i))
+				{
+					failed = false;
+					break;
+				}
+			}
+		}
+		if (failed)
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
+			return false;
+		}
 	}
 
 	// Server Signature
