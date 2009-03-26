@@ -729,37 +729,57 @@ void TPlayer::processChat(CString pChat)
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
 	{
 		// id: 0
-		if (chatParse[1] == "grey") chatParse[1] = "gray";
-		colors[0] = getColor(chatParse[1]);
-		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
+		char color = getColor(chatParse[1].toLower());
+		if (color != -1)
+		{
+			colors[0] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2)
 	{
 		// id: 1
-		if (chatParse[1] == "grey") chatParse[1] = "gray";
-		colors[1] = getColor(chatParse[1]);
-		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
+		char color = getColor(chatParse[1].toLower());
+		if (color != -1)
+		{
+			colors[1] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2)
 	{
 		// id: 2
-		if (chatParse[1] == "grey") chatParse[1] = "gray";
-		colors[2] = getColor(chatParse[1]);
-		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
+		char color = getColor(chatParse[1].toLower());
+		if (color != -1)
+		{
+			colors[2] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2)
 	{
 		// id: 3
-		if (chatParse[1] == "grey") chatParse[1] = "gray";
-		colors[3] = getColor(chatParse[1]);
-		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
+		char color = getColor(chatParse[1].toLower());
+		if (color != -1)
+		{
+			colors[3] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2)
 	{
 		// id: 4
-		if (chatParse[1] == "grey") chatParse[1] = "gray";
-		colors[4] = getColor(chatParse[1]);
-		setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
+		char color = getColor(chatParse[1].toLower());
+		if (color != -1)
+		{
+			colors[4] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+		}
 	}
 	else if (chatParse[0] == "warpto")
 	{

@@ -1454,6 +1454,14 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+
+		// If it was a level, update it.
+		CString ext = removeExtension(file);
+		if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
+		{
+			TLevel* l = TLevel::findLevel(file, server);
+			if (l) l->reload();
+		}
 	}
 	else
 	{
