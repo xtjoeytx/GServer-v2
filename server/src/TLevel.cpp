@@ -42,8 +42,8 @@ CString TLevel::getBaddyPacket()
 	{
 		TLevelBaddy* baddy = *i;
 		if (baddy == 0) continue;
-		if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-			retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps() << "\n";
+		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
+		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps() << "\n";
 	}
 	return retVal;
 }

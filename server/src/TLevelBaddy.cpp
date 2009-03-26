@@ -101,10 +101,7 @@ void TLevelBaddy::setProps(CString &pProps)
 		switch (propId)
 		{
 			case BDPROP_ID:
-				// Old gserver allowed the ID to be changed.  I doubt that is okay.
-				printf( "TLevelBaddy::setProps(), BDPROP_ID is being changed when it shouldn't be.\n" );
-				pProps.readGChar();
-				//id = pProps.readGChar();
+				id = pProps.readGChar();
 			break;
 
 			case BDPROP_X:
