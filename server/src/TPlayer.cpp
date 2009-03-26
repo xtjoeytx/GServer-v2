@@ -1793,8 +1793,8 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 	if (baddy == 0) return true;
 
 	// Set the props and send to everybody in the level.
-	baddy->setProps(props);
 	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, 0, level, this);
+	baddy->setProps(props);
 	return true;
 }
 
