@@ -1792,8 +1792,11 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 	TLevelBaddy* baddy = level->getBaddy(id);
 	if (baddy == 0) return true;
 
-	// Set the props and send to everybody in the level.
-	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, 0, level, this);
+	// Get the leader.
+	TPlayer* leader = level->getPlayer(0);
+
+	// Set the props and send to everybody in the level, except the leader.
+	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, 0, level, leader);
 	baddy->setProps(props);
 	return true;
 }
