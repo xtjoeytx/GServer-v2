@@ -42,42 +42,7 @@ TServer::TServer(CString pName)
 
 TServer::~TServer()
 {
-	// Save server flags.
-	CString out;
-	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-		out << *i << "\r\n";
-	out.save(CString() << serverpath << "serverflags.txt");
-
-	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
-	{
-		delete *i;
-		i = playerList.erase(i);
-	}
-
-	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
-	{
-		delete *i;
-		i = npcList.erase(i);
-	}
-
-	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
-	{
-		delete *i;
-		i = levelList.erase(i);
-	}
-
-	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
-	{
-		delete *i;
-		i = mapList.erase(i);
-	}
-
-	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
-	{
-		(*i)->saveWeapon(this);
-		delete *i;
-		i = weaponList.erase(i);
-	}
+	cleanup();
 }
 
 int TServer::init()
@@ -144,6 +109,47 @@ void TServer::operator()()
 		boost::this_thread::sleep(xt);
 */
 		//boost::this_thread::yield();
+	}
+	cleanup();
+}
+
+void TServer::cleanup()
+{
+	// Save server flags.
+	CString out;
+	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
+		out << *i << "\r\n";
+	out.save(CString() << serverpath << "serverflags.txt");
+
+	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
+	{
+		delete *i;
+		i = playerList.erase(i);
+	}
+
+	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
+	{
+		delete *i;
+		i = npcList.erase(i);
+	}
+
+	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
+	{
+		delete *i;
+		i = levelList.erase(i);
+	}
+
+	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
+	{
+		delete *i;
+		i = mapList.erase(i);
+	}
+
+	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
+	{
+		(*i)->saveWeapon(this);
+		delete *i;
+		i = weaponList.erase(i);
 	}
 }
 
