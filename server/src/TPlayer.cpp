@@ -360,7 +360,7 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
-	server->getSocketManager()->updateSingle(this);
+	server->getSocketManager()->updateSingleSelective(this, false, true);
 	return true;
 }
 
@@ -773,18 +773,9 @@ void TPlayer::processChat(CString pChat)
 				return;
 			}
 
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer* player = *i;
-				if (player == this || player == 0) continue;
-				if (player->getProp(PLPROP_ACCOUNTNAME).subString(1) == chatParse[1])
-				{
-					if (player->getLevel() == 0) break;
-					warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
-					break;
-				}
-			}
+			TPlayer* player = server->getPlayer(chatParse[1]);
+			if (player && player->getLevel() != 0)
+				warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 		}
 		// To x/y location
 		else if (chatParse.size() == 3)
@@ -820,8 +811,8 @@ void TPlayer::processChat(CString pChat)
 			return;
 		}
 
-		TPlayer* p = server->getPlayer(chatParse[1], false);
-		if (p != 0 && p->isClient()) p->warp(levelName, x, y);
+		TPlayer* p = server->getPlayer(chatParse[1]);
+		if (p) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
