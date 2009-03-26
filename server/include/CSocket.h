@@ -74,10 +74,18 @@ class CSocketManager
 
 		//! Updates a single socket.
 		//! Calls the functions of the CSocketStub class.
+		//! \param stub The socket to update.
 		//! \param sec Seconds to wait.
 		//! \param usec Nanoseconds to wait.
 		//! \return False if select() returned nothing, true otherwise.
 		bool updateSingle(CSocketStub* stub, long sec = 0, long usec = 0);
+
+		//! Attempts to update a socket selectively.
+		//! \param stub The socket to try to write to.
+		//! \param pRead Attempt to read from the socket.
+		//! \param pWrite Attempt to write to the socket.
+		//! \return False if select() returned nothing, true otherwise.
+		bool updateSingleSelective(CSocketStub* stub, bool pRead, bool pWrite);
 
 		//! Registers a class derived from CSocketStub into the management system.
 		//! \param stub The class to add to the system.
