@@ -24,7 +24,8 @@ class CString
 {
 	public:
 		/* Constructor ~ Deconstructor */
-		CString(const char *pString = "");
+		CString();
+		CString(const char *pString);
 		CString(const CString& pString);
 		CString(char pChar);
 		CString(double pDouble);
