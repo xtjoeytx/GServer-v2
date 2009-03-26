@@ -143,7 +143,7 @@ void TServer::operator()()
 		xt.nsec += 5000000;		// 5 milliseconds
 		boost::this_thread::sleep(xt);
 */
-		boost::this_thread::yield();
+		//boost::this_thread::yield();
 	}
 }
 

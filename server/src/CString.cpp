@@ -9,6 +9,13 @@
 	Constructor ~ Deconstructor
 */
 
+CString::CString()
+{
+	buffer = 0;
+
+	clear(30);
+}
+
 CString::CString(const char *pString)
 {
 	buffer = 0;
