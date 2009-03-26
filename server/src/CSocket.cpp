@@ -51,6 +51,7 @@
 
 	#include <sys/socket.h>
 	#include <netinet/in.h>
+	#include <netinet/tcp.h>
 	#define SOCKET_ERROR	-1
 	#define INVALID_SOCKET	(unsigned int)-1
 
@@ -170,18 +171,10 @@ bool CSocketManager::update(long sec, long usec)
 		removeStubs.clear();
 	}
 
-	// Just a test.
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
-	{
-		CSocketStub* stub = *i;
-		if (stub == 0) continue;
-		updateSingleSelective(stub, false, true);
-	}
-
 	return true;
 }
 
-bool CSocketManager::updateSingle(CSocketStub* stub, long sec, long usec)
+bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, long sec, long usec)
 {
 	fd_set set_read;
 	fd_set set_write;
@@ -191,81 +184,6 @@ bool CSocketManager::updateSingle(CSocketStub* stub, long sec, long usec)
 
 	tm.tv_sec = sec;
 	tm.tv_usec = usec;
-	FD_ZERO(&set_read);
-	FD_ZERO(&set_write);
-
-	// Put the socket handle into the set.
-	SOCKET sock = stub->getSocketHandle();
-	if (sock == INVALID_SOCKET) return false;
-	if (stub->canRecv()) FD_SET(sock, &set_read);
-	if (stub->canSend()) FD_SET(sock, &set_write);
-
-	// Do the select.
-	select(fd_max + 1, &set_read, &set_write, 0, &tm);
-
-	// Call relevant functions.
-	blockStubs = true;
-	bool erased = false;
-	if (FD_ISSET(sock, &set_read))
-	{
-		if (stub->onRecv() == false)
-		{
-			vecRemove<CSocketStub*>(stubList, stub);
-			erased = true;
-		}
-	}
-	if (!erased && FD_ISSET(sock, &set_write))
-	{
-		if (stub->onSend() == false)
-		{
-			vecRemove<CSocketStub*>(stubList, stub);
-			erased = true;
-		}
-	}
-	blockStubs = false;
-
-	// If any stubs were added while parsing data, add them to the list now.
-	if (newStubs.size() != 0)
-	{
-		for (std::vector<CSocketStub*>::iterator i = newStubs.begin(); i != newStubs.end(); ++i)
-		{
-			CSocketStub* stub = *i;
-			stubList.push_back(stub);
-		}
-		newStubs.clear();
-	}
-
-	// If any stubs were removed while parsing data, remove them now.
-	if (removeStubs.size() != 0)
-	{
-		for (std::vector<CSocketStub*>::iterator i = removeStubs.begin(); i != removeStubs.end();)
-		{
-			CSocketStub* stub = *i;
-			for (std::vector<CSocketStub*>::iterator j = stubList.begin(); j != stubList.end();)
-			{
-				CSocketStub* search = *j;
-				if (stub == search)
-					j = stubList.erase(j);
-				else ++j;
-			}
-			i = removeStubs.erase(i);
-		}
-		removeStubs.clear();
-	}
-
-	return true;
-}
-
-bool CSocketManager::updateSingleSelective(CSocketStub* stub, bool pRead, bool pWrite)
-{
-	fd_set set_read;
-	fd_set set_write;
-	struct timeval tm;
-
-	if (stub == 0) return false;
-
-	tm.tv_sec = 0;
-	tm.tv_usec = 0;
 	FD_ZERO(&set_read);
 	FD_ZERO(&set_write);
 
@@ -509,6 +427,13 @@ int CSocket::connect()
 			disconnect();
 			return SOCKET_CONNECT_ERROR;
 		}
+	}
+
+	// Disable the nagle algorithm.
+	if (properties.protocol == SOCKET_PROTOCOL_TCP)
+	{
+		int nagle = 1;
+		setsockopt(properties.handle, IPPROTO_TCP, TCP_NODELAY, (char*)&nagle, sizeof(nagle));
 	}
 
 	// Socket connected!
