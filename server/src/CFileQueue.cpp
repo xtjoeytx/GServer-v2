@@ -59,7 +59,7 @@ void CFileQueue::addPacket(CString pPacket)
 
 bool CFileQueue::canSend()
 {
-	if (fileBuffer.size() != 0 || normalBuffer.size() != 0) return true;
+	if (normalBuffer.size() != 0 || fileBuffer.size() != 0) return true;
 	return false;
 }
 
