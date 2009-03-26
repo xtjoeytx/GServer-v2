@@ -241,7 +241,7 @@ TPlayer::~TPlayer()
 			saveAccount();
 
 		// Remove from the level.
-		if (level) level->removePlayer(this);
+		if (level) leaveLevel();
 
 		// Announce our departure to other clients.
 		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
