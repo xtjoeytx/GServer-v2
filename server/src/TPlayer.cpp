@@ -32,11 +32,11 @@ bool __sendLogin[propscount] =
 	false, true,  true,  true,  true,  true,  // 0-5
 	true,  false, true,  true,  true,  true,  // 6-11
 	false, true,  false, false, false, true,  // 12-17
-	true,  false, false, true,  true,  true, // 18-23
+	true,  false, false, true,  true,  true,  // 18-23
 	false, true,  true,  false, false, false, // 24-29
 	false, false, true,  false, true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
-	false, false, false, false, true,  true, // 42-47
+	false, false, false, false, true,  true,  // 42-47
 	true,  true,  false, false, false, false, // 48-53
 	true,  true,  true,  true,  true,  true,  // 54-59
 	true,  true,  true,  true,  true,  true,  // 60-65
@@ -1850,6 +1850,34 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	{
 		flagName = flagPacket;
 		flagNew = flagPacket;
+	}
+
+	// Add a little hack for our special gr.strings.
+	if (flagName.find("gr.") != -1)
+	{
+		// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
+		// movement amongst pre-2.3 clients.
+		if (flagName == "gr.x")
+		{
+			if (versionID >= CLVER_2_3) return true;
+			float pos = (float)atof(flagValue.text());
+			if (pos != x)
+			{
+				x = pos;
+				setProps(CString() >> (char)PLPROP_X >> (char)(x * 2.0f), true, false);
+			}
+		}
+		else if (flagName == "gr.y")
+		{
+			if (versionID >= CLVER_2_3) return true;
+			float pos = (float)atof(flagValue.text());
+			if (pos != y)
+			{
+				y = pos;
+				setProps(CString() >> (char)PLPROP_Y >> (char)(y * 2.0f), true, false);
+			}
+		}
+		return true;
 	}
 
 	// 2.171 clients didn't support this.strings and tried to set them as a
