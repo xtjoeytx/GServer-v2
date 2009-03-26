@@ -360,7 +360,7 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
-	server->getSocketManager()->updateSingleSelective(this, false, true);
+	server->getSocketManager()->updateSingle(this, false, true);
 	return true;
 }
 

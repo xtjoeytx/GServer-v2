@@ -133,7 +133,7 @@ bool TServerList::main()
 		// update last data
 		lastData = time(0);
 	}
-	server->getSocketManager()->updateSingle(this);
+	server->getSocketManager()->updateSingle(this, false, true);
 
 	return getConnected();
 }
