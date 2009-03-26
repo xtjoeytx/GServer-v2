@@ -48,6 +48,7 @@ class TServer : public CSocketStub
 		TServer(CString pName);
 		~TServer();
 		void operator()();
+		void cleanup();
 
 		int init();
 		bool doMain();
