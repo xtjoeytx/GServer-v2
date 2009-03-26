@@ -155,7 +155,7 @@ enum
 };
 
 int getVersionID(const CString& version);
-unsigned char getColor(const CString& color);
+char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
 CString removeExtension(const CString& ext);
 

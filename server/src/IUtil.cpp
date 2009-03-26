@@ -114,7 +114,7 @@ int getVersionID(const CString& version)
 	return -1;
 }
 
-unsigned char getColor(const CString& color)
+char getColor(const CString& color)
 {
 	int i = 0;
 	while (colors[i] != 0)
@@ -123,7 +123,7 @@ unsigned char getColor(const CString& color)
 			return i;
 		++i;
 	}
-	return 0;
+	return -1;
 }
 
 CString removeComments(const CString& code, const CString& newLine)
