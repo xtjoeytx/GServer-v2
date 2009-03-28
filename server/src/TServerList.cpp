@@ -482,9 +482,23 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 				val = CString((int)p2->getProp(PLPROP_GLOVEPOWER).readGUChar());
 			else
 			{
-				// Flag values.
-				CString flag = p2->getFlag(val);
-				if (flag.length() != 0) val = flag;
+				// Find if String-Array
+				int pos[3] = {0, 0, 0};
+				pos[0] = val.findl('{');
+				pos[1] = val.find('}', pos[0]);
+				pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0]+1, pos[1]-1)) : -1);
+
+				// Find Flag Name / Value
+				CString flagName = val.subString(0, pos[0]);
+				val = p2->getFlag(flagName);
+
+				// If String-Array, Get Index
+				if (pos[2] >= 0)
+				{
+					std::vector<CString> temp = val.tokenize(',');
+					if ((int)temp.size() > pos[2])
+						val = temp[pos[2]];
+				}
 			}
 
 			// Add it to the profile now.
