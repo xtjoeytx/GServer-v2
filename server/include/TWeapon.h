@@ -29,6 +29,7 @@ public:
 	void setImage(const CString& pImage)			{ image = pImage; }
 	void setServerScript(const CString& pScript)	{ serverScript = pScript; }
 	void setClientScript(const CString& pScript)	{ clientScript = pScript; }
+	void setModTime(time_t mod)						{ modTime = mod; }
 
 private:
 	CString name;

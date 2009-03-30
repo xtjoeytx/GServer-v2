@@ -2276,6 +2276,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		{
 			newWeapon = true;		// Lets the new code get saved.
 			weapon->setClientScript(npc->getClientScript());
+			weapon->setModTime(npc->getPropModTime(NPCPROP_SCRIPT));
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
