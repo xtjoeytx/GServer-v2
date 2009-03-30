@@ -901,18 +901,23 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			for (unsigned int i = 1; i < words.size(); ++i)
 			{
 				TLevel* level = server->getLevel(words[i]);
-				if (level) level->reload();
+				if (level)
+				{
+					level->reload();
+					sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated level: " << level->getLevelName());
+				}
 			}
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated level.");
 		}
 		else if (words[0] == "/updatelevelall" && words.size() == 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
+			int count = 0;
 			std::vector<TLevel*>* levels = server->getLevelList();
 			for (std::vector<TLevel*>::iterator i = levels->begin(); i != levels->end(); ++i)
 			{
 				(*i)->reload();
+				++count;
 			}
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels.");
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels (" << CString((int)count) << ").");
 		}
 		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
