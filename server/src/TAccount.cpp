@@ -265,7 +265,8 @@ bool TAccount::saveAccount()
 	// Save the account now.
 	CString accpath = CString() << server->getServerPath() << "accounts/" << accountName << ".txt";
 	CFileSystem::fixPathSeparators(&accpath);
-	newFile.save(accpath);
+	if (!newFile.save(accpath))
+		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
 
 	return true;
 }
