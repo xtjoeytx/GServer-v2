@@ -685,22 +685,40 @@ bool TLevel::loadNW(const CString& pLevelName)
 		}
 		else if (curLine[0] == "LINK")
 		{
-			if (curLine.size() != 8)
+			if (curLine.size() < 8)
 				continue;
-			if (fileSystem->find(curLine[1]).length() < 1)
+
+			// Find the whole level name.
+			CString level(curLine[1]);
+			if (curLine.size() > 8)
+			{
+				for (unsigned int i = 0; i < curLine.size() - 8; ++i)
+					level << " " << curLine[2 + i];
+			}
+
+			if (fileSystem->find(level).length() < 1)
 				continue;
 
 			levelLinks.push_back(new TLevelLink(curLine));
 		}
 		else if (curLine[0] == "NPC")
 		{
-			if (curLine.size() != 4)
+			unsigned int offset = 0;
+			if (curLine.size() < 4)
 				continue;
 
 			// Grab the image properties.
-			CString image = curLine[1];
-			float x = (float)strtofloat(curLine[2]);
-			float y = (float)strtofloat(curLine[3]);
+			CString image(curLine[1]);
+			if (curLine.size() > 4)
+			{
+				offset = curLine.size() - 4;
+				for (unsigned int i = 0; i < offset; ++i)
+					image << " " << curLine[2 + i];
+			}
+
+			// Grab the NPC location.
+			float x = (float)strtofloat(curLine[2 + offset]);
+			float y = (float)strtofloat(curLine[3 + offset]);
 
 			// Grab the NPC code.
 			CString code;
