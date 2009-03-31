@@ -488,6 +488,55 @@ std::vector<CString> CString::tokenize(const CString& pString) const
 	return strList;
 }
 
+std::vector<CString> CString::tokenizeConsole() const
+{
+	std::vector<CString> strList;
+	bool quotes = false;
+	CString str;
+	for (int i = 0; i < sizec; ++i)
+	{
+		switch (buffer[i])
+		{
+			case ' ':
+				if (!quotes)
+				{
+					strList.push_back(str);
+					str.clear(30);
+				}
+				else str.write(buffer + i, 1);
+				break;
+			case '\"':
+				quotes = !quotes;
+				break;
+			case '\\':
+				if (i + 1 < sizec)
+				{
+					switch (buffer[i + 1])
+					{
+						case '\"':
+							str.write("\"", 1);
+							++i;
+							break;
+						case '\\':
+							str.write("\\", 1);
+							++i;
+							break;
+						default:
+							str.write(buffer + i, 1);
+							break;
+					}
+				}
+				else str.write(buffer + i, 1);
+				break;
+			default:
+				str.write(buffer + i, 1);
+				break;
+		}
+	}
+	strList.push_back(str);
+	return strList;
+}
+
 std::vector<CString> CString::loadToken(const CString& pFile, const CString& pToken, bool removeCR)
 {
 	CString fileData;
