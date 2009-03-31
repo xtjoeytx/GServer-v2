@@ -528,7 +528,7 @@ void TPlayer::sendPacket(CString pPacket)
 
 void TPlayer::processChat(CString pChat)
 {
-	std::vector<CString> chatParse = pChat.tokenize();
+	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return;
 
 	if (chatParse[0] == "setnick")
