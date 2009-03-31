@@ -21,11 +21,21 @@ CString TLevelLink::getLinkStr()
 
 void TLevelLink::parseLinkStr(const std::vector<CString>& pLink)
 {
+	unsigned int offset = 0;
+
+	// Find the whole level name.
 	newLevel = pLink[1];
-	x = strtoint(pLink[2]);
-	y = strtoint(pLink[3]);
-	width = strtoint(pLink[4]);
-	height = strtoint(pLink[5]);
-	newX = pLink[6];
-	newY = pLink[7];
+	if (pLink.size() > 8)
+	{
+		offset = pLink.size() - 8;
+		for (unsigned int i = 0; i < offset; ++i)
+			newLevel << " " << pLink[2 + i];
+	}
+
+	x = strtoint(pLink[2 + offset]);
+	y = strtoint(pLink[3 + offset]);
+	width = strtoint(pLink[4 + offset]);
+	height = strtoint(pLink[5 + offset]);
+	newX = pLink[6 + offset];
+	newY = pLink[7 + offset];
 }
