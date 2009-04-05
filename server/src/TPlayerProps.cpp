@@ -233,6 +233,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	CSettings* settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	int len = 0;
+	bool doSignCheck = false;
 /*
 	printf("\n");
 	printf("%s\n", pPacket.text());
@@ -421,6 +422,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				// Let 2.30+ clients see pre-2.30 movement.
 				y2 = (int)(y * 16);
 				levelBuff2 >> (char)PLPROP_Y2 << getProp(PLPROP_Y2);
+
+				// Do collision testing.
+				doSignCheck = true;
 			break;
 
 			case PLPROP_Z:
@@ -435,6 +439,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_SPRITE:
 				sprite = pPacket.readGUChar();
+
+				// Do collision testing.
+				doSignCheck = true;
 			break;
 
 			case PLPROP_STATUS:
@@ -688,6 +695,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				// Let pre-2.30+ clients see 2.30+ movement.
 				y = (float)y2 / 16.0f;
 				levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
+
+				// Do collision testing.
+				doSignCheck = true;
 				break;
 
 			case PLPROP_Z2:
@@ -768,6 +778,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
+
+		// Movement check.
+		if (doSignCheck) testSign();
 	}
 }
 

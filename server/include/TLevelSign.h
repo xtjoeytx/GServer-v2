@@ -19,10 +19,12 @@ class TLevelSign
 		int getX()					{ return x; }
 		int getY()					{ return y; }
 		CString getText()			{ return text; }
+		CString getUText()			{ return unformattedText; }
 
 	private:
 		int x, y;
 		CString text;
+		CString unformattedText;
 };
 
 #endif // TLEVELSIGN_H

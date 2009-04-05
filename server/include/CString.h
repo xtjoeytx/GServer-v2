@@ -105,6 +105,7 @@ class CString
 
 		/* Operators */
 		char& operator[](int pIndex);
+		char operator[](int pIndex) const;
 		CString& operator=(const CString& pString);
 		CString& operator<<(const CString& pString);
 		CString& operator+=(const CString& pString);
