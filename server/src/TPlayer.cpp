@@ -223,7 +223,9 @@ playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
 id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
-nextIsRaw(false), rawPacketSize(0), isFtp(false), fileQueue(pSocket)
+nextIsRaw(false), rawPacketSize(0), isFtp(false),
+grMovementUpdated(false),
+fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -360,6 +362,20 @@ bool TPlayer::doMain()
 		if (!parsePacket(unBuffer))
 			return false;
 	}
+
+	// Update the -gr_movement packets.
+	if (!grMovementPackets.isEmpty())
+	{
+		if (!grMovementUpdated)
+		{
+			std::vector<CString> pack = grMovementPackets.tokenize("\n");
+			for (std::vector<CString>::iterator i = pack.begin(); i != pack.end(); ++i)
+				setProps(*i, true, false);
+		}
+		grMovementPackets.clear(42);
+	}
+	grMovementUpdated = false;
+
 	server->getSocketManager()->updateSingle(this, false, true);
 	return true;
 }
@@ -1903,8 +1919,9 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			float pos = (float)atof(flagValue.text());
 			if (pos != x)
 			{
-				x = pos;
-				setProps(CString() >> (char)PLPROP_X >> (char)(x * 2.0f), true, false);
+				grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
+//				x = pos;
+//				setProps(CString() >> (char)PLPROP_X >> (char)(x * 2.0f), true, false);
 			}
 			return true;
 		}
@@ -1914,8 +1931,10 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			float pos = (float)atof(flagValue.text());
 			if (pos != y)
 			{
-				y = pos;
-				setProps(CString() >> (char)PLPROP_Y >> (char)(y * 2.0f), true, false);
+				//printf("gr.y: %.2f, adding\n", pos);
+				grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
+//				y = pos;
+//				setProps(CString() >> (char)PLPROP_Y >> (char)(y * 2.0f), true, false);
 			}
 			return true;
 		}
@@ -1925,8 +1944,9 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			float pos = (float)atof(flagValue.text());
 			if (pos != z)
 			{
-				z = pos;
-				setProps(CString() >> (char)PLPROP_Z >> (char)((z + 25.0f) * 2.0f), true, false);
+				grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 25.0f) * 2.0f) << "\n";
+//				z = pos;
+//				setProps(CString() >> (char)PLPROP_Z >> (char)((z + 25.0f) * 2.0f), true, false);
 			}
 			return true;
 		}
