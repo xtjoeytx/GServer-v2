@@ -63,7 +63,7 @@ CString decodeSignCode(CString pText)
 		unsigned char letter = pText.readGUChar();
 		bool isCode = false;
 		int codeID = -1;
-		for (int j = 0; j < 17; ++j)	// ctab length
+		for (int j = 0; j < 16; ++j)	// ctab length
 		{
 			if (letter == ctab[j])
 			{
@@ -76,7 +76,7 @@ CString decodeSignCode(CString pText)
 		if (isCode)
 		{
 			int codeIndex = -1;
-			for (int j = 0; j < 15; ++j)	// ctabindex
+			for (int j = 0; j < 14; ++j)	// ctabindex
 			{
 				if (ctabindex[j] == codeID)
 				{
