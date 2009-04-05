@@ -179,7 +179,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 	if (loadedFromDefault)
 	{
 		saveAccount();
-		accfs->addFile(CString() << pAccount << ".txt");
+		accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
 	}
 
 	return true;

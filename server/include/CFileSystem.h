@@ -18,7 +18,7 @@ class CFileSystem
 
 		void addDir(const CString& dir, const CString& wildcard = "*");
 		void removeDir(const CString& dir);
-		void addFile(const CString& file);
+		void addFile(CString file);
 		void removeFile(const CString& file);
 		void resync();
 
