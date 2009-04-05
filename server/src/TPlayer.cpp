@@ -529,7 +529,7 @@ void TPlayer::sendPacket(CString pPacket)
 bool TPlayer::testSign()
 {
 	CSettings* settings = server->getSettings();
-	if (settings->getBool("serverside", false) == true) return true;	// TODO: NPC server check instead
+	if (settings->getBool("serverside", false) == false) return true;	// TODO: NPC server check instead
 
 	// Check for sign collisions.
 	if ((sprite % 4) == 0)
@@ -1117,7 +1117,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		if (settings->getBool("serverside", false) == true)	// TODO: NPC server check instead.
+		if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
 		{
 			sendPacket(CString() << pLevel->getLinksPacket());
 			sendPacket(CString() << pLevel->getSignsPacket());
@@ -1906,6 +1906,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 				x = pos;
 				setProps(CString() >> (char)PLPROP_X >> (char)(x * 2.0f), true, false);
 			}
+			return true;
 		}
 		else if (flagName == "gr.y")
 		{
@@ -1916,8 +1917,19 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 				y = pos;
 				setProps(CString() >> (char)PLPROP_Y >> (char)(y * 2.0f), true, false);
 			}
+			return true;
 		}
-		return true;
+		else if (flagName == "gr.z")
+		{
+			if (versionID >= CLVER_2_3) return true;
+			float pos = (float)atof(flagValue.text());
+			if (pos != z)
+			{
+				z = pos;
+				setProps(CString() >> (char)PLPROP_Z >> (char)((z + 25.0f) * 2.0f), true, false);
+			}
+			return true;
+		}
 	}
 
 	// 2.171 clients didn't support this.strings and tried to set them as a
