@@ -222,7 +222,7 @@ enum
 	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
 	PLO_NPCDEL2					= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
 	PLO_HIDENPCS				= 151,
-	PLO_SAY						= 153,	// {153}{text}
+	PLO_SAY2					= 153,	// Also used for signs. {153}{text}
 	PLO_FREEZEPLAYER2			= 154,	// Blank.
 	PLO_UNFREEZEPLAYER			= 155,	// Blank.
 	PLO_SETACTIVELEVEL			= 156,	// Sets the level to receive chests, baddies, NPCs, etc.
@@ -469,6 +469,9 @@ class TPlayer : public TAccount, public CSocketStub
 		// Packet functions.
 		bool parsePacket(CString& pPacket);
 		void decryptPacket(CString& pPacket);
+
+		// Collision detection stuff.
+		bool testSign();
 
 		// Socket Variables
 		CSocket *playerSock;

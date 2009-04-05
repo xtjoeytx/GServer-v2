@@ -59,6 +59,10 @@ class TLevel
 		//! \return The level chests.
 		std::vector<TLevelChest *>* getLevelChests()	{ return &levelChests; }
 
+		//! Gets a vector full of the level signs.
+		//! \return The level signs.
+		std::vector<TLevelSign *>* getLevelSigns()		{ return &levelSigns; }
+
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
 		std::vector<TPlayer *>* getPlayerList()			{ return &levelPlayerList; }
