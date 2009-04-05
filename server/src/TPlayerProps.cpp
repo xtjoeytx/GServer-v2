@@ -408,6 +408,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				x = (float)(pPacket.readGUChar() / 2.0f);
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				x2 = (int)(x * 16);
@@ -418,6 +419,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				y = (float)(pPacket.readGUChar() / 2.0f);
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				y2 = (int)(y * 16);
@@ -431,6 +433,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				z = (float)(pPacket.readGUChar() / 2.0f) - 25.0f;
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				z2 = (int)(z * 16);
@@ -673,6 +676,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				x2 = len = pPacket.readGUShort();
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// If the first bit is 1, our position is negative.
 				x2 >>= 1;
@@ -687,6 +691,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				y2 = len = pPacket.readGUShort();
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// If the first bit is 1, our position is negative.
 				y2 >>= 1;
@@ -704,6 +709,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				z2 = len = pPacket.readGUShort();
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
+				grMovementUpdated = true;
 
 				// If the first bit is 1, our position is negative.
 				z2 >>= 1;
