@@ -139,6 +139,10 @@ nofoldersconfig = false
 # In the old style, "if (created)" is called for each player that enters the level for their first time.
 oldcreated = false
 
+# Determines whether the server handles certain things like signs and links.
+# Don't set to true.
+serverside = false
+
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
 sharefolder = 

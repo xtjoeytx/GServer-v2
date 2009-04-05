@@ -526,6 +526,28 @@ void TPlayer::sendPacket(CString pPacket)
 	fileQueue.addPacket(pPacket);
 }
 
+bool TPlayer::testSign()
+{
+	CSettings* settings = server->getSettings();
+	if (settings->getBool("serverside", false) == true) return true;	// TODO: NPC server check instead
+
+	// Check for sign collisions.
+	if ((sprite % 4) == 0)
+	{
+		std::vector<TLevelSign*>* signs = level->getLevelSigns();
+		for (std::vector<TLevelSign*>::iterator i = signs->begin(); i != signs->end(); ++i)
+		{
+			TLevelSign* sign = *i;
+			float signLoc[] = {(float)sign->getX(), (float)sign->getY()};
+			if (y == signLoc[1] && inrange(x, signLoc[0]-1.5f, signLoc[0]+0.5f))
+			{
+				sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
+			}
+		}
+	}
+	return true;
+}
+
 void TPlayer::processChat(CString pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
@@ -1079,6 +1101,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 {
 	if (pLevel == 0) return false;
+	CSettings* settings = server->getSettings();
 
 	// Send Level
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
@@ -1094,8 +1117,11 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		sendPacket(CString() << pLevel->getLinksPacket());
-		sendPacket(CString() << pLevel->getSignsPacket());
+		if (settings->getBool("serverside", false) == true)	// TODO: NPC server check instead.
+		{
+			sendPacket(CString() << pLevel->getLinksPacket());
+			sendPacket(CString() << pLevel->getSignsPacket());
+		}
 	}
 
 	// Send board changes, chests, horses, and baddies.

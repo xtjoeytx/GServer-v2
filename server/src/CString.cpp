@@ -850,6 +850,11 @@ char& CString::operator[](int pIndex)
 	return buffer[pIndex];
 }
 
+char CString::operator[](int pIndex) const
+{
+	return buffer[pIndex];
+}
+
 bool operator==(const CString& pString1, const CString& pString2)
 {
 	if (pString1.length() == pString2.length())
