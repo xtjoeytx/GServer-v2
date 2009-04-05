@@ -62,16 +62,16 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard)
 	}
 }
 
-void CFileSystem::addFile(const CString& file)
+void CFileSystem::addFile(CString file)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 
 	// Grab the file name and directory.
+	CFileSystem::fixPathSeparators(&file);
 	CString filename(file.subString(file.findl(fSep) + 1));
 	CString directory(file.subString(0, file.find(filename)));
 
 	// Fix directory path separators.
-	CFileSystem::fixPathSeparators(&directory);
 	if (directory.find(server->getServerPath()) != -1)
 		directory.removeI(0, server->getServerPath().length());
 

@@ -76,7 +76,7 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)(y * 2);
 
 		case PLPROP_Z:
-		return CString() >> (char)(((z + 25) * 2)/* + 50*/);
+		return CString() >> (char)((z + 25) * 2);
 
 		case PLPROP_SPRITE:
 		return CString() >> (char)sprite;
@@ -200,7 +200,7 @@ CString TPlayer::getProp(int pPropId)
 
 		case PLPROP_Z2:
 		{
-			unsigned short val = (z2 < 0 ? -z2 : z2);
+			unsigned short val = (z2 < 0 ? -z2 : z2) + (25 * 16);
 			val <<= 1;
 			if (z2 < 0) val |= 0x0001;
 			return CString().writeGShort(val);
@@ -428,7 +428,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_Z:
-				z = (float)(pPacket.readGUChar() / 2.0f);
+				z = (float)(pPacket.readGUChar() / 2.0f) - 25.0f;
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 
@@ -710,6 +710,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				if ((short)len & 0x0001) z2 = -z2;
 
 				// Let pre-2.30+ clients see 2.30+ movement.
+				z2 -= (float)(25 * 16);
 				z = (float)z2 / 16.0f;
 				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
 				break;

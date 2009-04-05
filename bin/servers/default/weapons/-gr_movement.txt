@@ -1,15 +1,11 @@
 NEWWEAPON -gr_movement,wbomb1.png,1219820391
 //#CLIENTSIDE
-if (playerenters) {
-  this.loc={playerx,playery};
-  this.oldloc=this.loc;
-  timeout=0.05;
-}
-if (timeout) {
-  this.loc={playerx,playery};
-  if (this.loc[0] != this.oldloc[0]) setstring gr.x,#v(playerx);
-  if (this.loc[1] != this.oldloc[1]) setstring gr.y,#v(playery);
-  this.oldloc=this.loc;
+if (playerenters || timeout) {
+  if (!gr.off) {
+    if (!gr.x.off) setstring gr.x,#v(int((playerx+0.25)*2)/2);
+    if (!gr.y.off) setstring gr.y,#v(int((playery+0.25)*2)/2);
+//    if (!gr.z.off) setstring gr.z,#v(int((playerz+0.25)*2)/2);
+  }
   timeout=0.05;
 }
 ENDWEAPON

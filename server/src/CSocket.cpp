@@ -463,7 +463,16 @@ void CSocket::disconnect()
 {
 	// Shut down the socket.
 	if (shutdown(properties.handle, SHUT_WR) == SOCKET_ERROR)
-		SLOG("[CSocket::destroy] shutdown returned error: %s\n", errorMessage(identifyError()));
+	{
+		int error = identifyError();
+		if (error == ENOTSOCK)
+		{
+			properties.handle = INVALID_SOCKET;
+			properties.state = SOCKET_STATE_DISCONNECTED;
+			return;
+		}
+		SLOG("[CSocket::destroy] shutdown returned error: %s\n", errorMessage(error));
+	}
 
 	// Mark socket as terminating.
 	properties.state = SOCKET_STATE_TERMINATING;
