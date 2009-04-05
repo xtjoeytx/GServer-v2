@@ -498,6 +498,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool nextIsRaw;
 		int rawPacketSize;
 		bool isFtp;
+		bool grMovementUpdated;
+		CString grMovementPackets;
 
 		// File queue.
 		CFileQueue fileQueue;
