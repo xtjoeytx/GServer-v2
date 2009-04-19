@@ -23,6 +23,7 @@ const char* __admin[] = {
 	"sharefolder", "language", "serverip", "serverport", "listip", "listport",
 };
 
+static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
 
 void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 {
@@ -1460,21 +1461,14 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
 
-		// If it was a level, update it.
-		CString ext = removeExtension(file);
-		if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
-		{
-			TLevel* l = TLevel::findLevel(file, server);
-			if (l) l->reload();
-		}
+		// Update file.
+		updateFile(this, server, lastFolder, file);
 	}
 	else
 	{
 		// Large file.  Store the data in memory.
 		rcLargeFiles[file] << fileData;
 	}
-
-	// TODO: update server files.
 
 	return true;
 }
@@ -1601,6 +1595,9 @@ bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		}
 	}
 
+	// Update file.
+	updateFile(this, server, lastFolder, file);
+
 	rclog.out("%s uploaded large file %s\n", accountName.text(), file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file);
 
@@ -1638,4 +1635,94 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	msgPLI_RC_FILEBROWSER_START(CString() << "");
 
 	return true;
+}
+
+void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
+{
+	CSettings* settings = server->getSettings();
+	CString fullPath(dir);
+	fullPath << file;
+
+	// Find the file extension.
+	CString ext = removeExtension(file);
+
+	// If folder config is off, add it to the file list.
+	if (settings->getBool("nofoldersconfig", false) == true)
+	{
+		CFileSystem* fs;
+		if (dir == "accounts/") fs = server->getAccountsFileSystem();
+		else fs = server->getFileSystem();
+
+		if (fs->find(file).isEmpty())
+			fs->addFile(CString() << dir << file);
+	}
+	// If folder config is on, try to find which file system to add it to.
+	else
+	{
+		std::vector<CString> foldersConfig = CString::loadToken(CString() << server->getServerPath() << "config/foldersconfig.txt", "\n", true);
+		for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
+		{
+			CString type = i->readString(" ").trim();
+			CString folder("world/");
+			folder << i->readString("").trim();
+
+			if (fullPath.match(folder))
+			{
+				CFileSystem* fs = server->getFileSystemByType(type);
+
+				// See if it exists in that file system.
+				if (fs->find(file).isEmpty())
+				{
+					// Add it to the file system.
+					CFileSystem* fs2 = server->getFileSystem();
+					fs->addFile(fullPath);
+					fs2->addFile(fullPath);
+					printf("adding %s to %s\n", file.text(), type.text());
+					break;
+				}
+			}
+		}
+	}
+
+	// If it is a level, see if we can update it.
+	// TODO: Should combine all server options loading/saving into one function in TServer.
+	if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
+	{
+		TLevel* l = TLevel::findLevel(file, server);
+		if (l) l->reload();
+	}
+	else if (file == "serveroptions.txt")
+	{
+		// Reload settings.
+		settings->clear();
+		settings->setSeparator("=");
+		settings->loadFile(CString() << server->getServerPath() << "config/serveroptions.txt");
+		if (!settings->isOpened())
+			serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
+	}
+	else if (file == "allowedversions.txt")
+	{
+		// Load allowed versions.
+		CString versions;
+		versions.load(CString() << server->getServerPath() << "config/allowedversions.txt");
+		versions = removeComments(versions);
+		versions.removeAllI("\r");
+		versions.removeAllI("\t");
+		versions.removeAllI(" ");
+		std::vector<CString>* allowedVersions = server->getAllowedVersions();
+		(*allowedVersions) = versions.tokenize("\n");
+	}
+	else if (file == "serverflags.txt")
+	{
+		std::vector<CString>* serverFlags = server->getServerFlags();
+		*serverFlags = CString::loadToken(CString() << server->getServerPath() << "serverflags.txt", "\n", true);
+	}
+	else if (file == "servermessage.html")
+	{
+		CString* servermessage = server->getServerMessage();
+		servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
+		servermessage->removeAllI("\r");
+		servermessage->replaceAllI("\n", " ");
+	}
+	// TODO: ipbans.txt
 }
