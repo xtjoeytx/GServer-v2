@@ -89,6 +89,7 @@ class TServer : public CSocketStub
 		TMap* getMap(const TLevel* pLevel) const;
 		TWeapon* getWeapon(const CString& name) const;
 		CString getFlag(const CString& pName) const;
+		CFileSystem* getFileSystemByType(CString& type);
 
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0);

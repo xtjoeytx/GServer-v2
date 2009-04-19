@@ -340,20 +340,10 @@ void TServer::loadFolderConfig()
 		CString wildcard = config.remove(0, dirNoWild.length());
 
 		// Find out which file system to add it to.
-		int fs = -1;
-		int j = 0;
-		while (filesystemTypes[j] != 0)
-		{
-			if (type.comparei(CString(filesystemTypes[j])))
-			{
-				fs = j;
-				break;
-			}
-			++j;
-		}
+		CFileSystem* fs = getFileSystemByType(type);
 
 		// Add it to the appropriate file system.
-		if (fs != -1) { filesystem[fs].addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), filesystemTypes[fs]); }
+		if (fs != 0) { fs->addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), type.text()); }
 		filesystem[0].addDir(dir, wildcard);
 	}
 }
@@ -611,6 +601,25 @@ CString TServer::getFlag(const CString& pName) const
 			return *i;
 	}
 	return CString();
+}
+
+CFileSystem* TServer::getFileSystemByType(CString& type)
+{
+	// Find out the filesystem.
+	int fs = -1;
+	int j = 0;
+	while (filesystemTypes[j] != 0)
+	{
+		if (type.comparei(CString(filesystemTypes[j])))
+		{
+			fs = j;
+			break;
+		}
+		++j;
+	}
+
+	if (fs == -1) return 0;
+	return &filesystem[fs];
 }
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
