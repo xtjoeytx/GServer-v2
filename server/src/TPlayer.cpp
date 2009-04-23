@@ -2351,8 +2351,12 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// Send the weapon to the player now.
 		if (foundThis == false)
 		{
-			weaponList.push_back(weapon->getName());
-			sendPacket(CString() << weapon->getWeaponPacket());
+			// See if the player already has the weapon.
+			if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
+			{
+				weaponList.push_back(weapon->getName());
+				sendPacket(CString() << weapon->getWeaponPacket());
+			}
 		}
 
 		// Save weapon.
