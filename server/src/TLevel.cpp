@@ -10,7 +10,7 @@
 	Global Variables
 */
 CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-short respawningTiles[10] = {
+short respawningTiles[] = {
 	0x1ff, 0x3ff, 0x2ac, 0x002, 0x200,
 	0x022, 0x3de, 0x1a4, 0x14a, 0x674,
 };
@@ -906,7 +906,8 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 	int respawnTime = settings->getInt("respawntime", 15);
 	bool doRespawn = false;
 	short testTile = levelTiles[pX + (pY * 64)];
-	for (int i = 0; i < 10; ++i)
+	int tileCount = sizeof(respawningTiles) / sizeof(short);
+	for (int i = 0; i < tileCount; ++i)
 		if (testTile == respawningTiles[i]) doRespawn = true;
 
 	// Grab old tiles for the respawn.

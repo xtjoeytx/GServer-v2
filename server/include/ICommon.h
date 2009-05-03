@@ -18,5 +18,5 @@
 #include "main.h"
 #undef wait
 
-#define GSERVER_VERSION		"0.6.0"
+#define GSERVER_VERSION		"0.7.0"
 #endif
