@@ -44,7 +44,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 		{
 			CString playerProp = player->getProp(PLPROP_RUPEESCOUNT);
 			int rupeeCount = playerProp.readGInt();
-			if (itemID == 20) rupeeCount += 100;
+			if (itemID == 19) rupeeCount += 100;
 			else if (itemID == 2) rupeeCount += 30;
 			else if (itemID == 1) rupeeCount += 5;
 			else rupeeCount += 1;

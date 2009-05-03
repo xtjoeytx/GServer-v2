@@ -1572,7 +1572,6 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 	int tiledroprate = settings->getInt("tiledroprate", 50);
 
 	// Bushes, grass, swamp.
-	// Bushes, grass, swamp
 	if ((oldTile == 2 || oldTile == 0x1a4 || oldTile == 0x1ff ||
 		oldTile == 0x3ff) && bushitems)
 	{
