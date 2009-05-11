@@ -176,10 +176,7 @@ bool TServerList::connectServer()
 
 	// Get Some Stuff
 	// TODO: localip server option
-	bool uc = server->getSettings()->getBool("underconstruction", false);
-	CString name;
-	if (uc) name << "U ";
-	name << settings->getStr("name");
+	CString name(settings->getStr("name"));
 	CString desc(settings->getStr("description"));
 	CString language(settings->getStr("language", "English"));
 	CString version(GSERVER_VERSION);
@@ -193,6 +190,10 @@ bool TServerList::connectServer()
 		localip.clear();
 	}
 
+	// Send before SVO_NEWSERVER or else we will get an incorrect name.
+	CSettings serverhq(CString() << server->getServerPath() << "config/serverhq.txt");
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << serverhq.getStr("password"));
+
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER
 		>> (char)name.length() << name
@@ -203,6 +204,9 @@ bool TServerList::connectServer()
 		>> (char)ip.length() << ip
 		>> (char)port.length() << port
 		>> (char)localip.length() << localip);
+
+	// Set the level now.
+	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)serverhq.getInt("level", 1));
 
 	// Send Players
 	sendPlayers();
@@ -252,7 +256,7 @@ void TServerList::sendPlayers()
 	int playerCount = 0;
 
 	// Iterate Playerlist
-	for (std::vector<TPlayer *>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end();)
+	for (std::vector<TPlayer *>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
 	{
 		TPlayer *pPlayer = (TPlayer*)*i;
 		if (pPlayer == 0)
@@ -274,6 +278,13 @@ void TServerList::sendPlayers()
 	sendPacket(CString() >> (char)SVO_SETPLYR >> (char)playerCount << playerPacket);
 }
 
+void TServerList::sendServerHQ()
+{
+	CSettings serverhq(CString() << server->getServerPath() << "config/serverhq.txt");
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << serverhq.getStr("password"));
+	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)serverhq.getInt("level", 1));
+}
+
 /*
 	Altering Server-Information
 */
@@ -289,8 +300,7 @@ void TServerList::setIp(const CString& pServerIp)
 
 void TServerList::setName(const CString& pServerName)
 {
-	bool uc = server->getSettings()->getBool("underconstruction", false);
-	sendPacket(CString() >> (char)SVO_SETNAME << (uc ? "U " : "") << pServerName);
+	sendPacket(CString() >> (char)SVO_SETNAME << pServerName);
 }
 
 void TServerList::setPort(const CString& pServerPort)

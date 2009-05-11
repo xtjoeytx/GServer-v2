@@ -893,6 +893,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
 			servermessage->removeAllI("\r");
 			servermessage->replaceAllI("\n", " ");
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Refreshed server message.");
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1)
 		{
@@ -901,6 +902,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				TLevel* level = server->getLevel(words[i]);
 				if (level) level->reload();
 			}
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated level.");
 		}
 		else if (words[0] == "/updatelevelall" && words.size() == 1)
 		{
@@ -909,10 +911,17 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				(*i)->reload();
 			}
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels.");
 		}
 		else if (words[0] == "/reloadserver" && words.size() == 1)
 		{
 			server->loadConfigFiles();
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded server configuration files.");
+		}
+		else if (words[0] == "/updateserverhq" && words.size() == 1)
+		{
+			server->getServerList()->sendServerHQ();
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Sent ServerHQ updates.");
 		}
 	}
 
