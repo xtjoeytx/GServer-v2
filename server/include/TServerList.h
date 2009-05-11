@@ -37,6 +37,8 @@ enum
 	SVO_UPDATEFILE		= 20,
 	SVO_GETFILE3		= 21,
 	SVO_NEWSERVER		= 22,
+	SVO_SERVERHQPASS	= 23,
+	SVO_SERVERHQLEVEL	= 24,
 };
 
 enum
@@ -104,6 +106,7 @@ class TServerList : public CSocketStub
 		void sendPlayers();
 
 		// Send New Server-Info
+		void sendServerHQ();
 		void setDesc(const CString& pServerDesc);
 		void setIp(const CString& pServerIp);
 		void setName(const CString& pServerName);

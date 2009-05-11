@@ -9,5 +9,5 @@ Available commands for GServer:
 /refreshservermessage: Reloads servermessage.html.
 /updatelevel level[,level]: Reloads levels from hard disk.
 /updatelevelall: updates all loaded levels.
-
 /reloadserver: Reloads many server configuration files.
+/updateserverhq: Sends the ServerHQ information to the serverlist.
