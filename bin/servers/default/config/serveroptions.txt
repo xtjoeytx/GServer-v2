@@ -132,9 +132,6 @@ maxplayers = 128
 # Enables/disables staff only.  If true, only accounts in the staff option are allowed on.
 onlystaff = false
 
-# If true, the server doesn't show up in the server list.
-underconstruction = false
-
 # Set to true to disable the folder configuration.
 nofoldersconfig = false
 
