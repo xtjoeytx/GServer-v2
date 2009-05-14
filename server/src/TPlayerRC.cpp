@@ -1349,7 +1349,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		if (newFolder == folder)
 		{
 			newFolder = folder;
-			newRights = rights;
+			newRights = rights.toLower();
 			wildcard = wild;
 			found = true;
 			break;
