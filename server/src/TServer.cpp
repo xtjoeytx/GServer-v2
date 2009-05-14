@@ -516,7 +516,7 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 			continue;
 
 		// Compare account names.
-		if (player->getProp(PLPROP_ACCOUNTNAME).subString(1).toLower() == account.toLower())
+		if (player->getAccountName().toLower() == account.toLower())
 			return player;
 	}
 	return 0;
@@ -541,7 +541,7 @@ TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
 			continue;
 
 		// Compare account names.
-		if (player->getProp(PLPROP_ACCOUNTNAME).subString(1).toLower() == account.toLower())
+		if (player->getAccountName().toLower() == account.toLower())
 			return player;
 	}
 	return 0;

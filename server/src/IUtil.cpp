@@ -103,8 +103,12 @@ int getVersionID(const CString& version)
 			return i;
 		++i;
 	}
+	return -1;
+}
 
-	i = 0;
+int getRCVersionID(const CString& version)
+{
+	int i = 0;
 	while (rcVersions[i] != 0)
 	{
 		if (version == CString(rcVersions[i]))
