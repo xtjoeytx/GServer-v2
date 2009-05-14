@@ -1,5 +1,6 @@
 #include <time.h>
 #include <math.h>
+#include <sys/stat.h>
 #include "ICommon.h"
 #include "CSocket.h"
 #include "TServer.h"
@@ -549,6 +550,83 @@ void TPlayer::sendPacket(CString pPacket)
 
 	// append buffer
 	fileQueue.addPacket(pPacket);
+}
+
+bool TPlayer::sendFile(const CString& pFile)
+{
+	CFileSystem* fileSystem = server->getFileSystem();
+
+	// Find file.
+	CString path = fileSystem->find(pFile);
+	if (path.isEmpty()) return false;
+
+	// Strip filename from the path.
+	path.removeI(path.findl(CFileSystem::getPathSeparator()) + 1);
+	if (path.find(server->getServerPath()) != -1)
+		path.removeI(0, server->getServerPath().length());
+
+	// Send the file now.
+	return this->sendFile(path, pFile);
+}
+
+bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
+{
+	CString filepath = CString() << server->getServerPath() << pPath << pFile;
+	CString fileData;
+	fileData.load(filepath);
+
+	time_t modTime = 0;
+	struct stat fileStat;
+	if (stat(filepath.text(), &fileStat) != -1)
+		modTime = fileStat.st_mtime;
+
+	// See if the file exists.
+	if (fileData.length() == 0)
+	{
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+		return false;
+	}
+
+	// See if we have enough room in the packet for the file.
+	// If not, we need to send it as a big file.
+	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
+	bool isBigFile = false;
+	int packetLength = 1 + 5 + 1 + pFile.length() + 1;
+	if (fileData.length() > 32000)
+		isBigFile = true;
+
+	// Clients before 2.14 didn't support large files.
+	if (isClient() && versionID < CLVER_2_14)
+	{
+		if (fileData.length() > 64000)
+		{
+			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+			return false;
+		}
+		isBigFile = false;
+	}
+
+	// If we are sending a big file, let the client know now.
+	if (isBigFile)
+	{
+		sendPacket(CString() >> (char)PLO_LARGEFILESTART << pFile);
+		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+	}
+
+	// Send the file now.
+	while (fileData.length() != 0)
+	{
+		int sendSize = clip(32000, 0, fileData.length());
+		if (isClient() && versionID < CLVER_2_14) sendSize = fileData.length();
+		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
+		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n");
+		fileData.removeI(0, sendSize);
+	}
+
+	// If we had sent a large file, let the client know we finished sending it.
+	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << pFile);
+
+	return true;
 }
 
 bool TPlayer::testSign()
@@ -2100,58 +2178,11 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
 	CFileSystem* fileSystem = server->getFileSystem();
 
-	// Load file.
+	// Get file.
 	CString file = pPacket.readString("");
-	CString fileData = fileSystem->load(file);
-	time_t modTime = fileSystem->getModTime(file);
 
-	if (fileData.length() == 0)
-	{
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
-		return true;
-	}
-
-	printf( "msgPLI_WANTFILE: %s\n", file.text() );
-
-	// See if we have enough room in the packet for the file.
-	// If not, we need to send it as a big file.
-	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
-	bool isBigFile = false;
-	int packetLength = 1 + 5 + 1 + file.length() + 1;
-	if (fileData.length() > 32000)
-		isBigFile = true;
-
-	// Clients before 2.14 didn't support large files.
-	if (versionID < CLVER_2_14)
-	{
-		if (fileData.length() > 64000)
-		{
-			sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
-			return true;
-		}
-		isBigFile = false;
-	}
-
-	// If we are sending a big file, let the client know now.
-	if (isBigFile)
-	{
-		sendPacket(CString() >> (char)PLO_LARGEFILESTART << file);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
-	}
-
-	// Send the file now.
-	while (fileData.length() != 0)
-	{
-		int sendSize = clip(32000, 0, fileData.length());
-		if (versionID < CLVER_2_14) sendSize = fileData.length();
-		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize) << "\n");
-		fileData.removeI(0, sendSize);
-	}
-
-	// If we had sent a large file, let the client know we finished sending it.
-	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << file);
-
+	// Send file.
+	this->sendFile(file);
 	return true;
 }
 
