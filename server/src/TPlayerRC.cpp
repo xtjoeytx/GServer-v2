@@ -1394,45 +1394,10 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 		return true;
 	}
 
-	// Load file.
+	// Send file.
 	CString file = pPacket.readString("");
 	CString filepath = CString() << server->getServerPath() << lastFolder << file;
-	CString fileData;
-	fileData.load(filepath);
-
-	time_t modTime = 0;
-	struct stat fileStat;
-	if (stat(filepath.text(), &fileStat) != -1)
-		modTime = fileStat.st_mtime;
-
-	if (fileData.length() == 0) return true;
-
-	// See if we have enough room in the packet for the file.
-	// If not, we need to send it as a big file.
-	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
-	bool isBigFile = false;
-	int packetLength = 1 + 5 + 1 + file.length() + 1;
-	if (fileData.length() > 32000)
-		isBigFile = true;
-
-	// If we are sending a big file, let the client know now.
-	if (isBigFile)
-	{
-		sendPacket(CString() >> (char)PLO_LARGEFILESTART << file);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
-	}
-
-	// Send the file now.
-	while (fileData.length() != 0)
-	{
-		int sendSize = clip(32000, 0, fileData.length());
-		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)file.length() << file << fileData.subString(0, sendSize) << "\n");
-		fileData.removeI(0, sendSize);
-	}
-
-	// If we had sent a large file, let the client know we finished sending it.
-	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << file);
+	this->sendFile(lastFolder, file);
 
 	rclog.out("%s downloaded file %s\n", accountName.text(), file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file);
