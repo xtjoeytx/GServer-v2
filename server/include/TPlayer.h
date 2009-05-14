@@ -350,6 +350,8 @@ class TPlayer : public TAccount, public CSocketStub
 		// Socket-Functions
 		bool doMain();
 		void sendPacket(CString pPacket);
+		bool sendFile(const CString& pFile);
+		bool sendFile(const CString& pPath, const CString& pFile);
 
 		// Misc functions.
 		bool doTimedEvents();
