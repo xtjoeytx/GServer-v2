@@ -462,8 +462,17 @@ bool TPlayer::parsePacket(CString& pPacket)
 		{
 			nextIsRaw = false;
 			curPacket = pPacket.readChars(rawPacketSize);
-			if (curPacket[curPacket.length() - 1] == '\n')
-				curPacket.removeI(curPacket.length() - 1);
+
+			if (isClient())
+			{
+				if (curPacket[curPacket.length() - 1] == '\n')
+					curPacket.removeI(curPacket.length() - 1);
+			}
+			else if (isRC() && versionID > RCVER_1_1)
+			{
+				if (curPacket[curPacket.length() - 1] == '\n')
+					curPacket.removeI(curPacket.length() - 1);
+			}
 		}
 		else curPacket = pPacket.readString("\n");
 
@@ -1458,7 +1467,9 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Read Client-Version
 	version = pPacket.readChars(8);
-	versionID = getVersionID(version);
+	if (isClient()) versionID = getVersionID(version);
+	else if (isRC()) versionID = getRCVersionID(version);
+	else versionID = 0;
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
