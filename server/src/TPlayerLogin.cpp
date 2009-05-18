@@ -274,6 +274,15 @@ bool TPlayer::sendLoginClient()
 		return false;
 	}
 
+	// Send the minimap if it was set.
+	CString minimap = settings->getStr("minimap");
+	if (!minimap.isEmpty())
+	{
+		std::vector<CString> vminimap = minimap.tokenize(",");
+		if (vminimap.size() == 4)
+			sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+	}
+
 	// Send out RPG Window greeting.
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
 
