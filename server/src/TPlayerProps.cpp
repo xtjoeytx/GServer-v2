@@ -20,7 +20,10 @@ CString TPlayer::getProp(int pPropId)
 	switch (pPropId)
 	{
 		case PLPROP_NICKNAME:
-		return CString() >> (char)nickName.length() << nickName;
+		{
+			if (nickName.length() > 223) nickName = nickName.subString(0, 223);
+			return CString() >> (char)nickName.length() << nickName;
+		}
 
 		case PLPROP_MAXPOWER:
 		return CString() >> (char)maxPower;
@@ -44,18 +47,31 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)bombPower;
 
 		case PLPROP_SWORDPOWER:
-		return CString() >> (char)(swordPower+30) >> (char)swordImg.length() << swordImg;
+		{
+			if (swordImg.length() > 223) swordImg = swordImg.subString(0, 223);
+			return CString() >> (char)(swordPower+30) >> (char)swordImg.length() << swordImg;
+		}
 
 		case PLPROP_SHIELDPOWER:
-		return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
+		{
+			if (shieldImg.length() > 223) shieldImg = shieldImg.subString(0, 223);
+			return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
+		}
 
 		case PLPROP_GANI:
-		if (versionID < CLVER_2_1)
-			return bowImage;
-		return CString() >> (char)gani.length() << gani;
+		{
+			if (versionID < CLVER_2_1)
+				return bowImage;
+
+			if (gani.length() > 223) gani = gani.subString(0, 223);
+			return CString() >> (char)gani.length() << gani;
+		}
 
 		case PLPROP_HEADGIF:
-		return CString() >> (char)(headImg.length()+100) << headImg;
+		{
+			if (headImg.length() > 123) headImg = headImg.subString(0, 123);
+			return CString() >> (char)(headImg.length()+100) << headImg;
+		}
 
 		case PLPROP_CURCHAT:
 		{
@@ -88,18 +104,23 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)carrySprite;
 
 		case PLPROP_CURLEVEL:
-		if (isClient() || type == PLTYPE_AWAIT)
 		{
-			if (pmap && pmap->getType() == MAPTYPE_GMAP)
-				return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
+			if (isClient() || type == PLTYPE_AWAIT)
+			{
+				if (pmap && pmap->getType() == MAPTYPE_GMAP)
+					return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
+				else
+					return CString() >> (char)levelName.length() << levelName;
+			}
 			else
-				return CString() >> (char)levelName.length() << levelName;
+				return CString() >> (char)1 << " ";
 		}
-		else
-			return CString() >> (char)1 << " ";
 
 		case PLPROP_HORSEGIF:
-		return CString() >> (char)horseImg.length() << horseImg;
+		{
+			if (horseImg.length() > 223) horseImg = horseImg.subString(0, 223);
+			return CString() >> (char)horseImg.length() << horseImg;
+		}
 
 		case PLPROP_HORSEBUSHES:
 		return CString() >> (char)horsec;
@@ -141,7 +162,10 @@ CString TPlayer::getProp(int pPropId)
 		return CString() >> (char)accountName.length() << accountName;
 
 		case PLPROP_BODYIMG:
-		return CString() >> (char)bodyImg.length() << bodyImg;
+		{
+			if (bodyImg.length() > 223) bodyImg = bodyImg.subString(0, 223);
+			return CString() >> (char)bodyImg.length() << bodyImg;
+		}
 
 		case PLPROP_RATING:
 		{
@@ -221,7 +245,10 @@ CString TPlayer::getProp(int pPropId)
 		for (unsigned int i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
 		{
 			if (__attrPackets[i] == pPropId)
+			{
+				if (attrList[i].length() > 223) attrList[i] = attrList[i].subString(0, 223);
 				return CString() >> (char)attrList[i].length() << attrList[i];
+			}
 		}
 	}
 
