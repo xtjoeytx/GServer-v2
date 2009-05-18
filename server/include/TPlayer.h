@@ -61,6 +61,7 @@ enum
 	PLI_TRIGGERACTION	= 38,
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
+	//PLI_SERVERINFO		= 41,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
 	PLI_RAWDATA			= 50,
@@ -237,7 +238,7 @@ enum
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...
 	PLO_EMPTY168				= 168,	// Login server sends this.  Blank packet.
 	PLO_GHOSTMODE				= 170,
-	PLO_BIGMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
+	PLO_MINIMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
 	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
 	PLO_SHOOT					= 175,
 	PLO_FULLSTOP				= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
