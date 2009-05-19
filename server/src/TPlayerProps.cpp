@@ -4,6 +4,7 @@
 #include "TPlayer.h"
 #include "TAccount.h"
 #include "TLevel.h"
+#include "CWordFilter.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()
@@ -273,11 +274,22 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		switch (propId)
 		{
 			case PLPROP_NICKNAME:
+			{
 				len = pPacket.readGUChar();
-				len = clip(len, 0, 224);
-				setNick(CString() << pPacket.readChars(len));
+				//len = clip(len, 0, 224);
+				CString nick = pPacket.readChars(len);
+
+				// Word filter.
+				int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
+				if (filter & FILTER_ACTION_WARN)
+				{
+					if (nickName.isEmpty())
+						setNick("unknown");
+				}
+				else setNick(nick);
 				globalBuff >> (char)propId << getProp(propId);
 				if (!pForwardToSelf) selfBuff >> (char)propId << getProp(propId);
+			}
 			break;
 
 			case PLPROP_MAXPOWER:
@@ -418,8 +430,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_CURCHAT:
+			{
 				chatMsg = pPacket.readChars(pPacket.readGUChar());
-				processChat(chatMsg);
+
+				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
+				if (!processChat(chatMsg))
+				{
+					int found = server->getWordFilter()->apply(this, chatMsg, FILTER_CHECK_CHAT);
+					if (pForwardToSelf == false && ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN)))
+						selfBuff >> (char)propId << getProp(propId);
+				}
+			}
 			break;
 
 			case PLPROP_COLORS:

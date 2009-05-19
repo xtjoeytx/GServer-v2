@@ -2,6 +2,7 @@
 #include "CSocket.h"
 #include "CSettings.h"
 #include "CFileSystem.h"
+#include "CWordFilter.h"
 #include "TServer.h"
 
 static const char* const filesystemTypes[] =
@@ -17,7 +18,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName)
+: name(pName), wordFilter(this)
 {
 	lastTimer = lastNWTimer = last5mTimer = last3mTimer = time(0);
 
@@ -491,6 +492,10 @@ int TServer::loadConfigFiles()
 		serverlog.out("       %s\n", i->text());
 		mapList.push_back(bigmap);
 	}
+
+	// Load word filter.
+	serverlog.out("     Loading word filter...\n");
+	wordFilter.load(CString() << serverpath << "config/rules.txt");
 
 	return 0;
 }

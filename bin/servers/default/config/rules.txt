@@ -1,5 +1,5 @@
 WARNMESSAGE Please don't use rude words
-SHOWWORDSTORC true
+SHOWWORDSTORC false
 
 RULE
 CHECK pm chat nick toall
@@ -14,5 +14,20 @@ MATCH b?tch
 PRECISION 80%
 WORDPOSITION full
 ACTION replace tellrc
-WARNMESSAGE Keep calm please!
+RULEEND
+
+RULE
+CHECK pm chat nick toall
+MATCH whore
+WORDPOSITION part
+ACTION log warn
+RULEEND
+
+RULE
+CHECK pm chat nick toall
+MATCH asshole
+PRECISION 5
+WORDPOSITION start
+ACTION log warn replace tellrc
+WARNMESSAGE I prefer the term "arse".
 RULEEND

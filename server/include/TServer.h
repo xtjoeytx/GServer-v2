@@ -8,6 +8,7 @@
 #include "CSocket.h"
 #include "CLog.h"
 #include "CFileSystem.h"
+#include "CWordFilter.h"
 #include "TPlayer.h"
 #include "TServerList.h"
 #include "TLevel.h"
@@ -77,6 +78,7 @@ class TServer : public CSocketStub
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
 		CString* getServerMessage()				{ return &servermessage; }
+		CWordFilter* getWordFilter()			{ return &wordFilter; }
 		unsigned int getNWTime() const;
 
 		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
@@ -129,6 +131,7 @@ class TServer : public CSocketStub
 		CString name;
 		CString serverpath;
 		CString servermessage;
+		CWordFilter wordFilter;
 
 		CLog serverlog;//("logs/serverlog.txt");
 		CLog rclog;//("logs/rclog.txt");

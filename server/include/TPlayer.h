@@ -328,7 +328,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Set Properties
 		void setChat(const CString& pChat);
-		void setNick(CString& pNickName, bool force = false);
+		void setNick(const CString& pNickName, bool force = false);
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 
@@ -357,7 +357,7 @@ class TPlayer : public TAccount, public CSocketStub
 		// Misc functions.
 		bool doTimedEvents();
 		void disconnect();
-		void processChat(CString pChat);
+		bool processChat(CString pChat);
 		bool isStaff();
 		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
 		bool isNC()				{ return (type & PLTYPE_ANYNC ? true : false); }
