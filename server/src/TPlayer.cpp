@@ -651,17 +651,28 @@ bool TPlayer::testSign()
 	return true;
 }
 
-void TPlayer::processChat(CString pChat)
+bool TPlayer::processChat(CString pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
-	if (chatParse.size() == 0) return;
+	if (chatParse.size() == 0) return false;
+	bool processed = false;
 
 	if (chatParse[0] == "setnick")
 	{
+		processed = true;
 		if ((int)difftime(time(0), lastNick) >= 10)
 		{
 			lastNick = time(0);
 			CString newName = pChat.subString(8).trim();
+
+			// Word filter.
+			int filter = server->getWordFilter()->apply(this, newName, FILTER_CHECK_NICK);
+			if (filter & FILTER_ACTION_WARN)
+			{
+				setChat(newName);
+				return true;
+			}
+
 			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
 		}
 		else
@@ -669,7 +680,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setheadallowed", true) == false) return;
+		if (server->getSettings()->getBool("setheadallowed", true) == false) return false;
+		processed = true;
 
 		// Make sure it isn't one of the default files.
 		bool isDefault = false;
@@ -681,7 +693,7 @@ void TPlayer::processChat(CString pChat)
 		if (isDefault)
 		{
 			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
-			return;
+			return false;
 		}
 
 		// Get the appropriate filesystem.
@@ -715,7 +727,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setbodyallowed", true) == false) return;
+		if (server->getSettings()->getBool("setbodyallowed", true) == false) return false;
+		processed = true;
 
 		// Make sure it isn't one of the default files.
 		bool isDefault = false;
@@ -727,7 +740,7 @@ void TPlayer::processChat(CString pChat)
 		if (isDefault)
 		{
 			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
-			return;
+			return false;
 		}
 
 		// Get the appropriate filesystem.
@@ -761,7 +774,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setswordallowed", true) == false) return;
+		if (server->getSettings()->getBool("setswordallowed", true) == false) return false;
+		processed = true;
 
 		// Make sure it isn't one of the default files.
 		bool isDefault = false;
@@ -773,7 +787,7 @@ void TPlayer::processChat(CString pChat)
 		if (isDefault)
 		{
 			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
-			return;
+			return false;
 		}
 
 		// Get the appropriate filesystem.
@@ -807,7 +821,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setshieldallowed", true) == false) return;
+		if (server->getSettings()->getBool("setshieldallowed", true) == false) return false;
+		processed = true;
 
 		// Make sure it isn't one of the default files.
 		bool isDefault = false;
@@ -819,7 +834,7 @@ void TPlayer::processChat(CString pChat)
 		if (isDefault)
 		{
 			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
-			return;
+			return false;
 		}
 
 		// Get the appropriate filesystem.
@@ -853,6 +868,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// id: 0
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
 		char color = getColor(chatParse[1].toLower());
@@ -864,6 +881,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// id: 1
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
 		char color = getColor(chatParse[1].toLower());
@@ -875,6 +894,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// id: 2
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
 		char color = getColor(chatParse[1].toLower());
@@ -886,6 +907,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// id: 3
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
 		char color = getColor(chatParse[1].toLower());
@@ -897,6 +920,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// id: 4
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
 		char color = getColor(chatParse[1].toLower());
@@ -908,6 +933,8 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "warpto")
 	{
+		processed = true;
+
 		// To player
 		if (chatParse.size() == 2)
 		{
@@ -915,7 +942,7 @@ void TPlayer::processChat(CString pChat)
 			if (!hasRight(PLPERM_WARPTOPLAYER) && !server->getSettings()->getBool("warptoforall", false))
 			{
 				setChat("(not authorized to warp)");
-				return;
+				return true;
 			}
 
 			TPlayer* player = server->getPlayer(chatParse[1]);
@@ -929,7 +956,7 @@ void TPlayer::processChat(CString pChat)
 			if (!hasRight(PLPERM_WARPTO) && !server->getSettings()->getBool("warptoforall", false))
 			{
 				setChat("(not authorized to warp)");
-				return;
+				return true;
 			}
 
 			setProps(CString() >> (char)PLPROP_X >> (char)(strtoint(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtoint(chatParse[2]) * 2), true, true);
@@ -941,7 +968,7 @@ void TPlayer::processChat(CString pChat)
 			if (!hasRight(PLPERM_WARPTO) && !server->getSettings()->getBool("warptoforall", false))
 			{
 				setChat("(not authorized to warp)");
-				return;
+				return true;
 			}
 
 			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
@@ -949,11 +976,13 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
 	{
+		processed = true;
+
 		// Permission check.
 		if (!hasRight(PLPERM_SUMMON))
 		{
 			setChat("(not authorized to summon)");
-			return;
+			return true;
 		}
 
 		TPlayer* p = server->getPlayer(chatParse[1]);
@@ -961,12 +990,14 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
+		processed = true;
+
 		if (chatParse.size() == 2 && chatParse[1] == "me")
 		{
 			// Check if the player is in a jailed level.
 			std::vector<CString> jailList = server->getSettings()->getStr("jaillevels").tokenize(",");
 			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
-				if (i->trim() == levelName) return;
+				if (i->trim() == levelName) return false;
 
 			if ((int)difftime(time(0), lastMovement) >= 30)
 			{
@@ -983,10 +1014,13 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (pChat == "update level" && hasRight(PLPERM_UPDATELEVEL))
 	{
+		processed = true;
 		level->reload();
 	}
 	else if (pChat == "showadmins")
 	{
+		processed = true;
+
 		// Search through the player list for all RC's.
 		CString msg;
 		{
@@ -1006,6 +1040,7 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "showguild")
 	{
+		processed = true;
 		CString g = guild;
 
 		// If a guild was specified, overwrite our guild with it.
@@ -1033,14 +1068,17 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (pChat == "showkills")
 	{
+		processed = true;
 		setChat(CString() << "kills: " << CString((int)kills));
 	}
 	else if (pChat == "showdeaths")
 	{
+		processed = true;
 		setChat(CString() << "deaths: " << CString((int)deaths));
 	}
 	else if (pChat == "showonlinetime")
 	{
+		processed = true;
 		int seconds = onlineTime % 60;
 		int minutes = (onlineTime / 60) % 60;
 		int hours = onlineTime / 3600;
@@ -1052,12 +1090,13 @@ void TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "toguild:")
 	{
-		if (guild.length() == 0) return;
+		processed = true;
+		if (guild.length() == 0) return false;
 
 		// Get the PM.
 		CString pm = pChat.text() + 8;
 		pm.trimI();
-		if (pm.length() == 0) return;
+		if (pm.length() == 0) return false;
 
 		// Send PM to guild members.
 		int num = 0;
@@ -1080,6 +1119,8 @@ void TPlayer::processChat(CString pChat)
 		// Tell the player how many guild members received his message.
 		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "") << " received your message)");
 	}
+
+	return processed;
 }
 
 bool TPlayer::isStaff()
@@ -1399,21 +1440,22 @@ void TPlayer::setChat(const CString& pChat)
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
 }
 
-void TPlayer::setNick(CString& pNickName, bool force)
+void TPlayer::setNick(const CString& pNickName, bool force)
 {
+	CString nickname = pNickName;
 	if (force)
 	{
 		nickName = pNickName;
-		CString nick = pNickName.readString("(").trim();
-		CString guild = pNickName.readString(")");
+		CString nick = nickname.readString("(").trim();
+		CString guild = nickname.readString(")");
 		this->guild = guild;
 		return;
 	}
 
 	CString newNick;
-	CString nick = pNickName.readString("(").trim();
-	CString guild = pNickName.readString(")");
-//	CString guild = CString("(") << pNickName.readString(")") << ")";
+	CString nick = nickname.readString("(").trim();
+	CString guild = nickname.readString(")");
+//	CString guild = CString("(") << nickname.readString(")") << ")";
 
 	// If a player has put a * before his nick, remove it.
 	if (nick[0] == '*') nick.removeI(0,1);
@@ -1748,8 +1790,15 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
 		if (i->trim() == levelName) return true;
 
-	CString message = pPacket.readString("");
-	// TODO: word filter.
+	CString message = pPacket.readString(pPacket.readGUChar());
+
+	// Word filter.
+	int filter = server->getWordFilter()->apply(this, message, FILTER_CHECK_TOALL);
+	if (filter & FILTER_ACTION_WARN)
+	{
+		setChat(message);
+		return true;
+	}
 
 	std::vector<TPlayer*>* playerList = server->getPlayerList();
 	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -1761,7 +1810,7 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 		unsigned char flags = strtoint(player->getProp(PLPROP_ADDITFLAGS));
 		if (flags & PLFLAG_NOTOALL) continue;
 
-		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)id << message);
+		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)id >> (char)message.length() << message);
 	}
 	return true;
 }
@@ -2273,7 +2322,16 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		return true;
 	}
 
-	// TODO: word filter.
+	// Word filter.
+	pmMessage.guntokenizeI();
+	int filter = server->getWordFilter()->apply(this, pmMessage, FILTER_CHECK_PM);
+	if (filter & FILTER_ACTION_WARN)
+	{
+		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
+			"Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
+		return true;
+	}
+	pmMessage.gtokenizeI();
 
 	// Send the message out.
 	for (std::vector<unsigned short>::iterator i = pmPlayers.begin(); i != pmPlayers.end(); ++i)

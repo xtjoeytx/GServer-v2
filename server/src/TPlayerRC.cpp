@@ -923,12 +923,17 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->loadConfigFiles();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded server configuration files.");
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the server configuration files.");
 		}
 		else if (words[0] == "/updateserverhq" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->getServerList()->sendServerHQ();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Sent ServerHQ updates.");
+		}
+		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
+		{
+			server->getWordFilter()->load(CString() << server->getServerPath() << "config/rules.txt");
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the word filter.");
 		}
 	}
 

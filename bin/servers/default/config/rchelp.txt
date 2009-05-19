@@ -11,3 +11,4 @@ Available commands for GServer:
 /updatelevelall: updates all loaded levels.
 /reloadserver: Reloads many server configuration files.
 /updateserverhq: Sends the ServerHQ information to the serverlist.
+/reloadwordfilter: Reloads the word filter rules.
