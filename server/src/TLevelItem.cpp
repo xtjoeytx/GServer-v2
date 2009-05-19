@@ -1,7 +1,33 @@
 #include "TLevelItem.h"
 #include "TPlayer.h"
 
-const char *__itemList[] = {"greenrupee", "bluerupee", "redrupee", "bombs", "darts", "heart", "glove1", "bow", "bomb", "shield", "sword", "fullheart", "superbomb", "battleaxe", "goldensword", "mirrorshield", "glove2", "lizardshield", "lizardsword", "goldrupee", "fireball", "fireblast", "nukeshot", "joltbomb", "spinattack"};
+const char *__itemList[] = {
+	"greenrupee",		// 0
+	"bluerupee",		// 1
+	"redrupee",			// 2
+	"bombs",			// 3
+	"darts",			// 4
+	"heart",			// 5
+	"glove1",			// 6
+	"bow",				// 7
+	"bomb",				// 8
+	"shield",			// 9
+	"sword",			// 10
+	"fullheart",		// 11
+	"superbomb",		// 12
+	"battleaxe",		// 13
+	"goldensword",		// 14
+	"mirrorshield",		// 15
+	"glove2",			// 16
+	"lizardshield",		// 17
+	"lizardsword",		// 18
+	"goldrupee",		// 19
+	"fireball",			// 20
+	"fireblast",		// 21
+	"nukeshot",			// 22
+	"joltbomb",			// 23
+	"spinattack"		// 24
+};
 
 CString TLevelItem::getItemStr() const
 {
@@ -90,6 +116,10 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 
 		case 7:		// bow
 		case 8:		// bomb
+		{
+			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)itemID);
+			break;
+		}
 
 		case 9:		// shield
 		case 15:	// mirrorshield
@@ -129,6 +159,10 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 		case 21:	// fireblast
 		case 22:	// nukeshot
 		case 23:	// joltbomb
+		{
+			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)itemID);
+			break;
+		}
 
 		case 24:	// spinattack
 		{
