@@ -655,8 +655,25 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 		}
 	}
 
+	// Save RC stuff.
+	CString adminip = p->getAdminIp();
+	int rights = p->getAdminRights();
+	std::vector<CString> folders;
+	for (std::vector<CString>::iterator i = p->getFolderList()->begin(); i != p->getFolderList()->end(); ++i)
+		folders.push_back(*i);
+
 	// Reset the player.
 	p->reset();
+
+	// Add the RC stuff back in.
+	p->setAdminIp(adminip);
+	p->setAdminRights(rights);
+	std::vector<CString>* pFolders = p->getFolderList();
+	for (std::vector<CString>::iterator i = folders.begin(); i != folders.end(); ++i)
+		pFolders->push_back(*i);
+
+	// Save the account.
+	p->saveAccount();
 
 	// If the player is online, boot him from the server.
 	if (!offline)
