@@ -227,8 +227,6 @@ bool TPlayer::sendLoginClient()
 		pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
 	sendPacket(pliconPacket);
 
-	// PLO_BIGMAP (minimap?)
-
 	// Send the player's flags.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
