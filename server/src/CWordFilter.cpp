@@ -165,7 +165,7 @@ void CWordFilter::load(const CString& file)
 
 int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 {
-	if (chat.isEmpty()) return 0;
+	if (chat.isEmpty() || rules.size() == 0 || check == 0) return 0;
 
 	CString out = chat;
 	CString warnmessage;
