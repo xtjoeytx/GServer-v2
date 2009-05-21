@@ -155,6 +155,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			return CString() >> (char)PLPROP_MAXPOWER >> (char)heartMax >> (char)PLPROP_CURPOWER >> (char)(heartMax * 2);
 		}
 
+		case 12:	// superbomb
 		case 20:	// fireball
 		case 21:	// fireblast
 		case 22:	// nukeshot
