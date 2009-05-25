@@ -157,6 +157,18 @@ bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 				player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon);
 		}
 
+		// Remove the weapon from the server.
+		std::vector<TWeapon*>* weaponList = server->getWeaponList();
+		for (std::vector<TWeapon*>::iterator i = weaponList->begin(); i != weaponList->end(); ++i)
+		{
+			TWeapon* w = *i;
+			if (w->getName() == weapon)
+			{
+				weaponList->erase(i);
+				break;
+			}
+		}
+
 		// If we are looking at the File Browser, reload it.
 		if (isFtp) msgPLI_RC_FILEBROWSER_START(CString() << "");
 
