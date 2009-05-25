@@ -1458,7 +1458,11 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 //	CString guild = CString("(") << nickname.readString(")") << ")";
 
 	// If a player has put a * before his nick, remove it.
-	if (nick[0] == '*') nick.removeI(0,1);
+	while (!nick.isEmpty() && nick[0] == '*')
+		nick.removeI(0,1);
+
+	// If the nickname is now empty, set it to unknown.
+	if (nick.isEmpty()) nick = "unknown";
 
 	// If the nickname is equal to the account name, add the *.
 	if (nick == accountName)
