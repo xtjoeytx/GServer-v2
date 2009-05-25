@@ -362,6 +362,9 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
 		bool isNC()				{ return (type & PLTYPE_ANYNC ? true : false); }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT ? true : false); }
+		bool addWeapon(int defaultWeapon);
+		bool addWeapon(const CString& name);
+		bool addWeapon(TWeapon* weapon);
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
