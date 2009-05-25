@@ -21,6 +21,7 @@ extern bool __playerPropsRC[propscount];
 const char* __admin[] = {
 	"name", "description", "url", "maxplayers", "onlystaff", "nofoldersconfig",
 	"sharefolder", "language", "serverip", "serverport", "listip", "listport",
+	"oldcreated", "serverside",
 };
 
 static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
@@ -207,7 +208,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 
 			// If it is an admin command, replace it with the current value.
 			if (isAdmin)
-				(*i) = settings->getStr(name);
+				(*i) = CString() << name << " = " << settings->getStr(name);
 
 			// Add this line back into options.
 			options << *i << "\n";
