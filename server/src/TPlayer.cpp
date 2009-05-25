@@ -1522,6 +1522,66 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	}
 }
 
+bool TPlayer::addWeapon(int defaultWeapon)
+{
+	CSettings* settings = server->getSettings();
+	std::vector<TWeapon*>* sWeaponList = server->getWeaponList();
+
+	if (settings->getBool("defaultweapons", true) == false)
+		return false;
+
+	if (defaultWeapon == 8 && allowBomb == false)
+	{
+		allowBomb = true;
+		return false;
+	}
+
+	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
+	if (weapon == 0)
+	{
+		weapon = new TWeapon(defaultWeapon);
+		sWeaponList->push_back(weapon);
+	}
+
+	// See if the player already has the weapon.
+	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
+	{
+		weaponList.push_back(weapon->getName());
+		sendPacket(CString() << weapon->getWeaponPacket());
+	}
+
+	return true;
+}
+
+bool TPlayer::addWeapon(const CString& name)
+{
+	TWeapon* weapon = server->getWeapon(name);
+	if (weapon == 0) return false;
+
+	// See if the player already has the weapon.
+	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
+	{
+		weaponList.push_back(weapon->getName());
+		sendPacket(CString() << weapon->getWeaponPacket());
+	}
+
+	return true;
+}
+
+bool TPlayer::addWeapon(TWeapon* weapon)
+{
+	if (weapon == 0) return false;
+
+	// See if the player already has the weapon.
+	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
+	{
+		weaponList.push_back(weapon->getName());
+		sendPacket(CString() << weapon->getWeaponPacket());
+	}
+
+	return true;
+}
+
 
 /*
 	TPlayer: Packet functions
@@ -2381,25 +2441,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 	// Type 0 means it is a default weapon.
 	if (type == 0)
 	{
-		std::vector<TWeapon*>* weaponList = server->getWeaponList();
-
-		if (settings->getBool("defaultweapons", true) == false)
-			return true;
-
-		char item = pPacket.readGChar();
-		if (item == 8 && allowBomb == false)
-		{
-			allowBomb = true;
-			return true;
-		}
-
-		TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(item));
-		if (weapon == 0)
-		{
-			weapon = new TWeapon(item);
-			weaponList->push_back(weapon);
-		}
-		sendPacket(CString() << weapon->getWeaponPacket());
+		this->addWeapon(pPacket.readGChar());
 	}
 	// NPC weapons.
 	else
@@ -2453,14 +2495,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 
 		// Send the weapon to the player now.
 		if (foundThis == false)
-		{
-			// See if the player already has the weapon.
-			if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
-			{
-				weaponList.push_back(weapon->getName());
-				sendPacket(CString() << weapon->getWeaponPacket());
-			}
-		}
+			this->addWeapon(weapon);
 
 		// Save weapon.
 		if (newWeapon)
@@ -2560,6 +2595,16 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	unsigned int npcId = pPacket.readGUInt();
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	CString action = pPacket.readString("");
+
+	if (loc[0] == 0.0f && loc[1] == 0.0f)
+	{
+		if (action.find("gr.addweapon") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 2)
+				this->addWeapon(actionParts[1]);
+		}
+	}
 
 	// We don't have an NPCserver, so, for now, just pass it along.
 	CString packet;
