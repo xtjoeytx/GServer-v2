@@ -1129,7 +1129,7 @@ bool TPlayer::isStaff()
 	std::vector<CString> staffList = staff.tokenize(",");
 	for (std::vector<CString>::iterator i = staffList.begin(); i != staffList.end(); ++i)
 	{
-		if (accountName == (*i).trim()) return true;
+		if (accountName.toLower() == (*i).trim().toLower()) return true;
 	}
 	return false;
 }
