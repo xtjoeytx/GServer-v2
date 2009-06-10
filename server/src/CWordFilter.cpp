@@ -109,6 +109,7 @@ void CWordFilter::load(const CString& file)
 							rule->precisionPercentage = true;
 							wordParts2[1].removeAll("%");
 						}
+						else rule->precisionPercentage = false;
 						rule->precision = strtoint(wordParts2[1]);
 					}
 				}
