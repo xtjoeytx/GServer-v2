@@ -14,6 +14,7 @@ setbodyallowed = true
 setheadallowed = true
 setshieldallowed = true
 setswordallowed = true
+setcolorsallowed = true
 
 # Defines the amount of Gralats a player drops with they die.
 mindeathgralats = 1

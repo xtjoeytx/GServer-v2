@@ -656,6 +656,7 @@ bool TPlayer::processChat(CString pChat)
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
 	bool processed = false;
+	bool setcolorsallowed = server->getSettings()->getBool("setcolorsallowed", true);
 
 	if (chatParse[0] == "setnick")
 	{
@@ -866,7 +867,7 @@ bool TPlayer::processChat(CString pChat)
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
-	else if (chatParse[0] == "setskin" && chatParse.size() == 2)
+	else if (chatParse[0] == "setskin" && chatParse.size() == 2 && setcolorsallowed)
 	{
 		processed = true;
 
@@ -879,7 +880,7 @@ bool TPlayer::processChat(CString pChat)
 			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 		}
 	}
-	else if (chatParse[0] == "setcoat" && chatParse.size() == 2)
+	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
 	{
 		processed = true;
 
@@ -892,7 +893,7 @@ bool TPlayer::processChat(CString pChat)
 			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 		}
 	}
-	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2)
+	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
 	{
 		processed = true;
 
@@ -905,7 +906,7 @@ bool TPlayer::processChat(CString pChat)
 			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 		}
 	}
-	else if (chatParse[0] == "setshoes" && chatParse.size() == 2)
+	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
 	{
 		processed = true;
 
@@ -918,7 +919,7 @@ bool TPlayer::processChat(CString pChat)
 			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
 		}
 	}
-	else if (chatParse[0] == "setbelt" && chatParse.size() == 2)
+	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
 	{
 		processed = true;
 
@@ -1485,11 +1486,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		{
 			guildList.setRead(guildList.findi(accountName));
 			CString line = guildList.readString("\n");
+			line.removeAllI("\r");
 			if (line.find(":") != -1)
 			{
 				std::vector<CString> line2 = line.tokenize(":");
 				if ((line2[1])[0] == '*') line2[1].removeI(0, 1);
-				if (line2[1] == nick)	// Use nick instead of newNick because nick doesn't include the *
+				if ((line2[1]) == nick)	// Use nick instead of newNick because nick doesn't include the *
 				{
 					nickName = newNick;
 					nickName << " (" << guild << ")";
