@@ -41,7 +41,7 @@ enum
 	PLI_FLAGSET			= 18,
 	PLI_FLAGDEL			= 19,
 	PLI_OPENCHEST		= 20,
-	PLI_NPCADD			= 21,
+	PLI_PUTNPC			= 21,
 	PLI_NPCDEL			= 22,
 	PLI_WANTFILE		= 23,
 	PLI_SHOWIMG			= 24,
@@ -391,7 +391,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_FLAGSET(CString& pPacket);
 		bool msgPLI_FLAGDEL(CString& pPacket);
 		bool msgPLI_OPENCHEST(CString& pPacket);
-		bool msgPLI_NPCADD(CString& pPacket);
+		bool msgPLI_PUTNPC(CString& pPacket);
 		bool msgPLI_NPCDEL(CString& pPacket);
 		bool msgPLI_WANTFILE(CString& pPacket);
 		bool msgPLI_SHOWIMG(CString& pPacket);

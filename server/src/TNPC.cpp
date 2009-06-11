@@ -261,12 +261,13 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 			else
 				retVal >> (char)i << getProp(i, clientVersion);
 		}
-		if (clientVersion > CLVER_1_411)
-		{
-			if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
-				retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
-		}
 	}
+	if (clientVersion > CLVER_1_411)
+	{
+		if (modTime[NPCPROP_GANI] == 0 && image == "#c#")
+			retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
+	}
+
 	return retVal;
 }
 

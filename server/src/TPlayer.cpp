@@ -133,7 +133,7 @@ void createPLFunctions()
 	TPLFunc[PLI_FLAGSET] = &TPlayer::msgPLI_FLAGSET;
 	TPLFunc[PLI_FLAGDEL] = &TPlayer::msgPLI_FLAGDEL;
 	TPLFunc[PLI_OPENCHEST] = &TPlayer::msgPLI_OPENCHEST;
-	TPLFunc[PLI_NPCADD] = &TPlayer::msgPLI_NPCADD;
+	TPLFunc[PLI_PUTNPC] = &TPlayer::msgPLI_PUTNPC;
 	TPLFunc[PLI_NPCDEL] = &TPlayer::msgPLI_NPCDEL;
 	TPLFunc[PLI_WANTFILE] = &TPlayer::msgPLI_WANTFILE;
 	TPLFunc[PLI_SHOWIMG] = &TPlayer::msgPLI_SHOWIMG;
@@ -2262,7 +2262,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NPCADD(CString& pPacket)
+bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 {
 	CSettings* settings = server->getSettings();
 
@@ -2274,8 +2274,13 @@ bool TPlayer::msgPLI_NPCADD(CString& pPacket)
 	if (settings->getBool("putnpcenabled") == false)
 		return true;
 
+	// Load the code.
+	CString code = server->getFileSystem(0)->load(ncode);
+	code.removeAllI("\r");
+	code.replaceAllI("\n", "\xa7");
+
 	// Add NPC to level
-	TNPC* npc = server->addNPC(nimage, ncode, loc[0], loc[1], level, false);
+	TNPC* npc = server->addNPC(nimage, code, loc[0], loc[1], level, true, true);
 
 	return true;
 }
