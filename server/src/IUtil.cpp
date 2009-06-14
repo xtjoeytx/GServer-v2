@@ -162,10 +162,10 @@ CString removeComments(const CString& code, const CString& newLine)
 	return ret;
 }
 
-CString removeExtension(const CString& ext)
+CString removeExtension(const CString& file)
 {
-	int ePos = ext.findl('.');
-	if (ePos == -1) return ext;
+	int ePos = file.findl('.');
+	if (ePos == -1) return file;
 
-	return ext.subString(0, ePos);
+	return file.subString(0, ePos);
 }

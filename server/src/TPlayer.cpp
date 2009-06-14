@@ -2296,8 +2296,6 @@ bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 
 bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
-	CFileSystem* fileSystem = server->getFileSystem();
-
 	// Get file.
 	CString file = pPacket.readString("");
 
@@ -2532,6 +2530,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	}
 
 	// If the file on disk is different, send it to the player.
+	file.setRead(0);
 	if (isDefault == false && fModTime > modTime)
 		return msgPLI_WANTFILE(file);
 
