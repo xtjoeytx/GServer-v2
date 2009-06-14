@@ -1632,15 +1632,21 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	fullPath << file;
 
 	// Find the file extension.
-	CString ext = removeExtension(file);
+	CString ext = getExtension(file);
+
+	// Check and see if it is an account.
+	if (dir == "accounts/")
+	{
+		CFileSystem* fs = server->getAccountsFileSystem();
+		if (fs->find(file).isEmpty())
+			fs->addFile(CString() << dir << file);
+		return;
+	}
 
 	// If folder config is off, add it to the file list.
 	if (settings->getBool("nofoldersconfig", false) == true)
 	{
-		CFileSystem* fs;
-		if (dir == "accounts/") fs = server->getAccountsFileSystem();
-		else fs = server->getFileSystem();
-
+		CFileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
 			fs->addFile(CString() << dir << file);
 	}
@@ -1657,14 +1663,15 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 			if (fullPath.match(folder))
 			{
 				CFileSystem* fs = server->getFileSystemByType(type);
+				CFileSystem* fs2 = server->getFileSystem();
 
 				// See if it exists in that file system.
 				if (fs->find(file).isEmpty())
 				{
-					// Add it to the file system.
-					CFileSystem* fs2 = server->getFileSystem();
+					if (fs2->find(file).isEmpty())
+						fs2->addFile(fullPath);
+		
 					fs->addFile(fullPath);
-					fs2->addFile(fullPath);
 					printf("adding %s to %s\n", file.text(), type.text());
 					break;
 				}
