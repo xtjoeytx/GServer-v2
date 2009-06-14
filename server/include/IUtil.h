@@ -158,6 +158,6 @@ int getVersionID(const CString& version);
 int getRCVersionID(const CString& version);
 char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
-CString removeExtension(const CString& ext);
+CString removeExtension(const CString& file);
 
 #endif
