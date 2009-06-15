@@ -365,6 +365,9 @@ class TPlayer : public TAccount, public CSocketStub
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
+		bool deleteWeapon(int defaultWeapon);
+		bool deleteWeapon(const CString& name);
+		bool deleteWeapon(TWeapon* weapon);
 
 		// Packet-Functions
 		bool msgPLI_NULL(CString& pPacket);
