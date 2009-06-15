@@ -335,7 +335,7 @@ class TPlayer : public TAccount, public CSocketStub
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
 		bool setLevel(const CString& pLevelName, time_t modTime = 0);
-		bool sendLevel(TLevel* pLevel, time_t modTime, bool skipActors = false);
+		bool sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent = false);
 		bool leaveLevel(bool resetCache = false);
 		time_t getCachedLevelModTime(const TLevel* level) const;
 		void resetLevelCache(const TLevel* level);
