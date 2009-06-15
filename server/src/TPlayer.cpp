@@ -1584,6 +1584,35 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 	return true;
 }
 
+bool TPlayer::deleteWeapon(int defaultWeapon)
+{
+	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
+	this->deleteWeapon(weapon);
+
+	return true;
+}
+
+bool TPlayer::deleteWeapon(const CString& name)
+{
+	TWeapon* weapon = server->getWeapon(name);
+	this->deleteWeapon(weapon);
+
+	return true;
+}
+
+bool TPlayer::deleteWeapon(TWeapon* weapon)
+{
+	if (weapon == 0) return false;
+
+	// Remove the weapon.
+	if (vecRemove<CString>(weaponList, weapon->getName()))
+	{
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
+	}
+
+	return true;
+}
+
 
 /*
 	TPlayer: Packet functions
@@ -2600,7 +2629,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 {
 	unsigned int npcId = pPacket.readGUInt();
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	CString action = pPacket.readString("");
+	CString action = pPacket.readString("").trim();
 
 	if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
@@ -2608,7 +2637,13 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			std::vector<CString> actionParts = action.tokenize(",");
 			if (actionParts.size() == 2)
-				this->addWeapon(actionParts[1]);
+				this->addWeapon((actionParts[1]).trim());
+		}
+		else if (action.find("gr.deleteweapon") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 2)
+				this->deleteWeapon((actionParts[1]).trim());
 		}
 	}
 
