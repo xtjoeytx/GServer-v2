@@ -45,7 +45,7 @@ healswords = false
 # Timeout in seconds for respawning objects.
 # respawntime affects tile changes.
 respawntime = 15
-horselifetime = 10
+horselifetime = 30
 baddyrespawntime = 60
 
 # Allows any player to use the warpto command.
