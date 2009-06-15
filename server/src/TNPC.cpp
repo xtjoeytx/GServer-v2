@@ -53,7 +53,8 @@ level(pLevel), server(pServer)
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
 	// Search if the NPC is a sparringzone NPC.
-	if (pScript.subString(0, 12) == "sparringzone") pLevel->setSparringZone(true);
+	if (pScript.subString(0, 12) == "sparringzone")
+		pLevel->setSparringZone(true);
 
 	// Remove comments and separate clientside and serverside scripts.
 	CString nocomments = removeComments(pScript, "\xa7");
