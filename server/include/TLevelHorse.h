@@ -5,11 +5,12 @@
 #include "CString.h"
 #include "CTimeout.h"
 
+class TServer;
 class TLevelHorse
 {
 	public:
 		// constructor - destructor
-		TLevelHorse(const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0) : image(pImage), x(pX), y(pY), dir(pDir), bushes(pBushes) { timeout.setTimeout(180); }
+		TLevelHorse(TServer* server, const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0);
 
 		CString getHorseStr() const;
 

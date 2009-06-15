@@ -1243,7 +1243,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	return true;
 }
 
-bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
+bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 {
 	if (pLevel == 0) return false;
 	CSettings* settings = server->getSettings();
@@ -1270,9 +1270,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	}
 
 	// Send board changes, chests, horses, and baddies.
-	sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
-	if (skipActors == false)
+	if (fromAdjacent == false)
 	{
+		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 		sendPacket(CString() << pLevel->getChestPacket(this));
 		sendPacket(CString() << pLevel->getHorsePacket());
 		sendPacket(CString() << pLevel->getBaddyPacket());
@@ -1286,7 +1286,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
-	if (skipActors == false)
+	if (fromAdjacent == false || pmap != 0)
 	{
 		// If we are the leader, send it now.
 		if (pLevel->getPlayer(0) == this)
@@ -1299,7 +1299,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool skipActors)
 	// NPCs like to cause 1.41 to crash for some reason.
 	//if (versionID < CLVER_2_1) skipActors = true;
 
-	if (skipActors == false)
+	if (fromAdjacent == false || pmap != 0)
 	{
 		// Send NPCs.
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
@@ -2589,7 +2589,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	}
 
 	// Send the level.
-	sendLevel(adjacentLevel, modTime, (pmap ? false : true));
+	sendLevel(adjacentLevel, modTime, true);
 
 	// Set our old level back to normal.
 	sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
