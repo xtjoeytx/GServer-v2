@@ -2037,12 +2037,12 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			setRating((int)tLoseRating, (int)tLoseDeviation);
-			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true);
+			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			player->setRating((int)tWinRating, (int)tWinDeviation);
-			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true);
+			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
 		}
 		this->setLastSparTime(time(0));
 		player->setLastSparTime(time(0));
