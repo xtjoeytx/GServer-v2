@@ -482,6 +482,9 @@ class TPlayer : public TAccount, public CSocketStub
 		// Collision detection stuff.
 		bool testSign();
 
+		// Misc.
+		void dropItemsOnDeath();
+
 		// Socket Variables
 		CSocket *playerSock;
 		CString rBuffer;
