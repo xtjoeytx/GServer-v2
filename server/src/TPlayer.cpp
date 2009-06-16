@@ -651,6 +651,91 @@ bool TPlayer::testSign()
 	return true;
 }
 
+void TPlayer::dropItemsOnDeath()
+{
+	if (server->getSettings()->getBool("dropitemsdead", true) == false)
+		return;
+
+	int mindeathgralats = server->getSettings()->getInt("mindeathgralats", 1);
+	int maxdeathgralats = server->getSettings()->getInt("maxdeathgralats", 50);
+
+	// Determine how many gralats to remove from the account.
+	int drop_gralats = rand() % maxdeathgralats;
+	clip(drop_gralats, mindeathgralats, maxdeathgralats);
+	if (drop_gralats > gralatc) drop_gralats = gralatc;
+
+	// Determine how many arrows and bombs to remove from the account.
+	int drop_arrows = rand() % 4;
+	int drop_bombs = rand() % 4;
+	if ((drop_arrows * 5) > arrowc) drop_arrows = arrowc / 5;
+	if ((drop_bombs * 5) > bombc) drop_bombs = bombc / 5;
+
+	// Remove gralats/bombs/arrows.
+	gralatc -= drop_gralats;
+	arrowc -= (drop_arrows * 5);
+	bombc -= (drop_bombs * 5);
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_RUPEESCOUNT >> (int)gralatc >> (char)PLPROP_ARROWSCOUNT >> (char)arrowc >> (char)PLPROP_BOMBSCOUNT >> (char)bombc);
+
+	// Add gralats to the level.
+	while (drop_gralats != 0)
+	{
+		char item = 0;
+		if (drop_gralats % 100 != drop_gralats)
+		{
+			drop_gralats -= 100;
+			item = 19;
+		}
+		else if (drop_gralats % 30 != drop_gralats)
+		{
+			drop_gralats -= 30;
+			item = 2;
+		}
+		else if (drop_gralats % 5 != drop_gralats)
+		{
+			drop_gralats -= 5;
+			item = 1;
+		}
+		else if (drop_gralats != 0)
+		{
+			--drop_gralats;
+			item = 0;
+		}
+
+		float pX = x + 1.5f + (rand() % 8) - 2.0f;
+		float pY = y + 2.0f + (rand() % 8) - 2.0f;
+
+		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)item;
+		packet.readGChar();		// So msgPLI_ITEMADD works.
+
+		msgPLI_ITEMADD(packet);
+		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+	}
+
+	// Add arrows and bombs to the level.
+	for (int i = 0; i < drop_arrows; ++i)
+	{
+		float pX = x + 1.5f + (rand() % 8) - 2.0f;
+		float pY = y + 2.0f + (rand() % 8) - 2.0f;
+
+		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4;	// 4 = arrows
+		packet.readGChar();		// So msgPLI_ITEMADD works.
+
+		msgPLI_ITEMADD(packet);
+		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+	}
+	for (int i = 0; i < drop_bombs; ++i)
+	{
+		float pX = x + 1.5f + (rand() % 8) - 2.0f;
+		float pY = y + 2.0f + (rand() % 8) - 2.0f;
+
+		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)3;	// 3 = bombs
+		packet.readGChar();		// So msgPLI_ITEMADD works.
+
+		msgPLI_ITEMADD(packet);
+		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+	}
+}
+
 bool TPlayer::processChat(CString pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
@@ -946,7 +1031,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			TPlayer* player = server->getPlayer(chatParse[1]);
+			TPlayer* player = server->getPlayer(chatParse[1], false);
 			if (player && player->getLevel() != 0)
 				warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 		}
@@ -986,7 +1071,7 @@ bool TPlayer::processChat(CString pChat)
 			return true;
 		}
 
-		TPlayer* p = server->getPlayer(chatParse[1]);
+		TPlayer* p = server->getPlayer(chatParse[1], false);
 		if (p) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
