@@ -234,7 +234,7 @@ TPlayer::~TPlayer()
 
 	if (id >= 0 && server != 0)
 	{
-		if (isNPCServer())
+		if (isNPCServer() && server->getNPCServer() == this)
 			server->setNPCServer(0);
 
 		// Save account.
