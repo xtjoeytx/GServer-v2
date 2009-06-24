@@ -802,7 +802,7 @@ const char* CSocket::getRemotePort()
 	memset((void*)port, 0, 32);
 
 	// Grab the IP address.
-	int error = getnameinfo((struct sockaddr*)&properties.address, sizeof(struct sockaddr_storage), port, 32, 0, 0, NI_NUMERICSERV);
+	int error = getnameinfo((struct sockaddr*)&properties.address, sizeof(struct sockaddr_storage), 0, 0, port, 32, NI_NUMERICSERV);
 	if (error) return 0;
 	portret = port;
 	return portret;
