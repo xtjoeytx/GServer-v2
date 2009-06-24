@@ -18,7 +18,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), wordFilter(this)
+: name(pName), wordFilter(this), npcServer(0)
 {
 	lastTimer = lastNWTimer = last5mTimer = last3mTimer = time(0);
 
@@ -99,7 +99,7 @@ void TServer::operator()()
 		{
 			boost::this_thread::interruption_point();
 		}
-		catch (boost::thread_interrupted e)
+		catch (boost::thread_interrupted)
 		{
 			running = false;
 		}
@@ -363,6 +363,16 @@ int TServer::loadConfigFiles()
 		return ERR_SETTINGS;
 	}
 
+	// Load Admin Settings
+	serverlog.out("     Loading admin settings...\n");
+	adminsettings.setSeparator("=");
+	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
+	if (!adminsettings.isOpened())
+	{
+		serverlog.out("** [Error] Could not open config/adminconfig.txt\n");
+		return ERR_SETTINGS;
+	}
+
 	// Load allowed versions.
 	serverlog.out("     Loading allowed client versions...\n");
 	CString versions;
@@ -505,7 +515,7 @@ int TServer::loadConfigFiles()
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includeRC && (playerIds[id]->isRC() || playerIds[id]->isNC())) return 0;
+	if (!includeRC && playerIds[id]->isRC()) return 0;
 	return playerIds[id];
 }
 
@@ -517,7 +527,7 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 		if (player == 0)
 			continue;
 
-		if (!includeRC && (player->isRC() || player->isNC()))
+		if (!includeRC && player->isRC())
 			continue;
 
 		// Compare account names.

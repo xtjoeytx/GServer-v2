@@ -191,8 +191,8 @@ bool TServerList::connectServer()
 	}
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
-	CSettings serverhq(CString() << server->getServerPath() << "config/serverhq.txt");
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << serverhq.getStr("password"));
+	CSettings* adminsettings = server->getAdminSettings();
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
 
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER
@@ -206,7 +206,7 @@ bool TServerList::connectServer()
 		>> (char)localip.length() << localip);
 
 	// Set the level now.
-	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)serverhq.getInt("level", 1));
+	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 
 	// Send Players
 	sendPlayers();
@@ -281,9 +281,9 @@ void TServerList::sendPlayers()
 
 void TServerList::sendServerHQ()
 {
-	CSettings serverhq(CString() << server->getServerPath() << "config/serverhq.txt");
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << serverhq.getStr("password"));
-	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)serverhq.getInt("level", 1));
+	CSettings* adminsettings = server->getAdminSettings();
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
+	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 }
 
 /*
