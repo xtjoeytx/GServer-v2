@@ -788,7 +788,8 @@ bool TServer::deletePlayer(TPlayer* player)
 
 unsigned int TServer::getNWTime() const
 {
-	return ((unsigned int)time(0) - 11078 * 24 * 60 * 60) * 2 / 10;
+	// timevar apparently subtracts 11078 days from time(0) then divides by 5.
+	return ((unsigned int)time(0) - 11078 * 24 * 60 * 60) / 5;
 }
 
 bool TServer::isIpBanned(const CString& ip)
