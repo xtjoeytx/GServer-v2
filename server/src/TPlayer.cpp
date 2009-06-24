@@ -207,11 +207,6 @@ void createPLFunctions()
 	TPLFunc[PLI_RC_LARGEFILESTART] = &TPlayer::msgPLI_RC_LARGEFILESTART;
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
-
-	TPLFunc[PLI_NC_WEAPONLISTGET] = &TPlayer::msgPLI_NC_WEAPONLISTGET;
-	TPLFunc[PLI_NC_WEAPONGET] = &TPlayer::msgPLI_NC_WEAPONGET;
-	TPLFunc[PLI_NC_WEAPONADD] = &TPlayer::msgPLI_NC_WEAPONADD;
-	TPLFunc[PLI_NC_WEAPONDELETE] = &TPlayer::msgPLI_NC_WEAPONDELETE;
 }
 
 
@@ -239,6 +234,9 @@ TPlayer::~TPlayer()
 
 	if (id >= 0 && server != 0)
 	{
+		if (isNPCServer())
+			server->setNPCServer(0);
+
 		// Save account.
 		if (isClient() && loaded && !isLoadOnly)
 			saveAccount();
@@ -1555,7 +1553,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	newNick << nick;
 
 	// If a guild was specified, add the guild.
-	if (guild.length() != 0)
+	if (guild.length() != 0 && !isNPCServer())
 	{
 		// Read the guild list.
 		CFileSystem guildFS(server);
@@ -1601,8 +1599,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	}
 	else
 	{
-		// Save it.
-		nickName = newNick;
+		if (!isNPCServer())
+		{
+			// Save it.
+			nickName = newNick;
+		}
+		else nickName = CString() << newNick << " (Server)";
 	}
 }
 
@@ -1727,11 +1729,15 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			serverlog.out("RC\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
-		case PLTYPE_NC:
-			serverlog.out("NC\n");
+		case PLTYPE_NPCSERVER:
+			serverlog.out("NPCSERVER\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
-			getKey = false;
 			break;
+		//case PLTYPE_NC:
+		//	serverlog.out("NC\n");
+		//	in_codec.setGen(ENCRYPT_GEN_3);
+		//	getKey = false;
+		//	break;
 		case PLTYPE_CLIENT2:
 			serverlog.out("New Client (2.19 - 2.21, 3 - 3.01)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
@@ -1829,7 +1835,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Verify login details with the serverlist.
 	// TODO: localhost mode.
-	if (!isNC())
+	if (!isNPCServer())
 	{
 		if (server->getServerList()->getConnected() == false)
 		{
@@ -1842,6 +1848,28 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			>> (short)id >> (char)type
 			);
 	}
+	else
+	{
+		// Check if we supplied the correct password.
+		CSettings* adminsettings = server->getAdminSettings();
+		if (password != adminsettings->getStr("ns_password"))
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Invalid password.");
+			return false;
+		}
+
+		// If an NPC-Server is already logged into the server, disconnect.
+		// TODO: Should we boot the other one off?
+		if (server->hasNPCServer())
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "An NPC-Server is already logged in.");
+			return false;
+		}
+
+		// Yay.
+		server->setNPCServer(this);
+	}
+
 	return true;
 }
 
@@ -2805,7 +2833,10 @@ bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
 	// Enact upon the message.
 	if (message == "location")
 	{
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << settings->getStr("serverip") << "," << settings->getStr("serverport"));
+		TPlayer* npcserver = server->getNPCServer();
+		CString ip = npcserver->getSocket()->getRemoteIp();
+		CString port = npcserver->getSocket()->getRemotePort();
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << ip << "," << port);
 	}
 	return true;
 }

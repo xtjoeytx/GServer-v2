@@ -60,6 +60,7 @@ class TServer : public CSocketStub
 
 		// Get functions.
 		CSettings* getSettings()				{ return &settings; }
+		CSettings* getAdminSettings()			{ return &adminsettings; }
 		std::vector<TPlayer*>* getPlayerList()	{ return &playerList; }
 		std::vector<TPlayer*>* getPlayerIdList(){ return &playerIds; }
 		std::vector<TNPC*>* getNPCList()		{ return &npcList; }
@@ -108,11 +109,17 @@ class TServer : public CSocketStub
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
+		//NPC-Server
+		bool hasNPCServer()						{ return npcServer != 0; }
+		void setNPCServer(TPlayer* npcserver)	{ npcServer = npcserver; }
+		TPlayer* getNPCServer()					{ return npcServer; }
+
 	private:
 		bool doTimedEvents();
 		void acceptSock(CSocket& pSocket);
 
 		CSettings settings;
+		CSettings adminsettings;
 		std::vector<TPlayer*> playerIds, playerList;
 		std::vector<TNPC*> npcIds, npcList;
 		std::vector<TLevel*> levelList;
@@ -132,6 +139,8 @@ class TServer : public CSocketStub
 		CString serverpath;
 		CString servermessage;
 		CWordFilter wordFilter;
+
+		TPlayer* npcServer;
 
 		CLog serverlog;//("logs/serverlog.txt");
 		CLog rclog;//("logs/rclog.txt");

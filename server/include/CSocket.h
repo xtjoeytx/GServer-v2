@@ -244,6 +244,10 @@ class CSocket
 		//! \return The IP address.
 		const char* getRemoteIp();
 
+		//! Gets the port of the device at the other end of the socket.
+		//! \return The port.
+		const char* getRemotePort();
+
 		//! Gets the IP address of the current device.
 		/*! Gets the IP address of the current device.
 			Linux beware.  It will return the IP address in /etc/hosts that corresponds

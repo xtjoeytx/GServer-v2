@@ -278,13 +278,14 @@ enum
 	PLTYPE_AWAIT		= (int)(-1),
 	PLTYPE_CLIENT		= (int)(1 << 0),
 	PLTYPE_RC			= (int)(1 << 1),
-	PLTYPE_NC			= (int)(1 << 3),
+	PLTYPE_NPCSERVER	= (int)(1 << 2),
+	//PLTYPE_NC			= (int)(1 << 3),
 	PLTYPE_CLIENT2		= (int)(1 << 4),
 	PLTYPE_CLIENT3		= (int)(1 << 5),
 	PLTYPE_RC2			= (int)(1 << 6),
 	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2 | PLTYPE_CLIENT3),
 	PLTYPE_ANYRC		= (int)(PLTYPE_RC | PLTYPE_RC2),
-	PLTYPE_ANYNC		= (int)(PLTYPE_NC),
+	//PLTYPE_ANYNC		= (int)(PLTYPE_NC),
 };
 
 struct SCachedLevel
@@ -315,6 +316,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool sendLogin();
 
 		// Get Properties
+		CSocket* getSocket()	{ return playerSock; }
 		TLevel* getLevel()		{ return level; }
 		TMap* getMap()			{ return pmap; }
 		int getId() const;
@@ -359,9 +361,10 @@ class TPlayer : public TAccount, public CSocketStub
 		void disconnect();
 		bool processChat(CString pChat);
 		bool isStaff();
-		bool isRC()				{ return (type & PLTYPE_ANYRC ? true : false); }
-		bool isNC()				{ return (type & PLTYPE_ANYNC ? true : false); }
-		bool isClient()			{ return (type & PLTYPE_ANYCLIENT ? true : false); }
+		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
+		//bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
+		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
+		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
@@ -465,11 +468,6 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_LARGEFILEEND(CString& pPacket);
 		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
 
-		bool msgPLI_NC_WEAPONLISTGET(CString& pPacket);
-		bool msgPLI_NC_WEAPONGET(CString& pPacket);
-		bool msgPLI_NC_WEAPONADD(CString& pPacket);
-		bool msgPLI_NC_WEAPONDELETE(CString& pPacket);
-
 	private:
 		// Login functions.
 		bool sendLoginClient();
@@ -512,6 +510,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isFtp;
 		bool grMovementUpdated;
 		CString grMovementPackets;
+		CString npcserverPort;
 
 		// File queue.
 		CFileQueue fileQueue;
