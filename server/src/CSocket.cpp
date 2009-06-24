@@ -795,6 +795,19 @@ const char* CSocket::getRemoteIp()
 	return hostret;
 }
 
+const char* CSocket::getRemotePort()
+{
+	char* portret;
+	static char port[32];
+	memset((void*)port, 0, 32);
+
+	// Grab the IP address.
+	int error = getnameinfo((struct sockaddr*)&properties.address, sizeof(struct sockaddr_storage), port, 32, 0, 0, NI_NUMERICSERV);
+	if (error) return 0;
+	portret = port;
+	return portret;
+}
+
 const char* CSocket::getLocalIp()
 {
 	char* hostret;

@@ -91,7 +91,8 @@ bool TPlayer::sendLogin()
 
 	// If we have an NPC Server, send this to prevent clients from sending
 	// npc props it modifies.
-	//sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+	if (server->hasNPCServer())
+		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 	// Check if the account is already in use.
 	{
@@ -141,7 +142,6 @@ bool TPlayer::sendLogin()
 		{
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
-			if (player->isNC()) continue;
 
 			// Send the other player my props.
 			if (player->isClient())
@@ -287,10 +287,6 @@ bool TPlayer::sendLoginClient()
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
 
-	//sendPacket(CString() >> (char)195 >> (char)4 << "idle" << "\"SETBACKTO \"");
-	//sendPacket(CString() >> (char)195 >> (char)4 << "walk" << "\"SETBACKTO \"");
-	//sendPacket(CString() >> (char)195 >> (char)5 << "sword" << "\"SETBACKTO idle\"");
-
 	return true;
 }
 
@@ -307,19 +303,6 @@ bool TPlayer::sendLoginRC()
 	CString rcmessage;
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
-
-	
-	// Send the details about the NPC-Server.
-	// second 0 = ID.
-	CString npcServer;
-	npcServer >> (char)PLO_ADDPLAYER        >> (short)1;
-	npcServer >> (char)11 << "(npcserver)";
-	npcServer >> (char)PLPROP_CURLEVEL		>> (char)0;
-	npcServer >> (char)PLPROP_PSTATUSMSG    >> (char)0;
-	npcServer >> (char)PLPROP_NICKNAME      >> (char)19 << "NPC-Server (Server)";
-	npcServer >> (char)PLPROP_COMMUNITYNAME >> (char)11 << "(npcserver)";
-	sendPacket(npcServer);
-	
 
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;

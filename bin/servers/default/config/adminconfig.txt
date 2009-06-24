@@ -1,5 +1,5 @@
 # ServerHQ password for the server.
-password = 
+hq_password = 
 
 # Current level the server is set to.
 # If you specify a level that is higher than the server's allowed level,
@@ -8,4 +8,7 @@ password =
 # 2 = Silver
 # 1 = Bronze
 # 0 = Hidden
-level = 1
+hq_level = 1
+
+# NPC-Server password.
+ns_password = 
