@@ -172,7 +172,7 @@ class TAccount
 		void setAdminIp(CString ip)					{ adminIp = ip; }
 		void setComments(CString comments)			{ accountComments = comments; }
 
-		bool hasRight(int mask)		{ return ((adminRights & mask) && accountIpStr.match(adminIp)); }
+		bool hasRight(int mask)		{ return (adminRights & mask) ? true : false; }
 
 	protected:
 		TServer* server;
