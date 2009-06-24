@@ -20,6 +20,9 @@ void codec::reset(uint8_t key) {
 }
 
 void codec::decrypt(CString& pBuf) {
+	// If we don't have anything, just return.
+	if (pBuf.isEmpty()) return;
+
 	// Apply the correct decryption algorithm.
 	switch (m_gen)
 	{
@@ -33,7 +36,7 @@ void codec::decrypt(CString& pBuf) {
 		{
 			m_iterator *= 0x8088405;
 			m_iterator += m_key;
-			int pos  = ((m_iterator & 0x0FFFF) % pBuf.length());
+			int pos = ((m_iterator & 0x0FFFF) % pBuf.length());
 			pBuf.removeI(pos, 1);
 		}
 		break;
@@ -68,6 +71,9 @@ void codec::decrypt(CString& pBuf) {
 
 CString codec::encrypt(CString pBuf)
 {
+	// If we don't have anything, just return.
+	if (pBuf.isEmpty()) return pBuf;
+
 	switch (m_gen)
 	{
 		// No encryption.
@@ -80,7 +86,7 @@ CString codec::encrypt(CString pBuf)
 		{
 			m_iterator *= 0x8088405;
 			m_iterator += m_key;
-			int pos  = ((m_iterator & 0x0FFFF) % pBuf.length());
+			int pos = ((m_iterator & 0x0FFFF) % pBuf.length());
 			return CString() << pBuf.subString(0, pos) << ")" << pBuf.subString(pos);
 			break;
 		}

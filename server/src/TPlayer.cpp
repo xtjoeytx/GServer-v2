@@ -464,12 +464,9 @@ bool TPlayer::parsePacket(CString& pPacket)
 			nextIsRaw = false;
 			curPacket = pPacket.readChars(rawPacketSize);
 
-			if (isClient())
-			{
-				if (curPacket[curPacket.length() - 1] == '\n')
-					curPacket.removeI(curPacket.length() - 1);
-			}
-			else if (isRC() && versionID > RCVER_1_1)
+			// The client and RC versions above 1.1 append a \n to the end of the packet.
+			// Remove it now.
+			if (isClient() || (isRC() && versionID > RCVER_1_1))
 			{
 				if (curPacket[curPacket.length() - 1] == '\n')
 					curPacket.removeI(curPacket.length() - 1);
