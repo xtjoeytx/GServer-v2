@@ -1,6 +1,7 @@
 #include <time.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include "ICommon.h"
 #include "CSocket.h"
 #include "TServer.h"
@@ -2754,6 +2755,93 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			std::vector<CString> actionParts = action.tokenize(",");
 			if (actionParts.size() == 2)
 				this->deleteWeapon((actionParts[1]).trim());
+		}
+		else if (action.find("gr.addguildmember") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			CString guild, account, nick;
+			if (actionParts.size() > 1) guild = actionParts[1];
+			if (actionParts.size() > 2) account = actionParts[2];
+			if (actionParts.size() > 3) nick = actionParts[3];
+
+			if (!guild.isEmpty() && !account.isEmpty())
+			{
+				// Read the guild list.
+				CFileSystem guildFS(server);
+				guildFS.addDir("guilds");
+				CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+
+				if (guildList.find(account) == -1)
+				{
+					if (guildList[guildList.length() - 1] != '\n') guildList << "\n";
+					guildList << account;
+					if (!nick.isEmpty()) guildList << ":" << nick;
+
+					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+				}
+			}
+		}
+		else if (action.find("gr.removeguildmember") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			CString guild, account;
+			if (actionParts.size() > 1) guild = actionParts[1];
+			if (actionParts.size() > 2) account = actionParts[2];
+
+			if (!guild.isEmpty() && !account.isEmpty())
+			{
+				// Read the guild list.
+				CFileSystem guildFS(server);
+				guildFS.addDir("guilds");
+				CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+
+				if (guildList.find(account) != -1)
+				{
+					int pos = guildList.find(account);
+					int length = guildList.find("\n", pos) - pos;
+					if (length < 0) length = -1;
+					else ++length;
+
+					guildList.removeI(pos, length);
+					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+				}
+			}
+		}
+		else if (action.find("gr.removeguild") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			CString guild;
+			if (actionParts.size() > 1) guild = actionParts[1];
+
+			if (!guild.isEmpty())
+			{
+				// Read the guild list.
+				CFileSystem guildFS(server);
+				guildFS.addDir("guilds");
+				CString path = guildFS.find(CString() << "guild" << guild << ".txt");
+
+				remove(path.text());
+			}
+		}
+		else if (action.find("gr.setguild") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			CString guild, account;
+			if (actionParts.size() > 1) guild = actionParts[1];
+			if (actionParts.size() > 2) account = actionParts[2];
+
+			if (!guild.isEmpty())
+			{
+				TPlayer* p = this;
+				if (!account.isEmpty()) p = server->getPlayer(account, false);
+				if (p)
+				{
+					CString nick = p->getNickname();
+					p->setNick(CString() << nick.readString("(").trim() << " (" << guild << ")", true);
+					p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
+					server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
+				}
+			}
 		}
 	}
 
