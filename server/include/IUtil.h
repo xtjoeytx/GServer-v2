@@ -6,10 +6,12 @@
 
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
-#if defined(_WIN32) || defined(_WIN64)
-	#define sleep(a) Sleep(a)
-#else
-	#define sleep(a) usleep(a*1000)
+#ifndef sleep
+	#if defined(_WIN32) || defined(_WIN64)
+		#define sleep(a) Sleep(a)
+	#else
+		#define sleep(a) usleep(a*1000)
+	#endif
 #endif
 
 /*

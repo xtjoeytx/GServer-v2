@@ -104,13 +104,14 @@ bool __playerPropsRC[propscount] =
 /*
 	Pointer-Functions for Packets
 */
-std::vector<TPLSock> TPLFunc;
+bool TPlayer::created = false;
+typedef bool (TPlayer::*TPLSock)(CString&);
+std::vector<TPLSock> TPLFunc(255, &TPlayer::msgPLI_NULL);
 
-void createPLFunctions()
+void TPlayer::createFunctions()
 {
-	// kinda like a memset-ish thing y'know
-	for (int i = 0; i < 200; i++)
-		TPLFunc.push_back(&TPlayer::msgPLI_NULL);
+	if (TPlayer::created)
+		return;
 
 	// now set non-nulls
 	TPLFunc[PLI_LEVELWARP] = &TPlayer::msgPLI_LEVELWARP;
@@ -208,6 +209,12 @@ void createPLFunctions()
 	TPLFunc[PLI_RC_LARGEFILESTART] = &TPlayer::msgPLI_RC_LARGEFILESTART;
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
+
+	// NPC-Server Functions
+	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_QUERY;
+
+	// Finished
+	TPlayer::created = true;
 }
 
 
@@ -226,6 +233,10 @@ fileQueue(pSocket)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
+
+	// Create Functions
+	if (!TPlayer::created)
+		TPlayer::createFunctions();
 }
 
 TPlayer::~TPlayer()
@@ -1205,14 +1216,27 @@ bool TPlayer::processChat(CString pChat)
 	return processed;
 }
 
+bool TPlayer::isAdminIp()
+{
+	std::vector<CString> adminIps = adminIp.tokenize(",");
+	for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+	{
+		if (accountIpStr.match(*i))
+			   return true;
+	}
+
+	return false;
+}
+
 bool TPlayer::isStaff()
 {
-	CString staff(server->getSettings()->getStr("staff"));
-	std::vector<CString> staffList = staff.tokenize(",");
+	std::vector<CString> staffList = server->getSettings()->getStr("staff").tokenize(",");
 	for (std::vector<CString>::iterator i = staffList.begin(); i != staffList.end(); ++i)
 	{
-		if (accountName.toLower() == (*i).trim().toLower()) return true;
+		if (accountName.toLower() == (*i).trim().toLower())
+			return true;
 	}
+
 	return false;
 }
 
@@ -1867,8 +1891,15 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			return false;
 		}
 
-		// Yay.
-		server->setNPCServer(this);
+		if (!sendLogin())
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "NPC-Server failed to login.");
+			return false;
+		}
+
+		// NPC-Server
+		int port = pPacket.readGShort();
+		server->setNPCServer(this, port);
 	}
 
 	return true;
@@ -2907,24 +2938,5 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
-	return true;
-}
-
-bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
-{
-	unsigned short pid = pPacket.readGUShort();
-	CString message = pPacket.readString("");
-	CSettings* settings = server->getSettings();
-
-	// TODO: Check if player is the NPC Server.
-
-	// Enact upon the message.
-	if (message == "location")
-	{
-		TPlayer* npcserver = server->getNPCServer();
-		CString ip = npcserver->getSocket()->getRemoteIp();
-		CString port = npcserver->getSocket()->getRemotePort();
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)pid << ip << "," << port);
-	}
 	return true;
 }

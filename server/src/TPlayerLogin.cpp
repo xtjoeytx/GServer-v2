@@ -18,103 +18,80 @@ extern bool __getLoginRC[propscount];
 bool TPlayer::sendLogin()
 {
 	// Load Player-Account
-	loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
-
-	// Check to see if the player is banned or not.
-	if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	if (!isNPCServer())
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
-		return false;
-	}
+		loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
 
-	// If we are an RC, check to see if we can log in.
-	if (isRC())
-	{
-		// Check and see if we are allowed in.
-		std::vector<CString> adminIps = adminIp.tokenize(",");
-		bool failed = true;
-		if (isStaff())
+		// Check to see if the player is banned or not.
+		if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
-			for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
+			return false;
+		}
+
+		// If we are an RC, check to see if we can log in.
+		if (isRC())
+		{
+			// Check and see if we are allowed in.
+			if (!isStaff() || !isAdminIp())
 			{
-				if (accountIpStr.match(*i))
-				{
-					failed = false;
-					break;
-				}
+				rclog.out("Attempted RC login by %s.\n", accountName.text());
+				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
+				return false;
 			}
 		}
-		if (failed)
-		{
-			rclog.out("Attempted RC login by %s.\n", accountName.text());
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
-			return false;
-		}
-	}
 
-	// Check to see if we can log in if we are a client.
-	if (isClient())
-	{
-		// Staff only.
-		if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
+		// Check to see if we can log in if we are a client.
+		if (isClient())
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
-			return false;
-		}
-
-		// Check and see if we are allowed in.
-		std::vector<CString> adminIps = adminIp.tokenize(",");
-		bool failed = true;
-		if (adminIp == "0.0.0.0") failed = false;
-		if (failed)
-		{
-			for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+			// Staff only.
+			if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
 			{
-				if (*i == "0.0.0.0" || accountIpStr.match(*i))
-				{
-					failed = false;
-					break;
-				}
+				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
+				return false;
+			}
+
+			// Check and see if we are allowed in.
+			std::vector<CString> adminIps = adminIp.tokenize(",");
+			if (!isAdminIp() && vecSearch<CString>(adminIps, "0.0.0.0") == -1)
+			{
+				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
+				return false;
 			}
 		}
-		if (failed)
+	
+		// Server Signature
+		// 0x49 (73) is used to tell the client that more than eight
+		// players will be playing.
+		sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+
+		// If we have an NPC Server, send this to prevent clients from sending
+		// npc props it modifies.
+		if (server->hasNPCServer())
+			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+
+		// Check if the account is already in use.
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
-			return false;
-		}
-	}
-
-	// Server Signature
-	// 0x49 (73) is used to tell the client that more than eight
-	// players will be playing.
-	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-
-	// If we have an NPC Server, send this to prevent clients from sending
-	// npc props it modifies.
-	if (server->hasNPCServer())
-		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
-
-	// Check if the account is already in use.
-	{
-		std::vector<TPlayer*>* playerList = server->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-		{
-			TPlayer* player = *i;
-			CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
-			unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
-			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
-			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
-			if (oacc == accountName && meClient == themClient && oid != id)
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
-				if ((int)difftime(time(0), player->getLastData()) > 30)
+				TPlayer* player = *i;
+				CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
+				unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
+				int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
+				int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
+				if (oacc == accountName && meClient == themClient && oid != id)
 				{
-					player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
-					player->disconnect();
-				}
-				else
-				{
-					sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
-					return false;
+					if ((int)difftime(time(0), player->getLastData()) > 30)
+					{
+						player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
+						player->disconnect();
+					}
+					else
+					{
+						sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
+						return false;
+					}
 				}
 			}
 		}
@@ -124,6 +101,8 @@ bool TPlayer::sendLogin()
 	bool succeeded = false;
 	if (isClient()) succeeded = sendLoginClient();
 	else if (isRC()) succeeded = sendLoginRC();
+	else if (isNPCServer()) succeeded = sendLoginNPCServer();
+	
 	if (succeeded == false) return false;
 
 	// Exchange props with everybody on the server.
@@ -176,7 +155,6 @@ bool TPlayer::sendLogin()
 
 	// Set loaded to true so our account is saved when we leave.
 	loaded = true;
-
 	return true;
 }
 
@@ -305,5 +283,16 @@ bool TPlayer::sendLoginRC()
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
+	return true;
+}
+
+bool TPlayer::sendLoginNPCServer()
+{
+	// If no nickname was specified, set the nickname to the account name.
+	if (nickName.length() == 0)
+		nickName = "NPC-Server (Server)";
+
+	// Set the head to the server's set staff head.
+	headImg = server->getSettings()->getStr("staffhead", "head25.png");
 	return true;
 }
