@@ -42,10 +42,6 @@ int main(int argc, char* argv[])
 	// Grab the base path to the server executable.
 	getBasePath();
 
-	// Create Packet-Functions
-	createPLFunctions();
-	createSLFunctions();
-
 	// Program announcements.
 	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
 	serverlog.out("Programmed by Joey and Nalin.\n\n");

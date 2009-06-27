@@ -25,10 +25,12 @@ public:
 	CString getImage() const			{ return image; }
 	CString getServerScript() const		{ return serverScript; }
 	CString getClientScript() const		{ return clientScript; }
+	CString getFullScript() const		{ return fullScript; }
 
 	void setImage(const CString& pImage)			{ image = pImage; }
 	void setServerScript(const CString& pScript)	{ serverScript = pScript; }
 	void setClientScript(const CString& pScript)	{ clientScript = pScript; }
+	void setFullScript(const CString& pScript)		{ fullScript = pScript; }
 	void setModTime(time_t mod)						{ modTime = mod; }
 
 private:
@@ -36,6 +38,7 @@ private:
 	CString image;
 	CString serverScript;
 	CString clientScript;
+	CString fullScript;
 	time_t modTime;
 	bool defaultWeapon;
 	char defaultWeaponId;

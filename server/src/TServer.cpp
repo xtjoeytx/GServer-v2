@@ -18,7 +18,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), wordFilter(this), npcServer(0)
+: name(pName), wordFilter(this), mNpcServer(0)
 {
 	lastTimer = lastNWTimer = last5mTimer = last3mTimer = time(0);
 
@@ -923,4 +923,13 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 		if ((*i)->getType() & who)
 			(*i)->sendPacket(pPacket);
 	}
+}
+
+/*
+	NPC-Server Functionality
+*/
+void TServer::setNPCServer(TPlayer *pNpcServer, int pNCPort)
+{
+	mNpcServer = pNpcServer;
+	mNCPort = pNCPort;
 }

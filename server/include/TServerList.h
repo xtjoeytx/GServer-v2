@@ -92,7 +92,7 @@ class TServerList : public CSocketStub
 		void setServer(TServer* pServer) { server = pServer; }
 
 		bool doTimedEvents();
-
+		
 		// Socket-Control Functions
 		bool getConnected() const;
 		bool main();
@@ -115,6 +115,9 @@ class TServerList : public CSocketStub
 		void setVersion(const CString& pServerVersion);
 
 		// Incoming message parsing functions
+		static bool created;
+		static void createFunctions();
+
 		void msgSVI_NULL(CString& pPacket);
 		void msgSVI_VERIACC(CString& pPacket);
 		void msgSVI_VERIGUILD(CString& pPacket);
@@ -136,7 +139,7 @@ class TServerList : public CSocketStub
 		void msgSVI_FILESTART3(CString& pPacket);
 		void msgSVI_FILEDATA3(CString& pPacket);
 		void msgSVI_FILEEND3(CString& pPacket);
-
+		
 	protected:
 		// Packet Functions
 		void parsePacket(CString& pPacket);
@@ -148,11 +151,7 @@ class TServerList : public CSocketStub
 		CString rBuffer, sBuffer;
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer;
-		TServer* server;
+		TServer *server;
 };
-
-// Packet-Functions
-typedef void (TServerList::*TSLSock)(CString&);
-void createSLFunctions();
 
 #endif // TSERVERLIST_H
