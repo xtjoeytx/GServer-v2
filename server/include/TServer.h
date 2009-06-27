@@ -109,10 +109,12 @@ class TServer : public CSocketStub
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
-		//NPC-Server
-		bool hasNPCServer()						{ return npcServer != 0; }
-		void setNPCServer(TPlayer* npcserver)	{ npcServer = npcserver; }
-		TPlayer* getNPCServer()					{ return npcServer; }
+		// NPC-Server Functionality
+		bool hasNPCServer()						{ return mNpcServer != 0; }
+		TPlayer *getNPCServer()					{ return mNpcServer; }
+		int getNCPort()							{ return mNCPort; }
+
+		void setNPCServer(TPlayer * pNpcServer, int pNCPort = 0);
 
 	private:
 		bool doTimedEvents();
@@ -140,12 +142,14 @@ class TServer : public CSocketStub
 		CString servermessage;
 		CWordFilter wordFilter;
 
-		TPlayer* npcServer;
-
 		CLog serverlog;//("logs/serverlog.txt");
 		CLog rclog;//("logs/rclog.txt");
 
 		time_t lastTimer, lastNWTimer, last5mTimer, last3mTimer;
+
+		// NPC-Server Functionality
+		TPlayer *mNpcServer;
+		int mNCPort;
 };
 
 #endif

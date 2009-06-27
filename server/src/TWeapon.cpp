@@ -5,7 +5,7 @@
 #include "TServer.h"
 
 TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool trimCode)
-: name(pName), image(pImage), modTime(pModTime), defaultWeapon(false), defaultWeaponId(-1)
+: name(pName), image(pImage), fullScript(pScript), modTime(pModTime), defaultWeapon(false), defaultWeaponId(-1)
 {
 	if (pModTime == 0) modTime = time(0);
 
@@ -128,10 +128,12 @@ CString TWeapon::getWeaponPacket() const
 	if (defaultWeapon)
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)defaultWeaponId;
 
-	return CString() >> (char)PLO_NPCWEAPONADD
+	CString outPacket = CString() >> (char)PLO_NPCWEAPONADD
 		>> (char)name.length() << name
 		>> (char)0 >> (char)image.length() << image
 		>> (char)1 >> (short)clientScript.length() << clientScript;
+
+	return outPacket;
 
 	// 0x00 - image
 	// 0x01 - script

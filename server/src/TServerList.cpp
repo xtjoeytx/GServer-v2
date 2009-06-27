@@ -9,13 +9,14 @@
 /*
 	Pointer-Functions for Packets
 */
-std::vector<TSLSock> TSLFunc;
+bool TServerList::created = false;
+typedef void (TServerList::*TSLSock)(CString&);
+std::vector<TSLSock> TSLFunc(255, &TServerList::msgSVI_NULL);
 
-void createSLFunctions()
+void TServerList::createFunctions()
 {
-	// kinda like a memset-ish thing y'know
-	for (int i = 0; i < 101; i++)
-		TSLFunc.push_back(&TServerList::msgSVI_NULL);
+	if (TServerList::created)
+		return;
 
 	// now set non-nulls
 	TSLFunc[SVI_VERIACC] = &TServerList::msgSVI_VERIACC;
@@ -36,6 +37,9 @@ void createSLFunctions()
 	TSLFunc[SVI_FILESTART3] = &TServerList::msgSVI_FILESTART3;
 	TSLFunc[SVI_FILEDATA3] = &TServerList::msgSVI_FILEDATA3;
 	TSLFunc[SVI_FILEEND3] = &TServerList::msgSVI_FILEEND3;
+
+	// Finished
+	TServerList::created = true;
 }
 
 /*
@@ -50,6 +54,10 @@ TServerList::TServerList()
 	sock.setDescription("listserver");
 
 	lastData = lastPing = lastTimer = time(0);
+
+	// Create Functions
+	if (!TServerList::created)
+		TServerList::createFunctions();
 }
 
 TServerList::~TServerList()

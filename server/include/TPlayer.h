@@ -360,9 +360,9 @@ class TPlayer : public TAccount, public CSocketStub
 		bool doTimedEvents();
 		void disconnect();
 		bool processChat(CString pChat);
+		bool isAdminIp();
 		bool isStaff();
 		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
-		//bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
 		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
 		bool addWeapon(int defaultWeapon);
@@ -372,7 +372,14 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
 
+		// NPC-Server Functionality
+		void sendNCAddr();
+		void sendNC_Weapons();
+
 		// Packet-Functions
+		static bool created;
+		static void createFunctions();
+
 		bool msgPLI_NULL(CString& pPacket);
 		bool msgPLI_LOGIN(CString& pPacket);
 
@@ -468,10 +475,13 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_LARGEFILEEND(CString& pPacket);
 		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
 
+		bool msgPLI_NC_QUERY(CString& pPacket);
+
 	private:
 		// Login functions.
 		bool sendLoginClient();
 		bool sendLoginRC();
+		bool sendLoginNPCServer();
 
 		// Packet functions.
 		bool parsePacket(CString& pPacket);
@@ -535,9 +545,5 @@ inline void TPlayer::setId(int pId)
 {
 	id = pId;
 }
-
-// Packet-Functions
-typedef bool (TPlayer::*TPLSock)(CString&);
-void createPLFunctions();
 
 #endif // TPLAYER_H
