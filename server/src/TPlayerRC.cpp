@@ -232,8 +232,20 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
 
 	rclog.out("%s has updated the server options.\n", accountName.text());
-	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.");
-
+	
+	// Send RC Information
+	CString outPacket = CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.";
+	std::vector<TPlayer *> *playerList = server->getPlayerList();
+	for (std::vector<TPlayer *>::const_iterator i = playerList->begin(); i != playerList->end(); ++i)
+	{
+		if ((*i)->getType() & PLTYPE_ANYRC)
+		{
+			(*i)->sendPacket(outPacket);
+			if (hasRight(PLPERM_NPCCONTROL))
+				(*i)->sendNCAddr();
+		}
+	}
+	
 	return true;
 }
 
@@ -1626,6 +1638,29 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	rclog.out("%s removed folder %s\n", accountName.text(), folder.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder << " has been removed.\n");
 	msgPLI_RC_FILEBROWSER_START(CString() << "");
+
+	return true;
+}
+
+
+bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
+{
+	// No npc-server, don't continue!
+	if (!server->hasNPCServer())
+		return true;
+
+	// Read Packet Data
+	unsigned short pid = pPacket.readGUShort();
+	CString message = pPacket.readString("");
+
+	// Check if player id is of the NPC Server.
+	TPlayer *npcserver = server->getNPCServer();
+	if (npcserver->getId() != pid)
+		return true;
+
+	// Enact upon the message.
+	if (message == "location")
+		sendNCAddr();
 
 	return true;
 }
