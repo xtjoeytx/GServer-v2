@@ -133,19 +133,17 @@ bool TPlayer::sendLogin()
 				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 			else
 			{
+				// Levelname
+				CString levelName = (player->getLevel() ? player->getLevel()->getLevelName() : "");
+
 				// Get the other player's RC props.
-				CString lvl;
-				if (player->getLevel()) lvl = player->getLevel()->getLevelName();
-				CString otherRCProps;
-				otherRCProps >> (char)PLO_ADDPLAYER >> (short)player->getId()
+				this->sendPacket(CString()
+					>> (char)PLO_ADDPLAYER >> (short)player->getId()
 					>> (char)player->getAccountName().length() << player->getAccountName()
-					>> (char)PLPROP_CURLEVEL >> lvl.length() << lvl
+					>> (char)PLPROP_CURLEVEL >> (char)levelName.length() << levelName
 					>> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG)
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
-					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME);
-					//>> (char)PLPROP_HEADGIF << player->getProp(PLPROP_HEADGIF)
-					//>> (char)PLPROP_BODYIMG << player->getProp(PLPROP_BODYIMG);
-				this->sendPacket(otherRCProps);
+					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME));
 			}
 		}
 	}
