@@ -40,7 +40,7 @@ class TLevel;
 class TLevelBaddy
 {
 	public:
-		TLevelBaddy(const float pX, const float pY, const char pType, TLevel* pLevel, TServer* pServer);
+		TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer);
 
 		void reset();
 
@@ -61,7 +61,7 @@ class TLevelBaddy
 	private:
 		TLevel* level;
 		TServer* server;
-		char type;
+		unsigned char type;
 		char id, power, mode, ani, dir;
 		float x, y, startX, startY;
 		CString image;

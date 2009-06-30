@@ -171,13 +171,8 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 	CString serverOptions;
 	serverOptions.load(CString() << server->getServerPath() << "config/serveroptions.txt");
 	serverOptions.removeAllI("\r");
-	serverOptions.gtokenizeI();
-	
-	// Stupid RC2
-	if (isRC() && versionID == RCVER_2)
-		serverOptions.replaceAllI(",,", ", ,");
 
-	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << serverOptions);
+	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << serverOptions.gtokenize());
 	return true;
 }
 
