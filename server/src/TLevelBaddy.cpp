@@ -23,11 +23,12 @@ const bool baddyPropsReinit[baddypropcount] = {
 	true, true, true, false, false, false
 };
 
-TLevelBaddy::TLevelBaddy(const float pX, const float pY, const char pType, TLevel* pLevel, TServer* pServer)
+TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer)
 : level(pLevel), server(pServer), type(pType), id(0),
 startX(pX), startY(pY),
 respawn(true)
 {
+	if (pType > baddytypes) type = 0;
 	verses.resize(3);
 	reset();
 }
