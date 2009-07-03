@@ -1548,20 +1548,25 @@ void TPlayer::setChat(const CString& pChat)
 
 void TPlayer::setNick(const CString& pNickName, bool force)
 {
-	CString nickname = pNickName;
+	CString newNick, nick, guild;
+	int guild_start = pNickName.findl('(');
+	if (guild_start == -1)
+		nick = pNickName;
+	else
+	{
+		nick = pNickName.subString(0, guild_start);
+		guild = pNickName.subString(guild_start + 1);
+		guild.trimI();
+		if (guild[guild.length() - 1] == ')')
+			guild.removeI(guild.length() - 1);
+	}
+
 	if (force)
 	{
 		nickName = pNickName;
-		CString nick = nickname.readString("(").trim();
-		CString guild = nickname.readString(")");
 		this->guild = guild;
 		return;
 	}
-
-	CString newNick;
-	CString nick = nickname.readString("(").trim();
-	CString guild = nickname.readString(")");
-//	CString guild = CString("(") << nickname.readString(")") << ")";
 
 	// If a player has put a * before his nick, remove it.
 	while (!nick.isEmpty() && nick[0] == '*')
