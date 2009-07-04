@@ -145,7 +145,7 @@ class TServer : public CSocketStub
 		CLog serverlog;//("logs/serverlog.txt");
 		CLog rclog;//("logs/rclog.txt");
 
-		time_t lastTimer, lastNWTimer, last5mTimer, last3mTimer;
+		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 
 		// NPC-Server Functionality
 		TPlayer *mNpcServer;

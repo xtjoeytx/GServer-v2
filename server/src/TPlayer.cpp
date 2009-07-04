@@ -244,13 +244,13 @@ TPlayer::~TPlayer()
 	// Send all unsent data (for disconnect messages and whatnot).
 	fileQueue.sendCompress();
 
-	if (id >= 0 && server != 0)
+	if (id >= 0 && server != 0 && loaded)
 	{
 		if (isNPCServer() && server->getNPCServer() == this)
 			server->setNPCServer(0);
 
 		// Save account.
-		if (isClient() && loaded && !isLoadOnly)
+		if (isClient() && !isLoadOnly)
 			saveAccount();
 
 		// Remove from the level.
