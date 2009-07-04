@@ -92,6 +92,9 @@ int main(int argc, char* argv[])
 
 	// Announce that the program is now running.
 	serverlog.out(":: Program started.\n");
+#if defined(WIN32) || defined(WIN64)
+	serverlog.out(":: Use CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
+#endif
 
 	// Wait on each thread to end.
 	// Once all threads have ended, the program has terminated.
@@ -128,7 +131,7 @@ const CString getHomePath()
 	return homepath;
 }
 
-void shutdownServer(int signal)
+void shutdownServer(int sig)
 {
 	serverlog.out(":: The server is now shutting down...\n");
 

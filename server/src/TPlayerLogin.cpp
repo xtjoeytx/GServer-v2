@@ -212,8 +212,8 @@ bool TPlayer::sendLoginClient()
 	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
 
-	sendPacket(CString() >> (char)PLO_EMPTY190);
-	sendPacket(CString() >> (char)PLO_EMPTY194);
+	//sendPacket(CString() >> (char)PLO_EMPTY190);
+	//sendPacket(CString() >> (char)PLO_EMPTY194);
 
 	// Delete the bomb.  It gets automagically added by the client for
 	// God knows which reason.  Bomb must be capitalized.

@@ -17,6 +17,6 @@
 	Define Functions
 */
 const CString getHomePath();
-void shutdownServer(int signal);
+void shutdownServer(int sig);
 
 #endif // MAIN_H
