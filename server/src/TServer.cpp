@@ -20,7 +20,7 @@ static const char* const filesystemTypes[] =
 TServer::TServer(CString pName)
 : name(pName), wordFilter(this), mNpcServer(0)
 {
-	lastTimer = lastNWTimer = last5mTimer = last3mTimer = time(0);
+	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
@@ -215,6 +215,18 @@ bool TServer::doTimedEvents()
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 	}
 
+	// Stuff that happens every minute.
+	if ((int)difftime(lastTimer, last1mTimer) >= 60)
+	{
+		last1mTimer = lastTimer;
+
+		// Save server flags.
+		CString out;
+		for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
+			out << *i << "\r\n";
+		out.save(CString() << serverpath << "serverflags.txt");
+	}
+
 	// Stuff that happens every 3 minutes.
 	if ((int)difftime(lastTimer, last3mTimer) >= 180)
 	{
@@ -230,12 +242,6 @@ bool TServer::doTimedEvents()
 	if ((int)difftime(lastTimer, last5mTimer) >= 300)
 	{
 		last5mTimer = lastTimer;
-
-		// Save server flags.
-		CString out;
-		for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-			out << *i << "\r\n";
-		out.save(CString() << serverpath << "serverflags.txt");
 
 		// Load allowed versions.
 		CString versions;
