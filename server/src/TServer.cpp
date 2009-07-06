@@ -708,7 +708,16 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+	//sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer* p = *i;
+		if (!p->isClient()) continue;
+
+		if (p->getVersion() < CLVER_2_1)
+			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+		else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+	}
 
 	// Delete the NPC from memory.
 	delete npc;

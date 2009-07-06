@@ -141,10 +141,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		return CString() >> (char)bombPower;
 
 		case NPCPROP_SWORDIMAGE:
-		if (swordPower + 30 > 30)
-			return CString() >> (char)(swordPower + 30) >> (char)swordImage.length() << swordImage;
-		else
+		if (swordPower == 0)
 			return CString() >> (char)0;
+		else
+			return CString() >> (char)(swordPower + 30) >> (char)swordImage.length() << swordImage;
 
 		case NPCPROP_SHIELDIMAGE:
 		if (shieldPower + 10 > 10)
@@ -295,12 +295,22 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			break;
 
 			case NPCPROP_X:
-				x = (float)(pProps.readGChar())/2;
+				x = (float)(pProps.readGChar()) / 2.0f;
+				if (clientVersion < CLVER_2_1)
+				{
+					if (x < 0.0f) x = 0.0f;
+					if (x > 63.0f) x = 63.0f;
+				}
 				x2 = (int)(x * 16);
 			break;
 
 			case NPCPROP_Y:
-				y = (float)(pProps.readGChar())/2;
+				y = (float)(pProps.readGChar()) / 2.0f;
+				if (clientVersion < CLVER_2_1)
+				{
+					if (y < 0.0f) y = 0.0f;
+					if (y > 63.0f) y = 63.0f;
+				}
 				y2 = (int)(y * 16);
 			break;
 
