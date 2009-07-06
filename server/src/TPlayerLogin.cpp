@@ -76,8 +76,8 @@ bool TPlayer::sendLogin()
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
 				TPlayer* player = *i;
-				CString oacc = player->getProp(PLPROP_ACCOUNTNAME).subString(1);
-				unsigned short oid = player->getProp(PLPROP_ID).readGUShort();
+				CString oacc = player->getAccountName();
+				unsigned short oid = (unsigned short)player->getId();
 				int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
 				int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
 				if (oacc == accountName && meClient == themClient && oid != id)

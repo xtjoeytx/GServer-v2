@@ -75,6 +75,14 @@ class TLevel
 		//! \param pLevelSpar If true, the level becomes a sparring zone level.
 		void setSparringZone(bool pLevelSpar)			{ levelSpar = pLevelSpar; }
 
+		//! Gets the singleplayer status of the level.
+		//! \return The singleplayer status.  If true, the level is singleplayer.
+		bool getSingleplayer() const					{ return levelSingleplayer; }
+
+		//! Sets the singleplayer status of the level.
+		//! \param pLevelSingleplayer If true, the level becomes a singleplayer level.
+		void setSingleplayer(bool pLevelSingleplayer)	{ levelSingleplayer = pLevelSingleplayer; }
+
 		//! Adds a board change to the level.
 		//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
 		//! \param pX X location of the top-left tile.
@@ -171,6 +179,7 @@ class TLevel
 		TServer* server;
 		time_t modTime;
 		bool levelSpar;
+		bool levelSingleplayer;
 		short levelTiles[4096];
 		CString fileName, fileVersion, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;

@@ -111,7 +111,12 @@ CString TPlayer::getProp(int pPropId)
 				if (pmap && pmap->getType() == MAPTYPE_GMAP)
 					return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
-					return CString() >> (char)levelName.length() << levelName;
+				{
+					if (level != 0 && level->getSingleplayer() == true)
+						return CString() >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
+					else
+						return CString() >> (char)levelName.length() << levelName;
+				}
 			}
 			else
 				return CString() >> (char)1 << " ";
