@@ -70,6 +70,19 @@ CString TLevel::getBoardChangesPacket(time_t time)
 	return retVal;
 }
 
+CString TLevel::getBoardChangesPacket2(time_t time)
+{
+	CString retVal;
+	retVal >> (char)PLO_BOARDMODIFY;
+	for (std::vector<TLevelBoardChange*>::const_iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
+	{
+		TLevelBoardChange* change = *i;
+		if (change->getModTime() >= time)
+			retVal << change->getBoardStr();
+	}
+	return retVal;
+}
+
 CString TLevel::getChestPacket(TPlayer *pPlayer)
 {
 	if (pPlayer == 0)
@@ -162,7 +175,16 @@ bool TLevel::reload()
 			}
 
 			// Inform all the clients that the NPC has been deleted.
-			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
+			//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
+			for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
+			{
+				TPlayer* p = *i;
+				if (!p->isClient()) continue;
+
+				if (p->getVersion() < CLVER_2_1)
+					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)n->getId());
+				else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)n->getLevel()->getLevelName().length() << n->getLevel()->getLevelName() >> (int)n->getId());
+			}
 
 			delete n;
 		}

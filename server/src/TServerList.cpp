@@ -434,83 +434,117 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 		<< CString((int)time%60) << " secs";
 	profile >> (char)line.length() << line;
 
-	// Add all the specified variables to the profile string.
-	CString profileVars = server->getSettings()->getStr("profilevars");
-	if (profileVars.length() != 0)
+	// Do the old profile method for the old clients.
+	if (p1->getVersion() < CLVER_2_1)
 	{
-		std::vector<CString> vars = profileVars.tokenize(",");
-		for (std::vector<CString>::iterator i = vars.begin(); i != vars.end(); ++i)
+		CString val;
+
+		val = CString((int)p2->getProp(PLPROP_KILLSCOUNT).readGUInt());
+		profile >> (char)val.length() << val;
+
+		val = CString((int)p2->getProp(PLPROP_DEATHSCOUNT).readGUInt());
+		profile >> (char)val.length() << val;
+
+		val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
+		profile >> (char)val.length() << val;
+
+		int rating = p2->getProp(PLPROP_RATING).readGUInt();
+		val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+		profile >> (char)val.length() << val;
+
+		val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGUChar());
+		profile >> (char)val.length() << val;
+
+		val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
+		profile >> (char)val.length() << val;
+
+		val = CString((int)(p2->getProp(PLPROP_SWORDPOWER).readGUChar() - 30));
+		profile >> (char)val.length() << val;
+
+		bool canSpin = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) != 0 ? true : false);
+		if (canSpin) val = "true"; else val = "false";
+		profile >> (char)val.length() << val;
+	}
+	else
+	{
+		// Add all the specified variables to the profile string.
+		CString profileVars = server->getSettings()->getStr("profilevars");
+		if (profileVars.length() != 0)
 		{
-			CString name = i->readString(":=").trim();
-			CString val = i->readString("").trim();
+			std::vector<CString> vars = profileVars.tokenize(",");
+			for (std::vector<CString>::iterator i = vars.begin(); i != vars.end(); ++i)
+			{
+				CString name = i->readString(":=").trim();
+				CString val = i->readString("").trim();
 
-			// Built-in values.
-			if (val == "playerkills")
-				val = CString((unsigned int)(p2->getProp(PLPROP_KILLSCOUNT).readGUInt()));
-			else if (val == "playerdeaths")
-				val = CString((unsigned int)(p2->getProp(PLPROP_DEATHSCOUNT).readGUInt()));
-			else if (val == "playerfullhearts")
-				val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
-			else if (val == "playerrating")
-			{
-				int rating = p2->getProp(PLPROP_RATING).readGUInt();
-				val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
-			}
-			else if (val == "playerap")
-				val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGChar());
-			else if (val == "playerrupees")
-				val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
-			else if (val == "playerswordpower")
-			{
-				char sp = p2->getProp(PLPROP_SWORDPOWER).readGChar();
-				if (sp > 4) sp -= 30;
-				val = CString((int)sp);
-			}
-			else if (val == "canspin")
-				val = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
-			else if (val == "playerhearts")
-			{
-				unsigned char power = p2->getProp(PLPROP_CURPOWER).readGUChar();
-				val = CString((int)(power / 2));
-				if (power % 2 == 1) val << ".5";
-			}
-			else if (val == "playerdarts")
-				val = CString((int)p2->getProp(PLPROP_ARROWSCOUNT).readGUChar());
-			else if (val == "playerbombs")
-				val = CString((int)p2->getProp(PLPROP_BOMBSCOUNT).readGUChar());
-			else if (val == "playermp")
-				val = CString((int)p2->getProp(PLPROP_MAGICPOINTS).readGUChar());
-			else if (val == "playershieldpower")
-			{
-				char sp = p2->getProp(PLPROP_SHIELDPOWER).readGChar();
-				if (sp > 3) sp -= 10;
-				val = CString((int)sp);
-			}
-			else if (val == "playerglovepower")
-				val = CString((int)p2->getProp(PLPROP_GLOVEPOWER).readGUChar());
-			else
-			{
-				// Find if String-Array
-				int pos[3] = {0, 0, 0};
-				pos[0] = val.findl('{');
-				pos[1] = val.find('}', pos[0]);
-				pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0]+1, pos[1]-1)) : -1);
-
-				// Find Flag Name / Value
-				CString flagName = val.subString(0, pos[0]);
-				val = p2->getFlag(flagName);
-
-				// If String-Array, Get Index
-				if (pos[2] >= 0)
+				// Built-in values.
+				if (val == "playerkills")
+					val = CString((unsigned int)(p2->getProp(PLPROP_KILLSCOUNT).readGUInt()));
+				else if (val == "playerdeaths")
+					val = CString((unsigned int)(p2->getProp(PLPROP_DEATHSCOUNT).readGUInt()));
+				else if (val == "playerfullhearts")
+					val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
+				else if (val == "playerrating")
 				{
-					std::vector<CString> temp = val.tokenize(',');
-					if ((int)temp.size() > pos[2])
-						val = temp[pos[2]];
+					int rating = p2->getProp(PLPROP_RATING).readGUInt();
+					val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
 				}
-			}
+				else if (val == "playerap")
+					val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGChar());
+				else if (val == "playerrupees")
+					val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
+				else if (val == "playerswordpower")
+				{
+					char sp = p2->getProp(PLPROP_SWORDPOWER).readGChar();
+					if (sp > 4) sp -= 30;
+					val = CString((int)sp);
+				}
+				else if (val == "canspin")
+					val = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
+				else if (val == "playerhearts")
+				{
+					unsigned char power = p2->getProp(PLPROP_CURPOWER).readGUChar();
+					val = CString((int)(power / 2));
+					if (power % 2 == 1) val << ".5";
+				}
+				else if (val == "playerdarts")
+					val = CString((int)p2->getProp(PLPROP_ARROWSCOUNT).readGUChar());
+				else if (val == "playerbombs")
+					val = CString((int)p2->getProp(PLPROP_BOMBSCOUNT).readGUChar());
+				else if (val == "playermp")
+					val = CString((int)p2->getProp(PLPROP_MAGICPOINTS).readGUChar());
+				else if (val == "playershieldpower")
+				{
+					char sp = p2->getProp(PLPROP_SHIELDPOWER).readGChar();
+					if (sp > 3) sp -= 10;
+					val = CString((int)sp);
+				}
+				else if (val == "playerglovepower")
+					val = CString((int)p2->getProp(PLPROP_GLOVEPOWER).readGUChar());
+				else
+				{
+					// Find if String-Array
+					int pos[3] = {0, 0, 0};
+					pos[0] = val.findl('{');
+					pos[1] = val.find('}', pos[0]);
+					pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0]+1, pos[1]-1)) : -1);
 
-			// Add it to the profile now.
-			profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
+					// Find Flag Name / Value
+					CString flagName = val.subString(0, pos[0]);
+					val = p2->getFlag(flagName);
+
+					// If String-Array, Get Index
+					if (pos[2] >= 0)
+					{
+						std::vector<CString> temp = val.tokenize(',');
+						if ((int)temp.size() > pos[2])
+							val = temp[pos[2]];
+					}
+				}
+
+				// Add it to the profile now.
+				profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
+			}
 		}
 	}
 
