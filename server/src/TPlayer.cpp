@@ -1577,11 +1577,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	CString newNick, nick, guild;
 	int guild_start = pNickName.findl('(');
 	if (guild_start == -1)
-		nick = pNickName;
+		nick = pNickName.trim();
 	else
 	{
 		nick = pNickName.subString(0, guild_start);
 		guild = pNickName.subString(guild_start + 1);
+		nick.trimI();
 		guild.trimI();
 		if (guild[guild.length() - 1] == ')')
 			guild.removeI(guild.length() - 1);
@@ -1645,13 +1646,32 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		}
 		else nickName = newNick;
 
+		// See if we can ask if it is a global guild.
+		bool askGlobal = false;
+		if (server->getSettings()->getBool("globalguilds", true) == false)
+		{
+			std::vector<CString> allowed = server->getSettings()->getStr("allowedglobalguilds").tokenize(",");
+			for (std::vector<CString>::iterator i = allowed.begin(); i != allowed.end(); ++i)
+			{
+				if (*i == guild)
+				{
+					askGlobal = true;
+					break;
+				}
+			}
+		}
+		else askGlobal = true;
+
 		// See if it is a global guild.
-		server->getServerList()->sendPacket(
-			CString() >> (char)SVO_VERIGUILD >> (short)id
-			>> (char)accountName.length() << accountName
-			>> (char)newNick.length() << newNick
-			>> (char)guild.length() << guild
-			);
+		if (askGlobal)
+		{
+			server->getServerList()->sendPacket(
+				CString() >> (char)SVO_VERIGUILD >> (short)id
+				>> (char)accountName.length() << accountName
+				>> (char)newNick.length() << newNick
+				>> (char)guild.length() << guild
+				);
+		}
 	}
 	else
 	{
