@@ -52,9 +52,13 @@ level(pLevel), server(pServer)
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
-	// Search if the NPC is a sparringzone NPC.
+	// See if the NPC sets the level as a sparring zone.
 	if (pScript.subString(0, 12) == "sparringzone")
 		pLevel->setSparringZone(true);
+
+	// See if the NPC sets the level as singleplayer.
+	if (pScript.subString(0, 12) == "singleplayer")
+		pLevel->setSingleplayer(true);
 
 	// Remove comments and separate clientside and serverside scripts.
 	CString nocomments = removeComments(pScript, "\xa7");
