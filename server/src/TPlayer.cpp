@@ -145,9 +145,9 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_PRIVATEMESSAGE] = &TPlayer::msgPLI_PRIVATEMESSAGE;
 	TPLFunc[PLI_NPCWEAPONDEL] = &TPlayer::msgPLI_NPCWEAPONDEL;
 	TPLFunc[PLI_LEVELWARPMOD] = &TPlayer::msgPLI_LEVELWARP;	// Shared with PLI_LEVELWARP
-
-	TPLFunc[PLI_WEAPONADD] = &TPlayer::msgPLI_WEAPONADD;
+	TPLFunc[PLI_PACKETCOUNT] = &TPlayer::msgPLI_PACKETCOUNT;
 	TPLFunc[PLI_ITEMTAKE] = &TPlayer::msgPLI_ITEMDEL;			// Shared with PLI_ITEMDEL
+	TPLFunc[PLI_WEAPONADD] = &TPlayer::msgPLI_WEAPONADD;
 	TPLFunc[PLI_UPDATEFILE] = &TPlayer::msgPLI_UPDATEFILE;
 	TPLFunc[PLI_ADJACENTLEVEL] = &TPlayer::msgPLI_ADJACENTLEVEL;
 	TPLFunc[PLI_HITOBJECTS] = &TPlayer::msgPLI_HITOBJECTS;
@@ -229,7 +229,8 @@ id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
-fileQueue(pSocket)
+fileQueue(pSocket),
+packetCount(0), firstLevel(true)
 {
 	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
 	srand((unsigned int)time(0));
@@ -471,6 +472,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 	// First packet is always unencrypted zlib.  Read it in a special way.
 	if (type == PLTYPE_AWAIT)
 	{
+		packetCount++;
 		if (msgPLI_LOGIN(CString() << pPacket.readString("\n")) == false)
 			return false;
 	}
@@ -506,6 +508,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 			return false;
 
 		// Call the function assigned to the packet id.
+		packetCount++;
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -555,15 +558,18 @@ void TPlayer::decryptPacket(CString& pPacket)
 	}
 }
 
-void TPlayer::sendPacket(CString pPacket)
+void TPlayer::sendPacket(CString pPacket, bool appendNL)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
 		return;
 
 	// append '\n'
-	if (pPacket[pPacket.length()-1] != '\n')
-		pPacket.writeChar('\n');
+	if (appendNL)
+	{
+		if (pPacket[pPacket.length()-1] != '\n')
+			pPacket.writeChar('\n');
+	}
 
 	// append buffer
 	fileQueue.addPacket(pPacket);
@@ -615,6 +621,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && versionID < CLVER_2_14)
 	{
+		packetLength -= 5;
 		if (fileData.length() > 64000)
 		{
 			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
@@ -635,8 +642,19 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	{
 		int sendSize = clip(32000, 0, fileData.length());
 		if (isClient() && versionID < CLVER_2_14) sendSize = fileData.length();
-		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-		sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n");
+
+		// Older client versions didn't send the modTime.
+		if (versionID < CLVER_2_1)
+		{
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
+			sendPacket(CString() >> (char)PLO_FILE >> (char)pFile.length() << pFile << fileData.subString(0, sendSize), false);
+		}
+		else
+		{
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n");
+		}
+
 		fileData.removeI(0, sendSize);
 	}
 
@@ -1325,7 +1343,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Tell the client their new level.
 	if (modTime == 0 || versionID < CLVER_2_1)
 	{
-		if (pmap && pmap->getType() == MAPTYPE_GMAP)
+		if (pmap && pmap->getType() == MAPTYPE_GMAP && versionID >= CLVER_2_1)
 		{
 			gmaplevelx = pmap->getLevelX(levelName);
 			gmaplevely = pmap->getLevelY(levelName);
@@ -1373,32 +1391,47 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (pLevel == 0) return false;
 	CSettings* settings = server->getSettings();
 
-	// Send Level
-	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+	//if (versionID >= CLVER_2_1)
+		sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time == 0 || versionID < CLVER_2_1)
+	if (l_time >= 0)
 	{
-		if (modTime != pLevel->getModTime() || versionID < CLVER_2_1)
+		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
+	}
+	else
+	{
+		if (modTime != pLevel->getModTime())
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
-		}
 
-		// Send links, signs, and mod time.
-		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
+			//if (firstLevel && versionID < CLVER_2_1)
+			//	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+			//firstLevel = false;
+
+			// Send links, signs, and mod time.
+			if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
+			{
+				sendPacket(CString() << pLevel->getLinksPacket());
+				sendPacket(CString() << pLevel->getSignsPacket());
+			}
+			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+		}
+		else
+			sendPacket(CString() >> (char)PLO_LEVELBOARD);
+
+		if (fromAdjacent == false)
 		{
-			sendPacket(CString() << pLevel->getLinksPacket());
-			sendPacket(CString() << pLevel->getSignsPacket());
+			sendPacket(CString() << pLevel->getBoardChangesPacket2(l_time));
+			sendPacket(CString() << pLevel->getChestPacket(this));
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (fromAdjacent == false)
 	{
-		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
-		sendPacket(CString() << pLevel->getChestPacket(this));
 		sendPacket(CString() << pLevel->getHorsePacket());
 		sendPacket(CString() << pLevel->getBaddyPacket());
 	}
@@ -1427,10 +1460,13 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false || pmap != 0)
 	{
 		// Send NPCs.
-		if (pmap && pmap->getType() == MAPTYPE_GMAP)
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
-		else if (versionID > CLVER_1_411)
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+		if (versionID >= CLVER_2_1)
+		{
+			if (pmap && pmap->getType() == MAPTYPE_GMAP)
+				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
+			else if (versionID > CLVER_1_411)
+				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+		}
 		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
 	}
 
@@ -1491,7 +1527,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
 		{
-			cl->modTime = (resetCache ? 0 : time(0));
+			cl->modTime = (resetCache ? -1 : time(0));
 			found = true;
 			i = cachedLevels.end();
 		} else ++i;
@@ -1531,15 +1567,13 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
-	// 1.41r1 and below don't cache things (probably).
-	if (versionID < CLVER_2_1) return 0;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
 	{
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
 			return cl->modTime;
 	}
-	return 0;
+	return -1;
 }
 
 void TPlayer::resetLevelCache(const TLevel* level)
@@ -1603,7 +1637,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	if (nick.isEmpty()) nick = "unknown";
 
 	// If the nickname is equal to the account name, add the *.
-	if (nick == accountName)
+	if (nick.comparei(accountName))
 		newNick = CString("*");
 
 	// Add the nick name.
@@ -1982,6 +2016,10 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << pPacket.text() + 1, 0, level);
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63) return true;
+
+	// Older clients drop items clientside.
+	if (versionID < CLVER_2_1)
+		return true;
 
 	// Lay items when you destroy objects.
 	short oldTile = (getLevel()->getTiles())[loc[0] + (loc[1] * 64)];
@@ -2520,6 +2558,7 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
 	// Get file.
 	CString file = pPacket.readString("");
+	printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
 	this->sendFile(file);
@@ -2660,6 +2699,18 @@ bool TPlayer::msgPLI_NPCWEAPONDEL(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
+{
+	unsigned short count = pPacket.readGUShort();
+	if (count != packetCount || packetCount > 10000)
+	{
+		serverlog.out(":: Warning - Player %s had an invalid packet count.\n", accountName.text());
+	}
+	packetCount = 0;
+
+	return true;
+}
+
 bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 {
 	CSettings* settings = server->getSettings();
@@ -2738,6 +2789,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	// Get the packet data and file mod time.
 	time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
+	printf("UPDATEFILE: %s\n", file.text());
 	time_t fModTime = fileSystem->getModTime(file);
 
 	// Make sure it isn't one of the default files.
@@ -2764,6 +2816,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
 	time_t modTime = pPacket.readGUInt5();
 	CString levelName = pPacket.readString("");
+	printf("PLI_ADJACENTLEVEL: %s\n", levelName.text());
 	CString packet;
 	TLevel* adjacentLevel = TLevel::findLevel(levelName, server);
 

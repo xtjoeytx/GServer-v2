@@ -28,7 +28,7 @@ statusMsg(0)
 	colors[2] = 10;	// k
 	colors[3] = 4;	// e
 	colors[4] = 18;	// s
-	bowImage >> (char)0;
+	bowImage >> (char)1;
 }
 
 TAccount::~TAccount()
