@@ -37,6 +37,7 @@ class TLevel
 		CString getBaddyPacket();
 		CString getBoardPacket();
 		CString getBoardChangesPacket(time_t time);
+		CString getBoardChangesPacket2(time_t time);
 		CString getChestPacket(TPlayer *pPlayer);
 		CString getHorsePacket();
 		CString getLinksPacket();

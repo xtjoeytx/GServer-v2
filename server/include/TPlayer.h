@@ -195,8 +195,17 @@ enum
 	PLO_STAFFGUILDS		= 47,
 	PLO_TRIGGERACTION	= 48,
 	PLO_PLAYERWARP2		= 49,	// Bytes 1-3 are x/y/z. 4 = level x in gmap, 5 = level y in gmap.
-	PLO_ADDPLAYER		= 55,
-	PLO_DELPLAYER		= 56,
+	PLO_RC_ACCOUNTADD			= 50,	// Deprecated
+	PLO_RC_ACCOUNTSTATUS		= 51,	// Deprecated
+	PLO_RC_ACCOUNTNAME			= 52,	// Deprecated
+	PLO_RC_ACCOUNTDEL			= 53,	// Deprecated
+	PLO_RC_ACCOUNTPROPS			= 54,	// Deprecated
+	PLO_ADDPLAYER				= 55,
+	PLO_DELPLAYER				= 56,
+	PLO_RC_ACCOUNTPROPSGET		= 57,	// Deprecated
+	PLO_RC_ACCOUNTCHANGE		= 58,	// Deprecated
+	PLO_RC_PLAYERPROPSCHANGE	= 59,	// Deprecated
+	PLO_EMPTY60					= 60,
 	PLO_RC_SERVERFLAGSGET		= 61,
 	PLO_RC_PLAYERRIGHTSGET		= 62,
 	PLO_RC_PLAYERCOMMENTSGET	= 63,
@@ -207,6 +216,7 @@ enum
 	PLO_LARGEFILESTART			= 68,
 	PLO_LARGEFILEEND			= 69,
 	PLO_RC_ACCOUNTLISTGET		= 70,
+	PLO_RC_PLAYERPROPS			= 71,	// Deprecated
 	PLO_RC_PLAYERPROPSGET		= 72,
 	PLO_RC_ACCOUNTGET			= 73,
 	PLO_RC_CHAT					= 74,
@@ -352,7 +362,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Socket-Functions
 		bool doMain();
-		void sendPacket(CString pPacket);
+		void sendPacket(CString pPacket, bool appendNL = true);
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);
 
@@ -413,6 +423,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_EXPLOSION(CString& pPacket);
 		bool msgPLI_PRIVATEMESSAGE(CString& pPacket);
 		bool msgPLI_NPCWEAPONDEL(CString& pPacket);
+		bool msgPLI_PACKETCOUNT(CString& pPacket);
 		bool msgPLI_WEAPONADD(CString& pPacket);
 		bool msgPLI_UPDATEFILE(CString& pPacket);
 		bool msgPLI_ADJACENTLEVEL(CString& pPacket);
@@ -521,6 +532,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool grMovementUpdated;
 		CString grMovementPackets;
 		CString npcserverPort;
+		int packetCount;
+		bool firstLevel;
 
 		// File queue.
 		CFileQueue fileQueue;

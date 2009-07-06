@@ -179,7 +179,7 @@ bool TPlayer::sendLoginClient()
 
 	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
 	// So, just send them all the maps loaded into the server.
-	if (versionID == CLVER_2_31)
+	if (versionID == CLVER_2_31 || versionID == CLVER_1_411)
 	{
 		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
 		{
@@ -197,11 +197,14 @@ bool TPlayer::sendLoginClient()
 	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
-	std::vector<CString>* plicons = server->getStatusList();
-	CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-	for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-		pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
-	sendPacket(pliconPacket);
+	if (versionID >= CLVER_2_1)
+	{
+		std::vector<CString>* plicons = server->getStatusList();
+		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
+		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
+			pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
+		sendPacket(pliconPacket);
+	}
 
 	// Send the player's flags.
 	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
@@ -249,16 +252,20 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Send the minimap if it was set.
-	CString minimap = settings->getStr("minimap");
-	if (!minimap.isEmpty())
+	if (versionID >= CLVER_2_1)
 	{
-		std::vector<CString> vminimap = minimap.tokenize(",");
-		if (vminimap.size() == 4)
-			sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+		CString minimap = settings->getStr("minimap");
+		if (!minimap.isEmpty())
+		{
+			std::vector<CString> vminimap = minimap.tokenize(",");
+			if (vminimap.size() == 4)
+				sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+		}
 	}
 
 	// Send out RPG Window greeting.
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
+	if (versionID >= CLVER_2_1)
+		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
 
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
