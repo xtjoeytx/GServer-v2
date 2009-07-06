@@ -780,7 +780,7 @@ bool TServer::deleteFlag(const CString& pFlag)
 bool TServer::deletePlayer(TPlayer* player)
 {
 	// Remove the player from the serverlist.
-	serverlist.remPlayer(player->getProp(PLPROP_ACCOUNTNAME).removeI(0,1), player->getType());
+	serverlist.remPlayer(player->getAccountName(), player->getType());
 
 	// Get rid of the player now.
 	playerIds[player->getId()] = 0;
@@ -831,6 +831,9 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
+	if (pLevel != 0 && pLevel->getSingleplayer() == true)
+		return;
+
 	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
 	{
 		for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
@@ -872,6 +875,8 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (pPlayer->getLevel() == 0) return;
+	if (pPlayer->getLevel()->getSingleplayer() == true) return;
+
 	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
 	{
 		TLevel* level = pPlayer->getLevel();

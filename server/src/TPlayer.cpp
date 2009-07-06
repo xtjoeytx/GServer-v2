@@ -275,10 +275,12 @@ TPlayer::~TPlayer()
 
 bool TPlayer::onRecv()
 {
-	if (playerSock == 0)
+	// If our socket is gone, delete ourself.
+	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		server->deletePlayer(this);
 		return false;
-	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
-		return false;
+	}
 
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
@@ -303,10 +305,11 @@ bool TPlayer::onRecv()
 
 bool TPlayer::onSend()
 {
-	if (playerSock == 0)
+	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		server->deletePlayer(this);
 		return false;
-	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
-		return false;
+	}
 
 	// Send data.
 	fileQueue.sendCompress();
@@ -394,6 +397,13 @@ bool TPlayer::doMain()
 bool TPlayer::doTimedEvents()
 {
 	time_t currTime = time(0);
+
+	// If we are disconnected, delete ourself!
+	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		server->deletePlayer(this);
+		return false;
+	}
 
 	// Only run for clients.
 	if (!isClient()) return true;
@@ -1343,7 +1353,17 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
-	server->sendPacketToAll(this->getProps(0,0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
+	server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
+	/*
+	std::vector<TPlayer*>* playerList = server->getPlayerList();
+	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+	{
+		TPlayer* player = (TPlayer*)*i;
+		if (player == this) continue;
+
+		player->sendPacket(CString() << this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y));
+	}
+	*/
 
 	return true;
 }
@@ -1394,7 +1414,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false || pmap != 0)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this)
+		if (pLevel->getPlayer(0) == this || pLevel->getSingleplayer() == true)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1416,40 +1436,43 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (pmap)
+	if (level->getSingleplayer() == false)
 	{
-		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
-		std::vector<TPlayer*>* playerList = server->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		if (pmap)
 		{
-			TPlayer* player = (TPlayer*)*i;
-			if (player == this || player->getMap() != pmap) continue;
+			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* player = (TPlayer*)*i;
+				if (player == this || player->getMap() != pmap) continue;
 
-			if (pmap->getType() == MAPTYPE_GMAP)
-			{
-				int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
-				if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
-					this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-			}
-			else if (pmap->getType() == MAPTYPE_BIGMAP)
-			{
-				if (player->getLevel() == 0) continue;
-				int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
-				int sgmap[2] = {pmap->getLevelX(pLevel->getLevelName()), pmap->getLevelY(pLevel->getLevelName())};
-				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-					this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				if (pmap->getType() == MAPTYPE_GMAP)
+				{
+					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
+					if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
+						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				}
+				else if (pmap->getType() == MAPTYPE_BIGMAP)
+				{
+					if (player->getLevel() == 0) continue;
+					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
+					int sgmap[2] = {pmap->getLevelX(pLevel->getLevelName()), pmap->getLevelY(pLevel->getLevelName())};
+					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				}
 			}
 		}
-	}
-	else
-	{
-		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
-		std::vector<TPlayer*>* playerList = level->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		else
 		{
-			TPlayer* player = (TPlayer*)*i;
-			if (player == this) continue;
-			this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
+			std::vector<TPlayer*>* playerList = level->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* player = (TPlayer*)*i;
+				if (player == this) continue;
+				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			}
 		}
 	}
 
@@ -1483,6 +1506,8 @@ bool TPlayer::leaveLevel(bool resetCache)
 	if (leader != 0) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 
 	// Tell everyone I left.
+	// This prop isn't used at all???  Maybe it is required for 1.41?
+	/*
 //	if (pmap && pmap->getType() != MAPTYPE_GMAP)
 	{
 		server->sendPacketToLevel(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, 0, level, this);
@@ -1496,6 +1521,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
 	}
+	*/
 
 	// Set the level pointer to 0.
 	level = 0;
