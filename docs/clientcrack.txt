@@ -1,0 +1,5 @@
+The Graal client will manually assemble the listserver host string.
+To find an instance where the client is trying to manually assemble a string, search for:
+	mov bl,67
+
+That will find the letter g.
