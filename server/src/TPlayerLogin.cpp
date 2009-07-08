@@ -218,9 +218,10 @@ bool TPlayer::sendLoginClient()
 	//sendPacket(CString() >> (char)PLO_EMPTY190);
 	//sendPacket(CString() >> (char)PLO_EMPTY194);
 
-	// Delete the bomb.  It gets automagically added by the client for
-	// God knows which reason.  Bomb must be capitalized.
+	// Delete the bomb and bow.  They get automagically added by the client for
+	// God knows which reason.  Bomb and Bow must be capitalized.
 	sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+	sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bow");
 
 	// Send the player's weapons.
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)

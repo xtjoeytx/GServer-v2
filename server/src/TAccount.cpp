@@ -17,7 +17,7 @@ nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
 deviation(350.0f), oldDeviation(350.0f), power(3.0), rating(1500.0f), x(0), y(0), z(0),
 x2(0), y2(0), z2(0), gmaplevelx(0), gmaplevely(0),
 additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
-deaths(0), glovePower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
+deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
 onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
 lastSparTime(0),
 statusMsg(0)
@@ -28,7 +28,7 @@ statusMsg(0)
 	colors[2] = 10;	// k
 	colors[3] = 4;	// e
 	colors[4] = 18;	// s
-	bowImage >> (char)1;
+	bowPower = 1;
 }
 
 TAccount::~TAccount()
@@ -109,6 +109,8 @@ bool TAccount::loadAccount(const CString& pAccount)
 		else if (section == "GLOVEP") glovePower = strtoint(val);
 		else if (section == "SHIELDP") shieldPower = strtoint(val);
 		else if (section == "SWORDP") swordPower = strtoint(val);
+		else if (section == "BOWP") bowPower = strtoint(val);
+		else if (section == "BOW") bowImage = val;
 		else if (section == "HEAD") headImg = val;
 		else if (section == "BODY") bodyImg = val;
 		else if (section == "SWORD") swordImg = val;
@@ -208,6 +210,8 @@ bool TAccount::saveAccount()
 	newFile << "GLOVEP " << CString(glovePower) << "\r\n";
 	newFile << "SHIELDP " << CString(shieldPower) << "\r\n";
 	newFile << "SWORDP " << CString(swordPower) << "\r\n";
+	newFile << "BOWP " << CString(bowPower) << "\r\n";
+	newFile << "BOW " << bowImage << "\r\n";
 	newFile << "HEAD " << headImg << "\r\n";
 	newFile << "BODY " << bodyImg << "\r\n";
 	newFile << "SWORD " << swordImg << "\r\n";
