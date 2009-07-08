@@ -190,7 +190,7 @@ class TAccount
 		int x2, y2, z2, gmaplevelx, gmaplevely;
 		int additionalFlags, ap, apCounter, arrowc, bombc, bombPower, carrySprite;
 		unsigned char colors[5];
-		int deaths, glovePower, gralatc, horsec, kills, mp, maxPower;
+		int deaths, glovePower, bowPower, gralatc, horsec, kills, mp, maxPower;
 		int onlineTime, shieldPower, sprite, status, swordPower, udpport;
 		time_t lastSparTime;
 		unsigned char statusMsg;

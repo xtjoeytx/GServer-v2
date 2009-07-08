@@ -145,7 +145,7 @@ nofoldersconfig = false
 
 # Determines whether or not to use the old "if (created)" style.
 # In the old style, "if (created)" is called for each player that enters the level for their first time.
-oldcreated = false
+oldcreated = true
 
 # Determines whether the server handles certain things like signs and links.
 # Don't set to true.
