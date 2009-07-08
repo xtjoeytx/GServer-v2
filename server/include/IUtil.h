@@ -158,6 +158,7 @@ enum
 };
 
 int getVersionID(const CString& version);
+const char* getVersionString(const CString& version);
 int getRCVersionID(const CString& version);
 char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");

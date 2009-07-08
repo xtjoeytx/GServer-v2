@@ -91,6 +91,63 @@ static const char* const rcVersions[] =
 	0
 };
 
+static const char* const clientVersionString[] =
+{
+	"1.25",		// CLVER_1_25,
+	"1.27",		// CLVER_1_27,
+	"1.28",		// CLVER_1_28,
+	"1.31",		// CLVER_1_31,
+	"1.32",		// CLVER_1_32,
+	"",		// CLVER_1_322,
+	"",		// CLVER_1_323,
+	"",		// CLVER_1_324,
+	"1.33",		// CLVER_1_33,
+	"",		// CLVER_1_331,
+	"1.34",		// CLVER_1_34,
+	"",		// CLVER_1_341,
+	"1.35",		// CLVER_1_35,
+	"1.36",		// CLVER_1_36,
+	"1.37",		// CLVER_1_37,
+	"",		// CLVER_1_371,
+	"1.38",		// CLVER_1_38,
+	"",		// CLVER_1_381,
+	"1.39",		// CLVER_1_39,
+	"",		// CLVER_1_391,
+	"",		// CLVER_1_392,
+	"",		// CLVER_1_4,
+	"",		// CLVER_1_41,
+	"1.41r1",	// CLVER_1_411,
+	"2.1",		// CLVER_2_1,
+	"2.12",		// CLVER_2_12,
+	"2.13",		// CLVER_2_13,
+	"2.14",		// CLVER_2_14,
+	"2.15",		// CLVER_2_15,
+	"2.151",	// CLVER_2_151,
+	"2.16",		// CLVER_2_16,
+	"2.17",		// CLVER_2_17,
+	"2.18",		// CLVER_2_18,
+	"2.19",		// CLVER_2_19,
+	"2.2",		// CLVER_2_2,
+	"2.21",		// CLVER_2_21,
+	"2.22",		// CLVER_2_22,
+	"2.3",		// CLVER_2_3,
+	"2.31",		// CLVER_2_31,
+
+	"3.0",		// CLVER_3,
+	"3.01",		// CLVER_3_01,
+	"3.041",	// CLVER_3_041,
+
+	"4.0211",	// CLVER_4_0211,
+	"4.034",	// CLVER_4_034,
+	"4.042",	// CLVER_4_042,
+	"4.110",	// CLVER_4_110,
+	"4.208",	// CLVER_4_208,
+
+	"5.07",		// CLVER_5_07,
+	"5.12",		// CLVER_5_12,
+	0
+};
+
 // ncVersions
 // NCL11012
 
@@ -104,6 +161,18 @@ int getVersionID(const CString& version)
 		++i;
 	}
 	return -1;
+}
+
+const char* getVersionString(const CString& version)
+{
+	int i = 0;
+	while (clientVersions[i] != 0)
+	{
+		if (version == CString(clientVersions[i]))
+			return clientVersionString[i];
+		++i;
+	}
+	return 0;
 }
 
 int getRCVersionID(const CString& version)

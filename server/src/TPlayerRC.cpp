@@ -28,7 +28,7 @@ static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& 
 
 void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 {
-	bool hadBomb = false;
+	bool hadBomb = false, hadBow = false;
 	CString outPacket;
 
 	// Skip playerworld
@@ -56,11 +56,21 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		}
 		if ((*i) == "Bomb")
 			hadBomb = true;
+
+		// Do the same thing with the bow.
+		if ((*i) == "bow")
+		{
+			outPacket >> (char)PLO_NPCWEAPONDEL << "Bow\n";
+			hadBow = true;
+		}
+		if ((*i) == "Bow")
+			hadBow = true;
 	}
 	if (id != -1) sendPacket(outPacket);
 
-	// If we never had the bomb, don't let it come back.
+	// If we never had the bomb or bow, don't let it come back.
 	if (hadBomb == false) allowBomb = false;
+	if (hadBow == false) allowBow = false;
 
 	// Clear the flags and re-populate the flag list.
 	flagList.clear();
@@ -98,6 +108,13 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		{
 			hadBomb = true;
 			allowBomb = true;
+		}
+
+		// Allow the bow through if we are actually adding it.
+		if (wpn == "bow" || wpn == "Bow")
+		{
+			hadBow = true;
+			allowBow = true;
 		}
 
 		// Send the weapon to the player.
