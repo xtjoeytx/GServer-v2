@@ -1391,7 +1391,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (pLevel == 0) return false;
 	CSettings* settings = server->getSettings();
 
-	//if (versionID >= CLVER_2_1)
+	if (versionID >= CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 
 	time_t l_time = getCachedLevelModTime(pLevel);
@@ -1407,9 +1407,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
 
-			//if (firstLevel && versionID < CLVER_2_1)
-			//	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
-			//firstLevel = false;
+			if (firstLevel && versionID < CLVER_2_1)
+				sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+			firstLevel = false;
 
 			// Send links, signs, and mod time.
 			if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
@@ -2558,7 +2558,6 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
 	// Get file.
 	CString file = pPacket.readString("");
-	printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
 	this->sendFile(file);
@@ -2789,7 +2788,6 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	// Get the packet data and file mod time.
 	time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
-	printf("UPDATEFILE: %s\n", file.text());
 	time_t fModTime = fileSystem->getModTime(file);
 
 	// Make sure it isn't one of the default files.
@@ -2816,7 +2814,6 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
 	time_t modTime = pPacket.readGUInt5();
 	CString levelName = pPacket.readString("");
-	printf("PLI_ADJACENTLEVEL: %s\n", levelName.text());
 	CString packet;
 	TLevel* adjacentLevel = TLevel::findLevel(levelName, server);
 
