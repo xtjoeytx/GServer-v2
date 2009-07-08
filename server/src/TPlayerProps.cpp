@@ -261,39 +261,49 @@ CString TPlayer::getProp(int pPropId)
 	return CString();
 }
 
-void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer* rc)
+void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer *rc)
 {
-	CSettings* settings = server->getSettings();
+	// Forward to NPC-Server if the npc-server isn't setting them
+	if (server->hasNPCServer() && server->getNPCServer() != rc)
+	{
+		pPacket.removeI(0, pPacket.readPos());
+		pPacket.setRead(0);
+		server->getNPCServer()->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << pPacket);
+	}
+
+	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
-	int len = 0;
 	bool doSignCheck = false;
-/*
-	printf("\n");
-	printf("%s\n", pPacket.text());
-	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
-*/
+	int len = 0;
+
 	while (pPacket.bytesLeft() > 0)
 	{
 		unsigned char propId = pPacket.readGUChar();
-		//printf("ID: %u\n", propId);
+		
 		switch (propId)
 		{
 			case PLPROP_NICKNAME:
 			{
-				len = pPacket.readGUChar();
-				//len = clip(len, 0, 224);
-				CString nick = pPacket.readChars(len);
+				CString nick = pPacket.readChars(pPacket.readGUChar());
 
-				// Word filter.
-				int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
-				if (filter & FILTER_ACTION_WARN)
+				// Force Nickname
+				if (server->getNPCServer() == rc)
+					nickName = nick;
+				else
 				{
-					if (nickName.isEmpty())
-						setNick("unknown");
+					// Word filter.
+					int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
+					if (filter & FILTER_ACTION_WARN)
+					{
+						if (nickName.isEmpty())
+							setNick("unknown");
+					}
+					else setNick(nick);
 				}
-				else setNick(nick);
+
 				globalBuff >> (char)propId << getProp(propId);
-				if (!pForwardToSelf) selfBuff >> (char)propId << getProp(propId);
+				if (!pForwardToSelf)
+					selfBuff >> (char)propId << getProp(propId);
 			}
 			break;
 
@@ -821,7 +831,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	if (isLoggedIn())
 	{
 		if (globalBuff.length() > 0)
-			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
+			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this, true);
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending

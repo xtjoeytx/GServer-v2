@@ -59,28 +59,29 @@ class TServer : public CSocketStub
 		int loadConfigFiles();
 
 		// Get functions.
-		CSettings* getSettings()				{ return &settings; }
-		CSettings* getAdminSettings()			{ return &adminsettings; }
-		std::vector<TPlayer*>* getPlayerList()	{ return &playerList; }
-		std::vector<TPlayer*>* getPlayerIdList(){ return &playerIds; }
-		std::vector<TNPC*>* getNPCList()		{ return &npcList; }
-		std::vector<TNPC*>* getNPCIdList()		{ return &npcIds; }
-		std::vector<TLevel*>* getLevelList()	{ return &levelList; }
-		std::vector<TMap*>* getMapList()		{ return &mapList; }
-		std::vector<TWeapon*>* getWeaponList()	{ return &weaponList; }
-		std::vector<CString>* getServerFlags()	{ return &serverFlags; }
-		std::vector<CString>* getStatusList()	{ return &statusList; }
-		std::vector<CString>* getAllowedVersions() { return &allowedVersions; }
-		TServerList* getServerList()			{ return &serverlist; }
-		CFileSystem* getFileSystem(int c = 0)	{ return &(filesystem[c]); }
-		CFileSystem* getAccountsFileSystem()	{ return &filesystem_accounts; }
-		CSocketManager* getSocketManager()		{ return &sockManager; }
-		CString getServerPath()					{ return serverpath; }
-		CLog& getServerLog()					{ return serverlog; }
-		CLog& getRCLog()						{ return rclog; }
-		CString* getServerMessage()				{ return &servermessage; }
-		CString* getAllowedVersionString()		{ return &allowedVersionString; }
-		CWordFilter* getWordFilter()			{ return &wordFilter; }
+		CSettings* getSettings()						{ return &settings; }
+		CSettings* getAdminSettings()					{ return &adminsettings; }
+		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
+		std::vector<TPlayer*>* getPlayerList()			{ return &playerList; }
+		std::vector<TPlayer*>* getPlayerIdList()		{ return &playerIds; }
+		std::vector<TNPC*>* getNPCList()				{ return &npcList; }
+		std::vector<TNPC*>* getNPCIdList()				{ return &npcIds; }
+		std::vector<TLevel*>* getLevelList()			{ return &levelList; }
+		std::vector<TMap*>* getMapList()				{ return &mapList; }
+		std::vector<CString>* getServerFlags()			{ return &serverFlags; }
+		std::vector<CString>* getStatusList()			{ return &statusList; }
+		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
+		TServerList* getServerList()					{ return &serverlist; }
+		CFileSystem* getFileSystem(int c = 0)			{ return &(filesystem[c]); }
+		CFileSystem* getAccountsFileSystem()			{ return &filesystem_accounts; }
+		CSocketManager* getSocketManager()				{ return &sockManager; }
+		CString getServerPath()							{ return serverpath; }
+		CLog& getNPCLog()								{ return npclog; }
+		CLog& getServerLog()							{ return serverlog; }
+		CLog& getRCLog()								{ return rclog; }
+		CString* getServerMessage()						{ return &servermessage; }
+		CString* getAllowedVersionString()				{ return &allowedVersionString; }
+		CWordFilter* getWordFilter()					{ return &wordFilter; }
 		unsigned int getNWTime() const;
 
 		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
@@ -91,7 +92,6 @@ class TServer : public CSocketStub
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
 		TMap* getMap(const TLevel* pLevel) const;
-		TWeapon* getWeapon(const CString& name) const;
 		CString getFlag(const CString& pName) const;
 		CFileSystem* getFileSystemByType(CString& type);
 
@@ -101,21 +101,27 @@ class TServer : public CSocketStub
 		bool addFlag(const CString& pFlag);
 		bool deleteFlag(const CString& pFlag);
 		bool deletePlayer(TPlayer* player);
-
 		bool isIpBanned(const CString& ip);
-
+		
 		// Packet sending.
-		void sendPacketToAll(CString pPacket, TPlayer *pPlayer = 0) const;
+		void sendPacketToAll(CString pPacket, TPlayer *pPlayer = 0, bool pNpcServer = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 		// NPC-Server Functionality
-		bool hasNPCServer()						{ return mNpcServer != 0; }
-		TPlayer *getNPCServer()					{ return mNpcServer; }
-		int getNCPort()							{ return mNCPort; }
+		inline bool hasNPCServer()		{ return mNpcServer != 0; }
+		inline TPlayer *getNPCServer()	{ return mNpcServer; }
+		inline int getNCPort()			{ return mNCPort; }
 
 		void setNPCServer(TPlayer * pNpcServer, int pNCPort = 0);
+
+		// Weapon Management
+		TWeapon *getWeapon(const CString& name);
+
+		bool NC_AddWeapon(TWeapon *pWeaponObj);
+		bool NC_DelWeapon(const CString& pWeaponName);
+		void NC_UpdateWeapon(TWeapon *pWeapon);
 
 	private:
 		bool doTimedEvents();
@@ -123,11 +129,11 @@ class TServer : public CSocketStub
 
 		CSettings settings;
 		CSettings adminsettings;
+		std::map<CString, TWeapon *> weaponList;
 		std::vector<TPlayer*> playerIds, playerList;
 		std::vector<TNPC*> npcIds, npcList;
 		std::vector<TLevel*> levelList;
 		std::vector<TMap*> mapList;
-		std::vector<TWeapon*> weaponList;
 		std::vector<CString> serverFlags;
 		std::vector<CString> ipBans;
 		std::vector<CString> foldersConfig;
@@ -144,8 +150,9 @@ class TServer : public CSocketStub
 		CString allowedVersionString;
 		CWordFilter wordFilter;
 
-		CLog serverlog;//("logs/serverlog.txt");
+		CLog npclog;//("logs/npclog.txt");
 		CLog rclog;//("logs/rclog.txt");
+		CLog serverlog;//("logs/serverlog.txt");
 
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 

@@ -9,39 +9,41 @@
 class TServer;
 class TWeapon
 {
-public:
-	TWeapon(const char id) : modTime(0), defaultWeapon(true), defaultWeaponId(id) {}
-	TWeapon(const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool trimCode = false);
+	public:
+		// -- Constructor | Destructor -- //
+		TWeapon(const char pId);
+		TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
 
-	static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
-	bool saveWeapon(TServer* server);
+		// -- Functions -- //
+		bool saveWeapon(TServer* server);
+		void updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime = 0, bool pSaveWeapon = true);
 
-	CString getWeaponPacket() const;
-	bool isDefault() const				{ return defaultWeapon; }
+		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
-	char getWeaponId() const			{ return defaultWeaponId; }
-	time_t getModTime() const			{ return modTime; }
-	CString getName() const;
-	CString getImage() const			{ return image; }
-	CString getServerScript() const		{ return serverScript; }
-	CString getClientScript() const		{ return clientScript; }
-	CString getFullScript() const		{ return fullScript; }
+		// Functions -> Inline Get-Functions
+		CString getWeaponPacket() const;
+		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
+		inline char getWeaponId()						{ return mWeaponDefault; }
+		inline const CString& getImage() const			{ return mWeaponImage; }
+		inline const CString& getName() const			{ return mWeaponName; }
+		inline const CString& getClientScript() const	{ return mScriptClient; }
+		inline const CString& getServerScript() const	{ return mScriptServer; }
+		inline const CString& getFullScript() const		{ return mWeaponScript; }
+		inline time_t getModTime() const				{ return mModTime; }
 
-	void setImage(const CString& pImage)			{ image = pImage; }
-	void setServerScript(const CString& pScript)	{ serverScript = pScript; }
-	void setClientScript(const CString& pScript)	{ clientScript = pScript; }
-	void setFullScript(const CString& pScript)		{ fullScript = pScript; }
-	void setModTime(time_t mod)						{ modTime = mod; }
-
-private:
-	CString name;
-	CString image;
-	CString serverScript;
-	CString clientScript;
-	CString fullScript;
-	time_t modTime;
-	bool defaultWeapon;
-	char defaultWeaponId;
+		// Functions -> Set Variables
+		void setImage(const CString& pImage)			{ mWeaponImage = pImage; }
+		void setClientScript(const CString& pScript)	{ mScriptClient = pScript; }
+		void setServerScript(const CString& pScript)	{ mScriptServer = pScript; }
+		void setFullScript(const CString& pScript)		{ mWeaponScript = pScript; }
+		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
+		
+	protected:
+		// Varaibles -> Weapon Data
+		char mWeaponDefault;
+		CString mWeaponImage, mWeaponName, mWeaponScript;
+		CString mScriptClient, mScriptServer;
+		time_t mModTime;
 };
 
 #endif
