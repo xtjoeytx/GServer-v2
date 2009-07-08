@@ -354,11 +354,11 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Prop-Manipulation
 		CString getProp(int pPropId);
-		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer* rc = 0);
-		void sendProps(const bool *pProps, int pCount);
 		CString getProps(const bool *pProps, int pCount);
-		void setPropsRC(CString& pPacket, TPlayer* rc);
 		CString getPropsRC();
+		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer *rc = 0);
+		void sendProps(const bool *pProps, int pCount);
+		void setPropsRC(CString& pPacket, TPlayer* rc);
 
 		// Socket-Functions
 		bool doMain();
