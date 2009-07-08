@@ -79,6 +79,7 @@ class TServer : public CSocketStub
 		CLog& getServerLog()					{ return serverlog; }
 		CLog& getRCLog()						{ return rclog; }
 		CString* getServerMessage()				{ return &servermessage; }
+		CString* getAllowedVersionString()		{ return &allowedVersionString; }
 		CWordFilter* getWordFilter()			{ return &wordFilter; }
 		unsigned int getNWTime() const;
 
@@ -140,6 +141,7 @@ class TServer : public CSocketStub
 		CString name;
 		CString serverpath;
 		CString servermessage;
+		CString allowedVersionString;
 		CWordFilter wordFilter;
 
 		CLog serverlog;//("logs/serverlog.txt");

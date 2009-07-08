@@ -520,7 +520,7 @@ class TPlayer : public TAccount, public CSocketStub
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
-		bool allowBomb;
+		bool allowBomb, allowBow;
 		TMap* pmap;
 		unsigned int carryNpcId;
 		bool carryNpcThrown;

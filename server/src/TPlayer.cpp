@@ -225,7 +225,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false), allowBow(false),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -1726,6 +1726,12 @@ bool TPlayer::addWeapon(int defaultWeapon)
 	if (settings->getBool("defaultweapons", true) == false)
 		return false;
 
+	// Prevent the Bow and Bomb from being added.
+	if (defaultWeapon == 7 && allowBow == false)
+	{
+		allowBow = true;
+		return false;
+	}
 	if (defaultWeapon == 8 && allowBomb == false)
 	{
 		allowBomb = true;
@@ -1938,7 +1944,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		}
 		if (!allowed)
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.");
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.\rAllowed: " << *server->getAllowedVersionString());
 			return false;
 		}
 	}

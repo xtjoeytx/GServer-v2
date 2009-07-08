@@ -251,6 +251,25 @@ bool TServer::doTimedEvents()
 		versions.removeAllI("\t");
 		versions.removeAllI(" ");
 		allowedVersions = versions.tokenize("\n");
+		allowedVersionString.clear();
+		for (std::vector<CString>::iterator i = allowedVersions.begin(); i != allowedVersions.end(); ++i)
+		{
+			if (!allowedVersionString.isEmpty())
+				allowedVersionString << ", ";
+
+			int loc = (*i).find(":");
+			if (loc == -1)
+				allowedVersionString << getVersionString(*i);
+			else
+			{
+				CString s = (*i).subString(0, loc);
+				CString f = (*i).subString(loc + 1);
+				int vid = getVersionID(s);
+				int vid2 = getVersionID(f);
+				if (vid != -1 && vid2 != -1)
+					allowedVersionString << getVersionString(s) << " - " << getVersionString(f);
+			}
+		}
 
 		// Load server message.
 		servermessage.load(CString() << serverpath << "config/servermessage.html");
@@ -388,6 +407,25 @@ int TServer::loadConfigFiles()
 	versions.removeAllI("\t");
 	versions.removeAllI(" ");
 	allowedVersions = versions.tokenize("\n");
+	allowedVersionString.clear();
+	for (std::vector<CString>::iterator i = allowedVersions.begin(); i != allowedVersions.end(); ++i)
+	{
+		if (!allowedVersionString.isEmpty())
+			allowedVersionString << ", ";
+
+		int loc = (*i).find(":");
+		if (loc == -1)
+			allowedVersionString << getVersionString(*i);
+		else
+		{
+			CString s = (*i).subString(0, loc);
+			CString f = (*i).subString(loc + 1);
+			int vid = getVersionID(s);
+			int vid2 = getVersionID(f);
+			if (vid != -1 && vid2 != -1)
+				allowedVersionString << getVersionString(s) << " - " << getVersionString(f);
+		}
+	}
 
 	// Load folders config.
 	// Load before file system.
