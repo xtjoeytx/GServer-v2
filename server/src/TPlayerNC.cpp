@@ -7,6 +7,7 @@
 #include "TServerList.h"
 
 #define serverlog	server->getServerLog()
+#define npclog		server->getNPCLog()
 #define rclog		server->getRCLog()
 
 /*
@@ -14,11 +15,14 @@
 */
 enum
 {
-	NCREQ_WEAPONS = 0,
-	NCREQ_LEVELS  = 1,
-	NCREQ_SENDPM  = 2,
-	NCREQ_SENDRC  = 3,
-	NCREQ_WEPADD  = 4,
+	NCREQ_NPCLOG	= 0,
+	NCREQ_WEAPONS	= 1,
+	NCREQ_LEVELS	= 2,
+	NCREQ_SENDPM	= 3,
+	NCREQ_SENDRC	= 4,
+	NCREQ_WEPADD	= 5,
+	NCREQ_WEPDEL	= 6,
+	NCREQ_SETPROPS	= 7,
 };
 
 /*
@@ -28,15 +32,15 @@ enum
 // Send Weapons
 void TPlayer::sendNC_Weapons()
 {
-	std::vector<TWeapon *> *weaponList = server->getWeaponList();
-	for (std::vector<TWeapon *>::const_iterator i = weaponList->begin(); i != weaponList->end(); ++i)
+	std::map<CString, TWeapon *> * weaponList = server->getWeaponList();
+	for (std::map<CString, TWeapon *>::const_iterator i = weaponList->begin(); i != weaponList->end(); ++i)
 	{
-		if ((*i)->isDefault())
+		if (i->second->isDefault())
 			continue;
 
-		CString weaponName = (*i)->getName();
-		CString imageName  = (*i)->getImage();
-		CString scriptData = (*i)->getFullScript();
+		CString weaponName = i->second->getName();
+		CString imageName  = i->second->getImage();
+		CString scriptData = i->second->getFullScript();
 		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)weaponName.length() << weaponName >> (char)imageName.length() << imageName << scriptData);
 	}
 }
@@ -69,6 +73,11 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 	int type = pPacket.readGUChar();
 	switch (type)
 	{
+		// NPC-Server Log
+		case NCREQ_NPCLOG:
+			npclog.out(pPacket.readString(""));
+			break;
+
 		// Send Weapons to NPC-Server
 		case NCREQ_WEAPONS:
 			sendNC_Weapons();
@@ -95,60 +104,42 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		// Weapon Add/Update
 		case NCREQ_WEPADD:
 		{
-			/*
-			CString name = pPacket.readChars(pPacket.readGUChar());
-			CString image = pPacket.readChars(pPacket.readGUChar());
-			CString script = pPacket.readString("");
-
-			// See if the weapon already exists.
-			std::vector<TWeapon*>* weaponList = server->getWeaponList();
-			for (std::vector<TWeapon*>::iterator i = weaponList->begin(); i != weaponList->end(); ++i)
+			// Packet Data
+			CString weaponName  = pPacket.readChars(pPacket.readGUChar());
+			CString weaponImage = pPacket.readChars(pPacket.readGUChar());
+			CString weaponCode  = pPacket.readString("");
+			
+			// Find Weapon
+			TWeapon *weaponObj = server->getWeapon(weaponName);
+			if (weaponObj != 0)
 			{
-				// We found the weapon.  Update it.
-				TWeapon* weapon = *i;
-				if (weapon->isDefault()) continue;
-				if (weapon->getName() == name)
-				{
-					// Separate clientside and serverside script.
-					if (script.find("//#CLIENTSIDE") != -1)
-					{
-						CString serverScript = script.readString("//#CLIENTSIDE");
-						CString clientScript = script.readString("");
-						weapon->setServerScript(serverScript);
-						weapon->setClientScript(clientScript);
-					}
-					else weapon->setClientScript(CString() << "//#CLIENTSIDE\xa7" << script);
+				// default weapon, don't update!
+				if (weaponObj->isDefault())
+					break;
 
-					// Save our weapon.
-					weapon->setFullScript(script);
-					weapon->setImage(image);
-					weapon->saveWeapon(server);
-
-					// See if we need to update the weapon for any players.
-					std::vector<TPlayer*>* playerList = server->getPlayerList();
-					for (std::vector<TPlayer*>::iterator j = playerList->begin(); j != playerList->end(); ++j)
-					{
-						TPlayer* player = *j;
-						if (!player->isClient()) continue;
-
-						// If the player has the weapon, send them the new version.
-						if (player->hasWeapon(weapon->getName()))
-						{
-							player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
-							player->sendPacket(CString() << weapon->getWeaponPacket());
-						}
-					}
-					rclog.out("%s updated weapon %s\n", accountName.text(), name.text());
-					return true;
-				}
+				// Update Weapon
+				weaponObj->updateWeapon(server, weaponImage, weaponCode);
+			
+				// Update Player-Weapons
+				server->NC_UpdateWeapon(weaponObj);
+				break;
 			}
 
-			// The weapon wasn't found.  Add a new weapon.
-			TWeapon* weapon = new TWeapon(name, image, script, 0, server->getSettings()->getBool("trimnpccode", false));
-			weapon->saveWeapon(server);
-			weaponList->push_back(weapon);
-			rclog.out("%s added weapon %s\n", accountName.text(), name.text());
-			*/
+			server->NC_AddWeapon(new TWeapon(server, weaponName, weaponImage, weaponCode, 0, true));
+			break;
+		}
+
+		// Weapon Delete
+		case NCREQ_WEPDEL:
+			server->NC_DelWeapon(pPacket.readString(""));
+			break;
+
+		// Player Props
+		case NCREQ_SETPROPS:
+		{
+			TPlayer *pl = server->getPlayer(pPacket.readGShort());
+			if (pl != 0)
+				pl->setProps(pPacket, true, true, this);
 			break;
 		}
 	}

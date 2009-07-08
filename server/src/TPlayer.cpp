@@ -247,6 +247,7 @@ TPlayer::~TPlayer()
 
 	if (id >= 0 && server != 0 && loaded)
 	{
+		// NPC-Server
 		if (isNPCServer() && server->getNPCServer() == this)
 			server->setNPCServer(0);
 
@@ -259,7 +260,9 @@ TPlayer::~TPlayer()
 
 		// Announce our departure to other clients.
 		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
-		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		server->sendPacketTo(PLTYPE_ANYRC | PLTYPE_NPCSERVER, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		if (isRC() && !accountName.isEmpty())
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
 	}
 
 	// Clean up.
@@ -1720,9 +1723,8 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 
 bool TPlayer::addWeapon(int defaultWeapon)
 {
-	CSettings* settings = server->getSettings();
-	std::vector<TWeapon*>* sWeaponList = server->getWeaponList();
-
+	// Allow Default Weapons..?
+	CSettings *settings = server->getSettings();
 	if (settings->getBool("defaultweapons", true) == false)
 		return false;
 
@@ -1738,11 +1740,11 @@ bool TPlayer::addWeapon(int defaultWeapon)
 		return false;
 	}
 
-	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
+	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
 		weapon = new TWeapon(defaultWeapon);
-		sWeaponList->push_back(weapon);
+		server->NC_AddWeapon(weapon);
 	}
 
 	// See if the player already has the weapon.
@@ -2718,7 +2720,10 @@ bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
 
 bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 {
-	CSettings* settings = server->getSettings();
+	// NPC-Server -- don't allow adding weapons
+	if (server->hasNPCServer())
+		return true;
+
 	unsigned char type = pPacket.readGUChar();
 
 	// Type 0 means it is a default weapon.
@@ -2729,7 +2734,6 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 	// NPC weapons.
 	else
 	{
-		// TODO: If NPC-Server is running, don't allow any of this.
 
 		// Get the NPC id.
 		unsigned int npcId = pPacket.readGUInt();
@@ -2743,46 +2747,29 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 			return true;
 
 		// See if we can find the weapon in the server weapon list.
-		TWeapon* weapon = server->getWeapon(name);
+		TWeapon *weapon = server->getWeapon(name);
 
 		// If weapon is 0, that means the NPC was not found.  Add the NPC to the list.
-		bool newWeapon = false;
-		std::vector<TWeapon*>* sweaponList = server->getWeaponList();
 		if (weapon == 0)
 		{
-			newWeapon = true;
-			weapon = new TWeapon(name, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getProp(NPCPROP_SCRIPT).subString(2), npc->getPropModTime(NPCPROP_SCRIPT));
-			sweaponList->push_back(weapon);
+			weapon = new TWeapon(server, name, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getProp(NPCPROP_SCRIPT).subString(2), npc->getPropModTime(NPCPROP_SCRIPT), true);
+			server->NC_AddWeapon(weapon);
 		}
 
 		// Check and see if the weapon has changed recently.  If it has, we should
 		// send the new NPC to everybody on the server.  After updating the script, of course.
-		bool foundThis = false;
 		if (weapon->getModTime() < npc->getPropModTime(NPCPROP_SCRIPT))
 		{
-			newWeapon = true;		// Lets the new code get saved.
-			weapon->setClientScript(npc->getClientScript());
-			weapon->setModTime(npc->getPropModTime(NPCPROP_SCRIPT));
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer* player = *i;
-				if (player->hasWeapon(weapon->getName()))
-				{
-					if (player == this) foundThis = true;
-					player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
-					player->sendPacket(CString() << weapon->getWeaponPacket());
-				}
-			}
+			// Update Weapon
+			weapon->updateWeapon(server, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getClientScript(), npc->getPropModTime(NPCPROP_SCRIPT));
+			
+			// Send to Players
+			server->NC_UpdateWeapon(weapon);
 		}
 
 		// Send the weapon to the player now.
-		if (foundThis == false)
+		if (!hasWeapon(weapon->getName()))
 			this->addWeapon(weapon);
-
-		// Save weapon.
-		if (newWeapon)
-			weapon->saveWeapon(server);
 	}
 	return true;
 }
