@@ -153,10 +153,6 @@ class CString
 		inline unsigned int readGUInt4();
 		inline unsigned int readGUInt5();
 
-		CString B64_Encode();
-		CString B64_Decode();
-
-
 	protected:
 		char *buffer;
 		int buffc, sizec, readc, writec;
