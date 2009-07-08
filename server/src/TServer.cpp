@@ -32,8 +32,9 @@ TServer::TServer(CString pName)
 	CFileSystem::fixPathSeparators(&serverpath);
 
 	// Set up the log files.
-	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
+	npclog.setFilename(CString() << serverpath << "logs/npclog.txt");
 	rclog.setFilename(CString() << serverpath << "logs/rclog.txt");
+	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
 
 	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
@@ -146,10 +147,10 @@ void TServer::cleanup()
 		i = mapList.erase(i);
 	}
 
-	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
+	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
-		(*i)->saveWeapon(this);
-		delete *i;
+		i->second->saveWeapon(this);
+		delete i->second;
 		i = weaponList.erase(i);
 	}
 }
@@ -465,10 +466,10 @@ int TServer::loadConfigFiles()
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
 
 	// Delete existing weapons.
-	for (std::vector<TWeapon*>::iterator i = weaponList.begin(); i != weaponList.end(); )
+	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
-		(*i)->saveWeapon(this);
-		delete *i;
+		i->second->saveWeapon(this);
+		delete i->second;
 		i = weaponList.erase(i);
 	}
 
@@ -476,26 +477,26 @@ int TServer::loadConfigFiles()
 	serverlog.out("     Loading weapons...\n");
 	{
 		CFileSystem weaponFS(this);
-		weaponFS.addDir("weapons");
-		std::map<CString, CString>* weaponFileList = weaponFS.getFileList();
+		weaponFS.addDir("weapons", "weapon*.txt");
+		std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
 		for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
 		{
-			TWeapon* weapon = TWeapon::loadWeapon(i->first.removeAll(".txt"), this);
+			TWeapon *weapon = TWeapon::loadWeapon(i->first, this);
 			if (weapon != 0)
 			{
 				serverlog.out("       %s\n", weapon->getName().text());
-				weaponList.push_back(weapon);
+				weaponList[weapon->getName()] = weapon;
 			}
 		}
 
 		// Add the default weapons.
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bow")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("bomb")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("superbomb")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireball")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("fireblast")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("nukeshot")));
-		weaponList.push_back(new TWeapon(TLevelItem::getItemId("joltbomb")));
+		weaponList["bow"] = new TWeapon(TLevelItem::getItemId("bow"));
+		weaponList["bomb"] = new TWeapon(TLevelItem::getItemId("bomb"));
+		weaponList["superbomb"] = new TWeapon(TLevelItem::getItemId("superbomb"));
+		weaponList["fireball"] = new TWeapon(TLevelItem::getItemId("fireball"));
+		weaponList["fireblast"] = new TWeapon(TLevelItem::getItemId("fireblast"));
+		weaponList["nukeshot"] = new TWeapon(TLevelItem::getItemId("nukeshot"));
+		weaponList["joltbomb"] = new TWeapon(TLevelItem::getItemId("joltbomb"));
 	}
 
 	// Remove existing maps.
@@ -641,15 +642,9 @@ TMap* TServer::getMap(const TLevel* pLevel) const
 	return 0;
 }
 
-TWeapon* TServer::getWeapon(const CString& name) const
+TWeapon* TServer::getWeapon(const CString& name)
 {
-	for (std::vector<TWeapon*>::const_iterator i = weaponList.begin(); i != weaponList.end(); ++i)
-	{
-		TWeapon* weapon = *i;
-		if (weapon->getName() == name)
-			return weapon;
-	}
-	return 0;
+	return (weaponList.find(name) != weaponList.end() ? weaponList[name] : 0);
 }
 
 CString TServer::getFlag(const CString& pName) const
@@ -867,11 +862,13 @@ bool TServer::isIpBanned(const CString& ip)
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
+void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer, bool pNpcServer) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
+		if (pNpcServer && (*i)->isNPCServer()) continue;
+
 		(*i)->sendPacket(pPacket);
 	}
 }
@@ -990,4 +987,51 @@ void TServer::setNPCServer(TPlayer *pNpcServer, int pNCPort)
 {
 	mNpcServer = pNpcServer;
 	mNCPort = pNCPort;
+}
+
+bool TServer::NC_AddWeapon(TWeapon *pWeaponObj)
+{
+	if (pWeaponObj == 0)
+		return false;
+
+	weaponList[pWeaponObj->getName()] = pWeaponObj;
+	return true;
+}
+
+bool TServer::NC_DelWeapon(const CString& pWeaponName)
+{
+	// Definitions
+	TWeapon *weaponObj = getWeapon(pWeaponName);
+	if (weaponObj == 0 || weaponObj->isDefault())
+		return false;
+
+	// Delete from File Browser
+	CString filePath = getServerPath() << "weapons/" << pWeaponName.replaceAll("*", "@").replaceAll("/", "_") << ".txt";
+	CFileSystem::fixPathSeparators(&filePath);
+	remove(filePath.text());
+
+	// Delete from Memory
+	mapRemove<CString, TWeapon *>(weaponList, weaponObj);
+	delete weaponObj;
+
+	// Delete from Players
+	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName); 
+	return true;
+}
+
+void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
+{
+	// Update Weapons
+	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer *player = *i;
+		if (!player->isClient())
+			continue;
+
+		if (player->hasWeapon(pWeapon->getName()))
+		{
+			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
+			player->sendPacket(CString() << pWeapon->getWeaponPacket());
+		}
+	}
 }

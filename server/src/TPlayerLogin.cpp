@@ -288,7 +288,7 @@ bool TPlayer::sendLoginRC()
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
-	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName, this);
 	return true;
 }
 
