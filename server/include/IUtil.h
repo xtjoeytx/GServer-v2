@@ -2,6 +2,7 @@
 #define IUTIL_H
 
 #include "CString.h"
+#include <map>
 #include <vector>
 
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
@@ -13,6 +14,39 @@
 		#define sleep(a) usleep(a*1000)
 	#endif
 #endif
+
+/*
+	Map-Functions
+*/
+template <class T, class U>
+bool mapRemove(std::map<T, U>& a, T b)
+{
+	typename std::map<T, U>::iterator i;
+	for (i = a.begin(); i != a.end(); ++i)
+	{
+		if (i->first == b)
+		{
+			a.erase(i);
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class T, class U>
+bool mapRemove(std::map<T, U>& a, U b)
+{
+	typename std::map<T, U>::iterator i;
+	for (i = a.begin(); i != a.end(); ++i)
+	{
+		if (i->second == b)
+		{
+			a.erase(i);
+			return true;
+		}
+	}
+	return false;
+}
 
 /*
 	Vector-Functions

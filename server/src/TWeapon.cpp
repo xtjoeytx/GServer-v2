@@ -4,145 +4,127 @@
 #include "TPlayer.h"
 #include "TServer.h"
 
-TWeapon::TWeapon(const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool trimCode)
-: name(pName), image(pImage), fullScript(pScript), modTime(pModTime), defaultWeapon(false), defaultWeaponId(-1)
+// -- Constructor: Default Weapons -- //
+TWeapon::TWeapon(const char pId) : mModTime(0), mWeaponDefault(pId)
 {
-	if (pModTime == 0) modTime = time(0);
-
-	// Remove comments and separate clientside and serverside scripts.
-	CString nocomments = removeComments(pScript, "\xa7");
-	if (nocomments.find("//#CLIENTSIDE") != -1)
-	{
-		serverScript = nocomments.readString("//#CLIENTSIDE");
-		clientScript = CString("//#CLIENTSIDE\xa7") << nocomments.readString("");
-	}
-	else clientScript = nocomments;
-
-	// Trim the code if specified.
-	if (trimCode)
-	{
-		if (!serverScript.isEmpty())
-		{
-			std::vector<CString> code = serverScript.tokenize("\xa7");
-			serverScript.clear();
-			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				serverScript << (*i).trim() << "\xa7";
-		}
-		if (!clientScript.isEmpty())
-		{
-			std::vector<CString> code = clientScript.tokenize("\xa7");
-			clientScript.clear();
-			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				clientScript << (*i).trim() << "\xa7";
-		}
-	}
+	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
 }
 
-TWeapon* TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
+// -- Constructor: Weapon Script -- //
+TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
+: mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
 {
-	// Prevent the loading/saving of filenames with illegal characters.
-	CString w(pWeapon);
-	w.replaceAllI("/", "_");
-	w.replaceAllI("*", "@");
+	// Update Weapon
+	this->updateWeapon(pServer, pImage, pScript, pModTime, pSaveWeapon);
+}
 
-	CString fileName = server->getServerPath() << "weapons/" << w << ".txt";
+// -- Function: Load Weapon -- //
+TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
+{
+	// File Path
+	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
+	
+	// Load File
 	std::vector<CString> fileData = CString::loadToken(fileName);
-	if (fileData.size() == 0) return 0;
-
-	CString name;
-	CString image;
-	CString script;
-	time_t modTime = 0;
-	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
-	{
-		CString line = *i;
-		line.removeAllI("\r");
-
-		// See if it is the NEWWEAPON line.
-		if (line.find("NEWWEAPON ") != -1)
-		{
-			line.readString("NEWWEAPON ");
-			CString s = line.readString("");
-			std::vector<CString> explode = s.tokenize(",");
-			if (explode.size() != 3) return 0;
-			name = explode[0];
-			image = explode[1];
-			modTime = (time_t)strtolong(explode[2]);
-			continue;
-		}
-
-		// Don't mess with ENDWEAPON.
-		if (line.find("ENDWEAPON") != -1) continue;
-
-		// Anything else weapon script.
-		script << line << "\xa7";
-	}
-
-	// Don't allow weapons with no name.
-	if (name.length() == 0)
+	if (fileData.size() == 0 || fileData[0].trim() != "GRAWP001")
 		return 0;
 
-	CSettings* settings = server->getSettings();
-	return new TWeapon(name, image, script, modTime, settings->getBool("trimnpccode", false));
+	// Definitions
+	CString weaponImage, weaponName, weaponScript;
+
+	// Parse File
+	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
+	{
+		// Find Command
+		CString curCommand = i->readString();
+
+		// Parse Line
+		if (curCommand == "REALNAME")
+			weaponName = i->readString("");
+		else if (curCommand == "IMAGE")
+			weaponImage = i->readString("");
+		else if (curCommand == "SCRIPT")
+		{
+			++i;
+			while (i != fileData.end() && *i != "SCRIPTEND")
+			{
+				weaponScript << *i << "\xa7";
+				++i;
+			}
+		}
+	}
+
+	// Valid Weapon Name?
+	if (weaponName.isEmpty())
+		return 0;
+
+	// Create Weapon
+	return new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
 }
 
+// -- Function: Save Weapon -- //
 bool TWeapon::saveWeapon(TServer* server)
 {
-	if (name.length() == 0) return false;
+	// Don't save default weapons / empty weapons
+	if (this->isDefault() || mWeaponName.isEmpty())
+		return false;
 
 	// Prevent the loading/saving of filenames with illegal characters.
-	CString w(name);
-	w.replaceAllI("/", "_");
-	w.replaceAllI("*", "@");
+	CString filename = server->getServerPath() << "weapons/weapon" << mWeaponName.replaceAll("/", "_").replaceAll("*", "@") << ".txt";
 
-	CString filename = server->getServerPath() << "weapons/" << w << ".txt";
-	CString output;
-
-	// Write the header.
-	output << "NEWWEAPON " << name << "," << image << "," << CString((unsigned long)modTime) << "\r\n";
-
-	// Write the serverside code.
-	std::vector<CString> explode = serverScript.tokenize("\xa7");
-	for (std::vector<CString>::iterator i = explode.begin(); i != explode.end(); ++i)
-		output << *i << "\r\n";
-
-	// Write the clientside separator if it does not exist.
-	if (clientScript.find("//#CLIENTSIDE") == -1)
-		output << "\r\n//#CLIENTSIDE\r\n";
-
-	// Write the clientside code.
-	explode.clear();
-	explode = clientScript.tokenize("\xa7");
-	for (std::vector<CString>::iterator i = explode.begin(); i != explode.end(); ++i)
-		output << *i << "\r\n";
-
-	// Write the footer.
-	output << "ENDWEAPON\r\n";
+	// Write the File.
+	CString output = "GRAWP001\r\n";
+	output << "REALNAME " << mWeaponName << "\r\n";
+	output << "IMAGE " << mWeaponImage << "\r\n";
+	output << "SCRIPT\r\n";
+	output << mWeaponScript << "\r\n";
+	output << "SCRIPTEND\r\n";
 
 	// Save it.
 	return output.save(filename);
 }
 
+// -- Function: Get Player Packet -- //
 CString TWeapon::getWeaponPacket() const
 {
-	if (defaultWeapon)
-		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)defaultWeaponId;
+	if (this->isDefault())
+		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	CString outPacket = CString() >> (char)PLO_NPCWEAPONADD
-		>> (char)name.length() << name
-		>> (char)0 >> (char)image.length() << image
-		>> (char)1 >> (short)clientScript.length() << clientScript;
-
-	return outPacket;
-
-	// 0x00 - image
-	// 0x01 - script
-	// 0x4A - npcserver class script whatever.
+	return CString() >> (char)PLO_NPCWEAPONADD
+		>> (char)mWeaponName.length() << mWeaponName
+		>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
+		>> (char)1 >> (short)mScriptClient.length() << mScriptClient;
 }
 
-CString TWeapon::getName() const
+// -- Function: Update Weapon Image/Script -- //
+void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
-	if (defaultWeapon)
-		return TLevelItem::getItemName(defaultWeaponId);
-	return name;
+	// Copy Data
+	this->setFullScript(pCode);
+	this->setImage(pImage);
+	this->setModTime(pModTime == 0 ? time(0) : pModTime);
+	
+	// Remove Comments
+	CString script = removeComments(pCode, "\xa7");
+
+	// Trim Code
+	if (pServer->getSettings()->getBool("trimnpccode", false))
+	{
+		std::vector<CString> code = script.tokenize("\xa7");
+		script.clear();
+		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+			script << (*i).trim() << "\xa7";
+	}
+	
+	// Parse Text
+	if (pServer->hasNPCServer())
+	{
+		setServerScript(script.readString("//#CLIENTSIDE"));
+		setClientScript(script.readString(""));
+	}
+	else setClientScript(script);
+
+	// Save Weapon
+	if (pSaveWeapon)
+		saveWeapon(pServer);
 }
