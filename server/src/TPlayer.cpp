@@ -633,7 +633,11 @@ bool TPlayer::sendFile(const CString& pFile)
 
 	// Find file.
 	CString path = fileSystem->find(pFile);
-	if (path.isEmpty()) return false;
+	if (path.isEmpty())
+	{
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+		return false;
+	}
 
 	// Strip filename from the path.
 	path.removeI(path.findl(CFileSystem::getPathSeparator()) + 1);
@@ -2630,6 +2634,7 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
 	// Get file.
 	CString file = pPacket.readString("");
+	//printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
 	this->sendFile(file);
@@ -2846,6 +2851,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
 	time_t fModTime = fileSystem->getModTime(file);
+	//printf("UPDATEFILE: %s\n", file.text());
 
 	// Make sure it isn't one of the default files.
 	bool isDefault = false;
