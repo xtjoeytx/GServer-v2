@@ -1432,6 +1432,11 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time >= 0)
 	{
+		if (versionID >= CLVER_2_1)
+		{
+			sendPacket(CString() << pLevel->getLinksPacket());
+			sendPacket(CString() << pLevel->getSignsPacket());
+		}
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 	}
 	else
