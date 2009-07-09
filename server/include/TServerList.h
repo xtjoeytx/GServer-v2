@@ -150,7 +150,7 @@ class TServerList : public CSocketStub
 		int rawPacketSize;
 		CString rBuffer, sBuffer;
 		CSocket sock;
-		time_t lastData, lastPing, lastTimer;
+		time_t lastData, lastPing, lastTimer, lastPlayerSync;
 		TServer *server;
 };
 
