@@ -105,6 +105,10 @@ bool TPlayer::sendLogin()
 	
 	if (succeeded == false) return false;
 
+	// Set loaded to true so our account is saved when we leave.
+	// This also lets us send data.
+	loaded = true;
+
 	// Exchange props with everybody on the server.
 	{
 		// RC props are sent in a "special" way.  As in retarded.
@@ -150,9 +154,6 @@ bool TPlayer::sendLogin()
 
 	// Tell the serverlist that the player connected.
 	server->getServerList()->addPlayer(this);
-
-	// Set loaded to true so our account is saved when we leave.
-	loaded = true;
 	return true;
 }
 
@@ -288,7 +289,7 @@ bool TPlayer::sendLoginRC()
 	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
 	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
 
-	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName, this);
+	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;
 }
 
