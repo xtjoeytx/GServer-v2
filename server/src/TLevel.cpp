@@ -256,6 +256,17 @@ bool TLevel::reload()
 	return ret;
 }
 
+TLevel* TLevel::clone()
+{
+	TLevel *level = new TLevel(server);
+	if (!level->loadLevel(levelName))
+	{
+		delete level;
+		return 0;
+	}
+	return level;
+}
+
 bool TLevel::loadLevel(const CString& pLevelName)
 {
 	CString ext(getExtension(pLevelName));
@@ -848,9 +859,6 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 
 bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, TPlayer* player)
 {
-	if (levelSingleplayer)
-		return false;
-
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63 ||
 		pWidth < 1 || pHeight < 1 ||
 		pX + pWidth > 64 || pY + pHeight > 64)
@@ -954,16 +962,12 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 bool TLevel::addItem(float pX, float pY, char pItem)
 {
-	if (levelSingleplayer) return false;
-
 	levelItems.push_back(new TLevelItem(pX, pY, pItem));
 	return true;
 }
 
 char TLevel::removeItem(float pX, float pY)
 {
-	if (levelSingleplayer) return -1;
-
 	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
 	{
 		TLevelItem* item = *i;
@@ -979,16 +983,12 @@ char TLevel::removeItem(float pX, float pY)
 
 bool TLevel::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
 {
-	if (levelSingleplayer) return false;
-
 	levelHorses.push_back(new TLevelHorse(server, pImage, pX, pY, pDir, pBushes));
 	return true;
 }
 
 void TLevel::removeHorse(float pX, float pY)
 {
-	if (levelSingleplayer) return;
-
 	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
 	{
 		TLevelHorse* horse = *i;
