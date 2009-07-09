@@ -1363,6 +1363,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	{
 		CString name = i->first;
 		CString dir;
+
 		int size = fs.getFileSize(i->first);
 		time_t mod = fs.getModTime(i->first);
 		dir >> (char)i->first.length() << i->first >> (char)viewRights.length() << viewRights >> (long long)size >> (long long)mod;
@@ -1722,7 +1723,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 				{
 					if (fs2->find(file).isEmpty())
 						fs2->addFile(fullPath);
-		
+
 					fs->addFile(fullPath);
 					printf("adding %s to %s\n", file.text(), type.text());
 					break;
