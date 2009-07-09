@@ -375,6 +375,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
 		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
+		bool isLoaded()			{ return loaded; }
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
