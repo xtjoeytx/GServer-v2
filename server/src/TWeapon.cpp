@@ -77,7 +77,7 @@ bool TWeapon::saveWeapon(TServer* server)
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	output << "SCRIPT\r\n";
-	output << mWeaponScript << "\r\n";
+	output << mWeaponScript.replaceAll("\xa7", "\r\n") << "\r\n";
 	output << "SCRIPTEND\r\n";
 
 	// Save it.
