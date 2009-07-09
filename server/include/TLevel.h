@@ -32,6 +32,9 @@ class TLevel
 		//! Re-loads the level.
 		//! \return True if it succeeds in re-loading the level.
 		bool reload();
+
+		//! Returns a clone of the level.
+		TLevel* clone();
 		
 		// get crafted packets
 		CString getBaddyPacket();
