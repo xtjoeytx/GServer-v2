@@ -703,84 +703,44 @@ CString CString::guntokenize() const
 
 bool CString::match(const CString& pMask) const
 {
-	int sloc = 0, mloc = 0;
+	char stopstring[1];
+	*stopstring = 0;
+	const char* matchstring = buffer;
+	const char* wildstring = pMask.text();
 
-	// Check to see if they are equal.
-	if (length() == pMask.length())
+	while (*matchstring)
 	{
-		if (memcmp(buffer, pMask.text(), length()) == 0)
-			return true;
-	}
-
-	// Check for a blank string.
-	if (buffer[sloc] == 0)
-	{
-		if ((pMask.text())[mloc] != '*') return false;
-		else return true;
-	}
-
-	// Check just for a single *.
-	if (pMask == "*") return true;
-
-	// Do the match now.
-	while (buffer[sloc] != 0)
-	{
-		// ? only wildcards a single character.
-		// Jump to the next character and try again.
-		if ((pMask.text())[mloc] == '?')
+		if (*wildstring == '*')
 		{
-			sloc++;
-			mloc++;
-			continue;
+			if (!*++wildstring)
+				return true;
+			else *stopstring = *wildstring;
 		}
 
-		// Find the next * or ?.
-		int loc = pMask.find("*", mloc);
-		int loc2 = pMask.find("?", mloc);
-		if (loc == -1 && loc2 == -1)
+		if (*stopstring)
 		{
-			// If neither * or ? was found, see if the rest of the string matches.
-			if (subString(sloc) == pMask.subString(mloc)) return true;
-			else
+			if (*stopstring == *matchstring)
 			{
-				// If they don't match, let's make sure the last mask value wasn't a *.
-				if ((pMask.text())[pMask.length() - 1] == '*') return true;
-				return false;
+				wildstring++;
+				matchstring++;
+				*stopstring = 0;
 			}
+			else matchstring++;
 		}
-
-		// Grab the string to search.
-		// Only read up to the first * or ? so choose the correct one.
-		if (loc == -1) loc = loc2;
-		if (loc2 != -1 && loc2 < loc) loc = loc2;
-		CString search = pMask.subString(mloc, loc - mloc);
-
-		// This should only happen if the mask starts with a *.
-		if (search.length() == 0)
+		else if ((*wildstring == *matchstring) || (*wildstring == '?'))
 		{
-			mloc++;
-			int loc3 = pMask.find("*", mloc);
-			int loc4 = pMask.find("?", mloc);
-			if (loc4 < loc3) loc3 = loc4;
-			sloc = find(pMask.subString(mloc, loc3));
-			continue;
+			wildstring++;
+			matchstring++;
 		}
+		else return false;
 
-		// See if we can find the search string.  If not, we don't match.
-		if ((loc2 = find(search, sloc)) == -1) return false;
-
-		// Update our locations.
-		sloc = loc2 + search.length() + 1;
-		mloc = loc + 1;
+		if (!*matchstring && *wildstring && *wildstring != '*')
+		{
+			// matchstring too short
+			return false;
+		}
 	}
-
-	// See if any non-wildcard characters are left in pMask.
-	// If not, return true.
-	CString search = pMask.subString(mloc);
-	search.removeAllI("*");
-	search.removeAllI("?");
-	if (search.length() == 0) return true;
-	return false;
+	return true;
 }
 
 bool CString::comparei(const CString& pOther) const
