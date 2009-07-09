@@ -53,7 +53,7 @@ TServerList::TServerList()
 	sock.setType(SOCKET_TYPE_CLIENT);
 	sock.setDescription("listserver");
 
-	lastData = lastPing = lastTimer = time(0);
+	lastData = lastPing = lastTimer = lastPlayerSync = time(0);
 
 	// Create Functions
 	if (!TServerList::created)
@@ -155,6 +155,13 @@ bool TServerList::doTimedEvents()
 	{
 		lastPing = lastTimer;
 		sendPacket(CString() >> (char)SVO_PING);
+	}
+
+	// Synchronize players every 5 minutes.
+	if ((int)difftime(lastTimer, lastPlayerSync) >= 300)
+	{
+		lastPlayerSync = lastTimer;
+		sendPlayers();
 	}
 
 	return true;
