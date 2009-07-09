@@ -1,4 +1,7 @@
-NEWWEAPON -gr_movement,wbomb1.png,1219820391
+GRAWP001
+REALNAME -gr_movement
+IMAGE wbomb1.png
+SCRIPT
 //#CLIENTSIDE
 if (playerenters || timeout) {
   if (!gr.off) {
@@ -7,4 +10,5 @@ if (playerenters || timeout) {
   }
   timeout=0.05;
 }
-ENDWEAPON
+
+SCRIPTEND

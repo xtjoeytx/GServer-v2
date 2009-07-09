@@ -10,7 +10,7 @@
 #define rclog		server->getRCLog()
 extern bool __sendLogin[propscount];
 extern bool __getLogin[propscount];
-extern bool __getLoginRC[propscount];
+extern bool __getRCLogin[propscount];
 
 /*
 	TPlayer: Manage Account
@@ -102,7 +102,6 @@ bool TPlayer::sendLogin()
 	if (isClient()) succeeded = sendLoginClient();
 	else if (isRC()) succeeded = sendLoginRC();
 	else if (isNPCServer()) succeeded = sendLoginNPCServer();
-	
 	if (succeeded == false) return false;
 
 	// Set loaded to true so our account is saved when we leave.
@@ -120,6 +119,12 @@ bool TPlayer::sendLogin()
 			>> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME)
 			>> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
 
+		// Get our client props.
+		CString myClientProps;
+		if (isClient())
+			myClientProps = getProps(__getLogin, sizeof(__getLogin)/sizeof(bool));
+		else myClientProps = getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool));
+
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -128,7 +133,7 @@ bool TPlayer::sendLogin()
 
 			// Send the other player my props.
 			if (player->isClient())
-				player->sendPacket(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				player->sendPacket(myClientProps);
 			else
 				player->sendPacket(myRCProps);
 
@@ -138,7 +143,7 @@ bool TPlayer::sendLogin()
 			else
 			{
 				// Levelname
-				CString levelName = (player->getLevel() ? player->getLevel()->getLevelName() : "");
+				CString levelName = (player->getLevel() ? player->getLevel()->getLevelName() : " ");
 
 				// Get the other player's RC props.
 				this->sendPacket(CString()
@@ -280,6 +285,7 @@ bool TPlayer::sendLoginRC()
 	// If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
 		nickName = accountName;
+	levelName = " ";
 
 	// Set the head to the server's set staff head.
 	headImg = server->getSettings()->getStr("staffhead", "head25.png");
