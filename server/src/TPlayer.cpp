@@ -290,6 +290,12 @@ TPlayer::~TPlayer()
 		delete cl;
 		i = cachedLevels.erase(i);
 	}
+	for (std::map<CString, TLevel*>::iterator i = spLevels.begin(); i != spLevels.end(); )
+	{
+		TLevel* cl = i->second;
+		delete cl;
+		spLevels.erase(i++);
+	}
 
 	if (playerSock)
 		delete playerSock;
@@ -470,6 +476,18 @@ bool TPlayer::doTimedEvents()
 			else if (ap < 60) apCounter = settings->getInt("aptime2", 300);
 			else if (ap < 80) apCounter = settings->getInt("aptime3", 600);
 			else apCounter = settings->getInt("aptime4", 1200);
+		}
+	}
+
+	// Do singleplayer level events.
+	{
+		for (std::map<CString, TLevel *>::iterator i = spLevels.begin(); i != spLevels.end(); ++i)
+		{
+			TLevel* level = i->second;
+			if (level == 0)
+				continue;
+
+			level->doTimedEvents();
 		}
 	}
 
@@ -1370,6 +1388,19 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 		return false;
 	}
 
+	// Check if the level is a singleplayer level.
+	// If so, see if we have been there before.  If not, duplicate it.
+	if (level->getSingleplayer())
+	{
+		TLevel* nl = (spLevels.find(level->getLevelName()) != spLevels.end() ? spLevels[level->getLevelName()] : 0);
+		if (nl == 0)
+		{
+			level = level->clone();
+			spLevels[level->getLevelName()] = level;
+		}
+		else level = nl;
+	}
+
 	// Add myself to the level playerlist.
 	level->addPlayer(this);
 	levelName = level->getLevelName();
@@ -1406,7 +1437,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
-	/*
+
 	std::vector<TPlayer*>* playerList = server->getPlayerList();
 	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 	{
@@ -1415,7 +1446,6 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 
 		player->sendPacket(CString() << this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y));
 	}
-	*/
 
 	return true;
 }
