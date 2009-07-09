@@ -624,7 +624,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && versionID < CLVER_2_14)
 	{
-		packetLength -= 5;
+		if (versionID < CLVER_2_1) packetLength -= 5;
 		if (fileData.length() > 64000)
 		{
 			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);

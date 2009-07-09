@@ -506,9 +506,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				int oldStatus = status;
 				status = pPacket.readGUChar();
-				printf("%s: status: %d, oldStatus: %d\n", accountName.text(), status, oldStatus );
+				//printf("%s: status: %d, oldStatus: %d\n", accountName.text(), status, oldStatus );
 
-				if (id == -1) break;
+				if (id == -1 || loaded == false) break;
 
 				// When they come back to life, give them hearts.
 				if ((oldStatus & PLSTATUS_DEAD) > 0 && (status & PLSTATUS_DEAD) == 0)
@@ -631,7 +631,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
-				server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
+				if (id != -1 && loaded)
+					server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
 				printf("udp_port: %d\n", udpport);
 				// TODO: udp support.
 			break;
@@ -679,7 +680,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_PSTATUSMSG:
 				statusMsg = pPacket.readGUChar();
-				if (id == -1)
+				if (id == -1 || !loaded)
 					break;
 
 				server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg, this);
@@ -828,7 +829,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	}
 
 	// Send Buffers Out
-	if (isLoggedIn())
+	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
 			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this, true);
