@@ -678,7 +678,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 		if (isClient() && versionID < CLVER_2_14) sendSize = fileData.length();
 
 		// Older client versions didn't send the modTime.
-		if (versionID < CLVER_2_1)
+		if (isClient() && versionID < CLVER_2_1)
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
 			sendPacket(CString() >> (char)PLO_FILE >> (char)pFile.length() << pFile << fileData.subString(0, sendSize), false);
