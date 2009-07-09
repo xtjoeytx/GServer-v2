@@ -151,7 +151,7 @@ void TServer::cleanup()
 	{
 		i->second->saveWeapon(this);
 		delete i->second;
-		i = weaponList.erase(i);
+		weaponList.erase(i++);
 	}
 }
 
@@ -470,7 +470,7 @@ int TServer::loadConfigFiles()
 	{
 		i->second->saveWeapon(this);
 		delete i->second;
-		i = weaponList.erase(i);
+		weaponList.erase(i++);
 	}
 
 	// Load weapons.
