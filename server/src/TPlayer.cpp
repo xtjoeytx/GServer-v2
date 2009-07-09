@@ -65,6 +65,24 @@ bool __getLogin[propscount] =
 	true,  true,  true,  false, true, // 78-82
 };
 
+bool __getRCLogin[propscount] =
+{
+	true,  false, false, false, false, false, // 0-5
+	false, false, false, false, false, true,  // 6-11
+	false, false, true,  false, false, false, // 12-17
+	true,  false, true,  false, false, false, // 18-23
+	false, false, false, false, false, false, // 24-29
+	true,  true,  false, false, true,  false, // 30-35
+	false, false, false, false, false, false, // 36-41
+	false, false, false, false, false, false, // 42-47
+	false, false, false, false, false, true,  // 48-53
+	false, false, false, false, false, false, // 54-59
+	false, false, false, false, false, false, // 60-65
+	false, false, false, false, false, false, // 66-71
+	false, false, false, false, false, false, // 72-77
+	false, false, false, false, true, // 78-82
+};
+
 bool __sendLocal[propscount] =
 {
 	false, false, true,  false, false, false, // 0-5
@@ -563,6 +581,19 @@ void TPlayer::decryptPacket(CString& pPacket)
 
 void TPlayer::sendPacket(CString pPacket, bool appendNL)
 {
+	/*
+	if (isClient() && accountName == "Nalin")
+	{
+		if (pPacket[0] - 32 == 8)
+		{
+			printf("packet: ");
+			for (int i = 0; i < pPacket.length(); ++i) printf("%2x ", (unsigned char)pPacket[i]);
+			printf("\n");
+		}
+		else printf("packet: %d\n", (unsigned char)(pPacket[0] - 32));
+	}
+	*/
+
 	// empty buffer?
 	if (pPacket.isEmpty())
 		return;
@@ -1546,7 +1577,6 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 	// Tell everyone I left.
 	// This prop isn't used at all???  Maybe it is required for 1.41?
-	/*
 //	if (pmap && pmap->getType() != MAPTYPE_GMAP)
 	{
 		server->sendPacketToLevel(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, 0, level, this);
@@ -1560,7 +1590,6 @@ bool TPlayer::leaveLevel(bool resetCache)
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
 	}
-	*/
 
 	// Set the level pointer to 0.
 	level = 0;
