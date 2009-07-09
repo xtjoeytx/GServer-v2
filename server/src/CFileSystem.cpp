@@ -173,12 +173,15 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 		{
 			CString dircheck = CString() << path << ent->d_name;
 			stat(dircheck.text(), &statx);
-			if ((statx.st_mode & S_IFDIR) && recursive)
+			if ((statx.st_mode & S_IFDIR))
 			{
-				// We need to add the directory to the directory list.
-				CString newDir = CString() << path << ent->d_name << fSep;
-				newDir.removeI(0, server->getServerPath().length());
-				addDir(newDir);
+				if (recursive)
+				{
+					// We need to add the directory to the directory list.
+					CString newDir = CString() << path << ent->d_name << fSep;
+					newDir.removeI(0, server->getServerPath().length());
+					addDir(newDir);
+				}
 				continue;
 			}
 		}
