@@ -435,7 +435,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	profile >> (char)line.length() << line;
 
 	// Do the old profile method for the old clients.
-	if (p1->getVersion() < CLVER_2_1)
+	if (p1->isClient() && p1->getVersion() < CLVER_2_1)
 	{
 		CString val;
 
