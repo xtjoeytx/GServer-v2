@@ -25,7 +25,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
 	
 	// Load File
-	std::vector<CString> fileData = CString::loadToken(fileName);
+	std::vector<CString> fileData = CString::loadToken(fileName, "\n", true);
 	if (fileData.size() == 0 || fileData[0].trim() != "GRAWP001")
 		return 0;
 
