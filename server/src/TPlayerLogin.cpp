@@ -134,12 +134,15 @@ bool TPlayer::sendLogin()
 			// Send the other player my props.
 			if (player->isClient())
 				player->sendPacket(myClientProps);
-			else
-				player->sendPacket(myRCProps);
+			else player->sendPacket(myRCProps);
 
 			// Get my props now.
 			if (isClient())
-				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			{
+				if (player->isClient())
+					sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				else sendPacket(player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
+			}
 			else
 			{
 				// Levelname
@@ -203,7 +206,7 @@ bool TPlayer::sendLoginClient()
 	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
-	if (versionID >= CLVER_2_1)
+	if ((isClient() && versionID >= CLVER_2_1) || isRC() || isNPCServer())
 	{
 		std::vector<CString>* plicons = server->getStatusList();
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
@@ -259,7 +262,7 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Send the minimap if it was set.
-	if (versionID >= CLVER_2_1)
+	if (isClient() && versionID >= CLVER_2_1)
 	{
 		CString minimap = settings->getStr("minimap");
 		if (!minimap.isEmpty())
@@ -271,7 +274,7 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Send out RPG Window greeting.
-	if (versionID >= CLVER_2_1)
+	if (isClient() && versionID >= CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
 
 	// Send the start message to the player.

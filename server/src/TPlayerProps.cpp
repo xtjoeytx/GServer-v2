@@ -61,7 +61,7 @@ CString TPlayer::getProp(int pPropId)
 
 		case PLPROP_GANI:
 		{
-			if (versionID < CLVER_2_1)
+			if (isClient() && versionID < CLVER_2_1)
 				return CString() >> (char)bowPower << bowImage;
 
 			if (gani.length() > 223) gani = gani.subString(0, 223);
@@ -193,8 +193,8 @@ CString TPlayer::getProp(int pPropId)
 
 		case PLPROP_PSTATUSMSG:
 		{
-			if (id == -1)
-				break;
+			//if (id == -1)
+			//	break;
 
 			if (statusMsg > server->getStatusList()->size() - 1)
 				return CString() >> (char)0;
@@ -392,7 +392,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_GANI:
 			{
-				if (versionID < CLVER_2_1)
+				if (isClient() && versionID < CLVER_2_1)
 				{
 					int sp = pPacket.readGUChar();
 					bowPower = sp;
@@ -508,7 +508,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status = pPacket.readGUChar();
 				//printf("%s: status: %d, oldStatus: %d\n", accountName.text(), status, oldStatus );
 
-				if (id == -1 || loaded == false) break;
+				if (id == -1) break;
 
 				// When they come back to life, give them hearts.
 				if ((oldStatus & PLSTATUS_DEAD) > 0 && (status & PLSTATUS_DEAD) == 0)
@@ -877,11 +877,11 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 	if (pCount > 0)
 	{
 		// Check if PLPROP_JOINLEAVELVL is set.
-		if (pProps[PLPROP_JOINLEAVELVL])
+		if (isClient() && pProps[PLPROP_JOINLEAVELVL])
 			propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
 
 		// Create Props
-		if (versionID < CLVER_2_1) pCount = 37;
+		if (isClient() && versionID < CLVER_2_1) pCount = 37;
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;
