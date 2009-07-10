@@ -296,21 +296,11 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 
 			case NPCPROP_X:
 				x = (float)(pProps.readGChar()) / 2.0f;
-				if (clientVersion < CLVER_2_1)
-				{
-					if (x < 0.0f) x = 0.0f;
-					if (x > 63.0f) x = 63.0f;
-				}
 				x2 = (int)(x * 16);
 			break;
 
 			case NPCPROP_Y:
 				y = (float)(pProps.readGChar()) / 2.0f;
-				if (clientVersion < CLVER_2_1)
-				{
-					if (y < 0.0f) y = 0.0f;
-					if (y > 63.0f) y = 63.0f;
-				}
 				y2 = (int)(y * 16);
 			break;
 
