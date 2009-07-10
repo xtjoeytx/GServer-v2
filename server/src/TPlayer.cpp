@@ -1424,7 +1424,14 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 		else
 			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(x * 2) >> (char)(y * 2) << levelName);
 	}
-	if (sendLevel(level, modTime, false) == false)
+
+	// Send the level now.
+	bool succeed = true;
+	if (versionID >= CLVER_2_1)
+		succeed = sendLevel(level, modTime, false);
+	else succeed = sendLevel141(level, modTime, false);
+
+	if (!succeed)
 	{
 		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
 		return false;
@@ -1459,18 +1466,117 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (pLevel == 0) return false;
 	CSettings* settings = server->getSettings();
 
-	if (versionID >= CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+	// Send Level
+	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+	time_t l_time = getCachedLevelModTime(pLevel);
+	if (modTime == -1) modTime = pLevel->getModTime();
+	if (l_time == 0)
+	{
+		if (modTime != pLevel->getModTime())
+		{
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
+			sendPacket(CString() << pLevel->getBoardPacket());
+		}
+
+		// Send links, signs, and mod time.
+		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+		if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
+		{
+			sendPacket(CString() << pLevel->getLinksPacket());
+			sendPacket(CString() << pLevel->getSignsPacket());
+		}
+	}
+
+	// Send board changes, chests, horses, and baddies.
+	if (fromAdjacent == false)
+	{
+		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
+		sendPacket(CString() << pLevel->getChestPacket(this));
+		sendPacket(CString() << pLevel->getHorsePacket());
+		sendPacket(CString() << pLevel->getBaddyPacket());
+	}
+
+	// If we are on a gmap, change our level back to the gmap.
+	if (pmap && pmap->getType() == MAPTYPE_GMAP)
+		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
+
+	// Tell the client if there are any ghost players in the level.
+	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
+	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
+
+	if (fromAdjacent == false || pmap != 0)
+	{
+		// If we are the leader, send it now.
+		if (pLevel->getPlayer(0) == this || pLevel->getSingleplayer() == true)
+			sendPacket(CString() >> (char)PLO_ISLEADER);
+	}
+
+	// Send new world time.
+	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
+
+	if (fromAdjacent == false || pmap != 0)
+	{
+		// Send NPCs.
+		if (pmap && pmap->getType() == MAPTYPE_GMAP)
+			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
+		else sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
+	}
+
+	// Do props stuff.
+	// Maps send to players in adjacent levels too.
+	if (level->getSingleplayer() == false)
+	{
+		if (pmap)
+		{
+			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* player = (TPlayer*)*i;
+				if (player == this || player->getMap() != pmap) continue;
+
+				if (pmap->getType() == MAPTYPE_GMAP)
+				{
+					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
+					if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
+						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				}
+				else if (pmap->getType() == MAPTYPE_BIGMAP)
+				{
+					if (player->getLevel() == 0) continue;
+					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
+					int sgmap[2] = {pmap->getLevelX(pLevel->getLevelName()), pmap->getLevelY(pLevel->getLevelName())};
+					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+				}
+			}
+		}
+		else
+		{
+			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
+			std::vector<TPlayer*>* playerList = level->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer* player = (TPlayer*)*i;
+				if (player == this) continue;
+				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			}
+		}
+	}
+
+	return true;
+}
+
+bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
+{
+	if (pLevel == 0) return false;
+	CSettings* settings = server->getSettings();
 
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time >= 0)
 	{
-		if (versionID >= CLVER_2_1)
-		{
-			sendPacket(CString() << pLevel->getLinksPacket());
-			sendPacket(CString() << pLevel->getSignsPacket());
-		}
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 	}
 	else
@@ -1480,7 +1586,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
 			sendPacket(CString() << pLevel->getBoardPacket());
 
-			if (firstLevel && versionID < CLVER_2_1)
+			if (firstLevel)
 				sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 			firstLevel = false;
 
@@ -1509,10 +1615,6 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		sendPacket(CString() << pLevel->getBaddyPacket());
 	}
 
-	// If we are on a gmap, change our level back to the gmap.
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
-		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
-
 	// Tell the client if there are any ghost players in the level.
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
@@ -1531,17 +1633,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	//if (versionID < CLVER_2_1) skipActors = true;
 
 	if (fromAdjacent == false || pmap != 0)
-	{
-		// Send NPCs.
-		if (versionID >= CLVER_2_1)
-		{
-			if (pmap && pmap->getType() == MAPTYPE_GMAP)
-				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
-			else if (versionID > CLVER_1_411)
-				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
-		}
 		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
-	}
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
@@ -1556,13 +1648,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				TPlayer* player = (TPlayer*)*i;
 				if (player == this || player->getMap() != pmap) continue;
 
-				if (pmap->getType() == MAPTYPE_GMAP)
-				{
-					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
-					if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
-						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-				}
-				else if (pmap->getType() == MAPTYPE_BIGMAP)
+				if (pmap->getType() == MAPTYPE_BIGMAP)
 				{
 					if (player->getLevel() == 0) continue;
 					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
@@ -2895,7 +2981,9 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	}
 
 	// Send the level.
-	sendLevel(adjacentLevel, modTime, true);
+	if (versionID >= CLVER_2_1)
+		sendLevel(adjacentLevel, modTime, true);
+	else sendLevel141(adjacentLevel, modTime, true);
 
 	// Set our old level back to normal.
 	sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
