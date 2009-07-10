@@ -1470,7 +1470,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time == 0)
+	if (l_time == -1)
 	{
 		if (modTime != pLevel->getModTime())
 		{
@@ -1794,7 +1794,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	if (nick.isEmpty()) nick = "unknown";
 
 	// If the nickname is equal to the account name, add the *.
-	if (nick.comparei(accountName))
+	if (nick == accountName)
 		newNick = CString("*");
 
 	// Add the nick name.
