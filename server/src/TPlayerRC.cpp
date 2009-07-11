@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #if defined(_WIN32) || defined(_WIN64)
 	#include <direct.h>
+	#define mkdir _mkdir
 	#define rmdir _rmdir
 #else
 	#include <unistd.h>
@@ -1467,14 +1468,17 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	}
 
 	CString file = pPacket.readChars(pPacket.readGUChar());
-	CString filepath = CString() << server->getServerPath() << lastFolder << file;
+	CString filepath = CString() << server->getServerPath() << lastFolder;
 	CString fileData = pPacket.subString(pPacket.readPos());
 
 	// See if we are uploading a large file or not.
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
 	{
-		// Normal file.  Save it and display our message.
-		fileData.save(filepath);
+		// Todo: Folder exists..?
+		mkdir(filepath.text());
+
+		// Normal file. Save it and display our message.
+		fileData.save(filepath << file);
 
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
