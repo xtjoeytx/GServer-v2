@@ -76,10 +76,11 @@ class TServer : public CSocketStub
 		unsigned int getNWTime() const;
 
 		std::map<CString, TWeapon *> * getWeaponList()	{ return &weaponList; }
-		std::vector<TPlayer *> * getPlayerList()			{ return &playerList; }
+		std::map<CString, TLevel*>* getGroupLevels()	{ return &groupLevels; }
+		std::vector<TPlayer *> * getPlayerList()		{ return &playerList; }
 		std::vector<TPlayer *> * getPlayerIdList()		{ return &playerIds; }
 		std::vector<TNPC *> * getNPCList()				{ return &npcList; }
-		std::vector<TNPC *> * getNPCIdList()				{ return &npcIds; }
+		std::vector<TNPC *> * getNPCIdList()			{ return &npcIds; }
 		std::vector<TLevel *> * getLevelList()			{ return &levelList; }
 		std::vector<TMap *> * getMapList()				{ return &mapList; }
 		std::vector<CString> * getServerFlags()			{ return &serverFlags; }
@@ -139,6 +140,7 @@ class TServer : public CSocketStub
 		CWordFilter wordFilter;
 
 		std::map<CString, TWeapon *> weaponList;
+		std::map<CString, TLevel*> groupLevels;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, serverFlags, statusList;
 		std::vector<TLevel *> levelList;
 		std::vector<TMap *> mapList;
