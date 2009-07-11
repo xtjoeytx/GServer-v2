@@ -1475,7 +1475,11 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
 	{
 		// Todo: Folder exists..?
-		mkdir(filepath.text());
+		#if defined(_WIN32) || defined(_WIN64)
+		  mkdir(filepath.text());
+		#else
+		  mkdir(filepath.text(), 0);
+		#endif
 
 		// Normal file. Save it and display our message.
 		fileData.save(filepath << file);
