@@ -128,24 +128,29 @@ void TServer::cleanup()
 		delete *i;
 		i = playerList.erase(i);
 	}
+	playerList.clear();
 
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		delete *i;
 		i = npcList.erase(i);
 	}
+	npcList.clear();
+	npcIds.clear();
 
 	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
 	{
 		delete *i;
 		i = levelList.erase(i);
 	}
+	levelList.clear();
 
 	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
 	{
 		delete *i;
 		i = mapList.erase(i);
 	}
+	mapList.clear();
 
 	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
@@ -153,6 +158,7 @@ void TServer::cleanup()
 		delete i->second;
 		weaponList.erase(i++);
 	}
+	weaponList.clear();
 }
 
 bool TServer::doMain()
@@ -875,10 +881,7 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer, bool pNpcServer
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
-	if (pLevel != 0 && pLevel->getSingleplayer() == true)
-		return;
-
-	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
+	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))// || pLevel->isGroupLevel())
 	{
 		for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 		{
@@ -894,7 +897,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 		if (!(*i)->isClient() || (*i) == pPlayer) continue;
 		if ((*i)->getMap() == pMap)
 		{
-			int sgmap[2] = {pMap->getLevelX(pLevel->getLevelName()), pMap->getLevelY(pLevel->getLevelName())};
+			int sgmap[2] = {pMap->getLevelX(pLevel->getActualLevelName()), pMap->getLevelY(pLevel->getActualLevelName())};
 			int ogmap[2];
 			switch (pMap->getType())
 			{
@@ -905,8 +908,8 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 
 				default:
 				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getLevelName());
-					ogmap[1] = pMap->getLevelY((*i)->getLevel()->getLevelName());
+					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getActualLevelName());
+					ogmap[1] = pMap->getLevelY((*i)->getLevel()->getActualLevelName());
 					break;
 			}
 
@@ -919,9 +922,8 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (pPlayer->getLevel() == 0) return;
-	if (pPlayer->getLevel()->getSingleplayer() == true) return;
 
-	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))
+	if (pMap == 0 || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP) || pPlayer->getLevel()->isSingleplayer() == true)
 	{
 		TLevel* level = pPlayer->getLevel();
 		if (level == 0) return;
@@ -934,6 +936,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 		return;
 	}
 
+	bool _groupLevel = pPlayer->getLevel()->isGroupLevel();
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient()) continue;
@@ -943,6 +946,8 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			continue;
 		}
 		if ((*i)->getLevel() == 0) continue;
+		if (_groupLevel && pPlayer->getGroup() != (*i)->getGroup()) continue;
+
 		if ((*i)->getMap() == pMap)
 		{
 			int ogmap[2], sgmap[2];
@@ -957,10 +962,10 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 
 				default:
 				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getLevelName());
-					ogmap[1] = pMap->getLevelY((*i)->getLevel()->getLevelName());
-					sgmap[0] = pMap->getLevelX(pPlayer->getLevel()->getLevelName());
-					sgmap[1] = pMap->getLevelY(pPlayer->getLevel()->getLevelName());
+					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getActualLevelName());
+					ogmap[1] = pMap->getLevelY((*i)->getLevel()->getActualLevelName());
+					sgmap[0] = pMap->getLevelX(pPlayer->getLevel()->getActualLevelName());
+					sgmap[1] = pMap->getLevelY(pPlayer->getLevel()->getActualLevelName());
 					break;
 			}
 
