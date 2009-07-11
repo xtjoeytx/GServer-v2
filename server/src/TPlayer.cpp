@@ -250,7 +250,9 @@ grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true)
 {
-	lastData = lastMovement = lastChat = lastMessage = lastNick = lastSave = time(0);
+	lastData = lastMovement = lastSave = time(0);
+	lastChat = lastMessage = lastNick = 0;
+
 	srand((unsigned int)time(0));
 
 	// Create Functions

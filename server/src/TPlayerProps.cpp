@@ -273,6 +273,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
+	bool doOverride = (server->hasNPCServer() && server->getNPCServer() == rc);
 	bool doSignCheck = false;
 	int len = 0;
 
@@ -286,20 +287,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				CString nick = pPacket.readChars(pPacket.readGUChar());
 
-				// Force Nickname
-				if (server->getNPCServer() == rc)
-					nickName = nick;
-				else
+				// Word filter.
+				int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
+				if (filter & FILTER_ACTION_WARN)
 				{
-					// Word filter.
-					int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
-					if (filter & FILTER_ACTION_WARN)
-					{
-						if (nickName.isEmpty())
-							setNick("unknown");
-					}
-					else setNick(nick);
+					if (nickName.isEmpty())
+						setNick("unknown");
 				}
+				else setNick(nick, doOverride);
 
 				globalBuff >> (char)propId << getProp(propId);
 				if (!pForwardToSelf)
