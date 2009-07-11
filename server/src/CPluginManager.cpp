@@ -64,3 +64,22 @@ void CPluginManager::AddPlugin(plugin_t *pPlugin)
 	mPlugins.push_back(pPlugin);
 	pPlugin->lib->Initialize(mServer);
 }
+
+
+void CPluginManager::LoadAccount(const char* accountName, const char** accountText)
+{
+	for (std::vector<plugin_t *>::iterator i = mPlugins.begin(); i != mPlugins.end(); ++i)
+	{
+		if ((*i)->lib->LoadAccount(accountName, accountText) == PLUGIN_STOP)
+			return;
+	}
+}
+
+void CPluginManager::SaveAccount(const char* accountName, const char* accountText)
+{
+	for (std::vector<plugin_t *>::iterator i = mPlugins.begin(); i != mPlugins.end(); ++i)
+	{
+		if ((*i)->lib->SaveAccount(accountName, accountText) == PLUGIN_STOP)
+			return;
+	}
+}

@@ -22,11 +22,8 @@ class CPluginManager
 		void AddPlugin(plugin_t *pPlugin);
 
 		// -- Functions -> Events -- //
-		void OnStart()
-		{
-			for (std::vector<plugin_t *>::iterator i = mPlugins.begin(); i != mPlugins.end(); ++i)
-				(*i)->lib->OnStart();
-		}
+		void LoadAccount(const char* accountName, const char** accountText);
+		void SaveAccount(const char* accountName, const char* accountText);
 
 	protected:
 		TServer *mServer;
