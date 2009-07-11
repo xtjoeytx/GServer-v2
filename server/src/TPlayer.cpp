@@ -463,7 +463,7 @@ bool TPlayer::doTimedEvents()
 	// Increase player AP.
 	if (settings->getBool("apsystem") && level != 0)
 	{
-		if (!(status & PLSTATUS_PAUSED) && level->getSparringZone() == false)
+		if (!(status & PLSTATUS_PAUSED) && level->isSparringZone() == false)
 			apCounter--;
 
 		if (apCounter <= 0)
@@ -753,9 +753,13 @@ void TPlayer::dropItemsOnDeath()
 	int maxdeathgralats = server->getSettings()->getInt("maxdeathgralats", 50);
 
 	// Determine how many gralats to remove from the account.
-	int drop_gralats = rand() % maxdeathgralats;
-	clip(drop_gralats, mindeathgralats, maxdeathgralats);
-	if (drop_gralats > gralatc) drop_gralats = gralatc;
+	int drop_gralats = 0;
+	if (maxdeathgralats > 0)
+	{
+		drop_gralats = rand() % maxdeathgralats;
+		clip(drop_gralats, mindeathgralats, maxdeathgralats);
+		if (drop_gralats > gralatc) drop_gralats = gralatc;
+	}
 
 	// Determine how many arrows and bombs to remove from the account.
 	int drop_arrows = rand() % 4;
@@ -1396,7 +1400,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 
 	// Check if the level is a singleplayer level.
 	// If so, see if we have been there before.  If not, duplicate it.
-	if (level->getSingleplayer())
+	if (level->isSingleplayer())
 	{
 		TLevel* nl = (spLevels.find(level->getLevelName()) != spLevels.end() ? spLevels[level->getLevelName()] : 0);
 		if (nl == 0)
@@ -1407,12 +1411,31 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 		else level = nl;
 	}
 
+	// Check if the level is a group level.
+	/*
+	if (level->isGroupLevel())
+	{
+		std::map<CString, TLevel*>* groupLevels = server->getGroupLevelList();
+		TLevel* nl = (*groupLevels)[CString() << level->getActualLevelName() << "." << levelGroup];
+		if (!levelGroup.isEmpty())
+		{
+			if (nl == 0)
+			{
+				level = level->clone();
+				level->setLevelName(CString() << level->getActualLevelName() << "." << levelGroup);
+				(*groupLevels)[level->getLevelName()] = level;
+			}
+			else level = nl;
+		}
+	}
+	*/
+
 	// Add myself to the level playerlist.
 	level->addPlayer(this);
 	levelName = level->getLevelName();
 
 	// Tell the client their new level.
-	if (modTime == 0 || versionID < CLVER_2_1)
+	if (modTime == 0 || versionID < CLVER_2_1)// || level->isGroupLevel())
 	{
 		if (pmap && pmap->getType() == MAPTYPE_GMAP && versionID >= CLVER_2_1)
 		{
@@ -1441,7 +1464,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
-	if (level->getSparringZone() && ap == 100)
+	if (level->isSparringZone() && ap == 100)
 	{
 		ap = 99;
 		apCounter = 1;
@@ -1509,7 +1532,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false || pmap != 0)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->getSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1527,7 +1550,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (level->getSingleplayer() == false)
+	if (level->isSingleplayer() == false)
 	{
 		if (pmap)
 		{
@@ -1547,8 +1570,8 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				else if (pmap->getType() == MAPTYPE_BIGMAP)
 				{
 					if (player->getLevel() == 0) continue;
-					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
-					int sgmap[2] = {pmap->getLevelX(pLevel->getLevelName()), pmap->getLevelY(pLevel->getLevelName())};
+					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getActualLevelName()), pmap->getLevelY(player->getLevel()->getActualLevelName())};
+					int sgmap[2] = {pmap->getLevelX(pLevel->getActualLevelName()), pmap->getLevelY(pLevel->getActualLevelName())};
 					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 				}
@@ -1624,7 +1647,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false || pmap != 0)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->getSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1639,7 +1662,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (level->getSingleplayer() == false)
+	if (level->isSingleplayer() == false)
 	{
 		if (pmap)
 		{
@@ -1717,6 +1740,20 @@ bool TPlayer::leaveLevel(bool resetCache)
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
 	}
+
+	// If we are in a group level and we were the last player inside, delete the level.
+	/*
+	if (level->isGroupLevel() && !levelGroup.isEmpty())
+	{
+		std::map<CString, TLevel*>* groupLevels = server->getGroupLevelList();
+		std::map<CString, TLevel*>::iterator i = groupLevels->find(CString() << levelGroup << level->getLevelName());
+		if (i != groupLevels->end())
+		{
+			delete i->second;
+			groupLevels->erase(i);
+		}
+	}
+	*/
 
 	// Set the level pointer to 0.
 	level = 0;
@@ -2398,7 +2435,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 	// Sparring zone rating code.
 	// Uses the glicko rating system.
 	if (level == 0) return true;
-	if (level->getSparringZone())
+	if (level->isSparringZone())
 	{
 		// Get some stats we are going to use.
 		// Need to parse the other player's PLPROP_RATING.
@@ -3128,6 +3165,27 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				}
 			}
 		}
+		/*
+		else if (action.find("gr.setgroup") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 2)
+				levelGroup = actionParts[1];
+		}
+		else if (action.find("gr.setlevelgroup") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 2)
+			{
+				std::vector<TPlayer*>* playerList = level->getPlayerList();
+				for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+				{
+					TPlayer* player = *i;
+					player->setGroup(actionParts[1]);
+				}
+			}
+		}
+		*/
 	}
 
 	// We don't have an NPCserver, so, for now, just pass it along.

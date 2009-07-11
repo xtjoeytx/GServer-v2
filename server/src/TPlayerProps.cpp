@@ -112,8 +112,10 @@ CString TPlayer::getProp(int pPropId)
 					return CString() >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
 				{
-					if (level != 0 && level->getSingleplayer() == true)
+					if (level != 0 && level->isSingleplayer() == true)
 						return CString() >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
+					//else if (level != 0 && level->isGroupLevel() == true)
+					//	return CString() >> (char)(levelName.length() + levelGroup.length()) << levelName << levelGroup;
 					else
 						return CString() >> (char)levelName.length() << levelName;
 				}
@@ -519,7 +521,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				// When they die, increase deaths and make somebody else level leader.
 				if ((oldStatus & PLSTATUS_DEAD) == 0 && (status & PLSTATUS_DEAD) > 0)
 				{
-					if (level->getSparringZone() == false)
+					if (level->isSparringZone() == false)
 					{
 						deaths++;
 						dropItemsOnDeath();
