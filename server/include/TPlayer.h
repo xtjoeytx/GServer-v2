@@ -329,6 +329,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CSocket* getSocket()	{ return playerSock; }
 		TLevel* getLevel()		{ return level; }
 		TMap* getMap()			{ return pmap; }
+		CString getGroup()		{ return levelGroup; }
 		int getId() const;
 		int getType() const;
 		time_t getLastData() const		{ return lastData; }
@@ -343,6 +344,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setNick(const CString& pNickName, bool force = false);
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
+		void setGroup(CString group)	{ levelGroup = group; }
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
@@ -537,6 +539,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CString npcserverPort;
 		int packetCount;
 		bool firstLevel;
+		CString levelGroup;
 
 		// File queue.
 		CFileQueue fileQueue;
