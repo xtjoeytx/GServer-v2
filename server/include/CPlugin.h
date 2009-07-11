@@ -22,8 +22,8 @@ class CPlugin
 		virtual bool Initialize(TServer *pServer) = 0;
 
 		// Functions -> Account Load/Save
-		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) = 0;
-		virtual PLUGINRET SaveAccount(const char* accountName, const char* accountText) = 0;
+		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) { return PLUGIN_CONTINUE; };
+		virtual PLUGINRET SaveAccount(const char* accountName, const char* accountText) { return PLUGIN_CONTINUE; };
 
 	protected:
 		TServer *mServer;
