@@ -47,9 +47,17 @@ class TLevel
 		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
 		CString getSignsPacket();
 
+		//! Gets the actual level name.
+		//! \return The action level name.
+		CString getActualLevelName() const				{ return actualLevelName; }
+
 		//! Gets the level name.
 		//! \return The level name.
 		CString getLevelName() const					{ return levelName; }
+
+		//! Sets the level name.
+		//! \param pLevelName The new name of the level.
+		void setLevelName(CString pLevelName)			{ levelName = pLevelName; }
 
 		//! Gets the raw level tile data.
 		//! \return A pointer to all 4096 raw level tiles.
@@ -73,7 +81,7 @@ class TLevel
 
 		//! Gets the sparring zone status of the level.
 		//! \return The sparring zone status.  If true, the level is a sparring zone.
-		bool getSparringZone() const					{ return levelSpar; }
+		bool isSparringZone() const						{ return levelSpar; }
 
 		//! Sets the sparring zone status of the level.
 		//! \param pLevelSpar If true, the level becomes a sparring zone level.
@@ -81,11 +89,19 @@ class TLevel
 
 		//! Gets the singleplayer status of the level.
 		//! \return The singleplayer status.  If true, the level is singleplayer.
-		bool getSingleplayer() const					{ return levelSingleplayer; }
+		bool isSingleplayer() const						{ return levelSingleplayer; }
 
 		//! Sets the singleplayer status of the level.
 		//! \param pLevelSingleplayer If true, the level becomes a singleplayer level.
 		void setSingleplayer(bool pLevelSingleplayer)	{ levelSingleplayer = pLevelSingleplayer; }
+
+		//! Gets the group status of the level.
+		//! \return The group status.  If true, the level is a group level.
+		bool isGroupLevel() const						{ return levelGroup; }
+
+		//! Sets the group status of the level.
+		//! \param pLevelGroupLevel If true, the level becomes a group level.
+		void setGroupLevel(bool pLevelGroupLevel)		{ levelGroup = pLevelGroupLevel; }
 
 		//! Adds a board change to the level.
 		//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
@@ -184,8 +200,9 @@ class TLevel
 		time_t modTime;
 		bool levelSpar;
 		bool levelSingleplayer;
+		bool levelGroup;
 		short levelTiles[4096];
-		CString fileName, fileVersion, levelName;
+		CString fileName, fileVersion, actualLevelName, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;
 		std::vector<TLevelBaddy *> levelBaddyIds;
 		std::vector<TLevelBoardChange *> levelBoardChanges;

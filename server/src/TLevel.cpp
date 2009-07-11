@@ -20,7 +20,7 @@ short respawningTiles[] = {
 */
 TLevel::TLevel(TServer* pServer)
 :
-server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
+server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelGroup(false)
 {
 	memset(levelTiles, 0, sizeof(levelTiles));
 
@@ -30,6 +30,76 @@ server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
 
 TLevel::~TLevel()
 {
+	// Delete NPCs.
+	{
+		// Get some pointers.
+		std::vector<TNPC*>* npcList = server->getNPCList();
+		std::vector<TNPC*>* npcIds = server->getNPCIdList();
+
+		// Remove every NPC in the level.
+		if (npcList->size() != 0 && npcIds->size() != 0)
+		{
+			for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
+			{
+				TNPC* n = *i;
+
+				// Remove the NPC from the global lists.
+				(*npcIds)[n->getId()] = 0;
+				for (std::vector<TNPC*>::iterator j = npcList->begin(); j != npcList->end(); )
+				{
+					if ((*j) == n)
+						j = npcList->erase(j);
+					else ++j;
+				}
+
+				// Inform all the clients that the NPC has been deleted.
+				//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
+				for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
+				{
+					TPlayer* p = *i;
+					if (!p->isClient()) continue;
+
+					if (p->getVersion() < CLVER_2_1)
+						p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)n->getId());
+					else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)n->getLevel()->getLevelName().length() << n->getLevel()->getLevelName() >> (int)n->getId());
+				}
+
+				delete n;
+			}
+			levelNPCs.clear();
+		}
+	}
+
+	// Delete baddies.
+	for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i) delete *i;
+	levelBaddies.clear();
+	levelBaddyIds.clear();
+
+	// Delete chests.
+	for (std::vector<TLevelChest*>::iterator i = levelChests.begin(); i != levelChests.end(); ++i) delete *i;
+	levelChests.clear();
+
+	// Delete links.
+	for (std::vector<TLevelLink*>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i) delete *i;
+	levelLinks.clear();
+
+	// Delete signs.
+	for (std::vector<TLevelSign*>::iterator i = levelSigns.begin(); i != levelSigns.end(); ++i) delete *i;
+	levelSigns.clear();
+
+	// Delete items.
+	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
+	{
+		TLevelItem* item = *i;
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item->getX() * 2) >> (char)(item->getY() * 2);
+		for (std::vector<TPlayer*>::iterator j = levelPlayerList.begin(); j != levelPlayerList.end(); ++j) (*j)->sendPacket(packet);
+		delete item;
+	}
+	levelItems.clear();
+
+	// Delete board changes.
+	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
+	levelBoardChanges.clear();
 }
 
 /*
@@ -224,6 +294,8 @@ bool TLevel::reload()
 
 	// Clean up the rest.
 	levelSpar = false;
+	levelSingleplayer = false;
+	levelGroup = false;
 
 	// Remove all the players from the level.
 	std::vector<TPlayer*> oldplayers = levelPlayerList;
@@ -284,7 +356,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
-	levelName = pLevelName;
+	actualLevelName = levelName = pLevelName;
 	fileName = fileSystem->find(pLevelName);
 	modTime = fileSystem->getModTime(pLevelName);
 
@@ -461,7 +533,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
-	levelName = pLevelName;
+	actualLevelName = levelName = pLevelName;
 	fileName = fileSystem->find(pLevelName);
 	modTime = fileSystem->getModTime(pLevelName);
 
@@ -660,7 +732,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
-	levelName = pLevelName;
+	actualLevelName = levelName = pLevelName;
 	fileName = fileSystem->find(pLevelName);
 	modTime = fileSystem->getModTime(pLevelName);
 
@@ -974,6 +1046,7 @@ char TLevel::removeItem(float pX, float pY)
 		if (item->getX() == pX && item->getY() == pY)
 		{
 			char itemType = item->getItem();
+			delete item;
 			levelItems.erase(i);
 			return itemType;
 		}
@@ -994,6 +1067,7 @@ void TLevel::removeHorse(float pX, float pY)
 		TLevelHorse* horse = *i;
 		if (horse->getX() == pX && horse->getY() == pY)
 		{
+			delete horse;
 			levelHorses.erase(i);
 			return;
 		}
