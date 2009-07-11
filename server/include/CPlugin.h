@@ -7,6 +7,13 @@
 // Class Definitions
 class TServer;
 
+// Enum
+enum PLUGINRET
+{
+	PLUGIN_CONTINUE,	// Let other plugins handle this event.
+	PLUGIN_STOP,		// Don't let other plugins handle this event.
+};
+
 // Class: Plugin
 class CPlugin
 {
@@ -15,10 +22,8 @@ class CPlugin
 		virtual bool Initialize(TServer *pServer) = 0;
 
 		// Functions -> Account Load/Save
-		virtual void OnStart() = 0;
-
-		//virtual TAccount * loadAccount(const CString& pAccount = "defaultaccount") = 0;
-		//virtual bool saveAccount(TAccount *pAccount) = 0;
+		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) = 0;
+		virtual PLUGINRET SaveAccount(const char* accountName, const char* accountText) = 0;
 
 	protected:
 		TServer *mServer;
