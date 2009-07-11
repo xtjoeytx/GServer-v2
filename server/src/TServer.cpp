@@ -18,7 +18,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), wordFilter(this), mNpcServer(0)
+: name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
