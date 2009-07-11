@@ -60,6 +60,10 @@ level(pLevel), server(pServer)
 	if (pScript.subString(0, 12) == "singleplayer")
 		pLevel->setSingleplayer(true);
 
+	// See if the NPC sets the level as a group level.
+	if (pScript.subString(0, 10) == "grouplevel")
+		pLevel->setGroupLevel(true);
+
 	// Remove comments and separate clientside and serverside scripts.
 	CString nocomments = removeComments(pScript, "\xa7");
 	if (nocomments.find("//#CLIENTSIDE") != -1)
