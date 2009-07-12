@@ -54,21 +54,29 @@ bool TAccount::loadAccount(const CString& pAccount)
 	// Just in case this account was loaded offline through RC.
 	accountName = pAccount;
 
-	// Find the account in the file system.
 	bool loadedFromDefault = false;
 	CFileSystem* accfs = server->getAccountsFileSystem();
-	CString accpath(accfs->findi(CString() << pAccount << ".txt"));
-	if (accpath.length() == 0)
-	{
-		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
-		CFileSystem::fixPathSeparators(&accpath);
-		loadedFromDefault = true;
-	}
+	std::vector<CString> fileData;
 
-	// Load file.
-	std::vector<CString> fileData = CString::loadToken(accpath, "\n");
-	if (fileData.size() == 0 || fileData[0].trim() != "GRACC001")
-		return false;
+	CString accountText = server->getPluginManager().LoadAccount(pAccount);
+	if (!accountText.isEmpty())
+		fileData = accountText.tokenize("\n");
+	else
+	{
+		// Find the account in the file system.
+		CString accpath(accfs->findi(CString() << pAccount << ".txt"));
+		if (accpath.length() == 0)
+		{
+			accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
+			CFileSystem::fixPathSeparators(&accpath);
+			loadedFromDefault = true;
+		}
+
+		// Load file.
+		fileData = CString::loadToken(accpath, "\n");
+		if (fileData.size() == 0 || fileData[0].trim() != "GRACC001")
+			return false;
+	}
 
 	// Clear Lists
 	for (int i = 0; i < 30; ++i) attrList[i].clear();
@@ -265,6 +273,10 @@ bool TAccount::saveAccount()
 	for (unsigned int i = 0; i < folderList.size(); i++)
 		newFile << "FOLDERRIGHT " << folderList[i] << "\r\n";
 	newFile << "LASTFOLDER " << lastFolder << "\r\n";
+
+	// See if a plugin saves the account.
+	if (server->getPluginManager().SaveAccount(accountName.text(), newFile.text()))
+		return true;
 
 	// Save the account now.
 	CString accpath = CString() << server->getServerPath() << "accounts/" << accountName << ".txt";
