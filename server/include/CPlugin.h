@@ -17,6 +17,7 @@ enum PLUGINRET
 };
 
 // Class: Plugin
+// *WARNING* _EVERYTHING_ must be purely virtual and CANNOT BE REORDERED.
 class CPlugin
 {
 	public:
@@ -24,8 +25,8 @@ class CPlugin
 		virtual bool Initialize(TServer *pServer) = 0;
 
 		// Functions -> Account Load/Save
-		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) { return PLUGIN_CONTINUE; };
-		virtual PLUGINRET SaveAccount(const char* accountName, const char* accountText) { return PLUGIN_CONTINUE; };
+		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) = 0;
+		virtual PLUGINRET SaveAccount(const char* accountName, const char* accountText) = 0;
 
 	protected:
 		TServer *mServer;
