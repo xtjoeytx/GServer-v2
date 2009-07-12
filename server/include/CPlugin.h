@@ -10,8 +10,10 @@ class TServer;
 // Enum
 enum PLUGINRET
 {
-	PLUGIN_CONTINUE,	// Let other plugins handle this event.
-	PLUGIN_STOP,		// Don't let other plugins handle this event.
+	PLUGIN_CONTINUE,		// Let other plugins handle this event.
+	PLUGIN_STOP,			// Don't let other plugins handle this event.
+	PLUGIN_CONTINUE_EAT,	// Let other plugins handle this event and eat the event.
+	PLUGIN_STOP_EAT,		// Don't let other plugins handle this event and eat the event.
 };
 
 // Class: Plugin

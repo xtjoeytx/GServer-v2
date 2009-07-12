@@ -65,6 +65,7 @@ class TServer : public CSocketStub
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
+		CPluginManager& getPluginManager()				{ return mPluginManager; }
 		CSettings * getSettings()						{ return &settings; }
 		CSettings * getAdminSettings()					{ return &adminsettings; }
 		CSocketManager* getSocketManager()				{ return &sockManager; }
