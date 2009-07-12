@@ -22,8 +22,8 @@ class CPluginManager
 		void AddPlugin(plugin_t *pPlugin);
 
 		// -- Functions -> Events -- //
-		void LoadAccount(const char* accountName, const char** accountText);
-		void SaveAccount(const char* accountName, const char* accountText);
+		CString LoadAccount(const CString& accountName);
+		bool SaveAccount(const CString& accountName, const CString& accountText);
 
 	protected:
 		TServer *mServer;
