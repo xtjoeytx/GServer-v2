@@ -66,20 +66,31 @@ void CPluginManager::AddPlugin(plugin_t *pPlugin)
 }
 
 
-void CPluginManager::LoadAccount(const char* accountName, const char** accountText)
+CString CPluginManager::LoadAccount(const CString& accountName)
 {
+	CString ret;
 	for (std::vector<plugin_t *>::iterator i = mPlugins.begin(); i != mPlugins.end(); ++i)
 	{
-		if ((*i)->lib->LoadAccount(accountName, accountText) == PLUGIN_STOP)
-			return;
+		const char* accountText = 0;
+		PLUGINRET val = (*i)->lib->LoadAccount(accountName.text(), &accountText);
+		ret.clear();
+		ret << accountText;
+
+		if (val == PLUGIN_STOP || val == PLUGIN_STOP_EAT)
+			return ret;
 	}
+	return ret;
 }
 
-void CPluginManager::SaveAccount(const char* accountName, const char* accountText)
+bool CPluginManager::SaveAccount(const CString& accountName, const CString& accountText)
 {
+	bool eat = false;
 	for (std::vector<plugin_t *>::iterator i = mPlugins.begin(); i != mPlugins.end(); ++i)
 	{
-		if ((*i)->lib->SaveAccount(accountName, accountText) == PLUGIN_STOP)
-			return;
+		PLUGINRET ret = (*i)->lib->SaveAccount(accountName.text(), accountText.text());
+		if (ret == PLUGIN_CONTINUE_EAT || ret == PLUGIN_STOP_EAT) eat = true;
+		if (ret == PLUGIN_STOP || ret == PLUGIN_STOP_EAT)
+			return eat;
 	}
+	return eat;
 }
