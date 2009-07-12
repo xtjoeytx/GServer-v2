@@ -1495,7 +1495,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time == -1)
+	if (l_time == 0)
 	{
 		if (modTime != pLevel->getModTime())
 		{
@@ -1600,7 +1600,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time >= 0)
+	if (l_time != 0)
 	{
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 	}
@@ -1711,7 +1711,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
 		{
-			cl->modTime = (resetCache ? -1 : time(0));
+			cl->modTime = (resetCache ? 0 : time(0));
 			found = true;
 			i = cachedLevels.end();
 		} else ++i;
@@ -1769,7 +1769,7 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 		if (cl->level == level)
 			return cl->modTime;
 	}
-	return -1;
+	return 0;
 }
 
 void TPlayer::resetLevelCache(const TLevel* level)
