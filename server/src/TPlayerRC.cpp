@@ -983,6 +983,20 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			server->getWordFilter()->load(CString() << server->getServerPath() << "config/rules.txt");
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the word filter.");
 		}
+		/*
+		 * Need to make it load non-loaded files from weapons that have been added manually,
+		 * I'll do this when I get the chance, which should be soon enough...
+		 * -Zach
+		*/
+		else if (words[0] == "/reloadweapons" && words.size() == 1)
+		{
+			std::map<CString, TWeapon *> * weaponList = server->getWeaponList();
+
+			for (std::map<CString, TWeapon *>::const_iterator i = weaponList->begin(); i != weaponList->end(); ++ i)
+			{
+				i->second->loadWeapon(i->second->getName(), server);
+			}
+		}
 	}
 
 	return true;
