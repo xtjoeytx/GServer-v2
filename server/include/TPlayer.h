@@ -248,6 +248,7 @@ enum
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...
 	PLO_EMPTY168				= 168,	// Login server sends this.  Blank packet.
 	PLO_GHOSTMODE				= 170,
+	PLO_BIGMAP					= 171,
 	PLO_MINIMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
 	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
 	PLO_SHOOT					= 175,
