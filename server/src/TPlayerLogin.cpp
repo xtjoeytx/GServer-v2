@@ -261,6 +261,18 @@ bool TPlayer::sendLoginClient()
 		return false;
 	}
 
+	// Send the bigmap if it was set.
+	if (isClient() && versionID >= CLVER_2_1)
+	{
+		CString bigmap = settings->getStr("bigmap");
+		if (!bigmap.isEmpty())
+		{
+			std::vector<CString> vbigmap = bigmap.tokenize(",");
+			if (vbigmap.size() == 4)
+				sendPacket(CString() >> (char)PLO_BIGMAP << vbigmap[0].trim() << "," << vbigmap[1].trim() << "," << vbigmap[2].trim() << "," << vbigmap[3].trim());
+		}
+	}
+
 	// Send the minimap if it was set.
 	if (isClient() && versionID >= CLVER_2_1)
 	{
@@ -279,6 +291,9 @@ bool TPlayer::sendLoginClient()
 
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
+
+	if (isClient() && versionID >= CLVER_4_0211)
+		sendPacket(CString() >> (char)82);
 
 	return true;
 }
