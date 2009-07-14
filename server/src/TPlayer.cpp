@@ -173,6 +173,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
+	TPLFunc[PLI_SERVERWARP] = &TPlayer::msgPLI_SERVERWARP;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
@@ -601,19 +602,6 @@ void TPlayer::decryptPacket(CString& pPacket)
 
 void TPlayer::sendPacket(CString pPacket, bool appendNL)
 {
-	/*
-	if (isClient() && accountName == "Nalin")
-	{
-		if (pPacket[0] - 32 == 8)
-		{
-			printf("packet: ");
-			for (int i = 0; i < pPacket.length(); ++i) printf("%2x ", (unsigned char)pPacket[i]);
-			printf("\n");
-		}
-		else printf("packet: %d\n", (unsigned char)(pPacket[0] - 32));
-	}
-	*/
-
 	// empty buffer?
 	if (pPacket.isEmpty())
 		return;
@@ -1527,7 +1515,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Tell the client if there are any ghost players in the level.
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
-	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
+	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	if (fromAdjacent == false || pmap != 0)
 	{
@@ -2443,7 +2431,8 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		float oldStats[4] = { rating, deviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
-		if (this->getProp(PLPROP_IPADDR).readGInt5() == player->getProp(PLPROP_IPADDR).readGInt5()) return true;
+		if (CString(playerSock->getRemoteIp()) == CString(player->getSocket()->getRemoteIp()))
+			return true;
 
 		float gSpar[2] = {1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[3],2))/pow(3.14159265f,2)),0.5f),	//Winner
 					  	  1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[1],2))/pow(3.14159265f,2)),0.5f)};	//Loser
@@ -3165,6 +3154,14 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				}
 			}
 		}
+		else if (action.find("gr.serverwarp") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 2)
+			{
+				msgPLI_SERVERWARP(actionParts[1]);
+			}
+		}
 		/*
 		else if (action.find("gr.setgroup") == 0)
 		{
@@ -3217,6 +3214,13 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 
 //	printf("shoot: %s\n", pPacket.text());
 //	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
+	return true;
+}
+
+bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
+{
+	CString servername = pPacket.readString("");
+	server->getServerList()->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << servername);
 	return true;
 }
 
