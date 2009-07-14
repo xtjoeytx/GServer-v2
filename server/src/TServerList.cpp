@@ -37,6 +37,7 @@ void TServerList::createFunctions()
 	TSLFunc[SVI_FILESTART3] = &TServerList::msgSVI_FILESTART3;
 	TSLFunc[SVI_FILEDATA3] = &TServerList::msgSVI_FILEDATA3;
 	TSLFunc[SVI_FILEEND3] = &TServerList::msgSVI_FILEEND3;
+	TSLFunc[SVI_SERVERINFO] = &TServerList::msgSVI_SERVERINFO;
 
 	// Finished
 	TServerList::created = true;
@@ -738,5 +739,18 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 				break;
 			}
 		}
+	}
+}
+
+void TServerList::msgSVI_SERVERINFO(CString& pPacket)
+{
+	int pid = pPacket.readGUShort();
+	CString serverpacket = pPacket.readString("");
+
+	TPlayer* p = server->getPlayer(pid);
+	if (p && p->isClient())
+	{
+		if (p->getVersion() >= CLVER_2_1)
+			p->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 	}
 }
