@@ -61,7 +61,7 @@ enum
 	PLI_TRIGGERACTION	= 38,
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
-	//PLI_SERVERINFO		= 41,
+	PLI_SERVERWARP		= 41,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
 	PLI_RAWDATA			= 50,
@@ -253,6 +253,7 @@ enum
 	PLO_SHOOT					= 175,
 	PLO_FULLSTOP				= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
 	PLO_FULLSTOP2				= 177,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
+	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
 	PLO_LISTPROCESSES			= 182,
@@ -436,6 +437,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
+		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
