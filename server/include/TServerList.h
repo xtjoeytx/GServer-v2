@@ -39,6 +39,7 @@ enum
 	SVO_NEWSERVER		= 22,
 	SVO_SERVERHQPASS	= 23,
 	SVO_SERVERHQLEVEL	= 24,
+	SVO_SERVERINFO		= 25,
 };
 
 enum
@@ -61,6 +62,7 @@ enum
 	SVI_FILESTART3		= 15,
 	SVI_FILEDATA3		= 16,
 	SVI_FILEEND3		= 17,
+	SVI_SERVERINFO		= 18,
 	SVI_PING			= 99,
 	SVI_RAWDATA			= 100,
 };
@@ -139,6 +141,7 @@ class TServerList : public CSocketStub
 		void msgSVI_FILESTART3(CString& pPacket);
 		void msgSVI_FILEDATA3(CString& pPacket);
 		void msgSVI_FILEEND3(CString& pPacket);
+		void msgSVI_SERVERINFO(CString& pPacket);
 		
 	protected:
 		// Packet Functions
