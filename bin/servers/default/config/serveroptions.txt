@@ -109,11 +109,13 @@ gmaps =
 # The head used by RCs on the server.
 staffhead = head25.png
 
-# Sets a minimap to use.
+# Sets the bigmap and minimap to use.
+# bigmap = maptext,mapimage,defaultx,defaulty
 # minimap = maptext,mapimage,defaultx,defaulty
-# maptext is the bigmap.txt styled file with the levels.
-# mapimage is the image to use
-# defaultx and defaulty is the position where the heads of players not on the map will be drawn.
+#   maptext is the bigmap.txt styled file with the levels.
+#   mapimage is the image to use
+#   defaultx and defaulty is the position where the heads of players not on the map will be drawn.
+bigmap = 
 minimap = 
 
 # --------------------------------------------------------------------------------------
