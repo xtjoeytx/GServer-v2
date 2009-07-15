@@ -519,3 +519,12 @@ condAbort:
 	delete [] conditionsMet;
 	return false;
 }
+
+/*
+	Translation Functionality
+*/
+CString TAccount::translate(const CString& pKey)
+{
+	printf("language: %s\n", language.text());
+	return server->TS_Translate(language, pKey);
+}

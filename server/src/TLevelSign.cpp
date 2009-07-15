@@ -1,4 +1,5 @@
 #include "TLevelSign.h"
+#include "TPlayer.h"
 
 const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 				"0123456789!?-.,#>()#####\"####':/~&### <####;\n";
@@ -93,24 +94,27 @@ CString decodeSignCode(CString pText)
 	return retVal;
 }
 
+CString encodeSign(const CString& pSignText)
+{
+	CString retVal;
+	std::vector<CString> signText = pSignText.tokenize("\n");
+	for (std::vector<CString>::iterator i = signText.begin(); i != signText.end(); ++i)
+		retVal << encodeSignCode(CString() << *i << "\n");
+	return retVal;
+}
+
 TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
  : x(pX), y(pY), unformattedText(pSign)
 {
-	if (!encoded)
-	{
-		std::vector<CString> signText = unformattedText.tokenize("\n");
-		text.clear(unformattedText.length());
-		for (std::vector<CString>::iterator i = signText.begin(); i != signText.end(); ++i)
-			text << encodeSignCode(CString() << *i << "\n");
-	}
-	else
+	if (encoded)
 	{
 		text = unformattedText;
 		unformattedText = decodeSignCode(unformattedText);
 	}
+	else text = encodeSign(unformattedText);
 }
 
-CString TLevelSign::getSignStr() const
+CString TLevelSign::getSignStr(TPlayer *pPlayer) const
 {
 	CString outText;
 
@@ -119,7 +123,7 @@ CString TLevelSign::getSignStr() const
 	outText.writeGChar(y);
 
 	// Write the text to the packet.
-	outText << text;
+	outText << (pPlayer == 0 ? text : encodeSign(pPlayer->translate(unformattedText.trim())));
 
 	return outText;
 }

@@ -208,13 +208,13 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 	return retVal;
 }
 
-CString TLevel::getSignsPacket()
+CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 {
 	CString retVal;
 	for (std::vector<TLevelSign*>::const_iterator i = levelSigns.begin(); i != levelSigns.end(); ++i)
 	{
 		TLevelSign* sign = *i;
-		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr() << "\n";
+		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr(pPlayer) << "\n";
 	}
 	return retVal;
 }
