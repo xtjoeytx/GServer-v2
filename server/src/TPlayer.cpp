@@ -3154,14 +3154,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				}
 			}
 		}
-		else if (action.find("gr.serverwarp") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 2)
-			{
-				msgPLI_SERVERWARP(actionParts[1]);
-			}
-		}
 		/*
 		else if (action.find("gr.setgroup") == 0)
 		{
