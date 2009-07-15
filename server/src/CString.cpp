@@ -235,6 +235,28 @@ CString CString::escape() const
 	return retVal;
 }
 
+CString CString::unescape() const
+{
+	CString retVal;
+
+	for (int i = 0; i < length(); i++)
+	{
+		char cur = buffer[i];
+		char nex = buffer[++i];
+		
+		if (cur == '\\' && nex == '\\')
+			retVal << "\\";
+		else if (cur == '\"' && nex == '\"')
+			retVal << "\"";
+		else if (cur == '\'' && nex == '\'')
+			retVal << "\'";
+		else
+			retVal << buffer[--i];
+	}
+
+	return retVal;
+}
+
 CString CString::left(int pLength) const
 {
 	return subString(0, pLength);
