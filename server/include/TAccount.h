@@ -121,8 +121,6 @@ enum
 };
 #define propscount	83
 
-class TServer;
-
 class TAccount
 {
 	public:
@@ -155,7 +153,8 @@ class TAccount
 		CString getAdminIp() const		{ return adminIp; }
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
-		std::vector<CString>* getFolderList()	{ return &folderList; }
+		std::vector<CString>* getFolderList()			{ return &folderList; }
+		CString translate(const CString& pKey);
 
 		// set functions
 		void setLastSparTime(time_t newTime)		{ lastSparTime = newTime; }
