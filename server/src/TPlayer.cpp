@@ -1496,7 +1496,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
 		{
 			sendPacket(CString() << pLevel->getLinksPacket());
-			sendPacket(CString() << pLevel->getSignsPacket());
+			sendPacket(CString() << pLevel->getSignsPacket(this));
 		}
 	}
 
@@ -1607,7 +1607,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
 			{
 				sendPacket(CString() << pLevel->getLinksPacket());
-				sendPacket(CString() << pLevel->getSignsPacket());
+				sendPacket(CString() << pLevel->getSignsPacket(this));
 			}
 			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
 		}
