@@ -61,6 +61,7 @@ class CString
 
 		/* Functions */
 		CString escape() const;
+		CString unescape() const;
 		CString left(int pLength) const;
 		CString right(int pLength) const;
 		CString remove(int pStart, int pLength = -1) const;
@@ -90,6 +91,7 @@ class CString
 
 		/* In-Functions */
 		inline CString& escapeI();
+		inline CString& unescapeI();
 		inline CString& removeI(int pStart, int pLength = -1);
 		inline CString& removeAllI(const CString& pString);
 		inline CString& toLowerI();
@@ -278,6 +280,12 @@ inline unsigned int CString::readGUInt5()
 inline CString& CString::escapeI()
 {
 	*this = escape();
+	return *this;
+}
+
+inline CString& CString::unescapeI()
+{
+	*this = unescape();
 	return *this;
 }
 
