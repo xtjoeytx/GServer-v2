@@ -45,7 +45,7 @@ class TLevel
 		CString getHorsePacket();
 		CString getLinksPacket();
 		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
-		CString getSignsPacket();
+		CString getSignsPacket(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
 		//! \return The action level name.
