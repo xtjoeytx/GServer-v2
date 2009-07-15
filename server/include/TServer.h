@@ -10,6 +10,7 @@
 #include "CPluginManager.h"
 #include "CSettings.h"
 #include "CSocket.h"
+#include "CTranslationManager.h"
 #include "CWordFilter.h"
 
 #include "TPlayer.h"
@@ -27,13 +28,13 @@ enum // Socket Type
 
 enum
 {
-	FS_ALL		= 0,
-	FS_FILE		= 1,
-	FS_LEVEL	= 2,
-	FS_HEAD		= 3,
-	FS_BODY		= 4,
-	FS_SWORD	= 5,
-	FS_SHIELD	= 6,
+	FS_ALL			= 0,
+	FS_FILE			= 1,
+	FS_LEVEL		= 2,
+	FS_HEAD			= 3,
+	FS_BODY			= 4,
+	FS_SWORD		= 5,
+	FS_SHIELD		= 6,
 };
 #define FS_COUNT	7
 
@@ -68,10 +69,11 @@ class TServer : public CSocketStub
 		CPluginManager& getPluginManager()				{ return mPluginManager; }
 		CSettings * getSettings()						{ return &settings; }
 		CSettings * getAdminSettings()					{ return &adminsettings; }
-		CSocketManager* getSocketManager()				{ return &sockManager; }
+		CSocketManager * getSocketManager()				{ return &sockManager; }
 		CString getServerPath()							{ return serverpath; }
 		CString * getServerMessage()					{ return &servermessage; }
 		CString * getAllowedVersionString()				{ return &allowedVersionString; }
+		CTranslationManager * getTranslationManager()	{ return &mTranslationManager; }
 		CWordFilter * getWordFilter()					{ return &wordFilter; }
 		TServerList * getServerList()					{ return &serverlist; }
 		unsigned int getNWTime() const;
@@ -120,6 +122,12 @@ class TServer : public CSocketStub
 
 		void setNPCServer(TPlayer * pNpcServer, int pNCPort = 0);
 
+		// Translation Management
+		bool TS_Load(const CString& pLanguage, const CString& pFileName);
+		CString TS_Translate(const CString& pLanguage, const CString& pKey);
+		void TS_Reload();
+		void TS_Save();
+
 		// Weapon Management
 		TWeapon *getWeapon(const CString& name);
 
@@ -138,6 +146,7 @@ class TServer : public CSocketStub
 		CSocket playerSock;
 		CSocketManager sockManager;
 		CString allowedVersionString, name, servermessage, serverpath;
+		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
 
 		std::map<CString, TWeapon *> weaponList;

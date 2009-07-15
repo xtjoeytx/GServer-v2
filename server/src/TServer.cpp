@@ -36,6 +36,7 @@ TServer::TServer(CString pName)
 	rclog.setFilename(CString() << serverpath << "logs/rclog.txt");
 	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
 
+	//
 	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
 		filesystem[i].setServer(this);
@@ -117,6 +118,9 @@ void TServer::operator()()
 
 void TServer::cleanup()
 {
+	// Save translations.
+	TS_Save();
+
 	// Save server flags.
 	CString out;
 	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
@@ -553,6 +557,10 @@ int TServer::loadConfigFiles()
 		serverlog.out("       %s\n", i->text());
 		mapList.push_back(bigmap);
 	}
+
+	// Load translations.
+	serverlog.out("     Loading translations...\n");
+	this->TS_Reload();
 
 	// Load word filter.
 	serverlog.out("     Loading word filter...\n");
@@ -1038,5 +1046,109 @@ void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
 			player->sendPacket(CString() << pWeapon->getWeaponPacket());
 		}
+	}
+}
+
+/*
+	Translation Functionality
+*/
+bool TServer::TS_Load(const CString& pLanguage, const CString& pFileName)
+{
+	// Load File
+	std::vector<CString> fileData = CString::loadToken(pFileName, "\n", true);
+	if (fileData.size() == 0)
+		return false;
+
+	// Parse File
+	std::vector<CString>::const_iterator cur, next;
+	for (cur = fileData.begin(); cur != fileData.end(); ++cur)
+	{
+		if (cur->find("msgid") == 0)
+		{
+			CString msgId = cur->subString(7, cur->length() - 8);
+			CString msgStr = "";
+			bool isStr = false;
+
+			++cur;
+			while (cur != fileData.end())
+			{
+				if ((*cur)[0] == '"' && (*cur)[cur->length() - 1] == '"')
+				{
+					CString str('\n');
+					str.write(cur->subString(1, cur->length() - 2));
+					(isStr == true ? msgStr.write(str) : msgId.write(str));
+				}
+				else if (cur->find("msgstr") == 0)
+				{
+					msgStr = cur->subString(8, cur->length() - 9);
+					isStr = true;
+				}
+				else { --cur; break; }
+
+				++cur;
+			}
+			
+			mTranslationManager.add(pLanguage.text(), msgId.text(), msgStr.text());
+		}
+
+		if (cur == fileData.end())
+			break;
+	}
+
+	return true;
+}
+
+CString TServer::TS_Translate(const CString& pLanguage, const CString& pKey)
+{
+	return mTranslationManager.translate(pLanguage.toLower().text(), pKey.trim().text());
+}
+
+void TServer::TS_Reload()
+{
+	// Save Translations
+	this->TS_Save();
+
+	// Reset Translations
+	mTranslationManager.reset();
+
+	// Load Translation Folder
+	CFileSystem translationFS(this);
+	translationFS.addDir("translations", "*.po");
+
+	// Load Each File
+	std::map<CString, CString> *temp = translationFS.getFileList();
+	for (std::map<CString, CString>::const_iterator i = temp->begin(); i != temp->end(); ++i)
+		this->TS_Load(removeExtension(i->first), i->second);
+}
+
+void TServer::TS_Save()
+{
+	// Grab Translations
+	std::map<std::string, STRMAP> *languages = mTranslationManager.getTranslationList();
+	
+	// Iterate each Language
+	for (std::map<std::string, STRMAP>::const_iterator i = languages->begin(); i != languages->end(); ++i)
+	{
+		// Create Output
+		CString output;
+
+		// Iterate each Translation
+		for (std::map<std::string, std::string>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
+		{
+			output << "msgid \"" << j->first.c_str() << "\"\r\n";
+			output << "msgstr ";
+			if (!j->second.empty())
+			{
+				std::vector<CString> lines = CString(j->second.c_str()).removeAll("\r").tokenize("\n");
+				for (std::vector<CString>::const_iterator k = lines.begin(); k != lines.end(); ++k)
+					output << "\"" << *k << "\"\r\n";
+			}
+			else output << "\"\"\r\n";
+
+			output << "\r\n";
+		}
+
+		// Save File
+		output.trimRight().save(getServerPath() << "translations/" << i->first.c_str() << ".po");
 	}
 }

@@ -5,6 +5,8 @@
 #include "ICommon.h"
 #include "CString.h"
 
+class TPlayer;
+
 class TLevelSign
 {
 	public:
@@ -13,7 +15,7 @@ class TLevelSign
 		TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 		// functions
-		CString getSignStr() const;
+		CString getSignStr(TPlayer *pPlayer = 0) const;
 
 		// get private variables
 		int getX()					{ return x; }
