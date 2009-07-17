@@ -132,9 +132,7 @@ bool TPlayer::sendLogin()
 			if (player == this) continue;
 
 			// Send the other player my props.
-			if (player->isClient())
-				player->sendPacket(myClientProps);
-			else player->sendPacket(myRCProps);
+			player->sendPacket(player->isClient() ? myClientProps : myRCProps);
 
 			// Get my props now.
 			if (isClient())
@@ -325,5 +323,9 @@ bool TPlayer::sendLoginNPCServer()
 
 	// Set the head to the server's set staff head.
 	headImg = server->getSettings()->getStr("staffhead", "head25.png");
+
+	// Send NC-Weapons
+	sendNC_Weapons();
+
 	return true;
 }
