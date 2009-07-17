@@ -102,7 +102,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 			val = fileData[i].subString(sep + 1);
 
 		if (section == "NAME") continue;
-		else if (section == "NICK") continue;
+		else if (section == "NICK") nickName = val;
 		else if (section == "COMMUNITYNAME") communityName = val;
 		else if (section == "LEVEL") levelName = val;
 		else if (section == "X") { x = (float)strtofloat(val); x2 = (int)(x * 16); }
@@ -525,6 +525,5 @@ condAbort:
 */
 CString TAccount::translate(const CString& pKey)
 {
-	printf("language: %s\n", language.text());
 	return server->TS_Translate(language, pKey);
 }
