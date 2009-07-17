@@ -872,7 +872,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 {
-	if (!isRC())
+	if (!isRC() && !isNPCServer())
 	{
 		rclog.out("[Hack] %s attempted to send a message to RC.\n", accountName.text());
 		return true;
