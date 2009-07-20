@@ -23,7 +23,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 {
 	// File Path
 	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
-	
+
 	// Load File
 	std::vector<CString> fileData = CString::loadToken(fileName, "\n", true);
 	if (fileData.size() == 0 || fileData[0].trim() != "GRAWP001")
@@ -54,6 +54,8 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		}
 	}
 
+	printf("Test: %s\n", weaponScript.text());
+
 	// Valid Weapon Name?
 	if (weaponName.isEmpty())
 		return 0;
@@ -77,7 +79,7 @@ bool TWeapon::saveWeapon(TServer* server)
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	output << "SCRIPT\r\n";
-	output << mWeaponScript.replaceAll("\xa7", "\r\n") << "\r\n";
+	output << mWeaponScript.replaceAll("\xa7", "\r\n") << (mWeaponScript[mWeaponScript.length() - 1] != '\xa7' ? "\r\n" : "");
 	output << "SCRIPTEND\r\n";
 
 	// Save it.
