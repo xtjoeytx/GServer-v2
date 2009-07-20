@@ -564,8 +564,16 @@ std::vector<CString> CString::loadToken(const CString& pFile, const CString& pTo
 	CString fileData;
 	if (!fileData.load(pFile))
 		return std::vector<CString>();
+
 	if (removeCR) fileData.removeAllI("\r");
-	return fileData.tokenize(pToken);
+
+	// parse file
+	std::vector<CString> result;
+	while (fileData.bytesLeft())
+		result.push_back(fileData.readString(pToken));
+	
+	// return
+	return result;
 }
 
 CString CString::replaceAll(const CString& pString, const CString& pNewString) const
