@@ -120,10 +120,7 @@ bool TPlayer::sendLogin()
 			>> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
 
 		// Get our client props.
-		CString myClientProps;
-		if (isClient())
-			myClientProps = getProps(__getLogin, sizeof(__getLogin)/sizeof(bool));
-		else myClientProps = getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool));
+		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -132,15 +129,11 @@ bool TPlayer::sendLogin()
 			if (player == this) continue;
 
 			// Send the other player my props.
-			player->sendPacket(player->isClient() ? myClientProps : myRCProps);
-
-			// Get my props now.
-			if (isClient())
-			{
-				if (player->isClient())
-					sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-				else sendPacket(player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
-			}
+			player->sendPacket(player->isClient() || player->isNPCServer() ? myClientProps : myRCProps);
+			
+			// Add Player / RC
+			if (isClient() || isNPCServer())
+				sendPacket(player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 			else
 			{
 				// Levelname

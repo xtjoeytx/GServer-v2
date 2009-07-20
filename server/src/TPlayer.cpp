@@ -280,8 +280,8 @@ TPlayer::~TPlayer()
 		if (level) leaveLevel();
 
 		// Announce our departure to other clients.
-		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
-		server->sendPacketTo(PLTYPE_ANYRC | PLTYPE_NPCSERVER, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
+		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 		if (isRC() && !accountName.isEmpty())
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
 	}
