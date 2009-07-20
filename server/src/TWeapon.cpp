@@ -54,8 +54,6 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		}
 	}
 
-	printf("Test: %s\n", weaponScript.text());
-
 	// Valid Weapon Name?
 	if (weaponName.isEmpty())
 		return 0;
