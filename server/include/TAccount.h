@@ -139,6 +139,11 @@ class TAccount
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
 		bool hasWeapon(const CString& pWeapon);
 
+		// Flag-Managing
+		CString getFlag(const CString& pFlagName)	{ return mFlagList[pFlagName]; }
+		void setFlag(CString pFlag);
+		void setFlag(const CString& pFlagName, const CString& pFlagValue);
+
 		// get functions
 		float getX() const				{ return x; }
 		float getY() const				{ return y; }
@@ -193,7 +198,8 @@ class TAccount
 		int onlineTime, shieldPower, sprite, status, swordPower, udpport;
 		time_t lastSparTime;
 		unsigned char statusMsg;
-		std::vector<CString> chestList, flagList, folderList, weaponList;
+		std::map<CString, CString> mFlagList;
+		std::vector<CString> chestList, folderList, weaponList;
 };
 
 #endif // TACCOUNT_H
