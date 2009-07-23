@@ -56,9 +56,13 @@ class TServer : public CSocketStub
 		int init();
 		bool doMain();
 
+		// Server Management
 		int loadConfigFiles();
 		void loadAllFolders();
 		void loadFolderConfig();
+
+		void LoadServerFlags();
+		void SaveServerFlags();
 
 		// Get functions.
 		CFileSystem * getFileSystem(int c = 0)			{ return &(filesystem[c]); }
@@ -78,6 +82,7 @@ class TServer : public CSocketStub
 		TServerList * getServerList()					{ return &serverlist; }
 		unsigned int getNWTime() const;
 
+		std::map<CString, CString> * getServerFlags()	{ return &mServerFlags; }
 		std::map<CString, TWeapon *> * getWeaponList()	{ return &weaponList; }
 		std::map<CString, TLevel*>* getGroupLevels()	{ return &groupLevels; }
 		std::vector<TPlayer *> * getPlayerList()		{ return &playerList; }
@@ -86,12 +91,11 @@ class TServer : public CSocketStub
 		std::vector<TNPC *> * getNPCIdList()			{ return &npcIds; }
 		std::vector<TLevel *> * getLevelList()			{ return &levelList; }
 		std::vector<TMap *> * getMapList()				{ return &mapList; }
-		std::vector<CString> * getServerFlags()			{ return &serverFlags; }
 		std::vector<CString> * getStatusList()			{ return &statusList; }
 		std::vector<CString> * getAllowedVersions()		{ return &allowedVersions; }
 		
 		CFileSystem * getFileSystemByType(CString& type);
-		CString getFlag(const CString& pName) const;
+		CString getFlag(const CString& pFlagName);
 		TLevel * getLevel(const CString& pLevel);
 		TMap * getMap(const CString& name) const;
 		TMap * getMap(const TLevel* pLevel) const;
@@ -104,10 +108,12 @@ class TServer : public CSocketStub
 		TNPC * addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0);
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0);
-		bool addFlag(const CString& pFlag);
-		bool deleteFlag(const CString& pFlag);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
+
+		bool deleteFlag(const CString& pFlagName, bool pSendToPlayers = true);
+		bool setFlag(CString pFlag, bool pSendToPlayers = true);
+		bool setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 		
 		// Packet sending.
 		void sendPacketToAll(CString pPacket, TPlayer *pPlayer = 0, bool pNpcServer = false) const;
@@ -149,9 +155,10 @@ class TServer : public CSocketStub
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
 
+		std::map<CString, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
 		std::map<CString, TLevel*> groupLevels;
-		std::vector<CString> allowedVersions, foldersConfig, ipBans, serverFlags, statusList;
+		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;
 		std::vector<TLevel *> levelList;
 		std::vector<TMap *> mapList;
 		std::vector<TNPC *> npcIds, npcList;

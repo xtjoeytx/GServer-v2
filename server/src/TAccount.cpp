@@ -81,7 +81,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 	// Clear Lists
 	for (int i = 0; i < 30; ++i) attrList[i].clear();
 	chestList.clear();
-	flagList.clear();
+	mFlagList.clear();
 	folderList.clear();
 	weaponList.clear();
 
@@ -138,7 +138,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 		else if (section == "DEVIATION") deviation = (float)strtofloat(val);
 		else if (section == "OLDDEVIATION") oldDeviation = (float)strtofloat(val);
 		else if (section == "LASTSPARTIME") lastSparTime = strtolong(val);
-		else if (section == "FLAG") flagList.push_back(val);
+		else if (section == "FLAG") setFlag(val);
 		else if (section == "ATTR1") attrList[0] = val;
 		else if (section == "ATTR2") attrList[1] = val;
 		else if (section == "ATTR3") attrList[2] = val;
@@ -256,8 +256,8 @@ bool TAccount::saveAccount()
 		newFile << "WEAPON " << weaponList[i] << "\r\n";
 
 	// Flags
-	for (unsigned int i = 0; i < flagList.size(); i++)
-		newFile << "FLAG " << flagList[i] << "\r\n";
+	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+		newFile << "FLAG " << i->first << "=" << i->second << "\r\n";
 
 	// Account Settings
 	newFile << "\r\n";
@@ -288,35 +288,8 @@ bool TAccount::saveAccount()
 }
 
 /*
-	TAccount: Attribute-Managing
+	TAccount: Account Management
 */
-bool TAccount::hasChest(const TLevelChest *pChest, const CString& pLevel)
-{
-	// Definitions
-	CString chestStr = pChest->getChestStr((pLevel.length() > 1 ? pLevel : levelName));
-
-	// Iterate Chest List
-	for (std::vector<CString>::iterator i = chestList.begin(); i != chestList.end(); ++i)
-	{
-		if (*i == chestStr)
-			return true;
-	}
-
-	return false;
-}
-
-bool TAccount::hasWeapon(const CString& pWeapon)
-{
-	// Iterate Weapon List
-	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
-	{
-		if (*i == pWeapon)
-			return true;
-	}
-
-	return false;
-}
-
 bool TAccount::meetsConditions( CString fileName, CString conditions )
 {
 	const char* conditional[] = { ">=", "<=", "!=", "=", ">", "<" };
@@ -518,6 +491,55 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 condAbort:
 	delete [] conditionsMet;
 	return false;
+}
+
+
+/*
+	TAccount: Attribute-Managing
+*/
+bool TAccount::hasChest(const TLevelChest *pChest, const CString& pLevel)
+{
+	// Definitions
+	CString chestStr = pChest->getChestStr((pLevel.length() > 1 ? pLevel : levelName));
+
+	// Iterate Chest List
+	for (std::vector<CString>::iterator i = chestList.begin(); i != chestList.end(); ++i)
+	{
+		if (*i == chestStr)
+			return true;
+	}
+
+	return false;
+}
+
+bool TAccount::hasWeapon(const CString& pWeapon)
+{
+	// Iterate Weapon List
+	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+	{
+		if (*i == pWeapon)
+			return true;
+	}
+
+	return false;
+}
+
+/*
+	TAccount: Flag Management
+*/
+void TAccount::setFlag(CString pFlag)
+{
+	CString flagName = pFlag.readString("=");
+	CString flagValue = pFlag.readString("");
+	this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue));
+}
+
+void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
+{
+	if (pFlagValue.isEmpty())
+		mFlagList.erase(pFlagName);
+	else
+		mFlagList[pFlagName] = pFlagValue;
 }
 
 /*
