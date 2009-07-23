@@ -65,6 +65,24 @@ bool __getLogin[propscount] =
 	true,  true,  true,  false, true, // 78-82
 };
 
+bool __getLoginNC[propscount] =
+{
+	true,  true,  true,  true,  true,  true, // 0-5
+	true,  true,  true,  true,  true,  true,  // 6-11
+	true,  true,  true,  true,  true,  true,  // 12-17
+	true,  true,  true,  true,  true,  true, // 18-23
+	true,  true,  true,  true,  true,  true, // 24-29
+	true,  false, true,  true,  true,  true,  // 30-35
+	true,  true,  true,  true,  true,  true,  // 36-41
+	false, true,  true,  true,  true,  true, // 42-47
+	true,  true,  true,  false, true,  true,  // 48-53
+	true,  true,  true,  true,  true,  true, // 54-59
+	true,  true,  true,  true,  true,  true, // 60-65
+	true,  true,  true,  true,  true,  true, // 66-71
+	true,  true,  true,  true,  false, false, // 72-77
+	true,  true,  true,  false, false, // 78-82
+};
+
 bool __getRCLogin[propscount] =
 {
 	true,  false, false, false, false, false, // 0-5
@@ -1773,18 +1791,6 @@ void TPlayer::resetLevelCache(const TLevel* level)
 	}
 }
 
-CString TPlayer::getFlag(const CString& flag) const
-{
-	for (std::vector<CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
-	{
-		CString val = *i;
-		CString name = val.readString("=").trim();
-		if (name == flag)
-			return val.readString("").trim();
-	}
-	return CString();
-}
-
 void TPlayer::setChat(const CString& pChat)
 {
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
@@ -2548,17 +2554,16 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 {
 	CString flagPacket = pPacket.readString("");
-	CString flagName, flagValue, flagNew;
+	CString flagName, flagValue;
 	if (flagPacket.find("=") != -1)
 	{
-		flagName = flagPacket.readString("=").trim();
-		flagValue = flagPacket.readString("").trim();
-		flagNew = CString() << flagName << "=" << flagValue;
+		flagName  = flagPacket.readString("=");
+		flagValue = flagPacket.readString("");
 	}
-	else
+		else
 	{
 		flagName = flagPacket;
-		flagNew = flagPacket;
+		flagValue = "1";
 	}
 
 	// Add a little hack for our special gr.strings.
@@ -2571,11 +2576,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			if (versionID >= CLVER_2_3) return true;
 			float pos = (float)atof(flagValue.text());
 			if (pos != x)
-			{
 				grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
-//				x = pos;
-//				setProps(CString() >> (char)PLPROP_X >> (char)(x * 2.0f), true, false);
-			}
 			return true;
 		}
 		else if (flagName == "gr.y")
@@ -2583,12 +2584,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			if (versionID >= CLVER_2_3) return true;
 			float pos = (float)atof(flagValue.text());
 			if (pos != y)
-			{
-				//printf("gr.y: %.2f, adding\n", pos);
 				grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
-//				y = pos;
-//				setProps(CString() >> (char)PLPROP_Y >> (char)(y * 2.0f), true, false);
-			}
 			return true;
 		}
 		else if (flagName == "gr.z")
@@ -2596,11 +2592,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 			if (versionID >= CLVER_2_3) return true;
 			float pos = (float)atof(flagValue.text());
 			if (pos != z)
-			{
 				grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 25.0f) * 2.0f) << "\n";
-//				z = pos;
-//				setProps(CString() >> (char)PLPROP_Z >> (char)((z + 25.0f) * 2.0f), true, false);
-			}
 			return true;
 		}
 	}
@@ -2616,41 +2608,17 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	// Server flags are handled differently than client flags.
 	if (flagName.find("server.") != -1)
 	{
-		server->addFlag(flagNew);
+		server->setFlag(flagName, flagValue);
 		return true;
 	}
 
-	// Loop for flags now.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-	{
-		CString tflagName = *i;
-		if (i->find("=") != -1)
-			tflagName.removeI(i->find("="));
-
-		if (tflagName == flagName)
-		{
-			// A flag with a value of 0 means we should unset it.
-			if (flagValue.length() == 0)
-			{
-				flagList.erase(i);
-				return true;
-			}
-
-			// If we didn't unset it, alter the existing flag.
-			*i = flagNew;
-			return true;
-		}
-	}
-
-	// We didn't find a pre-existing flag so let's create a new one.
-	flagList.push_back(flagNew);
+	// Set Flag
+	this->setFlag(flagName, flagValue);
 	return true;
 }
 
 bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 {
-	CSettings* settings = server->getSettings();
-
 	CString flagPacket = pPacket.readString("");
 	CString flagName;
 	if (flagPacket.find("=") != -1)
@@ -2672,20 +2640,8 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 		return true;
 	}
 
-	// Loop for flags now.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-	{
-		CString tflagName = *i;
-		if (i->find("=") != -1)
-			tflagName.removeI(i->find("="));
-
-		if (tflagName == flagName)
-		{
-			flagList.erase(i);
-			return true;
-		}
-	}
-
+	// Remove Flag
+	this->setFlag(flagName, "");
 	return true;
 }
 
