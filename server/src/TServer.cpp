@@ -119,13 +119,10 @@ void TServer::operator()()
 void TServer::cleanup()
 {
 	// Save translations.
-	TS_Save();
+	this->TS_Save();
 
 	// Save server flags.
-	CString out;
-	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-		out << *i << "\r\n";
-	out.save(CString() << serverpath << "serverflags.txt");
+	this->SaveServerFlags();
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
@@ -232,10 +229,7 @@ bool TServer::doTimedEvents()
 		last1mTimer = lastTimer;
 
 		// Save server flags.
-		CString out;
-		for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-			out << *i << "\r\n";
-		out.save(CString() << serverpath << "serverflags.txt");
+		this->SaveServerFlags();
 	}
 
 	// Stuff that happens every 3 minutes.
@@ -463,7 +457,7 @@ int TServer::loadConfigFiles()
 
 	// Load server flags.
 	serverlog.out("     Loading serverflags.txt...\n");
-	serverFlags = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
+	this->LoadServerFlags();
 
 	// Load server message.
 	serverlog.out("     Loading config/servermessage.html...\n");
@@ -569,6 +563,21 @@ int TServer::loadConfigFiles()
 	return 0;
 }
 
+void TServer::LoadServerFlags()
+{
+	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
+	for (std::vector<CString>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+		this->setFlag(*i, false);
+}
+
+void TServer::SaveServerFlags()
+{
+	CString out;
+	for (std::map<CString, CString>::iterator i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
+		out << i->first << "=" << i->second << "\r\n";
+	out.save(CString() << serverpath << "serverflags.txt");
+}
+
 /////////////////////////////////////////////////////
 
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
@@ -661,14 +670,9 @@ TWeapon* TServer::getWeapon(const CString& name)
 	return (weaponList.find(name) != weaponList.end() ? weaponList[name] : 0);
 }
 
-CString TServer::getFlag(const CString& pName) const
+CString TServer::getFlag(const CString& pFlagName)
 {
-	for (std::vector<CString>::const_iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-	{
-		if (*i == pName)
-			return *i;
-	}
-	return CString();
+	return mServerFlags[pFlagName];
 }
 
 CFileSystem* TServer::getFileSystemByType(CString& type)
@@ -772,67 +776,6 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	return true;
 }
 
-bool TServer::addFlag(const CString& pFlag)
-{
-	if (settings.getBool("dontaddserverflags", false) == true)
-		return false;
-
-	CString flag(pFlag);
-	CString flagName = flag.readString("=").trim();
-	CString flagValue = flag.readString("").trim();
-	CString flagNew = CString() << flagName << "=" << flagValue;
-
-	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-	{
-		CString tflag = *i;
-		CString tflagName = tflag.readString("=").trim();
-		if (tflagName == flagName)
-		{
-			// A flag with a value of 0 means we should unset it.
-			if (flagValue.length() == 0)
-			{
-				sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
-				serverFlags.erase(i);
-				return true;
-			}
-
-			// If we didn't unset it, alter the existing flag.
-			sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagNew);
-			*i = flagNew;
-			return true;
-		}
-	}
-
-	// We didn't find a pre-existing flag so let's create a new one.
-	sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagNew);
-	serverFlags.push_back(flagNew);
-
-	return true;
-}
-
-bool TServer::deleteFlag(const CString& pFlag)
-{
-	if (settings.getBool("dontaddserverflags", false) == true)
-		return false;
-
-	CString flag(pFlag);
-	CString flagName = flag.readString("=").trim();
-
-	// Loop for flags now.
-	for (std::vector<CString>::iterator i = serverFlags.begin(); i != serverFlags.end(); ++i)
-	{
-		CString tflag = *i;
-		CString tflagName = tflag.readString("=").trim();
-		if (tflagName == flagName)
-		{
-			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
-			serverFlags.erase(i);
-			return true;
-		}
-	}
-	return false;
-}
-
 bool TServer::deletePlayer(TPlayer* player)
 {
 	// Remove the player from the serverlist.
@@ -871,6 +814,48 @@ bool TServer::isIpBanned(const CString& ip)
 		if (ip.match(*i)) return true;
 	}
 	return false;
+}
+
+/*
+	TServer: Server Flag Management
+*/
+bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
+{
+	if (settings.getBool("dontaddserverflags", false) == true)
+		return false;
+
+	if (mServerFlags.find(pFlagName) != mServerFlags.end())
+	{
+		mServerFlags.erase(pFlagName);
+		if (pSendToPlayers)
+			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
+		return true;
+	}
+
+	return false;
+}
+
+bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
+{
+	CString flagName = pFlag.readString("=");
+	CString flagValue = pFlag.readString("");
+	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
+}
+
+bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
+{
+	if (settings.getBool("dontaddserverflags", false) == true)
+		return false;
+
+	// delete flag
+	if (pFlagValue.isEmpty())
+		return deleteFlag(pFlagName);
+
+	// set flag
+	mServerFlags[pFlagName] = pFlagValue;
+	if (pSendToPlayers)
+		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+	return true;
 }
 
 /*
