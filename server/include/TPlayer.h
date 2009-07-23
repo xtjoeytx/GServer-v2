@@ -335,7 +335,6 @@ class TPlayer : public TAccount, public CSocketStub
 		int getId() const;
 		int getType() const;
 		time_t getLastData() const		{ return lastData; }
-		CString getFlag(const CString& flag) const;
 		CString getGuild() const		{ return guild; }
 		int getVersion() const			{ return versionID; }
 		CString getVersionStr() const	{ return version; }
