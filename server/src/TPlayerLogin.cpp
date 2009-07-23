@@ -10,6 +10,7 @@
 #define rclog		server->getRCLog()
 extern bool __sendLogin[propscount];
 extern bool __getLogin[propscount];
+extern bool __getLoginNC[propscount];
 extern bool __getRCLogin[propscount];
 
 /*
@@ -122,6 +123,11 @@ bool TPlayer::sendLogin()
 		// Get our client props.
 		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 
+		// Get our nc props
+		CString myNCProps;
+		if (server->hasNPCServer())
+			myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
+
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -129,11 +135,13 @@ bool TPlayer::sendLogin()
 			if (player == this) continue;
 
 			// Send the other player my props.
-			player->sendPacket(player->isClient() || player->isNPCServer() ? myClientProps : myRCProps);
+			player->sendPacket(player->isClient() ? myClientProps : (player->isNPCServer() ? myNCProps : myRCProps));
 			
 			// Add Player / RC
-			if (isClient() || isNPCServer())
+			if (isClient())
 				sendPacket(player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
+			else if (isNPCServer())
+				sendPacket(player->getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool)));
 			else
 			{
 				// Levelname
@@ -207,13 +215,13 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Send the player's flags.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 
 	// Send the server's flags to the player.
-	std::vector<CString>* serverFlags = server->getServerFlags();
-	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+	std::map<CString, CString> * serverFlags = server->getServerFlags();
+	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 
 	//sendPacket(CString() >> (char)PLO_EMPTY190);
 	//sendPacket(CString() >> (char)PLO_EMPTY194);
@@ -317,8 +325,12 @@ bool TPlayer::sendLoginNPCServer()
 	// Set the head to the server's set staff head.
 	headImg = server->getSettings()->getStr("staffhead", "head25.png");
 
+	// Send the server's flags to the player.
+	std::map<CString, CString> * serverFlags = server->getServerFlags();
+	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+
 	// Send NC-Weapons
 	sendNC_Weapons();
-
 	return true;
 }

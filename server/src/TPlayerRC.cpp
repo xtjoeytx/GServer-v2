@@ -41,9 +41,11 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	// Send props out.
 	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
 
-	// Clear flags and weapons.
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-		outPacket >> (char)PLO_FLAGDEL << *i << "\n";
+	// Clear flags
+	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+		outPacket >> (char)PLO_FLAGDEL << i->first << "=" << i->second;
+
+	// Clear Weapons
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
 	{
 		outPacket >> (char)PLO_NPCWEAPONDEL << *i << "\n";
@@ -74,17 +76,17 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	if (hadBow == false) allowBow = false;
 
 	// Clear the flags and re-populate the flag list.
-	flagList.clear();
+	mFlagList.clear();
 	for (int i = pPacket.readGUShort(); i > 0; --i)
 	{
 		unsigned char len = pPacket.readGUChar();
 		if (len != 0)
-			flagList.push_back(pPacket.readChars(len));
+			this->setFlag(pPacket.readChars(len));
 	}
 	if (id != -1)
 	{
-		for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-			sendPacket(CString() >> (char)PLO_FLAGSET << *i);
+		for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+			sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 	}
 
 	// Clear the chests and re-populate the chest list.
@@ -153,9 +155,12 @@ CString TPlayer::getPropsRC()
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
-	ret >> (short)flagList.size();
-	for (std::vector<CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-		ret >> (char)(*i).length() << (*i);
+	ret >> (short)mFlagList.size();
+	for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+	{
+		CString flag = CString() << i->first << "=" << i->second;
+		ret >> (char)flag.length() << flag;
+	}
 
 	// Add the player's chests.
 	ret >> (short)chestList.size();
@@ -452,8 +457,11 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	}
 	CString ret;
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)server->getServerFlags()->size();
-	for (std::vector<CString>::iterator i = server->getServerFlags()->begin(); i != server->getServerFlags()->end(); ++i)
-		ret >> (char)(*i).length() << (*i);
+	for (std::map<CString, CString>::iterator i = server->getServerFlags()->begin(); i != server->getServerFlags()->end(); ++i)
+	{
+		CString flag = CString() << i->first << "=" << i->second;
+		ret >> (char)flag.length() << flag;
+	}
 	sendPacket(ret);
 	return true;
 }
@@ -468,31 +476,28 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	unsigned short count = pPacket.readGUShort();
-	std::vector<CString>* serverFlags = server->getServerFlags();
+	std::map<CString, CString> * serverFlags = server->getServerFlags();
 
 	// Save server flags.
-	std::vector<CString> oldFlags = *serverFlags;
+	std::map<CString, CString> oldFlags = *serverFlags;
 
 	// Delete server flags.
 	serverFlags->clear();
 
 	// Assemble the new server flags.
 	for (unsigned int i = 0; i < count; ++i)
-	{
-		CString flag = pPacket.readChars(pPacket.readGUChar());
-		serverFlags->push_back(flag);
-	}
+		server->setFlag(pPacket.readChars(pPacket.readGUChar()), false);
 
 	// Send flag changes to all players.
-	for (std::vector<CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+	for (std::map<CString, CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 	{
 		bool found = false;
-		for (std::vector<CString>::iterator j = oldFlags.begin(); j != oldFlags.end();)
+		for (std::map<CString, CString>::iterator j = oldFlags.begin(); j != oldFlags.end();)
 		{
 			if (*i == *j)
 			{
 				found = true;
-				j = oldFlags.erase(j);
+				oldFlags.erase(j++);
 				break;
 			}
 			else ++j;
@@ -500,16 +505,12 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 
 		// If we didn't find a match, this is either a new flag, or a changed flag.
 		if (!found)
-		{
-			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << *i);
-		}
+			server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 	}
 
 	// If any flags were deleted, tell that to the players now.
-	for (std::vector<CString>::iterator i = oldFlags.begin(); i != oldFlags.end(); ++i)
-	{
-		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << (*i).readString("=").trim());
-	}
+	for (std::map<CString, CString>::iterator i = oldFlags.begin(); i != oldFlags.end(); ++i)
+		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGDEL << i->first);
 
 	rclog.out("%s has updated the server flags.\n", accountName.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server flags.");
@@ -1784,8 +1785,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	}
 	else if (file == "serverflags.txt")
 	{
-		std::vector<CString>* serverFlags = server->getServerFlags();
-		*serverFlags = CString::loadToken(CString() << server->getServerPath() << "serverflags.txt", "\n", true);
+		server->LoadServerFlags();
 	}
 	else if (file == "servermessage.html")
 	{
