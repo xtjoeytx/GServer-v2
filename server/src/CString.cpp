@@ -239,7 +239,7 @@ CString CString::unescape() const
 {
 	CString retVal;
 
-	for (int i = 0; i < length(); i++)
+	for (int i = 0; i < length() - 1; i++)
 	{
 		char cur = buffer[i];
 		char nex = buffer[++i];
