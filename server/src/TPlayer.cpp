@@ -267,7 +267,7 @@ pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
 fileQueue(pSocket),
-packetCount(0), firstLevel(true)
+packetCount(0), firstLevel(true), invalidPackets(0)
 {
 	lastData = lastMovement = lastSave = time(0);
 	lastChat = lastMessage = lastNick = 0;
@@ -2011,6 +2011,11 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 	pPacket.setRead(0);
 	printf("Unknown Player Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text()+1);
 	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
+
+	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
+	invalidPackets++;
+	if (invalidPackets > 5) return false;
+
 	return true;
 }
 

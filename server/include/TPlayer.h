@@ -542,6 +542,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int packetCount;
 		bool firstLevel;
 		CString levelGroup;
+		int invalidPackets;
 
 		// File queue.
 		CFileQueue fileQueue;
