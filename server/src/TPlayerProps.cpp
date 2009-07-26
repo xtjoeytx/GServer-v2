@@ -278,6 +278,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	bool doOverride = (server->hasNPCServer() && server->getNPCServer() == rc);
 	bool doSignCheck = false;
 	int len = 0;
+	bool sentInvalid = false;
 
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -814,6 +815,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				for (int i = 0; i < pPacket.length(); ++i)
 					printf("%02x ", (unsigned char)pPacket[i]);
 				printf("\n");
+
+				sentInvalid = true;
 			}
 			return;
 		}
@@ -845,6 +848,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 		// Movement check.
 		if (doSignCheck) testSign();
+	}
+
+	if (sentInvalid)
+	{
+		// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
+		invalidPackets++;
+		if (invalidPackets > 5)
+			server->deletePlayer(this);
 	}
 }
 

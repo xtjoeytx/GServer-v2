@@ -470,7 +470,7 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 {
 	if (!isRC() || !hasRight(PLPERM_SETSERVERFLAGS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the server flags.\n");
+		if (!isRC()) rclog.out("[Hack] %s attempted to set the server flags.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set the server flags.");
 		return true;
 	}
