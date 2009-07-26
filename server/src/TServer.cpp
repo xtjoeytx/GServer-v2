@@ -36,7 +36,7 @@ TServer::TServer(CString pName)
 	rclog.setFilename(CString() << serverpath << "logs/rclog.txt");
 	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
 
-	//
+	// Announce ourself to other classes.
 	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
 		filesystem[i].setServer(this);
