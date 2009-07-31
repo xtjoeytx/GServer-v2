@@ -24,18 +24,18 @@ void TLevelLink::parseLinkStr(const std::vector<CString>& pLink)
 	unsigned int offset = 0;
 
 	// Find the whole level name.
-	newLevel = pLink[1];
-	if (pLink.size() > 8)
+	newLevel = pLink[0];
+	if (pLink.size() > 7)
 	{
-		offset = pLink.size() - 8;
+		offset = pLink.size() - 7;
 		for (unsigned int i = 0; i < offset; ++i)
-			newLevel << " " << pLink[2 + i];
+			newLevel << " " << pLink[1 + i];
 	}
 
-	x = strtoint(pLink[2 + offset]);
-	y = strtoint(pLink[3 + offset]);
-	width = strtoint(pLink[4 + offset]);
-	height = strtoint(pLink[5 + offset]);
-	newX = pLink[6 + offset];
-	newY = pLink[7 + offset];
+	x = strtoint(pLink[1 + offset]);
+	y = strtoint(pLink[2 + offset]);
+	width = strtoint(pLink[3 + offset]);
+	height = strtoint(pLink[4 + offset]);
+	newX = pLink[5 + offset];
+	newY = pLink[6 + offset];
 }

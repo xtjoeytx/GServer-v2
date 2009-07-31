@@ -466,8 +466,16 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
+			// Assemble the level string.
 			std::vector<CString> vline = line.tokenize();
-			if (fileSystem->find(vline[1]).length() < 1)
+			CString level = vline[0];
+			if (vline.size() > 7)
+			{
+				for (unsigned int i = 0; i < vline.size() - 7; ++i)
+					level << " " << vline[1 + i];
+			}
+
+			if (fileSystem->find(level).isEmpty())
 				continue;
 
 			levelLinks.push_back(new TLevelLink(vline));
@@ -639,8 +647,16 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
+			// Assemble the level string.
 			std::vector<CString> vline = line.tokenize();
-			if (fileSystem->find(vline[1]).length() < 1)
+			CString level = vline[0];
+			if (vline.size() > 7)
+			{
+				for (unsigned int i = 0; i < vline.size() - 7; ++i)
+					level << " " << vline[1 + i];
+			}
+
+			if (fileSystem->find(level).isEmpty())
 				continue;
 
 			levelLinks.push_back(new TLevelLink(vline));
@@ -793,18 +809,22 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (curLine.size() < 8)
 				continue;
 
+			// Get link string.
+			std::vector<CString>::iterator i = curLine.begin();
+			std::vector<CString> link(++i, curLine.end());
+
 			// Find the whole level name.
-			CString level(curLine[1]);
-			if (curLine.size() > 8)
+			CString level(link[0]);
+			if (link.size() > 7)
 			{
-				for (unsigned int i = 0; i < curLine.size() - 8; ++i)
-					level << " " << curLine[2 + i];
+				for (unsigned int i = 0; i < link.size() - 7; ++i)
+					level << " " << link[1 + i];
 			}
 
-			if (fileSystem->find(level).length() < 1)
+			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(new TLevelLink(curLine));
+			levelLinks.push_back(new TLevelLink(link));
 		}
 		else if (curLine[0] == "NPC")
 		{
