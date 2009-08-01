@@ -486,16 +486,16 @@ bool TLevel::loadZelda(const CString& pLevelName)
 	{
 		while (fileData.bytesLeft())
 		{
-			CString line = fileData.readString("\n");
-			if (line.length() < 3 || line[0] < 0) break;
-
-			char x = line.readChar();
-			char y = line.readChar();
-			char type = line.readChar();
+			char x = fileData.readChar();
+			char y = fileData.readChar();
+			char type = fileData.readChar();
 
 			// Ends with an invalid baddy.
 			if (x == -1 && y == -1 && type == -1)
+			{
+				fileData.readString("\n");	// Empty verses.
 				break;
+			}
 
 			// Add the baddy.
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
@@ -506,7 +506,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			if (v > 3)
 			{
 				// Load the verses.
-				std::vector<CString> bverse = line.readString("").tokenize("\\");
+				std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
 				CString props;
 				for (char j = 0; j < (char)bverse.size(); ++j)
 					props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
@@ -667,12 +667,16 @@ bool TLevel::loadGraal(const CString& pLevelName)
 	{
 		while (fileData.bytesLeft())
 		{
-			CString line = fileData.readString("\n");
-			if (line.length() < 3 || line[0] < 0) break;
+			char x = fileData.readChar();
+			char y = fileData.readChar();
+			char type = fileData.readChar();
 
-			char x = line.readChar();
-			char y = line.readChar();
-			char type = line.readChar();
+			// Ends with an invalid baddy.
+			if (x == -1 && y == -1 && type == -1)
+			{
+				fileData.readString("\n");	// Empty verses.
+				break;
+			}
 
 			// Add the baddy.
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
@@ -680,7 +684,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 				continue;
 
 			// Load the verses.
-			std::vector<CString> bverse = line.readString("").tokenize("\\");
+			std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
 			CString props;
 			for (char j = 0; j < (char)bverse.size(); ++j)
 				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
@@ -695,8 +699,8 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			char x = line.readGUChar();
-			char y = line.readGUChar();
+			char x = line.readGChar();
+			char y = line.readGChar();
 			CString image = line.readString("#");
 			CString code = line.readString("");
 
@@ -713,10 +717,10 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			char x = line.readGUChar();
-			char y = line.readGUChar();
-			char item = line.readGUChar();
-			char signindex = line.readGUChar();
+			char x = line.readGChar();
+			char y = line.readGChar();
+			char item = line.readGChar();
+			char signindex = line.readGChar();
 
 			levelChests.push_back(new TLevelChest(x, y, item, signindex));
 		}
