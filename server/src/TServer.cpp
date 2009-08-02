@@ -1057,6 +1057,13 @@ bool TServer::TS_Load(const CString& pLanguage, const CString& pFileName)
 			++cur;
 			while (cur != fileData.end())
 			{
+				// Make sure our string isn't empty.
+				if (cur->isEmpty())
+				{
+					++cur;
+					continue;
+				}
+
 				if ((*cur)[0] == '"' && (*cur)[cur->length() - 1] == '"')
 				{
 					CString str('\n');
@@ -1120,7 +1127,10 @@ void TServer::TS_Save()
 		// Iterate each Translation
 		for (std::map<std::string, std::string>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
 		{
-			output << "msgid \"" << j->first.c_str() << "\"\r\n";
+			output << "msgid ";
+			std::vector<CString> sign = CString(j->first.c_str()).removeAll("\r").tokenize("\n");
+			for (std::vector<CString>::iterator s = sign.begin(); s != sign.end(); ++s)
+				output << "\"" << *s << "\"\r\n";
 			output << "msgstr ";
 			if (!j->second.empty())
 			{
