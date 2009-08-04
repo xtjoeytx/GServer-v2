@@ -48,8 +48,8 @@ class TLevelBaddy
 		char getId() const						{ return id; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
-		CString getProp(const int propId) const;
-		CString getProps() const;
+		CString getProp(const int propId, int clientVersion = CLVER_2_17) const;
+		CString getProps(int clientVersion = CLVER_2_17) const;
 
 		// set functions
 		void setProps(CString& pProps);
