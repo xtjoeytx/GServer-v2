@@ -44,7 +44,7 @@ void TLevelBaddy::reset()
 	ani = 0;
 }
 
-CString TLevelBaddy::getProp(const int propId) const
+CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 {
 	switch (propId)
 	{
@@ -61,7 +61,11 @@ CString TLevelBaddy::getProp(const int propId) const
 		return CString() >> (char)type;
 
 		case BDPROP_POWERIMAGE:
-		return CString() >> (char)power >> (char)image.length() << image;
+		{
+			if (clientVersion < CLVER_2_1 && image == baddyImages[(int)type])
+				return CString() >> (char)power >> (char)image.length() << image.replaceAll(".png", ".gif");
+			else return CString() >> (char)power >> (char)image.length() << image;
+		}
 
 		case BDPROP_MODE:
 		return CString() >> (char)mode;
@@ -85,11 +89,11 @@ CString TLevelBaddy::getProp(const int propId) const
 	return CString();
 }
 
-CString TLevelBaddy::getProps() const
+CString TLevelBaddy::getProps(int clientVersion) const
 {
 	CString retVal;
 	for (int i = 1; i < baddypropcount; i++)
-		retVal >> (char)i << getProp(i);
+		retVal >> (char)i << getProp(i, clientVersion);
 	return retVal;
 }
 

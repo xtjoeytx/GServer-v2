@@ -41,15 +41,18 @@ CString encodeSignCode(CString& pText)
 			retVal.writeGChar((char)code);
 		else
 		{
-			// Write the character code directly into the sign.
-			retVal >> (char)86 >> (char)10 >> (char)69;		// #K(
-			CString scode((int)code);
-			for (int i = 0; i < scode.length(); ++i)
+			if (letter != '\r')
 			{
-				int c = signText.find(scode[i]);
-				if (scode != -1) retVal.writeGChar((char)c);
+				// Write the character code directly into the sign.
+				retVal >> (char)86 >> (char)10 >> (char)69;		// #K(
+				CString scode((int)letter);
+				for (int i = 0; i < scode.length(); ++i)
+				{
+					int c = signText.find(scode[i]);
+					if (scode != -1) retVal.writeGChar((char)c);
+				}
+				retVal >> (char)70;								// )
 			}
-			retVal >> (char)70;								// )
 		}
 	}
 	return retVal;
@@ -91,6 +94,7 @@ CString decodeSignCode(CString pText)
 		else
 			retVal << signText[letter];
 	}
+	retVal.removeAllI("#K(13)");
 	return retVal;
 }
 
@@ -111,7 +115,8 @@ TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool en
 		text = unformattedText;
 		unformattedText = decodeSignCode(unformattedText);
 	}
-	else text = encodeSign(unformattedText);
+	else
+		text = encodeSign(unformattedText);
 }
 
 CString TLevelSign::getSignStr(TPlayer *pPlayer) const
