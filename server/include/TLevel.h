@@ -37,7 +37,7 @@ class TLevel
 		TLevel* clone();
 		
 		// get crafted packets
-		CString getBaddyPacket();
+		CString getBaddyPacket(int clientVersion = CLVER_2_17);
 		CString getBoardPacket();
 		CString getBoardChangesPacket(time_t time);
 		CString getBoardChangesPacket2(time_t time);
