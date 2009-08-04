@@ -685,7 +685,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && versionID < CLVER_2_14)
 	{
-		if (versionID < CLVER_2_1) packetLength -= 5;
+		if (versionID < CLVER_2_1) packetLength -= 5;	// modTime isn't sent.
 		if (fileData.length() > 64000)
 		{
 			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
@@ -1524,7 +1524,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 		sendPacket(CString() << pLevel->getChestPacket(this));
 		sendPacket(CString() << pLevel->getHorsePacket());
-		sendPacket(CString() << pLevel->getBaddyPacket());
+		sendPacket(CString() << pLevel->getBaddyPacket(versionID));
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
@@ -1643,7 +1643,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false)
 	{
 		sendPacket(CString() << pLevel->getHorsePacket());
-		sendPacket(CString() << pLevel->getBaddyPacket());
+		sendPacket(CString() << pLevel->getBaddyPacket(versionID));
 	}
 
 	// Tell the client if there are any ghost players in the level.
@@ -2709,6 +2709,11 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 {
 	// Get file.
 	CString file = pPacket.readString("");
+
+	// If we are the 1.41 client, make sure a file extension was sent.
+	if (versionID < CLVER_2_1 && getExtension(file).isEmpty())
+		file << ".gif";
+
 	//printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
@@ -2926,6 +2931,11 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
 	time_t fModTime = fileSystem->getModTime(file);
+
+	// If we are the 1.41 client, make sure a file extension was sent.
+	if (versionID < CLVER_2_1 && getExtension(file).isEmpty())
+		file << ".gif";
+
 	//printf("UPDATEFILE: %s\n", file.text());
 
 	// Make sure it isn't one of the default files.
@@ -2944,7 +2954,9 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	if (isDefault == false && fModTime > modTime)
 		return msgPLI_WANTFILE(file);
 
-	sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+	if (versionID < CLVER_2_1)
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
+	else sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
 	return true;
 }
 
@@ -3005,6 +3017,8 @@ bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
 bool TPlayer::msgPLI_LANGUAGE(CString& pPacket)
 {
 	language = pPacket.readString("");
+	if (language.isEmpty())
+		language = "English";
 	return true;
 }
 
