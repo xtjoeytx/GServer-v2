@@ -105,7 +105,7 @@ TLevel::~TLevel()
 /*
 	TLevel: Get Crafted Packets
 */
-CString TLevel::getBaddyPacket()
+CString TLevel::getBaddyPacket(int clientVersion)
 {
 	CString retVal;
 	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
@@ -113,7 +113,7 @@ CString TLevel::getBaddyPacket()
 		TLevelBaddy* baddy = *i;
 		if (baddy == 0) continue;
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps() << "\n";
+		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(clientVersion) << "\n";
 	}
 	return retVal;
 }
@@ -372,9 +372,10 @@ bool TLevel::loadZelda(const CString& pLevelName)
 	if (fileVersion.subString(0, 2) == "GR")
 		return loadGraal(pLevelName);
 
-	int v = 0;
+	int v = -1;
 	if (fileVersion == "Z3-V1.03") v = 3;
 	else if (fileVersion == "Z3-V1.04") v = 4;
+	if (v == -1) return false;
 
 	// Load tiles.
 	{
@@ -551,11 +552,12 @@ bool TLevel::loadGraal(const CString& pLevelName)
 
 	// Grab file version.
 	fileVersion = fileData.readChars(8);
-	int v = 0;
+	int v = -1;
 	if (fileVersion == "GR-V1.00") v = 0;
 	else if (fileVersion == "GR-V1.01") v = 1;
 	else if (fileVersion == "GR-V1.02") v = 2;
 	else if (fileVersion == "GR-V1.03") v = 3;
+	if (v == -1) return false;
 
 	// Load tiles.
 	{

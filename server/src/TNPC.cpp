@@ -292,6 +292,8 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 		{
 			case NPCPROP_IMAGE:
 				image = pProps.readChars(pProps.readGUChar());
+				if (clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
+					image << ".gif";
 			break;
 
 			case NPCPROP_SCRIPT:
@@ -336,13 +338,17 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 4)
-					swordImage = CString() << "sword" << CString(sp) << ".png";
+					swordImage = CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
 					sp -= 30;
 					len = pProps.readGUChar();
 					if (len > 0)
+					{
 						swordImage = pProps.readChars(len);
+						if (clientVersion < CLVER_2_1 && getExtension(swordImage).isEmpty())
+							swordImage << ".gif";
+					}
 					else swordImage = "";
 					//swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
@@ -354,13 +360,17 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 3)
-					shieldImage = CString() << "shield" << CString(sp) << ".png";
+					shieldImage = CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
 					sp -= 10;
 					len = pProps.readGUChar();
 					if (len > 0)
+					{
 						shieldImage = pProps.readChars(len);
+						if (clientVersion < CLVER_2_1 && getExtension(shieldImage).isEmpty())
+							shieldImage << ".gif";
+					}
 					else shieldImage = "";
 				}
 				shieldPower = sp;
@@ -379,6 +389,8 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 						sp -= 10;
 						if (sp < 0) break;
 						bowImage = CString() >> (char)(sp + 10) << pProps.readChars(sp);
+						if (clientVersion < CLVER_2_1 && getExtension(bowImage).isEmpty())
+							bowImage << ".gif";
 					}
 					break;
 				}
@@ -421,14 +433,20 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 
 			case NPCPROP_HORSEIMAGE:
 				horseImage = pProps.readChars(pProps.readGUChar());
+				if (clientVersion < CLVER_2_1 && getExtension(horseImage).isEmpty())
+					horseImage << ".gif";
 			break;
 
 			case NPCPROP_HEADIMAGE:
 				len = pProps.readGUChar();
 				if (len < 100)
-					headImage = CString() << "head" << CString(len) << ".png";
+					headImage = CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
+				{
 					headImage = pProps.readChars(len - 100);
+					if (clientVersion < CLVER_2_1 && getExtension(headImage).isEmpty())
+						headImage << ".gif";
+				}
 			break;
 
 			case NPCPROP_ALIGNMENT:
