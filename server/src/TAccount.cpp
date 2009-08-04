@@ -131,7 +131,7 @@ bool TAccount::loadAccount(const CString& pAccount)
 		else if (section == "APCOUNTER") apCounter = strtoint(val);
 		else if (section == "ONSECS") onlineTime = strtoint(val);
 		else if (section == "IP") accountIp = strtoint(val);
-		else if (section == "LANGUAGE") language = val;
+		else if (section == "LANGUAGE") { language = val; if (language.isEmpty()) language = "English"; }
 		else if (section == "KILLS") kills = strtoint(val);
 		else if (section == "DEATHS") deaths = strtoint(val);
 		else if (section == "RATING") rating = (float)strtofloat(val);
