@@ -1137,7 +1137,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	TPlayer* pRC = server->getRC(acc);
 	if (pRC)
 	{
-		pRC->loadAccount(acc);
+		pRC->loadAccount(acc, true);
 
 		// If they are using the File Browser, reload it.
 		if (pRC->isUsingFileBrowser())
