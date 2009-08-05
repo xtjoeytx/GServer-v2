@@ -388,9 +388,10 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 					{
 						sp -= 10;
 						if (sp < 0) break;
-						bowImage = CString() >> (char)(sp + 10) << pProps.readChars(sp);
+						bowImage = pProps.readChars(sp);
 						if (clientVersion < CLVER_2_1 && getExtension(bowImage).isEmpty())
 							bowImage << ".gif";
+						bowImage = CString() >> (char)(10 + bowImage.length()) << bowImage;
 					}
 					break;
 				}
