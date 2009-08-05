@@ -33,6 +33,7 @@ staff = (Manager),YOURACCOUNT
 # Enables/disables item dropping from various sources.
 # bushitems also affects certain tiles other than bushes.
 # tiledroprate affects bushitems only.
+# If making a 1.41 server, set bushitems, vasesdrop, and baddyitems to false as the 1.41 client generates items.
 bushitems = true
 vasesdrop = true
 baddyitems = false
