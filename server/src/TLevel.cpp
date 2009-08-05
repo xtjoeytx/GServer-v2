@@ -1282,7 +1282,11 @@ bool TLevel::doTimedEvents()
 		if (respawnTimer == 0)
 		{
 			baddy->reset();
-			server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), 0, this);
+			for (std::vector<TPlayer*>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+			{
+				TPlayer* p = *i;
+				p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
+			}
 		}
 	}
 	return true;
