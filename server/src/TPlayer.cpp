@@ -22,6 +22,7 @@ const char* __defaultfiles[] = {
 	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani", "grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani", "idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani",
 	"sword?.png", "sword?.gif",
 	"shield?.png", "shield?.gif",
+	"body.png", "body2.png", "body3.png",
 	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
 };
 
@@ -1480,15 +1481,6 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
 
-	std::vector<TPlayer*>* playerList = server->getPlayerList();
-	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-	{
-		TPlayer* player = (TPlayer*)*i;
-		if (player == this) continue;
-
-		player->sendPacket(CString() << this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y));
-	}
-
 	return true;
 }
 
@@ -1650,7 +1642,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
-	if (fromAdjacent == false || pmap != 0)
+	if (fromAdjacent == false)
 	{
 		// If we are the leader, send it now.
 		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
@@ -1660,45 +1652,21 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
 
-	// NPCs like to cause 1.41 to crash for some reason.
-	//if (versionID < CLVER_2_1) skipActors = true;
-
-	if (fromAdjacent == false || pmap != 0)
+	// Send NPCs.
+	if (fromAdjacent == false)
 		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (level->isSingleplayer() == false)
+	if (level->isSingleplayer() == false && fromAdjacent == false)
 	{
-		if (pmap)
+		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
+		std::vector<TPlayer*>* playerList = level->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer* player = (TPlayer*)*i;
-				if (player == this || player->getMap() != pmap) continue;
-
-				if (pmap->getType() == MAPTYPE_BIGMAP)
-				{
-					if (player->getLevel() == 0) continue;
-					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getLevelName()), pmap->getLevelY(player->getLevel()->getLevelName())};
-					int sgmap[2] = {pmap->getLevelX(pLevel->getLevelName()), pmap->getLevelY(pLevel->getLevelName())};
-					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-				}
-			}
-		}
-		else
-		{
-			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
-			std::vector<TPlayer*>* playerList = level->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer* player = (TPlayer*)*i;
-				if (player == this) continue;
-				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-			}
+			TPlayer* player = (TPlayer*)*i;
+			if (player == this) continue;
+			this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 		}
 	}
 
