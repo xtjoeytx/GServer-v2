@@ -132,7 +132,7 @@ class TAccount
 
 		// Load/Save Account
 		void reset();
-		bool loadAccount(const CString& pAccount);
+		bool loadAccount(const CString& pAccount, bool ignoreNickname = false);
 		bool saveAccount();
 
 		// Attribute-Managing
