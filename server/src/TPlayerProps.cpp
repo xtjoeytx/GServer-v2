@@ -62,7 +62,12 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_GANI:
 		{
 			if (isClient() && versionID < CLVER_2_1)
-				return CString() >> (char)bowPower << bowImage;
+			{
+				if (!bowImage.isEmpty())
+					return CString() >> (char)(10 + bowImage.length()) << bowImage;
+				else
+					return CString() >> (char)bowPower;
+			}
 
 			if (gani.length() > 223) gani = gani.subString(0, 223);
 			return CString() >> (char)gani.length() << gani;
@@ -403,11 +408,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				if (isClient() && versionID < CLVER_2_1)
 				{
 					int sp = pPacket.readGUChar();
-					bowPower = sp;
 					if (sp < 10)
+					{
+						bowPower = sp;
 						bowImage.clear();
+					}
 					else
 					{
+						bowPower = 10;
 						sp -= 10;
 						if (sp < 0) break;
 						bowImage = CString() << pPacket.readChars(sp);
@@ -882,6 +890,7 @@ void TPlayer::sendProps(const bool *pProps, int pCount)
 	CString propPacket;
 
 	// Create Props
+	if (isClient() && versionID < CLVER_2_1) pCount = 37;
 	for (int i = 0; i < pCount; ++i)
 	{
 		if (pProps[i])
