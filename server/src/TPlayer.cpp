@@ -2511,6 +2511,10 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 	unsigned char bPower = pPacket.readGUChar();
 	bPower = MIN(bPower, 12);		// Hard-limit to 6 hearts.
 
+	// Fix the image for 1.41 clients.
+	if (getExtension(bImage).isEmpty())
+		bImage << ".gif";
+
 	// Add the baddy.
 	TLevelBaddy* baddy = level->addBaddy(loc[0], loc[1], bType);
 	if (baddy == 0) return true;
