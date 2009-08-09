@@ -250,7 +250,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
 
 	rclog.out("%s has updated the server options.\n", accountName.text());
-	
+
 	// Send RC Information
 	CString outPacket = CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.";
 	std::vector<TPlayer *> *playerList = server->getPlayerList();
@@ -263,7 +263,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 				(*i)->sendNCAddr();
 		}
 	}
-	
+
 	return true;
 }
 
@@ -997,6 +997,16 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				i->second->loadWeapon(i->second->getName(), server);
 			}
+		}
+		else if(words[0] == "/find" && words.size() == 2)
+		{
+			std::map<CString, CString> *fileList = server->getFileSystem()->getFileList();
+            std::vector<CString> found;
+
+		    for(std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++ i)
+		    {
+				if(i->first.match(words[1])) found.push_back(i->first);
+		    }
 		}
 	}
 
