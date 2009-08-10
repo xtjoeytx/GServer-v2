@@ -372,7 +372,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (len > 0)
 					{
 						swordImg = pPacket.readChars(len);
-						if (versionID < CLVER_2_1 && getExtension(swordImg).isEmpty())
+						if (!swordImg.isEmpty() && versionID < CLVER_2_1 && getExtension(swordImg).isEmpty())
 							swordImg << ".gif";
 					}
 					else swordImg = "";
@@ -394,7 +394,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (len > 0)
 					{
 						shieldImg = pPacket.readChars(len);
-						if (versionID < CLVER_2_1 && getExtension(shieldImg).isEmpty())
+						if (!shieldImg.isEmpty() && versionID < CLVER_2_1 && getExtension(shieldImg).isEmpty())
 							shieldImg << ".gif";
 					}
 					else shieldImg = "";
@@ -419,7 +419,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 						sp -= 10;
 						if (sp < 0) break;
 						bowImage = CString() << pPacket.readChars(sp);
-						if (versionID < CLVER_2_1 && getExtension(bowImage).isEmpty())
+						if (!bowImage.isEmpty() && versionID < CLVER_2_1 && getExtension(bowImage).isEmpty())
 							bowImage << ".gif";
 					}
 					break;
@@ -450,7 +450,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				else if (len > 100)
 				{
 					headImg = pPacket.readChars(len-100);
-					if (versionID < CLVER_2_1 && getExtension(headImg).isEmpty())
+					if (!headImg.isEmpty() && versionID < CLVER_2_1 && getExtension(headImg).isEmpty())
 						headImg << ".gif";
 
 					globalBuff >> (char)propId << getProp(propId);
@@ -575,7 +575,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			case PLPROP_HORSEGIF:
 				len = pPacket.readGUChar();
 				horseImg = pPacket.readChars(len);
-				if (versionID < CLVER_2_1 && getExtension(horseImg).isEmpty())
+				if (!horseImg.isEmpty() && versionID < CLVER_2_1 && getExtension(horseImg).isEmpty())
 					horseImg << ".gif";
 			break;
 
