@@ -194,6 +194,8 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
 	TPLFunc[PLI_SERVERWARP] = &TPlayer::msgPLI_SERVERWARP;
 
+	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
+
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
@@ -2512,7 +2514,7 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 	bPower = MIN(bPower, 12);		// Hard-limit to 6 hearts.
 
 	// Fix the image for 1.41 clients.
-	if (getExtension(bImage).isEmpty())
+	if (!bImage.isEmpty() && getExtension(bImage).isEmpty())
 		bImage << ".gif";
 
 	// Add the baddy.
@@ -3160,6 +3162,12 @@ bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << servername);
+	return true;
+}
+
+bool TPlayer::msgPLI_PROCESSLIST(CString& pPacket)
+{
+	std::vector<CString> processes = pPacket.readString("").guntokenize().tokenize("\n");
 	return true;
 }
 

@@ -292,7 +292,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 		{
 			case NPCPROP_IMAGE:
 				image = pProps.readChars(pProps.readGUChar());
-				if (clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
+				if (!image.isEmpty() && clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
 					image << ".gif";
 			break;
 
@@ -346,7 +346,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 					if (len > 0)
 					{
 						swordImage = pProps.readChars(len);
-						if (clientVersion < CLVER_2_1 && getExtension(swordImage).isEmpty())
+						if (!swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(swordImage).isEmpty())
 							swordImage << ".gif";
 					}
 					else swordImage = "";
@@ -368,7 +368,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 					if (len > 0)
 					{
 						shieldImage = pProps.readChars(len);
-						if (clientVersion < CLVER_2_1 && getExtension(shieldImage).isEmpty())
+						if (!shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(shieldImage).isEmpty())
 							shieldImage << ".gif";
 					}
 					else shieldImage = "";
@@ -389,7 +389,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 						sp -= 10;
 						if (sp < 0) break;
 						bowImage = pProps.readChars(sp);
-						if (clientVersion < CLVER_2_1 && getExtension(bowImage).isEmpty())
+						if (!bowImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(bowImage).isEmpty())
 							bowImage << ".gif";
 						bowImage = CString() >> (char)(10 + bowImage.length()) << bowImage;
 					}
@@ -434,7 +434,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 
 			case NPCPROP_HORSEIMAGE:
 				horseImage = pProps.readChars(pProps.readGUChar());
-				if (clientVersion < CLVER_2_1 && getExtension(horseImage).isEmpty())
+				if (!horseImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(horseImage).isEmpty())
 					horseImage << ".gif";
 			break;
 
@@ -445,7 +445,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 				else
 				{
 					headImage = pProps.readChars(len - 100);
-					if (clientVersion < CLVER_2_1 && getExtension(headImage).isEmpty())
+					if (!headImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(headImage).isEmpty())
 						headImage << ".gif";
 				}
 			break;
@@ -568,10 +568,15 @@ CString toWeaponName(const CString& code)
 	if (name_start == -1) return CString();
 	name_start += 10;	// 10 = strlen("toweapons ")
 
-	int name_end = code.find(";", name_start);
-	if (name_end == -1) return CString();
+	int name_end[2] = { code.find(";", name_start), code.find("}", name_start) };
+	if (name_end[0] == -1 && name_end[1] == -1) return CString();
 
-	return code.subString(name_start, name_end - name_start).trim();
+	int name_pos = -1;
+	if (name_end[0] == -1) name_pos = name_end[1];
+	if (name_end[1] == -1) name_pos = name_end[0];
+	if (name_pos == -1) name_pos = (name_end[0] < name_end[1]) ? name_end[0] : name_end[1];
+
+	return code.subString(name_start, name_pos - name_start).trim();
 }
 
 CString doJoins(const CString& code, CFileSystem* fs)
