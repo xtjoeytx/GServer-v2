@@ -18,6 +18,7 @@ CString::CString()
 
 CString::CString(const char *pString)
 {
+	if (pString == 0) return;
 	buffer = 0;
 
 	int length = strlen(pString);
