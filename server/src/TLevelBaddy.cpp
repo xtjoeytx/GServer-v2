@@ -138,7 +138,10 @@ void TLevelBaddy::setProps(CString &pProps)
 					if (respawn)
 						timeout.setTimeout(server->getSettings()->getInt("baddyrespawntime", 60));
 					else
+					{
 						level->removeBaddy(id);
+						return;
+					}
 				}
 			break;
 

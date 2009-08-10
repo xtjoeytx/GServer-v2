@@ -1132,9 +1132,15 @@ void TLevel::removeBaddy(char pId)
 	// Don't allow us to remove id 0 or any id over 50.
 	if (pId < 1 || pId > 50) return;
 
+	// Find the baddy.
 	TLevelBaddy* baddy = levelBaddyIds[pId];
-	delete baddy;
+
+	// Erase the baddy.
+	vecRemove(levelBaddies, baddy);
 	levelBaddyIds[pId] = 0;
+
+	// Clean up.
+	delete baddy;
 }
 
 TLevelBaddy* TLevel::getBaddy(char id)
