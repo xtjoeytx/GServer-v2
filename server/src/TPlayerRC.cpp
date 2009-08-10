@@ -557,6 +557,11 @@ bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 	// Get the account.
 	// Prevent the defaultaccount from being deleted.
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+	return true;
+
 	if (acc == "defaultaccount")
 	{
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not allowed to delete the default account.");
@@ -637,6 +642,11 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 {
 	bool offline = false;
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
+
 	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
@@ -665,6 +675,10 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || !hasRight(PLPERM_RESETATTRIBUTES))
 	{
@@ -729,6 +743,11 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 {
 	bool offline = false;
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
+
 	TPlayer* p = server->getPlayer(acc, false);
 	if (p == 0)
 	{
@@ -770,6 +789,10 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC())
 	{
@@ -809,6 +832,10 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.length() == 0) return true;
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
@@ -998,15 +1025,28 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				i->second->loadWeapon(i->second->getName(), server);
 			}
 		}
-		else if(words[0] == "/find" && words.size() == 2)
+		else if(words[0] == "/find" && words.size() > 1)
 		{
 			std::map<CString, CString> *fileList = server->getFileSystem()->getFileList();
-            std::vector<CString> found;
+			std::vector<CString> found;
 
-		    for(std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++ i)
-		    {
-				if(i->first.match(words[1])) found.push_back(i->first);
-		    }
+			// Assemble the search string.
+			CString search(words[1]);
+			for (unsigned int i = 2; i < words.size(); ++i)
+				search << " " << words[i];
+
+			// Search for the files.
+			for (std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++i)
+			{
+				if (i->first.match(search))
+					found.push_back(i->second.removeAll(server->getServerPath()));
+			}
+
+			// Return a list of files found.
+			for (std::vector<CString>::const_iterator i = found.begin(); i != found.end(); ++i)
+			{
+				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << *i);
+			}
 		}
 	}
 
@@ -1036,6 +1076,10 @@ bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || (acc != accountName && !hasRight(PLPERM_SETRIGHTS)))
 	{
@@ -1079,6 +1123,10 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || !hasRight(PLPERM_SETRIGHTS))
 	{
@@ -1164,6 +1212,10 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC())
 	{
@@ -1194,6 +1246,10 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || !hasRight(PLPERM_SETCOMMENTS))
 	{
@@ -1237,6 +1293,10 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC())
 	{
@@ -1267,6 +1327,10 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
+	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
+	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
+	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
+		return true;
 
 	if (!isRC() || !hasRight(PLPERM_BAN))
 	{
