@@ -1,0 +1,178 @@
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{72DD0220-0CB4-234C-8D9A-2BCE8F411EEF}</ProjectGUID>
+    <RootNamespace>gserver</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(LocalAppData)\Microsoft\VisualStudio\10.0\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(LocalAppData)\Microsoft\VisualStudio\10.0\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj/Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">gserver_d</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">obj/Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">gserver</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\dependencies;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\..\..\..\Program Files\boost\boost_1_38;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\..\..\..\Program Files\boost\boost_1_38\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../server/include;../../dependencies/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../server/include;../../dependencies/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libz.lib;libbz2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../lib;../../dependencies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)gserver_d.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>../../server/include;../../dependencies/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../server/include;../../dependencies/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>libz.lib;libbz2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../lib;../../dependencies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\server\include\CFileQueue.h" />
+    <ClInclude Include="..\..\server\include\CFileSystem.h" />
+    <ClInclude Include="..\..\server\include\CLog.h" />
+    <ClInclude Include="..\..\server\include\codec.h" />
+    <ClInclude Include="..\..\server\include\CPlugin.h" />
+    <ClInclude Include="..\..\server\include\CPluginManager.h" />
+    <ClInclude Include="..\..\server\include\CSettings.h" />
+    <ClInclude Include="..\..\server\include\CSocket.h" />
+    <ClInclude Include="..\..\server\include\CString.h" />
+    <ClInclude Include="..\..\server\include\CTimeout.h" />
+    <ClInclude Include="..\..\server\include\CTranslationManager.h" />
+    <ClInclude Include="..\..\server\include\CWordFilter.h" />
+    <ClInclude Include="..\..\server\include\ICommon.h" />
+    <ClInclude Include="..\..\server\include\IUtil.h" />
+    <ClInclude Include="..\..\server\include\main.h" />
+    <ClInclude Include="..\..\server\include\md5.h" />
+    <ClInclude Include="..\..\server\include\TAccount.h" />
+    <ClInclude Include="..\..\server\include\TLevel.h" />
+    <ClInclude Include="..\..\server\include\TLevelBaddy.h" />
+    <ClInclude Include="..\..\server\include\TLevelBoardChange.h" />
+    <ClInclude Include="..\..\server\include\TLevelChest.h" />
+    <ClInclude Include="..\..\server\include\TLevelHorse.h" />
+    <ClInclude Include="..\..\server\include\TLevelItem.h" />
+    <ClInclude Include="..\..\server\include\TLevelLink.h" />
+    <ClInclude Include="..\..\server\include\TLevelSign.h" />
+    <ClInclude Include="..\..\server\include\TMap.h" />
+    <ClInclude Include="..\..\server\include\TNPC.h" />
+    <ClInclude Include="..\..\server\include\TPlayer.h" />
+    <ClInclude Include="..\..\server\include\TServer.h" />
+    <ClInclude Include="..\..\server\include\TServerList.h" />
+    <ClInclude Include="..\..\server\include\TWeapon.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\server\src\CFileQueue.cpp" />
+    <ClCompile Include="..\..\server\src\CFileSystem.cpp" />
+    <ClCompile Include="..\..\server\src\CLog.cpp" />
+    <ClCompile Include="..\..\server\src\codec.cpp" />
+    <ClCompile Include="..\..\server\src\CPluginManager.cpp" />
+    <ClCompile Include="..\..\server\src\CSettings.cpp" />
+    <ClCompile Include="..\..\server\src\CSocket.cpp" />
+    <ClCompile Include="..\..\server\src\CString.cpp" />
+    <ClCompile Include="..\..\server\src\CTranslationManager.cpp" />
+    <ClCompile Include="..\..\server\src\CWordFilter.cpp" />
+    <ClCompile Include="..\..\server\src\IUtil.cpp" />
+    <ClCompile Include="..\..\server\src\main.cpp" />
+    <ClCompile Include="..\..\server\src\md5.cpp" />
+    <ClCompile Include="..\..\server\src\TAccount.cpp" />
+    <ClCompile Include="..\..\server\src\TLevel.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelBaddy.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelBoardChange.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelChest.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelHorse.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelItem.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelLink.cpp" />
+    <ClCompile Include="..\..\server\src\TLevelSign.cpp" />
+    <ClCompile Include="..\..\server\src\TMap.cpp" />
+    <ClCompile Include="..\..\server\src\TNPC.cpp" />
+    <ClCompile Include="..\..\server\src\TPlayer.cpp" />
+    <ClCompile Include="..\..\server\src\TPlayerLogin.cpp" />
+    <ClCompile Include="..\..\server\src\TPlayerNC.cpp" />
+    <ClCompile Include="..\..\server\src\TPlayerProps.cpp" />
+    <ClCompile Include="..\..\server\src\TPlayerRC.cpp" />
+    <ClCompile Include="..\..\server\src\TServer.cpp" />
+    <ClCompile Include="..\..\server\src\TServerList.cpp" />
+    <ClCompile Include="..\..\server\src\TWeapon.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
