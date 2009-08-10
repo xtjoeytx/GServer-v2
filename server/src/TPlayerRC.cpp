@@ -1027,8 +1027,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		}
 		else if(words[0] == "/find" && words.size() > 1)
 		{
-			std::map<CString, CString> *fileList = server->getFileSystem()->getFileList();
-			std::vector<CString> found;
+			std::map<CString, CString> found;
 
 			// Assemble the search string.
 			CString search(words[1]);
@@ -1036,16 +1035,29 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				search << " " << words[i];
 
 			// Search for the files.
-			for (std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++i)
+			for (unsigned int i = 0; i < FS_COUNT; ++i)
 			{
-				if (i->first.match(search))
-					found.push_back(i->second.removeAll(server->getServerPath()));
+				std::map<CString, CString>* fileList = server->getFileSystem(i)->getFileList();
+				CString fs("none");
+				if (i == 0) fs = "all";
+				if (i == 1) fs = "file";
+				if (i == 2) fs = "level";
+				if (i == 3) fs = "head";
+				if (i == 4) fs = "body";
+				if (i == 5) fs = "sword";
+				if (i == 6) fs = "shield";
+
+				for (std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++i)
+				{
+					if (i->first.match(search))
+						found[i->second.removeAll(server->getServerPath())] = fs;
+				}
 			}
 
 			// Return a list of files found.
-			for (std::vector<CString>::const_iterator i = found.begin(); i != found.end(); ++i)
+			for (std::map<CString, CString>::const_iterator i = found.begin(); i != found.end(); ++i)
 			{
-				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << *i);
+				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
 			}
 		}
 	}
