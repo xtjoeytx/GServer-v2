@@ -159,6 +159,9 @@ bool TPlayer::sendLogin()
 		}
 	}
 
+	// Ask for processes.
+	//sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+
 	// Tell the serverlist that the player connected.
 	server->getServerList()->addPlayer(this);
 	return true;
