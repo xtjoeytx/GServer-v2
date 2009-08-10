@@ -62,6 +62,7 @@ enum
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
 	PLI_SERVERWARP		= 41,
+	PLI_PROCESSLIST		= 44,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
 	PLI_UNKNOWN47		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
 	PLI_RAWDATA			= 50,
@@ -250,6 +251,7 @@ enum
 	PLO_GHOSTMODE				= 170,
 	PLO_BIGMAP					= 171,
 	PLO_MINIMAP					= 172,	// [172] zodiacminimap.txt,zodiacworldminimap3.png,10,10
+	PLO_GHOSTTEXT				= 173,	// {173}{text}  Shows static text in lower-right corner of screen only when in ghost mode.
 	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
 	PLO_SHOOT					= 175,
 	PLO_FULLSTOP				= 176,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.
@@ -438,6 +440,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
 		bool msgPLI_SERVERWARP(CString& pPacket);
+		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
