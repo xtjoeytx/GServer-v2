@@ -2740,8 +2740,8 @@ bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 
 bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
-	int sendLimit = 4;
-	if ((int)difftime(time(0), lastMessage) <= 4)
+	const int sendLimit = 4;
+	if (isClient() && (int)difftime(time(0), lastMessage) <= 4)
 	{
 		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
 			"Server message:\xa7You can only send messages once every " << CString((int)sendLimit) << " seconds.");
@@ -2783,15 +2783,18 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 
 	// Word filter.
-	pmMessage.guntokenizeI();
-	int filter = server->getWordFilter()->apply(this, pmMessage, FILTER_CHECK_PM);
-	if (filter & FILTER_ACTION_WARN)
+	if (isClient())
 	{
-		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
-			"Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
-		return true;
+		pmMessage.guntokenizeI();
+		int filter = server->getWordFilter()->apply(this, pmMessage, FILTER_CHECK_PM);
+		if (filter & FILTER_ACTION_WARN)
+		{
+			sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE <<
+				"Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
+			return true;
+		}
+		pmMessage.gtokenizeI();
 	}
-	pmMessage.gtokenizeI();
 
 	// Send the message out.
 	for (std::vector<unsigned short>::iterator i = pmPlayers.begin(); i != pmPlayers.end(); ++i)
