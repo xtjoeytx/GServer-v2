@@ -128,6 +128,7 @@ bool TPlayer::sendLogin()
 		if (server->hasNPCServer())
 			myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
 
+		CString rcsOnline;
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
@@ -155,8 +156,16 @@ bool TPlayer::sendLogin()
 					>> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG)
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
 					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME));
+
+				// If the other player is an RC, add them to the list of logged in RCs.
+				if (player->isRC())
+					rcsOnline << (rcsOnline.isEmpty() ? "" : ", ") << player->getAccountName();
 			}
 		}
+
+		// If we are an RC, announce the list of currently logged in RCs.
+		if (isRC() && !rcsOnline.isEmpty())
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Currently online: " << rcsOnline);
 	}
 
 	// Ask for processes.
