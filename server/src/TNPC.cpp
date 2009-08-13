@@ -66,7 +66,7 @@ level(pLevel), server(pServer)
 
 	// Remove comments and separate clientside and serverside scripts.
 	CString nocomments = removeComments(pScript, "\xa7");
-	if (nocomments.find("//#CLIENTSIDE") != -1)
+	if (server->hasNPCServer() && nocomments.find("//#CLIENTSIDE") != -1)
 	{
 		serverScript = nocomments.readString("//#CLIENTSIDE");
 		clientScript = CString("//#CLIENTSIDE\xa7") << nocomments.readString("");
