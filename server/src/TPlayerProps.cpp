@@ -538,7 +538,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 					// If we are the leader of the level, call warp().  This will fix NPCs not
 					// working again after we respawn.
-					if (level->getPlayer(0) == this)
+					if (level != 0 && level->getPlayer(0) == this)
 						warp(levelName, x, y, time(0));
 				}
 
