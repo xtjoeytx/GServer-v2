@@ -250,6 +250,8 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
 
+	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
+
 	// NPC-Server Functions
 	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_QUERY;
 
@@ -3204,5 +3206,25 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
+	return true;
+}
+
+bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
+{
+	// v4 and up needs this for some reason.
+	time_t mod = pPacket.readGUInt5();
+	CString gani = pPacket.readString("");
+	CString ganiData = server->getFileSystem()->load(CString() << gani << ".gani");
+	if (!ganiData.isEmpty())
+	{
+		ganiData.readString("SETBACKTO");
+		if (ganiData.bytesLeft())
+		{
+			CString backGani = ganiData.readString("\n").trim();
+			sendPacket(CString() >> (char)PLO_EMPTY195 >> (char)gani.length() << gani << "\"SETBACKTO " << backGani << "\"");
+			return true;
+		}
+	}
+	sendPacket(CString() >> (char)PLO_EMPTY195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
 	return true;
 }
