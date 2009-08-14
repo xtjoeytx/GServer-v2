@@ -149,6 +149,8 @@ class TAccount
 		float getY() const				{ return y; }
 		CString getAccountName() const	{ return accountName; }
 		CString getNickname() const		{ return nickName; }
+		float getPower() const			{ return power; }
+		int getStatus() const			{ return status; }
 		bool getBanned() const			{ return isBanned; }
 		CString getBanReason() const	{ return banReason; }
 		CString getBanLength() const	{ return banLength; }
