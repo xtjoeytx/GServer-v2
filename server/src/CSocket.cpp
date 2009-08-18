@@ -969,7 +969,7 @@ const char* errorMessage(int error)
 		default:
 		{
 			static char buf[32];
-			// snprintf(buf, 32, "%d", error);
+			snprintf(buf, 32, "%d", error);
 			return buf;
 		}
 	}
