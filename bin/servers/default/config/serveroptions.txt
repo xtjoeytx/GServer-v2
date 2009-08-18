@@ -111,6 +111,7 @@ gmaps =
 staffhead = head25.png
 
 # Sets the bigmap and minimap to use.
+# Setting bigmap will break gmaps.
 # bigmap = maptext,mapimage,defaultx,defaulty
 # minimap = maptext,mapimage,defaultx,defaulty
 #   maptext is the bigmap.txt styled file with the levels.
