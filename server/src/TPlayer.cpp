@@ -2862,7 +2862,6 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 	// NPC weapons.
 	else
 	{
-
 		// Get the NPC id.
 		unsigned int npcId = pPacket.readGUInt();
 		TNPC* npc = server->getNPC(npcId);
