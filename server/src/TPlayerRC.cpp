@@ -243,12 +243,8 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	options.save(CString() << server->getServerPath() << "config/serveroptions.txt");
 
 	// Reload settings.
-	settings->clear();
-	settings->setSeparator("=");
-	settings->loadFile(CString() << server->getServerPath() << "config/serveroptions.txt");
-	if (!settings->isOpened())
-		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
-
+	server->loadSettings();
+	server->loadMaps();
 	rclog.out("%s has updated the server options.\n", accountName.text());
 
 	// Send RC Information
@@ -300,10 +296,7 @@ bool TPlayer::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 	folders.save(CString() << server->getServerPath() << "config/foldersconfig.txt");
 
 	// Update file system.
-	if (server->getSettings()->getBool("nofoldersconfig", false) == true)
-		server->loadAllFolders();
-	else
-		server->loadFolderConfig();
+	server->loadFileSystem();
 
 	rclog.out("%s updated the folder config.\n", accountName.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " updated the folder config.");
@@ -967,10 +960,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		}
 		else if (words[0] == "/refreshservermessage" && words.size() == 1)
 		{
-			CString* servermessage = server->getServerMessage();
-			servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
-			servermessage->removeAllI("\r");
-			servermessage->replaceAllI("\n", " ");
+			server->loadServerMessage();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Refreshed server message.");
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && hasRight(PLPERM_UPDATELEVEL))
@@ -994,7 +984,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				(*i)->reload();
 				++count;
 			}
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels (" << CString((int)count) << ").");
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels (" << CString((int)count) << " levels updated).");
 		}
 		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
@@ -1003,13 +993,19 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		}
 		else if (words[0] == "/updateserverhq" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
+			server->loadAdminSettings();
 			server->getServerList()->sendServerHQ();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Sent ServerHQ updates.");
 		}
 		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 		{
-			server->getWordFilter()->load(CString() << server->getServerPath() << "config/rules.txt");
+			server->loadWordFilter();
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the word filter.");
+		}
+		else if (words[0] == "/reloadipbans" && words.size() == 1)
+		{
+			server->loadIPBans();
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the ip bans.");
 		}
 		/*
 		 * Need to make it load non-loaded files from weapons that have been added manually,
@@ -1018,12 +1014,8 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		*/
 		else if (words[0] == "/reloadweapons" && words.size() == 1)
 		{
-			std::map<CString, TWeapon *> * weaponList = server->getWeaponList();
-
-			for (std::map<CString, TWeapon *>::const_iterator i = weaponList->begin(); i != weaponList->end(); ++ i)
-			{
-				i->second->loadWeapon(i->second->getName(), server);
-			}
+			server->loadWeapons();
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the weapons.");
 		}
 		else if(words[0] == "/find" && words.size() > 1)
 		{
@@ -1850,35 +1842,21 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	}
 	else if (file == "serveroptions.txt")
 	{
-		// Reload settings.
-		settings->clear();
-		settings->setSeparator("=");
-		settings->loadFile(CString() << server->getServerPath() << "config/serveroptions.txt");
-		if (!settings->isOpened())
-			serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
+		server->loadSettings();
+		server->loadMaps();
 	}
+	else if (file == "adminconfig.txt")
+		server->loadAdminSettings();
 	else if (file == "allowedversions.txt")
-	{
-		// Load allowed versions.
-		CString versions;
-		versions.load(CString() << server->getServerPath() << "config/allowedversions.txt");
-		versions = removeComments(versions);
-		versions.removeAllI("\r");
-		versions.removeAllI("\t");
-		versions.removeAllI(" ");
-		std::vector<CString>* allowedVersions = server->getAllowedVersions();
-		(*allowedVersions) = versions.tokenize("\n");
-	}
+		server->loadAllowedVersions();
+	else if (file == "foldersconfig.txt")
+		server->loadFileSystem();
 	else if (file == "serverflags.txt")
-	{
-		server->LoadServerFlags();
-	}
+		server->loadServerFlags();
 	else if (file == "servermessage.html")
-	{
-		CString* servermessage = server->getServerMessage();
-		servermessage->load(CString() << server->getServerPath() << "config/servermessage.html");
-		servermessage->removeAllI("\r");
-		servermessage->replaceAllI("\n", " ");
-	}
-	// TODO: ipbans.txt
+		server->loadServerMessage();
+	else if (file == "ipbans.txt")
+		server->loadIPBans();
+	else if (file == "rules.txt")
+		server->loadWordFilter();
 }
