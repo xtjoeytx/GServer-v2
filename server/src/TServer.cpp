@@ -122,7 +122,7 @@ void TServer::cleanup()
 	this->TS_Save();
 
 	// Save server flags.
-	this->SaveServerFlags();
+	saveServerFlags();
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
@@ -153,9 +153,9 @@ void TServer::cleanup()
 	}
 	mapList.clear();
 
+	saveWeapons();
 	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
-		i->second->saveWeapon(this);
 		delete i->second;
 		weaponList.erase(i++);
 	}
@@ -229,7 +229,7 @@ bool TServer::doTimedEvents()
 		last1mTimer = lastTimer;
 
 		// Save server flags.
-		this->SaveServerFlags();
+		this->saveServerFlags();
 	}
 
 	// Stuff that happens every 3 minutes.
@@ -248,41 +248,13 @@ bool TServer::doTimedEvents()
 	{
 		last5mTimer = lastTimer;
 
-		// Load allowed versions.
-		CString versions;
-		versions.load(CString() << serverpath << "config/allowedversions.txt");
-		versions = removeComments(versions);
-		versions.removeAllI("\r");
-		versions.removeAllI("\t");
-		versions.removeAllI(" ");
-		allowedVersions = versions.tokenize("\n");
-		allowedVersionString.clear();
-		for (std::vector<CString>::iterator i = allowedVersions.begin(); i != allowedVersions.end(); ++i)
-		{
-			if (!allowedVersionString.isEmpty())
-				allowedVersionString << ", ";
-
-			int loc = (*i).find(":");
-			if (loc == -1)
-				allowedVersionString << getVersionString(*i);
-			else
-			{
-				CString s = (*i).subString(0, loc);
-				CString f = (*i).subString(loc + 1);
-				int vid = getVersionID(s);
-				int vid2 = getVersionID(f);
-				if (vid != -1 && vid2 != -1)
-					allowedVersionString << getVersionString(s) << " - " << getVersionString(f);
-			}
-		}
-
-		// Load server message.
-		servermessage.load(CString() << serverpath << "config/servermessage.html");
-		servermessage.removeAllI("\r");
-		servermessage.replaceAllI("\n", " ");
-
-		// Load IP bans.
-		ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+		// Reload some server settings.
+		loadAllowedVersions();
+		loadServerMessage();
+		loadIPBans();
+		
+		// Save some stuff.
+		saveWeapons();
 	}
 
 	return true;
@@ -385,26 +357,77 @@ int TServer::loadConfigFiles()
 
 	// Load Settings
 	serverlog.out("     Loading settings...\n");
-	settings.setSeparator("=");
-	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
-	if (!settings.isOpened())
-	{
-		serverlog.out("** [Error] Could not open config/serveroptions.txt\n");
-		return ERR_SETTINGS;
-	}
+	loadSettings();
 
 	// Load Admin Settings
 	serverlog.out("     Loading admin settings...\n");
-	adminsettings.setSeparator("=");
-	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
-	if (!adminsettings.isOpened())
-	{
-		serverlog.out("** [Error] Could not open config/adminconfig.txt\n");
-		return ERR_SETTINGS;
-	}
+	loadAdminSettings();
 
 	// Load allowed versions.
 	serverlog.out("     Loading allowed client versions...\n");
+	loadAllowedVersions();
+
+	// Load folders config and file system.
+	serverlog.out("     Folder config: ");
+	if (settings.getBool("nofoldersconfig", false) == false)
+	{
+		serverlog.out("ENABLED\n");
+	} else serverlog.out("disabled\n");
+	serverlog.out("     Loading file system...\n");
+	loadFileSystem();
+
+	// Load server flags.
+	serverlog.out("     Loading serverflags.txt...\n");
+	loadServerFlags();
+
+	// Load server message.
+	serverlog.out("     Loading config/servermessage.html...\n");
+	loadServerMessage();
+
+	// Load IP bans.
+	serverlog.out("     Loading config/ipbans.txt...\n");
+	loadIPBans();
+
+	// Load weapons.
+	serverlog.out("     Loading weapons...\n");
+	loadWeapons(true);
+
+	// Load maps.
+	serverlog.out("     Loading maps...\n");
+	loadMaps(true);
+
+	// Load translations.
+	serverlog.out("     Loading translations...\n");
+	loadTranslations();
+
+	// Load word filter.
+	serverlog.out("     Loading word filter...\n");
+	loadWordFilter();
+
+	return 0;
+}
+
+void TServer::loadSettings()
+{
+	settings.setSeparator("=");
+	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
+	if (!settings.isOpened())
+		serverlog.out("** [Error] Could not open config/serveroptions.txt.  Will use default config.\n");
+
+	// Load status list.
+	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+}
+
+void TServer::loadAdminSettings()
+{
+	adminsettings.setSeparator("=");
+	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
+	if (!adminsettings.isOpened())
+		serverlog.out("** [Error] Could not open config/adminconfig.txt.  Will use default config.\n");
+}
+
+void TServer::loadAllowedVersions()
+{
 	CString versions;
 	versions.load(CString() << serverpath << "config/allowedversions.txt");
 	versions = removeComments(versions);
@@ -431,17 +454,10 @@ int TServer::loadConfigFiles()
 				allowedVersionString << getVersionString(s) << " - " << getVersionString(f);
 		}
 	}
+}
 
-	// Load folders config.
-	// Load before file system.
-	serverlog.out("     Folder config: ");
-	if (settings.getBool("nofoldersconfig", false) == false)
-	{
-		serverlog.out("ENABLED\n");
-	} else serverlog.out("disabled\n");
-
-	// Load file system.
-	serverlog.out("     Loading file system...\n");
+void TServer::loadFileSystem()
+{
 	for (int i = 0; i < FS_COUNT; ++i)
 		filesystem[i].clear();
 	filesystem_accounts.clear();
@@ -450,59 +466,73 @@ int TServer::loadConfigFiles()
 		loadAllFolders();
 	else
 		loadFolderConfig();
+}
 
-	// Load status list.
-	serverlog.out("     Loading status list...\n");
-	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+void TServer::loadServerFlags()
+{
+	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
+	for (std::vector<CString>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+		this->setFlag(*i, false);
+}
 
-	// Load server flags.
-	serverlog.out("     Loading serverflags.txt...\n");
-	this->LoadServerFlags();
-
-	// Load server message.
-	serverlog.out("     Loading config/servermessage.html...\n");
+void TServer::loadServerMessage()
+{
 	servermessage.load(CString() << serverpath << "config/servermessage.html");
 	servermessage.removeAllI("\r");
 	servermessage.replaceAllI("\n", " ");
+}
 
-	// Load IP bans.
-	serverlog.out("     Loading config/ipbans.txt...\n");
+void TServer::loadIPBans()
+{
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+}
 
-	// Delete existing weapons.
-	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
+void TServer::loadWeapons(bool print)
+{
+	CFileSystem weaponFS(this);
+	weaponFS.addDir("weapons", "weapon*.txt");
+	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
+	for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
 	{
-		i->second->saveWeapon(this);
-		delete i->second;
-		weaponList.erase(i++);
-	}
+		TWeapon *weapon = TWeapon::loadWeapon(i->first, this);
+		if (weapon == 0) continue;
 
-	// Load weapons.
-	serverlog.out("     Loading weapons...\n");
-	{
-		CFileSystem weaponFS(this);
-		weaponFS.addDir("weapons", "weapon*.txt");
-		std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
-		for (std::map<CString, CString>::iterator i = weaponFileList->begin(); i != weaponFileList->end(); ++i)
+		// Check if the weapon exists.
+		if (weaponList.find(weapon->getName()) == weaponList.end())
 		{
-			TWeapon *weapon = TWeapon::loadWeapon(i->first, this);
-			if (weapon != 0)
+			weaponList[weapon->getName()] = weapon;
+			if (print) serverlog.out("       %s\n", weapon->getName().text());
+		}
+		else
+		{
+			// If the weapon exists, and the version on disk is newer, reload it.
+			TWeapon* w = weaponList[weapon->getName()];
+			if (w->getModTime() < weapon->getModTime())
 			{
-				serverlog.out("       %s\n", weapon->getName().text());
+				delete w;
 				weaponList[weapon->getName()] = weapon;
+				if (print) serverlog.out("       %s [updated]\n", weapon->getName().text());
+			}
+			else
+			{
+				delete weapon;
+				if (print) serverlog.out("       %s [skipped]\n", weapon->getName().text());
 			}
 		}
-
-		// Add the default weapons.
-		weaponList["bow"] = new TWeapon(TLevelItem::getItemId("bow"));
-		weaponList["bomb"] = new TWeapon(TLevelItem::getItemId("bomb"));
-		weaponList["superbomb"] = new TWeapon(TLevelItem::getItemId("superbomb"));
-		weaponList["fireball"] = new TWeapon(TLevelItem::getItemId("fireball"));
-		weaponList["fireblast"] = new TWeapon(TLevelItem::getItemId("fireblast"));
-		weaponList["nukeshot"] = new TWeapon(TLevelItem::getItemId("nukeshot"));
-		weaponList["joltbomb"] = new TWeapon(TLevelItem::getItemId("joltbomb"));
 	}
 
+	// Add the default weapons.
+	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(TLevelItem::getItemId("bow"));
+	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(TLevelItem::getItemId("bomb"));
+	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(TLevelItem::getItemId("superbomb"));
+	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(TLevelItem::getItemId("fireball"));
+	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(TLevelItem::getItemId("fireblast"));
+	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(TLevelItem::getItemId("nukeshot"));
+	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(TLevelItem::getItemId("joltbomb"));
+}
+
+void TServer::loadMaps(bool print)
+{
 	// Remove existing maps.
 	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
 	{
@@ -511,7 +541,6 @@ int TServer::loadConfigFiles()
 	}
 
 	// Load gmaps.
-	serverlog.out("     Loading gmaps...\n");
 	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
 	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
 	{
@@ -522,17 +551,16 @@ int TServer::loadConfigFiles()
 		TMap* gmap = new TMap(MAPTYPE_GMAP);
 		if (gmap->load(CString() << *i << ".gmap", this) == false)
 		{
-			serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
+			if (print) serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
 			delete gmap;
 			continue;
 		}
 
-		serverlog.out("       %s\n", i->text());
+		if (print) serverlog.out("       [gmap] %s\n", i->text());
 		mapList.push_back(gmap);
 	}
 
 	// Load bigmaps.
-	serverlog.out("     Loading bigmaps...\n");
 	std::vector<CString> bigmaps = settings.getStr("maps").guntokenize().tokenize("\n");
 	for (std::vector<CString>::iterator i = bigmaps.begin(); i != bigmaps.end(); ++i)
 	{
@@ -543,39 +571,51 @@ int TServer::loadConfigFiles()
 		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
 		if (bigmap->load(*i, this) == false)
 		{
-			serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
+			if (print) serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
 			delete bigmap;
 			continue;
 		}
 
-		serverlog.out("       %s\n", i->text());
+		if (print) serverlog.out("       [bigmap] %s\n", i->text());
 		mapList.push_back(bigmap);
 	}
-
-	// Load translations.
-	serverlog.out("     Loading translations...\n");
-	this->TS_Reload();
-
-	// Load word filter.
-	serverlog.out("     Loading word filter...\n");
-	wordFilter.load(CString() << serverpath << "config/rules.txt");
-
-	return 0;
 }
 
-void TServer::LoadServerFlags()
+void TServer::loadTranslations()
 {
-	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
-	for (std::vector<CString>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-		this->setFlag(*i, false);
+	this->TS_Reload();
 }
 
-void TServer::SaveServerFlags()
+void TServer::loadWordFilter()
+{
+	wordFilter.load(CString() << serverpath << "config/rules.txt");
+}
+
+void TServer::saveServerFlags()
 {
 	CString out;
 	for (std::map<CString, CString>::iterator i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
 		out << i->first << "=" << i->second << "\r\n";
 	out.save(CString() << serverpath << "serverflags.txt");
+}
+
+void TServer::saveWeapons()
+{
+	CFileSystem weaponFS(this);
+	weaponFS.addDir("weapons", "weapon*.txt");
+	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
+
+	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+	{
+		TWeapon* w = i->second;
+		time_t mod = weaponFS.getModTime(i->first);
+		if (w->getModTime() > mod)
+		{
+			// The weapon in memory is newer than the weapon on disk.  Save it.
+			w->saveWeapon(this);
+			weaponFS.setModTime(weaponFS.find(i->first), w->getModTime());
+		}
+	}
 }
 
 /////////////////////////////////////////////////////
