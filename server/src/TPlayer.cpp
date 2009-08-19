@@ -2877,19 +2877,19 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// See if we can find the weapon in the server weapon list.
 		TWeapon *weapon = server->getWeapon(name);
 
-		// If weapon is 0, that means the NPC was not found.  Add the NPC to the list.
+		// If weapon is 0, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == 0)
 		{
-			weapon = new TWeapon(server, name, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getProp(NPCPROP_SCRIPT).subString(2), npc->getPropModTime(NPCPROP_SCRIPT), true);
+			weapon = new TWeapon(server, name, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getProp(NPCPROP_SCRIPT).subString(2), npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 
 		// Check and see if the weapon has changed recently.  If it has, we should
 		// send the new NPC to everybody on the server.  After updating the script, of course.
-		if (weapon->getModTime() < npc->getPropModTime(NPCPROP_SCRIPT))
+		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(server, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getClientScript(), npc->getPropModTime(NPCPROP_SCRIPT));
+			weapon->updateWeapon(server, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getClientScript(), npc->getLevel()->getModTime());
 			
 			// Send to Players
 			server->NC_UpdateWeapon(weapon);
