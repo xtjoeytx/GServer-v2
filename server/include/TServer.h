@@ -58,54 +58,66 @@ class TServer : public CSocketStub
 
 		// Server Management
 		int loadConfigFiles();
+		void loadSettings();
+		void loadAdminSettings();
+		void loadAllowedVersions();
+		void loadFileSystem();
+		void loadServerFlags();
+		void loadServerMessage();
+		void loadIPBans();
+		void loadWeapons(bool print = false);
+		void loadMaps(bool print = false);
+		void loadTranslations();
+		void loadWordFilter();
+
 		void loadAllFolders();
 		void loadFolderConfig();
 
-		void LoadServerFlags();
-		void SaveServerFlags();
+		void saveServerFlags();
+		void saveWeapons();
 
 		// Get functions.
-		CFileSystem * getFileSystem(int c = 0)			{ return &(filesystem[c]); }
-		CFileSystem * getAccountsFileSystem()			{ return &filesystem_accounts; }
+		CFileSystem* getFileSystem(int c = 0)			{ return &(filesystem[c]); }
+		CFileSystem* getAccountsFileSystem()			{ return &filesystem_accounts; }
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
 		CPluginManager& getPluginManager()				{ return mPluginManager; }
-		CSettings * getSettings()						{ return &settings; }
-		CSettings * getAdminSettings()					{ return &adminsettings; }
-		CSocketManager * getSocketManager()				{ return &sockManager; }
+		CSettings* getSettings()						{ return &settings; }
+		CSettings* getAdminSettings()					{ return &adminsettings; }
+		CSocketManager* getSocketManager()				{ return &sockManager; }
 		CString getServerPath()							{ return serverpath; }
-		CString * getServerMessage()					{ return &servermessage; }
-		CString * getAllowedVersionString()				{ return &allowedVersionString; }
-		CTranslationManager * getTranslationManager()	{ return &mTranslationManager; }
-		CWordFilter * getWordFilter()					{ return &wordFilter; }
-		TServerList * getServerList()					{ return &serverlist; }
+		CString* getServerMessage()						{ return &servermessage; }
+		CString* getAllowedVersionString()				{ return &allowedVersionString; }
+		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
+		CWordFilter* getWordFilter()					{ return &wordFilter; }
+		TServerList* getServerList()					{ return &serverlist; }
 		unsigned int getNWTime() const;
 
-		std::map<CString, CString> * getServerFlags()	{ return &mServerFlags; }
-		std::map<CString, TWeapon *> * getWeaponList()	{ return &weaponList; }
+		std::map<CString, CString>* getServerFlags()	{ return &mServerFlags; }
+		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
 		std::map<CString, TLevel*>* getGroupLevels()	{ return &groupLevels; }
-		std::vector<TPlayer *> * getPlayerList()		{ return &playerList; }
-		std::vector<TPlayer *> * getPlayerIdList()		{ return &playerIds; }
-		std::vector<TNPC *> * getNPCList()				{ return &npcList; }
-		std::vector<TNPC *> * getNPCIdList()			{ return &npcIds; }
-		std::vector<TLevel *> * getLevelList()			{ return &levelList; }
-		std::vector<TMap *> * getMapList()				{ return &mapList; }
-		std::vector<CString> * getStatusList()			{ return &statusList; }
-		std::vector<CString> * getAllowedVersions()		{ return &allowedVersions; }
+		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
+		std::vector<TPlayer *>* getPlayerIdList()		{ return &playerIds; }
+		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
+		std::vector<TNPC *>* getNPCIdList()				{ return &npcIds; }
+		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
+		std::vector<TMap *>* getMapList()				{ return &mapList; }
+		std::vector<CString>* getStatusList()			{ return &statusList; }
+		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
 		
-		CFileSystem * getFileSystemByType(CString& type);
+		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const CString& pFlagName);
-		TLevel * getLevel(const CString& pLevel);
-		TMap * getMap(const CString& name) const;
-		TMap * getMap(const TLevel* pLevel) const;
-		TNPC * getNPC(const unsigned int id) const;
-		TPlayer * getPlayer(const unsigned short id, bool includeRC = true) const;
-		TPlayer * getPlayer(const CString& account, bool includeRC = true) const;
-		TPlayer * getRC(const unsigned short id, bool includePlayer = false) const;
-		TPlayer * getRC(const CString& account, bool includePlayer = false) const;
+		TLevel* getLevel(const CString& pLevel);
+		TMap* getMap(const CString& name) const;
+		TMap* getMap(const TLevel* pLevel) const;
+		TNPC* getNPC(const unsigned int id) const;
+		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
+		TPlayer* getPlayer(const CString& account, bool includeRC = true) const;
+		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
+		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 
-		TNPC * addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
+		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0);
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0);
 		bool deletePlayer(TPlayer* player);
