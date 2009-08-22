@@ -1051,6 +1051,10 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
 			}
+
+			// No files found.
+			if (found.size() == 0)
+				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: No files found matching: " << search);
 		}
 	}
 
