@@ -86,6 +86,9 @@ bool CSocketManager::update(long sec, long usec)
 	FD_ZERO(&set_read);
 	FD_ZERO(&set_write);
 
+	// Failed stubs will go here and will be unregistered at the end of the function.
+	std::vector<CSocketStub*> failedStubs;
+
 	// Put all the socket handles into the set.
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
@@ -108,16 +111,9 @@ bool CSocketManager::update(long sec, long usec)
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
 
 	// Loop through all the socket handles and call relevant functions.
-	blockStubs = true;
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
 	{
 		CSocketStub* stub = *i;
-		if (stub == 0)
-		{
-			i = stubList.erase(i);
-			continue;
-		}
-		bool erased = false;
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
@@ -125,51 +121,36 @@ bool CSocketManager::update(long sec, long usec)
 			{
 				if (stub->onRecv() == false)
 				{
-					i = stubList.erase(i);
-					erased = true;
+					// Failed.  Add to the list of failed stubs and continue.
+					failedStubs.push_back(stub);
+					continue;
 				}
 			}
-			if (!erased && FD_ISSET(sock, &set_write))
+			if (FD_ISSET(sock, &set_write))
 			{
 				if (stub->onSend() == false)
 				{
-					i = stubList.erase(i);
-					erased = true;
+					// Failed.  Add to the list of failed stubs and continue.
+					failedStubs.push_back(stub);
+					continue;
 				}
 			}
 		}
-		if (!erased) ++i;
-	}
-	blockStubs = false;
-
-	// If any stubs were added while parsing data, add them to the list now.
-	if (newStubs.size() != 0)
-	{
-		for (std::vector<CSocketStub*>::iterator i = newStubs.begin(); i != newStubs.end(); ++i)
-		{
-			CSocketStub* stub = *i;
-			stubList.push_back(stub);
-		}
-		newStubs.clear();
 	}
 
-	// If any stubs were removed while parsing data, remove them now.
-	if (removeStubs.size() != 0)
+	// Unregister failed stubs.
+	for (std::vector<CSocketStub*>::iterator i = failedStubs.begin(); i != failedStubs.end();)
 	{
-		for (std::vector<CSocketStub*>::iterator i = removeStubs.begin(); i != removeStubs.end();)
-		{
-			CSocketStub* stub = *i;
-			for (std::vector<CSocketStub*>::iterator j = stubList.begin(); j != stubList.end();)
-			{
-				CSocketStub* search = *j;
-				if (stub == search)
-					j = stubList.erase(j);
-				else ++j;
-			}
-			i = removeStubs.erase(i);
-		}
-		removeStubs.clear();
+		CSocketStub* stub = *i;
+		if (stub)
+			stub->onUnregister();
+
+		i = failedStubs.erase(i);
 	}
+
+	// Add new stubs.
+	stubList.insert(stubList.end(), newStubs.begin(), newStubs.end());
+	newStubs.clear();
 
 	return true;
 }
@@ -197,53 +178,23 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
 
 	// Call relevant functions.
-	blockStubs = true;
-	bool erased = false;
 	if (FD_ISSET(sock, &set_read))
 	{
 		if (stub->onRecv() == false)
 		{
-			vecRemove<CSocketStub*>(stubList, stub);
-			erased = true;
+			stub->onUnregister();
+			vecReplace<CSocketStub*>(stubList, stub, 0);	// Will remove during next call to update().
+			return false;
 		}
 	}
-	if (!erased && FD_ISSET(sock, &set_write))
+	if (FD_ISSET(sock, &set_write))
 	{
 		if (stub->onSend() == false)
 		{
-			vecRemove<CSocketStub*>(stubList, stub);
-			erased = true;
+			stub->onUnregister();
+			vecReplace<CSocketStub*>(stubList, stub, 0);
+			return false;
 		}
-	}
-	blockStubs = false;
-
-	// If any stubs were added while parsing data, add them to the list now.
-	if (newStubs.size() != 0)
-	{
-		for (std::vector<CSocketStub*>::iterator i = newStubs.begin(); i != newStubs.end(); ++i)
-		{
-			CSocketStub* stub = *i;
-			stubList.push_back(stub);
-		}
-		newStubs.clear();
-	}
-
-	// If any stubs were removed while parsing data, remove them now.
-	if (removeStubs.size() != 0)
-	{
-		for (std::vector<CSocketStub*>::iterator i = removeStubs.begin(); i != removeStubs.end();)
-		{
-			CSocketStub* stub = *i;
-			for (std::vector<CSocketStub*>::iterator j = stubList.begin(); j != stubList.end();)
-			{
-				CSocketStub* search = *j;
-				if (stub == search)
-					j = stubList.erase(j);
-				else ++j;
-			}
-			i = removeStubs.erase(i);
-		}
-		removeStubs.clear();
 	}
 
 	return true;
@@ -252,10 +203,13 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 bool CSocketManager::registerSocket(CSocketStub* stub)
 {
 	SOCKET sock = stub->getSocketHandle();
-	if (sock > fd_max) fd_max = sock;
-	if (blockStubs) newStubs.push_back(stub);
-	else stubList.push_back(stub);
-	return true;
+	if (stub->onRegister())
+	{
+		if (sock > fd_max) fd_max = sock;
+		newStubs.push_back(stub);
+		return true;
+	}
+	return false;
 }
 
 bool CSocketManager::unregisterSocket(CSocketStub* stub)
@@ -273,13 +227,8 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 		if (findNewMax && sock2 != sock && sock2 > max) max = sock2;
 		if (sock2 == sock)
 		{
-			if (blockStubs)
-			{
-				(*i) = 0;
-				removeStubs.push_back(stub);
-				++i;
-			}
-			else i = stubList.erase(i);
+			(*i)->onUnregister();
+			i = stubList.erase(i);
 			found = true;
 			if (!findNewMax) break;
 		}
@@ -764,7 +713,7 @@ int CSocket::setType(int sock_type)
 int CSocket::setDescription(const char *strDescription)
 {
 	memset((void*)&properties.description, 0, SOCKET_MAX_DESCRIPTION);
-	memcpy((void*)&properties.description, strDescription, SOCKET_MAX_DESCRIPTION - 1);
+	strncpy(properties.description, strDescription, MIN(strlen(strDescription), SOCKET_MAX_DESCRIPTION - 1));
 	return SOCKET_OK;
 }
 

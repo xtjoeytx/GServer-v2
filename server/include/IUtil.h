@@ -4,6 +4,7 @@
 #include "CString.h"
 #include <map>
 #include <vector>
+#include <iterator>
 
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
