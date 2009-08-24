@@ -316,6 +316,8 @@ class TPlayer : public TAccount, public CSocketStub
 		// Required by CSocketStub.
 		bool onRecv();
 		bool onSend();
+		bool onRegister()			{ return true; }
+		void onUnregister();
 		SOCKET getSocketHandle()	{ return playerSock->getHandle(); }
 		bool canRecv();
 		bool canSend();

@@ -51,8 +51,10 @@
 class CSocketStub
 {
 	public:
-		virtual bool onRecv() = 0;
 		virtual bool onSend() = 0;
+		virtual bool onRecv() = 0;
+		virtual bool onRegister() = 0;
+		virtual void onUnregister() = 0;
 		virtual SOCKET getSocketHandle() = 0;
 		virtual bool canRecv() = 0;
 		virtual bool canSend() = 0;
@@ -63,7 +65,7 @@ class CSocketManager
 {
 	public:
 		//! Constructor.
-		CSocketManager() : fd_max(0), blockStubs(false) {}
+		CSocketManager() : fd_max(0) {}
 
 		//! Updates the state of the sockets.
 		//! Calls the functions of all the registered CSocketStub classes.
@@ -88,6 +90,7 @@ class CSocketManager
 		bool registerSocket(CSocketStub* stub);
 
 		//! Unregisters a class.
+		//! Don't call during an onSend() or onRecv() event!
 		//! \param stub The class to remove from the system.
 		//! \return False if stub is not found
 		//! \return True if it is successfully removed.
@@ -97,13 +100,9 @@ class CSocketManager
 		//! List of classes registered with the socket manager.
 		std::vector<CSocketStub*> stubList;
 		std::vector<CSocketStub*> newStubs;
-		std::vector<CSocketStub*> removeStubs;
 
 		//! Max socket descriptor.
 		SOCKET fd_max;
-
-		//! Are we accessing stubList?
-		bool blockStubs;
 };
 
 
@@ -119,7 +118,7 @@ struct sock_properties
 	int protocol;
 	int type;
 	int state;
-	char description[ SOCKET_MAX_DESCRIPTION ];
+	char description[SOCKET_MAX_DESCRIPTION];
 	sockaddr_storage address;
 };
 

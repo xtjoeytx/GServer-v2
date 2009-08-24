@@ -44,6 +44,8 @@ class TServer : public CSocketStub
 		// Required by CSocketStub.
 		bool onRecv();
 		bool onSend()				{ return true; }
+		bool onRegister()			{ return true; }
+		void onUnregister()			{ return; }
 		SOCKET getSocketHandle()	{ return playerSock.getHandle(); }
 		bool canRecv()				{ return true; }
 		bool canSend()				{ return false; }
@@ -156,6 +158,7 @@ class TServer : public CSocketStub
 	private:
 		bool doTimedEvents();
 		void acceptSock(CSocket& pSocket);
+		void cleanupDeletedPlayers();
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
 		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
@@ -175,6 +178,8 @@ class TServer : public CSocketStub
 		std::vector<TMap *> mapList;
 		std::vector<TNPC *> npcIds, npcList;
 		std::vector<TPlayer *> playerIds, playerList;
+
+		std::vector<TPlayer *> deletedPlayers;
 
 		TServerList serverlist;
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
