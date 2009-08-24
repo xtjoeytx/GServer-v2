@@ -84,6 +84,8 @@ class TServerList : public CSocketStub
 		// Required by CSocketStub.
 		bool onRecv();
 		bool onSend();
+		bool onRegister()			{ return true; }
+		void onUnregister()			{ return; }
 		SOCKET getSocketHandle()	{ return sock.getHandle(); }
 		bool canRecv();
 		bool canSend();
