@@ -48,7 +48,6 @@ void TServerList::createFunctions()
 */
 TServerList::TServerList()
 : nextIsRaw(false), rawPacketSize(0)
-
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
