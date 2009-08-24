@@ -97,6 +97,8 @@ void TServer::operator()()
 		if (doMain() == false)
 			break;
 
+		cleanupDeletedPlayers();
+
 		try
 		{
 			boost::this_thread::interruption_point();
@@ -105,15 +107,27 @@ void TServer::operator()()
 		{
 			running = false;
 		}
-/*
-		boost::xtime xt;
-		boost::xtime_get(&xt, boost::TIME_UTC);
-		xt.nsec += 5000000;		// 5 milliseconds
-		boost::this_thread::sleep(xt);
-*/
-		//boost::this_thread::yield();
 	}
 	cleanup();
+}
+
+void TServer::cleanupDeletedPlayers()
+{
+	for (std::vector<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); )
+	{
+		TPlayer* player = *i;
+
+		// Remove the player from the socket manager.
+		sockManager.unregisterSocket((CSocketStub*)player);
+
+		// Get rid of the player now.
+		playerIds[player->getId()] = 0;
+		vecRemove<TPlayer*>(playerList, player);
+
+		// Delete and go to the next player.
+		if (player) delete player;
+		i = deletedPlayers.erase(i);
+	}
 }
 
 void TServer::cleanup()
@@ -821,22 +835,9 @@ bool TServer::deletePlayer(TPlayer* player)
 	// Remove the player from the serverlist.
 	serverlist.remPlayer(player->getAccountName(), player->getType());
 
-	// Get rid of the player now.
-	playerIds[player->getId()] = 0;
-	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		if (*i == player)
-		{
-			playerList.erase(i);
-			break;
-		}
-	}
-
-	// Remove the player from the socket manager.
-	sockManager.unregisterSocket((CSocketStub*)player);
-
-	// Clean up.
-	delete player;
+	// Add the player to the list of players to delete.
+	if (vecSearch<TPlayer*>(deletedPlayers, player) == -1)
+		deletedPlayers.push_back(player);
 
 	return true;
 }
