@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include <vector>
 #include <time.h>
 #include "ICommon.h"
