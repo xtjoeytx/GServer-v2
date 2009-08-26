@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "TLevelLink.h"
 
 /*

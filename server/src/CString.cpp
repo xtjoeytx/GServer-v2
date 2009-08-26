@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "CString.h"
 
 #ifdef _WIN32
@@ -10,16 +11,15 @@
 */
 
 CString::CString()
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	clear(30);
 }
 
 CString::CString(const char *pString)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
 	if (pString == 0) return;
-	buffer = 0;
 
 	int length = strlen(pString);
 	clear(length);
@@ -27,79 +27,70 @@ CString::CString(const char *pString)
 }
 
 CString::CString(const CString& pString)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	clear(pString.length());
 	write(pString.text(), pString.length());
 }
 
 CString::CString(char pChar)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	clear(sizeof(char));
 	writeChar(pChar);
 }
 
 CString::CString(double pDouble)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[32];
 	sprintf(tempBuff, "%f", pDouble);
 	*this = tempBuff;
 }
 
 CString::CString(float pFloat)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[32];
 	sprintf(tempBuff, "%.2f", pFloat);
 	*this = tempBuff;
 }
 
 CString::CString(int pInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[32];
 	sprintf(tempBuff, "%i", pInteger);
 	*this = tempBuff;
 }
 
 CString::CString(unsigned int pUInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[32];
 	sprintf(tempBuff, "%u", pUInteger);
 	*this = tempBuff;
 }
 
 CString::CString(unsigned long int pLUInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[32];
 	sprintf(tempBuff, "%lu", pLUInteger);
 	*this = tempBuff;
 }
 
 CString::CString(long long pLLInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[64];
 	sprintf(tempBuff, "%lld", pLLInteger);
 	*this = tempBuff;
 }
 
 CString::CString(unsigned long long pLLUInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	buffer = 0;
-
 	char tempBuff[64];
 	sprintf(tempBuff, "%llu", pLLUInteger);
 	*this = tempBuff;
@@ -107,7 +98,7 @@ CString::CString(unsigned long long pLLUInteger)
 
 CString::~CString()
 {
-	free(buffer);
+	if (buffer) free(buffer);
 }
 
 /*
@@ -185,6 +176,8 @@ int CString::write(const char *pSrc, int pSize)
 {
 	if (!pSize)
 		return 0;
+	if (buffer == 0)
+		clear(pSize);
 
 	if (writec + pSize >= buffc)
 	{
@@ -206,7 +199,7 @@ int CString::write(const CString& pString)
 
 void CString::clear(int pSize)
 {
-	free(buffer);
+	if (buffer) free(buffer);
 	sizec = readc = writec = 0;
 	buffc = (pSize > 0 ? pSize : 1) + 1;
 	buffer = (char*)malloc(buffc);
