@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include <vector>
 #include <math.h>
 #include "ICommon.h"

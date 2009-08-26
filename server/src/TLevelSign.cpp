@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "TLevelSign.h"
 #include "TPlayer.h"
 
