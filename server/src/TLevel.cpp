@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "ICommon.h"
 #include "main.h"
 #include "CFileSystem.h"

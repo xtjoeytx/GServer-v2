@@ -1,6 +1,7 @@
 // GraalReborn Server
 // (C) GraalReborn 2008
 
+#include "IDebug.h"
 #include "CString.h"
 #include "codec.h"
 
