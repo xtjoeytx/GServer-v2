@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "CPluginManager.h"
 #include "CLog.h"
 #include "TServer.h"

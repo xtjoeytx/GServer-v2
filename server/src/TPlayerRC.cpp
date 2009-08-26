@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include <vector>
 #include <map>
 #include <sys/stat.h>
