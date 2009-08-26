@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "IUtil.h"
 #include "CString.h"
 

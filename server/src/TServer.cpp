@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "ICommon.h"
 #include "CSocket.h"
 #include "CSettings.h"
@@ -200,21 +201,14 @@ bool TServer::doTimedEvents()
 
 	// Do player events.
 	{
-		for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end();)
+		for (std::vector<TPlayer *>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 		{
 			TPlayer *player = (TPlayer*)*i;
 			if (player == 0)
-			{
-				++i;
 				continue;
-			}
 
 			if (!player->doTimedEvents())
-			{
 				this->deletePlayer(player);
-				i = playerList.begin();
-			}
-			else ++i;
 		}
 	}
 
@@ -832,6 +826,8 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 
 bool TServer::deletePlayer(TPlayer* player)
 {
+	if (player == 0) return true;
+
 	// Remove the player from the serverlist.
 	serverlist.remPlayer(player->getAccountName(), player->getType());
 
