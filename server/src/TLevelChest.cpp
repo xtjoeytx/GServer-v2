@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "TLevelChest.h"
 
 extern int findItemId(const CString& pItemName);

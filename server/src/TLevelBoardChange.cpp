@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "ICommon.h"
 #include "TLevelBoardChange.h"
 #include "TPlayer.h"

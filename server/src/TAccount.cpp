@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include <memory.h>
 #include "CFileSystem.h"
 #include "TServer.h"

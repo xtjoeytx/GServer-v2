@@ -1,3 +1,4 @@
+#include "IDebug.h"
 #include "CTranslationManager.h"
 
 // -- Function: Translate String -- //
