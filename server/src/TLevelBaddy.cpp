@@ -27,7 +27,7 @@ const bool baddyPropsReinit[baddypropcount] = {
 TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer)
 : level(pLevel), server(pServer), type(pType), id(0),
 startX(pX), startY(pY),
-respawn(true)
+respawn(true), setImage(false)
 {
 	if (pType > baddytypes) type = 0;
 	verses.resize(3);
@@ -43,6 +43,7 @@ void TLevelBaddy::reset()
 	image = baddyImages[(int)type];
 	dir = (2 << 2) | 2;			// Both head/body direction is encoded in dir.
 	ani = 0;
+	setImage = false;
 }
 
 CString TLevelBaddy::getProp(const int propId, int clientVersion) const
@@ -125,11 +126,21 @@ void TLevelBaddy::setProps(CString &pProps)
 			break;
 
 			case BDPROP_POWERIMAGE:
+			{
+				power = pProps.readGChar();
 				if (pProps.bytesLeft() > 1)
 				{
-					power = pProps.readGChar();
-					image = pProps.readChars(pProps.readGUChar());
+					CString newImage = pProps.readChars(pProps.readGUChar());
+
+					// Why we need this I have no idea.
+					// For some reason, the client resets the custom image when the baddy is hurt.
+					if (setImage == false)
+					{
+						setImage = true;
+						image = newImage;
+					}
 				}
+			}
 			break;
 
 			case BDPROP_MODE:

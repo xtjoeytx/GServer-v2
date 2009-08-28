@@ -67,6 +67,7 @@ class TLevelBaddy
 		CString image;
 		std::vector<CString> verses;
 		bool respawn;
+		bool setImage;
 };
 
 #endif // TLEVELBADDY_H
