@@ -137,6 +137,8 @@ void CFileQueue::sendCompress()
 
 		case ENCRYPT_GEN_5:
 		{
+			//unsigned int oldSize = pSend.length();
+
 			// Choose which compression to use and apply it.
 			int compressionType = COMPRESS_UNCOMPRESSED;
 			if (pSend.length() > 0x2000)	// 8KB
@@ -144,11 +146,14 @@ void CFileQueue::sendCompress()
 				compressionType = COMPRESS_BZ2;
 				pSend.bzcompressI();
 			}
-			else if (pSend.length() > 40)
+			else if (pSend.length() > 55)
 			{
 				compressionType = COMPRESS_ZLIB;
 				pSend.zcompressI();
 			}
+
+			//unsigned int newSize = pSend.length();
+			//printf("Compression [%s] - old size: %ld, new size: %ld\n", (compressionType == COMPRESS_UNCOMPRESSED ? "uncompressed" : (compressionType == COMPRESS_ZLIB ? "zlib" : "bz2")), oldSize, newSize);
 
 			// Encrypt the packet and add it to the out buffer.
 			out_codec.limitFromType(compressionType);
