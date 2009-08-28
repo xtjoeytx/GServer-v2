@@ -348,7 +348,36 @@ bool TLevel::loadLevel(const CString& pLevelName)
 	if (ext == ".nw") return loadNW(pLevelName);
 	else if (ext == ".graal") return loadGraal(pLevelName);
 	else if (ext == ".zelda") return loadZelda(pLevelName);
-	return false;
+	else return detectLevelType(pLevelName);
+}
+
+bool TLevel::detectLevelType(const CString& pLevelName)
+{
+	// Get the appropriate filesystem.
+	CFileSystem* fileSystem = server->getFileSystem();
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		fileSystem = server->getFileSystem(FS_LEVEL);
+
+	// Load file
+	CString fileData;
+	if (fileData.load(fileSystem->find(pLevelName)) == false) return false;
+
+	// Grab file version.
+	fileVersion = fileData.readChars(8);
+
+	// Determine the level type.
+	int v = -1;
+	if (fileVersion == "GLEVNW01") v = 0;
+	else if (fileVersion == "GR-V1.03" || fileVersion == "GR-V1.02" || fileVersion == "GR-V1.01") v = 1;
+	else if (fileVersion == "Z3-V1.04" || fileVersion == "Z3-V1.03") v = 2;
+
+	// Not a level.
+	if (v == -1) return false;
+
+	// Load the correct level.
+	if (v == 0) return loadNW(pLevelName);
+	if (v == 1) return loadGraal(pLevelName);
+	if (v == 2) return loadZelda(pLevelName);
 }
 
 bool TLevel::loadZelda(const CString& pLevelName)
