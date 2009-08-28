@@ -674,6 +674,10 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 		return false;
 	}
 
+	// Warn for very large files.  These are the cause of many bug reports.
+	if (fileData.length() > 3145728)	// 3MB
+		serverlog.out("[WARNING] Sending a large file (over 3MB): %s\n", pFile.text());
+
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
 	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
@@ -2506,8 +2510,8 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 {
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char bType = pPacket.readGUChar();
-	CString bImage = pPacket.readChars(pPacket.bytesLeft() - 1);
 	unsigned char bPower = pPacket.readGUChar();
+	CString bImage = pPacket.readString("");
 	bPower = MIN(bPower, 12);		// Hard-limit to 6 hearts.
 
 	// Fix the image for 1.41 clients.
