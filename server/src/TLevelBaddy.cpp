@@ -128,16 +128,21 @@ void TLevelBaddy::setProps(CString &pProps)
 			case BDPROP_POWERIMAGE:
 			{
 				power = pProps.readGChar();
-				if (pProps.bytesLeft() > 1)
+				if (pProps.bytesLeft() != 0)
 				{
 					CString newImage = pProps.readChars(pProps.readGUChar());
 
-					// Why we need this I have no idea.
-					// For some reason, the client resets the custom image when the baddy is hurt.
-					if (setImage == false)
+					if (newImage.isEmpty())
+						image = baddyImages[(int)type];
+					else
 					{
-						setImage = true;
-						image = newImage;
+						// Why we need this I have no idea.
+						// For some reason, the client resets the custom image when the baddy is hurt.
+						if (setImage == false)
+						{
+							setImage = true;
+							image = newImage;
+						}
 					}
 				}
 			}
