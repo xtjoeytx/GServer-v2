@@ -96,6 +96,10 @@ class CSocketManager
 		//! \return True if it is successfully removed.
 		bool unregisterSocket(CSocketStub* stub);
 
+		//! Removes all socket stubs.
+		//! \param callUnregister If true, calls onUnregister() for all the stubs.
+		void cleanup(bool callOnUnregister = true);
+
 	private:
 		//! List of classes registered with the socket manager.
 		std::vector<CSocketStub*> stubList;
