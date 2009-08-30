@@ -325,7 +325,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			case PLPROP_RUPEESCOUNT:
 				if (rc != 0)
 				{
-					if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_MODIFYSTAFFACCOUNT)))
+					if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
 					{
 						gralatc = pPacket.readGUInt();
 						gralatc = clip(gralatc, 0, 9999999);

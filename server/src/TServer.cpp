@@ -19,7 +19,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+: doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
@@ -94,11 +94,21 @@ void TServer::operator()()
 	bool running = true;
 	while (running)
 	{
-		// TODO: If something happens, attempt to restart the server.
-		if (doMain() == false)
-			break;
+		// Do a server loop.
+		doMain();
 
+		// Clean up deleted players here.
 		cleanupDeletedPlayers();
+
+		// Check if we should do a restart.
+		if (doRestart)
+		{
+			doRestart = false;
+			cleanup();
+			int ret = init();
+			if (ret != 0)
+				break;
+		}
 
 		try
 		{
@@ -175,6 +185,17 @@ void TServer::cleanup()
 		weaponList.erase(i++);
 	}
 	weaponList.clear();
+
+	playerSock.disconnect();
+	serverlist.getSocket()->disconnect();
+
+	// Clean up the socket manager.  Pass false so we don't cause a crash.
+	sockManager.cleanup(false);
+}
+
+void TServer::restart()
+{
+	doRestart = true;
 }
 
 bool TServer::doMain()
@@ -504,6 +525,7 @@ void TServer::loadWeapons(bool print)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(i->first, this);
 		if (weapon == 0) continue;
+		weapon->setModTime(weaponFS.getModTime(i->first));
 
 		// Check if the weapon exists.
 		if (weaponList.find(weapon->getName()) == weaponList.end())
@@ -523,8 +545,8 @@ void TServer::loadWeapons(bool print)
 			}
 			else
 			{
-				delete weapon;
 				if (print) serverlog.out("       %s [skipped]\n", weapon->getName().text());
+				delete weapon;
 			}
 		}
 	}

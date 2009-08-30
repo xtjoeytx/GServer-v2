@@ -102,6 +102,7 @@ class TServerList : public CSocketStub
 		bool main();
 		bool init(const CString& pserverIp, const CString& pServerPort = "14900");
 		bool connectServer();
+		CSocket* getSocket()					{ return &sock; }
 		void sendPacket(CString& pPacket);
 
 		// Altering Player Information
