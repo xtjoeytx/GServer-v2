@@ -16,7 +16,7 @@ class CFileSystem
 
 		void setServer(TServer* pServer) { server = pServer; }
 
-		void addDir(const CString& dir, const CString& wildcard = "*");
+		void addDir(const CString& dir, const CString& wildcard = "*", bool forceRecursive = false);
 		void removeDir(const CString& dir);
 		void addFile(CString file);
 		void removeFile(const CString& file);
