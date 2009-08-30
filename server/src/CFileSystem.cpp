@@ -35,7 +35,7 @@ void CFileSystem::clear()
 	dirList.clear();
 }
 
-void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive = false)
+void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (server == 0) return;
