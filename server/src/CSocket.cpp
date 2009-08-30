@@ -240,6 +240,18 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 	return found;
 }
 
+void CSocketManager::cleanup(bool callOnUnregister)
+{
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	{
+		if (callOnUnregister)
+			(*i)->onUnregister();
+		i = stubList.erase(i);
+	}
+	fd_max = 0;
+}
+
+
 
 
 int CSocket::was_initiated = 0;

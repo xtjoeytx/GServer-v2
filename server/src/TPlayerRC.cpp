@@ -962,17 +962,18 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		else if (words[0] == "/refreshservermessage" && words.size() == 1)
 		{
 			server->loadServerMessage();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Refreshed server message.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed server message.");
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
-			for (unsigned int i = 1; i < words.size(); ++i)
+			std::vector<CString> levels = words[1].tokenize(",");
+			for (std::vector<CString>::const_iterator i = levels.begin(); i != levels.end(); ++i)
 			{
-				TLevel* level = server->getLevel(words[i]);
+				TLevel* level = server->getLevel(*i);
 				if (level)
 				{
 					level->reload();
-					sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated level: " << level->getLevelName());
+					server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " updated level: " << level->getLevelName());
 				}
 			}
 		}
@@ -985,38 +986,38 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				(*i)->reload();
 				++count;
 			}
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Updated all the levels (" << CString((int)count) << " levels updated).");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << "updated all the levels (" << CString((int)count) << " levels updated).");
+		}
+		else if (words[0] == "/restartserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+		{
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " restarted the server.");
+			server->restart();
 		}
 		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->loadConfigFiles();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the server configuration files.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the server configuration files.");
 		}
 		else if (words[0] == "/updateserverhq" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->loadAdminSettings();
 			server->getServerList()->sendServerHQ();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Sent ServerHQ updates.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " sent ServerHQ updates.");
 		}
 		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 		{
 			server->loadWordFilter();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the word filter.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the word filter.");
 		}
 		else if (words[0] == "/reloadipbans" && words.size() == 1)
 		{
 			server->loadIPBans();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the ip bans.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the ip bans.");
 		}
-		/*
-		 * Need to make it load non-loaded files from weapons that have been added manually,
-		 * I'll do this when I get the chance, which should be soon enough...
-		 * -Zach
-		*/
 		else if (words[0] == "/reloadweapons" && words.size() == 1)
 		{
 			server->loadWeapons();
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: Reloaded the weapons.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the weapons.");
 		}
 		else if(words[0] == "/find" && words.size() > 1)
 		{
