@@ -378,6 +378,7 @@ bool TLevel::detectLevelType(const CString& pLevelName)
 	if (v == 0) return loadNW(pLevelName);
 	if (v == 1) return loadGraal(pLevelName);
 	if (v == 2) return loadZelda(pLevelName);
+	return false;
 }
 
 bool TLevel::loadZelda(const CString& pLevelName)
