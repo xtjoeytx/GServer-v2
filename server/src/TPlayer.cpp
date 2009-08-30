@@ -2540,7 +2540,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 		flagName  = flagPacket.readString("=");
 		flagValue = flagPacket.readString("");
 	}
-		else
+	else
 	{
 		flagName = flagPacket;
 		flagValue = "1";
