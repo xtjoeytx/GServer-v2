@@ -46,6 +46,38 @@ void TLevelBaddy::reset()
 	setImage = false;
 }
 
+void TLevelBaddy::dropItem()
+{
+	// 41.66...% chance of a green gralat.
+	// 41.66...% chance of something else.
+	// 16.66...% chance of nothing.
+	int itemId = rand()%12;
+	bool valid = true;
+
+	switch (itemId)
+	{
+		case 0:	//GREENRUPEE
+		case 1:	//BLUERUPEE
+		case 2:	//REDRUPEE
+		case 3:	//BOMBS
+		case 4:	//DARTS
+		case 5:	//HEART
+			break;
+		break;
+
+		default:
+			if (itemId > 5 && itemId < 10) itemId = 0;	//GREENRUPEE
+			else valid = false;
+			break;
+	}
+
+	if (valid)
+	{
+		level->addItem(this->x, this->y, itemId);
+		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x*2) >> (char)(this->y*2) >> (char)itemId, 0, level);
+	}
+}
+
 CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 {
 	switch (propId)
@@ -152,6 +184,10 @@ void TLevelBaddy::setProps(CString &pProps)
 				mode = pProps.readGChar();
 				if (mode == BDMODE_DIE)
 				{
+					// Drop items when dead.
+					if (server->getSettings()->getBool("baddyitems", false) == true)
+						dropItem();
+
 					if (respawn)
 						timeout.setTimeout(server->getSettings()->getInt("baddyrespawntime", 60));
 					else
