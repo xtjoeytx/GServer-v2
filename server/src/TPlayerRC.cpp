@@ -1403,7 +1403,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	if (folderList.size() == 0)
 		return true;
 
-	// Get folder list.
+	// Get folder list to send to the client.
 	CString folders;
 	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
 		folders << *i << "\n";
@@ -1412,65 +1412,64 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIRLIST << folders.gtokenize());
 	if (!isFtp) sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Welcome to the File Browser.");
 
-	// Grab the first rights and folder for use as our default view, just in case
-	// the player doesn't have the ability to view their lastFolder anymore.
-	CString viewFolder, viewRights, viewWild;
-	CString rights = folderList[0].readString(" ");
-	CString folder = folderList[0].readString("");
-	folder.replaceAllI("\\", "/");
-	folderList[0].setRead(0);
-
-	// Create the defaults.
-	viewRights = rights;
-	int wcl = folder.findl('/');
-	if (wcl == -1) viewWild = "*";
-	else viewWild = folder.subString(wcl + 1);
-	viewFolder = CString() << folder.remove(wcl) << "/";
-
-	// Try to find our last folder.
-	if (lastFolder.length() != 0)
+	// Create a folder map.
+	std::map<CString, CString> folderMap;
+	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
 	{
-		for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
+		CString rights("r");
+		CString wild("*");
+		CString folder(*i);
+		rights = folder.readString(" ").trim().toLower();
+		folder.removeI(0, folder.readPos());
+		folder.replaceAllI("\\", "/");
+		folder.trimI();
+		if (folder[folder.length() - 1] != '/')
 		{
-			CString rights = (*i).readString(" ");
-			CString folder = (*i).readString("");
-			folder.replaceAllI("\\", "/");
-			CString wild;
-			int wcl = folder.findl('/');
-			if (wcl == -1) wild = "*";
-			else wild = folder.subString(wcl + 1);
-			folder.removeI(wcl);
-			folder << "/";
-			(*i).setRead(0);
-
-			if (lastFolder == folder)
+			int pos = folder.findl('/');
+			if (pos != -1)
 			{
-				viewRights = rights;
-				viewFolder = folder;
-				viewWild = wild;
-				break;
+				wild = folder.subString(pos + 1);
+				folder.removeI(pos + 1);
 			}
 		}
+		folderMap[folder] << rights << ":" << wild << "\n";
 	}
-	else lastFolder = viewFolder;
 
-	// Construct our file list.
-	CString files;
+	// See if we can use our lastFolder.  If we can't, use the first folder.
+	if (folderMap.find(lastFolder) == folderMap.end())
+		lastFolder = folderMap.begin()->first;
+
+	// Create the file system.
 	CFileSystem fs(server);
-	fs.addDir(viewFolder, viewWild);
-	for (std::map<CString, CString>::iterator i = fs.getFileList()->begin(); i != fs.getFileList()->end(); ++i)
-	{
-		CString name = i->first;
-		CString dir;
+	fs.addDir(lastFolder);
 
-		int size = fs.getFileSize(i->first);
-		time_t mod = fs.getModTime(i->first);
-		dir >> (char)i->first.length() << i->first >> (char)viewRights.length() << viewRights >> (long long)size >> (long long)mod;
-		files << " " >> (char)dir.length() << dir;
+	// Construct the file list.
+	CString files;
+	std::vector<CString> wildcards = folderMap[lastFolder].tokenize("\n");
+	for (std::vector<CString>::iterator i = wildcards.begin(); i != wildcards.end(); ++i)
+	{
+		CString rights = (*i).readString(":");
+		CString wildcard = (*i).readString("");
+		(*i).setRead(0);
+		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		{
+			// See if the file matches the wildcard.
+			if (!j->first.match(wildcard))
+				continue;
+
+			CString name = j->first;
+			CString dir;
+
+			// Add the file now.
+			int size = fs.getFileSize(j->first);
+			time_t mod = fs.getModTime(j->first);
+			dir >> (char)j->first.length() << j->first >> (char)rights.length() << rights >> (long long)size >> (long long)mod;
+			files << " " >> (char)dir.length() << dir;
+		}
 	}
 
 	// Send packet.
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIR >> (char)viewFolder.length() << viewFolder << files);
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIR >> (char)lastFolder.length() << lastFolder << files);
 	isFtp = true;
 
 	return true;
@@ -1484,46 +1483,65 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	CString newRights, wildcard;
 	newFolder.setRead(0);
 
-	bool found = false;
+	// Create a folder map.
+	std::map<CString, CString> folderMap;
 	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end(); ++i)
 	{
-		CString rights = (*i).readString(" ");
-		CString folder = (*i).readString("");
+		CString rights("r");
+		CString wild("*");
+		CString folder(*i);
+		rights = folder.readString(" ").trim().toLower();
+		folder.removeI(0, folder.readPos());
 		folder.replaceAllI("\\", "/");
-		CString wild;
-		int wcl = folder.findl('/');
-		if (wcl == -1) wild = "*";
-		else wild = folder.subString(wcl + 1);
-		folder.removeI(wcl);
-		folder << "/";
-		(*i).setRead(0);
-
-		if (newFolder == folder)
+		folder.trimI();
+		if (folder[folder.length() - 1] != '/')
 		{
-			newFolder = folder;
-			newRights = rights.toLower();
-			wildcard = wild;
-			found = true;
-			break;
+			int pos = folder.findl('/');
+			if (pos != -1)
+			{
+				wild = folder.subString(pos + 1);
+				folder.removeI(pos + 1);
+			}
+		}
+		folderMap[folder] << rights << ":" << wild << "\n";
+	}
+
+	// See if newFolder is part of the folder map.
+	// If it isn't, return.
+	if (folderMap.find(newFolder) == folderMap.end())
+		return true;
+	else lastFolder = newFolder;
+
+	// Create the file system.
+	CFileSystem fs(server);
+	fs.addDir(lastFolder);
+
+	// Construct the file list.
+	CString files;
+	std::vector<CString> wildcards = folderMap[lastFolder].tokenize("\n");
+	for (std::vector<CString>::iterator i = wildcards.begin(); i != wildcards.end(); ++i)
+	{
+		CString rights = (*i).readString(":");
+		CString wildcard = (*i).readString("");
+		(*i).setRead(0);
+		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		{
+			// See if the file matches the wildcard.
+			if (!j->first.match(wildcard))
+				continue;
+
+			CString name = j->first;
+			CString dir;
+
+			// Add the file now.
+			int size = fs.getFileSize(j->first);
+			time_t mod = fs.getModTime(j->first);
+			dir >> (char)j->first.length() << j->first >> (char)rights.length() << rights >> (long long)size >> (long long)mod;
+			files << " " >> (char)dir.length() << dir;
 		}
 	}
-	if (!found) return true;
 
-	lastFolder = newFolder;
-
-	// Construct our file list.
-	CString files;
-	CFileSystem fs(server);
-	fs.addDir(lastFolder, wildcard);
-	for (std::map<CString, CString>::iterator i = fs.getFileList()->begin(); i != fs.getFileList()->end(); ++i)
-	{
-		CString dir;
-		int size = fs.getFileSize(i->first);
-		time_t mod = fs.getModTime(i->first);
-		dir >> (char)i->first.length() << i->first >> (char)newRights.length() << newRights >> (long long)size >> (long long)mod;
-		files << " " >> (char)dir.length() << dir;
-	}
-
+	// Send packet.
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder changed to " << lastFolder);
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIR >> (char)lastFolder.length() << lastFolder << files);
 
