@@ -35,7 +35,7 @@ void CFileSystem::clear()
 	dirList.clear();
 }
 
-void CFileSystem::addDir(const CString& dir, const CString& wildcard)
+void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive = false)
 {
 	boost::recursive_mutex::scoped_lock lock(m_preventChange);
 	if (server == 0) return;
@@ -59,7 +59,7 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard)
 		dirList.push_back(ndir);
 
 		// Load up the files in the directory.
-		loadAllDirectories(ndir, server->getSettings()->getBool("nofoldersconfig", false));
+		loadAllDirectories(ndir, (forceRecursive ? true : server->getSettings()->getBool("nofoldersconfig", false)));
 	}
 }
 
@@ -141,7 +141,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << dir << filedata.cFileName << fSep;
 					newDir.removeI(0, server->getServerPath().length());
-					addDir(newDir);
+					addDir(newDir, "*", true);
 				}
 			}
 			else
@@ -181,7 +181,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << path << ent->d_name << fSep;
 					newDir.removeI(0, server->getServerPath().length());
-					addDir(newDir);
+					addDir(newDir, "*", true);
 				}
 				continue;
 			}

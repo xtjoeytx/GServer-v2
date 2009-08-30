@@ -82,17 +82,24 @@ void CFileQueue::sendCompress()
 	// Keep adding packets from normalBuffer until we hit 48KB or we run out of packets.
 	while (pSend.length() < 0xC000 && !normalBuffer.empty())	// 48KB
 	{
+		// If the next packet sticks us over 60KB, don't add it.
+		if (pSend.length() + normalBuffer.front().length() > 0xF000) break;
+
 		pSend << normalBuffer.front();
 		normalBuffer.pop();
 	}
 	bytesSentWithoutFile += pSend.length();
 
-	// If we have less than 16KB of data, add a file.
+	// If we have less than 16KB of data, try to add a file.
 	if (pSend.length() < 0x4000 && !fileBuffer.empty())	// 16KB
 	{
-		bytesSentWithoutFile = 0;
-		pSend << fileBuffer.front();
-		fileBuffer.pop();
+		// If the next packet sticks us over 60KB, don't add it.
+		if (pSend.length() + fileBuffer.front().length() <= 0xF000)
+		{
+			bytesSentWithoutFile = 0;
+			pSend << fileBuffer.front();
+			fileBuffer.pop();
+		}
 	}
 
 	// Reset this if we have no files to send.
