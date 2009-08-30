@@ -43,6 +43,7 @@ class TLevelBaddy
 		TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer);
 
 		void reset();
+		void dropItem();
 
 		// get functions
 		char getId() const						{ return id; }
