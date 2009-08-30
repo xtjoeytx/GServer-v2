@@ -54,6 +54,7 @@ class TServer : public CSocketStub
 		~TServer();
 		void operator()();
 		void cleanup();
+		void restart();
 
 		int init();
 		bool doMain();
@@ -159,6 +160,8 @@ class TServer : public CSocketStub
 		bool doTimedEvents();
 		void acceptSock(CSocket& pSocket);
 		void cleanupDeletedPlayers();
+
+		bool doRestart;
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
 		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
