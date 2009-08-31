@@ -56,9 +56,9 @@ int TServer::init(const CString& serverip, const CString& serverport)
 
 	// If an override serverip and serverport were specified, fix the options now.
 	if (!serverip.isEmpty())
-		settings.getKey("serverip")->value = serverip;
+		settings.addKey("serverip", serverip);
 	if (!serverport.isEmpty())
-		settings.getKey("serverport")->value = serverport;
+		settings.addKey("serverport", serverport);
 
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
