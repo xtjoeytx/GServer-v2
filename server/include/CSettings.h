@@ -31,6 +31,8 @@ class CSettings
 		void setSeparator(const CString& pSeparator);
 		void clear();
 
+		CKey* addKey(const CString& pKey, const CString& pValue);
+
 		// Get Type
 		CKey *getKey(const CString& pStr);
 		const CKey *getKey(const CString& pStr) const;
