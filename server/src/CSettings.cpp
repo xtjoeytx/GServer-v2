@@ -87,6 +87,20 @@ void CSettings::clear()
 	keys.clear();
 }
 
+CKey* CSettings::addKey(const CString& pKey, const CString& pValue)
+{
+	CKey* k = getKey(pKey);
+	if (k)
+	{
+		k->value = pValue;
+		return k;
+	}
+
+	k = new CKey(pKey, pValue);
+	keys.push_back(k);
+	return k;
+}
+
 /*
 	Get Settings
 */
