@@ -19,11 +19,19 @@ CString::CString()
 CString::CString(const char *pString)
 : buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
-	if (pString == 0) return;
+	if (pString == 0)
+	{
+		clear(30);
+		return;
+	}
 
 	int length = strlen(pString);
-	clear(length);
-	write(pString, length);
+	if (length != 0)
+	{
+		clear(length);
+		write(pString, length);
+	}
+	else clear(30);
 }
 
 CString::CString(const CString& pString)
@@ -805,8 +813,12 @@ CString& CString::operator=(const CString& pString)
 	if (this == &pString)
 		return *this;
 
-	clear(pString.length());
-	write((char*)pString.text(), pString.length());
+	if (pString.length() != 0)
+	{
+		clear(pString.length() + 10);
+		write((char*)pString.text(), pString.length());
+	}
+	else clear(30);
 	return *this;
 }
 

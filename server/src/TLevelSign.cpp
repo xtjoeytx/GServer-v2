@@ -102,9 +102,9 @@ CString decodeSignCode(CString pText)
 CString encodeSign(const CString& pSignText)
 {
 	CString retVal;
-	std::vector<CString> signText = pSignText.tokenize("\n");
-	for (std::vector<CString>::iterator i = signText.begin(); i != signText.end(); ++i)
-		retVal << encodeSignCode(CString() << *i << "\n");
+	CString signText(pSignText);
+	while (signText.bytesLeft())
+		retVal << encodeSignCode(CString() << signText.readString("\n") << "\n");
 	return retVal;
 }
 

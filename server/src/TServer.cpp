@@ -66,23 +66,23 @@ int TServer::init(const CString& serverip, const CString& serverport)
 	playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	serverlog.out("     Initializing player listen socket.\n");
+	serverlog.out("[%s]      Initializing player listen socket.\n", name.text());
 	if (playerSock.init(0, settings.getStr("serverport").text()))
 	{
-		serverlog.out("** [Error] Could not initialize listening socket...\n");
+		serverlog.out("[%s] ** [Error] Could not initialize listening socket...\n", name.text());
 		return ERR_LISTEN;
 	}
 	if (playerSock.connect())
 	{
-		serverlog.out("** [Error] Could not connect listening socket...\n");
+		serverlog.out("[%s] ** [Error] Could not connect listening socket...\n", name.text());
 		return ERR_LISTEN;
 	}
 
 	// Connect to the serverlist.
-	serverlog.out("     Initializing serverlist socket.\n");
+	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
 	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
 	{
-		serverlog.out("** [Error] Cound not initialize serverlist socket.\n");
+		serverlog.out("[%s] ** [Error] Cound not initialize serverlist socket.\n", name.text());
 		return ERR_LISTEN;
 	}
 	serverlist.connectServer();
@@ -381,62 +381,66 @@ void TServer::loadFolderConfig()
 		CFileSystem* fs = getFileSystemByType(type);
 
 		// Add it to the appropriate file system.
-		if (fs != 0) { fs->addDir(dir, wildcard); printf("adding %s [%s] to %s\n", dir.text(), wildcard.text(), type.text()); }
+		if (fs != 0)
+		{
+			fs->addDir(dir, wildcard);
+			serverlog.out("[%s]        adding %s [%s] to %s\n", name.text(), dir.text(), wildcard.text(), type.text());
+		}
 		filesystem[0].addDir(dir, wildcard);
 	}
 }
 
 int TServer::loadConfigFiles()
 {
-	serverlog.out(":: Loading server configuration...\n");
+	serverlog.out("[%s] :: Loading server configuration...\n", name.text());
 
 	// Load Settings
-	serverlog.out("     Loading settings...\n");
+	serverlog.out("[%s]      Loading settings...\n", name.text());
 	loadSettings();
 
 	// Load Admin Settings
-	serverlog.out("     Loading admin settings...\n");
+	serverlog.out("[%s]      Loading admin settings...\n", name.text());
 	loadAdminSettings();
 
 	// Load allowed versions.
-	serverlog.out("     Loading allowed client versions...\n");
+	serverlog.out("[%s]      Loading allowed client versions...\n", name.text());
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	serverlog.out("     Folder config: ");
+	serverlog.out("[%s]      Folder config: ", name.text());
 	if (settings.getBool("nofoldersconfig", false) == false)
 	{
 		serverlog.out("ENABLED\n");
 	} else serverlog.out("disabled\n");
-	serverlog.out("     Loading file system...\n");
+	serverlog.out("[%s]      Loading file system...\n", name.text());
 	loadFileSystem();
 
 	// Load server flags.
-	serverlog.out("     Loading serverflags.txt...\n");
+	serverlog.out("[%s]      Loading serverflags.txt...\n", name.text());
 	loadServerFlags();
 
 	// Load server message.
-	serverlog.out("     Loading config/servermessage.html...\n");
+	serverlog.out("[%s]      Loading config/servermessage.html...\n", name.text());
 	loadServerMessage();
 
 	// Load IP bans.
-	serverlog.out("     Loading config/ipbans.txt...\n");
+	serverlog.out("[%s]      Loading config/ipbans.txt...\n", name.text());
 	loadIPBans();
 
 	// Load weapons.
-	serverlog.out("     Loading weapons...\n");
+	serverlog.out("[%s]      Loading weapons...\n", name.text());
 	loadWeapons(true);
 
 	// Load maps.
-	serverlog.out("     Loading maps...\n");
+	serverlog.out("[%s]      Loading maps...\n", name.text());
 	loadMaps(true);
 
 	// Load translations.
-	serverlog.out("     Loading translations...\n");
+	serverlog.out("[%s]      Loading translations...\n", name.text());
 	loadTranslations();
 
 	// Load word filter.
-	serverlog.out("     Loading word filter...\n");
+	serverlog.out("[%s]      Loading word filter...\n", name.text());
 	loadWordFilter();
 
 	return 0;
@@ -447,7 +451,7 @@ void TServer::loadSettings()
 	settings.setSeparator("=");
 	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
 	if (!settings.isOpened())
-		serverlog.out("** [Error] Could not open config/serveroptions.txt.  Will use default config.\n");
+		serverlog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", name.text());
 
 	// Load status list.
 	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
@@ -458,7 +462,7 @@ void TServer::loadAdminSettings()
 	adminsettings.setSeparator("=");
 	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
 	if (!adminsettings.isOpened())
-		serverlog.out("** [Error] Could not open config/adminconfig.txt.  Will use default config.\n");
+		serverlog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", name.text());
 }
 
 void TServer::loadAllowedVersions()
@@ -537,7 +541,7 @@ void TServer::loadWeapons(bool print)
 		if (weaponList.find(weapon->getName()) == weaponList.end())
 		{
 			weaponList[weapon->getName()] = weapon;
-			if (print) serverlog.out("       %s\n", weapon->getName().text());
+			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().text());
 		}
 		else
 		{
@@ -547,11 +551,11 @@ void TServer::loadWeapons(bool print)
 			{
 				delete w;
 				weaponList[weapon->getName()] = weapon;
-				if (print) serverlog.out("       %s [updated]\n", weapon->getName().text());
+				if (print) serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
 			}
 			else
 			{
-				if (print) serverlog.out("       %s [skipped]\n", weapon->getName().text());
+				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().text());
 				delete weapon;
 			}
 		}
@@ -587,12 +591,12 @@ void TServer::loadMaps(bool print)
 		TMap* gmap = new TMap(MAPTYPE_GMAP);
 		if (gmap->load(CString() << *i << ".gmap", this) == false)
 		{
-			if (print) serverlog.out(CString() << "** [Error] Could not load " << *i << ".gmap" << "\n");
+			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << *i << ".gmap" << "\n");
 			delete gmap;
 			continue;
 		}
 
-		if (print) serverlog.out("       [gmap] %s\n", i->text());
+		if (print) serverlog.out("[%s]        [gmap] %s\n", name.text(), i->text());
 		mapList.push_back(gmap);
 	}
 
@@ -607,12 +611,12 @@ void TServer::loadMaps(bool print)
 		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
 		if (bigmap->load(*i, this) == false)
 		{
-			if (print) serverlog.out(CString() << "** [Error] Could not load " << *i << "\n");
+			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << *i << "\n");
 			delete bigmap;
 			continue;
 		}
 
-		if (print) serverlog.out("       [bigmap] %s\n", i->text());
+		if (print) serverlog.out("[%s]        [bigmap] %s\n", name.text(), i->text());
 		mapList.push_back(bigmap);
 	}
 }
@@ -805,16 +809,16 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	return newNPC;
 }
 
-bool TServer::deleteNPC(const unsigned int pId, TLevel* pLevel)
+bool TServer::deleteNPC(const unsigned int pId, TLevel* pLevel, bool eraseFromLevel)
 {
 	// Grab the NPC.
 	TNPC* npc = getNPC(pId);
 	if (npc == 0) return false;
 
-	return deleteNPC(npc, pLevel);
+	return deleteNPC(npc, pLevel, eraseFromLevel);
 }
 
-bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
+bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
@@ -824,7 +828,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel)
 	if (pLevel == 0) return false;
 
 	// Remove the NPC from all the lists.
-	pLevel->removeNPC(npc);
+	if (eraseFromLevel) pLevel->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
 
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
