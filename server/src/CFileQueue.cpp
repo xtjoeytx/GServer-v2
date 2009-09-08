@@ -71,8 +71,16 @@ void CFileQueue::sendCompress()
 	if (sock == 0 || sock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
 
+	// If the next normal packet is huge, lets "try" to send it.
+	// Everything else should skip because this may throw is way over the limit.
+	if (normalBuffer.front().length() > 0xF000)
+	{
+		pSend << normalBuffer.front();
+		normalBuffer.pop();
+	}
+
 	// If we haven't sent a file in a while, forcibly send one now.
-	if (bytesSentWithoutFile > 0x7FFF && !fileBuffer.empty())	// 32KB
+	if (pSend.length() == 0 && bytesSentWithoutFile > 0x7FFF && !fileBuffer.empty())	// 32KB
 	{
 		bytesSentWithoutFile = 0;
 		pSend << fileBuffer.front();
@@ -119,8 +127,17 @@ void CFileQueue::sendCompress()
 
 		case ENCRYPT_GEN_3:
 		{
-			// Compress the packet and add it to the out buffer.
+			// Compress the packet.
 			pSend.zcompressI();
+
+			// Sanity check.
+			if (pSend.length() > 0xFFFD)
+			{
+				printf("** [ERROR] Trying to send a GEN_3 packet over 65533 bytes!  Tossing data.\n");
+				return;
+			}
+
+			// Add the packet to the out buffer.
 			CString data = CString() << (short)pSend.length() << pSend;
 			oBuffer << data;
 			unsigned int dsize = oBuffer.length();
@@ -131,6 +148,13 @@ void CFileQueue::sendCompress()
 		case ENCRYPT_GEN_4:
 		{
 			pSend.bzcompressI();
+
+			// Sanity check.
+			if (pSend.length() > 0xFFFD)
+			{
+				printf("** [ERROR] Trying to send a GEN_4 packet over 65533 bytes!  Tossing data.\n");
+				return;
+			}
 
 			// Encrypt the packet and add it to the out buffer.
 			out_codec.limitFromType(COMPRESS_BZ2);
@@ -161,6 +185,13 @@ void CFileQueue::sendCompress()
 
 			//unsigned int newSize = pSend.length();
 			//printf("Compression [%s] - old size: %ld, new size: %ld\n", (compressionType == COMPRESS_UNCOMPRESSED ? "uncompressed" : (compressionType == COMPRESS_ZLIB ? "zlib" : "bz2")), oldSize, newSize);
+
+			// Sanity check.
+			if (pSend.length() > 0xFFFC)
+			{
+				printf("** [ERROR] Trying to send a GEN_5 packet over 65532 bytes!  Tossing data.\n");
+				return;
+			}
 
 			// Encrypt the packet and add it to the out buffer.
 			out_codec.limitFromType(compressionType);

@@ -80,6 +80,7 @@ class TServer : public CSocketStub
 		void saveWeapons();
 
 		// Get functions.
+		const CString& getName()						{ return name; }
 		CFileSystem* getFileSystem(int c = 0)			{ return &(filesystem[c]); }
 		CFileSystem* getAccountsFileSystem()			{ return &filesystem_accounts; }
 		CLog& getNPCLog()								{ return npclog; }
@@ -121,8 +122,8 @@ class TServer : public CSocketStub
 		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0);
-		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0);
+		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0, bool eraseFromLevel = true);
+		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0, bool eraseFromLevel = true);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
 

@@ -269,7 +269,7 @@ bool TPlayer::sendLoginClient()
 	if (warp(levelName, x, y) == false)
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		serverlog.out(CString() << "Cannot find level for " << accountName << "\n");
+		serverlog.out(CString() << "[" << server->getName() << "] " << "Cannot find level for " << accountName << "\n");
 		return false;
 	}
 
