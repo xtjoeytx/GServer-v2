@@ -41,32 +41,7 @@ TLevel::~TLevel()
 		if (npcList->size() != 0 && npcIds->size() != 0)
 		{
 			for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
-			{
-				TNPC* n = *i;
-
-				// Remove the NPC from the global lists.
-				(*npcIds)[n->getId()] = 0;
-				for (std::vector<TNPC*>::iterator j = npcList->begin(); j != npcList->end(); )
-				{
-					if ((*j) == n)
-						j = npcList->erase(j);
-					else ++j;
-				}
-
-				// Inform all the clients that the NPC has been deleted.
-				//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
-				for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
-				{
-					TPlayer* p = *i;
-					if (!p->isClient()) continue;
-
-					if (p->getVersion() < CLVER_2_1)
-						p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)n->getId());
-					else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)n->getLevel()->getLevelName().length() << n->getLevel()->getLevelName() >> (int)n->getId());
-				}
-
-				delete n;
-			}
+				server->deleteNPC(*i, this, false);
 			levelNPCs.clear();
 		}
 	}
@@ -235,29 +210,7 @@ bool TLevel::reload()
 		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 		{
 			TNPC* n = *i;
-
-			// Remove the NPC from the global lists.
-			(*npcIds)[n->getId()] = 0;
-			for (std::vector<TNPC*>::iterator j = npcList->begin(); j != npcList->end(); )
-			{
-				if ((*j) == n)
-					j = npcList->erase(j);
-				else ++j;
-			}
-
-			// Inform all the clients that the NPC has been deleted.
-			//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)n->getId());
-			for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
-			{
-				TPlayer* p = *i;
-				if (!p->isClient()) continue;
-
-				if (p->getVersion() < CLVER_2_1)
-					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)n->getId());
-				else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)n->getLevel()->getLevelName().length() << n->getLevel()->getLevelName() >> (int)n->getId());
-			}
-
-			delete n;
+			server->deleteNPC(n, this, false);
 		}
 		levelNPCs.clear();
 	}

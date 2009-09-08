@@ -466,7 +466,7 @@ bool TPlayer::doTimedEvents()
 	{
 		if ((int)difftime(currTime, lastMovement) > settings->getInt("maxnomovement", 1200))
 		{
-			serverlog.out("Client %s has been disconnected due to inactivity.\n", accountName.text());
+			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", server->getName().text(), accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
 			return false;
 		}
@@ -475,7 +475,7 @@ bool TPlayer::doTimedEvents()
 	// Disconnect if no data has been received in 5 minutes.
 	if ((int)difftime(currTime, lastData) > 300)
 	{
-		serverlog.out("Client %s has timed out.\n", accountName.text());
+		serverlog.out("[%s] Client %s has timed out.\n", server->getName().text(), accountName.text());
 		return false;
 	}
 
@@ -676,7 +676,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 
 	// Warn for very large files.  These are the cause of many bug reports.
 	if (fileData.length() > 3145728)	// 3MB
-		serverlog.out("[WARNING] Sending a large file (over 3MB): %s\n", pFile.text());
+		serverlog.out("[%s] [WARNING] Sending a large file (over 3MB): %s\n", server->getName().text(), pFile.text());
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
@@ -1997,7 +1997,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	accountIp = inet_addr(accountIpStr.text());
 
 	// Read Client-Type
-	serverlog.out(":: New login:\t");
+	serverlog.out("[%s] :: New login:\t", server->getName().text());
 	type = (1 << pPacket.readGChar());
 	bool getKey = false;
 	switch (type)
@@ -2059,10 +2059,9 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
 
-	//serverlog.out("Key: %d\n", key);
-	serverlog.out("   Version:\t%s\n", version.text());
-	serverlog.out("   Account:\t%s\n", accountName.text());
-	//serverlog.out("Password: %s\n", password.text());
+	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
+	serverlog.out("[%s]    Version:\t%s\n", server->getName().text(), version.text());
+	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2269,7 +2268,7 @@ bool TPlayer::msgPLI_BOMBADD(CString& pPacket)
 	unsigned char power = player_power & 0x03;
 	unsigned char timeToExplode = pPacket.readGUChar();		// How many 0.05 sec increments until it explodes.  Defaults to 55 (2.75 seconds.)
 
-	for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
+	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
 	server->sendPacketToLevel(CString() >> (char)PLO_BOMBADD >> (short)id << pPacket.text() + 1, 0, level, this);
 	return true;
 }
@@ -2838,7 +2837,7 @@ bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
 	unsigned short count = pPacket.readGUShort();
 	if (count != packetCount || packetCount > 10000)
 	{
-		serverlog.out(":: Warning - Player %s had an invalid packet count.\n", accountName.text());
+		serverlog.out("[%s] :: Warning - Player %s had an invalid packet count.\n", server->getName().text(), accountName.text());
 	}
 	packetCount = 0;
 

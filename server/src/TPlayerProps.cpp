@@ -657,7 +657,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				udpport = pPacket.readGInt();
 				if (id != -1 && loaded)
 					server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
-				printf("udp_port: %d\n", udpport);
 				// TODO: udp support.
 			break;
 
