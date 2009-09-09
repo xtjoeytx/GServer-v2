@@ -454,6 +454,18 @@ CString CString::zuncompress(unsigned int buffSize) const
 
 	if ((error = uncompress((Bytef *)buf, (uLongf *)&clen, (const Bytef *)buffer, length())) != Z_OK)
 	{
+		switch (error)
+		{
+			case Z_MEM_ERROR:
+				printf("[zlib] Not enough memory to decompress.\n");
+				break;
+			case Z_BUF_ERROR:
+				printf("[zlib] Not enough room in the output buffer to decompress.\n");
+				break;
+			case Z_DATA_ERROR:
+				printf("[zlib] The input data was corrupted.\n");
+				break;
+		}
 		delete [] buf;
 		return retVal;
 	}
