@@ -615,6 +615,8 @@ void TPlayer::decryptPacket(CString& pPacket)
 			pPacket.zuncompressI();
 		else if (pType == COMPRESS_BZ2)
 			pPacket.bzuncompressI();
+		else if (pType != COMPRESS_UNCOMPRESSED)
+			serverlog.out("[%s] ** [ERROR] Client gave incorrect packet compression type! [%d]\n", server->getName().text(), pType);
 	}
 }
 
