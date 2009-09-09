@@ -73,7 +73,7 @@ void CFileQueue::sendCompress()
 
 	// If the next normal packet is huge, lets "try" to send it.
 	// Everything else should skip because this may throw is way over the limit.
-	if (normalBuffer.front().length() > 0xF000)
+	if (!normalBuffer.empty() && normalBuffer.front().length() > 0xF000)
 	{
 		pSend << normalBuffer.front();
 		normalBuffer.pop();
