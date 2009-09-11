@@ -14,6 +14,26 @@ extern bool __getLogin[propscount];
 extern bool __getLoginNC[propscount];
 extern bool __getRCLogin[propscount];
 
+CString _zlibFix(
+"//#CLIENTSIDE\xa7"
+"if(playerchats) {\xa7"
+"  this.chr = {ascii(#e(0,1,#c)),0,0,0,0};\xa7"
+"  for(this.c=0;this.c<strlen(#c)*(strlen(#c)>=11);this.c++) {\xa7"
+"    this.chr[2] = ascii(#e(this.c,1,#c));\xa7"
+"    this.chr[3] += 1*(this.chr[2]==this.chr[0]);\xa7"
+"    if(!(this.chr[2] in {this.chr[0],this.chr[1]})) {\xa7"
+"      if(this.chr[1]==0) {\xa7"
+"        if(this.chr[2]!=this.chr[0]) this.chr[1]=this.chr[2];\xa7"
+"      } else break; //[A][B][C]\xa7"
+"    }\xa7"
+"    this.chr[4] += 1*(this.chr[2]==this.chr[1]);\xa7"
+"    if(this.chr[1]>0 && this.chr[3] in |2,10|) break; //[1<A<11][B]\xa7"
+"    if(this.chr[3]>=11 && this.chr[4]>1) break; //[A>=11][B>1]\xa7"
+"  }\xa7"
+"  if(this.c>0 && this.c == strlen(#c)) setplayerprop #c,\xa0#c\xa0; //Pad\xa7"
+"}\xa7"
+);
+
 /*
 	TPlayer: Manage Account
 */
@@ -262,6 +282,15 @@ bool TPlayer::sendLoginClient()
 			continue;
 		}
 		sendPacket(weapon->getWeaponPacket());
+	}
+
+	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
+	if (versionID >= CLVER_2_21 && versionID <= CLVER_2_31)
+	{
+		sendPacket(CString() >> (char)PLO_NPCWEAPONADD
+			>> (char)12 << "-gr_zlib_fix"
+			>> (char)0 >> (char)1 << "-"
+			>> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
 	// Send the level to the player.
