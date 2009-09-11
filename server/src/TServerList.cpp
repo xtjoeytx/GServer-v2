@@ -188,10 +188,9 @@ bool TServerList::connectServer()
 	if (sock.connect() != 0)
 		return false;
 
-	server->getServerLog().out(":: %s - Connected.\n", sock.getDescription());
+	server->getServerLog().out("[%s] :: %s - Connected.\n", server->getName().text(), sock.getDescription());
 
 	// Get Some Stuff
-	// TODO: localip server option
 	CString name(settings->getStr("name"));
 	CString desc(settings->getStr("description"));
 	CString language(settings->getStr("language", "English"));
@@ -199,10 +198,14 @@ bool TServerList::connectServer()
 	CString url(settings->getStr("url", "http://www.graal.in/"));
 	CString ip(settings->getStr("serverip", "AUTO"));
 	CString port(settings->getStr("serverport", "14900"));
-	CString localip = sock.getLocalIp();
+	CString localip(settings->getStr("localip"));
+
+	// Grab the local ip.
+	if (localip.isEmpty() || localip == "AUTO")
+		localip = sock.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		server->getServerLog().out(CString() << "** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		server->getServerLog().out(CString() << "[" << server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 
@@ -365,12 +368,12 @@ void TServerList::sendCompress()
 void TServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	server->getServerLog().out("Unknown Serverlist Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text()+1);
+	server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", server->getName().text(), pPacket.readGUChar(), pPacket.text()+1);
 }
 
 void TServerList::msgSVI_VERIACC(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_VERIACC is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_VERIGUILD(CString& pPacket)
@@ -395,23 +398,23 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILESTART is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILEEND is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILEDATA is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	server->getServerLog().out(":: You are running an old version of the Graal Reborn gserver.\n"
-		":: An updated version is available online.\n");
+	server->getServerLog().out("[%s] :: You are running an old version of the Graal Reborn gserver.\n"
+		":: An updated version is available online.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -562,7 +565,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 
 void TServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	server->getServerLog().out("%s\n", pPacket.readString("").text());
+	server->getServerLog().out("[%s] %s\n", server->getName().text(), pPacket.readString("").text());
 }
 
 void TServerList::msgSVI_VERIACC2(CString& pPacket)
@@ -599,17 +602,17 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILESTART2 is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILEDATA2 is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	server->getServerLog().out("** SVI_FILEEND2 is deprecated.  It should not be used.\n");
+	server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", server->getName().text());
 }
 
 void TServerList::msgSVI_PING(CString& pPacket)
@@ -709,7 +712,7 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// Set the file mod time.
 	if (server->getFileSystem()->setModTime(shortName, modTime) == false)
-		server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
+		server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", server->getName().text(), fileName.text());
 
 	// Set the player props.
 	TPlayer* p = server->getPlayer(pid);
