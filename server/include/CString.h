@@ -32,7 +32,8 @@ class CString
 		CString(float pFloat);
 		CString(int pInteger);
 		CString(unsigned int pUInteger);
-		CString(unsigned long int pLUInteger);
+		CString(long pLInteger);
+		CString(unsigned long pLUInteger);
 		CString(long long pLLInteger);
 		CString(unsigned long long pLLUInteger);
 		~CString();
