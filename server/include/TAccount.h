@@ -187,7 +187,8 @@ class TAccount
 		bool isBanned, isLoadOnly;
 		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
-		int accountIp, adminRights;
+		long accountIp;
+		int adminRights;
 
 		// Player-Attributes
 		CString attrList[30], bodyImg, chatMsg, headImg, horseImg, gani, bowImage, language;
