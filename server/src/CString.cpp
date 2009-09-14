@@ -80,7 +80,15 @@ CString::CString(unsigned int pUInteger)
 	*this = tempBuff;
 }
 
-CString::CString(unsigned long int pLUInteger)
+CString::CString(long pLInteger)
+: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
+{
+	char tempBuff[32];
+	sprintf(tempBuff, "%ld", pLInteger);
+	*this = tempBuff;
+}
+
+CString::CString(unsigned long pLUInteger)
 : buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {
 	char tempBuff[32];
