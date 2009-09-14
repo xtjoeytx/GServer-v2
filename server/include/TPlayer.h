@@ -224,6 +224,7 @@ enum
 	PLO_PROFILE					= 75,
 	PLO_RC_SERVEROPTIONSGET		= 76,
 	PLO_RC_FOLDERCONFIGGET		= 77,
+	PLO_NC_CONTROL				= 78,	// HIJACKED BY GR!  No clue as to its official purpose.
 	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}
 	PLO_UNKNOWN82				= 82,	// Answers PLI_UNKNOWN152's request.

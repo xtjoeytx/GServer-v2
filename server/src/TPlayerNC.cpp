@@ -16,14 +16,20 @@
 */
 enum
 {
-	NCREQ_NPCLOG	= 0,
-	NCREQ_WEAPONS	= 1,
-	NCREQ_LEVELS	= 2,
-	NCREQ_SENDPM	= 3,
-	NCREQ_SENDRC	= 4,
-	NCREQ_WEPADD	= 5,
-	NCREQ_WEPDEL	= 6,
-	NCREQ_SETPROPS	= 7,
+	NCI_NPCLOG				= 0,
+	NCI_GETWEAPONS			= 1,
+	NCI_GETLEVELS			= 2,
+	NCI_SENDPM				= 3,
+	NCI_SENDTORC			= 4,
+	NCI_WEAPONADD			= 5,
+	NCI_WEAPONDEL			= 6,
+	NCI_PLAYERPROPSSET		= 7,
+	NCI_PLAYERWEAPONSGET	= 8,
+};
+
+enum
+{
+	NCO_PLAYERWEAPONS		= 0,
 };
 
 /*
@@ -75,21 +81,21 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 	switch (type)
 	{
 		// NPC-Server Log
-		case NCREQ_NPCLOG:
+		case NCI_NPCLOG:
 			npclog.out(pPacket.readString(""));
 			break;
 
 		// Send Weapons to NPC-Server
-		case NCREQ_WEAPONS:
+		case NCI_GETWEAPONS:
 			sendNC_Weapons();
 			break;
 
 		// Send Levels to NPC-Server
-		case NCREQ_LEVELS:
+		case NCI_GETLEVELS:
 			break;
 
 		// Send PM
-		case NCREQ_SENDPM:
+		case NCI_SENDPM:
 		{
 			TPlayer *player = server->getPlayer(pPacket.readGUShort());
 			if (player != 0)
@@ -98,12 +104,12 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		}
 
 		// Send RC
-		case NCREQ_SENDRC:
+		case NCI_SENDTORC:
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << pPacket.readString(""));
 			break;
 
 		// Weapon Add/Update
-		case NCREQ_WEPADD:
+		case NCI_WEAPONADD:
 		{
 			// Packet Data
 			CString weaponName  = pPacket.readChars(pPacket.readGUChar());
@@ -131,17 +137,35 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		}
 
 		// Weapon Delete
-		case NCREQ_WEPDEL:
+		case NCI_WEAPONDEL:
 			server->NC_DelWeapon(pPacket.readString(""));
 			break;
 
 		// Player Props
-		case NCREQ_SETPROPS:
+		case NCI_PLAYERPROPSSET:
 		{
-			TPlayer *pl = server->getPlayer(pPacket.readGShort());
+			TPlayer *pl = server->getPlayer(pPacket.readGUShort());
 			if (pl != 0)
 				pl->setProps(pPacket, true, true, this);
 			break;
+		}
+
+		case NCI_PLAYERWEAPONSGET:
+		{
+			unsigned short pid = pPacket.readGUShort();
+			TPlayer* pl = server->getPlayer(pid);
+			if (pl != 0)
+			{
+				CString w;
+				std::vector<CString>* weapons = pl->getWeaponList();
+				for (std::vector<CString>::iterator i = weapons->begin(); i != weapons->end(); ++i)
+				{
+					if (!w.isEmpty()) w << ",";
+					w << "\"" << i->replaceAll("\"", "\"\"") << "\"";
+				}
+
+				sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)NCO_PLAYERWEAPONS >> (short)pid << w);
+			}
 		}
 	}
 
