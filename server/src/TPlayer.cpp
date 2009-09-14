@@ -3130,10 +3130,13 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		*/
 	}
 
-	// We don't have an NPCserver, so, for now, just pass it along.
-	CString packet;
-	packet >> (char)PLO_TRIGGERACTION >> (short)id << pPacket.text() + 1;
-	server->sendPacketToLevel(packet, 0, level, this);
+	// Send to the level.
+	server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+
+	// Send to the NPC-server.
+	if (server->hasNPCServer())
+		server->getNPCServer()->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1));
+
 	return true;
 }
 

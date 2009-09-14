@@ -161,6 +161,7 @@ class TAccount
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
 		std::vector<CString>* getFolderList()			{ return &folderList; }
+		std::vector<CString>* getWeaponList()			{ return &weaponList; }
 		CString translate(const CString& pKey);
 
 		// set functions
