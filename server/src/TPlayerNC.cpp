@@ -178,16 +178,15 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TPlayer* pl = server->getPlayer(pid);
 			if (pl != 0)
 			{
-				pPacket.remove(0, 2);	// Remove the player id.
-				pPacket.setRead(0);
-				unsigned char id = pPacket.readGUChar();
+				CString packet = pPacket.readString("");
+				unsigned char id = packet.readGUChar();
 
 				// Check if it is a valid packet id.
 				if (id >= (unsigned char)TPLFunc.size())
 					return true;
 
 				// Call the function assigned to the packet id.
-				if (!(*this.*TPLFunc[id])(pPacket))
+				if (!(*this.*TPLFunc[id])(packet))
 					server->deletePlayer(pl);
 			}
 		}
