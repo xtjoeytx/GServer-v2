@@ -186,7 +186,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 					return true;
 
 				// Call the function assigned to the packet id.
-				if (!(*this.*TPLFunc[id])(packet))
+				if (!(*pl.*TPLFunc[id])(packet))
 					server->deletePlayer(pl);
 			}
 		}
