@@ -11,6 +11,9 @@
 #define npclog		server->getNPCLog()
 #define rclog		server->getRCLog()
 
+typedef bool (TPlayer::*TPLSock)(CString&);
+extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
+
 /*
 	NPC-Server Requests
 */
@@ -25,6 +28,7 @@ enum
 	NCI_WEAPONDEL			= 6,
 	NCI_PLAYERPROPSSET		= 7,
 	NCI_PLAYERWEAPONSGET	= 8,
+	NCI_PLAYERPACKET		= 9,
 };
 
 enum
@@ -165,6 +169,26 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 				}
 
 				sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)NCO_PLAYERWEAPONS >> (short)pid << w);
+			}
+		}
+
+		case NCI_PLAYERPACKET:
+		{
+			unsigned short pid = pPacket.readGUChar();
+			TPlayer* pl = server->getPlayer(pid);
+			if (pl != 0)
+			{
+				pPacket.remove(0, 2);	// Remove the player id.
+				pPacket.setRead(0);
+				unsigned char id = pPacket.readGUChar();
+
+				// Check if it is a valid packet id.
+				if (id >= (unsigned char)TPLFunc.size())
+					return true;
+
+				// Call the function assigned to the packet id.
+				if (!(*this.*TPLFunc[id])(pPacket))
+					server->deletePlayer(pl);
 			}
 		}
 	}
