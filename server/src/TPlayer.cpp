@@ -1154,7 +1154,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_X >> (char)(strtoint(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtoint(chatParse[2]) * 2), true, true);
+			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), true, true);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
