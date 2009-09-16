@@ -174,7 +174,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 		case NCI_PLAYERPACKET:
 		{
-			unsigned short pid = pPacket.readGUChar();
+			unsigned short pid = pPacket.readGUShort();
 			TPlayer* pl = server->getPlayer(pid);
 			if (pl != 0)
 			{
