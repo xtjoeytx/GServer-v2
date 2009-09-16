@@ -893,9 +893,10 @@ bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
 
-	if (mServerFlags.find(pFlagName) != mServerFlags.end())
+	std::map<CString, CString>::iterator i;
+	if ((i = mServerFlags.find(pFlagName)) != mServerFlags.end())
 	{
-		mServerFlags.erase(pFlagName);
+		mServerFlags.erase(i);
 		if (pSendToPlayers)
 			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
 		return true;
