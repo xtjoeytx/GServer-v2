@@ -59,6 +59,11 @@
 	typedef unsigned int SOCKET;
 #endif
 
+// Don't send a signal.  Should only affect Linux.
+#ifndef MSG_NOSIGNAL
+	#define MSG_NOSIGNAL 0
+#endif
+
 #include <memory.h>
 #include <stdio.h>
 #include "CSocket.h"
@@ -444,9 +449,9 @@ void CSocket::disconnect()
 	{
 		char buff[ 0x2000 ];
 		int size;
-		while ( true )
+		while (true)
 		{
-			size = recv( properties.handle, buff, 0x2000, 0 );
+			size = recv(properties.handle, buff, 0x2000, 0);
 			if (size == 0) break;
 			if (size == SOCKET_ERROR)
 			{
@@ -561,7 +566,7 @@ int CSocket::sendData(char* data, unsigned int* dsize)
 
 	// Send our data, yay!
 	int sent = 0;
-	if ((sent = ::send(properties.handle, data, *dsize, 0)) == SOCKET_ERROR)
+	if ((sent = ::send(properties.handle, data, *dsize, MSG_NOSIGNAL)) == SOCKET_ERROR)
 	{
 		sent = 0;
 		intError = identifyError();
