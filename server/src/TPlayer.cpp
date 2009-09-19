@@ -288,7 +288,8 @@ packetCount(0), firstLevel(true), invalidPackets(0)
 TPlayer::~TPlayer()
 {
 	// Send all unsent data (for disconnect messages and whatnot).
-	fileQueue.sendCompress();
+	if (playerSock)
+		fileQueue.sendCompress();
 
 	if (id >= 0 && server != 0 && loaded)
 	{
