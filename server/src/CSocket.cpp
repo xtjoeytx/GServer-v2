@@ -558,7 +558,7 @@ int CSocket::sendData(char* data, unsigned int* dsize)
 	int intError = 0;
 
 	// Make sure the socket is connected!
-	if (properties.state == SOCKET_STATE_DISCONNECTED)
+	if (properties.state == SOCKET_STATE_DISCONNECTED || properties.handle == INVALID_SOCKET)
 	{
 		*dsize = 0;
 		return 0;
@@ -606,7 +606,7 @@ char* CSocket::getData(unsigned int* dsize)
 	static char buff[0x8000];	// 32KB.
 
 	// Make sure it is connected!
-	if (properties.state == SOCKET_STATE_DISCONNECTED)
+	if (properties.state == SOCKET_STATE_DISCONNECTED || properties.handle == INVALID_SOCKET)
 	{
 		*dsize = 0;
 		return 0;
@@ -664,7 +664,7 @@ char* CSocket::peekData(unsigned int* dsize)
 	int intError;
 
 	// Make sure it is connected!
-	if (properties.state == SOCKET_STATE_DISCONNECTED)
+	if (properties.state == SOCKET_STATE_DISCONNECTED || properties.handle == INVALID_SOCKET)
 	{
 		*dsize = 0;
 		return 0;
