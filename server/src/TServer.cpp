@@ -49,7 +49,7 @@ TServer::~TServer()
 	cleanup();
 }
 
-int TServer::init(const CString& serverip, const CString& serverport)
+int TServer::init(const CString& serverip, const CString& serverport, const CString& localip)
 {
 	int ret = loadConfigFiles();
 	if (ret) return ret;
@@ -59,6 +59,8 @@ int TServer::init(const CString& serverip, const CString& serverport)
 		settings.addKey("serverip", serverip);
 	if (!serverport.isEmpty())
 		settings.addKey("serverport", serverport);
+	if (!localip.isEmpty())
+		settings.addKey("localip", localip);
 
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
