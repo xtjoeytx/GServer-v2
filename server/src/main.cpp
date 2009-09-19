@@ -87,10 +87,11 @@ int main(int argc, char* argv[])
 			// See if an override was specified.
 			CString serverip = serversettings.getStr(CString() << "server_" << CString(i) << "_ip");
 			CString serverport = serversettings.getStr(CString() << "server_" << CString(i) << "_port");
+			CString localip = serversettings.getStr(CString() << "server_" << CString(i) << "_localip");
 
 			// Initialize the server.
 			serverlog.out(":: Starting server: %s.\n", name.text());
-			if (server->init(serverip, serverport) != 0)
+			if (server->init(serverip, serverport, localip) != 0)
 			{
 				serverlog.out("** [Error] Failed to start server: %s\n", name.text());
 				delete server;
