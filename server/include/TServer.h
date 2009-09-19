@@ -56,7 +56,7 @@ class TServer : public CSocketStub
 		void cleanup();
 		void restart();
 
-		int init(const CString& serverip = "", const CString& serverport = "");
+		int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "");
 		bool doMain();
 
 		// Server Management
