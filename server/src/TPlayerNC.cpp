@@ -29,6 +29,8 @@ enum
 	NCI_PLAYERPROPSSET		= 7,
 	NCI_PLAYERWEAPONSGET	= 8,
 	NCI_PLAYERPACKET		= 9,
+	NCI_PLAYERWEAPONADD		= 10,
+	NCI_PLAYERWEAPONDEL		= 11,
 };
 
 enum
@@ -189,6 +191,22 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 				if (!(*pl.*TPLFunc[id])(packet))
 					server->deletePlayer(pl);
 			}
+		}
+
+		case NCI_PLAYERWEAPONADD:
+		{
+			unsigned short pid = pPacket.readGUShort();
+			TPlayer* pl = server->getPlayer(pid);
+			if (pl != 0)
+				pl->addWeapon(pPacket.readString(""));
+		}
+
+		case NCI_PLAYERWEAPONDEL:
+		{
+			unsigned short pid = pPacket.readGUShort();
+			TPlayer* pl = server->getPlayer(pid);
+			if (pl != 0)
+				pl->deleteWeapon(pPacket.readString(""));
 		}
 	}
 
