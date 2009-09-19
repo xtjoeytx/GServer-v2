@@ -1921,16 +1921,7 @@ bool TPlayer::addWeapon(int defaultWeapon)
 bool TPlayer::addWeapon(const CString& name)
 {
 	TWeapon* weapon = server->getWeapon(name);
-	if (weapon == 0) return false;
-
-	// See if the player already has the weapon.
-	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
-	{
-		weaponList.push_back(weapon->getName());
-		sendPacket(CString() << weapon->getWeaponPacket());
-	}
-
-	return true;
+	return this->addWeapon(weapon);
 }
 
 bool TPlayer::addWeapon(TWeapon* weapon)
@@ -1941,7 +1932,14 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
 		weaponList.push_back(weapon->getName());
+		if (id == -1) return true;
+
+		// Send weapon.
 		sendPacket(CString() << weapon->getWeaponPacket());
+
+		// Send to npc-server.
+		if (server->hasNPCServer())
+			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)1 /*NCO_PLAYERWEAPONADD*/ >> (short)id << weapon->getName());
 	}
 
 	return true;
@@ -1958,9 +1956,7 @@ bool TPlayer::deleteWeapon(int defaultWeapon)
 bool TPlayer::deleteWeapon(const CString& name)
 {
 	TWeapon* weapon = server->getWeapon(name);
-	this->deleteWeapon(weapon);
-
-	return true;
+	return this->deleteWeapon(weapon);
 }
 
 bool TPlayer::deleteWeapon(TWeapon* weapon)
@@ -1970,7 +1966,14 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	// Remove the weapon.
 	if (vecRemove<CString>(weaponList, weapon->getName()))
 	{
+		if (id == -1) return true;
+
+		// Send delete notice.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
+
+		// Send to npc-server.
+		if (server->hasNPCServer())
+			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)2 /*NCO_PLAYERWEAPONDEL*/ >> (short)id << weapon->getName());
 	}
 
 	return true;
