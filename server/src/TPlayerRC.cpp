@@ -71,6 +71,8 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 			hadBow = true;
 	}
 	if (id != -1) sendPacket(outPacket);
+	if (server->hasNPCServer())
+		server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)0 /*NCO_PLAYERWEAPONS*/ >> (short)id);
 
 	// If we never had the bomb or bow, don't let it come back.
 	if (hadBomb == false) allowBomb = false;
@@ -122,12 +124,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		}
 
 		// Send the weapon to the player.
-		TWeapon* weapon = server->getWeapon(wpn);
-		if (weapon)
-		{
-			weaponList.push_back(weapon->getName());
-			if (id != -1) sendPacket(CString() << weapon->getWeaponPacket());
-		}
+		this->addWeapon(wpn);
 	}
 
 	// KILL THE BOMB DEAD

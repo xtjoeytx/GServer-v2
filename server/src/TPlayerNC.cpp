@@ -36,6 +36,8 @@ enum
 enum
 {
 	NCO_PLAYERWEAPONS		= 0,
+	NCO_PLAYERWEAPONADD		= 1,
+	NCO_PLAYERWEAPONDEL		= 2,
 };
 
 /*
