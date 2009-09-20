@@ -31,6 +31,7 @@ enum
 	NCI_PLAYERPACKET		= 9,
 	NCI_PLAYERWEAPONADD		= 10,
 	NCI_PLAYERWEAPONDEL		= 11,
+	NCI_LEVELGET			= 12,
 };
 
 enum
@@ -209,6 +210,24 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TPlayer* pl = server->getPlayer(pid);
 			if (pl != 0)
 				pl->deleteWeapon(pPacket.readString(""));
+		}
+
+		case NCI_LEVELGET:
+		{
+			TLevel* level = TLevel::findLevel(pPacket.readString(""), server);
+			if (level)
+			{
+				// Send the level name.
+				sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
+
+				// Send links, signs, and mod time.
+				sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)level->getModTime());
+				sendPacket(CString() << level->getLinksPacket());
+				sendPacket(CString() << level->getSignsPacket(0));
+
+				// Send NPCs.
+				sendPacket(CString() << level->getNpcsPacket(0, CLVER_NPCSERVER));
+			}
 		}
 	}
 
