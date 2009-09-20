@@ -2059,7 +2059,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	version = pPacket.readChars(8);
 	if (isClient()) versionID = getVersionID(version);
 	else if (isRC()) versionID = getRCVersionID(version);
-	else versionID = 0;
+	else if (isNPCServer()) versionID = getNPCServerVersionID(version);
+	else versionID = CLVER_UNKNOWN;
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
