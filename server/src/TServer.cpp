@@ -804,8 +804,15 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
+
+		// Send to level.
 		TMap* map = getMap(pLevel);
-		sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0), map, pLevel, 0, true);
+		sendPacketToLevel(packet, map, pLevel, 0, true);
+
+		// Send to npc-server.
+		if (mNpcServer != 0)
+			mNpcServer->sendPacket(packet);
 	}
 
 	return newNPC;
@@ -845,7 +852,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer* p = *i;
-		if (!p->isClient()) continue;
+		if (p->isRC()) continue;
 
 		if (p->getVersion() < CLVER_2_1)
 			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
@@ -1104,6 +1111,23 @@ void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
 			player->sendPacket(CString() << pWeapon->getWeaponPacket());
 		}
 	}
+}
+
+bool TServer::NC_SendLevel(TLevel* level)
+{
+	if (level == 0 || mNpcServer == 0) return false;
+
+	// Send the level name.
+	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
+
+	// Send links, signs, and mod time.
+	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)level->getModTime());
+	mNpcServer->sendPacket(CString() << level->getLinksPacket());
+	mNpcServer->sendPacket(CString() << level->getSignsPacket(0));
+
+	// Send NPCs.
+	mNpcServer->sendPacket(CString() << level->getNpcsPacket(0, CLVER_NPCSERVER));
+	return true;
 }
 
 /*
