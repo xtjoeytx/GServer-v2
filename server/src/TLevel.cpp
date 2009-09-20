@@ -281,6 +281,9 @@ bool TLevel::reload()
 			p->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)1 >> (char)PLPROP_STATUS >> (char)(p->getStatus() & ~PLSTATUS_DEAD));
 	}
 
+	// Update the npc-server of the level change.
+	server->NC_SendLevel(this);
+
 	return ret;
 }
 
