@@ -131,6 +131,8 @@ enum
 
 enum
 {
+	CLVER_UNKNOWN,
+	CLVER_NPCSERVER,
 	CLVER_1_25,
 	CLVER_1_27,
 	CLVER_1_28,
@@ -187,14 +189,23 @@ enum
 
 enum
 {
+	RCVER_UNKNOWN,
 	RCVER_1_010,
 	RCVER_1_1,
 	RCVER_2,
 };
 
+enum
+{
+	NSVER_UNKNOWN,
+	NSVER_GENERIC,
+	NSVER_LNXMAD,
+};
+
 int getVersionID(const CString& version);
 const char* getVersionString(const CString& version);
 int getRCVersionID(const CString& version);
+int getNPCServerVersionID(const CString& version);
 char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
 CString removeExtension(const CString& file);
