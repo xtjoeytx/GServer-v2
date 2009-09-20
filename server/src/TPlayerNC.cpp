@@ -214,20 +214,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 		case NCI_LEVELGET:
 		{
-			TLevel* level = TLevel::findLevel(pPacket.readString(""), server);
-			if (level)
-			{
-				// Send the level name.
-				sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
-
-				// Send links, signs, and mod time.
-				sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)level->getModTime());
-				sendPacket(CString() << level->getLinksPacket());
-				sendPacket(CString() << level->getSignsPacket(0));
-
-				// Send NPCs.
-				sendPacket(CString() << level->getNpcsPacket(0, CLVER_NPCSERVER));
-			}
+			server->NC_SendLevel(TLevel::findLevel(pPacket.readString(""), server));
 		}
 	}
 
