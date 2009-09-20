@@ -156,6 +156,7 @@ class TServer : public CSocketStub
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void NC_UpdateWeapon(TWeapon *pWeapon);
+		bool NC_SendLevel(TLevel* level);
 
 	private:
 		bool doTimedEvents();
