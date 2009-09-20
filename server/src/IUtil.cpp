@@ -29,6 +29,8 @@ static const char* colors[] =
 
 static const char* const clientVersions[] =
 {
+	"",				// CLVER_UNKNOWN,
+	"",				// CLVER_NPCSERVER,
 	"SERV009",		// CLVER_1_25,
 	"SERV011",		// CLVER_1_27,
 	"SERV013",		// CLVER_1_28,
@@ -86,14 +88,25 @@ static const char* const clientVersions[] =
 
 static const char* const rcVersions[] =
 {
+	"",				// RCVER_UNKNOWN,
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
 	0
 };
 
+static const char* const npcserverVersions[] =
+{
+	"",				// NSVER_UNKNOWN,
+	"GRNS0000",		// NSVER_GENERIC,
+	"LNX00001",		// NSVER_LNXMAD,
+	0
+};
+
 static const char* const clientVersionString[] =
 {
+	"",			// CLVER_UNKNOWN,
+	"",			// CLVER_NPCSERVER,
 	"1.25",		// CLVER_1_25,
 	"1.27",		// CLVER_1_27,
 	"1.28",		// CLVER_1_28,
@@ -161,7 +174,7 @@ int getVersionID(const CString& version)
 			return i;
 		++i;
 	}
-	return -1;
+	return CLVER_UNKNOWN;
 }
 
 const char* getVersionString(const CString& version)
@@ -185,7 +198,19 @@ int getRCVersionID(const CString& version)
 			return i;
 		++i;
 	}
-	return -1;
+	return RCVER_UNKNOWN;
+}
+
+int getNPCServerVersionID(const CString& version)
+{
+	int i = 0;
+	while (npcserverVersions[i] != 0)
+	{
+		if (version == CString(npcserverVersions[i]))
+			return i;
+		++i;
+	}
+	return NSVER_UNKNOWN;
 }
 
 char getColor(const CString& color)

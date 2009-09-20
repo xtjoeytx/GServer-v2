@@ -119,7 +119,12 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
-		return CString() >> (short)(clientScript.length() > 0x2FDF ? 0x2FDF : clientScript.length()) << clientScript.subString(0, 0x2FDF);
+		{
+			if (clientVersion != CLVER_NPCSERVER)
+				return CString() >> (short)(clientScript.length() > 0x2FDF ? 0x2FDF : clientScript.length()) << clientScript.subString(0, 0x2FDF);
+			else
+				return CString() >> (long long)serverScript.length() << serverScript;
+		}
 
 		case NPCPROP_X:
 		return CString() >> (char)(x * 2);
