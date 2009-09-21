@@ -9,63 +9,6 @@
 //#include "TPlayer.h"		// FOR THE LOVE OF GOD DON'T UNCOMMENT!
 //#include "TServer.h"
 
-/*
-	Enumerators
-*/
-enum
-{
-	SVO_SETNAME			= 0,
-	SVO_SETDESC			= 1,
-	SVO_SETLANG			= 2,
-	SVO_SETVERS			= 3,
-	SVO_SETURL			= 4,
-	SVO_SETIP			= 5,
-	SVO_SETPORT			= 6,
-	SVO_SETPLYR			= 7,
-	SVO_VERIACC			= 8,	// deprecated
-	SVO_VERIGUILD		= 9,
-	SVO_GETFILE			= 10,	// deprecated
-	SVO_NICKNAME		= 11,
-	SVO_GETPROF			= 12,
-	SVO_SETPROF			= 13,
-	SVO_PLYRADD			= 14,
-	SVO_PLYRREM			= 15,
-	SVO_PING			= 16,
-	SVO_VERIACC2		= 17,
-	SVO_SETLOCALIP		= 18,
-	SVO_GETFILE2		= 19,	// deprecated
-	SVO_UPDATEFILE		= 20,
-	SVO_GETFILE3		= 21,
-	SVO_NEWSERVER		= 22,
-	SVO_SERVERHQPASS	= 23,
-	SVO_SERVERHQLEVEL	= 24,
-	SVO_SERVERINFO		= 25,
-};
-
-enum
-{
-	SVI_VERIACC			= 0,	// deprecated
-	SVI_VERIGUILD		= 1,
-	SVI_FILESTART		= 2,	// deprecated
-	SVI_FILEEND			= 3,	// deprecated
-	SVI_FILEDATA		= 4,	// deprecated
-	SVI_VERSIONOLD		= 5,
-	SVI_VERSIONCURRENT	= 6,
-	SVI_PROFILE			= 7,
-	SVI_ERRMSG			= 8,
-	SVI_NULL4			= 9,
-	SVI_NULL5			= 10,
-	SVI_VERIACC2		= 11,
-	SVI_FILESTART2		= 12,	// deprecated
-	SVI_FILEDATA2		= 13,	// deprecated
-	SVI_FILEEND2		= 14,	// deprecated
-	SVI_FILESTART3		= 15,
-	SVI_FILEDATA3		= 16,
-	SVI_FILEEND3		= 17,
-	SVI_SERVERINFO		= 18,
-	SVI_PING			= 99,
-	SVI_RAWDATA			= 100,
-};
 
 enum
 {

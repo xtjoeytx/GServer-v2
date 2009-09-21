@@ -2,6 +2,7 @@
 #include <vector>
 #include <math.h>
 #include "ICommon.h"
+#include "IEnums.h"
 #include "TPlayer.h"
 #include "TAccount.h"
 #include "CSocket.h"
@@ -14,37 +15,6 @@
 typedef bool (TPlayer::*TPLSock)(CString&);
 extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
 
-/*
-	NPC-Server Requests
-*/
-enum
-{
-	NCI_NPCLOG				= 0,
-	NCI_GETWEAPONS			= 1,
-	NCI_GETLEVELS			= 2,
-	NCI_SENDPM				= 3,
-	NCI_SENDTORC			= 4,
-	NCI_WEAPONADD			= 5,
-	NCI_WEAPONDEL			= 6,
-	NCI_PLAYERPROPSSET		= 7,
-	NCI_PLAYERWEAPONSGET	= 8,
-	NCI_PLAYERPACKET		= 9,
-	NCI_PLAYERWEAPONADD		= 10,
-	NCI_PLAYERWEAPONDEL		= 11,
-	NCI_LEVELGET			= 12,
-	NCI_NPCPROPSSET			= 13,
-};
-
-enum
-{
-	NCO_PLAYERWEAPONS		= 0,
-	NCO_PLAYERWEAPONADD		= 1,
-	NCO_PLAYERWEAPONDEL		= 2,
-};
-
-/*
-	NPC-Server Functionality
-*/
 
 // Send Weapons
 void TPlayer::sendNC_Weapons()
@@ -176,6 +146,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 				sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)NCO_PLAYERWEAPONS >> (short)pid << w);
 			}
+			break;
 		}
 
 		case NCI_PLAYERPACKET:
@@ -195,6 +166,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 				if (!(*pl.*TPLFunc[id])(packet))
 					server->deletePlayer(pl);
 			}
+			break;
 		}
 
 		case NCI_PLAYERWEAPONADD:
@@ -203,6 +175,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TPlayer* pl = server->getPlayer(pid);
 			if (pl != 0)
 				pl->addWeapon(pPacket.readString(""));
+			break;
 		}
 
 		case NCI_PLAYERWEAPONDEL:
@@ -211,11 +184,13 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TPlayer* pl = server->getPlayer(pid);
 			if (pl != 0)
 				pl->deleteWeapon(pPacket.readString(""));
+			break;
 		}
 
 		case NCI_LEVELGET:
 		{
 			server->NC_SendLevel(TLevel::findLevel(pPacket.readString(""), server));
+			break;
 		}
 
 		case NCI_NPCPROPSSET:
@@ -226,12 +201,45 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TNPC* npc = server->getNPC(npcId);
 			if (npc == 0) return true;
 
+			// Set the npc's props.
+			npc->setProps(npcProps);
+
+			// Find the level.
 			TLevel* level = npc->getLevel();
 			TMap* map = 0;
 			if (level != 0) map = level->getMap();
 
+			// Send the props.
 			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)npcId << npcProps, map, level, 0, true);
-			npc->setProps(npcProps, CLVER_2_22);
+			break;
+		}
+
+		case NCI_NPCWARP:
+		{
+			unsigned int npcId = pPacket.readGUInt();
+			float loc[] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+			CString levelName = pPacket.readString("");
+
+			TNPC* npc = server->getNPC(npcId);
+			if (npc == 0) return true;
+			if (npc->isLevelNPC()) return true;
+
+			TLevel* levelNew = TLevel::findLevel(levelName, server);
+			if (levelNew == 0) return true;
+			TMap* mapNew = levelNew->getMap();
+
+			// Remove the NPC.
+			TLevel* levelOld = npc->getLevel();
+			if (levelOld)
+			{
+				levelOld->removeNPC(npc);
+				server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)levelOld->getLevelName().length() << levelOld->getLevelName() >> (int)npc->getId());
+			}
+
+			// Set its new level.
+			npc->setLevel(levelNew);
+			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(0), mapNew, levelNew, this, true);
+			break;
 		}
 	}
 
