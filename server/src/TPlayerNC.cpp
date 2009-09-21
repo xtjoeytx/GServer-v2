@@ -227,10 +227,10 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			if (npc == 0) return true;
 
 			TLevel* level = npc->getLevel();
-			TMap* map = level->getMap();
+			TMap* map = 0;
+			if (level != 0) map = level->getMap();
 
-			CString packet = CString() >> (char)PLO_NPCPROPS << pPacket.text() + 1;
-			server->sendPacketToLevel(packet, map, level, 0, true);
+			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS << npcProps, map, level, 0, true);
 			npc->setProps(npcProps, versionID);
 		}
 	}
