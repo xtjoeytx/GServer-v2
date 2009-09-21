@@ -15,7 +15,7 @@ class TServer;
 class CFileSystem
 {
 	public:
-		CFileSystem() : server(0) { }
+		CFileSystem();
 		CFileSystem(TServer* pServer);
 		~CFileSystem();
 		void clear();
