@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include "ICommon.h"
+#include <boost/thread.hpp>
+#include "IEnums.h"
 #include "CSocket.h"
 #include "TServer.h"
 #include "TPlayer.h"
@@ -3233,10 +3235,10 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 		if (ganiData.bytesLeft())
 		{
 			CString backGani = ganiData.readString("\n").trim();
-			sendPacket(CString() >> (char)PLO_EMPTY195 >> (char)gani.length() << gani << "\"SETBACKTO " << backGani << "\"");
+			sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << backGani << "\"");
 			return true;
 		}
 	}
-	sendPacket(CString() >> (char)PLO_EMPTY195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
+	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
 	return true;
 }
