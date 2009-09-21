@@ -32,6 +32,7 @@ enum
 	NCI_PLAYERWEAPONADD		= 10,
 	NCI_PLAYERWEAPONDEL		= 11,
 	NCI_LEVELGET			= 12,
+	NCI_NPCPROPSSET			= 13,
 };
 
 enum
@@ -215,6 +216,22 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		case NCI_LEVELGET:
 		{
 			server->NC_SendLevel(TLevel::findLevel(pPacket.readString(""), server));
+		}
+
+		case NCI_NPCPROPSSET:
+		{
+			unsigned int npcId = pPacket.readGUInt();
+			CString npcProps = pPacket.readString("");
+
+			TNPC* npc = server->getNPC(npcId);
+			if (npc == 0) return true;
+
+			TLevel* level = npc->getLevel();
+			TMap* map = level->getMap();
+
+			CString packet = CString() >> (char)PLO_NPCPROPS << pPacket.text() + 1;
+			server->sendPacketToLevel(packet, map, level, 0, true);
+			npc->setProps(npcProps, versionID);
 		}
 	}
 

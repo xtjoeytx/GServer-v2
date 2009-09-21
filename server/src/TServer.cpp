@@ -300,7 +300,7 @@ bool TServer::doTimedEvents()
 bool TServer::onRecv()
 {
 	// Create socket.
-	CSocket *newSock = playerSock.accept();	// 1 second
+	CSocket *newSock = playerSock.accept();
 	if (newSock == 0)
 		return true;
 

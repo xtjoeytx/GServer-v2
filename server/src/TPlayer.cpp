@@ -2245,6 +2245,8 @@ bool TPlayer::msgPLI_PLAYERPROPS(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 {
+	if (server->hasNPCServer()) return true;
+
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcProps = pPacket.readString("");
 
