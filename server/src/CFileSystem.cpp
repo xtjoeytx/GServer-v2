@@ -25,6 +25,12 @@
 	const char fSep_O = '\\';
 #endif
 
+CFileSystem::CFileSystem()
+: server(0)
+{
+	m_preventChange = new boost::recursive_mutex();
+}
+
 CFileSystem::CFileSystem(TServer* pServer)
 : server(pServer)
 {
