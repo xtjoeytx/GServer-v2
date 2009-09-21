@@ -269,6 +269,13 @@ bool TLevel::reload()
 	// Re-load the level now.
 	bool ret = loadLevel(levelName);
 
+	// Update the npc-server of the level change.
+	if (server->hasNPCServer())
+	{
+		server->NC_SendLevel(this);
+		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
+	}
+
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
 	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
 	float uX = server->getSettings()->getFloat("unstickmex", 30.0f);
@@ -280,9 +287,6 @@ bool TLevel::reload()
 		if (p->getPower() <= 0)
 			p->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)1 >> (char)PLPROP_STATUS >> (char)(p->getStatus() & ~PLSTATUS_DEAD));
 	}
-
-	// Update the npc-server of the level change.
-	server->NC_SendLevel(this);
 
 	return ret;
 }
