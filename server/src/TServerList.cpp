@@ -1,5 +1,6 @@
 #include "IDebug.h"
 #include "ICommon.h"
+#include "IEnums.h"
 #include "IUtil.h"
 #include "CSocket.h"
 #include "CSettings.h"

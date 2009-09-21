@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <map>
 #include "ICommon.h"
+#include <boost/thread.hpp>
 #include "main.h"
 #include "IUtil.h"
 #include "CLog.h"

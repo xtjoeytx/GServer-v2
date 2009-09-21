@@ -3,9 +3,12 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <boost/thread.hpp>
-
 #include "CString.h"
+
+namespace boost
+{
+	class recursive_mutex;
+}
 
 //! Logger class for logging information to a file.
 class CLog
@@ -64,7 +67,7 @@ class CLog
 		FILE* file;
 
 		//! Mutex
-		boost::recursive_mutex m_write;
+		boost::recursive_mutex* m_write;
 };
 
 inline
