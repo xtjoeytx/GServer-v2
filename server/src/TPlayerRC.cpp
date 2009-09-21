@@ -183,7 +183,7 @@ CString TPlayer::getPropsRC()
 
 bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to view the server options.", accountName.text());
 		return true;
@@ -199,9 +199,9 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_SETSERVEROPTIONS))
+	if (isClient() || !hasRight(PLPERM_SETSERVEROPTIONS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the server options.", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the server options.", accountName.text());
 		else rclog.out("%s attempted to set the server options.", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to change the server options.");
 		return true;
@@ -263,7 +263,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to get the folder config.", accountName.text());
 		return true;
@@ -279,9 +279,9 @@ bool TPlayer::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_SETFOLDEROPTIONS))
+	if (isClient() || !hasRight(PLPERM_SETFOLDEROPTIONS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the folder config.", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the folder config.", accountName.text());
 		else rclog.out("%s attempted to set the folder config.", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to change the folder config.");
 		return true;
@@ -338,9 +338,9 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 	TPlayer* p = server->getPlayer(pPacket.readGUShort());
 	if (p == 0) return true;
 
-	if (!isRC() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
+	if (isClient() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set a player's properties.", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set a player's properties.", accountName.text());
 		else rclog.out("%s attempted to set a player's properties.", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to set the properties of " << p->getAccountName());
 		return true;
@@ -359,9 +359,9 @@ bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 	TPlayer* p = server->getPlayer(pPacket.readGUShort());
 	if (p == 0) return true;
 
-	if (!isRC() || !hasRight(PLPERM_DISCONNECT))
+	if (isClient() || !hasRight(PLPERM_DISCONNECT))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to disconnect %s.\n", accountName.text(), p->getAccountName().text());
+		if (isClient()) rclog.out("[Hack] %s attempted to disconnect %s.\n", accountName.text(), p->getAccountName().text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to disconnect players.");
 		return true;
 	}
@@ -376,9 +376,9 @@ bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_UPDATELEVEL))
+	if (isClient() || !hasRight(PLPERM_UPDATELEVEL))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to update levels.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to update levels.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to update levels.");
 		return true;
 	}
@@ -394,9 +394,9 @@ bool TPlayer::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_ADMINMSG))
+	if (isClient() || !hasRight(PLPERM_ADMINMSG))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to send an admin message.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to send an admin message.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to send an admin message.");
 		return true;
 	}
@@ -407,9 +407,9 @@ bool TPlayer::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_ADMINMSG))
+	if (isClient() || !hasRight(PLPERM_ADMINMSG))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to send an admin message.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to send an admin message.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to send an admin message.");
 		return true;
 	}
@@ -441,7 +441,7 @@ bool TPlayer::msgPLI_RC_APPLYREASON(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to view the server flags.\n", accountName.text());
 		return true;
@@ -459,9 +459,9 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_SETSERVERFLAGS))
+	if (isClient() || !hasRight(PLPERM_SETSERVERFLAGS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the server flags.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the server flags.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set the server flags.");
 		return true;
 	}
@@ -510,9 +510,9 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	if (isClient() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to add a new account.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to add a new account.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to create new accounts.");
 		return true;
 	}
@@ -538,9 +538,9 @@ bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	if (isClient() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to delete an account.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to delete an account.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to delete accounts.");
 		return true;
 	}
@@ -576,7 +576,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to view the account listing.\n", accountName.text());
 		return true;
@@ -618,9 +618,9 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 	TPlayer* p = server->getPlayer(pPacket.readGUShort());
 	if (p == 0) return true;
 
-	if (!isRC() || !hasRight(PLPERM_VIEWATTRIBUTES))
+	if (isClient() || !hasRight(PLPERM_VIEWATTRIBUTES))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", accountName.text(), p->getAccountName().text());
+		if (isClient()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", accountName.text(), p->getAccountName().text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view player props.");
 		return true;
 	}
@@ -650,9 +650,9 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 		}
 	}
 
-	if (!isRC() || !hasRight(PLPERM_VIEWATTRIBUTES))
+	if (isClient() || !hasRight(PLPERM_VIEWATTRIBUTES))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", accountName.text(), p->getAccountName().text());
+		if (isClient()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", accountName.text(), p->getAccountName().text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view player props.");
 		if (offline) delete p;
 		return true;
@@ -671,9 +671,9 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || !hasRight(PLPERM_RESETATTRIBUTES))
+	if (isClient() || !hasRight(PLPERM_RESETATTRIBUTES))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to reset the account: %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to reset the account: %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to reset accounts.\n");
 		return true;
 	}
@@ -751,9 +751,9 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 		}
 	}
 
-	if (!isRC() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
+	if (isClient() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set a player's properties.", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set a player's properties.", accountName.text());
 		else rclog.out("%s attempted to set a player's properties.", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " is not authorized to set the properties of " << p->getAccountName());
 		if (offline) delete p;
@@ -785,7 +785,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to view the account: %s\n", accountName.text(), acc.text());
 		return true;
@@ -828,9 +828,9 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	if (isClient() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to edit the account: %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to edit the account: %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to edit accounts.\n");
 		return true;
 	}
@@ -891,7 +891,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 {
-	if (!isRC() && !isNPCServer())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to send a message to RC.\n", accountName.text());
 		return true;
@@ -1062,9 +1062,9 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
 {
-	if (!isRC() || !hasRight(PLPERM_WARPTOPLAYER))
+	if (isClient() || !hasRight(PLPERM_WARPTOPLAYER))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to warp a player.\n", accountName.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to warp a player.\n", accountName.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to warp players.\n");
 		return true;
 	}
@@ -1088,9 +1088,9 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || (acc != accountName && !hasRight(PLPERM_SETRIGHTS)))
+	if (isClient() || (acc != accountName && !hasRight(PLPERM_SETRIGHTS)))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to get the rights of %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to get the rights of %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view that player's rights.");
 		return true;
 	}
@@ -1135,9 +1135,9 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || !hasRight(PLPERM_SETRIGHTS))
+	if (isClient() || !hasRight(PLPERM_SETRIGHTS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the rights of %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the rights of %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player rights.");
 		return true;
 	}
@@ -1224,7 +1224,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to get the comments of %s\n", accountName.text(), acc.text());
 		return true;
@@ -1258,9 +1258,9 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || !hasRight(PLPERM_SETCOMMENTS))
+	if (isClient() || !hasRight(PLPERM_SETCOMMENTS))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the comments of %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the comments of %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player comments.");
 		return true;
 	}
@@ -1305,7 +1305,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to view the ban of %s\n", accountName.text(), acc.text());
 		return true;
@@ -1339,9 +1339,9 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	if (server->getAccountsFileSystem()->find(CString(acc) << ".txt").isEmpty())
 		return true;
 
-	if (!isRC() || !hasRight(PLPERM_BAN))
+	if (isClient() || !hasRight(PLPERM_BAN))
 	{
-		if (!isRC()) rclog.out("[Hack] %s attempted to set the ban of %s\n", accountName.text(), acc.text());
+		if (isClient()) rclog.out("[Hack] %s attempted to set the ban of %s\n", accountName.text(), acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player bans.");
 		return true;
 	}
@@ -1391,7 +1391,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to open the File Browser.\n", accountName.text());
 		return true;
@@ -1475,7 +1475,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 {
-	if (!isRC()) return true;
+	if (isClient()) return true;
 
 	CString newFolder = pPacket.readString("");
 	CString newRights, wildcard;
@@ -1548,7 +1548,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
 {
-	if (!isRC()) return true;
+	if (isClient()) return true;
 	isFtp = false;
 
 	return true;
@@ -1556,7 +1556,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to download a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1575,7 +1575,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1615,7 +1615,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to move a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1641,7 +1641,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to delete a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1669,7 +1669,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to rename a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1699,7 +1699,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s is attempting to upload a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1713,7 +1713,7 @@ bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 {
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", accountName.text());
 		return true;
@@ -1746,17 +1746,11 @@ bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
-	if (!isRC())
-	{
-		rclog.out("[Hack] %s attempted to delete a folder through the File Browser.\n", accountName.text());
-		return true;
-	}
-
 	CString folder = pPacket.readString("");
 	CString folderpath = CString() << server->getServerPath() << folder;
 	CFileSystem::fixPathSeparators(&folderpath);
 	folderpath.removeI(folderpath.length() -1);
-	if (!isRC())
+	if (isClient())
 	{
 		rclog.out("[Hack] %s attempted to delete a folder through the File Browser: %s\n", accountName.text(), folder.text());
 		return true;
