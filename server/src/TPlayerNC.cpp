@@ -115,7 +115,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 		// Send RC
 		case NCI_SENDTORC:
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << pPacket.readString(""));
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pPacket.readString(""));
 			break;
 
 		// Weapon Add/Update
@@ -230,8 +230,8 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TMap* map = 0;
 			if (level != 0) map = level->getMap();
 
-			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS << npcProps, map, level, 0, true);
-			npc->setProps(npcProps, versionID);
+			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)npcId << npcProps, map, level, 0, true);
+			npc->setProps(npcProps, CLVER_2_22);
 		}
 	}
 
