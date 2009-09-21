@@ -106,6 +106,7 @@ class TNPC
 
 		// set functions
 		void setId(unsigned int pId)	{ id = pId; }
+		void setLevel(TLevel* pLevel)	{ level = pLevel; }
 
 		// get functions
 		unsigned int getId() const		{ return id; }
@@ -114,6 +115,8 @@ class TNPC
 		CString getServerScript() const	{ return serverScript; }
 		CString getClientScript() const	{ return clientScript; }
 		time_t getPropModTime(unsigned char pId);
+
+		bool isLevelNPC()				{ return levelNPC; }
 
 	private:
 		bool levelNPC;
