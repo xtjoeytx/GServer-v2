@@ -964,6 +964,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 		return;
 	}
 
+	if (pLevel == 0) return;
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient() || (*i) == pPlayer) continue;
