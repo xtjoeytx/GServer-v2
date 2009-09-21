@@ -2159,6 +2159,9 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			return false;
 		}
 
+		// NPC-Server has full rights.
+		this->adminRights = 0xFFFFF;
+
 		// NPC-Server
 		int port = pPacket.readGShort();
 		server->setNPCServer(this, port);
