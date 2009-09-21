@@ -14,7 +14,7 @@
 	#include <windows.h>
 #endif
 
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include "main.h"
 #undef wait
 

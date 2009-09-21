@@ -17,6 +17,11 @@ struct CKey
 	CString value;
 };
 
+namespace boost
+{
+	class recursive_mutex;
+}
+
 class CSettings
 {
 	public:
@@ -50,19 +55,7 @@ class CSettings
 		std::vector<CKey *> keys;
 		std::vector<CString> strList;
 
-		mutable boost::recursive_mutex m_preventChange;
+		mutable boost::recursive_mutex* m_preventChange;
 };
-
-inline bool CSettings::isOpened() const
-{
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-	return opened;
-}
-
-inline void CSettings::setSeparator(const CString& pSeparator)
-{
-	boost::recursive_mutex::scoped_lock lock(m_preventChange);
-	strSep = pSeparator;
-}
 
 #endif // CSETTINGS_H
