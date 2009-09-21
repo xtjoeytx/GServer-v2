@@ -8,6 +8,7 @@
 */
 CSettings::CSettings()
 {
+	m_preventChange = new boost::recursive_mutex();
 }
 
 CSettings::CSettings(const CString& pStr, const CString& pSeparator)
