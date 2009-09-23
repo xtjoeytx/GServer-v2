@@ -2,8 +2,8 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <map>
-#include "ICommon.h"
 #include <boost/thread.hpp>
+#include "ICommon.h"
 #include "main.h"
 #include "IUtil.h"
 #include "CLog.h"

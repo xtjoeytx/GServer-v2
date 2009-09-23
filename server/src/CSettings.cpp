@@ -1,6 +1,6 @@
 #include "IDebug.h"
-#include "ICommon.h"
 #include <boost/thread.hpp>
+#include "ICommon.h"
 #include "CSettings.h"
 
 /*
