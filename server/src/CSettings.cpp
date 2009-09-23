@@ -1,7 +1,7 @@
 #include "IDebug.h"
 #include "ICommon.h"
-#include "CSettings.h"
 #include <boost/thread.hpp>
+#include "CSettings.h"
 
 /*
 	Constructor - Deconstructor
