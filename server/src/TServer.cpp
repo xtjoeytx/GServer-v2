@@ -25,11 +25,6 @@ TServer::TServer(CString pName)
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
-	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
-	// Don't allow anything to have one of those ids.
-	playerIds.resize(2);
-	npcIds.resize(1);
-
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
 	CFileSystem::fixPathSeparators(&serverpath);
@@ -53,6 +48,12 @@ TServer::~TServer()
 
 int TServer::init(const CString& serverip, const CString& serverport, const CString& localip)
 {
+	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
+	// Don't allow anything to have one of those ids.
+	playerIds.resize(2);
+	npcIds.resize(1);
+
+	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
 
@@ -834,12 +835,8 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
-	// If pLevel == 0, then it is an npc-server NPC.
-	// Not currently supported so just exit.
-	if (pLevel == 0) return false;
-
 	// Remove the NPC from all the lists.
-	if (eraseFromLevel) pLevel->removeNPC(npc);
+	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
 
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
