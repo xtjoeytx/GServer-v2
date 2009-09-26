@@ -41,6 +41,8 @@
 	#define ECONNRESET			WSAECONNRESET
 	#define EHOSTUNREACH		WSAEHOSTUNREACH
 	#define SHUT_WR				SD_SEND
+	#define SHUT_RD				SD_RECEIVE
+	#define SHUT_RDWR			SD_BOTH
 
 	#define sleep Sleep
 	#define snprintf _snprintf
@@ -429,7 +431,7 @@ int CSocket::connect()
 void CSocket::disconnect()
 {
 	// Shut down the socket.
-	if (shutdown(properties.handle, SHUT_WR) == SOCKET_ERROR)
+	if (shutdown(properties.handle, SHUT_RDWR) == SOCKET_ERROR)
 	{
 		int error = identifyError();
 		if (error == ENOTSOCK)
@@ -445,21 +447,20 @@ void CSocket::disconnect()
 	properties.state = SOCKET_STATE_TERMINATING;
 
 	// Gracefully shut it down.
+	/*
 	if (properties.protocol == SOCKET_PROTOCOL_TCP)
 	{
+		int count = 0;
 		char buff[ 0x2000 ];
 		int size;
-		while (true)
+		while (++count < 3)
 		{
 			size = recv(properties.handle, buff, 0x2000, 0);
 			if (size == 0) break;
-			if (size == SOCKET_ERROR)
-			{
-				int e = identifyError();
-				if (!(e == EWOULDBLOCK || e == EINPROGRESS)) break;
-			}
+			if (size == SOCKET_ERROR) break;
 		}
 	}
+	*/
 
 	// Destroy the socket of d00m.
 #if defined(_WIN32) || defined(_WIN64)
