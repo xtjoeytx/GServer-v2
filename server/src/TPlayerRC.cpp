@@ -1592,7 +1592,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		#if defined(_WIN32) || defined(_WIN64)
 		  mkdir(filepath.text());
 		#else
-		  mkdir(filepath.text(), 0);
+		  mkdir(filepath.text(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		#endif
 
 		// Normal file. Save it and display our message.
