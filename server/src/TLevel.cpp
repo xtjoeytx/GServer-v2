@@ -207,12 +207,16 @@ bool TLevel::reload()
 		std::vector<TNPC*>* npcIds = server->getNPCIdList();
 
 		// Remove every NPC in the level.
-		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
+		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end();)
 		{
 			TNPC* n = *i;
-			server->deleteNPC(n, this, false);
+			if (n->isLevelNPC())
+			{
+				server->deleteNPC(n, this, false);
+				i = levelNPCs.erase(i);
+			}
 		}
-		levelNPCs.clear();
+		//levelNPCs.clear();
 	}
 
 	// Delete baddies.
