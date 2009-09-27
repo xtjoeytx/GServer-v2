@@ -44,7 +44,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 
 	// Clear flags
 	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-		outPacket >> (char)PLO_FLAGDEL << i->first << "=" << i->second;
+		outPacket >> (char)PLO_FLAGDEL << i->first << "=" << i->second << "\n";
 
 	// Clear Weapons
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
