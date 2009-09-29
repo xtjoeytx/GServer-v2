@@ -1212,6 +1212,16 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
 
+	// Send the packet to the npc-server.
+	if (server->hasNPCServer())
+	{
+		folders.gtokenizeI();
+		server->getNPCServer()->sendPacket(CString() >> (char)PLO_RC_PLAYERRIGHTSGET >> (char)acc.length() << acc
+			>> (long long)p->getAdminRights()
+			>> (char)p->getAdminIp().length() << p->getAdminIp()
+			>> (short)folders.length() << folders);
+	}
+
 	if (offline) delete p;
 	return true;
 }
