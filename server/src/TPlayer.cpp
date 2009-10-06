@@ -27,6 +27,7 @@ const char* __defaultfiles[] = {
 	"shield?.png", "shield?.gif",
 	"body.png", "body2.png", "body3.png",
 	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
+	"pics1.png",
 };
 
 // Enum per Attr
@@ -311,6 +312,14 @@ TPlayer::~TPlayer()
 		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 		if (isRC() && !accountName.isEmpty())
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
+
+		// Log.
+		if (isClient())
+			serverlog.out("[%s] :: Client disconnected: %s\n", server->getName().text(), accountName.text());
+		else if (isRC())
+			serverlog.out("[%s] :: RC disconnected: %s\n", server->getName().text(), accountName.text());
+		else if (isNPCServer())
+			serverlog.out("[%s] :: NPC-Server disconnected.\n", server->getName().text());
 	}
 
 	// Clean up.
