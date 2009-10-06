@@ -30,9 +30,16 @@ TServer::TServer(CString pName)
 	CFileSystem::fixPathSeparators(&serverpath);
 
 	// Set up the log files.
-	npclog.setFilename(CString() << serverpath << "logs/npclog.txt");
-	rclog.setFilename(CString() << serverpath << "logs/rclog.txt");
-	serverlog.setFilename(CString() << serverpath << "logs/serverlog.txt");
+	CString logpath = serverpath.remove(0, getHomePath().length());
+	CString npcPath = CString() << logpath << "logs/npclog.txt";
+	CString rcPath = CString() << logpath << "logs/rclog.txt";
+	CString serverPath = CString() << logpath << "logs/serverlog.txt";
+	CFileSystem::fixPathSeparators(&npcPath);
+	CFileSystem::fixPathSeparators(&rcPath);
+	CFileSystem::fixPathSeparators(&serverPath);
+	npclog.setFilename(npcPath);
+	rclog.setFilename(rcPath);
+	serverlog.setFilename(serverPath);
 
 	// Announce ourself to other classes.
 	serverlist.setServer(this);
