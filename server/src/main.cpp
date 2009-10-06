@@ -24,7 +24,7 @@ typedef void (*sighandler_t)(int);
 
 std::map<CString, TServer*> serverList;
 std::map<CString, boost::thread*> serverThreads;
-CLog serverlog("logs/serverlog.txt");
+CLog serverlog("startuplog.txt");
 
 // Home path of the gserver.
 CString homepath;
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
 		// Load Server Settings
 		serverlog.out(":: Loading servers.txt... ");
-		CSettings serversettings(CString() << homepath << "servers.txt");
+		CSettings serversettings(CString(homepath) << "servers.txt");
 		if (!serversettings.isOpened())
 		{
 			serverlog.out("FAILED!\n");
@@ -148,7 +148,7 @@ const CString getHomePath()
 
 void shutdownServer(int sig)
 {
-	serverlog.out(":: The server is now shutting down...\n");
+	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
 
 	// Interrupt each thread.  We are shutting down the server.
 	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end(); ++i)
