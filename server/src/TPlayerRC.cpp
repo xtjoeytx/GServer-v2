@@ -79,12 +79,12 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	if (hadBow == false) allowBow = false;
 
 	// Clear the flags and re-populate the flag list.
+	// TODO: npc-server
 	mFlagList.clear();
 	for (int i = pPacket.readGUShort(); i > 0; --i)
 	{
-		unsigned char len = pPacket.readGUChar();
-		if (len != 0)
-			this->setFlag(pPacket.readChars(len));
+		CString flag = pPacket.readChars(pPacket.readGUChar());
+		this->setFlag(flag);
 	}
 	if (id != -1)
 	{
