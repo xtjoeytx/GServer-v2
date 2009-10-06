@@ -88,11 +88,4 @@ void CLog::setEnabled(bool enabled)
 	this->enabled = enabled;
 }
 
-inline
-void CLog::setFilename(const CString& filename)
-{
-	this->filename = filename;
-	this->clear();
-}
-
 #endif

@@ -76,8 +76,19 @@ void CLog::clear()
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "w");
-	if (0 == file)
-		enabled = false;
+	if (0 == file) enabled = false;
+	else enabled = true;
+}
+
+void CLog::setFilename(const CString& filename)
+{
+	boost::recursive_mutex::scoped_lock lock(*m_write);
+	if (file) fclose(file);
+
+	this->filename = filename;
+	file = fopen((homepath + filename).text(), "a");
+	if (0 == file) enabled = false;
+	else enabled = true;
 }
 
 CString getBasePath()
