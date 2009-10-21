@@ -70,20 +70,21 @@ bool __getLogin[propscount] =
 	true,  true,  true,  false, true, // 78-82
 };
 
+// Turn prop 14 off to see the npc-server's profile.
 bool __getLoginNC[propscount] =
 {
-	true,  true,  true,  true,  true,  true, // 0-5
+	true,  true,  true,  true,  true,  true,  // 0-5
 	true,  true,  true,  true,  true,  true,  // 6-11
 	true,  true,  true,  true,  true,  true,  // 12-17
-	true,  true,  true,  true,  true,  true, // 18-23
-	true,  true,  true,  true,  true,  true, // 24-29
+	true,  true,  true,  true,  true,  true,  // 18-23
+	true,  true,  true,  true,  true,  true,  // 24-29
 	true,  false, true,  true,  true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
-	false, true,  true,  true,  true,  true, // 42-47
+	false, true,  true,  true,  true,  true,  // 42-47
 	true,  true,  true,  false, true,  true,  // 48-53
-	true,  true,  true,  true,  true,  true, // 54-59
-	true,  true,  true,  true,  true,  true, // 60-65
-	true,  true,  true,  true,  true,  true, // 66-71
+	true,  true,  true,  true,  true,  true,  // 54-59
+	true,  true,  true,  true,  true,  true,  // 60-65
+	true,  true,  true,  true,  true,  true,  // 66-71
 	true,  true,  true,  true,  false, false, // 72-77
 	true,  true,  true,  false, false, // 78-82
 };
@@ -92,7 +93,7 @@ bool __getRCLogin[propscount] =
 {
 	true,  false, false, false, false, false, // 0-5
 	false, false, false, false, false, true,  // 6-11
-	false, false, true,  false, false, false, // 12-17
+	false, false, false, false, false, false, // 12-17
 	true,  false, true,  false, false, false, // 18-23
 	false, false, false, false, false, false, // 24-29
 	true,  true,  false, false, true,  false, // 30-35
