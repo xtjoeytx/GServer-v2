@@ -1826,6 +1826,8 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		CFileSystem guildFS(server);
 		guildFS.addDir("guilds");
 		CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+		if (guildList.isEmpty())
+			guildList = guildFS.load(CString() << "guild" << guild.replaceAll(" ", "_") << ".txt");
 
 		// Find the account in the guild list.
 		// Will also return -1 if the guild does not exist.
