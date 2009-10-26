@@ -52,6 +52,7 @@ void CFileQueue::addPacket(CString pPacket)
 					// Everything else goes into the normal buffer.
 					default:
 						normalBuffer.push(packet);
+						break;
 				}
 			}
 		}
