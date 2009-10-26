@@ -217,7 +217,7 @@ enum
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}
 	PLO_UNKNOWN82				= 82,	// Answers PLI_UNKNOWN152's request.
 	PLO_LARGEFILESIZE			= 84,
-	PLO_RAWDATA					= 100,
+	PLO_RAWDATA					= 100,	// {100}{INT3 length}
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
 	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}

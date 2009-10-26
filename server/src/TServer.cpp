@@ -937,7 +937,14 @@ bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 		return deleteFlag(pFlagName);
 
 	// set flag
-	mServerFlags[pFlagName] = pFlagValue;
+	if (settings.getBool("cropflags", true))
+	{
+		int totalLength = pFlagName.length() + 1 + pFlagValue.length();
+		int fixedLength = 223 - 1 - pFlagName.length();
+		mServerFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
+	}
+	else mServerFlags[pFlagName] = pFlagValue;
+
 	if (pSendToPlayers)
 		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
 	return true;
