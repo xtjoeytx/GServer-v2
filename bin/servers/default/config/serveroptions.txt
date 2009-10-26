@@ -85,7 +85,14 @@ putnpcenabled = true
 
 # If true, disable the ability.
 dontchangekills = false
+
+# Flag options.
+# If dontaddserverflags is true, any server. flag changes sent by the client are rejected.
+# If cropflags is true, any client and server flags will be cropped to 223 characters.
+#    The flag name and equal sign are INCLUSIVE!
+#    It is recommended to not turn this off unless you know the repercussions of doing so.
 dontaddserverflags = false
+cropflags = true
 
 # If true, idle players are removed after maxnomovement seconds.
 disconnectifnotmoved = true
