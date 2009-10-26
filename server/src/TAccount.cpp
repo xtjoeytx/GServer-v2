@@ -540,7 +540,15 @@ void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
 	if (pFlagValue.isEmpty())
 		mFlagList.erase(pFlagName);
 	else
-		mFlagList[pFlagName] = pFlagValue;
+	{
+		if (server->getSettings()->getBool("cropflags", true))
+		{
+			int totalLength = pFlagName.length() + 1 + pFlagValue.length();
+			int fixedLength = 223 - 1 - pFlagName.length();
+			mFlagList[pFlagName] = pFlagValue.subString(0, fixedLength);
+		}
+		else mFlagList[pFlagName] = pFlagValue;
+	}
 }
 
 /*
