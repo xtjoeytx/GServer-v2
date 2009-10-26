@@ -157,6 +157,7 @@ CString TPlayer::getPropsRC()
 	for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
 	{
 		CString flag = CString() << i->first << "=" << i->second;
+		if (flag.length() > 0xDF) flag.removeI(0xDF);
 		ret >> (char)flag.length() << flag;
 	}
 
@@ -1525,6 +1526,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	fs.addDir(lastFolder);
 
 	// Construct the file list.
+	// file packet: {CHAR name_length}{STRING name}{CHAR rights_length}{STRING rights}{INT5 file_size}{INT5 file_mod_time}
+	// files: {CHAR file_packet_length}{file_packet}[space]{CHAR file_packet_length}{file_packet}[space]
 	CString files;
 	std::vector<CString> wildcards = folderMap[lastFolder].tokenize("\n");
 	for (std::vector<CString>::iterator i = wildcards.begin(); i != wildcards.end(); ++i)
