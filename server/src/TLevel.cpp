@@ -42,8 +42,8 @@ TLevel::~TLevel()
 		{
 			for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 				server->deleteNPC(*i, this, false);
-			levelNPCs.clear();
 		}
+		levelNPCs.clear();
 	}
 
 	// Delete baddies.
