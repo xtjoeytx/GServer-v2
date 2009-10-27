@@ -140,6 +140,11 @@ url = http://www.graal.in/
 serverip = AUTO
 serverport = 14802
 
+# The local IP address of the computer.  Helps you connect to your server if your router can't route on
+# its WAN-side IP address.  Leave it as AUTO unless you know what you are doing.
+# If you have a Linux server, you will want to change this, though.
+localip = AUTO
+
 # Specifies the location of the list server.
 # DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
 listip = listserver.graal.in
