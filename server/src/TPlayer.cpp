@@ -2565,11 +2565,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 		flagName  = flagPacket.readString("=");
 		flagValue = flagPacket.readString("");
 	}
-	else
-	{
-		flagName = flagPacket;
-		flagValue = "1";
-	}
+	else flagName = flagPacket;
 
 	// Add a little hack for our special gr.strings.
 	if (flagName.find("gr.") != -1)
@@ -2646,7 +2642,7 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	}
 
 	// Remove Flag
-	this->setFlag(flagName, "");
+	this->deleteFlag(flagName);
 	return true;
 }
 
