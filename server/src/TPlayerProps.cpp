@@ -389,6 +389,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					shieldImg = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
+					// This fixes an odd bug with the 1.41 client.
+					if (pPacket.bytesLeft() == 0) continue;
+
 					sp -= 10;
 					if (sp < 0) break;
 					len = pPacket.readGUChar();
