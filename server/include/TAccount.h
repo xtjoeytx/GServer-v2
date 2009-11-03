@@ -143,6 +143,7 @@ class TAccount
 		CString getFlag(const CString& pFlagName)	{ return mFlagList[pFlagName]; }
 		void setFlag(CString pFlag);
 		void setFlag(const CString& pFlagName, const CString& pFlagValue);
+		void deleteFlag(const CString& pFlagName);
 
 		// get functions
 		float getX() const				{ return x; }
