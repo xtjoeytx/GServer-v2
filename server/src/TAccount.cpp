@@ -258,7 +258,11 @@ bool TAccount::saveAccount()
 
 	// Flags
 	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-		newFile << "FLAG " << i->first << "=" << i->second << "\r\n";
+	{
+		newFile << "FLAG " << i->first;
+		if (!i->second.isEmpty()) newFile << "=" << i->second;
+		newFile << "\r\n";
+	}
 
 	// Account Settings
 	newFile << "\r\n";
@@ -532,23 +536,23 @@ void TAccount::setFlag(CString pFlag)
 {
 	CString flagName = pFlag.readString("=");
 	CString flagValue = pFlag.readString("");
-	this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue));
+	this->setFlag(flagName, flagValue);
 }
 
 void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
 {
-	if (pFlagValue.isEmpty())
-		mFlagList.erase(pFlagName);
-	else
+	if (server->getSettings()->getBool("cropflags", true))
 	{
-		if (server->getSettings()->getBool("cropflags", true))
-		{
-			int totalLength = pFlagName.length() + 1 + pFlagValue.length();
-			int fixedLength = 223 - 1 - pFlagName.length();
-			mFlagList[pFlagName] = pFlagValue.subString(0, fixedLength);
-		}
-		else mFlagList[pFlagName] = pFlagValue;
+		int totalLength = pFlagName.length() + 1 + pFlagValue.length();
+		int fixedLength = 223 - 1 - pFlagName.length();
+		mFlagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
+	else mFlagList[pFlagName] = pFlagValue;
+}
+
+void TAccount::deleteFlag(const CString& pFlagName)
+{
+	mFlagList.erase(pFlagName);
 }
 
 /*

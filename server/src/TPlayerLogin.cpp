@@ -249,7 +249,10 @@ bool TPlayer::sendLoginClient()
 
 	// Send the player's flags.
 	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+	{
+		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
+		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+	}
 
 	// Send the server's flags to the player.
 	std::map<CString, CString> * serverFlags = server->getServerFlags();
