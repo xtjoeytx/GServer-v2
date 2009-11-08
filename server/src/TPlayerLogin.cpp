@@ -57,7 +57,7 @@ bool TPlayer::sendLogin()
 			// Check and see if we are allowed in.
 			if (!isStaff() || !isAdminIp())
 			{
-				rclog.out("Attempted RC login by %s.\n", accountName.text());
+				rclog.out("[%s] Attempted RC login by %s.\n", server->getName().text(), accountName.text());
 				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 				return false;
 			}
