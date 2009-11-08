@@ -486,18 +486,30 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		bool found = false;
 		for (std::map<CString, CString>::iterator j = oldFlags.begin(); j != oldFlags.end();)
 		{
-			if (*i == *j)
+			// Flag name
+			if (i->first == j->first)
 			{
-				found = true;
 				oldFlags.erase(j++);
-				break;
+
+				// Check to see if the values are the same.
+				// If they are, set found to true so we don't send it to the player again.
+				if (i->second == j->second)
+				{
+					found = true;
+					break;
+				}
 			}
 			else ++j;
 		}
 
 		// If we didn't find a match, this is either a new flag, or a changed flag.
 		if (!found)
-			server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+		{
+			if (i->second.isEmpty())
+				server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first);
+			else
+				server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+		}
 	}
 
 	// If any flags were deleted, tell that to the players now.
