@@ -145,6 +145,7 @@ void TServer::cleanupDeletedPlayers()
 	for (std::vector<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); )
 	{
 		TPlayer* player = *i;
+		if (player == 0) { ++i; continue; }
 
 		// Remove the player from the socket manager.
 		sockManager.unregisterSocket((CSocketStub*)player);
@@ -154,7 +155,7 @@ void TServer::cleanupDeletedPlayers()
 		vecRemove<TPlayer*>(playerList, player);
 
 		// Delete and go to the next player.
-		if (player) delete player;
+		delete player;
 		i = deletedPlayers.erase(i);
 	}
 }
