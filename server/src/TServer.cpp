@@ -142,6 +142,7 @@ void TServer::operator()()
 
 void TServer::cleanupDeletedPlayers()
 {
+	if (deletedPlayers.empty()) return;
 	for (std::vector<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); )
 	{
 		TPlayer* player = *i;
@@ -152,12 +153,19 @@ void TServer::cleanupDeletedPlayers()
 
 		// Get rid of the player now.
 		playerIds[player->getId()] = 0;
-		vecRemove<TPlayer*>(playerList, player);
-
-		// Delete and go to the next player.
-		delete player;
+		for (std::vector<TPlayer*>::iterator j = playerList.begin(); j != playerList.end();)
+		{
+			TPlayer* p = *j;
+			if (p == player)
+			{
+				delete p;
+				j = playerList.erase(j);
+			}
+			else ++j;
+		}
 		i = deletedPlayers.erase(i);
 	}
+	deletedPlayers.clear();
 }
 
 void TServer::cleanup()
@@ -880,7 +888,7 @@ bool TServer::deletePlayer(TPlayer* player)
 	serverlist.remPlayer(player->getAccountName(), player->getType());
 
 	// Add the player to the list of players to delete.
-	if (vecSearch<TPlayer*>(deletedPlayers, player) == -1)
+	if (std::find(deletedPlayers.begin(), deletedPlayers.end(), player) == deletedPlayers.end())
 		deletedPlayers.push_back(player);
 
 	return true;
