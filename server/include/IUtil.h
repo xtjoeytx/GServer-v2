@@ -66,15 +66,17 @@ int vecSearch(std::vector<T>& a, T b)
 template <class T>
 bool vecRemove(std::vector<T>& a, T b)
 {
+	bool found = false;
 	typename std::vector<T>::iterator i;
 	for (i = a.begin(); i != a.end(); ++i)
 	{
 		if (*i == b)
 		{
 			a.erase(i);
-			return true;
+			found = true;
 		}
 	}
+	if (found) return true;
 	return false;
 }
 
