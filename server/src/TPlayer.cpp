@@ -1575,6 +1575,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 			{
 				TPlayer* player = (TPlayer*)*i;
+				if (player == 0) continue;
 				if (player == this || player->getMap() != pmap) continue;
 
 				if (pmap->getType() == MAPTYPE_GMAP)
