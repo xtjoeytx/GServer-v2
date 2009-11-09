@@ -3032,14 +3032,24 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (action.find("gr.addweapon") == 0)
 		{
 			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 2)
-				this->addWeapon((actionParts[1]).trim());
+			if (actionParts.size() != 1)
+			{
+				std::vector<CString>::iterator i = actionParts.begin();
+				for (++i; i != actionParts.end(); ++i)
+					this->addWeapon(i->trim());
+			}
+			return true;
 		}
 		else if (action.find("gr.deleteweapon") == 0)
 		{
 			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 2)
-				this->deleteWeapon((actionParts[1]).trim());
+			if (actionParts.size() != 1)
+			{
+				std::vector<CString>::iterator i = actionParts.begin();
+				for (++i; i != actionParts.end(); ++i)
+					this->deleteWeapon(i->trim());
+			}
+			return true;
 		}
 		else if (action.find("gr.addguildmember") == 0)
 		{
@@ -3065,6 +3075,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
 				}
 			}
+			return true;
 		}
 		else if (action.find("gr.removeguildmember") == 0)
 		{
@@ -3091,6 +3102,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
 				}
 			}
+			return true;
 		}
 		else if (action.find("gr.removeguild") == 0)
 		{
@@ -3107,6 +3119,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 
 				remove(path.text());
 			}
+			return true;
 		}
 		else if (action.find("gr.setguild") == 0)
 		{
@@ -3127,6 +3140,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
 				}
 			}
+			return true;
 		}
 		/*
 		else if (action.find("gr.setgroup") == 0)
@@ -3134,6 +3148,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			std::vector<CString> actionParts = action.tokenize(",");
 			if (actionParts.size() == 2)
 				levelGroup = actionParts[1];
+			return true;
 		}
 		else if (action.find("gr.setlevelgroup") == 0)
 		{
@@ -3147,6 +3162,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					player->setGroup(actionParts[1]);
 				}
 			}
+			return true;
 		}
 		*/
 	}
