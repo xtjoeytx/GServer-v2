@@ -464,7 +464,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			case PLPROP_CURCHAT:
 			{
 				chatMsg = pPacket.readChars(pPacket.readGUChar());
-				lastMovement = time(0);
+				lastChat = time(0);
 
 				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
 				if (!processChat(chatMsg))

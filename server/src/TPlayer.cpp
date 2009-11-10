@@ -477,7 +477,8 @@ bool TPlayer::doTimedEvents()
 	CSettings* settings = server->getSettings();
 	if (settings->getBool("disconnectifnotmoved"))
 	{
-		if ((int)difftime(currTime, lastMovement) > settings->getInt("maxnomovement", 1200))
+		int maxnomovement = settings->getInt("maxnomovement", 1200);
+		if (((int)difftime(currTime, lastMovement) > maxnomovement) && ((int)difftime(currTime, lastChat) > maxnomovement)))
 		{
 			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", server->getName().text(), accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
@@ -1198,10 +1199,10 @@ bool TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
-		processed = true;
-
 		if (chatParse.size() == 2 && chatParse[1] == "me")
 		{
+			processed = true;
+
 			// Check if the player is in a jailed level.
 			std::vector<CString> jailList = server->getSettings()->getStr("jaillevels").tokenize(",");
 			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
