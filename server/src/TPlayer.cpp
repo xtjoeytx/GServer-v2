@@ -478,7 +478,7 @@ bool TPlayer::doTimedEvents()
 	if (settings->getBool("disconnectifnotmoved"))
 	{
 		int maxnomovement = settings->getInt("maxnomovement", 1200);
-		if (((int)difftime(currTime, lastMovement) > maxnomovement) && ((int)difftime(currTime, lastChat) > maxnomovement)))
+		if (((int)difftime(currTime, lastMovement) > maxnomovement) && ((int)difftime(currTime, lastChat) > maxnomovement))
 		{
 			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", server->getName().text(), accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
