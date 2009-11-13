@@ -23,13 +23,14 @@ template <class T, class U>
 bool mapRemove(std::map<T, U>& a, T b)
 {
 	typename std::map<T, U>::iterator i;
-	for (i = a.begin(); i != a.end(); ++i)
+	for (i = a.begin(); i != a.end();)
 	{
 		if (i->first == b)
 		{
-			a.erase(i);
+			a.erase(i++);
 			return true;
 		}
+		else ++i;
 	}
 	return false;
 }
@@ -38,13 +39,14 @@ template <class T, class U>
 bool mapRemove(std::map<T, U>& a, U b)
 {
 	typename std::map<T, U>::iterator i;
-	for (i = a.begin(); i != a.end(); ++i)
+	for (i = a.begin(); i != a.end();)
 	{
 		if (i->second == b)
 		{
-			a.erase(i);
+			a.erase(i++);
 			return true;
 		}
+		else ++i;
 	}
 	return false;
 }
@@ -68,13 +70,14 @@ bool vecRemove(std::vector<T>& a, T b)
 {
 	bool found = false;
 	typename std::vector<T>::iterator i;
-	for (i = a.begin(); i != a.end(); ++i)
+	for (i = a.begin(); i != a.end();)
 	{
 		if (*i == b)
 		{
-			a.erase(i);
+			i = a.erase(i);
 			found = true;
 		}
+		else ++i;
 	}
 	if (found) return true;
 	return false;
