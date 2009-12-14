@@ -1131,9 +1131,19 @@ void TLevel::removeBaddy(char pId)
 
 	// Find the baddy.
 	TLevelBaddy* baddy = levelBaddyIds[pId];
+	if (baddy == 0) return;
 
 	// Erase the baddy.
-	vecRemove(levelBaddies, baddy);
+	if (!levelBaddies.empty())
+	{
+		for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end();)
+		{
+			TLevelBaddy* b = *i;
+			if (b == baddy)
+				i = levelBaddies.erase(i);
+		}
+	}
+	//vecRemove(levelBaddies, baddy);
 	levelBaddyIds[pId] = 0;
 
 	// Clean up.
