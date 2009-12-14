@@ -2509,6 +2509,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 
 bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 {
+	if (level == 0) return true;
 	unsigned char id = pPacket.readGUChar();
 	CString props = pPacket.readString("");
 
