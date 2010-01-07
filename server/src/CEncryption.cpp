@@ -3,24 +3,23 @@
 
 #include "IDebug.h"
 #include "CString.h"
-#include "codec.h"
+#include "CEncryption.h"
 
-const uint32_t codec::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x4A80B38, 0};
+const uint32_t CEncryption::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x4A80B38, 0};
 
-codec::codec()
-: m_key(0), m_offset(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
+CEncryption::CEncryption()
+: m_key(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
 {
 	m_iterator = ITERATOR_START[m_gen];
 }
 
-void codec::reset(uint8_t key) {
+void CEncryption::reset(uint8_t key) {
 	m_key = key;
-	m_offset = 0;
 	m_iterator = ITERATOR_START[m_gen];
 	m_limit = -1;
 }
 
-void codec::decrypt(CString& pBuf) {
+void CEncryption::decrypt(CString& pBuf) {
 	// If we don't have anything, just return.
 	if (pBuf.isEmpty()) return;
 
@@ -49,17 +48,17 @@ void codec::decrypt(CString& pBuf) {
 		{
 			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
-			for (int32_t i = 0; i < pBuf.length(); ++i) {
-				const uint32_t i_ = i + m_offset;
-				if (i_ % 4 == 0) {
+			for (int32_t i = 0; i < pBuf.length(); ++i)
+			{
+				if (i % 4 == 0)
+				{
 					if (m_limit == 0) return;
 					m_iterator *= 0x8088405;
 					m_iterator += m_key;
-					m_offset = 0;
 					if (m_limit > 0) m_limit--;
 				}
 
-				pBuf[i] ^= iterator[i_%4];
+				pBuf[i] ^= iterator[i%4];
 			}
 		}
 		break;
@@ -70,7 +69,7 @@ void codec::decrypt(CString& pBuf) {
 	}
 }
 
-CString codec::encrypt(CString pBuf)
+CString CEncryption::encrypt(CString pBuf)
 {
 	// If we don't have anything, just return.
 	if (pBuf.isEmpty()) return pBuf;
@@ -99,17 +98,17 @@ CString codec::encrypt(CString pBuf)
 		{
 			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
-			for (int32_t i = 0; i < pBuf.length(); ++i) {
-				const uint32_t i_ = i + m_offset;
-				if (i_ % 4 == 0) {
+			for (int32_t i = 0; i < pBuf.length(); ++i)
+			{
+				if (i % 4 == 0)
+				{
 					if (m_limit == 0) return pBuf;
 					m_iterator *= 0x8088405;
 					m_iterator += m_key;
-					m_offset = 0;
 					if (m_limit > 0) m_limit--;
 				}
 
-				pBuf[i] ^= iterator[i_%4];
+				pBuf[i] ^= iterator[i%4];
 			}
 			return pBuf;
 			break;
@@ -118,12 +117,12 @@ CString codec::encrypt(CString pBuf)
 	return pBuf;
 }
 
-void codec::limit(int32_t limit)
+void CEncryption::limit(int32_t limit)
 {
 	m_limit = limit;
 }
 
-int codec::limitFromType(uint8_t type)
+int CEncryption::limitFromType(uint8_t type)
 {
 	// { type, limit, type2, limit2, ... }
 	static int limits[] = { 0x02, 0x0C, 0x04, 0x04, 0x06, 0x04 };

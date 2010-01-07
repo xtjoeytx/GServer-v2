@@ -78,7 +78,7 @@ bool TWeapon::saveWeapon(TServer* server)
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	output << "SCRIPT\r\n";
-	output << mWeaponScript.replaceAll("\xa7", "\r\n") << (mWeaponScript[mWeaponScript.length() - 1] != '\xa7' ? "\r\n" : "");
+	output << mWeaponScript.replaceAll("\xa7", "\r\n");
 	output << "SCRIPTEND\r\n";
 
 	// Save it.
@@ -109,13 +109,10 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 	CString script = removeComments(pCode, "\xa7");
 
 	// Trim Code
-	if (pServer->getSettings()->getBool("trimnpccode", false))
-	{
-		std::vector<CString> code = script.tokenize("\xa7");
-		script.clear();
-		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-			script << (*i).trim() << "\xa7";
-	}
+	std::vector<CString> code = script.tokenize("\xa7");
+	script.clear();
+	for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+		script << (*i).trim() << "\xa7";
 	
 	// Parse Text
 	if (pServer->hasNPCServer())

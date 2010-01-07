@@ -120,8 +120,6 @@ CString TPlayer::getProp(int pPropId)
 				{
 					if (level != 0 && level->isSingleplayer() == true)
 						return CString() >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
-					//else if (level != 0 && level->isGroupLevel() == true)
-					//	return CString() >> (char)(levelName.length() + levelGroup.length()) << levelName << levelGroup;
 					else
 						return CString() >> (char)levelName.length() << levelName;
 				}
