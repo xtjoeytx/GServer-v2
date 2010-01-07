@@ -16,6 +16,8 @@
 /*
 	Define Functions
 */
+bool parseArgs(int argc, char* argv[]);
+void printHelp(const char* pname);
 const CString getHomePath();
 void shutdownServer(int sig);
 

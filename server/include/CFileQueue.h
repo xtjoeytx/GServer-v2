@@ -5,7 +5,7 @@
 #include "ICommon.h"
 #include "CString.h"
 #include "CSocket.h"
-#include "codec.h"
+#include "CEncryption.h"
 
 class CFileQueue
 {
@@ -33,7 +33,7 @@ class CFileQueue
 		CString pack100;
 		CString oBuffer;
 
-		codec out_codec;
+		CEncryption out_codec;
 
 		int bytesSentWithoutFile;
 };
