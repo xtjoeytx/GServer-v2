@@ -104,15 +104,16 @@ clientsidepushpull = true
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
 defaultweapons = true
 
-# If true, it will trim NPC code to try to save space.
-trimnpccode = false
-
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
 maps = 
 
 # List of gmaps to be used by the server.
 gmaps = 
+
+# List of group instanced maps used by the server.
+# Use full filenames, even for gmaps.
+groupmaps = 
 
 # The head used by RCs on the server.
 staffhead = head25.png

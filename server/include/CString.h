@@ -88,7 +88,7 @@ class CString
 		CString guntokenize() const;
 		bool match(const CString& pMask) const;
 		bool comparei(const CString& pOther) const;
-		bool isNumber();
+		bool isNumber() const;
 
 		/* In-Functions */
 		inline CString& escapeI();
@@ -113,6 +113,7 @@ class CString
 		CString& operator<<(const CString& pString);
 		CString& operator+=(const CString& pString);
 		CString operator+(const CString& pString);
+		//operator const char*() const;
 
 		friend bool operator==(const CString& pString1, const CString& pString2);
 		friend bool operator!=(const CString& pString1, const CString& pString2);

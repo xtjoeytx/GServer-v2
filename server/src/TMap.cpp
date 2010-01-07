@@ -6,13 +6,13 @@
 #include "TMap.h"
 #include "TServer.h"
 
-TMap::TMap(int pType)
-: type(pType), modTime(0), width(0), height(0)
+TMap::TMap(int pType, bool pGroupMap)
+: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap)
 {
 }
 
-TMap::TMap(int pType, const CString& pFileName, TServer* pServer)
-: type(pType), modTime(0), width(0), height(0)
+TMap::TMap(int pType, const CString& pFileName, TServer* pServer, bool pGroupMap)
+: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap)
 {
 	load(pFileName, pServer);
 }
