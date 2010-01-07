@@ -12,7 +12,7 @@
 #include "TAccount.h"
 #include "TLevel.h"
 #include "TWeapon.h"
-#include "codec.h"
+#include "CEncryption.h"
 
 
 struct SCachedLevel
@@ -237,7 +237,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Encryption
 		unsigned char key;
-		codec in_codec;
+		CEncryption in_codec;
 
 		// Variables
 		CString version, os;

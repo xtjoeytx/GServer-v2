@@ -270,6 +270,19 @@ bool TServer::doTimedEvents()
 
 			level->doTimedEvents();
 		}
+
+		// Group levels.
+		for (std::map<CString, std::map<CString, TLevel*> >::iterator i = groupLevels.begin(); i != groupLevels.end(); ++i)
+		{
+			for (std::map<CString, TLevel*>::iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
+			{
+				TLevel* level = j->second;
+				if (level == 0)
+					continue;
+
+				level->doTimedEvents();
+			}
+		}
 	}
 
 	// Send NW time.
@@ -311,6 +324,38 @@ bool TServer::doTimedEvents()
 		
 		// Save some stuff.
 		saveWeapons();
+
+		// Check all of the instanced maps to see if the players have left.
+		if (!groupLevels.empty())
+		{
+			for (std::map<CString, std::map<CString, TLevel*> >::iterator i = groupLevels.begin(); i != groupLevels.end();)
+			{
+				// Check if any players are found.
+				bool playersFound = false;
+				for (std::map<CString, TLevel*>::iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
+				{
+					TLevel* level = (*j).second;
+					if (!level->getPlayerList()->empty())
+					{
+						playersFound = true;
+						break;
+					}
+				}
+
+				// If no players are found, delete all the levels in this instance.
+				if (!playersFound)
+				{
+					for (std::map<CString, TLevel*>::iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
+					{
+						TLevel* level = (*j).second;
+						delete level;
+					}
+					(*i).second.clear();
+					groupLevels.erase(i++);
+				}
+				else ++i;
+			}
+		}
 	}
 
 	return true;
@@ -639,6 +684,37 @@ void TServer::loadMaps(bool print)
 
 		if (print) serverlog.out("[%s]        [bigmap] %s\n", name.text(), i->text());
 		mapList.push_back(bigmap);
+	}
+
+	// Load group maps.
+	std::vector<CString> groupmaps = settings.getStr("groupmaps").guntokenize().tokenize("\n");
+	for (std::vector<CString>::iterator i = groupmaps.begin(); i != groupmaps.end(); ++i)
+	{
+		// Check for blank lines.
+		if (*i == "\r") continue;
+
+		// Determine the type of map we are loading.
+		CString ext(getExtension(*i));
+		ext.toLowerI();
+
+		// Create the new map based on the file extension.
+		TMap* gmap = 0;
+		if (ext == ".txt")
+			gmap = new TMap(MAPTYPE_BIGMAP, true);
+		else if (ext == ".gmap")
+			gmap = new TMap(MAPTYPE_GMAP, true);
+		else continue;
+
+		// Load the map.
+		if (gmap->load(CString() << *i, this) == false)
+		{
+			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << *i << "\n");
+			delete gmap;
+			continue;
+		}
+
+		if (print) serverlog.out("[%s]        [group map] %s\n", name.text(), i->text());
+		mapList.push_back(gmap);
 	}
 }
 
@@ -987,9 +1063,12 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	}
 
 	if (pLevel == 0) return;
+	bool _groupMap = pPlayer->getMap()->isGroupMap();
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient() || (*i) == pPlayer) continue;
+		if (_groupMap && pPlayer->getGroup() != (*i)->getGroup()) continue;
+
 		if ((*i)->getMap() == pMap)
 		{
 			int sgmap[2] = {pMap->getLevelX(pLevel->getActualLevelName()), pMap->getLevelY(pLevel->getActualLevelName())};
@@ -1031,7 +1110,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 		return;
 	}
 
-	bool _groupLevel = pPlayer->getLevel()->isGroupLevel();
+	bool _groupMap = pPlayer->getMap()->isGroupMap();
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient()) continue;
@@ -1041,7 +1120,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			continue;
 		}
 		if ((*i)->getLevel() == 0) continue;
-		if (_groupLevel && pPlayer->getGroup() != (*i)->getGroup()) continue;
+		if (_groupMap && pPlayer->getGroup() != (*i)->getGroup()) continue;
 
 		if ((*i)->getMap() == pMap)
 		{

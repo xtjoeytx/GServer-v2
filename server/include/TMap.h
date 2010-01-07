@@ -31,8 +31,8 @@ class TServer;
 class TMap
 {
 	public:
-		TMap(int pType);
-		TMap(int pType, const CString& pFileName, TServer* pServer);
+		TMap(int pType, bool pGroupMap = false);
+		TMap(int pType, const CString& pFileName, TServer* pServer, bool pGroupMap = false);
 
 		bool load(const CString& filename, TServer* pServer);
 
@@ -43,6 +43,7 @@ class TMap
 		int getLevelY(const CString& level) const;
 		CString getMapName() const			{ return mapName; }
 		int getType() const					{ return type; }
+		bool isGroupMap() const				{ return groupMap; }
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
@@ -53,6 +54,7 @@ class TMap
 		time_t modTime;
 		int width;
 		int height;
+		bool groupMap;
 		CString mapImage;
 		CString miniMapImage;
 		//bool loadFullMap;
