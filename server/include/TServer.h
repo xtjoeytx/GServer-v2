@@ -100,7 +100,6 @@ class TServer : public CSocketStub
 
 		std::map<CString, CString>* getServerFlags()	{ return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
-		std::map<CString, TLevel*>* getGroupLevels()	{ return &groupLevels; }
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TPlayer *>* getPlayerIdList()		{ return &playerIds; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
@@ -109,6 +108,7 @@ class TServer : public CSocketStub
 		std::vector<TMap *>* getMapList()				{ return &mapList; }
 		std::vector<CString>* getStatusList()			{ return &statusList; }
 		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
+		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
 		
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const CString& pFlagName);
@@ -177,7 +177,7 @@ class TServer : public CSocketStub
 
 		std::map<CString, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
-		std::map<CString, TLevel*> groupLevels;
+		std::map<CString, std::map<CString, TLevel*> > groupLevels;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;
 		std::vector<TLevel *> levelList;
 		std::vector<TMap *> mapList;

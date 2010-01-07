@@ -25,6 +25,7 @@ typedef void (*sighandler_t)(int);
 std::map<CString, TServer*> serverList;
 std::map<CString, boost::thread*> serverThreads;
 CLog serverlog("startuplog.txt");
+CString overrideServer;
 
 // Home path of the gserver.
 CString homepath;
@@ -32,6 +33,9 @@ static void getBasePath();
 
 int main(int argc, char* argv[])
 {
+	if (parseArgs(argc, argv))
+		return 1;
+
 #if defined(WIN32) || defined(WIN64)
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
@@ -56,52 +60,70 @@ int main(int argc, char* argv[])
 		serverlog.out("Programmed by Joey and Nalin.\n\n");
 
 		// Load Server Settings
-		serverlog.out(":: Loading servers.txt... ");
-		CSettings serversettings(CString(homepath) << "servers.txt");
-		if (!serversettings.isOpened())
+		if (overrideServer.isEmpty())
 		{
-			serverlog.out("FAILED!\n");
-			return ERR_SETTINGS;
-		}
-		serverlog.out("success\n");
-
-		// Make sure we actually have a server.
-		if (serversettings.getInt("servercount", 0) == 0)
-		{
-			serverlog.out("** [Error] Incorrect settings.txt file.  servercount not found.\n");
-			return ERR_SETTINGS;
-		}
-
-		// Load servers.
-		for (int i = 1; i <= serversettings.getInt("servercount"); ++i)
-		{
-			CString name = serversettings.getStr(CString() << "server_" << CString(i), "default");
-			TServer* server = new TServer(name);
-
-			// Make sure doubles don't exist.
-			if (serverList.find(name) != serverList.end())
+			serverlog.out(":: Loading servers.txt... ");
+			CSettings serversettings(CString(homepath) << "servers.txt");
+			if (!serversettings.isOpened())
 			{
-				serverlog.out("-- [WARNING] Server %s already found, deleting old server.\n", name.text());
-				delete serverList[name];
+				serverlog.out("FAILED!\n");
+				return ERR_SETTINGS;
+			}
+			serverlog.out("success\n");
+
+			// Make sure we actually have a server.
+			if (serversettings.getInt("servercount", 0) == 0)
+			{
+				serverlog.out("** [Error] Incorrect settings.txt file.  servercount not found.\n");
+				return ERR_SETTINGS;
 			}
 
-			// See if an override was specified.
-			CString serverip = serversettings.getStr(CString() << "server_" << CString(i) << "_ip");
-			CString serverport = serversettings.getStr(CString() << "server_" << CString(i) << "_port");
-			CString localip = serversettings.getStr(CString() << "server_" << CString(i) << "_localip");
-
-			// Initialize the server.
-			serverlog.out(":: Starting server: %s.\n", name.text());
-			if (server->init(serverip, serverport, localip) != 0)
+			// Load servers.
+			for (int i = 1; i <= serversettings.getInt("servercount"); ++i)
 			{
-				serverlog.out("** [Error] Failed to start server: %s\n", name.text());
+				CString name = serversettings.getStr(CString() << "server_" << CString(i), "default");
+				TServer* server = new TServer(name);
+
+				// Make sure doubles don't exist.
+				if (serverList.find(name) != serverList.end())
+				{
+					serverlog.out("-- [WARNING] Server %s already found, deleting old server.\n", name.text());
+					delete serverList[name];
+				}
+
+				// See if an override was specified.
+				CString serverip = serversettings.getStr(CString() << "server_" << CString(i) << "_ip");
+				CString serverport = serversettings.getStr(CString() << "server_" << CString(i) << "_port");
+				CString localip = serversettings.getStr(CString() << "server_" << CString(i) << "_localip");
+
+				// Initialize the server.
+				serverlog.out(":: Starting server: %s.\n", name.text());
+				if (server->init(serverip, serverport, localip) != 0)
+				{
+					serverlog.out("** [Error] Failed to start server: %s\n", name.text());
+					delete server;
+					continue;
+				}
+				serverList[name] = server;
+
+				// Put the server in its own thread.
+				serverThreads[name] = new boost::thread(boost::ref(*server));
+			}
+		}
+		else
+		{
+			TServer* server = new TServer(overrideServer);
+			serverlog.out(":: Starting server: %s.\n", overrideServer.text());
+			if (server->init() != 0)
+			{
+				serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
 				delete server;
-				continue;
+				return 1;
 			}
-			serverList[name] = server;
+			serverList[overrideServer] = server;
 
 			// Put the server in its own thread.
-			serverThreads[name] = new boost::thread(boost::ref(*server));
+			serverThreads[overrideServer] = new boost::thread(boost::ref(*server));
 		}
 
 		// Announce that the program is now running.
@@ -140,6 +162,69 @@ int main(int argc, char* argv[])
 /*
 	Extra-Cool Functions :D
 */
+
+bool parseArgs(int argc, char* argv[])
+{
+	std::vector<CString> args;
+	for (int i = 0; i < argc; ++i)
+		args.push_back(CString(argv[i]));
+
+	for (std::vector<CString>::iterator i = args.begin(); i != args.end(); ++i)
+	{
+		if ((*i).find("--") == 0)
+		{
+			CString key((*i).subString(2));
+			if (key == "help")
+			{
+				printHelp(args[0].text());
+				return true;
+			}
+			else if (key == "server")
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideServer = *i;
+			}
+		}
+		else if ((*i)[0] == '-')
+		{
+			for (int j = 1; j < (*i).length(); ++j)
+			{
+				if ((*i)[j] == 'h')
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				if ((*i)[j] == 's')
+				{
+					++i;
+					if (i == args.end())
+					{
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideServer = *i;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void printHelp(const char* pname)
+{
+	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
+	serverlog.out("Programmed by Joey and Nalin.\n\n");
+	serverlog.out("USAGE: %s [options]\n\n", pname);
+	serverlog.out("Commands:\n\n");
+	serverlog.out(" -h, --help\t\tPrints out this help text.\n");
+	serverlog.out(" -s, --server DIRECTORY\tDirectory that contains the server.\n");
+	serverlog.out("\n");
+}
 
 const CString getHomePath()
 {
