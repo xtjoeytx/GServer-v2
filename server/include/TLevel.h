@@ -95,14 +95,6 @@ class TLevel
 		//! \param pLevelSingleplayer If true, the level becomes a singleplayer level.
 		void setSingleplayer(bool pLevelSingleplayer)	{ levelSingleplayer = pLevelSingleplayer; }
 
-		//! Gets the group status of the level.
-		//! \return The group status.  If true, the level is a group level.
-		bool isGroupLevel() const						{ return levelGroup; }
-
-		//! Sets the group status of the level.
-		//! \param pLevelGroupLevel If true, the level becomes a group level.
-		void setGroupLevel(bool pLevelGroupLevel)		{ levelGroup = pLevelGroupLevel; }
-
 		//! Adds a board change to the level.
 		//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
 		//! \param pX X location of the top-left tile.
@@ -201,7 +193,6 @@ class TLevel
 		time_t modTime;
 		bool levelSpar;
 		bool levelSingleplayer;
-		bool levelGroup;
 		short levelTiles[4096];
 		CString fileName, fileVersion, actualLevelName, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;
