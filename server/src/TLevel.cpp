@@ -21,7 +21,7 @@ short respawningTiles[] = {
 */
 TLevel::TLevel(TServer* pServer)
 :
-server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelGroup(false)
+server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
 {
 	memset(levelTiles, 0, sizeof(levelTiles));
 
@@ -253,7 +253,6 @@ bool TLevel::reload()
 	// Clean up the rest.
 	levelSpar = false;
 	levelSingleplayer = false;
-	levelGroup = false;
 
 	// Remove all the players from the level.
 	std::vector<TPlayer*> oldplayers = levelPlayerList;
