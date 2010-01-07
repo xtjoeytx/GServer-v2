@@ -10,7 +10,7 @@
 #include "TServer.h"
 #include "TPlayer.h"
 #include "TAccount.h"
-#include "codec.h"
+#include "CEncryption.h"
 
 /*
 	Logs
@@ -1437,31 +1437,39 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 		else level = nl;
 	}
 
-	// Check if the level is a group level.
-	/*
-	if (level->isGroupLevel())
+	// Check if the map is a group map.
+	if (pmap && pmap->isGroupMap())
 	{
-		std::map<CString, TLevel*>* groupLevels = server->getGroupLevelList();
-		TLevel* nl = (*groupLevels)[CString() << level->getActualLevelName() << "." << levelGroup];
 		if (!levelGroup.isEmpty())
 		{
+			// If any players are in this level, they might have been cached on the client.  Solve this by manually removing them.
+			std::vector<TPlayer*>* plist = level->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = plist->begin(); i != plist->end(); ++i)
+			{
+				TPlayer* p = *i;
+				sendPacket(p->getProps(0, 0) >> (char)PLPROP_CURLEVEL >> (char)(level->getLevelName().length() + 1 + 7) << level->getLevelName() << ".unknown" >> (char)PLPROP_X << p->getProp(PLPROP_X) >> (char)PLPROP_Y << p->getProp(PLPROP_Y));
+			}
+
+			// Set the correct level now.
+			std::map<CString, std::map<CString, TLevel*> >* groupLevels = server->getGroupLevels();
+			std::map<CString, TLevel*>& group = (*groupLevels)[levelGroup];
+			TLevel* nl = group[level->getLevelName()];
 			if (nl == 0)
 			{
 				level = level->clone();
-				level->setLevelName(CString() << level->getActualLevelName() << "." << levelGroup);
-				(*groupLevels)[level->getLevelName()] = level;
+				level->setLevelName(level->getLevelName());
+				group[level->getLevelName()] = level;
 			}
 			else level = nl;
 		}
 	}
-	*/
 
 	// Add myself to the level playerlist.
 	level->addPlayer(this);
 	levelName = level->getLevelName();
 
 	// Tell the client their new level.
-	if (modTime == 0 || versionID < CLVER_2_1)// || level->isGroupLevel())
+	if (modTime == 0 || versionID < CLVER_2_1)
 	{
 		if (pmap && pmap->getType() == MAPTYPE_GMAP && versionID >= CLVER_2_1)
 		{
@@ -1498,7 +1506,18 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
-	server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
+	CString minimap = this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y);
+	for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
+	{
+		TPlayer* p = *i;
+		if (p == this)
+			continue;
+		if (pmap && pmap->isGroupMap() && levelGroup != p->getGroup())
+			continue;
+
+		p->sendPacket(minimap);
+	}
+	//server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
 
 	return true;
 }
@@ -1578,6 +1597,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				TPlayer* player = (TPlayer*)*i;
 				if (player == 0) continue;
 				if (player == this || player->getMap() != pmap) continue;
+				if (pmap->isGroupMap() && levelGroup != player->getGroup()) continue;
 
 				if (pmap->getType() == MAPTYPE_GMAP)
 				{
@@ -1734,20 +1754,6 @@ bool TPlayer::leaveLevel(bool resetCache)
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
 	}
-
-	// If we are in a group level and we were the last player inside, delete the level.
-	/*
-	if (level->isGroupLevel() && !levelGroup.isEmpty())
-	{
-		std::map<CString, TLevel*>* groupLevels = server->getGroupLevelList();
-		std::map<CString, TLevel*>::iterator i = groupLevels->find(CString() << levelGroup << level->getLevelName());
-		if (i != groupLevels->end())
-		{
-			delete i->second;
-			groupLevels->erase(i);
-		}
-	}
-	*/
 
 	// Set the level pointer to 0.
 	level = 0;
@@ -3144,7 +3150,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 			return true;
 		}
-		/*
 		else if (action.find("gr.setgroup") == 0)
 		{
 			std::vector<CString> actionParts = action.tokenize(",");
@@ -3166,7 +3171,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 			return true;
 		}
-		*/
 	}
 
 	// Send to the level.

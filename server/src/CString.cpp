@@ -802,7 +802,7 @@ bool CString::comparei(const CString& pOther) const
 	return false;
 }
 
-bool CString::isNumber()
+bool CString::isNumber() const
 {
 	const char numbers[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };
 	char periodCount = 0;
@@ -860,6 +860,11 @@ CString CString::operator+(const CString& pString)
 {
 	return CString(*this) << pString;
 }
+
+//CString::operator const char*() const
+//{
+//	return buffer;
+//}
 
 char& CString::operator[](int pIndex)
 {

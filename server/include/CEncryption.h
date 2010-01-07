@@ -31,9 +31,10 @@ enum
 	COMPRESS_BZ2			= 0x06,
 };
 
-class codec {
+class CEncryption
+{
 	public:
-		codec();
+		CEncryption();
 
 		static const uint32_t ITERATOR_START[6];
 		void reset(uint8_t key);
@@ -46,10 +47,9 @@ class codec {
 
 	private:
 		uint8_t		m_key;
-		uint8_t		m_offset;
 		uint32_t	m_iterator;
 		int32_t		m_limit;
 		uint32_t	m_gen;
 }; 
- 
+
 #endif
