@@ -44,7 +44,11 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 
 	// Clear flags
 	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-		outPacket >> (char)PLO_FLAGDEL << i->first << "=" << i->second << "\n";
+	{
+		outPacket >> (char)PLO_FLAGDEL << i->first;
+		if (!i->second.isEmpty()) outPacket << "=" << i->second;
+		outPacket << "\n";
+	}
 
 	// Clear Weapons
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
@@ -89,7 +93,10 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	if (id != -1)
 	{
 		for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-			sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+		{
+			if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
+			else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+		}
 	}
 
 	// Clear the chests and re-populate the chest list.
@@ -156,7 +163,8 @@ CString TPlayer::getPropsRC()
 	ret >> (short)mFlagList.size();
 	for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
 	{
-		CString flag = CString() << i->first << "=" << i->second;
+		CString flag = CString() << i->first;
+		if (!i->second.isEmpty()) flag << "=" << i->second;
 		if (flag.length() > 0xDF) flag.removeI(0xDF);
 		ret >> (char)flag.length() << flag;
 	}
