@@ -125,8 +125,21 @@ bool CString::load(const CString& pString)
 {
 	char buff[65535];
 	FILE *file = 0;
+
+#if defined(WIN32) || defined(WIN64)
+	// Convert to wchar_t because the filename might be UTF-8 encoded.
+	int wcsize = mbstowcs(0, pString.text(), 0);
+	wchar_t* wcstr = new wchar_t[wcsize + 1];
+	mbstowcs(wcstr, pString.text(), wcsize + 1);
+	file = _wfopen(wcstr, L"rb");
+	delete[] wcstr;
+	if (file == 0)
+		return false;
+#else
+	// Linux uses UTF-8 filenames.
 	if ((file = fopen(pString.text(), "rb")) == 0)
 		return false;
+#endif
 
 	int size = 0;
 	clear();
@@ -139,8 +152,22 @@ bool CString::load(const CString& pString)
 bool CString::save(const CString& pString) const
 {
 	FILE *file = 0;
+
+#if defined(WIN32) || defined(WIN64)
+	// Convert to wchar_t because the filename might be UTF-8 encoded.
+	int wcsize = mbstowcs(0, pString.text(), 0);
+	wchar_t* wcstr = new wchar_t[wcsize + 1];
+	mbstowcs(wcstr, pString.text(), wcsize + 1);
+	file = _wfopen(wcstr, L"wb");
+	delete[] wcstr;
+	if (file == 0)
+		return false;
+#else
+	// Linux uses UTF-8 filenames.
 	if ((file = fopen(pString.text(), "wb")) == 0)
 		return false;
+#endif
+
 	fwrite(buffer, 1, sizec, file);
 	fclose(file);
 	return true;

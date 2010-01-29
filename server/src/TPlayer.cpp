@@ -2089,7 +2089,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	CString password = pPacket.readChars(pPacket.readGUChar());
 
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
-	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version));
+	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
 
 	// Check for available slots on the server.
