@@ -208,7 +208,7 @@ enum
 };
 
 int getVersionID(const CString& version);
-const char* getVersionString(const CString& version);
+const char* getVersionString(const CString& version, const int type);
 int getRCVersionID(const CString& version);
 int getNPCServerVersionID(const CString& version);
 char getColor(const CString& color);
