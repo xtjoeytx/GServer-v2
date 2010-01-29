@@ -1,5 +1,6 @@
 #include "IDebug.h"
 #include "IUtil.h"
+#include "IEnums.h"
 #include "CString.h"
 
 static const char* colors[] =
@@ -162,8 +163,23 @@ static const char* const clientVersionString[] =
 	0
 };
 
-// ncVersions
-// NCL11012
+static const char* const rcVersionString[] =
+{
+	"",				// RCVER_UNKNOWN,
+	"1.010",		// RCVER_1_010,
+	"1.1",			// RCVER_1_1,
+	"2.0",			// RCVER_2,
+	0
+};
+
+static const char* const npcserverVersionString[] =
+{
+	"",				// NSVER_UNKNOWN,
+	"Generic",		// NSVER_GENERIC,
+	"lnxmad",		// NSVER_LNXMAD,
+	0
+};
+
 
 int getVersionID(const CString& version)
 {
@@ -177,13 +193,26 @@ int getVersionID(const CString& version)
 	return CLVER_UNKNOWN;
 }
 
-const char* getVersionString(const CString& version)
+const char* getVersionString(const CString& version, const int type)
 {
 	int i = 0;
 	while (clientVersions[i] != 0)
 	{
-		if (version == CString(clientVersions[i]))
-			return clientVersionString[i];
+		if ((type & PLTYPE_ANYCLIENT) != 0)
+		{
+			if (version == CString(clientVersions[i]))
+				return clientVersionString[i];
+		}
+		else if ((type & PLTYPE_ANYRC) != 0)
+		{
+			if (version == CString(rcVersions[i]))
+				return rcVersionString[i];
+		}
+		else if ((type & PLTYPE_NPCSERVER) != 0)
+		{
+			if (version == CString(npcserverVersions[i]))
+				return npcserverVersionString[i];
+		}
 		++i;
 	}
 	return 0;

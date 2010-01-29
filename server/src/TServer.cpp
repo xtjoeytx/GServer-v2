@@ -548,7 +548,7 @@ void TServer::loadAllowedVersions()
 
 		int loc = (*i).find(":");
 		if (loc == -1)
-			allowedVersionString << getVersionString(*i);
+			allowedVersionString << getVersionString(*i, PLTYPE_ANYCLIENT);
 		else
 		{
 			CString s = (*i).subString(0, loc);
@@ -556,7 +556,7 @@ void TServer::loadAllowedVersions()
 			int vid = getVersionID(s);
 			int vid2 = getVersionID(f);
 			if (vid != -1 && vid2 != -1)
-				allowedVersionString << getVersionString(s) << " - " << getVersionString(f);
+				allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
 		}
 	}
 }
