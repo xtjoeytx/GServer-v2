@@ -319,10 +319,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_CURPOWER:
-				if (ap < 40) break;
-				power = (float)pPacket.readGUChar() / 2.0f;
-				power = clip(power, 0, (float)maxPower);
-			break;
+			{
+				float p = (float)pPacket.readGUChar() / 2.0f;
+				if (ap < 40 && p > power) break;
+				power = clip(p, 0, (float)maxPower);
+				break;
+			}
 
 			case PLPROP_RUPEESCOUNT:
 				if (rc != 0)
