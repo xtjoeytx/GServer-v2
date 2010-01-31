@@ -71,8 +71,7 @@
 #include "CSocket.h"
 
 // Change this to any printf()-like function you use for logging purposes.
-#define SLOG_	if (0) fprintf(stderr,
-#define _SLOG	);
+#define SLOG(x, ...)		if (0) printf(x, ## __VA_ARGS__)
 //////
 
 // Function declarations.
@@ -298,7 +297,7 @@ int CSocket::init(const char* host, const char* port, int protocol)
 	// Make sure a TCP socket is disconnected.
 	if (properties.protocol == SOCKET_PROTOCOL_TCP && properties.state != SOCKET_STATE_DISCONNECTED)
 	{
-		SLOG_ "[ERROR] Socket %s is already connected.\n", properties.description _SLOG
+		SLOG("[ERROR] Socket %s is already connected.\n", properties.description);
 		return SOCKET_ALREADY_CONNECTED;
 	}
 
@@ -333,14 +332,14 @@ int CSocket::init(const char* host, const char* port, int protocol)
 	}
 	else
 	{
-		SLOG_ "[ERROR] Socket %s's properties.type is invalid.\n", properties.description _SLOG
+		SLOG("[ERROR] Socket %s's properties.type is invalid.\n", properties.description);
 		return SOCKET_ERROR;
 	}
 
 	// Check for errors.
 	if (error)
 	{
-		SLOG_ "[CSocket::init] getaddrinfo() returned error: %d\n", error _SLOG
+		SLOG("[CSocket::init] getaddrinfo() returned error: %d\n", error);
 		return SOCKET_HOST_UNKNOWN;
 	}
 	else
@@ -367,7 +366,7 @@ int CSocket::connect()
 	// Make sure the socket was created correctly.
 	if (properties.handle == INVALID_SOCKET)
 	{
-		SLOG_ "[CSocket::connect] socket() returned INVALID_SOCKET.\n" _SLOG
+		SLOG("[CSocket::connect] socket() returned INVALID_SOCKET.\n");
 		properties.state = SOCKET_STATE_DISCONNECTED;
 		return SOCKET_INVALID;
 	}
@@ -382,7 +381,7 @@ int CSocket::connect()
 		// Bind the socket.
 		if (::bind(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
 		{
-			SLOG_ "[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()) _SLOG
+			SLOG("[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
 			return SOCKET_BIND_ERROR;
 		}
@@ -393,7 +392,7 @@ int CSocket::connect()
 	{
 		if (::connect(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
 		{
-			SLOG_ "[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()) _SLOG
+			SLOG("[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
 			return SOCKET_CONNECT_ERROR;
 		}
@@ -405,6 +404,15 @@ int CSocket::connect()
 		int nagle = 1;
 		setsockopt(properties.handle, IPPROTO_TCP, TCP_NODELAY, (char*)&nagle, sizeof(nagle));
 	}
+
+	// Set as non-blocking.
+#if defined(_WIN32) || defined(_WIN64)
+	u_long flags = 1;
+	ioctlsocket(properties.handle, FIONBIO, &flags);
+#else
+	int flags = fcntl(properties.handle, F_GETFL, 0);
+	fcntl(properties.handle, F_SETFL, flags | O_NONBLOCK);
+#endif
 
 	// Socket connected!
 	properties.state = SOCKET_STATE_CONNECTED;
@@ -418,7 +426,7 @@ int CSocket::connect()
 		{
 			if (::listen(properties.handle, SOMAXCONN) == SOCKET_ERROR)
 			{
-				SLOG_ "[CSocket::connect] listen() returned error: %s\n", errorMessage(identifyError()) _SLOG
+				SLOG("[CSocket::connect] listen() returned error: %s\n", errorMessage(identifyError()));
 				disconnect();
 				return SOCKET_CONNECT_ERROR;
 			}
@@ -441,7 +449,7 @@ void CSocket::disconnect()
 			properties.state = SOCKET_STATE_DISCONNECTED;
 			return;
 		}
-		SLOG_ "[CSocket::destroy] shutdown returned error: %s\n", errorMessage(error) _SLOG
+		SLOG("[CSocket::destroy] shutdown returned error: %s\n", errorMessage(error));
 	}
 
 	// Mark socket as terminating.
@@ -467,13 +475,13 @@ void CSocket::disconnect()
 #if defined(_WIN32) || defined(_WIN64)
 	if (closesocket(properties.handle) == SOCKET_ERROR)
 	{
-		SLOG_ "[CSocket::destroy] closesocket " _SLOG
+		SLOG("[CSocket::destroy] closesocket ");
 #else
 	if (close(properties.handle) == SOCKET_ERROR)
 	{
-		SLOG_ "[CSocket::destroy] close " _SLOG
+		SLOG("[CSocket::destroy] close ");
 #endif
-		SLOG_ "returned error: %s\n", errorMessage(identifyError()) _SLOG
+		SLOG("returned error: %s\n", errorMessage(identifyError()));
 	}
 
 	// Reset the socket state.
@@ -531,7 +539,7 @@ CSocket* CSocket::accept()
 	{
 		int error = identifyError();
 		if (error == EWOULDBLOCK || error == EINPROGRESS) return 0;
-		SLOG_ "[CSocket::accept] accept() returned error: %s\n", errorMessage(error) _SLOG
+		SLOG("[CSocket::accept] accept() returned error: %s\n", errorMessage(error));
 		return 0;
 	}
 
@@ -547,6 +555,22 @@ CSocket* CSocket::accept()
 	props.handle = handle;
 	sock->setProperties(props);
 	sock->setDescription(sock->getRemoteIp());
+
+	// Disable the nagle algorithm.
+	if (props.protocol == SOCKET_PROTOCOL_TCP)
+	{
+		int nagle = 1;
+		setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, (char*)&nagle, sizeof(nagle));
+	}
+
+	// Set as non-blocking.
+#if defined(_WIN32) || defined(_WIN64)
+	u_long flags = 1;
+	ioctlsocket(handle, FIONBIO, &flags);
+#else
+	int flags = fcntl(properties.handle, F_GETFL, 0);
+	fcntl(handle, F_SETFL, flags | O_NONBLOCK);
+#endif
 
 	// Accept the connection by calling getsockopt.
 	int type, typeSize = sizeof(int);
@@ -582,7 +606,7 @@ int CSocket::sendData(char* data, unsigned int* dsize)
 			case ECONNRESET:
 			case ETIMEDOUT:
 				// Destroy the bad socket and create a new one.
-				SLOG_ "%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError) _SLOG
+				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
 				return 0;
 				break;
@@ -639,7 +663,7 @@ char* CSocket::getData(unsigned int* dsize)
 			case ETIMEDOUT:
 			case ESHUTDOWN:
 				// Destroy the bad socket and create a new one.
-				SLOG_ "%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError) _SLOG
+				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
 				break;
 			default:
@@ -698,7 +722,7 @@ char* CSocket::peekData(unsigned int* dsize)
 			case ETIMEDOUT:
 			case ESHUTDOWN:
 				// Destroy the bad socket and create a new one.
-				SLOG_ "%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError) _SLOG
+				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
 				break;
 			default:
@@ -822,13 +846,13 @@ int CSocket::socketSystemInit()
 	err = WSAStartup(wVersionRequested, &wsaData);
 	if (err != 0)
 	{
-		SLOG_ "Failed to initialize winsocks!\n" _SLOG
+		SLOG("Failed to initialize winsocks!\n");
 		return 1;
 	}
 
 	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2)
 	{
-		SLOG_ "Failed to initialize winsocks!  Wasn't version 2.2!\n" _SLOG
+		SLOG("Failed to initialize winsocks!  Wasn't version 2.2!\n");
 		WSACleanup();
 		return 1;
 	}
@@ -867,7 +891,7 @@ void CSocket::socketSystemDestroy()
 	while (intTimeCheck++ < 3)
 	{
 		if (WSACleanup() == SOCKET_ERROR)
-			SLOG_ "[CSocket::socketSystemDestroy] WSACleanup() returned error: %s\n", errorMessage(identifyError()) _SLOG
+			SLOG("[CSocket::socketSystemDestroy] WSACleanup() returned error: %s\n", errorMessage(identifyError()));
 		sleep(1000);
 	}
 #endif
@@ -956,5 +980,4 @@ int identifyError(int source)
 #endif
 }
 
-#undef SLOG_
-#undef _SLOG
+#undef SLOG
