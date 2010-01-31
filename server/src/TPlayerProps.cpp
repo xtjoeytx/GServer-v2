@@ -313,9 +313,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				maxPower = pPacket.readGUChar();
 				maxPower = clip(maxPower, 0, settings->getInt("heartlimit", 20));
 				maxPower = clip(maxPower, 0, 20);
+				power = maxPower;
+				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+				selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
 			break;
 
 			case PLPROP_CURPOWER:
+				if (ap < 40) break;
 				power = (float)pPacket.readGUChar() / 2.0f;
 				power = clip(power, 0, (float)maxPower);
 			break;
