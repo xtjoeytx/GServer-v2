@@ -1,4 +1,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
-    v0.1.0
+    v2.1.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Bugs fixed:
+- Fixed modifying player flags via RC.
+- The gserver will now correctly display RC and npcserver version strings on connect.
+- The gserver no longer mangles UTF-8 filenames on Windows.
+- Players can no longer gain hearts if they have low AP.
+
+Changes:
+- GServer uses non-blocking sockets.  Hopefully this will fix problems where the server can block on a send() call to a slow client.
+- zlib and libbz2 are now packaged with the server gserver source code.  It makes it easier to compile.
