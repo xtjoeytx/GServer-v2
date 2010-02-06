@@ -8,21 +8,18 @@ package.files =
 {
     matchfiles(rootdir.."server/src/*.cpp"),
     matchfiles(rootdir.."server/include/*.h"),
+	matchfiles(rootdir.."dependencies/bzip2/*.c"),
+	matchfiles(rootdir.."dependencies/bzip2/*.h"),
+	matchfiles(rootdir.."dependencies/zlib/*.c"),
+	matchfiles(rootdir.."dependencies/zlib/*.h"),
 }
 
--- Windows library includes.
-if (windows) then
-	include(rootdir.."dependencies/include")
-	librarypath(rootdir.."dependencies")
-end
+-- Library includes.
+include(rootdir.."dependencies/bzip2")
+include(rootdir.."dependencies/zlib")
 
 -- Libraries to link to.
 if (linux or target == "cb-gcc" or target == "gnu") then
-	library("z")
-	library("bz2")
 	library("boost_thread")
-else
-	library("libz")
-	library("libbz2")
 end
 if (windows) then library("ws2_32") end
