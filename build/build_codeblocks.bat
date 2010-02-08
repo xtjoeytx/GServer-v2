@@ -1,2 +1,2 @@
-premake --target cb-gcc
+premake4.exe codeblocks
 pause
