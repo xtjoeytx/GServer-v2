@@ -131,6 +131,7 @@ bool CSocketManager::update(long sec, long usec)
 				{
 					// Failed.  Add to the list of failed stubs and continue.
 					failedStubs.push_back(stub);
+					*i = 0;
 					continue;
 				}
 			}
@@ -140,6 +141,7 @@ bool CSocketManager::update(long sec, long usec)
 				{
 					// Failed.  Add to the list of failed stubs and continue.
 					failedStubs.push_back(stub);
+					*i = 0;
 					continue;
 				}
 			}
