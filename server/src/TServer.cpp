@@ -148,9 +148,6 @@ void TServer::cleanupDeletedPlayers()
 		TPlayer* player = *i;
 		if (player == 0) { ++i; continue; }
 
-		// Remove the player from the socket manager.
-		sockManager.unregisterSocket((CSocketStub*)player);
-
 		// Get rid of the player now.
 		playerIds[player->getId()] = 0;
 		for (std::vector<TPlayer*>::iterator j = playerList.begin(); j != playerList.end();)
