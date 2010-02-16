@@ -61,8 +61,13 @@ bool CSettings::loadFile(const CString& pStr)
 	strList = fileData.tokenize("\n");
 	for (unsigned int i = 0; i < strList.size(); i++)
 	{
-		// Skip Comments
-		if (strList[i][0] == '#' || strList[i].find(strSep) == -1)
+		// Strip out comments.
+		int comment_pos = strList[i].find("#");
+		if (comment_pos != -1)
+			strList[i].removeI(comment_pos);
+
+		// Skip invalid or blank lines.
+		if (strList[i].isEmpty() || strList[i].find(strSep) == -1)
 			continue;
 
 		// Tokenize Line && Trim && Lowercase Key Name
