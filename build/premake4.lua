@@ -1,6 +1,7 @@
 solution "gserver2"
 	configurations { "Debug", "Release" }
 	platforms { "native", "x32", "x64" }
+	flags { "Symbols", "Unicode", "StaticRuntime" }
 	
 	project "gserver2"
 		kind "ConsoleApp"
@@ -9,7 +10,6 @@ solution "gserver2"
 		location "projects"
 		targetdir "../bin"
 		targetname "gserver2"
-		flags { "Symbols", "Unicode" }
 		files { "../server/include/**", "../server/src/**" }
 		includedirs { "../server/include" }
 		
@@ -40,4 +40,4 @@ solution "gserver2"
 		-- Release options.
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "StaticRuntime", "OptimizeSpeed" }
+			flags { "OptimizeSpeed" }
