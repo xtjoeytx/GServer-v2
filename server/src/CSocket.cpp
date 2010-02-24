@@ -98,6 +98,7 @@ bool CSocketManager::update(long sec, long usec)
 	std::vector<CSocketStub*> failedStubs;
 
 	// Put all the socket handles into the set.
+	SOCKET max = 0;
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
@@ -109,11 +110,13 @@ bool CSocketManager::update(long sec, long usec)
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
+			if (sock > max) max = sock;
 			if (stub->canRecv()) FD_SET(sock, &set_read);
 			if (stub->canSend()) FD_SET(sock, &set_write);
 		}
 		++i;
 	}
+	fd_max = max;
 
 	// Do the select.
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
@@ -227,25 +230,19 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 	SOCKET sock = stub->getSocketHandle();
 
 	bool found = false;
-	bool findNewMax = false;
-	if (sock == fd_max) findNewMax = true;
-	SOCKET max = 0;
-
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
 		SOCKET sock2 = (*i)->getSocketHandle();
-		if (findNewMax && sock2 != sock && sock2 > max) max = sock2;
 		if (sock2 == sock)
 		{
 			(*i)->onUnregister();
 			i = stubList.erase(i);
 			found = true;
-			if (!findNewMax) break;
+			break;
 		}
 		else ++i;
 	}
 
-	if (findNewMax) fd_max = max;
 	return found;
 }
 

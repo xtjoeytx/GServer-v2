@@ -538,7 +538,7 @@ bool TPlayer::doTimedEvents()
 
 void TPlayer::disconnect()
 {
-	server->deletePlayer(this);
+	server->getSocketManager()->unregisterSocket(this);
 }
 
 bool TPlayer::parsePacket(CString& pPacket)
