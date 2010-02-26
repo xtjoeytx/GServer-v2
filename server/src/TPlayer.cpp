@@ -2567,43 +2567,54 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 
 bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 {
+	CSettings* settings = server->getSettings();
 	CString flagPacket = pPacket.readString("");
 	CString flagName, flagValue;
 	if (flagPacket.find("=") != -1)
 	{
 		flagName  = flagPacket.readString("=");
 		flagValue = flagPacket.readString("");
+
+		// If the value is empty, delete the flag instead.
+		if (flagValue.isEmpty())
+		{
+			pPacket.setRead(1);	// Don't let us read the packet ID.
+			return msgPLI_FLAGDEL(pPacket);
+		}
 	}
 	else flagName = flagPacket;
 
 	// Add a little hack for our special gr.strings.
 	if (flagName.find("gr.") != -1)
 	{
-		// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
-		// movement amongst pre-2.3 clients.
-		if (flagName == "gr.x")
+		if (settings->getBool("flaghack_movement", true) == true)
 		{
-			if (versionID >= CLVER_2_3) return true;
-			float pos = (float)atof(flagValue.text());
-			if (pos != x)
-				grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
-			return true;
-		}
-		else if (flagName == "gr.y")
-		{
-			if (versionID >= CLVER_2_3) return true;
-			float pos = (float)atof(flagValue.text());
-			if (pos != y)
-				grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
-			return true;
-		}
-		else if (flagName == "gr.z")
-		{
-			if (versionID >= CLVER_2_3) return true;
-			float pos = (float)atof(flagValue.text());
-			if (pos != z)
-				grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 25.0f) * 2.0f) << "\n";
-			return true;
+			// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
+			// movement amongst pre-2.3 clients.
+			if (flagName == "gr.x")
+			{
+				if (versionID >= CLVER_2_3) return true;
+				float pos = (float)atof(flagValue.text());
+				if (pos != x)
+					grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
+				return true;
+			}
+			else if (flagName == "gr.y")
+			{
+				if (versionID >= CLVER_2_3) return true;
+				float pos = (float)atof(flagValue.text());
+				if (pos != y)
+					grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
+				return true;
+			}
+			else if (flagName == "gr.z")
+			{
+				if (versionID >= CLVER_2_3) return true;
+				float pos = (float)atof(flagValue.text());
+				if (pos != z)
+					grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 25.0f) * 2.0f) << "\n";
+				return true;
+			}
 		}
 	}
 
@@ -3034,142 +3045,210 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	unsigned int npcId = pPacket.readGUInt();
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	CString action = pPacket.readString("").trim();
+	CSettings* settings = server->getSettings();
 
 	if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
-		if (action.find("gr.addweapon") == 0)
+		if (settings->getBool("triggerhack_weapons", false) == true)
 		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() != 1)
+			if (action.find("gr.addweapon") == 0)
 			{
-				std::vector<CString>::iterator i = actionParts.begin();
-				for (++i; i != actionParts.end(); ++i)
-					this->addWeapon(i->trim());
-			}
-			return true;
-		}
-		else if (action.find("gr.deleteweapon") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() != 1)
-			{
-				std::vector<CString>::iterator i = actionParts.begin();
-				for (++i; i != actionParts.end(); ++i)
-					this->deleteWeapon(i->trim());
-			}
-			return true;
-		}
-		else if (action.find("gr.addguildmember") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			CString guild, account, nick;
-			if (actionParts.size() > 1) guild = actionParts[1];
-			if (actionParts.size() > 2) account = actionParts[2];
-			if (actionParts.size() > 3) nick = actionParts[3];
-
-			if (!guild.isEmpty() && !account.isEmpty())
-			{
-				// Read the guild list.
-				CFileSystem guildFS(server);
-				guildFS.addDir("guilds");
-				CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-
-				if (guildList.find(account) == -1)
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() != 1)
 				{
-					if (guildList[guildList.length() - 1] != '\n') guildList << "\n";
-					guildList << account;
-					if (!nick.isEmpty()) guildList << ":" << nick;
-
-					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+					std::vector<CString>::iterator i = actionParts.begin();
+					for (++i; i != actionParts.end(); ++i)
+						this->addWeapon(i->trim());
 				}
+				return true;
 			}
-			return true;
-		}
-		else if (action.find("gr.removeguildmember") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			CString guild, account;
-			if (actionParts.size() > 1) guild = actionParts[1];
-			if (actionParts.size() > 2) account = actionParts[2];
-
-			if (!guild.isEmpty() && !account.isEmpty())
+			else if (action.find("gr.deleteweapon") == 0)
 			{
-				// Read the guild list.
-				CFileSystem guildFS(server);
-				guildFS.addDir("guilds");
-				CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-
-				if (guildList.find(account) != -1)
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() != 1)
 				{
-					int pos = guildList.find(account);
-					int length = guildList.find("\n", pos) - pos;
-					if (length < 0) length = -1;
-					else ++length;
-
-					guildList.removeI(pos, length);
-					guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+					std::vector<CString>::iterator i = actionParts.begin();
+					for (++i; i != actionParts.end(); ++i)
+						this->deleteWeapon(i->trim());
 				}
+				return true;
 			}
-			return true;
 		}
-		else if (action.find("gr.removeguild") == 0)
+
+		if (settings->getBool("triggerhack_guilds", false) == true)
 		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			CString guild;
-			if (actionParts.size() > 1) guild = actionParts[1];
-
-			if (!guild.isEmpty())
+			if (action.find("gr.addguildmember") == 0)
 			{
-				// Read the guild list.
-				CFileSystem guildFS(server);
-				guildFS.addDir("guilds");
-				CString path = guildFS.find(CString() << "guild" << guild << ".txt");
+				std::vector<CString> actionParts = action.tokenize(",");
+				CString guild, account, nick;
+				if (actionParts.size() > 1) guild = actionParts[1];
+				if (actionParts.size() > 2) account = actionParts[2];
+				if (actionParts.size() > 3) nick = actionParts[3];
 
-				remove(path.text());
-			}
-			return true;
-		}
-		else if (action.find("gr.setguild") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			CString guild, account;
-			if (actionParts.size() > 1) guild = actionParts[1];
-			if (actionParts.size() > 2) account = actionParts[2];
-
-			if (!guild.isEmpty())
-			{
-				TPlayer* p = this;
-				if (!account.isEmpty()) p = server->getPlayer(account, false);
-				if (p)
+				if (!guild.isEmpty() && !account.isEmpty())
 				{
-					CString nick = p->getNickname();
-					p->setNick(CString() << nick.readString("(").trim() << " (" << guild << ")", true);
-					p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
-					server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
+					// Read the guild list.
+					CFileSystem guildFS(server);
+					guildFS.addDir("guilds");
+					CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+
+					if (guildList.find(account) == -1)
+					{
+						if (guildList[guildList.length() - 1] != '\n') guildList << "\n";
+						guildList << account;
+						if (!nick.isEmpty()) guildList << ":" << nick;
+
+						guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+					}
 				}
+				return true;
 			}
-			return true;
-		}
-		else if (action.find("gr.setgroup") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 2)
-				levelGroup = actionParts[1];
-			return true;
-		}
-		else if (action.find("gr.setlevelgroup") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 2)
+			else if (action.find("gr.removeguildmember") == 0)
 			{
-				std::vector<TPlayer*>* playerList = level->getPlayerList();
-				for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+				std::vector<CString> actionParts = action.tokenize(",");
+				CString guild, account;
+				if (actionParts.size() > 1) guild = actionParts[1];
+				if (actionParts.size() > 2) account = actionParts[2];
+
+				if (!guild.isEmpty() && !account.isEmpty())
 				{
-					TPlayer* player = *i;
-					player->setGroup(actionParts[1]);
+					// Read the guild list.
+					CFileSystem guildFS(server);
+					guildFS.addDir("guilds");
+					CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+
+					if (guildList.find(account) != -1)
+					{
+						int pos = guildList.find(account);
+						int length = guildList.find("\n", pos) - pos;
+						if (length < 0) length = -1;
+						else ++length;
+
+						guildList.removeI(pos, length);
+						guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
+					}
 				}
+				return true;
 			}
-			return true;
+			else if (action.find("gr.removeguild") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				CString guild;
+				if (actionParts.size() > 1) guild = actionParts[1];
+
+				if (!guild.isEmpty())
+				{
+					// Read the guild list.
+					CFileSystem guildFS(server);
+					guildFS.addDir("guilds");
+					CString path = guildFS.find(CString() << "guild" << guild << ".txt");
+
+					remove(path.text());
+				}
+				return true;
+			}
+			else if (action.find("gr.setguild") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				CString guild, account;
+				if (actionParts.size() > 1) guild = actionParts[1];
+				if (actionParts.size() > 2) account = actionParts[2];
+
+				if (!guild.isEmpty())
+				{
+					TPlayer* p = this;
+					if (!account.isEmpty()) p = server->getPlayer(account, false);
+					if (p)
+					{
+						CString nick = p->getNickname();
+						p->setNick(CString() << nick.readString("(").trim() << " (" << guild << ")", true);
+						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
+						server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
+					}
+				}
+				return true;
+			}
+		}
+
+		if (settings->getBool("triggerhack_groups", true) == true)
+		{
+			if (action.find("gr.setgroup") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() == 2)
+					levelGroup = actionParts[1];
+				return true;
+			}
+			else if (action.find("gr.setlevelgroup") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() == 2)
+				{
+					std::vector<TPlayer*>* playerList = level->getPlayerList();
+					for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+					{
+						TPlayer* player = *i;
+						player->setGroup(actionParts[1]);
+					}
+				}
+				return true;
+			}
+		}
+
+		if (settings->getBool("triggerhack_files", false) == true)
+		{
+			if  (action.find("gr.appendfile") == 0)
+			{
+				int start = action.find(",") + 1;
+				if (start == 0) return true;
+				int finish = action.find(",", start) + 1;
+				if (finish == 0) return true;
+
+				// Assemble the file name.
+				CString filename = action.subString(start, finish - start - 1);
+				filename.removeAllI("../");
+				filename.removeAllI("..\\");
+
+				// Load the file.
+				CString file;
+				file.load(server->getServerPath() << "logs/" << filename);
+
+				// Save the file.
+				file << action.subString(finish) << "\r\n";
+				file.save(server->getServerPath() << "logs/" << filename);
+				return true;
+			}
+			else if (action.find("gr.writefile") == 0)
+			{
+				int start = action.find(",") + 1;
+				if (start == 0) return true;
+				int finish = action.find(",", start) + 1;
+				if (finish == 0) return true;
+
+				// Load the file.
+				CString filename = action.subString(start, finish - start - 1);
+				filename.removeAllI("../");
+				filename.removeAllI("..\\");
+
+				// Save the file.
+				CString file = action.subString(finish) << "\r\n";
+				file.save(server->getServerPath() << "logs/" << filename);
+				return true;
+			}
+		}
+
+		if (settings->getBool("triggerhack_rc", false) == true)
+		{
+			if (action.find("gr.rcchat") == 0)
+			{
+				int start = action.find(",");
+				if (start != -1)
+				{
+					++start;
+					server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << action.subString(start));
+				}
+				return true;
+			}
 		}
 	}
 

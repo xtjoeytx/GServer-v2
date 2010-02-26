@@ -168,6 +168,17 @@ oldcreated = true
 # Don't set to true.
 serverside = false
 
+# Enables triggeraction hacks.
+triggerhack_weapons = false	# gr.addweapon, gr.deleteweapon
+triggerhack_guilds = false	# gr.addguildmember, gr.removeguildmember, gr.removeguild, gr.setguild
+triggerhack_groups = true	# gr.setgroup, gr.setlevelgroup
+triggerhack_files = false	# gr.appendfile, gr.writefile
+triggerhack_rc = false		# gr.rcchat
+
+# Enables flag hacks.
+flaghack_movement = true	# -gr_movement weapon.
+flaghack_ip = false		# gr.ip
+
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
 sharefolder = 
