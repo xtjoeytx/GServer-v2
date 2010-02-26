@@ -21,9 +21,11 @@
 extern bool __playerPropsRC[propscount];
 
 const char* __admin[] = {
-	"name", "description", "url", "maxplayers", "onlystaff", "nofoldersconfig",
-	"sharefolder", "language", "serverip", "serverport", "listip", "listport",
-	"oldcreated", "serverside",
+	"name", "description", "url", "serverip", "serverport", "localip", "listip", "listport",
+	"maxplayers", "onlystaff", "nofoldersconfig", "oldcreated", "serverside",
+	"triggerhack_weapons", "triggerhack_guilds", "triggerhack_groups", "triggerhack_files",
+	"triggerhack_rc", "flaghack_movement", "flaghack_ip",
+	"sharefolder", "language"
 };
 
 static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
