@@ -152,6 +152,9 @@ class TAccount
 		CString getNickname() const		{ return nickName; }
 		float getPower() const			{ return power; }
 		int getStatus() const			{ return status; }
+		int getOnlineTime() const		{ return onlineTime; }
+		int getKills() const			{ return kills; }
+		int getDeaths() const			{ return deaths; }
 		bool getBanned() const			{ return isBanned; }
 		CString getBanReason() const	{ return banReason; }
 		CString getBanLength() const	{ return banLength; }
