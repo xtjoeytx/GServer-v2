@@ -440,7 +440,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	profile << p2->getProp(PLPROP_ACCOUNTNAME) << pPacket.readString("");
 
 	// Add the time to the profile string.
-	int time = p2->getProp(PLPROP_ONLINESECS).readGInt();
+	int time = p2->getOnlineTime();
 	CString line = CString() << CString((int)time/3600) << " hrs "
 		<< CString((int)(time/60)%60) << " mins "
 		<< CString((int)time%60) << " secs";
@@ -451,10 +451,10 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	{
 		CString val;
 
-		val = CString((int)p2->getProp(PLPROP_KILLSCOUNT).readGUInt());
+		val = CString((int)p2->getKills());
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp(PLPROP_DEATHSCOUNT).readGUInt());
+		val = CString((int)p2->getDeaths());
 		profile >> (char)val.length() << val;
 
 		val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
@@ -491,9 +491,9 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 
 				// Built-in values.
 				if (val == "playerkills")
-					val = CString((unsigned int)(p2->getProp(PLPROP_KILLSCOUNT).readGUInt()));
+					val = CString((unsigned int)(p2->getKills()));
 				else if (val == "playerdeaths")
-					val = CString((unsigned int)(p2->getProp(PLPROP_DEATHSCOUNT).readGUInt()));
+					val = CString((unsigned int)(p2->getDeaths()));
 				else if (val == "playerfullhearts")
 					val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
 				else if (val == "playerrating")
