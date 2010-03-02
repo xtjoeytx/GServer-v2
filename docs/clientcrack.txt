@@ -2,4 +2,21 @@ The Graal client will manually assemble the listserver host string.
 To find an instance where the client is trying to manually assemble a string, search for:
 	mov bl,67
 
-That will find the letter g.
+0x67 is the hex code for the ASCII letter g.
+
+If you are trying to replace, for example, listserver.graalonline.com with your own
+listserver hostname, keep in mind that your host name MUST fit within the boundaries
+of the existing host name.  If your host name is shorter, just pad the end with 0's.
+
+
+---------
+-- RC1 --
+---------
+Start of listserver.graalonline.com:
+0049449B
+
+
+---------
+-- RC2 --
+---------
+listserver.graalonline.com is a referenced string.
