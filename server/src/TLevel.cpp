@@ -869,7 +869,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			int x = strtoint(curLine[1]);
 			int y = strtoint(curLine[2]);
 
-			// Grab the NPC code.
+			// Grab the sign code.
 			CString text;
 			++i;
 			while (i != fileData.end())
