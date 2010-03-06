@@ -1287,7 +1287,7 @@ bool TServer::TS_Load(const CString& pLanguage, const CString& pFileName)
 
 CString TServer::TS_Translate(const CString& pLanguage, const CString& pKey)
 {
-	return mTranslationManager.translate(pLanguage.toLower().text(), pKey.trim().text());
+	return mTranslationManager.translate(pLanguage.toLower().text(), pKey.text());
 }
 
 void TServer::TS_Reload()
