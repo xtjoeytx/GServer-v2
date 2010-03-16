@@ -116,8 +116,8 @@ bool __sendLocal[propscount] =
 	true,  true,  false, false, false, false, // 24-29
 	true,  true,  true,  false, true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
-	false, true,  true,  true,  false, false, // 42-47
-	false, false, true,  false, false, true,  // 48-53
+	false, true,  true,  true,  true,  true,  // 42-47
+	true,  true,  true,  false, false, true,  // 48-53
 	true,  true,  true,  true,  true,  true,  // 54-59
 	true,  true,  true,  true,  true,  true,  // 60-65
 	true,  true,  true,  true,  true,  true,  // 66-71
