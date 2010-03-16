@@ -1656,20 +1656,62 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return true;
 	}
 
-	CString f1, f2, f3, f4;
-	f1 = pPacket.readChars(pPacket.readGUChar());
-	f2 = pPacket.readString("");
-	f2.removeAllI("\"");
+	CString source;
+	CString destination;
+	CString dir(pPacket.readChars(pPacket.readGUChar()));
+	CString file(pPacket.readString(""));
 
-	f1 << f2;
-	f4 << lastFolder << f2;
+	// Fix file.
+	file.removeAllI("\"");
 
-	rclog.out("%s moved file %s to %s\n", accountName.text(), f4.text(), f1.text());
+	// Add trailing directory slash if it is missing.
+	if (dir[dir.length() - 1] != '\\' && dir[dir.length() - 1] != '/')
+		dir << "/";
 
-	f4 = CString() << server->getServerPath() << f4;
-	f3.load(f4);
-	f3.save(f1);
-	remove(f4.text());
+	// Assemble destination and source.
+	destination << dir << file;
+	source << lastFolder << file;
+
+	rclog.out("%s moved file %s to %s\n", accountName.text(), source.text(), destination.text());
+
+	// Add working directory.
+	source = CString(server->getServerPath()) << source;
+	destination = CString(server->getServerPath()) << destination;
+	CFileSystem::fixPathSeparators(&source);
+	CFileSystem::fixPathSeparators(&destination);
+
+	// Save the new file now.
+	CString temp;
+	temp.load(source);
+	if (temp.save(destination) == false)
+		return true;
+
+	// Remove the old file.
+#if defined(WIN32) || defined(WIN64)
+	wchar_t* wcstr = 0;
+
+	// Determine if the filename is UTF-8 encoded.
+	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, source.text(), source.length(), 0, 0);
+	if (wcsize != 0)
+	{
+		wcstr = new wchar_t[wcsize + 1];
+		memset((void *)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, source.text(), source.length(), wcstr, wcsize);
+	}
+	else
+	{
+		wcstr = new wchar_t[source.length() + 1];
+		for (int i = 0; i < source.length(); ++i)
+			wcstr[i] = (unsigned char)source[i];
+		wcstr[source.length()] = 0;
+	}
+
+	// Remove the file now.
+	_wremove(wcstr);
+	delete[] wcstr;
+#else
+	remove(source.text());
+#endif
 
 	return true;
 }
@@ -1693,8 +1735,31 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 		return true;
 	}
 
-	// Remove the file.
+#if defined(WIN32) || defined(WIN64)
+	wchar_t* wcstr = 0;
+
+	// Determine if the filename is UTF-8 encoded.
+	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filePath.text(), filePath.length(), 0, 0);
+	if (wcsize != 0)
+	{
+		wcstr = new wchar_t[wcsize + 1];
+		memset((void *)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, filePath.text(), filePath.length(), wcstr, wcsize);
+	}
+	else
+	{
+		wcstr = new wchar_t[filePath.length() + 1];
+		for (int i = 0; i < filePath.length(); ++i)
+			wcstr[i] = (unsigned char)filePath[i];
+		wcstr[filePath.length()] = 0;
+	}
+
+	// Remove the file now.
+	_wremove(wcstr);
+	delete[] wcstr;
+#else
 	remove(filePath.text());
+#endif
 
 	rclog.out("%s deleted file %s\n", accountName.text(), file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Deleted file " << file);
@@ -1725,7 +1790,52 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	}
 
 	// Do the renaming.
+#if defined(WIN32) || defined(WIN64)
+	// Convert to wchar_t because the filename might be UTF-8 encoded.
+	wchar_t* f1_wcstr = 0;
+	wchar_t* f2_wcstr = 0;
+
+	// Test f1path.
+	int f1_wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, f1path.text(), f1path.length(), 0, 0);
+	if (f1_wcsize != 0)
+	{
+		f1_wcstr = new wchar_t[f1_wcsize + 1];
+		memset((void *)f1_wcstr, 0, (f1_wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, f1path.text(), f1path.length(), f1_wcstr, f1_wcsize);
+	}
+	else
+	{
+		f1_wcstr = new wchar_t[f1path.length() + 1];
+		for (int i = 0; i < f1path.length(); ++i)
+			f1_wcstr[i] = (unsigned char)f1path[i];
+		f1_wcstr[f1path.length()] = 0;
+	}
+
+	// Test f2path.
+	int f2_wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, f2path.text(), f2path.length(), 0, 0);
+	if (f2_wcsize != 0)
+	{
+		f2_wcstr = new wchar_t[f2_wcsize + 1];
+		memset((void *)f2_wcstr, 0, (f2_wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, f2path.text(), f2path.length(), f2_wcstr, f2_wcsize);
+	}
+	else
+	{
+		f2_wcstr = new wchar_t[f2path.length() + 1];
+		for (int i = 0; i < f2path.length(); ++i)
+			f2_wcstr[i] = f2path[i];
+		f2_wcstr[f2path.length()] = 0;
+	}
+
+	// Rename.
+	_wrename(f1_wcstr, f2_wcstr);
+	delete[] f1_wcstr;
+	delete[] f2_wcstr;
+#else
+	// Linux uses UTF-8 filenames.
 	rename(f1path.text(), f2path.text());
+#endif
+
 	rclog.out("%s renamed file %s to %s\n", accountName.text(), f1.text(), f2.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);
 
