@@ -548,7 +548,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 					// If String-Array, Get Index
 					if (pos[2] >= 0)
 					{
-						std::vector<CString> temp = val.tokenize(',');
+						std::vector<CString> temp = val.guntokenize().tokenize("\n");
 						if ((int)temp.size() > pos[2])
 							val = temp[pos[2]];
 					}
