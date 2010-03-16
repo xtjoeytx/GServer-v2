@@ -127,10 +127,25 @@ bool CString::load(const CString& pString)
 	FILE *file = 0;
 
 #if defined(WIN32) || defined(WIN64)
-	// Convert to wchar_t because the filename might be UTF-8 encoded.
-	int wcsize = mbstowcs(0, pString.text(), 0);
-	wchar_t* wcstr = new wchar_t[wcsize + 1];
-	mbstowcs(wcstr, pString.text(), wcsize + 1);
+	wchar_t* wcstr = 0;
+
+	// Determine if the filename is UTF-8 encoded.
+	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, pString.text(), pString.length(), 0, 0);
+	if (wcsize != 0)
+	{
+		wcstr = new wchar_t[wcsize + 1];
+		memset((void *)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, pString.text(), pString.length(), wcstr, wcsize);
+	}
+	else
+	{
+		wcstr = new wchar_t[pString.length() + 1];
+		for (int i = 0; i < pString.length(); ++i)
+			wcstr[i] = (unsigned char)pString[i];
+		wcstr[pString.length()] = 0;
+	}
+
+	// Open the file now.
 	file = _wfopen(wcstr, L"rb");
 	delete[] wcstr;
 	if (file == 0)
@@ -154,10 +169,25 @@ bool CString::save(const CString& pString) const
 	FILE *file = 0;
 
 #if defined(WIN32) || defined(WIN64)
-	// Convert to wchar_t because the filename might be UTF-8 encoded.
-	int wcsize = mbstowcs(0, pString.text(), 0);
-	wchar_t* wcstr = new wchar_t[wcsize + 1];
-	mbstowcs(wcstr, pString.text(), wcsize + 1);
+	wchar_t* wcstr = 0;
+
+	// Determine if the filename is UTF-8 encoded.
+	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, pString.text(), pString.length(), 0, 0);
+	if (wcsize != 0)
+	{
+		wcstr = new wchar_t[wcsize + 1];
+		memset((void *)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		MultiByteToWideChar(CP_UTF8, 0, pString.text(), pString.length(), wcstr, wcsize);
+	}
+	else
+	{
+		wcstr = new wchar_t[pString.length() + 1];
+		for (int i = 0; i < pString.length(); ++i)
+			wcstr[i] = (unsigned char)pString[i];
+		wcstr[pString.length()] = 0;
+	}
+
+	// Open the file now.
 	file = _wfopen(wcstr, L"wb");
 	delete[] wcstr;
 	if (file == 0)
