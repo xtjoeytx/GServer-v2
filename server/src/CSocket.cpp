@@ -122,33 +122,30 @@ bool CSocketManager::update(long sec, long usec)
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
 
 	// Loop through all the socket handles and call relevant functions.
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
+		if (stub == 0)
+		{
+			i = stubList.erase(i);
+			continue;
+		}
+
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
 		{
-			if (FD_ISSET(sock, &set_read))
+			bool success = true;
+			if (success && FD_ISSET(sock, &set_read)) success = stub->onRecv();
+			if (success && FD_ISSET(sock, &set_write)) success = stub->onSend();
+			if (!success)
 			{
-				if (stub->onRecv() == false)
-				{
-					// Failed.  Add to the list of failed stubs and continue.
-					failedStubs.push_back(stub);
-					*i = 0;
-					continue;
-				}
-			}
-			if (FD_ISSET(sock, &set_write))
-			{
-				if (stub->onSend() == false)
-				{
-					// Failed.  Add to the list of failed stubs and continue.
-					failedStubs.push_back(stub);
-					*i = 0;
-					continue;
-				}
+				// Failed.  Add to the list of failed stubs and continue.
+				failedStubs.push_back(stub);
+				i = stubList.erase(i);
+				continue;
 			}
 		}
+		++i;
 	}
 
 	// Unregister failed stubs.
@@ -236,7 +233,7 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 		if (sock2 == sock)
 		{
 			(*i)->onUnregister();
-			i = stubList.erase(i);
+			*i = 0;
 			found = true;
 			break;
 		}
