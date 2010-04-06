@@ -73,12 +73,18 @@ bool TWeapon::saveWeapon(TServer* server)
 	// Prevent the loading/saving of filenames with illegal characters.
 	CString filename = server->getServerPath() << "weapons/weapon" << mWeaponName.replaceAll("/", "_").replaceAll("*", "@") << ".txt";
 
+	// Format the weapon script.
+	CString script(mWeaponScript);
+	if (script[script.length() - 1] != '\xa7')
+		script << "\xa7";
+	script.replaceAllI("\xa7", "\r\n");
+
 	// Write the File.
 	CString output = "GRAWP001\r\n";
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	output << "SCRIPT\r\n";
-	output << mWeaponScript.replaceAll("\xa7", "\r\n");
+	output << script;
 	output << "SCRIPTEND\r\n";
 
 	// Save it.
