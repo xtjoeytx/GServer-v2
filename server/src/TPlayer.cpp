@@ -1899,6 +1899,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		{
 			// Save it.
 			nickName = newNick;
+			this->guild.clear();
 		}
 		else nickName = CString() << newNick << " (Server)";
 	}
@@ -3143,7 +3144,20 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					guildFS.addDir("guilds");
 					CString path = guildFS.find(CString() << "guild" << guild << ".txt");
 
+					// Remove the guild.
 					remove(path.text());
+
+					// Remove the guild from all players.
+					for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
+					{
+						TPlayer* p = *i;
+						if (p->getGuild() == guild)
+						{
+							p->setNick(p->getNickname().readString("(").trimI());
+							p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
+							server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
+						}
+					}
 				}
 				return true;
 			}
@@ -3161,7 +3175,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					if (p)
 					{
 						CString nick = p->getNickname();
-						p->setNick(CString() << nick.readString("(").trim() << " (" << guild << ")", true);
+						p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
 						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
 						server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
 					}
