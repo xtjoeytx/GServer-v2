@@ -90,7 +90,6 @@ class CSocketManager
 		bool registerSocket(CSocketStub* stub);
 
 		//! Unregisters a class.
-		//! Don't call during an onSend() or onRecv() event!
 		//! \param stub The class to remove from the system.
 		//! \return False if stub is not found
 		//! \return True if it is successfully removed.
