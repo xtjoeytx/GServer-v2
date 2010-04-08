@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include "ICommon.h"
 
 #include "CLog.h"
@@ -184,7 +185,7 @@ class TServer : public CSocketStub
 		std::vector<TNPC *> npcIds, npcList;
 		std::vector<TPlayer *> playerIds, playerList;
 
-		std::vector<TPlayer *> deletedPlayers;
+		std::set<TPlayer *> deletedPlayers;
 
 		TServerList serverlist;
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
