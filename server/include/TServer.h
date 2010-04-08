@@ -175,6 +175,7 @@ class TServer : public CSocketStub
 		CString allowedVersionString, name, servermessage, serverpath;
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
+		CString overrideIP, overrideLocalIP, overridePort;
 
 		std::map<CString, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
