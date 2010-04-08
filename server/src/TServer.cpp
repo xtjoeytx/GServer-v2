@@ -143,10 +143,10 @@ void TServer::operator()()
 void TServer::cleanupDeletedPlayers()
 {
 	if (deletedPlayers.empty()) return;
-	for (std::vector<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); )
+	for (std::set<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); ++i)
 	{
 		TPlayer* player = *i;
-		if (player == 0) { ++i; continue; }
+		if (player == 0) continue;
 
 		// Get rid of the player now.
 		playerIds[player->getId()] = 0;
@@ -155,12 +155,14 @@ void TServer::cleanupDeletedPlayers()
 			TPlayer* p = *j;
 			if (p == player)
 			{
+				// Unregister the player.
+				sockManager.unregisterSocket(p);
+
 				delete p;
 				j = playerList.erase(j);
 			}
 			else ++j;
 		}
-		i = deletedPlayers.erase(i);
 	}
 	deletedPlayers.clear();
 }
@@ -957,12 +959,12 @@ bool TServer::deletePlayer(TPlayer* player)
 {
 	if (player == 0) return true;
 
-	// Remove the player from the serverlist.
-	serverlist.remPlayer(player->getAccountName(), player->getType());
-
-	// Add the player to the list of players to delete.
-	if (std::find(deletedPlayers.begin(), deletedPlayers.end(), player) == deletedPlayers.end())
-		deletedPlayers.push_back(player);
+	// Add the player to the set of players to delete.
+	if (deletedPlayers.insert(player).second == true)
+	{
+		// Remove the player from the serverlist.
+		serverlist.remPlayer(player->getAccountName(), player->getType());
+	}
 
 	return true;
 }
