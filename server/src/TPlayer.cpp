@@ -1369,6 +1369,14 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	// Find the level.
 	TLevel* newLevel = TLevel::findLevel(pLevelName, server);
 
+	// If we are warping to the same level, just update the player's location.
+	if (newLevel == currentLevel)
+	{
+		sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_X << getProp(PLPROP_X) >> (char)PLPROP_Y << getProp(PLPROP_Y));
+		server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_X << getProp(PLPROP_X) >> (char)PLPROP_Y << getProp(PLPROP_Y), pmap, currentLevel, this);
+		return true;
+	}
+
 	// Find the unstickme level.
 	TLevel* unstickLevel = TLevel::findLevel(settings->getStr("unstickmelevel", "onlinestartlocal.nw"), server);
 	float unstickX = settings->getFloat("unstickmex", 30.0f);
