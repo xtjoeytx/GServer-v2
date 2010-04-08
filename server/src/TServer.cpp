@@ -71,6 +71,9 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 		settings.addKey("serverport", serverport);
 	if (!localip.isEmpty())
 		settings.addKey("localip", localip);
+	overrideIP = serverip;
+	overridePort = serverport;
+	overrideLocalIP = localip;
 
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
@@ -123,7 +126,7 @@ void TServer::operator()()
 		{
 			doRestart = false;
 			cleanup();
-			int ret = init();
+			int ret = init(overrideIP, overridePort, overrideLocalIP);
 			if (ret != 0)
 				break;
 		}
