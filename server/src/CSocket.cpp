@@ -94,9 +94,6 @@ bool CSocketManager::update(long sec, long usec)
 	FD_ZERO(&set_read);
 	FD_ZERO(&set_write);
 
-	// Failed stubs will go here and will be unregistered at the end of the function.
-	std::vector<CSocketStub*> failedStubs;
-
 	// Put all the socket handles into the set.
 	SOCKET max = 0;
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
@@ -125,11 +122,7 @@ bool CSocketManager::update(long sec, long usec)
 	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
-		if (stub == 0)
-		{
-			i = stubList.erase(i);
-			continue;
-		}
+		if (stub == 0) continue;
 
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
@@ -139,23 +132,11 @@ bool CSocketManager::update(long sec, long usec)
 			if (success && FD_ISSET(sock, &set_write)) success = stub->onSend();
 			if (!success)
 			{
-				// Failed.  Add to the list of failed stubs and continue.
-				failedStubs.push_back(stub);
-				i = stubList.erase(i);
-				continue;
+				stub->onUnregister();
+				*i = 0;
 			}
 		}
 		++i;
-	}
-
-	// Unregister failed stubs.
-	for (std::vector<CSocketStub*>::iterator i = failedStubs.begin(); i != failedStubs.end();)
-	{
-		CSocketStub* stub = *i;
-		if (stub)
-			stub->onUnregister();
-
-		i = failedStubs.erase(i);
 	}
 
 	// Add new stubs.
@@ -227,17 +208,19 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 	SOCKET sock = stub->getSocketHandle();
 
 	bool found = false;
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
 	{
-		SOCKET sock2 = (*i)->getSocketHandle();
+		CSocketStub* stub = *i;
+		if (stub == 0) continue;
+
+		SOCKET sock2 = stub->getSocketHandle();
 		if (sock2 == sock)
 		{
-			(*i)->onUnregister();
+			stub->onUnregister();
 			*i = 0;
 			found = true;
 			break;
 		}
-		else ++i;
 	}
 
 	return found;
@@ -245,12 +228,15 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 
 void CSocketManager::cleanup(bool callOnUnregister)
 {
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
 	{
+		CSocketStub* stub = *i;
+		if (stub == 0) continue;
+
 		if (callOnUnregister)
-			(*i)->onUnregister();
-		i = stubList.erase(i);
+			stub->onUnregister();
 	}
+	stubList.clear();
 	fd_max = 0;
 }
 
