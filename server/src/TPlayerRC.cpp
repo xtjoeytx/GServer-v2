@@ -1547,6 +1547,21 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	CFileSystem fs(server);
 	fs.addDir(lastFolder);
 
+	// Make sure our folder exists.
+	CString mkdir_path = CString() << server->getServerPath();
+	std::vector<CString> f = lastFolder.tokenize('/');
+	for (std::vector<CString>::iterator i = f.begin(); i != f.end(); ++i)
+	{
+		if (i->isEmpty()) continue;
+		mkdir_path << *i << '/';
+
+#if defined(_WIN32) || defined(_WIN64)
+		mkdir(mkdir_path.text());
+#else
+		mkdir(mkdir_path.text(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+	}
+
 	// Construct the file list.
 	// file packet: {CHAR name_length}{STRING name}{CHAR rights_length}{STRING rights}{INT5 file_size}{INT5 file_mod_time}
 	// files: {CHAR file_packet_length}{file_packet}[space]{CHAR file_packet_length}{file_packet}[space]
@@ -1623,13 +1638,6 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	// See if we are uploading a large file or not.
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
 	{
-		// Todo: Folder exists..?
-		#if defined(_WIN32) || defined(_WIN64)
-		  mkdir(filepath.text());
-		#else
-		  mkdir(filepath.text(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		#endif
-
 		// Normal file. Save it and display our message.
 		fileData.save(filepath << file);
 
@@ -1986,7 +1994,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 						fs2->addFile(fullPath);
 
 					fs->addFile(fullPath);
-					printf("adding %s to %s\n", file.text(), type.text());
+					//printf("adding %s to %s\n", file.text(), type.text());
 					break;
 				}
 			}

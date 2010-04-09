@@ -42,7 +42,8 @@ bool TPlayer::sendLogin()
 	// Load Player-Account
 	if (!isNPCServer())
 	{
-		loadAccount(accountName); // We don't need to check if this fails.. because the defaults have already been loaded :)
+		// We don't need to check if this fails.. because the defaults have already been loaded :)
+		loadAccount(accountName, (isRC() ? true : false));
 
 		// Check to see if the player is banned or not.
 		if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
