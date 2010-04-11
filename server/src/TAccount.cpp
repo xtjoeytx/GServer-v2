@@ -15,7 +15,7 @@ adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
 nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
-deviation(350.0f), oldDeviation(350.0f), power(3.0), rating(1500.0f), x(0), y(0), z(0),
+deviation(350.0f), power(3.0), rating(1500.0f), x(0), y(0), z(0),
 x2(0), y2(0), z2(0), gmaplevelx(0), gmaplevely(0),
 additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
 deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
@@ -137,7 +137,6 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "DEATHS") deaths = strtoint(val);
 		else if (section == "RATING") rating = (float)strtofloat(val);
 		else if (section == "DEVIATION") deviation = (float)strtofloat(val);
-		else if (section == "OLDDEVIATION") oldDeviation = (float)strtofloat(val);
 		else if (section == "LASTSPARTIME") lastSparTime = strtolong(val);
 		else if (section == "FLAG") setFlag(val);
 		else if (section == "ATTR1") attrList[0] = val;
@@ -238,7 +237,6 @@ bool TAccount::saveAccount()
 	newFile << "DEATHS " << CString(deaths) << "\r\n";
 	newFile << "RATING " << CString(rating) << "\r\n";
 	newFile << "DEVIATION " << CString(deviation) << "\r\n";
-	newFile << "OLDDEVIATION " << CString(oldDeviation) << "\r\n";
 	newFile << "LASTSPARTIME " << CString((unsigned long)lastSparTime) << "\r\n";
 
 	// Attributes
