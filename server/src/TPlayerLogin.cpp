@@ -205,15 +205,20 @@ bool TPlayer::sendLoginClient()
 	// Recalculate player spar deviation.
 	{
 		// c = sqrt( (350*350 - 50*50) / t )
-		// where t = 60 for number of rating periods for deviation to go from 50 to 350
+		// where t is the number of rating periods for deviation to go from 50 to 350.
+		// t = 60 days for us.
 		const float c = 44.721f;
-		float t = (float)(time(0) - lastSparTime)/86400.0f; // Convert seconds to days: 60/60/24
+		time_t current_time = time(0);
+		time_t periods = (current_time - lastSparTime)/60/60/24;
+		if (periods != 0)
+		{
+			// Find the new deviation.
+			float deviate = MIN( sqrt((deviation*deviation) + (c*c) * periods), 350.0f );
 
-		// Find the new deviation.
-		float deviate = MIN( sqrt((oldDeviation*oldDeviation) + (c*c) * t), 350.0f );
-
-		// Save the old rating and set the new one.
-		deviation = deviate;
+			// Set the new rating.
+			deviation = deviate;
+			lastSparTime = current_time;
+		}
 	}
 
 	// Send the player his login props.
