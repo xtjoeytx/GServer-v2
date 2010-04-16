@@ -14,7 +14,7 @@
 * Player gani parameters #P6 through #P9 should be correctly passed to other players now.
 * String arrays in the profile field are correctly tokenized now.
 * Fixed a bug with saving weapons where the SCRIPTEND field wasn't being written correctly in some instances.
-* The RC command /restartserver now longer ignores the server overrides specified in servers.txt.
+* The RC command /restartserver no longer ignores the server overrides specified in servers.txt.
 * The gr.removeguild triggeraction hack will remove the guild tag from all currently online players when the guild is deleted.
 * Fixed a bug where the client's guild wasn't being cleared internally.
 * If a player issues a setlevel2 command to warp to the same level he is in, the server just moves the player instead of attempting to warp him.  This fixes some script issues with isleader.
