@@ -26,15 +26,26 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
 
 	// Load File
-	std::vector<CString> fileData = CString::loadToken(fileName, "\n", true);
-	if (fileData.size() == 0 || fileData[0].trim() != "GRAWP001")
+	CString fileData;
+	fileData.load(fileName);
+	fileData.removeAllI("\r");
+
+	// Grab some information.
+	bool has_script = (fileData.find("SCRIPT") != -1 ? true : false);
+	bool has_scriptend = (fileData.find("SCRIPTEND") != -1 ? true : false);
+	bool found_scriptend = false;
+
+	// Parse into lines.
+	std::vector<CString> fileLines = fileData.tokenize("\n");
+	if (fileLines.size() == 0 || fileLines[0].trim() != "GRAWP001")
 		return 0;
 
 	// Definitions
 	CString weaponImage, weaponName, weaponScript;
 
 	// Parse File
-	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
+	std::vector<CString>::iterator i = fileLines.begin();
+	while (i != fileLines.end())
 	{
 		// Find Command
 		CString curCommand = i->readString();
@@ -47,17 +58,30 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		else if (curCommand == "SCRIPT")
 		{
 			++i;
-			while (i != fileData.end() && *i != "SCRIPTEND")
+			while (i != fileLines.end())
 			{
+				if (*i == "SCRIPTEND")
+				{
+					found_scriptend = true;
+					break;
+				}
 				weaponScript << *i << "\xa7";
 				++i;
 			}
 		}
+		if (i != fileLines.end()) ++i;
 	}
 
 	// Valid Weapon Name?
 	if (weaponName.isEmpty())
 		return 0;
+
+	// Give a warning if our weapon was malformed.
+	if (has_scriptend && !found_scriptend)
+	{
+		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(), weaponName.text());
+		server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", server->getName().text());
+	}
 
 	// Create Weapon
 	return new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
