@@ -10,5 +10,4 @@ if (playerenters || timeout) {
   }
   timeout=0.05;
 }
-
 SCRIPTEND
