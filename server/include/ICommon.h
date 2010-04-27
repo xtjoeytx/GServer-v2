@@ -18,5 +18,5 @@
 #include "main.h"
 #undef wait
 
-#define GSERVER_VERSION		"2.2.x SVN"
+#define GSERVER_VERSION		"2.3.x SVN"
 #endif
