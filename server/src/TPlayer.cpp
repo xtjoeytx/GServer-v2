@@ -1373,8 +1373,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	// If we are warping to the same level, just update the player's location.
 	if (newLevel == currentLevel)
 	{
-		sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_X << getProp(PLPROP_X) >> (char)PLPROP_Y << getProp(PLPROP_Y));
-		server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_X << getProp(PLPROP_X) >> (char)PLPROP_Y << getProp(PLPROP_Y), pmap, currentLevel, this);
+		CString packet = CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2);
+		setProps(packet, true, true);
 		return true;
 	}
 
