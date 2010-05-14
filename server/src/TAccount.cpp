@@ -281,8 +281,12 @@ bool TAccount::saveAccount()
 	if (server->getPluginManager().SaveAccount(accountName.text(), newFile.text()))
 		return true;
 
+	// Get the file name for the account.
+	CString accountFileName = server->getAccountsFileSystem()->fileExistsAs(CString() << accountName << ".txt");
+	if (accountFileName.isEmpty()) accountFileName = CString() << accountName << ".txt";
+
 	// Save the account now.
-	CString accpath = CString() << server->getServerPath() << "accounts/" << accountName << ".txt";
+	CString accpath = CString() << server->getServerPath() << "accounts/" << accountFileName;
 	CFileSystem::fixPathSeparators(&accpath);
 	if (!newFile.save(accpath))
 		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
