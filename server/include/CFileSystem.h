@@ -30,6 +30,7 @@ class CFileSystem
 
 		CString find(const CString& file) const;
 		CString findi(const CString& file) const;
+		CString fileExistsAs(const CString& file) const;
 		CString load(const CString& file) const;
 		time_t getModTime(const CString& file) const;
 		bool setModTime(const CString& file, time_t modTime) const;

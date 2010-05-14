@@ -137,6 +137,14 @@ CString CFileSystem::findi(const CString& file) const
 	return CString();
 }
 
+CString CFileSystem::fileExistsAs(const CString& file) const
+{
+	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
+		if (i->first.comparei(file)) return CString(i->first);
+	return CString();
+}
+
 #if defined(_WIN32) || defined(_WIN64)
 void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
