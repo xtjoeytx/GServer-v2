@@ -499,15 +499,12 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 			// Flag name
 			if (i->first == j->first)
 			{
-				oldFlags.erase(j++);
-
 				// Check to see if the values are the same.
 				// If they are, set found to true so we don't send it to the player again.
 				if (i->second == j->second)
-				{
 					found = true;
-					break;
-				}
+				oldFlags.erase(j++);
+				if (found) break;
 			}
 			else ++j;
 		}
