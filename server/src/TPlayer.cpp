@@ -3085,6 +3085,93 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
+		if (settings->getBool("triggerhack_execscript", false) == true)
+		{
+			if (action.find("gr.es_clear") == 0)
+			{
+				// Clear the parameters.
+				grExecParameterList.clear();
+				return true;
+			}
+			else if (action.find("gr.es_set") == 0)
+			{
+				// Add the parameter to our saved parameter list.
+				CString parameters = action.subString(9);
+				if (grExecParameterList.isEmpty())
+					grExecParameterList = parameters;
+				else grExecParameterList << "," << parameters;
+				return true;
+			}
+			else if (action.find("gr.es_append") == 0)
+			{
+				// Append doesn't add the beginning comma.
+				CString parameters = action.subString(9);
+				if (grExecParameterList.isEmpty())
+					grExecParameterList = parameters;
+				else grExecParameterList << parameters;
+				return true;
+			}
+			else if (action.find("gr.es") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() != 1)
+				{
+					CString account = actionParts[1];
+					CString wepname = CString() << "-gr_exec_" << removeExtension(actionParts[2]);
+					CString wepimage = "wbomb1.png";
+
+					// Load in all the execscripts.
+					CFileSystem execscripts(server);
+					execscripts.addDir("execscripts");
+					CString wepscript = execscripts.load(actionParts[2]);
+
+					// Check to see if we were able to load the weapon.
+					if (wepscript.isEmpty())
+					{
+						serverlog.out("Error: Player %s tried to load execscript %s, but the script was not found.\n", accountName.text(), actionParts[2].text());
+						return true;
+					}
+
+					// Format the weapon script properly.
+					wepscript.removeAllI("\r");
+					wepscript.replaceAllI("\n", "\xa7");
+
+					// Replace parameters.
+					std::vector<CString> parameters = grExecParameterList.tokenize(",");
+					for (int i = 0; i < parameters.size(); i++)
+					{
+						CString parmName = "*PARM" + CString(i);
+						wepscript.replaceAllI(parmName, parameters[i]);
+					}
+
+					// Set all unreplaced parameters to 0.
+					for (int i = 0; i < 128; i++)
+					{
+						CString parmName = "*PARM" + CString(i);
+						wepscript.replaceAllI(parmName, "0");
+					}
+
+					// Create the weapon packet.
+					CString weapon_packet = CString() >> (char)PLO_NPCWEAPONADD
+							>> (char)wepname.length() << wepname
+							>> (char)0 >> (char)wepimage.length() << wepimage
+							>> (char)1 >> (short)wepscript.length() << wepscript;
+
+					// Send it to the players now.
+					if (actionParts[1] == "ALLPLAYERS")
+						server->sendPacketTo(PLTYPE_ANYCLIENT, weapon_packet);
+					else
+					{
+						TPlayer* p;
+						p = server->getPlayer(actionParts[1], false);
+						if (p) p->sendPacket(weapon_packet);
+					}
+					grExecParameterList.clear();
+				}
+				return true;
+			}
+		}
+
 		if (settings->getBool("triggerhack_guilds", false) == true)
 		{
 			if (action.find("gr.addguildmember") == 0)
