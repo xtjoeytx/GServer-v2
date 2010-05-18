@@ -265,6 +265,8 @@ class TPlayer : public TAccount, public CSocketStub
 		CString levelGroup;
 		int invalidPackets;
 
+		CString grExecParameterList;
+
 		// File queue.
 		CFileQueue fileQueue;
 };
