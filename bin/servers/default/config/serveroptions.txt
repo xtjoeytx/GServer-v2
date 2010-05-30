@@ -175,6 +175,7 @@ triggerhack_groups = true	# gr.setgroup, gr.setlevelgroup
 triggerhack_files = false	# gr.appendfile, gr.writefile
 triggerhack_rc = false		# gr.rcchat
 triggerhack_execscript = false	# gr.es_clear, gr.es_set, gr.es_append, gr.es
+triggerhack_props = false	# gr.attr1-gr.attr30
 
 # Enables flag hacks.
 flaghack_movement = true	# -gr_movement weapon.
