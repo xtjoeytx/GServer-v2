@@ -1794,6 +1794,13 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 		return true;
 	}
 
+	// Renaming our logs?  First, we need to close them.
+	if (lastFolder == "logs/")
+	{
+		if (f1 == "rclog.txt") rclog.close();
+		else if (f1 == "serverlog.txt") serverlog.close();
+	}
+
 	// Do the renaming.
 #if defined(WIN32) || defined(WIN64)
 	// Convert to wchar_t because the filename might be UTF-8 encoded.
@@ -1840,6 +1847,13 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	// Linux uses UTF-8 filenames.
 	rename(f1path.text(), f2path.text());
 #endif
+
+	// Renaming our logs?  We can open them now.
+	if (lastFolder == "logs/")
+	{
+		if (f1 == "rclog.txt") rclog.open();
+		else if (f1 == "serverlog.txt") serverlog.open();
+	}
 
 	rclog.out("%s renamed file %s to %s\n", accountName.text(), f1.text(), f2.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);

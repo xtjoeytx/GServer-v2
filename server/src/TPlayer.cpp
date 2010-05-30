@@ -61,12 +61,12 @@ bool __getLogin[propscount] =
 	true,  false, false, false, false, false, // 24-29
 	true,  true,  true,  false, true,  true,  // 30-35
 	true,  true,  true,  true,  true,  true,  // 36-41
-	false, true,  true,  true,  false, false, // 42-47
-	false, false, true,  false, false, true,  // 48-53
-	false, false, false, false, false, false, // 54-59
-	false, false, false, false, false, false, // 60-65
-	false, false, false, false, false, false, // 66-71
-	false, false, false, false, false, false, // 72-77
+	false, true,  true,  true,  true,  true,  // 42-47
+	true,  true,  true,  false, false, true,  // 48-53
+	true,  true,  true,  true,  true,  true,  // 54-59
+	true,  true,  true,  true,  true,  true,  // 60-65
+	true,  true,  true,  true,  true,  true,  // 66-71
+	true,  true,  true,  false, false, false, // 72-77
 	true,  true,  true,  false, true, // 78-82
 };
 
@@ -719,7 +719,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	if (isBigFile)
 	{
 		sendPacket(CString() >> (char)PLO_LARGEFILESTART << pFile);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+		//sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
 	}
 
 	// Send the file now.
@@ -731,13 +731,14 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 		// Older client versions didn't send the modTime.
 		if (isClient() && versionID < CLVER_2_1)
 		{
+			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
 			sendPacket(CString() >> (char)PLO_FILE >> (char)pFile.length() << pFile << fileData.subString(0, sendSize), false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n");
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n", false);
 		}
 
 		fileData.removeI(0, sendSize);
@@ -3057,6 +3058,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	CString action = pPacket.readString("").trim();
 	CSettings* settings = server->getSettings();
 
+	// (int)(loc[0]) % 64 == 0.0f, for gmap?
 	if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
 		if (settings->getBool("triggerhack_weapons", false) == true)
@@ -3138,7 +3140,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 
 					// Replace parameters.
 					std::vector<CString> parameters = grExecParameterList.tokenize(",");
-					for (int i = 0; i < parameters.size(); i++)
+					for (int i = 0; i < (int)parameters.size(); i++)
 					{
 						CString parmName = "*PARM" + CString(i);
 						wepscript.replaceAllI(parmName, parameters[i]);
@@ -3358,6 +3360,24 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << action.subString(start));
 				}
 				return true;
+			}
+		}
+
+		if (settings->getBool("triggerhack_props", false) == true)
+		{
+			if (action.find("gr.attr") == 0)
+			{
+				int start = action.find(",");
+				if (start != -1)
+				{
+					int attrNum = strtoint(action.subString(7, start - 7));
+					if (attrNum > 0 && attrNum <= 30)
+					{
+						++start;
+						CString val = action.subString(start);
+						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, true, true);
+					}
+				}
 			}
 		}
 	}
