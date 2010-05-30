@@ -80,6 +80,24 @@ void CLog::clear()
 	else enabled = true;
 }
 
+void CLog::close()
+{
+	boost::recursive_mutex::scoped_lock lock(*m_write);
+	if (file) fclose(file);
+	file = 0;
+	enabled = false;
+}
+
+void CLog::open()
+{
+	boost::recursive_mutex::scoped_lock lock(*m_write);
+	if (file) fclose(file);
+
+	file = fopen((homepath + filename).text(), "a");
+	if (0 == file) enabled = false;
+	else enabled = true;
+}
+
 void CLog::setFilename(const CString& filename)
 {
 	boost::recursive_mutex::scoped_lock lock(*m_write);
