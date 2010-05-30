@@ -33,6 +33,12 @@ class CLog
 		//! Clears the output file.
 		void clear();
 
+		//! Closes the file.
+		void close();
+
+		//! Opens the file.
+		void open();
+
 		//! Gets the enabled state of the class.
 		//! \return True if logging is enabled.
 		bool getEnabled() const;
