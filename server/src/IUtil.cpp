@@ -84,6 +84,9 @@ static const char* const clientVersions[] =
 
 	"G3D22067",		// CLVER_5_07,
 	"G3D14097",		// CLVER_5_12,
+
+	"G3D04048",		// CLVER_IPHONE_1_1
+	"G3D18010",		// CLVER_IPHONE_1_5
 	0
 };
 
@@ -160,6 +163,9 @@ static const char* const clientVersionString[] =
 
 	"5.07",		// CLVER_5_07,
 	"5.12",		// CLVER_5_12,
+
+	"iPhone 1.1",	// CLVER_IPHONE_1_1
+	"iPhone 1.5",	// CLVER_IPHONE_1_5
 	0
 };
 
