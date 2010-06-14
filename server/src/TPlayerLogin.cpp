@@ -347,7 +347,7 @@ bool TPlayer::sendLoginClient()
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
 
 	// This will allow serverwarp and some other things.  Don't know what its actual purpose is for, though.
-	sendPacket(CString() >> (char)82);
+	sendPacket(CString() >> (char)PLO_UNKNOWN82);
 
 	return true;
 }
