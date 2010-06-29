@@ -578,6 +578,15 @@ bool TPlayer::parsePacket(CString& pPacket)
 		// Get the packet id.
 		int id = curPacket.readGUChar();
 
+		// RC version 1.1 adds a "\n" string to the end of file uploads instead of a newline character.
+		// This causes issues because it messes with the packet order.
+		if (isRC() && versionID == RCVER_1_1 && id == PLI_RC_FILEBROWSER_UP)
+		{
+			curPacket.removeI(curPacket.length() - 1);
+			curPacket.setRead(1);
+			pPacket.readChar();	// Read out the n that got left behind.
+		}
+
 		// Check if it is a valid packet id.
 		if (id >= (unsigned char)TPLFunc.size())
 			return false;
