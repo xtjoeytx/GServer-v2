@@ -1140,6 +1140,7 @@ void TLevel::removeBaddy(char pId)
 			TLevelBaddy* b = *i;
 			if (b == baddy)
 				i = levelBaddies.erase(i);
+			else ++i;
 		}
 	}
 	//vecRemove(levelBaddies, baddy);
