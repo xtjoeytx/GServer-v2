@@ -180,6 +180,9 @@ void TServer::cleanupDeletedPlayers()
 void TServer::cleanup()
 {
 	// Close our UPNP port forward.
+	// First, make sure the thread has completed already.
+	// This can cause an issue if the server is about to be deleted.
+	upnp_thread.join();
 	upnp.remove_port_forward(settings.getStr("serverport"));
 
 	// Save translations.
