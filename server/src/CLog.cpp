@@ -7,9 +7,8 @@
 #include <unistd.h>
 #endif
 
-#include "CLog.h"
-#include "CString.h"
 #include <boost/thread.hpp>
+#include "CLog.h"
 
 static CString getBasePath();
 

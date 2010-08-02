@@ -1,9 +1,10 @@
 #include "IDebug.h"
-#include "ICommon.h"
+
 #include "TWeapon.h"
-#include "TLevelItem.h"
-#include "TPlayer.h"
 #include "TServer.h"
+#include "TLevelItem.h"
+#include "IEnums.h"
+#include "IUtil.h"
 
 // -- Constructor: Default Weapons -- //
 TWeapon::TWeapon(const char pId) : mModTime(0), mWeaponDefault(pId)

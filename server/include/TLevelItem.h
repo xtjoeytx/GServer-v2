@@ -2,7 +2,6 @@
 #define TLEVELITEM_H
 
 #include <time.h>
-#include "ICommon.h"
 #include "CTimeout.h"
 #include "CString.h"
 

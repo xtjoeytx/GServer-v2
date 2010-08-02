@@ -10,10 +10,10 @@
 	#include <unistd.h>
 #endif
 #include <stdio.h>
-#include "ICommon.h"
-#include "main.h"
+
+#include "TServer.h"
 #include "TPlayer.h"
-#include "TAccount.h"
+#include "IEnums.h"
 #include "TLevel.h"
 
 #define serverlog	server->getServerLog()

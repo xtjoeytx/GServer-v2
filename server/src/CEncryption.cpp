@@ -2,7 +2,6 @@
 // (C) GraalReborn 2008
 
 #include "IDebug.h"
-#include "CString.h"
 #include "CEncryption.h"
 
 const uint32_t CEncryption::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x4A80B38, 0};
