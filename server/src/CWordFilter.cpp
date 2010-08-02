@@ -1,8 +1,6 @@
 #include "IDebug.h"
-#include <vector>
-#include "ICommon.h"
 #include "CLog.h"
-#include "CString.h"
+#include "IEnums.h"
 #include "CWordFilter.h"
 #include "TServer.h"
 #include "TPlayer.h"

@@ -1,9 +1,7 @@
 #include "IDebug.h"
-#include "ICommon.h"
-#include "main.h"
-#include "CFileSystem.h"
-#include "TServer.h"
+#include "IEnums.h"
 #include "TLevel.h"
+#include "TServer.h"
 #include "TPlayer.h"
 #include "TNPC.h"
 
