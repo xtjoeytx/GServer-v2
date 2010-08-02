@@ -12,16 +12,19 @@ solution "gserver2"
 		targetname "gserver2"
 		files { "../server/include/**", "../server/src/**" }
 		includedirs { "../server/include" }
+		defines { "STATICLIB" }  -- For the UPnP library.
 		
 		-- Dependencies.
 		files { "../dependencies/zlib/**" }
 		files { "../dependencies/bzip2/**" }
+		files { "../dependencies/miniupnpc" }
+		includedirs { "../dependencies" }
 		includedirs { "../dependencies/zlib" }
 		includedirs { "../dependencies/bzip2" }
 		
 		-- Libraries.
 		configuration "windows"
-			links { "ws2_32" }
+			links { "ws2_32", "Iphlpapi" }
 		configuration "linux"
 			links { "boost_thread" }
 		

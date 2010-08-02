@@ -1,5 +1,6 @@
 #include "IDebug.h"
-#include "ICommon.h"
+#include "IEnums.h"
+#include "IUtil.h"
 #include "TLevelBaddy.h"
 #include "TServer.h"
 #include "TLevel.h"

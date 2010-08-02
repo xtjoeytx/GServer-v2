@@ -1,7 +1,5 @@
 #include "IDebug.h"
-#include "ICommon.h"
 #include "TLevelBoardChange.h"
-#include "TPlayer.h"
 
 CString TLevelBoardChange::getBoardStr(const CString ignore) const
 {

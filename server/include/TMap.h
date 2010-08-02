@@ -2,7 +2,7 @@
 #define TGMAP_H
 
 #include <map>
-#include "ICommon.h"
+#include <time.h>
 #include "CString.h"
 
 enum
@@ -28,6 +28,7 @@ struct SMapLevel
 };
 
 class TServer;
+
 class TMap
 {
 	public:

@@ -1,9 +1,8 @@
 #include "IDebug.h"
 #include <memory.h>
-#include "CFileSystem.h"
-#include "TServer.h"
 #include "TAccount.h"
-#include "ICommon.h"
+#include "TServer.h"
+#include "CFileSystem.h"
 
 /*
 	TAccount: Constructor - Deconstructor

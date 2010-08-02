@@ -2,18 +2,19 @@
 #define TPLAYER_H
 
 #include <time.h>
+#include <map>
 #include <vector>
-#include "ICommon.h"
 #include "IEnums.h"
-#include "IUtil.h"
-#include "CSocket.h"
 #include "CFileQueue.h"
-//#include "TServer.h"
 #include "TAccount.h"
-#include "TLevel.h"
-#include "TWeapon.h"
 #include "CEncryption.h"
+#include "CSocket.h"
 
+class TLevel;
+class TServer;
+class TMap;
+class TWeapon;
+//class CFileQueue;
 
 struct SCachedLevel
 {
@@ -22,8 +23,6 @@ struct SCachedLevel
 	time_t modTime;
 };
 
-class TServer;
-class TMap;
 class TPlayer : public TAccount, public CSocketStub
 {
 	public:

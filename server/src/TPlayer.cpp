@@ -4,13 +4,16 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <boost/thread.hpp>
-#include "ICommon.h"
-#include "IEnums.h"
-#include "CSocket.h"
-#include "TServer.h"
+
 #include "TPlayer.h"
+#include "IEnums.h"
+#include "IUtil.h"
+#include "TServer.h"
 #include "TAccount.h"
-#include "CEncryption.h"
+#include "TLevel.h"
+#include "TMap.h"
+#include "TWeapon.h"
+#include "TNPC.h"
 
 /*
 	Logs

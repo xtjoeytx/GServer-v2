@@ -2,12 +2,8 @@
 #define TSERVERLIST_H
 
 #include <time.h>
-#include "ICommon.h"
-#include "IUtil.h"
 #include "CString.h"
 #include "CSocket.h"
-//#include "TPlayer.h"		// FOR THE LOVE OF GOD DON'T UNCOMMENT!
-//#include "TServer.h"
 
 
 enum
