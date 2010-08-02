@@ -2,7 +2,6 @@
 #define CFILEQUEUE_H
 
 #include <queue>
-#include "ICommon.h"
 #include "CString.h"
 #include "CSocket.h"
 #include "CEncryption.h"

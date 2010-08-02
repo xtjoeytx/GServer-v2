@@ -1,11 +1,13 @@
 #include "IDebug.h"
 #include <vector>
 #include <math.h>
-#include "ICommon.h"
+
+#include "TServer.h"
 #include "TPlayer.h"
-#include "TAccount.h"
-#include "CSocket.h"
-#include "TServerList.h"
+#include "IUtil.h"
+#include "TLevel.h"
+#include "TMap.h"
+#include "TWeapon.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()

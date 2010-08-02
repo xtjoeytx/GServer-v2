@@ -1,10 +1,10 @@
 #ifndef IUTIL_H
 #define IUTIL_H
 
-#include "CString.h"
 #include <map>
 #include <vector>
 #include <iterator>
+#include "CString.h"
 
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 

@@ -1,5 +1,6 @@
 #include "IDebug.h"
 #include "TLevelItem.h"
+#include "IEnums.h"
 #include "TPlayer.h"
 
 const char *__itemList[] = {

@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <map>
-#include "ICommon.h"
-#include "TServer.h"
+#include "IUtil.h"
+#include "CString.h"
 #include "TLevelBaddy.h"
 #include "TLevelBoardChange.h"
 #include "TLevelChest.h"
@@ -13,6 +13,7 @@
 #include "TLevelLink.h"
 #include "TLevelSign.h"
 
+class TServer;
 class TPlayer;
 class TNPC;
 class TMap;
