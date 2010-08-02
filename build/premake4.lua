@@ -17,7 +17,7 @@ solution "gserver2"
 		-- Dependencies.
 		files { "../dependencies/zlib/**" }
 		files { "../dependencies/bzip2/**" }
-		files { "../dependencies/miniupnpc" }
+		files { "../dependencies/miniupnpc/**" }
 		includedirs { "../dependencies" }
 		includedirs { "../dependencies/zlib" }
 		includedirs { "../dependencies/bzip2" }
