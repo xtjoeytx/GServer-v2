@@ -1,8 +1,9 @@
 #include "IDebug.h"
+#include <boost/thread.hpp>
 #include <signal.h>
 #include <stdlib.h>
 #include <map>
-#include <boost/thread.hpp>
+
 #include "main.h"
 #include "IConfig.h"
 #include "CString.h"
