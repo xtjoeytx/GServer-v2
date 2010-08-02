@@ -1,10 +1,10 @@
 #include "IDebug.h"
 #include <vector>
 #include <time.h>
+#include "TServer.h"
 #include "TNPC.h"
 #include "CFileSystem.h"
 #include "TMap.h"
-#include "TServer.h"
 #include "TLevel.h"
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };

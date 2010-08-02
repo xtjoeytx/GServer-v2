@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <boost/thread.hpp>
 #include <sys/stat.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <dirent.h>
@@ -9,7 +10,6 @@
 	#define _utimbuf utimbuf;
 #endif
 #include <map>
-#include <boost/thread.hpp>
 #include "IDebug.h"
 #include "IUtil.h"
 #include "TServer.h"
