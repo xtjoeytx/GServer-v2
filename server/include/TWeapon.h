@@ -2,8 +2,6 @@
 #define TWEAPON_H
 
 #include <time.h>
-#include "ICommon.h"
-#include "TNPC.h"
 #include "CString.h"
 
 class TServer;

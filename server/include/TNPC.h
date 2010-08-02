@@ -1,9 +1,9 @@
 #ifndef TNPC_H
 #define TNPC_H
 
-#include "ICommon.h"
+#include <time.h>
 #include "CString.h"
-//#include "TLevel.h"
+#include "IUtil.h"
 
 enum
 {

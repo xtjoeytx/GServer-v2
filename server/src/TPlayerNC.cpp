@@ -1,12 +1,13 @@
 #include "IDebug.h"
 #include <vector>
 #include <math.h>
-#include "ICommon.h"
+
 #include "IEnums.h"
+#include "TServer.h"
 #include "TPlayer.h"
-#include "TAccount.h"
-#include "CSocket.h"
-#include "TServerList.h"
+#include "TWeapon.h"
+#include "TNPC.h"
+#include "TLevel.h"
 
 #define serverlog	server->getServerLog()
 #define npclog		server->getNPCLog()
