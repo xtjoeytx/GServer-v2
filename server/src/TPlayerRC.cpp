@@ -377,10 +377,17 @@ bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 		return true;
 	}
 
-	rclog.out("%s disconnected %s.\n", accountName.text(), p->getAccountName().text());
+	CString reason = pPacket.readString("");
+	if (!reason.isEmpty())
+		rclog.out("%s disconnected %s: %s\n", accountName.text(), p->getAccountName().text(), reason.text());
+	else rclog.out("%s disconnected %s.\n", accountName.text(), p->getAccountName().text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " disconnected " << p->getAccountName());
 
-	p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "One of the server administrators, " << accountName << ", has disconnected you.");
+	CString disconnectMessage = CString() << "One of the server administrators, " << accountName << ", has disconnected you";
+	if (!reason.isEmpty())
+		disconnectMessage << " for the following reason: " << reason;
+	else disconnectMessage << ".";
+	p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << disconnectMessage);
 	server->deletePlayer(p);
 	return true;
 }
