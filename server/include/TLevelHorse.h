@@ -1,7 +1,6 @@
 #ifndef TLEVELHORSE_H
 #define TLEVELHORSE_H
 
-#include "ICommon.h"
 #include "CString.h"
 #include "CTimeout.h"
 

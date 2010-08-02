@@ -10,12 +10,10 @@
 #endif
 #include <map>
 #include <boost/thread.hpp>
-#include "ICommon.h"
-#include "CString.h"
-#include "CSettings.h"
-#include "CFileSystem.h"
+#include "IDebug.h"
+#include "IUtil.h"
 #include "TServer.h"
-//nofoldersconfig
+#include "CFileSystem.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 	const char fSep = '\\';

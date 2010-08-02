@@ -2,7 +2,6 @@
 #define CSETTINGS_H
 
 #include <vector>
-#include "ICommon.h"
 #include "CString.h"
 
 struct CKey

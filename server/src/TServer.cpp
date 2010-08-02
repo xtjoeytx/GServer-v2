@@ -1,12 +1,14 @@
 #include "IDebug.h"
 #include <boost/thread.hpp>
-#include "ICommon.h"
-#include "IEnums.h"
-#include "CSocket.h"
-#include "CSettings.h"
-#include "CFileSystem.h"
-#include "CWordFilter.h"
+
 #include "TServer.h"
+#include "main.h"
+#include "TPlayer.h"
+#include "TWeapon.h"
+#include "IUtil.h"
+#include "TNPC.h"
+#include "TMap.h"
+#include "TLevel.h"
 
 static const char* const filesystemTypes[] =
 {
@@ -21,7 +23,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+: doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this), upnp(this)
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
@@ -92,6 +94,11 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 		serverlog.out("[%s] ** [Error] Could not connect listening socket...\n", name.text());
 		return ERR_LISTEN;
 	}
+
+	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
+	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
+	upnp.initialize(playerSock.getLocalIp(), settings.getStr("serverport").text());
+	upnp_thread = boost::thread(boost::ref(upnp));
 
 	// Connect to the serverlist.
 	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
@@ -172,6 +179,9 @@ void TServer::cleanupDeletedPlayers()
 
 void TServer::cleanup()
 {
+	// Close our UPNP port forward.
+	upnp.remove_port_forward(settings.getStr("serverport"));
+
 	// Save translations.
 	this->TS_Save();
 

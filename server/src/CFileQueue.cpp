@@ -1,10 +1,7 @@
-#include "IDebug.h"
-#include "ICommon.h"
 #include <queue>
+#include "IDebug.h"
+#include "IEnums.h"
 #include "CFileQueue.h"
-#include "CString.h"
-#include "CSocket.h"
-#include "TPlayer.h"
 
 void CFileQueue::addPacket(CString pPacket)
 {
