@@ -4,7 +4,9 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "ICommon.h"
+
+#include <boost/thread.hpp>
+#include "CString.h"
 
 #include "CLog.h"
 #include "CFileSystem.h"
@@ -13,13 +15,15 @@
 #include "CSocket.h"
 #include "CTranslationManager.h"
 #include "CWordFilter.h"
-
-#include "TPlayer.h"
 #include "TServerList.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TWeapon.h"
+
+#include "CUPNP.h"
+
+class TPlayer;
+class TLevel;
+class TNPC;
+class TMap;
+class TWeapon;
 
 enum // Socket Type
 {
@@ -190,6 +194,9 @@ class TServer : public CSocketStub
 
 		TServerList serverlist;
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+
+		CUPNP upnp;
+		boost::thread upnp_thread;
 
 		// NPC-Server Functionality
 		TPlayer *mNpcServer;

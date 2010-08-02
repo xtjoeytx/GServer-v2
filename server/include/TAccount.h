@@ -1,10 +1,9 @@
 #ifndef TACCOUNT_H
 #define TACCOUNT_H
 
-#include "ICommon.h"
+#include <vector>
+#include <map>
 #include "CString.h"
-#include "TServer.h"
-#include "TLevel.h"
 #include "TLevelChest.h"
 
 enum
@@ -121,6 +120,7 @@ enum
 };
 #define propscount	83
 
+class TServer;
 class TAccount
 {
 	public:

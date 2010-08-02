@@ -1,7 +1,6 @@
 #include "IDebug.h"
-#include "IUtil.h"
 #include "IEnums.h"
-#include "CString.h"
+#include "IUtil.h"
 
 static const char* colors[] =
 {

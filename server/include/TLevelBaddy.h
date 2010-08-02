@@ -2,7 +2,6 @@
 #define TLEVELBADDY_H
 
 #include <vector>
-#include "ICommon.h"
 #include "CString.h"
 #include "CTimeout.h"
 

@@ -2,9 +2,7 @@
 #define CFILESYSTEM_H
 
 #include <map>
-#include "ICommon.h"
 #include "CString.h"
-//#include "TServer.h"
 
 namespace boost
 {
