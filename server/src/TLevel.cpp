@@ -1,7 +1,7 @@
 #include "IDebug.h"
 #include "IEnums.h"
-#include "TLevel.h"
 #include "TServer.h"
+#include "TLevel.h"
 #include "TPlayer.h"
 #include "TNPC.h"
 
