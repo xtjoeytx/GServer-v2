@@ -3,8 +3,8 @@
 
 #include "TServerList.h"
 #include "IEnums.h"
-#include "IUtil.h"
 #include "TServer.h"
+#include "IUtil.h"
 #include "TPlayer.h"
 
 /*
