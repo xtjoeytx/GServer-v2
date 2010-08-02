@@ -1,4 +1,6 @@
 #include "IDebug.h"
+#include <boost/thread.hpp>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -7,7 +9,6 @@
 #include <unistd.h>
 #endif
 
-#include <boost/thread.hpp>
 #include "CLog.h"
 
 static CString getBasePath();
