@@ -3,14 +3,13 @@
 #include <stdlib.h>
 #include <map>
 #include <boost/thread.hpp>
-#include "ICommon.h"
 #include "main.h"
+#include "IConfig.h"
+#include "CString.h"
 #include "IUtil.h"
 #include "CLog.h"
 #include "CSocket.h"
 #include "TServer.h"
-#include "TPlayer.h"
-#include "TServerList.h"
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
