@@ -1,8 +1,8 @@
 #include "IDebug.h"
 #include "IEnums.h"
+#include "TServer.h"
 #include "IUtil.h"
 #include "TLevelBaddy.h"
-#include "TServer.h"
 #include "TLevel.h"
 
 const int baddytypes = 10;
