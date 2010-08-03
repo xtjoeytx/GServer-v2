@@ -17,7 +17,7 @@ void CUPNP::discover()
 	memset(&urls, 0, sizeof(UPNPUrls));
 	memset(&data, 0, sizeof(IGDdatas));
 
-	device_list = upnpDiscover(4000, 0, 0, 0);
+	device_list = upnpDiscover(2000, 0, 0, 0);
 	if (device_list)
 	{
 		device = device_list;
