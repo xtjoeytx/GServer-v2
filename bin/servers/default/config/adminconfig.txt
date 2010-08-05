@@ -12,3 +12,4 @@ hq_level = 1
 
 # NPC-Server password.
 ns_password = 
+ns_ip = AUTO
