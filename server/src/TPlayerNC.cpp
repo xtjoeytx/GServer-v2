@@ -44,7 +44,7 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != 0)
 	{
-		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip");
+		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip","AUTO");
 		if (npcServerIp == "AUTO")
 			npcServerIp = npcServer->getSocket()->getRemoteIp();
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
