@@ -47,6 +47,7 @@ EMAIL
 LOCALRIGHTS 1040383
 IPRANGE *.*.*.*
 FOLDERRIGHT rw accounts/*
+FOLDERRIGHT rw config/*
 FOLDERRIGHT rw guilds/*
 FOLDERRIGHT rw logs/*
 FOLDERRIGHT rw npcprops/*
@@ -64,4 +65,5 @@ FOLDERRIGHT rw world/images/*
 FOLDERRIGHT rw world/shields/*
 FOLDERRIGHT rw world/swords/*
 FOLDERRIGHT rw world/sounds/*
+FOLDERRIGHT r weapons/*
 LASTFOLDER accounts/
