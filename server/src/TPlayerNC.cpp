@@ -84,6 +84,16 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			break;
 		}
 
+		// Send RPG Message
+		case NCI_SENDRPGMESSAGE:
+		{
+			TPlayer *player = server->getPlayer(pPacket.readGUShort());
+			if (player != 0)	
+				if (player->isClient() && player->getVersion() >= CLVER_2_1)
+				player->sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"" << pPacket.readString("") << "\"");
+			break;
+		}
+
 		// Send RC
 		case NCI_SENDTORC:
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pPacket.readString(""));

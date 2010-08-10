@@ -28,6 +28,10 @@ const char* __admin[] = {
 	"sharefolder", "language"
 };
 
+const char* __importantfiles[] = {
+	"accounts/defaultaccount.txt","config/adminconfig.txt","config/allowedversions.txt","config/foldersconfig.txt","config/ipbans.txt","config/rchelp.txt","config/rcmessage.txt","config/rules.txt","config/servermessage.html","config/serveroptions.txt",                
+};
+
 static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
 
 void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
@@ -1619,6 +1623,21 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	// Send file.
 	CString file = pPacket.readString("");
 	CString filepath = CString() << server->getServerPath() << lastFolder << file;
+	CString checkFile = CString() << lastFolder << file;
+
+	// Don't let us download/view important files
+	if (!hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+		{
+			if (checkFile == CString(__importantfiles[j]) && checkFile!="config/servermessage.html" && checkFile!="config/rules.txt" && checkFile!="config/ipbans.txt" && checkFile!="config/rcmessage.txt" && checkFile!="config/serveroptions.txt" && checkFile!="config/foldersconfig.txt")
+			{
+				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to download/view " << checkFile);
+				return true;
+			}
+		}
+	}
+
 	this->sendFile(lastFolder, file);
 
 	rclog.out("%s downloaded file %s\n", accountName.text(), file.text());
@@ -1638,6 +1657,25 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	CString file = pPacket.readChars(pPacket.readGUChar());
 	CString filepath = CString() << server->getServerPath() << lastFolder;
 	CString fileData = pPacket.subString(pPacket.readPos());
+	CString checkFile = CString() << lastFolder << file;
+
+	// Don't let us upload/overwrite important files
+	if(hasRight(PLPERM_MODIFYSTAFFACCOUNT) || checkFile == "config/foldersconfig.txt" && hasRight(PLPERM_SETFOLDEROPTIONS) || checkFile == "config/serveroptions.txt" && hasRight(PLPERM_SETSERVEROPTIONS) || checkFile=="config/servermessage.html" || checkFile=="config/rules.txt" || checkFile=="config/ipbans.txt" || checkFile=="config/rcmessage.txt"){
+		 // Check if user has the right to edit folders config or server options
+		 // Then we will let them do it through file manager, why not? :P
+		 // I'm not sure how to do this as a 'not' expression...
+		 // This is by far the messiest check on my new code :(
+		 // TODO: update this to be less messy, I mean an else statement!? CMON!
+	}else{
+		for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+		{
+			if (checkFile == CString(__importantfiles[j]))
+			{
+				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to upload " << checkFile);
+				return true;
+			}
+		}
+	}
 
 	// See if we are uploading a large file or not.
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
@@ -1683,6 +1721,16 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	// Assemble destination and source.
 	destination << dir << file;
 	source << lastFolder << file;
+
+	// Don't let us move important files
+	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+	{
+		if (source == CString(__importantfiles[j]))
+		{
+			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source);
+			return true;
+		}
+	}
 
 	rclog.out("%s moved file %s to %s\n", accountName.text(), source.text(), destination.text());
 
@@ -1738,13 +1786,17 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 
 	CString file = pPacket.readString("");
 	CString filePath = CString() << server->getServerPath() << lastFolder << file;
+	CString checkFile = CString() << lastFolder << file;
 	CFileSystem::fixPathSeparators(&filePath);
 
-	// Don't let us delete defaultaccount.
-	if (file == "defaultaccount.txt")
+	// Don't let us delete important files
+	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
 	{
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete defaultaccount.txt");
-		return true;
+		if (checkFile == CString(__importantfiles[j]))
+		{
+			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete file " << checkFile);
+			return true;
+		}
 	}
 
 #if defined(WIN32) || defined(WIN64)
@@ -1791,14 +1843,20 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f2 = pPacket.readChars(pPacket.readGUChar());
 	CString f1path = CString() << server->getServerPath() << lastFolder << f1;
 	CString f2path = CString() << server->getServerPath() << lastFolder << f2;
+	CString checkFile1 = CString() << lastFolder << f1;
+	CString checkFile2 = CString() << lastFolder << f2;
 	CFileSystem::fixPathSeparators(&f1path);
 	CFileSystem::fixPathSeparators(&f2path);
 
-	// Don't let us rename defaultaccount.
-	if (f1 == "defaultaccount.txt" || f2 == "defaultaccount.txt")
+
+	// Don't let us rename/overwrite important files
+	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
 	{
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete defaultaccount.txt");
-		return true;
+		if (checkFile1 == CString(__importantfiles[j]))
+		{
+			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to rename/overwrite file " << checkFile1 << " or " << checkFile2);
+			return true;
+		}
 	}
 
 	// Renaming our logs?  First, we need to close them.
