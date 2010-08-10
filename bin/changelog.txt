@@ -1,5 +1,49 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v2.3.0 (WIP)
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC Server in RC.
++ Added protection for important files rather than preventing rw config/* now you can give people rights without worrying about them stealing your adminconfig.txt password.
++ Now supports sendrpgmessage() packet from NPC-Server.
+o Updated adminconfig.txt to have ns_ip=AUTO at the end.
+o Updated YOURACCOUNT.TXT to have access to some folders the default was missing.
+o The new protection added for protecting config/* also completely protects defaultaccount.txt from being modified.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
+    v2.2.0
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Some admin-only server options weren't in the list of protected options. They are now.
+* Server now correctly deletes an empty string flag.
+* A player's online seconds, kills, and deaths will now display correctly in their profile if their values exceed 1568735.
+* Sign text is no longer trimmed.
+* The server correctly handles UTF-8 file names in Windows now.
+* Fixed a bug where moving a file in RC would fail to move the file and delete the original.
+* Player gani parameters #P6 through #P9 should be correctly passed to other players now.
+* String arrays in the profile field are correctly tokenized now.
+* Fixed a bug with saving weapons where the SCRIPTEND field wasn't being written correctly in some instances.
+* The RC command /restartserver no longer ignores the server overrides specified in servers.txt.
+* The gr.removeguild triggeraction hack will remove the guild tag from all currently online players when the guild is deleted.
+* Fixed a bug where the client's guild wasn't being cleared internally.
+* If a player issues a setlevel2 command to warp to the same level he is in, the server just moves the player instead of attempting to warp him. This fixes some script issues with isleader.
+* RCs will use their properly set nickname now, instead of using the nickname saved to the user's account file when they last logged in as a normal client.
+* Fixed the creation of new directories via RC. It can now recursively create new directories.
+* Fixed a bug with the sparring deviation decay algorithm.
++ Comments in settings files can be placed anywhere now.
++ Flag hack gr.ip added.
++ Triggeraction hacks gr.appendfile, gr.writefile, and gr.rcchat added.
++ Added new server options to enable/disable all the various triggeraction and flag hacks.
+o Updated readme.txt with a bunch of information about the Graal Reborn gserver, including information on all the triggeraction hacks.
+o Updated the build system to premake 4.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v2.1.0
 
   * bug fix, + new feature, o other
