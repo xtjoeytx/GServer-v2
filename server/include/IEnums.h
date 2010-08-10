@@ -313,6 +313,7 @@ enum
 	NCI_LEVELGET			= 12,
 	NCI_NPCPROPSSET			= 13,
 	NCI_NPCWARP				= 14,
+	NCI_SENDRPGMESSAGE		= 15,
 };
 
 enum
