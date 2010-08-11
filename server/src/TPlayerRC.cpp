@@ -1630,7 +1630,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	{
 		for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
 		{
-			if (checkFile == CString(__importantfiles[j]) && checkFile!="config/servermessage.html" && checkFile!="config/rules.txt" && checkFile!="config/ipbans.txt" && checkFile!="config/rcmessage.txt" && checkFile!="config/serveroptions.txt" && checkFile!="config/foldersconfig.txt")
+			if (checkFile == CString(__importantfiles[j]) && checkFile!="config/servermessage.html" && checkFile!="config/rules.txt" && checkFile!="config/ipbans.txt" && checkFile!="config/rcmessage.txt" && checkFile!="config/serveroptions.txt" && checkFile!="config/foldersconfig.txt" && checkFile!="accounts/defaultaccount.txt")
 			{
 				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to download/view " << checkFile);
 				return true;
@@ -1660,7 +1660,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	CString checkFile = CString() << lastFolder << file;
 
 	// Don't let us upload/overwrite important files
-	if(hasRight(PLPERM_MODIFYSTAFFACCOUNT) || checkFile == "config/foldersconfig.txt" && hasRight(PLPERM_SETFOLDEROPTIONS) || checkFile == "config/serveroptions.txt" && hasRight(PLPERM_SETSERVEROPTIONS) || checkFile=="config/servermessage.html" || checkFile=="config/rules.txt" || checkFile=="config/ipbans.txt" || checkFile=="config/rcmessage.txt"){
+	if(hasRight(PLPERM_MODIFYSTAFFACCOUNT) || checkFile == "config/foldersconfig.txt" && hasRight(PLPERM_SETFOLDEROPTIONS) || checkFile == "config/serveroptions.txt" && hasRight(PLPERM_SETSERVEROPTIONS) || checkFile=="config/servermessage.html" || checkFile=="config/rules.txt" || checkFile=="config/ipbans.txt" || checkFile=="config/rcmessage.txt"  || checkFile=="accounts/defaultaccount.txt"){
 		 // Check if user has the right to edit folders config or server options
 		 // Then we will let them do it through file manager, why not? :P
 		 // I'm not sure how to do this as a 'not' expression...
