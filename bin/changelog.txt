@@ -7,6 +7,8 @@
 
 * GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC Server in RC.
 + Added protection for important files rather than preventing rw config/* now you can give people rights without worrying about them stealing your adminconfig.txt password.
+  Note on protection: People with 'change staff accounts' can edit any file in config/* but cannot delete/move/rename them (to avoid messing up the server)
+  Also, people with 'edit server options' or 'edit folder config' can directly edit the serveroptions.txt & foldersconfig.txt files respectively.
 + Now supports sendrpgmessage() packet from NPC-Server.
 o Updated adminconfig.txt to have ns_ip=AUTO at the end.
 o Updated YOURACCOUNT.TXT to have access to some folders the default was missing.
