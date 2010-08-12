@@ -5,7 +5,9 @@
   * bug fix, + new feature, o other
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Fixed an oversight in protection that didn't let you edit the defaultaccount.txt from RC
 * GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC Server in RC.
++ Servers are now automatically hidden from the list (marked as UC) if onlystaff is set to true
 + Added protection for important files rather than preventing rw config/* now you can give people rights without worrying about them stealing your adminconfig.txt password.
   Note on protection: People with 'change staff accounts' can edit any file in config/* but cannot delete/move/rename them (to avoid messing up the server)
   Also, people with 'edit server options' or 'edit folder config' can directly edit the serveroptions.txt & foldersconfig.txt files respectively.
