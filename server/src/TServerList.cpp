@@ -225,7 +225,11 @@ bool TServerList::connectServer()
 		>> (char)localip.length() << localip);
 
 	// Set the level now.
-	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+	if(server->getSettings()->getBool("onlystaff", false)){
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
+	}else{
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+	}
 
 	// Send Players
 	sendPlayers();
@@ -302,7 +306,11 @@ void TServerList::sendServerHQ()
 {
 	CSettings* adminsettings = server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
-	sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+	if(server->getSettings()->getBool("onlystaff", false)){
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
+	}else{
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+	}
 }
 
 /*
