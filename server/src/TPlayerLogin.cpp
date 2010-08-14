@@ -159,14 +159,31 @@ bool TPlayer::sendLogin()
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
 
-			// Send the other player my props.
-			player->sendPacket(player->isClient() ? myClientProps : (player->isNPCServer() ? myNCProps : myRCProps));
-			
+			// Send the other player my props (and flags to npcserver)
+			if (player->isNPCServer())
+			{
+				// send props
+				player->sendPacket(myNCProps);
+
+				// send flags
+				for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+					player->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << i->first << "=" << i->second);
+			}
+			else player->sendPacket(player->isClient() ? myClientProps : myRCProps);
+
 			// Add Player / RC
 			if (isClient())
 				sendPacket(player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 			else if (isNPCServer())
+			{
+				// send props
 				sendPacket(player->getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool)));
+
+				// send flags
+				std::map<CString, CString> *flags = player->getFlagList();
+				for (std::map<CString, CString>::const_iterator i = flags->begin(); i != flags->end(); ++i)
+					sendPacket(CString() >> (char)PLO_FLAGSET >> (short)player->getId() << i->first << "=" << i->second);
+			}
 			else
 			{
 				// Levelname
@@ -260,7 +277,7 @@ bool TPlayer::sendLoginClient()
 		this->setFlag("gr.ip", this->accountIpStr);
 
 	// Send the player's flags.
-	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
 		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
