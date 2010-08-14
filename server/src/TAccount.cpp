@@ -81,7 +81,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	// Clear Lists
 	for (int i = 0; i < 30; ++i) attrList[i].clear();
 	chestList.clear();
-	mFlagList.clear();
+	flagList.clear();
 	folderList.clear();
 	weaponList.clear();
 
@@ -254,7 +254,7 @@ bool TAccount::saveAccount()
 		newFile << "WEAPON " << weaponList[i] << "\r\n";
 
 	// Flags
-	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		newFile << "FLAG " << i->first;
 		if (!i->second.isEmpty()) newFile << "=" << i->second;
@@ -546,14 +546,14 @@ void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
 	{
 		int totalLength = pFlagName.length() + 1 + pFlagValue.length();
 		int fixedLength = 223 - 1 - pFlagName.length();
-		mFlagList[pFlagName] = pFlagValue.subString(0, fixedLength);
+		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
-	else mFlagList[pFlagName] = pFlagValue;
+	else flagList[pFlagName] = pFlagValue;
 }
 
 void TAccount::deleteFlag(const CString& pFlagName)
 {
-	mFlagList.erase(pFlagName);
+	flagList.erase(pFlagName);
 }
 
 /*
