@@ -2034,6 +2034,27 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	return true;
 }
 
+/*
+	TPlayer: Flag Functions
+*/
+void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, int pForward)
+{
+	// Call Default Set Flag
+	TAccount::setFlag(pFlagName, pFlagValue);
+	
+	// Send to Player
+	if (pForward & 1)
+	{
+		if (pFlagValue.isEmpty())
+			sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+		else
+			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+	}
+
+	// Send to NPC-Server
+	if (pForward & 2)
+		server->getNPCServer()->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << pFlagName << "=" << pFlagValue);
+}
 
 /*
 	TPlayer: Packet functions
@@ -2056,7 +2077,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Player-Ip
 	accountIpStr = playerSock->getRemoteIp();
 	accountIp = inet_addr(accountIpStr.text());
-
+	
 	// Read Client-Type
 	serverlog.out("[%s] :: New login:\t", server->getName().text());
 	type = (1 << pPacket.readGChar());
@@ -2220,6 +2241,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		// NPC-Server
 		int port = pPacket.readGShort();
 		server->setNPCServer(this, port);
+
+		printf("NPC Server connected -> Port: %d\n", port);
 	}
 
 	return true;
@@ -2667,7 +2690,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName, flagValue);
+	this->setFlag(flagName, flagValue, 2);
 	return true;
 }
 
