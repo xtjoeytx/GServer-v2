@@ -252,6 +252,18 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(0), mapNew, levelNew, this, true);
 			break;
 		}
+		
+		case NCI_SETPLFLAG:
+		{
+			TPlayer *pl = server->getPlayer(pPacket.readGShort());
+			if (pl != 0)
+			{
+				CString flagName  = pPacket.readString("=");
+				CString flagValue = pPacket.readString("");
+				pl->setFlag(flagName, flagValue, 1);
+			}
+			break;
+		}
 	}
 
 	return true;
