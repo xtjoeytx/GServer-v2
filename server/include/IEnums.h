@@ -314,6 +314,7 @@ enum
 	NCI_NPCPROPSSET			= 13,
 	NCI_NPCWARP				= 14,
 	NCI_SENDRPGMESSAGE		= 15,
+	NCI_SETPLFLAG			= 16,
 };
 
 enum
