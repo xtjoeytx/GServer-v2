@@ -140,7 +140,7 @@ class TAccount
 		bool hasWeapon(const CString& pWeapon);
 
 		// Flag-Managing
-		CString getFlag(const CString& pFlagName)	{ return mFlagList[pFlagName]; }
+		CString getFlag(const CString& pFlagName)	{ return flagList[pFlagName]; }
 		void setFlag(CString pFlag);
 		void setFlag(const CString& pFlagName, const CString& pFlagValue);
 		void deleteFlag(const CString& pFlagName);
@@ -164,6 +164,7 @@ class TAccount
 		CString getAdminIp() const		{ return adminIp; }
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
+		std::map<CString, CString>* getFlagList()		{ return &flagList; }
 		std::vector<CString>* getFolderList()			{ return &folderList; }
 		std::vector<CString>* getWeaponList()			{ return &weaponList; }
 		CString translate(const CString& pKey);
@@ -206,7 +207,7 @@ class TAccount
 		int onlineTime, shieldPower, sprite, status, swordPower, udpport;
 		time_t lastSparTime;
 		unsigned char statusMsg;
-		std::map<CString, CString> mFlagList;
+		std::map<CString, CString> flagList;
 		std::vector<CString> chestList, folderList, weaponList;
 };
 
