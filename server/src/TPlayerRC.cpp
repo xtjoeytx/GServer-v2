@@ -49,7 +49,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
 
 	// Clear flags
-	for (std::map<CString, CString>::const_iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		outPacket >> (char)PLO_FLAGDEL << i->first;
 		if (!i->second.isEmpty()) outPacket << "=" << i->second;
@@ -90,20 +90,22 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 
 	// Clear the flags and re-populate the flag list.
 	// TODO: npc-server
-	mFlagList.clear();
+	flagList.clear();
 	for (int i = pPacket.readGUShort(); i > 0; --i)
 	{
 		CString flag = pPacket.readChars(pPacket.readGUChar());
-		this->setFlag(flag);
+		CString name = flag.readString("=");
+		CString val = flag.readString("");
+		setFlag(name, val, (id == -1 ? 0 : 1 | 2));
 	}
-	if (id != -1)
-	{
-		for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
-		{
-			if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
-			else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
-		}
-	}
+	//if (id != -1)
+	//{
+	//	for (std::map<CString, CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
+	//	{
+	//		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
+	//		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+	//	}
+	//}
 
 	// Clear the chests and re-populate the chest list.
 	chestList.clear();
@@ -166,8 +168,8 @@ CString TPlayer::getPropsRC()
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
-	ret >> (short)mFlagList.size();
-	for (std::map<CString, CString>::iterator i = mFlagList.begin(); i != mFlagList.end(); ++i)
+	ret >> (short)flagList.size();
+	for (std::map<CString, CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		CString flag = CString() << i->first;
 		if (!i->second.isEmpty()) flag << "=" << i->second;

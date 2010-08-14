@@ -103,7 +103,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(int defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
-		
+		void setFlag(const CString& pFlagName, const CString& pFlagValue, int pForward = 0);
+
 		// NPC-Server Functionality
 		void sendNCAddr();
 		void sendNC_Weapons();
