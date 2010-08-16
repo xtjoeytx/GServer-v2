@@ -63,6 +63,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
+		void setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
@@ -103,7 +104,6 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(int defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
-		void setFlag(const CString& pFlagName, const CString& pFlagValue, int pForward = 0);
 
 		// NPC-Server Functionality
 		void sendNCAddr();
