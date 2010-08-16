@@ -2037,13 +2037,13 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 /*
 	TPlayer: Flag Functions
 */
-void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, int pForward)
+void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer, bool sendToNPCServer)
 {
 	// Call Default Set Flag
 	TAccount::setFlag(pFlagName, pFlagValue);
 	
 	// Send to Player
-	if (pForward & 1)
+	if (sendToPlayer)
 	{
 		if (pFlagValue.isEmpty())
 			sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
@@ -2052,7 +2052,7 @@ void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, int p
 	}
 
 	// Send to NPC-Server
-	if (pForward & 2)
+	if (sendToNPCServer && server->getNPCServer() != 0)
 		server->getNPCServer()->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << pFlagName << "=" << pFlagValue);
 }
 
@@ -2690,7 +2690,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName, flagValue, 2);
+	this->setFlag(flagName, flagValue, false, true);
 	return true;
 }
 

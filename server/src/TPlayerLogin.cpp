@@ -274,7 +274,7 @@ bool TPlayer::sendLoginClient()
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
-		this->setFlag("gr.ip", this->accountIpStr);
+		this->setFlag("gr.ip", this->accountIpStr, true, true);
 
 	// Send the player's flags.
 	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)

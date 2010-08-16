@@ -115,7 +115,8 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		CString name = flag.readString("=");
 		CString val = flag.readString("");
-		setFlag(name, val, (id == -1 ? 0 : 1 | 2));
+		if (id == -1) setFlag(name, val);
+		else setFlag(name, val, true, true);
 	}
 
 	// Clear the chests and re-populate the chest list.
