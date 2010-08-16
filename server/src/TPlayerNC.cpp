@@ -260,7 +260,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			{
 				CString flagName  = pPacket.readString("=");
 				CString flagValue = pPacket.readString("");
-				pl->setFlag(flagName, flagValue, 1);
+				pl->setFlag(flagName, flagValue, true, false);
 			}
 			break;
 		}
