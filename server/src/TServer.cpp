@@ -529,9 +529,6 @@ int TServer::loadConfigFiles()
 
 void TServer::loadSettings()
 {
-	bool staffonly_old = false;
-	staffonly_old = settings.getBool("onlystaff", false);
-
 	settings.setSeparator("=");
 	settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
 	if (!settings.isOpened())
@@ -540,19 +537,17 @@ void TServer::loadSettings()
 	// Load status list.
 	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
 
-	if(staffonly_old != settings.getBool("onlystaff", false))
-		getServerList()->sendServerHQ(); // Make sure the server is marked as UC
+	// Send our ServerHQ info in case we got changed the staffonly setting.
+	getServerList()->sendServerHQ();
 }
 
 void TServer::loadAdminSettings()
 {
 	adminsettings.setSeparator("=");
 	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
-	if (!adminsettings.isOpened()){
+	if (!adminsettings.isOpened())
 		serverlog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", name.text());
-	}else{
-		getServerList()->sendServerHQ();
-	}
+	else getServerList()->sendServerHQ();
 }
 
 void TServer::loadAllowedVersions()
