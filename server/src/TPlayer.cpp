@@ -3350,6 +3350,15 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				}
 				return true;
 			}
+			else if (action.find("gr.setplayergroup") == 0)
+			{
+				std::vector<CString> actionParts = action.tokenize(",");
+				if (actionParts.size() == 3)
+				{
+					TPlayer* player = server->getPlayer(actionParts[1], false);
+					player->setGroup(actionParts[2]);
+				}
+			}
 		}
 
 		if (settings->getBool("triggerhack_files", false) == true)
