@@ -2077,7 +2077,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Player-Ip
 	accountIpStr = playerSock->getRemoteIp();
 	accountIp = inet_addr(accountIpStr.text());
-	
+
 	// Read Client-Type
 	serverlog.out("[%s] :: New login:\t", server->getName().text());
 	type = (1 << pPacket.readGChar());
@@ -2242,7 +2242,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		int port = pPacket.readGShort();
 		server->setNPCServer(this, port);
 
-		printf("NPC Server connected -> Port: %d\n", port);
+		serverlog.out("[%s] :: NPC-Server connected on port: %d\n", server->getName().text(), port);
 	}
 
 	return true;
