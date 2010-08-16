@@ -5,16 +5,14 @@
   * bug fix, + new feature, o other
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Fixed an oversight in protection that didn't let you edit the defaultaccount.txt from RC
-* GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC Server in RC.
-+ Servers are now automatically hidden from the list (marked as UC) if onlystaff is set to true
-+ Added protection for important files rather than preventing rw config/* now you can give people rights without worrying about them stealing your adminconfig.txt password.
-  Note on protection: People with 'change staff accounts' can edit any file in config/* but cannot delete/move/rename them (to avoid messing up the server)
-  Also, people with 'edit server options' or 'edit folder config' can directly edit the serveroptions.txt & foldersconfig.txt files respectively.
-+ Now supports sendrpgmessage() packet from NPC-Server.
+* Fixed an oversight in protection that didn't let you edit the defaultaccount.txt from RC.
+* GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC-Server in RC.
++ Servers are now automatically hidden from the list (marked as UC) if onlystaff is set to true.
++ Added protection for important files rather than preventing rw config/* in the folder config.  Now, you can give people rights without worrying about them stealing your adminconfig.txt password.  foldersconfig.txt requires the 'set folder options' right.  rcmessage.txt, servermessage.html, and serveroptions.txt requires the 'set server options' right.  Everything else requires the 'change staff account' right.
++ The gserver now supports the sendrpgmessage() function from an NPC-Server.
 o Updated adminconfig.txt to have ns_ip=AUTO at the end.
-o Updated YOURACCOUNT.TXT to have access to some folders the default was missing.
-o The new protection added for protecting config/* also completely protects defaultaccount.txt from being modified.
+o Updated YOURACCOUNT.TXT to have access to folders that the default was missing.
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
@@ -45,6 +43,7 @@ o The new protection added for protecting config/* also completely protects defa
 + Added new server options to enable/disable all the various triggeraction and flag hacks.
 o Updated readme.txt with a bunch of information about the Graal Reborn gserver, including information on all the triggeraction hacks.
 o Updated the build system to premake 4.
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:

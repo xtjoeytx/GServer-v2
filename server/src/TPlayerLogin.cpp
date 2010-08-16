@@ -41,7 +41,6 @@ CString _zlibFix(
 */
 bool TPlayer::sendLogin()
 {
-	// Load Player-Account
 	if (!isNPCServer())
 	{
 		// We don't need to check if this fails.. because the defaults have already been loaded :)
@@ -147,7 +146,7 @@ bool TPlayer::sendLogin()
 		// Get our client props.
 		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 
-		// Get our nc props
+		// Get our NC props.
 		CString myNCProps;
 		if (server->hasNPCServer())
 			myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
@@ -159,34 +158,35 @@ bool TPlayer::sendLogin()
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
 
-			// Send the other player my props (and flags to npcserver)
+			// Send the other player my props.
+			// Send my flags to the npcserver.
 			if (player->isNPCServer())
 			{
-				// send props
+				// Send props.
 				player->sendPacket(myNCProps);
 
-				// send flags
+				// Send flags.
 				for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
 					player->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << i->first << "=" << i->second);
 			}
 			else player->sendPacket(player->isClient() ? myClientProps : myRCProps);
 
-			// Add Player / RC
+			// Add Player / RC.
 			if (isClient())
 				sendPacket(player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 			else if (isNPCServer())
 			{
-				// send props
+				// Send props.
 				sendPacket(player->getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool)));
 
-				// send flags
+				// Send flags.
 				std::map<CString, CString> *flags = player->getFlagList();
 				for (std::map<CString, CString>::const_iterator i = flags->begin(); i != flags->end(); ++i)
 					sendPacket(CString() >> (char)PLO_FLAGSET >> (short)player->getId() << i->first << "=" << i->second);
 			}
 			else
 			{
-				// Levelname
+				// Level name.  If no level, send an empty space.
 				CString levelName = (player->getLevel() ? player->getLevel()->getLevelName() : " ");
 
 				// Get the other player's RC props.
