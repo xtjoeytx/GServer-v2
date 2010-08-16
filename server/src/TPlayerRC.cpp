@@ -20,6 +20,8 @@
 #define rclog		server->getRCLog()
 extern bool __playerPropsRC[propscount];
 
+// Admin-only server options.  They are protected from being changed by people without the
+// 'change staff account' right.
 const char* __admin[] = {
 	"name", "description", "url", "serverip", "serverport", "localip", "listip", "listport",
 	"maxplayers", "onlystaff", "nofoldersconfig", "oldcreated", "serverside",
@@ -28,8 +30,26 @@ const char* __admin[] = {
 	"sharefolder", "language"
 };
 
-const char* __importantfiles[] = {
-	"accounts/defaultaccount.txt","config/adminconfig.txt","config/allowedversions.txt","config/foldersconfig.txt","config/ipbans.txt","config/rchelp.txt","config/rcmessage.txt","config/rules.txt","config/servermessage.html","config/serveroptions.txt",                
+// Files that are protected from being downloaded by people without the
+// 'change staff account' right.
+const char* __protectedFiles[] = {
+	"accounts/defaultaccount.txt", "config/adminconfig.txt", "config/allowedversions.txt",
+	"config/rchelp.txt",
+};
+
+// List of important files.
+const char* __importantFiles[] = {
+	"accounts/defaultaccount.txt", "config/adminconfig.txt", "config/allowedversions.txt",
+	"config/foldersconfig.txt", "config/ipbans.txt", "config/rchelp.txt",
+	"config/rcmessage.txt", "config/rules.txt", "config/servermessage.html",
+	"config/serveroptions.txt",
+};
+
+const int __importantFileRights[] = {
+	PLPERM_MODIFYSTAFFACCOUNT, PLPERM_MODIFYSTAFFACCOUNT, PLPERM_MODIFYSTAFFACCOUNT,
+	PLPERM_SETFOLDEROPTIONS, PLPERM_MODIFYSTAFFACCOUNT, PLPERM_MODIFYSTAFFACCOUNT,
+	PLPERM_SETSERVEROPTIONS, PLPERM_MODIFYSTAFFACCOUNT, PLPERM_SETSERVEROPTIONS,
+	PLPERM_SETSERVEROPTIONS,
 };
 
 static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
@@ -89,7 +109,6 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	if (hadBow == false) allowBow = false;
 
 	// Clear the flags and re-populate the flag list.
-	// TODO: npc-server
 	flagList.clear();
 	for (int i = pPacket.readGUShort(); i > 0; --i)
 	{
@@ -98,14 +117,6 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		CString val = flag.readString("");
 		setFlag(name, val, (id == -1 ? 0 : 1 | 2));
 	}
-	//if (id != -1)
-	//{
-	//	for (std::map<CString, CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
-	//	{
-	//		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
-	//		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
-	//	}
-	//}
 
 	// Clear the chests and re-populate the chest list.
 	chestList.clear();
@@ -1627,12 +1638,12 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	CString filepath = CString() << server->getServerPath() << lastFolder << file;
 	CString checkFile = CString() << lastFolder << file;
 
-	// Don't let us download/view important files
+	// Don't let us download/view important files.
 	if (!hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+		for (unsigned int j = 0; j < sizeof(__protectedFiles) / sizeof(const char*); ++j)
 		{
-			if (checkFile == CString(__importantfiles[j]) && checkFile!="config/servermessage.html" && checkFile!="config/rules.txt" && checkFile!="config/ipbans.txt" && checkFile!="config/rcmessage.txt" && checkFile!="config/serveroptions.txt" && checkFile!="config/foldersconfig.txt" && checkFile!="accounts/defaultaccount.txt")
+			if (checkFile == CString(__protectedFiles[j]))
 			{
 				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to download/view " << checkFile);
 				return true;
@@ -1661,24 +1672,38 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	CString fileData = pPacket.subString(pPacket.readPos());
 	CString checkFile = CString() << lastFolder << file;
 
-	// Don't let us upload/overwrite important files
-	if(hasRight(PLPERM_MODIFYSTAFFACCOUNT) || checkFile == "config/foldersconfig.txt" && hasRight(PLPERM_SETFOLDEROPTIONS) || checkFile == "config/serveroptions.txt" && hasRight(PLPERM_SETSERVEROPTIONS) || checkFile=="config/servermessage.html" || checkFile=="config/rules.txt" || checkFile=="config/ipbans.txt" || checkFile=="config/rcmessage.txt"  || checkFile=="accounts/defaultaccount.txt"){
-		 // Check if user has the right to edit folders config or server options
-		 // Then we will let them do it through file manager, why not? :P
-		 // I'm not sure how to do this as a 'not' expression...
-		 // This is by far the messiest check on my new code :(
-		 // TODO: update this to be less messy, I mean an else statement!? CMON!
-	}else{
-		for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+	// Check if this is a protected file.
+	bool isProtected = false;
+	int fileID = -1;
+	for (int i = 0; i < sizeof(__importantFiles) / sizeof(const char*); ++i)
+	{
+		if (checkFile == CString(__importantFiles[i]))
 		{
-			if (checkFile == CString(__importantfiles[j]))
-			{
-				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to upload " << checkFile);
-				return true;
-			}
+			fileID = i;
+			isProtected = true;
+			break;
 		}
 	}
 
+	// If this file is protected, see if we have permission to upload this file.
+	bool hasPermission = true;
+	if (isProtected)
+	{
+		hasPermission = hasRight(PLPERM_MODIFYSTAFFACCOUNT);
+		if (!hasPermission)
+		{
+			if (fileID < (sizeof(__importantFileRights) / sizeof(const int)))
+				hasPermission = hasRight(__importantFileRights[fileID]);
+		}
+	}
+
+	// Don't let us upload/overwrite important files.
+	if (isProtected && !hasPermission)
+	{
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to upload " << checkFile);
+		return true;
+	}
+	
 	// See if we are uploading a large file or not.
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
 	{
@@ -1724,10 +1749,10 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	destination << dir << file;
 	source << lastFolder << file;
 
-	// Don't let us move important files
-	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+	// Don't let us move important files.
+	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
 	{
-		if (source == CString(__importantfiles[j]))
+		if (source == CString(__importantFiles[j]))
 		{
 			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source);
 			return true;
@@ -1791,10 +1816,10 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	CString checkFile = CString() << lastFolder << file;
 	CFileSystem::fixPathSeparators(&filePath);
 
-	// Don't let us delete important files
-	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+	// Don't let us delete important files.
+	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
 	{
-		if (checkFile == CString(__importantfiles[j]))
+		if (checkFile == CString(__importantFiles[j]))
 		{
 			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete file " << checkFile);
 			return true;
@@ -1851,10 +1876,10 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CFileSystem::fixPathSeparators(&f2path);
 
 
-	// Don't let us rename/overwrite important files
-	for (unsigned int j = 0; j < sizeof(__importantfiles) / sizeof(char*); ++j)
+	// Don't let us rename/overwrite important files.
+	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
 	{
-		if (checkFile1 == CString(__importantfiles[j]))
+		if (checkFile1 == CString(__importantFiles[j]))
 		{
 			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to rename/overwrite file " << checkFile1 << " or " << checkFile2);
 			return true;

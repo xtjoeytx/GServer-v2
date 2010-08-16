@@ -44,7 +44,7 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != 0)
 	{
-		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip","AUTO");
+		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "AUTO");
 		if (npcServerIp == "AUTO")
 			npcServerIp = npcServer->getSocket()->getRemoteIp();
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
@@ -81,16 +81,6 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			TPlayer *player = server->getPlayer(pPacket.readGUShort());
 			if (player != 0)
 				player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pPacket.readString(""));
-			break;
-		}
-
-		// Send RPG Message
-		case NCI_SENDRPGMESSAGE:
-		{
-			TPlayer *player = server->getPlayer(pPacket.readGUShort());
-			if (player != 0)	
-				if (player->isClient() && player->getVersion() >= CLVER_2_1)
-				player->sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"" << pPacket.readString("") << "\"");
 			break;
 		}
 
@@ -252,9 +242,18 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(0), mapNew, levelNew, this, true);
 			break;
 		}
+
+		// Send RPG Message
+		case NCI_SENDRPGMESSAGE:
+		{
+			TPlayer *player = server->getPlayer(pPacket.readGUShort());
+			if (player != 0 && player->isClient() && player->getVersion() >= CLVER_2_1)
+				player->sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"" << pPacket.readString("") << "\"");
+			break;
+		}
 		
 		// NPCServer -> Player -- Set Flag
-		case NCI_SETPLFLAG:
+		case NCI_PLAYERFLAGSET:
 		{
 			TPlayer *pl = server->getPlayer(pPacket.readGShort());
 			if (pl != 0)
