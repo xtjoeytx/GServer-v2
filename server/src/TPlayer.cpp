@@ -3434,6 +3434,28 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				}
 			}
 		}
+
+		if (settings->getBool("triggerhack_levels", false) == true)
+		{
+			if (action.find("gr.updatelevel") == 0)
+			{
+				int start = action.find(",");
+				if (start != -1)
+				{
+					++start;
+					CString levelName = action.subString(start).trim();
+					if (levelName.isEmpty())
+						level->reload();
+					else
+					{
+						TLevel* targetLevel = server->getLevel(levelName);
+						if (targetLevel != 0)
+							targetLevel->reload();
+					}
+				}
+				else level->reload();
+			}
+		}
 	}
 
 	// Send to the level.
