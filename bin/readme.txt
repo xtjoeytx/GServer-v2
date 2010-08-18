@@ -119,6 +119,9 @@ Controlled by the setting triggerhack_groups:
     triggeraction 0,0,gr.setlevelgroup,group;
         Adds all the players in the level to the specified group.
 
+    triggeraction 0,0,gr.setplayergroup,account,group;
+        Adds the specified player to the specified group.
+
 Controlled by the setting triggerhack_files:
     triggeraction 0,0,gr.appendfile,filename,text;
         Opens the file specified, located in the server's logs directory, and appends a line of text.
@@ -129,3 +132,28 @@ Controlled by the setting triggerhack_files:
 Controlled by the setting triggerhack_rc:
     triggeraction 0,0,gr.rcchat,Some chat text;
         Sends some chat text to any logged in RC's.
+
+Controlled by the setting triggerhack_execscript:
+    triggeraction 0,0,gr.es_clear;
+        Clears the execscript parameter list.
+
+    triggeraction 0,0,gr.es_set,param1,param2,...;
+        Sets the execscript parameter list.
+
+    triggeraction 0,0,gr.es_append,phrase;
+        Appends phrase directly to the end of the set parameter list.
+
+    triggeraction 0,0,gr.es,account,script_name;
+        Sends the execscript to the specified account, or everybody if ALLPLAYERS was specified.
+        View the execscript/readme.txt file for more information.
+
+Controlled by the setting triggerhack_props:
+    triggeraction 0,0,gr.attr1,data;
+        Sets data on the specified attribute.  gr.attr1 - gr.attr30 work.
+
+Controlled by the setting triggerhack_levels:
+    triggeraction 0,0,gr.updatelevel;
+        Updates the current level.
+
+    triggeraction 0,0,gr.updatelevel,levelname;
+        Updates the specified level.
