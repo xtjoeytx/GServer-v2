@@ -1,17 +1,35 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
-    v2.3.0 (WIP)
+    v2.3.0
 
   * bug fix, + new feature, o other
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Fixed an oversight in protection that didn't let you edit the defaultaccount.txt from RC.
-* GServer now defaults ns_ip (NPC-Server IP) to AUTO if it can't read it from the adminconfig.txt - This fixes NPC-Server in RC.
-+ Servers are now automatically hidden from the list (marked as UC) if onlystaff is set to true.
-+ Added protection for important files rather than preventing rw config/* in the folder config.  Now, you can give people rights without worrying about them stealing your adminconfig.txt password.  foldersconfig.txt requires the 'set folder options' right.  rcmessage.txt, servermessage.html, and serveroptions.txt requires the 'set server options' right.  Everything else requires the 'change staff account' right.
-+ The gserver now supports the sendrpgmessage() function from an NPC-Server.
+* Server doesn't crash on a malformed weapon anymore.  Instead, it will display a warning.
+* Version 2.2.0's setlevel2 bug fix involved with warping to the current level is properly fixed now.
+* Fixed a crash when editing server flags via RC.
+* Fixed an issue where, if the player tried to log in to a non-existent level, the gserver wouldn't send them to the unstickme level.
+* Fixed a Linux case issue that cropped up if you manually created an account.txt file.
+* Worked around a bug in RC 1.1.
+* Fixed an infinite loop caused by killing baddies that were spawned via script.
+* Fixed some NPC-Server related issues.
+* The ServerHQ is properly updated when the settings are changed.
++ Added Downsider's execscript triggeraction hack.  The triggerhack_execscript server option turns it on and off.
++ Added gr.attr1 - gr.attr30 triggeraction hacks.  The triggerhack_props server option turns it on and off.
++ Added the ability to rename rclog.txt and serverlog.txt via the RC file browser.
++ Added UPnP support.
++ Added support for the RC2 disconnect message.
++ The server checks if a player is dead when they "leave" a level.  If they are dead, it brings that back to life with 0.5 hearts.  This is consistent with official Graal.
++ Added support for the NPC-Server sendrpgmessage() command.
++ Added built-in RC file browser protections to the config/ folder.  accounts/defaultaccount.txt, config/adminconfig.txt, config/allowedversions.txt, config/ipbans.txt, config/rchelp.txt, config/rcmessage.txt, and config/rules.txt require the 'change staff account' right.  config/foldersconfig.txt requires the 'set folder options' right.  config/servermessage.html and config/serveroptions.txt require the 'set server options' right.
++ Player flags are now sent to the NPC-Server.
++ Added support for say2 signs sent to a player by the NPC-Server.
++ Added the gr.setplayergroup triggeraction for setting the group of a specified player.
++ Added the gr.updatelevel triggeraction hack.  The triggerhack_levels server option turns it on and off.
 o Updated adminconfig.txt to have ns_ip=AUTO at the end.
 o Updated YOURACCOUNT.TXT to have access to folders that the default was missing.
+o Updated serveroptions.txt with a bunch of new options.
+o Servers are now hidden from the server list (marked as under construction) if the 'onlystaff' server option is set to true.
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
