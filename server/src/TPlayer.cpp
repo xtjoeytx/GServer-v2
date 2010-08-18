@@ -3175,7 +3175,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
 					{
-						serverlog.out("Error: Player %s tried to load execscript %s, but the script was not found.\n", accountName.text(), actionParts[2].text());
+						serverlog.out("[%s] Error: Player %s tried to load execscript %s, but the script was not found.\n", server->getName().text(), accountName.text(), actionParts[2].text());
 						return true;
 					}
 
