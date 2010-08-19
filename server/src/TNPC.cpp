@@ -258,7 +258,7 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 {
 	bool oldcreated = server->getSettings()->getBool("oldcreated", "false");
 	CString retVal;
-	int pmax = npcpropcount;
+	int pmax = NPCPROP_COUNT;
 	if (clientVersion < CLVER_2_1) pmax = 36;
 
 	for (int i = 0; i < pmax; i++)
@@ -554,7 +554,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 		}
 
 		// If a prop changed, adjust its mod time.
-		if (propId < npcpropcount)
+		if (propId < NPCPROP_COUNT)
 		{
 			if (oldProp != getProp(propId))
 				modTime[propId] = time(0);
