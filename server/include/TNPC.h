@@ -81,15 +81,23 @@ enum
 	NPCPROP_CLASS			= 74,	// NPC-Server class.  Possibly also join scripts.
 	NPCPROP_X2				= 75,
 	NPCPROP_Y2				= 76,
+
+	NPCPROP_COUNT
 };
 
-//#define npcpropcount 48
-#define npcpropcount 77
-
-//! NPCPROP_VISFLAG values.
+//! NPCPROP_VISFLAGS values.
 enum
 {
+	NPCVISFLAG_VISIBLE			= 0x01,
 	NPCVISFLAG_DRAWOVERPLAYER	= 0x02,
+	NPCVISFLAG_DRAWUNDERPLAYER	= 0x04,
+};
+
+//! NPCPROP_BLOCKFLAGS values.
+enum
+{
+	NPCBLOCKFLAG_BLOCK		= 0x00,
+	NPCBLOCKFLAG_NOBLOCK	= 0x01,
 };
 
 class TServer;
@@ -121,7 +129,7 @@ class TNPC
 
 	private:
 		bool levelNPC;
-		time_t modTime[npcpropcount];
+		time_t modTime[NPCPROP_COUNT];
 		float x, y, hurtX, hurtY;
 		int x2, y2;
 		unsigned char gmaplevelx, gmaplevely;
@@ -141,7 +149,7 @@ class TNPC
 inline
 time_t TNPC::getPropModTime(unsigned char pId)
 {
-	if (pId < npcpropcount) return modTime[pId];
+	if (pId < NPCPROP_COUNT) return modTime[pId];
 	return 0;
 }
 
