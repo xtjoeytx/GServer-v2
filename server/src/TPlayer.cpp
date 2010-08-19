@@ -1740,16 +1740,6 @@ bool TPlayer::leaveLevel(bool resetCache)
 	// Make sure we are on a level first.
 	if (level == 0) return true;
 
-	// If we are dead, revive ourself with 0.5 hearts.
-	if (status & PLSTATUS_DEAD)
-	{
-		status &= ~PLSTATUS_DEAD;
-		power = 0.5f;
-		CString props = CString() >> (char)PLPROP_STATUS >> (char)status >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
-		this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << props);
-		server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id << props, pmap, this);
-	}
-
 	// Save the time we left the level for the client-side caching.
 	bool found = false;
 	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end();)
