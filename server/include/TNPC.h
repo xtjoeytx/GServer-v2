@@ -86,9 +86,10 @@ enum
 //#define npcpropcount 48
 #define npcpropcount 77
 
+//! NPCPROP_VISFLAG values.
 enum
 {
-	NPCSTATUS_DRAWOVERPLAYER	= 0x02,
+	NPCVISFLAG_DRAWOVERPLAYER	= 0x02,
 };
 
 class TServer;
