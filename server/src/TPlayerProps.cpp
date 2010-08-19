@@ -323,6 +323,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				float p = (float)pPacket.readGUChar() / 2.0f;
 				if (ap < 40 && p > power) break;
+				if ((status & PLSTATUS_UNKNOWN) != 0)
+					break;
 				power = clip(p, 0, (float)maxPower);
 				break;
 			}
@@ -544,7 +546,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				// When they come back to life, give them hearts.
 				if ((oldStatus & PLSTATUS_DEAD) > 0 && (status & PLSTATUS_DEAD) == 0)
 				{
-					power = clip((ap < 20 ? 3 : (ap < 40 ? 5 : maxPower)), 0.0f, maxPower);
+					power = clip((ap < 20 ? 3 : (ap < 40 ? 5 : maxPower)), 0.5f, maxPower);
+					selfBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
+					levelBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 
 					// If we are the leader of the level, call warp().  This will fix NPCs not
 					// working again after we respawn.
