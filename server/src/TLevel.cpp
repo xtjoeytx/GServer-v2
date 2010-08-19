@@ -285,8 +285,6 @@ bool TLevel::reload()
 	{
 		TPlayer* p = *i;
 		p->warp((ret ? levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
-		if (p->getPower() <= 0)
-			p->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)1 >> (char)PLPROP_STATUS >> (char)(p->getStatus() & ~PLSTATUS_DEAD));
 	}
 
 	return ret;
