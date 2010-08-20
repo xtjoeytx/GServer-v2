@@ -1004,7 +1004,8 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		else if (words[0] == "/refreshservermessage" && words.size() == 1)
 		{
 			server->loadServerMessage();
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed server message.");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed the server message.");
+			rclog.out("%s refreshed the server message.\n", accountName.text());
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
@@ -1014,13 +1015,15 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				TLevel* level = server->getLevel(*i);
 				if (level)
 				{
-					level->reload();
 					server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " updated level: " << level->getLevelName());
+					rclog.out("%s updated level: %s\n", accountName.text(), level->getLevelName().text());
+					level->reload();
 				}
 			}
 		}
 		else if (words[0] == "/updatelevelall" && words.size() == 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
+			rclog.out("%s updated all the levels", accountName.text());
 			int count = 0;
 			std::vector<TLevel*>* levels = server->getLevelList();
 			for (std::vector<TLevel*>::iterator i = levels->begin(); i != levels->end(); ++i)
@@ -1029,37 +1032,44 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				++count;
 			}
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << "updated all the levels (" << CString((int)count) << " levels updated).");
+			rclog.out(" (%d levels updated).\n", count);
 		}
 		else if (words[0] == "/restartserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " restarted the server.");
+			rclog.out("%s restarted the server.\n", accountName.text());
 			server->restart();
 		}
 		else if (words[0] == "/reloadserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
-			server->loadConfigFiles();
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the server configuration files.");
+			rclog.out("%s reloaded the server configuration files.\n", accountName.text());
+			server->loadConfigFiles();
 		}
 		else if (words[0] == "/updateserverhq" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 		{
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " sent ServerHQ updates.");
+			rclog.out("%s sent ServerHQ updates.\n", accountName.text());
 			server->loadAdminSettings();
 			server->getServerList()->sendServerHQ();
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " sent ServerHQ updates.");
 		}
 		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 		{
-			server->loadWordFilter();
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the word filter.");
+			rclog.out("%s reloaded the word filter.\n", accountName.text());
+			server->loadWordFilter();
 		}
 		else if (words[0] == "/reloadipbans" && words.size() == 1)
 		{
-			server->loadIPBans();
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the ip bans.");
+			rclog.out("%s reloaded the ip bans.\n", accountName.text());
+			server->loadIPBans();
 		}
 		else if (words[0] == "/reloadweapons" && words.size() == 1)
 		{
-			server->loadWeapons();
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the weapons.");
+			rclog.out("%s reloaded the weapons.\n", accountName.text());
+			server->loadWeapons();
 		}
 		else if(words[0] == "/find" && words.size() > 1)
 		{
