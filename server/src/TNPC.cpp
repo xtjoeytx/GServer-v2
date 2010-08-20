@@ -266,7 +266,7 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 		if (modTime[i] != 0 && modTime[i] >= newTime)
 		{
 			if (oldcreated && i == NPCPROP_VISFLAGS && newTime == 0)
-				retVal >> (char)i >> (char)1;
+				retVal >> (char)i >> (char)(visFlags | NPCVISFLAG_VISIBLE);
 			else
 				retVal >> (char)i << getProp(i, clientVersion);
 		}
