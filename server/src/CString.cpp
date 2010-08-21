@@ -260,8 +260,9 @@ int CString::write(const char *pSrc, int pSize)
 
 	memcpy(&buffer[writec], pSrc, pSize);
 	writec += pSize;
+	buffer[writec] = 0;
 	sizec = (writec > sizec ? writec : sizec);
-	buffer[sizec] = 0;
+	//buffer[sizec] = 0;
 	return pSize;
 }
 
