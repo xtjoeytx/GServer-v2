@@ -661,7 +661,13 @@ void TServer::loadMaps(bool print)
 	// Remove existing maps.
 	for (std::vector<TMap*>::iterator i = mapList.begin(); i != mapList.end(); )
 	{
-		delete *i;
+		TMap* map = *i;
+		for (std::vector<TPlayer*>::iterator j = playerList.begin(); j != playerList.end(); ++j)
+		{
+			if ((*j)->getMap() == map)
+				(*j)->setMap(0);
+		}
+		delete map;
 		i = mapList.erase(i);
 	}
 
