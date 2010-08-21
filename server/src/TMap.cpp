@@ -48,14 +48,14 @@ CString TMap::getLevelAt(int x, int y) const
 
 int TMap::getLevelX(const CString& level) const
 {
-	SMapLevel lvl = levels.find(level)->second;
-	return lvl.mapx;
+	if (levels.empty()) return 0;
+	return levels.find(level)->second.mapx;
 }
 
 int TMap::getLevelY(const CString& level) const
 {
-	SMapLevel lvl = levels.find(level)->second;
-	return lvl.mapy;
+	if (levels.empty()) return 0;
+	return levels.find(level)->second.mapy;
 }
 
 bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
