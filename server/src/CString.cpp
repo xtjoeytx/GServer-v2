@@ -199,6 +199,7 @@ bool CString::save(const CString& pString) const
 #endif
 
 	fwrite(buffer, 1, sizec, file);
+	fflush(file);
 	fclose(file);
 	return true;
 }
