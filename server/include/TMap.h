@@ -15,6 +15,11 @@ struct SMapLevel
 {
 	SMapLevel() : mapx(-1), mapy(-1) {}
 	SMapLevel(int x, int y) : mapx(x), mapy(y) {}
+	SMapLevel(const SMapLevel& level)
+	{
+		mapx = level.mapx;
+		mapy = level.mapy;
+	}
 
 	SMapLevel& operator=(const SMapLevel& level)
 	{
