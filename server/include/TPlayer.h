@@ -64,6 +64,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
 		void setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
+		void setMap(TMap* map)			{ pmap = map; }
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
