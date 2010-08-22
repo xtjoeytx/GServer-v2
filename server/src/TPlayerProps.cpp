@@ -29,10 +29,18 @@ CString TPlayer::getProp(int pPropId)
 		}
 
 		case PLPROP_MAXPOWER:
-		return CString() >> (char)maxPower;
+		{
+			maxPower = clip(maxPower, 0, settings->getInt("heartlimit", 3));
+			maxPower = clip(maxPower, 0, 20);
+			return CString() >> (char)maxPower;
+		}
 
 		case PLPROP_CURPOWER:
-		return CString() >> (char)(power * 2);
+		{
+			power = clip(power, 0, settings->getInt("heartlimit", 3));
+			power = clip(power, 0, 20);
+			return CString() >> (char)(power * 2);
+		}
 
 		case PLPROP_RUPEESCOUNT:
 		return CString() >> (int)gralatc;
@@ -51,12 +59,14 @@ CString TPlayer::getProp(int pPropId)
 
 		case PLPROP_SWORDPOWER:
 		{
+			swordPower = clip(swordPower, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 			if (swordImg.length() > 223) swordImg = swordImg.subString(0, 223);
 			return CString() >> (char)(swordPower+30) >> (char)swordImg.length() << swordImg;
 		}
 
 		case PLPROP_SHIELDPOWER:
 		{
+			shieldPower = clip(shieldPower, 0, settings->getInt("shieldlimit", 3));
 			if (shieldImg.length() > 223) shieldImg = shieldImg.subString(0, 223);
 			return CString() >> (char)(shieldPower+10) >> (char)shieldImg.length() << shieldImg;
 		}
@@ -312,7 +322,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_MAXPOWER:
 				maxPower = pPacket.readGUChar();
-				maxPower = clip(maxPower, 0, settings->getInt("heartlimit", 20));
+				maxPower = clip(maxPower, 0, settings->getInt("heartlimit", 3));
 				maxPower = clip(maxPower, 0, 20);
 				power = (float)maxPower;
 				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
