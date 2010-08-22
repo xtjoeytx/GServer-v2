@@ -291,7 +291,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 						status &= ~(pPacket.readGUChar());
 						break;
 				}
-				pl->setProps(CString() >> (char)PLPROP_STATUS >> (char)status, true, true, this);
+				pl->setProps(CString() >> (char)PLPROP_STATUS >> (char)status, true, true);
 			}
 		}
 	}
