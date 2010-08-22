@@ -250,6 +250,7 @@ enum
 	PLO_STATUSLIST				= 180,
 	PLO_LISTPROCESSES			= 182,
 	PLO_NC_CLASSDELETE			= 188,	// {188}{class}
+	PLO_MOVE2					= 189,	// {189}{INT id}...
 	PLO_UNKNOWN190				= 190,	// Was blank.  Sent before weapon list.
 	PLO_NC_WEAPONGET			= 192,	// {192}{CHAR name length}{name}{CHAR image length}{image}{script}
 	PLO_UNKNOWN194				= 194,	// Was blank.  Sent before weapon list.
@@ -318,6 +319,7 @@ enum
 	NCI_PLAYERFLAGSET		= 16,
 	NCI_SAY2SIGN			= 17,
 	NCI_PLAYERSTATUSSET		= 18,
+	NCI_NPCMOVE				= 19,
 };
 
 enum
