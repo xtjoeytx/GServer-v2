@@ -255,7 +255,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		// NPCServer -> Player -- Set Flag
 		case NCI_PLAYERFLAGSET:
 		{
-			TPlayer *pl = server->getPlayer(pPacket.readGShort());
+			TPlayer *pl = server->getPlayer(pPacket.readGUShort());
 			if (pl != 0)
 			{
 				CString flagName  = pPacket.readString("=");
@@ -268,10 +268,31 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 		// NPCServer -> Player --> Sign Message
 		case NCI_SAY2SIGN:
 		{
-			TPlayer *pl = server->getPlayer(pPacket.readGShort());
+			TPlayer *pl = server->getPlayer(pPacket.readGUShort());
 			if (pl != 0)
 				pl->sendPacket(CString() >> (char)PLO_SAY2 << pPacket.readString("").replaceAll("\n", "#b"));
 			break;
+		}
+
+		case NCI_PLAYERSTATUSSET:
+		{
+			TPlayer *pl = server->getPlayer(pPacket.readGUShort());
+			if (pl != 0)
+			{
+				unsigned char operation = pPacket.readGUChar();
+				unsigned char status = (unsigned char)pl->getStatus();
+				switch (operation)
+				{
+					default:
+					case 0:
+						status |= pPacket.readGUChar();
+						break;
+					case 1:
+						status &= ~(pPacket.readGUChar());
+						break;
+				}
+				pl->setProps(CString() >> (char)PLPROP_STATUS >> (char)status, true, true, this);
+			}
 		}
 	}
 
