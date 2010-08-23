@@ -86,6 +86,10 @@ static const char* const clientVersions[] =
 
 	"G3D04048",		// CLVER_IPHONE_1_1
 	"G3D18010",		// CLVER_IPHONE_1_5
+
+	"",				// NSVER_UNKNOWN,
+	"GRNS0000",		// NSVER_GENERIC,
+	"LNX00001",		// NSVER_LNXMAD,
 	0
 };
 
@@ -95,14 +99,6 @@ static const char* const rcVersions[] =
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
-	0
-};
-
-static const char* const npcserverVersions[] =
-{
-	"",				// NSVER_UNKNOWN,
-	"GRNS0000",		// NSVER_GENERIC,
-	"LNX00001",		// NSVER_LNXMAD,
 	0
 };
 
@@ -165,6 +161,10 @@ static const char* const clientVersionString[] =
 
 	"iPhone 1.1",	// CLVER_IPHONE_1_1
 	"iPhone 1.5",	// CLVER_IPHONE_1_5
+
+	"[NPC-Server]",				// NSVER_UNKNOWN,
+	"[NPC-Server] Generic",		// NSVER_GENERIC,
+	"[NPC-Server] lnxmad",		// NSVER_LNXMAD,
 	0
 };
 
@@ -177,13 +177,6 @@ static const char* const rcVersionString[] =
 	0
 };
 
-static const char* const npcserverVersionString[] =
-{
-	"",				// NSVER_UNKNOWN,
-	"Generic",		// NSVER_GENERIC,
-	"lnxmad",		// NSVER_LNXMAD,
-	0
-};
 
 
 int getVersionID(const CString& version)
@@ -215,8 +208,8 @@ const char* getVersionString(const CString& version, const int type)
 		}
 		else if ((type & PLTYPE_NPCSERVER) != 0)
 		{
-			if (version == CString(npcserverVersions[i]))
-				return npcserverVersionString[i];
+			if (version == CString(clientVersions[i]))
+				return clientVersionString[i];
 		}
 		++i;
 	}
@@ -233,18 +226,6 @@ int getRCVersionID(const CString& version)
 		++i;
 	}
 	return RCVER_UNKNOWN;
-}
-
-int getNPCServerVersionID(const CString& version)
-{
-	int i = 0;
-	while (npcserverVersions[i] != 0)
-	{
-		if (version == CString(npcserverVersions[i]))
-			return i;
-		++i;
-	}
-	return NSVER_UNKNOWN;
 }
 
 char getColor(const CString& color)
