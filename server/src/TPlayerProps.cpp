@@ -831,7 +831,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				if ((short)len & 0x0001) z2 = -z2;
 
 				// Let pre-2.30+ clients see 2.30+ movement.
-				z = (int)(((float)z2 / 16.0f) + 0.5f);
+				z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
 				break;
 
