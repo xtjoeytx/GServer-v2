@@ -301,21 +301,33 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 			if (npc != 0)
 			{
 				// Retrieve information from the packet.
-				unsigned short start_pos[] = {pPacket.readGUShort(), pPacket.readGUShort()};
-				unsigned short delta[] = {pPacket.readGUShort(), pPacket.readGUShort()};
+				short start_pos[] = {pPacket.readGShort(), pPacket.readGShort()};
+				short delta[] = {pPacket.readGShort(), pPacket.readGShort()};
 				//unsigned short time = pPacket.readGUShort();
 				//unsigned char options = pPacket.readGUChar();
+
+				// Process the positions.
+				start_pos[0] = (short)((unsigned short)start_pos[0] >> 1) * ((start_pos[0] & 0x0001) ? -1 : 1);
+				start_pos[1] = (short)((unsigned short)start_pos[1] >> 1) * ((start_pos[1] & 0x0001) ? -1 : 1);
+				delta[0] = (short)((unsigned short)delta[0] >> 1) * ((delta[0] & 0x0001) ? -1 : 1);
+				delta[1] = (short)((unsigned short)delta[1] >> 1) * ((delta[1] & 0x0001) ? -1 : 1);
 
 				// Calculate the finish location.
 				unsigned short finish_pos[] = {start_pos[0] + delta[0], start_pos[1] + delta[1]};
 
+				// Repackage the positions.
+				start_pos[0] = (short)((unsigned short)abs(start_pos[0]) << 1) | (start_pos[0] < 0 ? 0x0001 : 0x0000);
+				start_pos[1] = (short)((unsigned short)abs(start_pos[1]) << 1) | (start_pos[1] < 0 ? 0x0001 : 0x0000);
+				delta[0] = (short)((unsigned short)abs(delta[0]) << 1) | (delta[0] < 0 ? 0x0001 : 0x0000);
+				delta[1] = (short)((unsigned short)abs(delta[1]) << 1) | (delta[1] < 0 ? 0x0001 : 0x0000);
+
 				// Update the NPC's position now.
 				// Don't send to any players nearby as they will get the move event.
-				npc->setProps(CString() >> (char)NPCPROP_X2 << (short)finish_pos[0] >> (char)NPCPROP_Y2 << (short)finish_pos[1]);
+				npc->setProps(CString() >> (char)NPCPROP_X2 >> (short)finish_pos[0] >> (char)NPCPROP_Y2 >> (short)finish_pos[1]);
 
 				// Send the packet to all nearby players now.
 				if (npc->getLevel() != 0)
-					server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 << (pPacket.text() + 1), npc->getLevel()->getMap(), npc->getLevel(), false, true);
+					server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 << (pPacket.text() + 2), npc->getLevel()->getMap(), npc->getLevel(), false, true);
 			}
 		}
 	}
