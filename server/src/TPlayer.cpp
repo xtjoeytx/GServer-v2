@@ -1563,7 +1563,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
+		//if (!server->hasNPCServer())
 		{
 			sendPacket(CString() << pLevel->getLinksPacket());
 			sendPacket(CString() << pLevel->getSignsPacket(this));
@@ -2123,9 +2123,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Read Client-Version
 	version = pPacket.readChars(8);
-	if (isClient()) versionID = getVersionID(version);
+	if (isClient() || isNPCServer()) versionID = getVersionID(version);
 	else if (isRC()) versionID = getRCVersionID(version);
-	else if (isNPCServer()) versionID = getNPCServerVersionID(version);
 	else versionID = CLVER_UNKNOWN;
 
 	// Read Account & Password
@@ -3051,9 +3050,10 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	else sendLevel141(adjacentLevel, modTime, true);
 
 	// Set our old level back to normal.
-	sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
+	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
+	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)
 		sendPacket(CString() >> (char)PLO_ISLEADER);
 
