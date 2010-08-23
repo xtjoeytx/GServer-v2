@@ -1498,7 +1498,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 			gmaplevelx = pmap->getLevelX(levelName);
 			gmaplevely = pmap->getLevelY(levelName);
 			sendPacket(CString() >> (char)PLO_PLAYERWARP2
-				>> (char)(x * 2) >> (char)(y * 2) >> (char)((z * 2) + 50)
+				>> (char)(x * 2) >> (char)(y * 2) >> (char)(z + 50)
 				>> (char)gmaplevelx >> (char)gmaplevely
 				<< pmap->getMapName());
 		}
@@ -2658,7 +2658,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 				if (versionID >= CLVER_2_3) return true;
 				float pos = (float)atof(flagValue.text());
 				if (pos != z)
-					grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 25.0f) * 2.0f) << "\n";
+					grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
 				return true;
 			}
 		}
