@@ -231,24 +231,21 @@ CString TPlayer::getProp(int pPropId)
 
 		case PLPROP_X2:
 		{
-			unsigned short val = (x2 < 0 ? -x2 : x2);
-			val <<= 1;
+			unsigned short val = abs(x2) << 1;
 			if (x2 < 0) val |= 0x0001;
 			return CString().writeGShort(val);
 		}
 
 		case PLPROP_Y2:
 		{
-			unsigned short val = (y2 < 0 ? -y2 : y2);
-			val <<= 1;
+			unsigned short val = abs(y2) << 1;
 			if (y2 < 0) val |= 0x0001;
 			return CString().writeGShort((short)val);
 		}
 
 		case PLPROP_Z2:
 		{
-			unsigned short val = (z2 < 0 ? -z2 : z2) + (25 * 16);
-			val <<= 1;
+			unsigned short val = (abs(z2) + (25 * 16)) << 1;
 			if (z2 < 0) val |= 0x0001;
 			return CString().writeGShort(val);
 		}
