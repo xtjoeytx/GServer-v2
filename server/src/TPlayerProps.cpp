@@ -718,6 +718,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				unsigned char object_type = pPacket.readGUChar();
 				unsigned int npcID = pPacket.readGUInt();
 				attachNPC = npcID;
+				levelBuff >> (char)PLPROP_ATTACHNPC << getProp(PLPROP_ATTACHNPC);
 				break;
 			}
 /*
