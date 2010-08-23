@@ -76,7 +76,7 @@ enum
 	PLPROP_GATTRIB3			= 39,
 	PLPROP_GATTRIB4			= 40,
 	PLPROP_GATTRIB5			= 41,
-	PLPROP_UNKNOWN42		= 42,
+	PLPROP_ATTACHNPC		= 42,
 	PLPROP_GMAPLEVELX		= 43,
 	PLPROP_GMAPLEVELY		= 44,
 	PLPROP_Z				= 45,
@@ -207,6 +207,7 @@ class TAccount
 		unsigned char colors[5];
 		int deaths, glovePower, bowPower, gralatc, horsec, kills, mp, maxPower;
 		int onlineTime, shieldPower, sprite, status, swordPower, udpport;
+		unsigned int attachNPC;
 		time_t lastSparTime;
 		unsigned char statusMsg;
 		std::map<CString, CString> flagList;
