@@ -19,6 +19,7 @@ x2(0), y2(0), z2(0), gmaplevelx(0), gmaplevely(0),
 additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
 deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
 onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
+attachNPC(0),
 lastSparTime(0),
 statusMsg(0)
 {

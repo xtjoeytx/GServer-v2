@@ -196,6 +196,12 @@ CString TPlayer::getProp(int pPropId)
 			return CString() >> (int)temp;
 		}
 
+		case PLPROP_ATTACHNPC:
+		{
+			// Only attach type 0 (NPC) supported.
+			return CString() >> (char)0 >> (int)attachNPC;
+		}
+
 		// Simplifies login.
 		// Manually send prop if you are leaving the level.
 		// 1 = join level, 0 = leave level.
@@ -706,10 +712,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				//rating = (float)((len >> 9) & 0xFFF);
 			break;
 
-			case PLPROP_UNKNOWN42:
-				len = pPacket.readGInt4();
-				printf( "PLPROP_UNKNOWN42: %d\n", len );
+			case PLPROP_ATTACHNPC:
+			{
+				// Only supports object_type 0 (NPC).
+				unsigned char object_type = pPacket.readGUChar();
+				unsigned int npcID = pPacket.readGUInt();
+				attachNPC = npcID;
 				break;
+			}
 /*
 			case PLPROP_UNKNOWN50:
 				break;
@@ -940,6 +950,10 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;
+			
+			if (i == PLPROP_ATTACHNPC && attachNPC != 0)
+				propPacket >> (char)i << getProp(i);
+
 			if (pProps[i])
 				propPacket >> (char)i << getProp(i);
 		}
