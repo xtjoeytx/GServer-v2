@@ -192,7 +192,11 @@ enum
 	CLVER_5_12,
 
 	CLVER_IPHONE_1_1,
-	CLVER_IPHONE_1_5
+	CLVER_IPHONE_1_5,
+
+	NSVER_UNKNOWN,
+	NSVER_GENERIC,
+	NSVER_LNXMAD
 };
 
 enum
@@ -203,17 +207,9 @@ enum
 	RCVER_2,
 };
 
-enum
-{
-	NSVER_UNKNOWN,
-	NSVER_GENERIC,
-	NSVER_LNXMAD,
-};
-
 int getVersionID(const CString& version);
 const char* getVersionString(const CString& version, const int type);
 int getRCVersionID(const CString& version);
-int getNPCServerVersionID(const CString& version);
 char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
 CString removeExtension(const CString& file);

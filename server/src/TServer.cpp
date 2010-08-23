@@ -1088,11 +1088,11 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	}
 
 	if (pLevel == 0) return;
-	bool _groupMap = pPlayer->getMap()->isGroupMap();
+	bool _groupMap = (pPlayer == 0 ? false : pPlayer->getMap()->isGroupMap());
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if (!(*i)->isClient() || (*i) == pPlayer) continue;
-		if (_groupMap && pPlayer->getGroup() != (*i)->getGroup()) continue;
+		if (_groupMap && pPlayer != 0 && pPlayer->getGroup() != (*i)->getGroup()) continue;
 
 		if ((*i)->getMap() == pMap)
 		{
