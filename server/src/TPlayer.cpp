@@ -2736,6 +2736,10 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 {
+	// Disable if we have an NPC-Server.
+	if (server->hasNPCServer())
+		return true;
+
 	CSettings* settings = server->getSettings();
 
 	CString nimage = pPacket.readChars(pPacket.readGUChar());
@@ -2759,6 +2763,10 @@ bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 {
+	// Disable if we have an NPC-Server.
+	if (server->hasNPCServer())
+		return true;
+
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
