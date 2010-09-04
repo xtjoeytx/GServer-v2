@@ -1091,29 +1091,30 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	bool _groupMap = (pPlayer == 0 ? false : pPlayer->getMap()->isGroupMap());
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
-		if (!(*i)->isClient() || (*i) == pPlayer) continue;
-		if (_groupMap && pPlayer != 0 && pPlayer->getGroup() != (*i)->getGroup()) continue;
+		TPlayer* other = *i;
+		if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
+		if (_groupMap && pPlayer != 0 && pPlayer->getGroup() != other->getGroup()) continue;
 
-		if ((*i)->getMap() == pMap)
+		if (other->getMap() == pMap)
 		{
 			int sgmap[2] = {pMap->getLevelX(pLevel->getActualLevelName()), pMap->getLevelY(pLevel->getActualLevelName())};
 			int ogmap[2];
 			switch (pMap->getType())
 			{
 				case MAPTYPE_GMAP:
-					ogmap[0] = (*i)->getProp(PLPROP_GMAPLEVELX).readGUChar();
-					ogmap[1] = (*i)->getProp(PLPROP_GMAPLEVELY).readGUChar();
+					ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
+					ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
 					break;
 
 				default:
 				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX((*i)->getLevel()->getActualLevelName());
-					ogmap[1] = pMap->getLevelY((*i)->getLevel()->getActualLevelName());
+					ogmap[0] = pMap->getLevelX(other->getLevel()->getActualLevelName());
+					ogmap[1] = pMap->getLevelY(other->getLevel()->getActualLevelName());
 					break;
 			}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				(*i)->sendPacket(pPacket);
+				other->sendPacket(pPacket);
 		}
 	}
 }
