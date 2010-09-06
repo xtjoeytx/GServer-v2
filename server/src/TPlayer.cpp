@@ -257,7 +257,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_LARGEFILESTART] = &TPlayer::msgPLI_RC_LARGEFILESTART;
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
-
+	TPLFunc[PLI_UNKNOWN154] = &TPlayer::msgPLI_UNKNOWN154;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 
 	// NPC-Server Functions
@@ -1596,7 +1596,6 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
-
 	if (fromAdjacent == false || pmap != 0)
 	{
 		// Send NPCs.
@@ -2018,7 +2017,7 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 
 		// Send to npc-server.
 		if (server->hasNPCServer())
-			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)2 /*NCO_PLAYERWEAPONDEL*/ >> (short)id << weapon->getName());
+			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL >> (short)id >> (char)0 << weapon->getName());
 	}
 
 	return true;
@@ -2230,6 +2229,11 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		// NPC-Server
 		int port = pPacket.readGShort();
 		server->setNPCServer(this, port);
+
+		// Send Levels & Weapons
+		this->sendNC_Maps();
+		this->sendNC_Levels();
+		this->sendNC_Weapons();
 
 		serverlog.out("[%s] :: NPC-Server connected on port: %d\n", server->getName().text(), port);
 	}
@@ -2921,7 +2925,13 @@ bool TPlayer::msgPLI_NPCWEAPONDEL(CString& pPacket)
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); )
 	{
 		if (*i == weapon)
+		{
 			i = weaponList.erase(i);
+
+			// send to npc-server
+			if (server->hasNPCServer())
+				server->getNPCServer()->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL >> (short)id >> (char)0 << weapon);
+		}
 		else ++i;
 	}
 	return true;
@@ -3534,6 +3544,16 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
+	return true;
+}
+
+// IRC Stuff
+bool TPlayer::msgPLI_UNKNOWN154(CString& pPacket)
+{
+	// Client -> Return
+	if (isClient())
+		return false;
+
 	return true;
 }
 
