@@ -16,6 +16,28 @@
 typedef bool (TPlayer::*TPLSock)(CString&);
 extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
 
+/*
+	NPC-Server Functionality
+*/
+
+// Send Maps
+void TPlayer::sendNC_Maps()
+{
+	std::vector<TMap *> * mapList = server->getMapList();
+	for (std::vector<TMap *>::const_iterator i = mapList->begin(); i != mapList->end(); ++i)
+		server->NC_SendMap(*i);
+}
+
+// Send Levels
+void TPlayer::sendNC_Levels()
+{
+	std::vector<TLevel *> * levelList = server->getLevelList();
+	for (std::vector<TLevel *>::const_iterator i = levelList->begin(); i != levelList->end(); ++i)
+	{
+		(*i)->reload();
+		server->NC_SendLevel(*i);
+	}
+}
 
 // Send Weapons
 void TPlayer::sendNC_Weapons()

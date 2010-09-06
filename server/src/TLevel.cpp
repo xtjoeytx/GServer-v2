@@ -942,6 +942,13 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 		return 0;
 	}
 
+	// Send NC Level
+	if (server->hasNPCServer())
+	{
+		server->NC_SendLevel(level);
+		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
+	}
+
 	// Return Level
 	levelList->push_back(level);
 	return level;

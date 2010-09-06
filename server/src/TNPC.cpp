@@ -47,7 +47,7 @@ level(pLevel), server(pServer)
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y]
-		= modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE]
+		= modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE]
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
@@ -127,7 +127,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 		case NPCPROP_SCRIPT:
 		{
-			if (clientVersion != CLVER_NPCSERVER)
+			if (clientVersion != NSVER_GENERIC)
 				return CString() >> (short)(clientScript.length() > 0x2FDF ? 0x2FDF : clientScript.length()) << clientScript.subString(0, 0x2FDF);
 			else
 				return CString() >> (long long)serverScript.length() << serverScript;
