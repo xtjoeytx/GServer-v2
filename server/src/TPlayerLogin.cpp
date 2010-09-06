@@ -168,6 +168,12 @@ bool TPlayer::sendLogin()
 				// Send flags.
 				for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
 					player->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << i->first << "=" << i->second);
+
+				// Send weapons.
+				CString packet;
+				for (std::vector<CString>::const_iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+					packet >> (char)(*i).length() << (*i);
+				player->sendPacket(CString() >> (char)PLO_UNKNOWN60 >> (short)id << packet);
 			}
 			else player->sendPacket(player->isClient() ? myClientProps : myRCProps);
 
@@ -183,6 +189,13 @@ bool TPlayer::sendLogin()
 				std::map<CString, CString> *flags = player->getFlagList();
 				for (std::map<CString, CString>::const_iterator i = flags->begin(); i != flags->end(); ++i)
 					sendPacket(CString() >> (char)PLO_FLAGSET >> (short)player->getId() << i->first << "=" << i->second);
+
+				// Send weapons.
+				CString packet;
+				std::vector<CString> *weapons = player->getWeaponList();
+				for (std::vector<CString>::const_iterator i = weapons->begin(); i != weapons->end(); ++i)
+					packet >> (char)(*i).length() << (*i);
+				sendPacket(CString() >> (char)PLO_UNKNOWN60 >> (short)player->getId() << packet);
 			}
 			else
 			{
@@ -403,8 +416,5 @@ bool TPlayer::sendLoginNPCServer()
 	std::map<CString, CString> * serverFlags = server->getServerFlags();
 	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
-
-	// Send NC-Weapons
-	sendNC_Weapons();
 	return true;
 }
