@@ -1241,6 +1241,15 @@ void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
 	}
 }
 
+bool TServer::NC_SendMap(TMap *map)
+{
+	if (map == 0 || mNpcServer == 0) return false;
+
+	// Send the level name.
+	mNpcServer->sendFile(map->getMapName() << ".gmap");
+	return true;
+}
+
 bool TServer::NC_SendLevel(TLevel* level)
 {
 	if (level == 0 || mNpcServer == 0) return false;
@@ -1254,7 +1263,7 @@ bool TServer::NC_SendLevel(TLevel* level)
 	mNpcServer->sendPacket(CString() << level->getSignsPacket(0));
 
 	// Send NPCs.
-	mNpcServer->sendPacket(CString() << level->getNpcsPacket(0, CLVER_NPCSERVER));
+	mNpcServer->sendPacket(CString() << level->getNpcsPacket(0, NSVER_GENERIC));
 	return true;
 }
 
