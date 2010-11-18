@@ -1814,13 +1814,21 @@ void TPlayer::setChat(const CString& pChat)
 void TPlayer::setNick(const CString& pNickName, bool force)
 {
 	CString newNick, nick, guild;
-	int guild_start = pNickName.findl('(');
+	int guild_start = pNickName.find('(');
+	int guild_end = pNickName.find(')', guild_start);
+
+	// If the player ommitted the ), make sure the guild calculations will work.
+	if (guild_end == -1 && guild_start != -1)
+		guild_end = pNickName.length();
+
+	// If there was no guild, just use the given nickname.
 	if (guild_start == -1)
 		nick = pNickName.trim();
 	else
 	{
+		// We have a guild.  Separate the nickname from the guild.
 		nick = pNickName.subString(0, guild_start);
-		guild = pNickName.subString(guild_start + 1);
+		guild = pNickName.subString(guild_start + 1, guild_end - guild_start - 1);
 		nick.trimI();
 		guild.trimI();
 		if (guild[guild.length() - 1] == ')')
@@ -1888,9 +1896,10 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		else nickName = newNick;
 
 		// See if we can ask if it is a global guild.
-		bool askGlobal = false;
-		if (server->getSettings()->getBool("globalguilds", true) == false)
+		bool askGlobal = server->getSettings()->getBool("globalguilds", true);
+		if (askGlobal == false)
 		{
+			// Check for whitelisted global guilds.
 			std::vector<CString> allowed = server->getSettings()->getStr("allowedglobalguilds").tokenize(",");
 			for (std::vector<CString>::iterator i = allowed.begin(); i != allowed.end(); ++i)
 			{
@@ -1901,7 +1910,6 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 				}
 			}
 		}
-		else askGlobal = true;
 
 		// See if it is a global guild.
 		if (askGlobal)
