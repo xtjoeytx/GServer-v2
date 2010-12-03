@@ -80,7 +80,10 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 		}
 	}
 	else
+	{
 		server->getServerLog().out("[%s] :: [UPnP] Forwarded port %s to %s.\n", server->getName().text(), port.text(), addr.text());
+		ports_forwarded.insert(port);
+	}
 }
 
 void CUPNP::remove_port_forward(const CString& port)
@@ -90,4 +93,5 @@ void CUPNP::remove_port_forward(const CString& port)
 			
 	UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.text(), "TCP", 0);
 	server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", server->getName().text(), port.text());
+	ports_forwarded.erase(port);
 }
