@@ -199,6 +199,8 @@ CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 bool TLevel::reload()
 {
 	// Delete NPCs.
+	// Don't delete NPCs if this level is on a gmap!  If we are on a gmap, just set them
+	// back to their original positions.
 	{
 		// Get some pointers.
 		std::vector<TNPC*>* npcList = server->getNPCList();
