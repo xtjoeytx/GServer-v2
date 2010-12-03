@@ -183,7 +183,7 @@ void TServer::cleanup()
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
 	upnp_thread.join();
-	upnp.remove_port_forward(settings.getStr("serverport"));
+	upnp.remove_all_forwarded_ports();
 
 	// Save translations.
 	this->TS_Save();
