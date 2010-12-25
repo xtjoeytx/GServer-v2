@@ -1442,7 +1442,6 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	// If the player was just now banned, kick him off the server.
 	if (banned && !offline)
 	{
-		p->setLoaded(false);
 		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << accountName << " has banned you.  Reason: " << reason.guntokenize().replaceAll("\n", "\r"));
 		server->deletePlayer(p);
 	}
