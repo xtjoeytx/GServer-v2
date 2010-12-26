@@ -151,7 +151,7 @@ bool __playerPropsRC[propscount] =
 */
 bool TPlayer::created = false;
 typedef bool (TPlayer::*TPLSock)(CString&);
-std::vector<TPLSock> TPLFunc(255, &TPlayer::msgPLI_NULL);
+std::vector<TPLSock> TPLFunc(256, &TPlayer::msgPLI_NULL);
 
 void TPlayer::createFunctions()
 {
@@ -579,7 +579,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 			decryptPacket(curPacket);
 
 		// Get the packet id.
-		int id = curPacket.readGUChar();
+		unsigned char id = curPacket.readGUChar();
 
 		// RC version 1.1 adds a "\n" string to the end of file uploads instead of a newline character.
 		// This causes issues because it messes with the packet order.
