@@ -111,6 +111,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendNC_Maps();
 		void sendNC_Levels();
 		void sendNC_Weapons();
+		void sendNC_GMapList();
 
 		// Packet-Functions
 		static bool created;
