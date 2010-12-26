@@ -416,5 +416,9 @@ bool TPlayer::sendLoginNPCServer()
 	std::map<CString, CString> * serverFlags = server->getServerFlags();
 	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+
+	// Send the server gmaps.
+	sendNC_GMapList();
+
 	return true;
 }

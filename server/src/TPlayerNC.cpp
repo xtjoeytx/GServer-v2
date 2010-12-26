@@ -73,6 +73,26 @@ void TPlayer::sendNCAddr()
 	}
 }
 
+void TPlayer::sendNC_GMapList()
+{
+	if (!isNPCServer())
+		return;
+
+	// Get the gmap list.
+	CSettings* settings = server->getSettings();
+	std::vector<CString> gmaps = settings->getStr("maps").guntokenize().tokenize("\n");
+
+	// Assemble the gmap packet.
+	CString packet;
+	packet >> (char)NCO_GMAPLIST;
+	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
+		packet >> (short)(*i).length() << (*i);
+
+	// Send it.
+	sendPacket(packet);
+}
+
+
 // Request Query from NPC-Server
 bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 {
