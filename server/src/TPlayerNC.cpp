@@ -201,10 +201,6 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 				CString packet = pPacket.readString("");
 				unsigned char id = packet.readGUChar();
 
-				// Check if it is a valid packet id.
-				if (id >= (unsigned char)TPLFunc.size())
-					return true;
-
 				// Call the function assigned to the packet id.
 				if (!(*pl.*TPLFunc[id])(packet))
 					server->deletePlayer(pl);
