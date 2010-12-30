@@ -590,10 +590,6 @@ bool TPlayer::parsePacket(CString& pPacket)
 			pPacket.readChar();	// Read out the n that got left behind.
 		}
 
-		// Check if it is a valid packet id.
-		if (id >= (unsigned char)TPLFunc.size())
-			return false;
-
 		// Call the function assigned to the packet id.
 		packetCount++;
 		if (!(*this.*TPLFunc[id])(curPacket))
