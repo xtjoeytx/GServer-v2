@@ -84,7 +84,7 @@ void TPlayer::sendNC_GMapList()
 
 	// Assemble the gmap packet.
 	CString packet;
-	packet >> (char)NCO_GMAPLIST;
+	packet >> (char)PLO_NC_CONTROL >> (char)NCO_GMAPLIST >> (short)0;
 	for (std::vector<CString>::iterator i = gmaps.begin(); i != gmaps.end(); ++i)
 		packet >> (short)(*i).length() << (*i);
 
