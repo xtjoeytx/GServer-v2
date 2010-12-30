@@ -12,7 +12,7 @@
 */
 bool TServerList::created = false;
 typedef void (TServerList::*TSLSock)(CString&);
-std::vector<TSLSock> TSLFunc(255, &TServerList::msgSVI_NULL);
+std::vector<TSLSock> TSLFunc(256, &TServerList::msgSVI_NULL);
 
 void TServerList::createFunctions()
 {
@@ -349,10 +349,6 @@ void TServerList::parsePacket(CString& pPacket)
 {
 	// read id & packet
 	unsigned char id = pPacket.readGUChar();
-
-	// id exists?
-	if (id >= (unsigned char)TSLFunc.size())
-		return;
 
 	// valid packet, call function
 	(*this.*TSLFunc[id])(pPacket);
