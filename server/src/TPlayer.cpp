@@ -257,7 +257,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_LARGEFILESTART] = &TPlayer::msgPLI_RC_LARGEFILESTART;
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
-	TPLFunc[PLI_UNKNOWN154] = &TPlayer::msgPLI_UNKNOWN154;
+	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 
 	// NPC-Server Functions
@@ -3552,7 +3552,7 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 }
 
 // IRC Stuff
-bool TPlayer::msgPLI_UNKNOWN154(CString& pPacket)
+bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 {
 	// Client -> Return
 	if (isClient())

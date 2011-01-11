@@ -215,7 +215,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_LARGEFILEEND(CString& pPacket);
 		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
 
-		bool msgPLI_UNKNOWN154(CString& pPacket);
+		bool msgPLI_SENDTEXT(CString& pPacket);
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 
 		bool msgPLI_NC_QUERY(CString& pPacket);
