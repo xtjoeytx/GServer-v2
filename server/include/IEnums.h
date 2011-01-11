@@ -120,9 +120,9 @@ enum
 	PLI_NC_CLASSDELETE			= 119,	// {119}{class}
 	PLI_NC_LEVELLISTGET			= 150,	// {150}
 	PLI_NC_LEVELLISTSET			= 151,	// {151}{GSTRING levels}
-
-	PLI_UNKNOWN152				= 152,	// Gets a value from the GraalEngine (or a server-side NPC?) (probably a database)
-	PLI_UNKNOWN154				= 154,	// Sets a value on the GraalEngine (or a server-side NPC?) (probably a database)
+	
+	PLI_REQUESTTEXT				= 152,	// Gets a value from the server.
+	PLI_SENDTEXT				= 154,	// Sets a value on the server.
 
 	PLI_RC_LARGEFILESTART		= 155,
 	PLI_RC_LARGEFILEEND			= 156,
@@ -215,12 +215,14 @@ enum
 	PLO_NC_CONTROL				= 78,	// HIJACKED BY GR!  No clue as to its official purpose.
 	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}
-	PLO_UNKNOWN82				= 82,	// Answers PLI_UNKNOWN152's request.
+	PLO_SERVERTEXT				= 82,	// Answer to PLI_REQUESTTEXT and PLI_SENDTEXT.
 	PLO_LARGEFILESIZE			= 84,
 	PLO_RAWDATA					= 100,	// {100}{INT3 length}
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
 	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
+	PLO_UNKNOWN134				= 134,	// Might be used for package downloads.
+	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{INT2 info_length}{script}
 	PLO_NPCDEL2					= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
 	PLO_HIDENPCS				= 151,
 	PLO_SAY2					= 153,	// Also used for signs. {153}{text}
