@@ -257,6 +257,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_LARGEFILESTART] = &TPlayer::msgPLI_RC_LARGEFILESTART;
 	TPLFunc[PLI_RC_LARGEFILEEND] = &TPlayer::msgPLI_RC_LARGEFILEEND;
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
+	TPLFunc[PLI_REQUESTTEXT] = &TPlayer::msgPLI_REQUESTTEXT;
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 
@@ -3551,13 +3552,29 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	return true;
 }
 
-// IRC Stuff
+bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
+{
+	CString packet = pPacket.readString();
+	CString data = packet.guntokenize();
+
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString option = data.readString("\n");
+
+	TServerList* list = server->getServerList();
+	if (type == "lister")
+	{
+		if (option == "simplelist")
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << type << "simpleserverlist" << "\n").gtokenizeI());
+		else if (type == "serverinfo")
+			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+	}
+
+	return true;
+}
+
 bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 {
-	// Client -> Return
-	if (isClient())
-		return false;
-
 	return true;
 }
 
