@@ -3579,7 +3579,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
-	CString params = data.readString("\n");
+	std::vector<CString> params = data.readString("").tokenize("\n");
 
 	TServerList* list = server->getServerList();
 	if (type == "lister")
