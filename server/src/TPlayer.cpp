@@ -3565,7 +3565,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << type << "simpleserverlist" << "\n").gtokenizeI());
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 	}
 
 	return true;
