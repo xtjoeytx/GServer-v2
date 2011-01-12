@@ -3566,6 +3566,8 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	{
 		if (option == "simplelist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+		else if (option == "rebornlist")
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST2 >> (short)id << CString(weapon << "\n" << type << "\n" << "rebornlist" << "\n").gtokenizeI());
 	}
 
 	return true;
