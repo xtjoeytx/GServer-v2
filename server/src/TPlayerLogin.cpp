@@ -378,8 +378,8 @@ bool TPlayer::sendLoginClient()
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
 
-	// This will allow serverwarp and some other things.  Don't know what its actual purpose is for, though.
-	sendPacket(CString() >> (char)PLO_UNKNOWN82);
+	// This will allow serverwarp and some other things, for some reason.
+	sendPacket(CString() >> (char)PLO_SERVERTEXT);
 
 	return true;
 }
