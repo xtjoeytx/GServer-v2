@@ -1,6 +1,7 @@
 #ifndef TWEAPON_H
 #define TWEAPON_H
 
+#include <vector>
 #include <time.h>
 #include "CString.h"
 
@@ -41,6 +42,7 @@ class TWeapon
 		char mWeaponDefault;
 		CString mWeaponImage, mWeaponName, mWeaponScript;
 		CString mScriptClient, mScriptServer;
+		std::vector<std::pair<CString, CString> > mByteCode;
 		time_t mModTime;
 };
 

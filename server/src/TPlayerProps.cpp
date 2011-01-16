@@ -565,10 +565,14 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					selfBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 					levelBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 
+					if (level != 0 && level->getPlayer(0) == this)
+						sendPacket(CString() >> (char)PLO_ISLEADER);
+					/*
 					// If we are the leader of the level, call warp().  This will fix NPCs not
 					// working again after we respawn.
 					if (level != 0 && level->getPlayer(0) == this)
 						warp(levelName, x, y, time(0));
+					*/
 				}
 
 				// When they die, increase deaths and make somebody else level leader.
