@@ -133,9 +133,12 @@ bool TWeapon::saveWeapon(TServer* server)
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	for (unsigned int i = 0; i < mByteCode.size(); ++i)
 		output << "BYTECODE " << mByteCode[i].first << "\r\n";
-	output << "SCRIPT\r\n";
-	output << script;
-	output << "SCRIPTEND\r\n";
+	if (!script.isEmpty())
+	{
+		output << "SCRIPT\r\n";
+		output << script;
+		output << "SCRIPTEND\r\n";
+	}
 
 	// Save it.
 	return output.save(filename);
@@ -176,7 +179,8 @@ CString TWeapon::getWeaponPacket() const
 
 			// Get the mod time and send packet 197.
 			CString smod = CString() >> (long long)time(0);
-			out >> (char)PLO_UNKNOWN197 << header << ",\"" << smod << "\"" << "\n";
+			smod.gtokenizeI();
+			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
 
 			// Add to the output stream.
 			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
