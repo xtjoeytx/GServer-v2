@@ -367,15 +367,14 @@ enum
 	SVO_SERVERINFO		= 25,
 	SVO_REQUESTLIST		= 26,
 	SVO_REQUESTSVRINFO	= 27,
-	SVO_REQUESTLIST2	= 28,
 };
 
 enum
 {
-	SVI_VERIACC		= 0,	// deprecated
+	SVI_VERIACC			= 0,	// deprecated
 	SVI_VERIGUILD		= 1,
 	SVI_FILESTART		= 2,	// deprecated
-	SVI_FILEEND		= 3,	// deprecated
+	SVI_FILEEND			= 3,	// deprecated
 	SVI_FILEDATA		= 4,	// deprecated
 	SVI_VERSIONOLD		= 5,
 	SVI_VERSIONCURRENT	= 6,
