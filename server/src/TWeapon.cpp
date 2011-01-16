@@ -96,7 +96,13 @@ bool TWeapon::saveWeapon(TServer* server)
 		return false;
 
 	// Prevent the loading/saving of filenames with illegal characters.
-	CString filename = server->getServerPath() << "weapons/weapon" << mWeaponName.replaceAll("/", "_").replaceAll("*", "@") << ".txt";
+	CString name = mWeaponName;
+	name.replaceAllI("\\", "_");
+	name.replaceAllI("/", "_");
+	name.replaceAllI("*", "@");
+	name.replaceAllI(":", ";");
+	name.replaceAllI("?", "!");
+	CString filename = server->getServerPath() << "weapons/weapon" << name << ".txt";
 
 	// Format the weapon script.
 	CString script(mWeaponScript);
@@ -121,6 +127,25 @@ CString TWeapon::getWeaponPacket() const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
+
+	/*
+	CString smod = CString() >> (long long)mModTime;
+
+	CString p33;
+	p33 >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
+		>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage;
+
+	CString p197;
+	p197 >> (char)197 << "weapon," << mWeaponName << ",1,\"" << mWeaponName << "\",\"" << smod << "\"";
+
+	CString p140;
+	p140 >> (char)140 >> (short)(p197.length() - 1) << (p197.text() + 1) << mScriptClient << "\n";
+
+	CString p100;
+	p100 >> (char)PLO_RAWDATA >> (int)(p140.length());
+
+	return CString() << p33 << "\n" << p197 << "\n" << p100 << "\n" << p140;
+	*/
 
 	return CString() >> (char)PLO_NPCWEAPONADD
 		>> (char)mWeaponName.length() << mWeaponName
