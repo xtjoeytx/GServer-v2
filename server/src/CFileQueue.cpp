@@ -7,6 +7,10 @@ void CFileQueue::addPacket(CString pPacket)
 {
 	while (pPacket.bytesLeft() != 0)
 	{
+		// Protect against invalid packet ids.
+		if (pPacket[pPacket.readPos()] < 0x20)
+			break;
+
 		unsigned char pId = pPacket.readGUChar();
 		pPacket.setRead(pPacket.readPos() - 1);
 		if (pId == PLO_RAWDATA)
