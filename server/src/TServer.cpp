@@ -1211,7 +1211,13 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 		return false;
 
 	// Delete from File Browser
-	CString filePath = getServerPath() << "weapons/weapon" << pWeaponName.replaceAll("*", "@").replaceAll("/", "_") << ".txt";
+	CString name = pWeaponName;
+	name.replaceAllI("\\", "_");
+	name.replaceAllI("/", "_");
+	name.replaceAllI("*", "@");
+	name.replaceAllI(":", ";");
+	name.replaceAllI("?", "!");
+	CString filePath = getServerPath() << "weapons/weapon" << name << ".txt";
 	CFileSystem::fixPathSeparators(&filePath);
 	remove(filePath.text());
 
