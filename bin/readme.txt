@@ -85,6 +85,9 @@ These flags are used by the -gr_movement weapon included in the server weapons f
 
 If you don't want the gserver to recognize these flags, set the flaghack_movement setting to false in serveroptions.txt.
 
+Also, if flaghack_ip is enabled in the serveroptions.txt file, you can gain access to the following:
+gr.ip
+
 
 ---------------------------------------
 | Graal Reborn special triggeractions |
@@ -157,3 +160,12 @@ Controlled by the setting triggerhack_levels:
 
     triggeraction 0,0,gr.updatelevel,levelname;
         Updates the specified level.
+
+
+-------------------
+| Weapon bytecode |
+-------------------
+Place weapon bytecode in the weapon_bytecode/ folder.  Inside each weapon file in weapons/, add the following:
+BYTECODE name_of_file
+
+The gserver will load weapon_bytecode/name_of_file and use the bytecode contained there-in.

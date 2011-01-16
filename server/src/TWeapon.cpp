@@ -43,6 +43,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 	// Definitions
 	CString weaponImage, weaponName, weaponScript;
+	std::vector<std::pair<CString, CString> > byteCode;
 
 	// Parse File
 	std::vector<CString>::iterator i = fileLines.begin();
@@ -56,6 +57,15 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 			weaponName = i->readString("");
 		else if (curCommand == "IMAGE")
 			weaponImage = i->readString("");
+		else if (curCommand == "BYTECODE")
+		{
+			CString fname = i->readString("");
+			CString bytecode;
+			bytecode.load(server->getServerPath() << "weapon_bytecode/" << fname);
+
+			if (!bytecode.isEmpty())
+				byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+		}
 		else if (curCommand == "SCRIPT")
 		{
 			++i;
@@ -84,8 +94,15 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", server->getName().text());
 	}
 
-	// Create Weapon
-	return new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
+	// Give a warning if both a script and a bytecode was found.
+	if (!weaponScript.isEmpty() && !byteCode.empty())
+		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.text());
+
+	TWeapon* ret = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
+	if (byteCode.size() != 0)
+		ret->mByteCode = byteCode;
+
+	return ret;
 }
 
 // -- Function: Save Weapon -- //
@@ -114,6 +131,8 @@ bool TWeapon::saveWeapon(TServer* server)
 	CString output = "GRAWP001\r\n";
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
+	for (unsigned int i = 0; i < mByteCode.size(); ++i)
+		output << "BYTECODE " << mByteCode[i].first << "\r\n";
 	output << "SCRIPT\r\n";
 	output << script;
 	output << "SCRIPTEND\r\n";
@@ -128,29 +147,44 @@ CString TWeapon::getWeaponPacket() const
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	/*
-	CString smod = CString() >> (long long)mModTime;
+	if (mByteCode.empty())
+	{
+		return CString() >> (char)PLO_NPCWEAPONADD
+			>> (char)mWeaponName.length() << mWeaponName
+			>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
+			>> (char)1 >> (short)mScriptClient.length() << mScriptClient;
+	}
+	else
+	{
+		CString out;
+		out >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
+			>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
+			>> (char)74 >> (char)0 << "\n";
 
-	CString p33;
-	p33 >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
-		>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage;
+		for (std::vector<std::pair<CString, CString> >::const_iterator i = mByteCode.begin(); i != mByteCode.end(); ++i)
+		{
+			CString b = i->second;
 
-	CString p197;
-	p197 >> (char)197 << "weapon," << mWeaponName << ",1,\"" << mWeaponName << "\",\"" << smod << "\"";
+			unsigned char id = b.readGUChar();
+			CString header = b.readChars(b.readGUShort());
+			CString header2 = header.guntokenize();
 
-	CString p140;
-	p140 >> (char)140 >> (short)(p197.length() - 1) << (p197.text() + 1) << mScriptClient << "\n";
+			CString type = header2.readString("\n");
+			CString name = header2.readString("\n");
+			CString unknown = header2.readString("\n");
+			CString hash = header2.readString("\n");
 
-	CString p100;
-	p100 >> (char)PLO_RAWDATA >> (int)(p140.length());
+			// Get the mod time and send packet 197.
+			CString smod = CString() >> (long long)time(0);
+			out >> (char)PLO_UNKNOWN197 << header << ",\"" << smod << "\"" << "\n";
 
-	return CString() << p33 << "\n" << p197 << "\n" << p100 << "\n" << p140;
-	*/
+			// Add to the output stream.
+			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+			out << b;
+		}
 
-	return CString() >> (char)PLO_NPCWEAPONADD
-		>> (char)mWeaponName.length() << mWeaponName
-		>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
-		>> (char)1 >> (short)mScriptClient.length() << mScriptClient;
+		return out;
+	}
 }
 
 // -- Function: Update Weapon Image/Script -- //
