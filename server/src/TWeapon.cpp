@@ -159,7 +159,7 @@ CString TWeapon::getWeaponPacket() const
 		CString out;
 		out >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
 			>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
-			>> (char)74 >> (char)0 << "\n";
+			>> (char)74 >> (short)0 << "\n";
 
 		for (std::vector<std::pair<CString, CString> >::const_iterator i = mByteCode.begin(); i != mByteCode.end(); ++i)
 		{
