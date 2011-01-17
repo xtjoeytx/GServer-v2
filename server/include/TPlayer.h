@@ -162,6 +162,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
+		bool msgPLI_UNKNOWN47(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
 		bool msgPLI_RC_SERVEROPTIONSGET(CString& pPacket);
@@ -219,6 +220,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SENDTEXT(CString& pPacket);
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
+		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 
 		bool msgPLI_NC_QUERY(CString& pPacket);
 
@@ -251,7 +253,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int codepage;
 		TLevel *level;
 		int id, type, versionID;
-		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave;
+		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;
