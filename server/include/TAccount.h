@@ -166,6 +166,7 @@ class TAccount
 		CString getAdminIp() const		{ return adminIp; }
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
+		bool getGuest()					{ return isGuest; }
 		std::map<CString, CString>* getFlagList()		{ return &flagList; }
 		std::vector<CString>* getFolderList()			{ return &folderList; }
 		std::vector<CString>* getWeaponList()			{ return &weaponList; }
@@ -192,7 +193,7 @@ class TAccount
 		TServer* server;
 
 		// Player-Account
-		bool isBanned, isLoadOnly;
+		bool isBanned, isLoadOnly, isGuest;
 		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
 		long accountIp;
