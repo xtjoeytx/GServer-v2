@@ -120,7 +120,7 @@ enum
 	PLI_NC_CLASSDELETE			= 119,	// {119}{class}
 	PLI_NC_LEVELLISTGET			= 150,	// {150}
 	PLI_NC_LEVELLISTSET			= 151,	// {151}{GSTRING levels}
-	
+
 	PLI_REQUESTTEXT				= 152,	// Gets a value from the server.
 	PLI_SENDTEXT				= 154,	// Sets a value on the server.
 
@@ -367,6 +367,7 @@ enum
 	SVO_SERVERINFO		= 25,
 	SVO_REQUESTLIST		= 26,
 	SVO_REQUESTSVRINFO	= 27,
+	SVO_REQUESTBUDDIES	= 28,
 };
 
 enum
