@@ -194,10 +194,10 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		// Try to create a unique account number.
 		while (true)
 		{
-			int v = (rand() * rand()) % 999999;
-			if (server->getPlayer("pc" + CString(v)) == 0)
+			int v = (rand() * rand()) % 9999999;
+			if (server->getPlayer("pc:" + CString(v)) == 0)
 			{
-				accountName = "pc" + CString(v);
+				accountName = "pc:" + CString(v);
 				break;
 			}
 		}
