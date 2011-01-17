@@ -3612,8 +3612,8 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	{
 		if (option == "serverinfo")
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
-		else if (option == "verifybuddies")
-			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id >> (char)accountName.length() << accountName << packet);
+		else if (option == "verifybuddies" && !getGuest())
+			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
 	}
 
 	return true;
