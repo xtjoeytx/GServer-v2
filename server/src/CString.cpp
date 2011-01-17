@@ -695,10 +695,10 @@ CString CString::gtokenize() const
 	while ((pos[0] = self.find("\n", pos[1])) != -1)
 	{
 		CString temp(self.subString(pos[1], pos[0] - pos[1]));
+		temp.removeAllI("\r");
 		if (temp.find(" ") != -1 || temp[0] == '"')
 		{
 			temp.replaceAllI( "\"", "\"\"" );	// Change all " to ""
-			temp.removeAllI("\r");
 			if (temp.length() != 0)
 				retVal << "\"" << temp << "\",";
 			else
