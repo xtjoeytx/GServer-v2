@@ -1,5 +1,6 @@
 #include "IDebug.h"
 #include <memory.h>
+#include <time.h>
 #include "TAccount.h"
 #include "TServer.h"
 #include "CFileSystem.h"
@@ -9,7 +10,7 @@
 */
 TAccount::TAccount(TServer* pServer)
 : server(pServer),
-isBanned(false), isLoadOnly(false),
+isBanned(false), isLoadOnly(false), isGuest(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
@@ -178,15 +179,35 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "EMAIL") email = val;
 		else if (section == "LOCALRIGHTS") adminRights = strtoint(val);
 		else if (section == "IPRANGE") adminIp = val;
+		else if (section == "LOADONLY") isLoadOnly = (strtoint(val) == 0 ? false : true);
 		else if (section == "FOLDERRIGHT") folderList.push_back(val);
 		else if (section == "LASTFOLDER") lastFolder = val;
+	}
+
+	// If this is a guest account, loadonly is set to true.
+	if (pAccount == "guest")
+	{
+		isLoadOnly = true;
+		isGuest = true;
+		srand((unsigned int)time(0));
+
+		// Try to create a unique account number.
+		while (true)
+		{
+			int v = (rand() * rand()) % 999999;
+			if (server->getPlayer("pc" + CString(v)) == 0)
+			{
+				accountName = "pc" + CString(v);
+				break;
+			}
+		}
 	}
 
 	// Comment out this line if you are actually going to use community names.
 	communityName = accountName;
 
 	// If we loaded from the default account, save our account now and add it to the file system.
-	if (loadedFromDefault)
+	if (loadedFromDefault && !isLoadOnly)
 	{
 		saveAccount();
 		accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
@@ -271,6 +292,7 @@ bool TAccount::saveAccount()
 	newFile << "EMAIL " << email << "\r\n";
 	newFile << "LOCALRIGHTS " << CString(adminRights) << "\r\n";
 	newFile << "IPRANGE " << adminIp << "\r\n";
+	newFile << "LOADONLY " << CString((int)(isLoadOnly == true ? 1 : 0)) << "\r\n";
 
 	// Folder Rights
 	for (unsigned int i = 0; i < folderList.size(); i++)
