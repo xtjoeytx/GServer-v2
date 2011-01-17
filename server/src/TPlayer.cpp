@@ -2044,7 +2044,7 @@ void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 {
 	// Call Default Set Flag
 	TAccount::setFlag(pFlagName, pFlagValue);
-	
+
 	// Send to Player
 	if (sendToPlayer)
 	{
@@ -3011,7 +3011,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		{
 			// Update Weapon
 			weapon->updateWeapon(server, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getClientScript(), npc->getLevel()->getModTime());
-			
+
 			// Send to Players
 			server->NC_UpdateWeapon(weapon);
 		}
@@ -3612,6 +3612,8 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	{
 		if (option == "serverinfo")
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+		else if (option == "verifybuddies")
+			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id >> (char)accountName.length() << accountName << packet);
 	}
 
 	return true;
