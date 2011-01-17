@@ -88,7 +88,10 @@ class CString
 		CString guntokenize() const;
 		bool match(const CString& pMask) const;
 		bool comparei(const CString& pOther) const;
+		bool contains(const CString& characters) const;
+		bool onlyContains(const CString& characters) const;
 		bool isNumber() const;
+		bool isAlphaNumeric() const;
 
 		/* In-Functions */
 		inline CString& escapeI();
