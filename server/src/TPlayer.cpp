@@ -3535,9 +3535,11 @@ bool TPlayer::msgPLI_PROCESSLIST(CString& pPacket)
 
 bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 {
+#ifdef DEBUG
 	printf("TODO: TPlayer::msgPLI_UNKNOWN46: ");
 	CString packet = pPacket.readString("");
 	for (int i = 0; i < packet.length(); ++i) printf( "%02x ", (unsigned char)packet[i] ); printf( "\n" );
+#endif
 	return true;
 }
 
