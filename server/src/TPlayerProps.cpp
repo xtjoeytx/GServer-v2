@@ -848,7 +848,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					leaveLevel();
 					setLevel(levelName, -1);
 				}
+#ifdef DEBUG
 				printf("gmap level x: %d\n", gmaplevelx);
+#endif
 				break;
 			}
 
@@ -861,7 +863,9 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					leaveLevel();
 					setLevel(levelName, -1);
 				}
+#ifdef DEBUG
 				printf("gmap level y: %d\n", gmaplevely);
+#endif
 				break;
 			}
 
@@ -871,11 +875,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			default:
 			{
+#ifdef DEBUG
 				printf("Unidentified PLPROP: %i, readPos: %d\n", propId, pPacket.readPos());
 				for (int i = 0; i < pPacket.length(); ++i)
 					printf("%02x ", (unsigned char)pPacket[i]);
 				printf("\n");
-
+#endif
 				sentInvalid = true;
 			}
 			return;
@@ -915,7 +920,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
 		invalidPackets++;
 		if (invalidPackets > 5)
+		{
+			serverlog.out("[%s] Player %s is sending invalid packets.\n", server->getName().text(), nickName.text());
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 			server->deletePlayer(this);
+		}
 	}
 }
 
