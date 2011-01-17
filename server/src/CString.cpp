@@ -696,15 +696,26 @@ CString CString::gtokenize() const
 	{
 		CString temp(self.subString(pos[1], pos[0] - pos[1]));
 		temp.removeAllI("\r");
-		if (temp[0] == '"' || temp.find(" ") != -1 || temp.find("\xA0") != -1)
+		if (!temp.isEmpty())
 		{
-			temp.replaceAllI( "\"", "\"\"" );	// Change all " to ""
-			if (temp.length() != 0)
+			// Check for a complex word.
+			bool complex = false;
+			if (temp[0] == '"') complex = true;
+			for (int i = 0; i < temp.length() && !complex; ++i)
+			{
+				if (temp[i] < 33 || temp[i] > 126)
+					complex = true;
+			}
+
+			// Put complex words inside quotation marks.
+			if (complex)
+			{
+				temp.replaceAllI( "\"", "\"\"" );	// Change all " to ""
 				retVal << "\"" << temp << "\",";
-			else
-				retVal << ",";
+			}
+			else retVal << temp << ",";
 		}
-		else retVal << temp << ",";
+		else retVal << ",";
 		pos[1] = pos[0] + 1;
 	}
 
@@ -822,6 +833,38 @@ bool CString::comparei(const CString& pOther) const
 	return false;
 }
 
+bool CString::contains(const CString& characters) const
+{
+	for (int i = 0; i < sizec; ++i)
+	{
+		for (int j = 0; j < characters.length(); ++j)
+		{
+			if (buffer[i] == characters[j])
+				return true;
+		}
+	}
+	return false;
+}
+
+bool CString::onlyContains(const CString& characters) const
+{
+	for (int i = 0; i < sizec; ++i)
+	{
+		bool test = false;
+		for (int j = 0; j < characters.length(); ++j)
+		{
+			if (buffer[i] == characters[j])
+			{
+				test = true;
+				j = characters.length();
+			}
+		}
+		if (test == false)
+			return false;
+	}
+	return true;
+}
+
 bool CString::isNumber() const
 {
 	const char numbers[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };
@@ -842,6 +885,11 @@ bool CString::isNumber() const
 			return false;
 	}
 	return true;
+}
+
+bool CString::isAlphaNumeric() const
+{
+	return onlyContains("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 }
 
 
