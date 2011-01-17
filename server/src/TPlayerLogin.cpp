@@ -95,6 +95,7 @@ bool TPlayer::sendLogin()
 			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 		// Check if the account is already in use.
+		if (!getGuest())
 		{
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
 			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
