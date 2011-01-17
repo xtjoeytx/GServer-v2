@@ -3591,6 +3591,8 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		else if (option == "rebornlist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
 	}
+	else if (type == "pmservers")
+		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
 
 	return true;
 }
