@@ -696,7 +696,7 @@ CString CString::gtokenize() const
 	{
 		CString temp(self.subString(pos[1], pos[0] - pos[1]));
 		temp.removeAllI("\r");
-		if (temp.find(" ") != -1 || temp[0] == '"')
+		if (temp[0] == '"' || temp.find(" ") != -1 || temp.find("\xA0") != -1)
 		{
 			temp.replaceAllI( "\"", "\"\"" );	// Change all " to ""
 			if (temp.length() != 0)
