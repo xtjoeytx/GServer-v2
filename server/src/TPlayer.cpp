@@ -205,6 +205,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
+	TPLFunc[PLI_UNKNOWN47] = &TPlayer::msgPLI_UNKNOWN47;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
 	TPLFunc[PLI_RC_SERVEROPTIONSGET] = &TPlayer::msgPLI_RC_SERVEROPTIONSGET;
@@ -260,6 +261,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_REQUESTTEXT] = &TPlayer::msgPLI_REQUESTTEXT;
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
+	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
 
 	// NPC-Server Functions
 	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_QUERY;
@@ -283,7 +285,7 @@ grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true), invalidPackets(0)
 {
-	lastData = lastMovement = lastSave = time(0);
+	lastData = lastMovement = lastSave = last1m = time(0);
 	lastChat = lastMessage = lastNick = 0;
 
 	srand((unsigned int)time(0));
@@ -535,6 +537,13 @@ bool TPlayer::doTimedEvents()
 	{
 		lastSave = currTime;
 		if (isClient() && loaded && !isLoadOnly) saveAccount();
+	}
+
+	// Events that happen every minute.
+	if ((int)difftime(currTime, last1m) > 60)
+	{
+		last1m = currTime;
+		invalidPackets = 0;
 	}
 
 	return true;
@@ -2061,7 +2070,12 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
 	invalidPackets++;
-	if (invalidPackets > 5) return false;
+	if (invalidPackets > 5)
+	{
+		serverlog.out("[%s] Player %s is sending invalid packets.\n", server->getName().text(), nickName.text());
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
+		return false;
+	}
 
 	return true;
 }
@@ -3527,6 +3541,12 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
+{
+	// Stub.
+	return true;
+}
+
 bool TPlayer::msgPLI_RAWDATA(CString& pPacket)
 {
 	nextIsRaw = true;
@@ -3610,5 +3630,11 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 		}
 	}
 	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
+	return true;
+}
+
+bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+{
+	// Stub.
 	return true;
 }
