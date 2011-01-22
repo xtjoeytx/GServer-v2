@@ -27,8 +27,8 @@ class CUPNP
 
 		void initialize(const char* local_ip, const char* port)
 		{
-			this->local_ip << local_ip;
-			this->port << port;
+			this->local_ip = local_ip;
+			this->port = port;
 		}
 
 		// Finds a valid UPNP device.
