@@ -84,7 +84,9 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 
 	// Start listening on the player socket.
 	serverlog.out("[%s]      Initializing player listen socket.\n", name.text());
-	if (playerSock.init(0, settings.getStr("serverport").text()))
+	CString serverinterface = settings.getStr("serverinterface");
+	if (serverinterface == "AUTO") serverinterface.clear();
+	if (playerSock.init((serverinterface.isEmpty() ? 0 : serverinterface.text()), settings.getStr("serverport").text()))
 	{
 		serverlog.out("[%s] ** [Error] Could not initialize listening socket...\n", name.text());
 		return ERR_LISTEN;
