@@ -310,7 +310,7 @@ int CSocket::init(const char* host, const char* port, int protocol)
 	else if (properties.type == SOCKET_TYPE_SERVER)
 	{
 		hints.ai_flags = AI_PASSIVE;		// Local socket.
-		error = getaddrinfo(0, port, &hints, &res);
+		error = getaddrinfo(host, port, &hints, &res);
 	}
 	else
 	{
