@@ -140,6 +140,7 @@ url = http://www.graal.in/
 # If myip is set to AUTO, it uses the IP address exposed to the list server.
 serverip = AUTO
 serverport = 14802
+serverinterface = AUTO
 
 # The local IP address of the computer.  Helps you connect to your server if your router can't route on
 # its WAN-side IP address.  Leave it as AUTO unless you know what you are doing.
