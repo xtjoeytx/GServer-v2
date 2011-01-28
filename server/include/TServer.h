@@ -61,7 +61,7 @@ class TServer : public CSocketStub
 		void cleanup();
 		void restart();
 
-		int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "");
+		int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
 		bool doMain();
 
 		// Server Management
@@ -180,7 +180,7 @@ class TServer : public CSocketStub
 		CString allowedVersionString, name, servermessage, serverpath;
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
-		CString overrideIP, overrideLocalIP, overridePort;
+		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
 
 		std::map<CString, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
