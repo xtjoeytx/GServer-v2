@@ -31,12 +31,14 @@ The file looks like this:
     server_1_ip = myserver.com
     server_1_port = 12345
     server_1_localip = 127.0.0.1
+    server_1_interface = 192.168.2.1
 
 servercount specifies the number of servers.  In the default file, that is 1 server.
 server_# specifies the directory the server is under.
 server_#_ip specifies an optional ip address override.
 server_#_port specifies an optional port override.
 server_#_localip specifies an optional localip override.
+server_#_interface specifies an optional interface override.
 
 All of the optional overrides will take precedence over the options defined in serveroptions.txt.
 
