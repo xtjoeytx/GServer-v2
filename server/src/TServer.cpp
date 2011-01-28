@@ -55,7 +55,7 @@ TServer::~TServer()
 	cleanup();
 }
 
-int TServer::init(const CString& serverip, const CString& serverport, const CString& localip)
+int TServer::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
 {
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
@@ -73,9 +73,19 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 		settings.addKey("serverport", serverport);
 	if (!localip.isEmpty())
 		settings.addKey("localip", localip);
+	if (!serverinterface.isEmpty())
+		settings.addKey("serverinterface", serverinterface);
 	overrideIP = serverip;
 	overridePort = serverport;
 	overrideLocalIP = localip;
+	overrideInterface = serverinterface;
+
+	// Fix up the interface to work properly with CSocket.
+	CString oInter = overrideInterface;
+	if (overrideInterface.isEmpty())
+		oInter = settings.getStr("serverinterface");
+	if (oInter == "AUTO")
+		oInter.clear();
 
 	// Initialize the player socket.
 	playerSock.setType(SOCKET_TYPE_SERVER);
@@ -84,9 +94,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 
 	// Start listening on the player socket.
 	serverlog.out("[%s]      Initializing player listen socket.\n", name.text());
-	CString serverinterface = settings.getStr("serverinterface");
-	if (serverinterface == "AUTO") serverinterface.clear();
-	if (playerSock.init((serverinterface.isEmpty() ? 0 : serverinterface.text()), settings.getStr("serverport").text()))
+	if (playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), settings.getStr("serverport").text()))
 	{
 		serverlog.out("[%s] ** [Error] Could not initialize listening socket...\n", name.text());
 		return ERR_LISTEN;
@@ -135,7 +143,7 @@ void TServer::operator()()
 		{
 			doRestart = false;
 			cleanup();
-			int ret = init(overrideIP, overridePort, overrideLocalIP);
+			int ret = init(overrideIP, overridePort, overrideLocalIP, overrideInterface);
 			if (ret != 0)
 				break;
 		}
