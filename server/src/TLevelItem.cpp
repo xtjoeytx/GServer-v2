@@ -111,7 +111,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 		{
 			CString playerProp = player->getProp(PLPROP_GLOVEPOWER);
 			char glovePower = playerProp.readGChar();
-			if (itemID == 17) glovePower = 3;
+			if (itemID == 16) glovePower = 3;
 			else glovePower = (glovePower < 2 ? 2 : glovePower);
 			return CString() >> (char)PLPROP_GLOVEPOWER >> (char)glovePower;
 		}
@@ -127,10 +127,9 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 		case 15:	// mirrorshield
 		case 17:	// lizardshield
 		{
-			CString playerProp = player->getProp(PLPROP_SHIELDPOWER);
-			char shieldPower = playerProp.readGChar();
-			if (itemID == 18) shieldPower = 3;
-			else if (itemID == 16) shieldPower = (shieldPower < 2 ? 2 : shieldPower);
+			char shieldPower = player->getShieldPower();
+			if (itemID == 17) shieldPower = 3;
+			else if (itemID == 15) shieldPower = (shieldPower < 2 ? 2 : shieldPower);
 			else shieldPower = (shieldPower < 1 ? 1 : shieldPower);
 			return CString() >> (char)PLPROP_SHIELDPOWER >> (char)shieldPower;
 		}
@@ -140,11 +139,10 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 		case 18:	// lizardsword
 		case 14:	// goldensword
 		{
-			CString playerProp = player->getProp(PLPROP_SWORDPOWER);
-			char swordPower = playerProp.readGChar();
-			if (itemID == 15) swordPower = 4;
-			else if (itemID == 19) swordPower = (swordPower < 3 ? 3 : swordPower);
-			else if (itemID == 14) swordPower = (swordPower < 2 ? 2 : swordPower);
+			char swordPower = (char)player->getSwordPower();
+			if (itemID == 14) swordPower = 4;
+			else if (itemID == 18) swordPower = (swordPower < 3 ? 3 : swordPower);
+			else if (itemID == 13) swordPower = (swordPower < 2 ? 2 : swordPower);
 			else swordPower = (swordPower < 1 ? 1 : swordPower);
 			return CString() >> (char)PLPROP_SWORDPOWER >> (char)swordPower;
 		}
