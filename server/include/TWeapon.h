@@ -10,7 +10,7 @@ class TWeapon
 {
 	public:
 		// -- Constructor | Destructor -- //
-		TWeapon(const char pId);
+		TWeapon(const signed char pId);
 		TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
 
 		// -- Functions -- //
@@ -22,7 +22,7 @@ class TWeapon
 		// Functions -> Inline Get-Functions
 		CString getWeaponPacket() const;
 		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
-		inline char getWeaponId()						{ return mWeaponDefault; }
+		inline signed char getWeaponId()				{ return mWeaponDefault; }
 		inline const CString& getImage() const			{ return mWeaponImage; }
 		inline const CString& getName() const			{ return mWeaponName; }
 		inline const CString& getClientScript() const	{ return mScriptClient; }
@@ -39,7 +39,7 @@ class TWeapon
 		
 	protected:
 		// Varaibles -> Weapon Data
-		char mWeaponDefault;
+		signed char mWeaponDefault;
 		CString mWeaponImage, mWeaponName, mWeaponScript;
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;

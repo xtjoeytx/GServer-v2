@@ -1101,7 +1101,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// id: 0
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		char color = getColor(chatParse[1].toLower());
+		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
 			colors[0] = color;
@@ -1114,7 +1114,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// id: 1
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		char color = getColor(chatParse[1].toLower());
+		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
 			colors[1] = color;
@@ -1127,7 +1127,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// id: 2
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		char color = getColor(chatParse[1].toLower());
+		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
 			colors[2] = color;
@@ -1140,7 +1140,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// id: 3
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		char color = getColor(chatParse[1].toLower());
+		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
 			colors[3] = color;
@@ -1153,7 +1153,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// id: 4
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		char color = getColor(chatParse[1].toLower());
+		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
 			colors[4] = color;
@@ -2486,7 +2486,7 @@ bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 
 	// Remove the item from the level, getting the type of the item in the process.
-	char item = level->removeItem(loc[0], loc[1]);
+	signed char item = level->removeItem(loc[0], loc[1]);
 	if (item == -1) return true;
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
@@ -2562,7 +2562,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		// Now, adjust their AP if allowed.
 		if (settings->getBool("apsystem", true))
 		{
-			char oAp = player->getProp(PLPROP_ALIGNMENT).readGChar();
+			signed char oAp = player->getProp(PLPROP_ALIGNMENT).readGChar();
 
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && ap > 19)
