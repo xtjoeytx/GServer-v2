@@ -1,5 +1,7 @@
 #include "IDebug.h"
-#include <boost/thread.hpp>
+#ifndef NO_BOOST
+#	include <boost/thread.hpp>
+#endif
 #include <sys/stat.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <dirent.h>
@@ -26,19 +28,25 @@
 CFileSystem::CFileSystem()
 : server(0)
 {
+#ifndef NO_BOOST
 	m_preventChange = new boost::recursive_mutex();
+#endif
 }
 
 CFileSystem::CFileSystem(TServer* pServer)
 : server(pServer)
 {
+#ifndef NO_BOOST
 	m_preventChange = new boost::recursive_mutex();
+#endif
 }
 
 CFileSystem::~CFileSystem()
 {
 	clear();
+#ifndef NO_BOOST
 	delete m_preventChange;
+#endif
 }
 
 void CFileSystem::clear()
@@ -49,7 +57,9 @@ void CFileSystem::clear()
 
 void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 	if (server == 0) return;
 
 	// Format the directory.
@@ -77,7 +87,9 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 
 void CFileSystem::addFile(CString file)
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Grab the file name and directory.
 	CFileSystem::fixPathSeparators(&file);
@@ -94,7 +106,9 @@ void CFileSystem::addFile(CString file)
 
 void CFileSystem::removeFile(const CString& file)
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Grab the file name and directory.
 	CString filename(file.subString(file.findl(fSep) + 1));
@@ -109,7 +123,9 @@ void CFileSystem::removeFile(const CString& file)
 
 void CFileSystem::resync()
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Clear the file list.
 	fileList.clear();
@@ -121,7 +137,9 @@ void CFileSystem::resync()
 
 CString CFileSystem::find(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 	std::map<CString, CString>::const_iterator i = fileList.find(file);
 	if (i == fileList.end()) return CString();
 	return CString(i->second);
@@ -129,7 +147,9 @@ CString CFileSystem::find(const CString& file) const
 
 CString CFileSystem::findi(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 		if (i->first.comparei(file)) return CString(i->second);
 	return CString();
@@ -137,7 +157,9 @@ CString CFileSystem::findi(const CString& file) const
 
 CString CFileSystem::fileExistsAs(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 		if (i->first.comparei(file)) return CString(i->first);
 	return CString();
@@ -219,7 +241,9 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 
 CString CFileSystem::load(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Get the full path to the file.
 	CString fileName = find(file);
@@ -234,7 +258,9 @@ CString CFileSystem::load(const CString& file) const
 
 time_t CFileSystem::getModTime(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Get the full path to the file.
 	CString fileName = find(file);
@@ -248,7 +274,9 @@ time_t CFileSystem::getModTime(const CString& file) const
 
 bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Get the full path to the file.
 	CString fileName = find(file);
@@ -266,7 +294,9 @@ bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 
 int CFileSystem::getFileSize(const CString& file) const
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
+#endif
 
 	// Get the full path to the file.
 	CString fileName = find(file);
