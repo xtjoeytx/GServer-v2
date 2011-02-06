@@ -21,8 +21,9 @@ enum PLUGINRET
 class CPlugin
 {
 	public:
-		// Functions -> Initiate
+		// Functions -> Initiate / Cleanup
 		virtual bool Initialize(TServer *pServer) = 0;
+		virtual void Cleanup() = 0;
 
 		// Functions -> Account Load/Save
 		virtual PLUGINRET LoadAccount(const char* accountName, const char** accountText) = 0;

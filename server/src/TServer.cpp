@@ -1,5 +1,7 @@
 #include "IDebug.h"
-#include <boost/thread.hpp>
+#ifndef NO_BOOST
+#	include <boost/thread.hpp>
+#endif
 
 #include "TServer.h"
 #include "main.h"
@@ -23,7 +25,7 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
-: doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this), upnp(this)
+: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this), upnp(this)
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
@@ -108,7 +110,11 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
 	upnp.initialize(playerSock.getLocalIp(), settings.getStr("serverport").text());
+#ifndef NO_BOOST
 	upnp_thread = boost::thread(boost::ref(upnp));
+#else
+	upnp();
+#endif
 
 	// Connect to the serverlist.
 	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
@@ -129,7 +135,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 // Called when the TServer is put into its own thread.
 void TServer::operator()()
 {
-	bool running = true;
+	running = true;
 	while (running)
 	{
 		// Do a server loop.
@@ -148,6 +154,7 @@ void TServer::operator()()
 				break;
 		}
 
+#ifndef NO_BOOST
 		try
 		{
 			boost::this_thread::interruption_point();
@@ -156,6 +163,7 @@ void TServer::operator()()
 		{
 			running = false;
 		}
+#endif
 	}
 	cleanup();
 }
@@ -192,7 +200,9 @@ void TServer::cleanup()
 	// Close our UPNP port forward.
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
+#ifndef NO_BOOST
 	upnp_thread.join();
+#endif
 	upnp.remove_all_forwarded_ports();
 
 	// Save translations.

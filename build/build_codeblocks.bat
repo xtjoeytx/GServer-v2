@@ -1,2 +1,2 @@
-premake4.exe codeblocks
+premake4.exe codeblocks %*
 pause
