@@ -336,8 +336,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				float p = (float)pPacket.readGUChar() / 2.0f;
 				if (ap < 40 && p > power) break;
-				if ((status & PLSTATUS_UNKNOWN) != 0)
-					break;
+				//if ((status & PLSTATUS_HIDESWORD) != 0)
+				//	break;
 				power = clip(p, 0, (float)maxPower);
 				break;
 			}
@@ -561,8 +561,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				//printf("%s: status: %d, oldStatus: %d\n", accountName.text(), status, oldStatus );
 
 				if (id == -1) break;
-				if ((status & PLSTATUS_UNKNOWN))
-					server->getServerLog().out("[%s] ** [DEBUG] PLSTATUS_UNKNOWN encountered! Please let us know why!\n", server->getName().text());
 
 				// When they come back to life, give them hearts.
 				if ((oldStatus & PLSTATUS_DEAD) > 0 && (status & PLSTATUS_DEAD) == 0)
