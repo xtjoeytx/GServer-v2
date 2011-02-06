@@ -1,5 +1,40 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v2.4.0
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fixed crash bugs.
+* heartlimit now properly defaults to 3 in the gserver code.
+* Fixed some bugs with player Z support.
+* Fixed a crash when using gmaps.
+* Fixed a guild tag exploit.
+* The server only removes a port that it successfully opened via UPnP instead of removing all possible ports.
+* Fixed a crash that could occur when banning players.
+* Fixed a possible invalid packet crash.
+* The gserver properly checks for heartlimit, swordlimit, and shieldlimit when sending props.
+* Fixed a potential issue with weapon filenames.
+* Fixed issues with CString::gtokenize and guntokenize.
+* Added a fix to prevent Beholder from breaking stuff.
+* Fixed a bug where the server was appending the ip/port when initializing UPnP. This was breaking UPnP when doing a /restartserver.
+* Fixed a typo with /updatelevelsall.
+* If a weapon is modified on the disk and reloaded via /reloadweapons, the new weapon will be sent to the players on the server.
+* Fixed the following chests: glove2, shield, mirrorshield, lizardshield, sword, battleaxe, lizardsword, and goldensword.
++ Improved NPC-Server support.
++ Improved support for v4+ clients.
++ Added weapon bytecode support for v5 clients.
++ Account load-only support added.
++ Guest account support added.
++ Added the serverinterface option for specifying an interface to bind the server's listen socket to. Can be used in servers.txt.
+o Added additional RC logging.
+o Updated zlib to version 1.2.5.
+o rcmessage.txt updated.
+o Updated premake4 and added a Visual Studio 2010 batch file.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v2.3.0
 
   * bug fix, + new feature, o other
