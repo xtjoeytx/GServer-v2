@@ -1947,18 +1947,6 @@ bool TPlayer::addWeapon(int defaultWeapon)
 	if (settings->getBool("defaultweapons", true) == false)
 		return false;
 
-	// Prevent the Bow and Bomb from being added.
-	if (defaultWeapon == 7 && allowBow == false)
-	{
-		allowBow = true;
-		return false;
-	}
-	if (defaultWeapon == 8 && allowBomb == false)
-	{
-		allowBomb = true;
-		return false;
-	}
-
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
