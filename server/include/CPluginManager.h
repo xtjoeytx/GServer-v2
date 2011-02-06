@@ -31,7 +31,15 @@ class CPluginManager
 #ifdef _WIN32
 		std::vector<HMODULE> mHandles;
 #endif
-
 };
+
+// Used by the plugins to interface the gserver.
+/*
+class CPluginInterface
+{
+	public:
+		const char* getServerString(const char* string);
+};
+*/
 
 #endif

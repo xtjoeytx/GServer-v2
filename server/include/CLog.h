@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include "CString.h"
 
+#ifndef NO_BOOST
 namespace boost
 {
 	class recursive_mutex;
 }
+#endif
 
 //! Logger class for logging information to a file.
 class CLog
@@ -72,8 +74,10 @@ class CLog
 		//! File handle.
 		FILE* file;
 
+#ifndef NO_BOOST
 		//! Mutex
 		boost::recursive_mutex* m_write;
+#endif
 };
 
 inline

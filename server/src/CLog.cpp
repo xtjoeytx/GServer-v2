@@ -1,5 +1,7 @@
 #include "IDebug.h"
-#include <boost/thread.hpp>
+#ifndef NO_BOOST
+#	include <boost/thread.hpp>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -16,7 +18,9 @@ static CString getBasePath();
 CLog::CLog()
 : enabled(false), file(0)
 {
+#ifndef NO_BOOST
 	m_write = new boost::recursive_mutex();
+#endif
 
 	// Get base path.
 	homepath = getBasePath();
@@ -25,7 +29,9 @@ CLog::CLog()
 CLog::CLog(const CString& _file, bool _enabled)
 : enabled(_enabled), filename(_file), file(0)
 {
+#ifndef NO_BOOST
 	m_write = new boost::recursive_mutex();
+#endif
 
 	// Get base path.
 	homepath = getBasePath();
@@ -40,14 +46,18 @@ CLog::CLog(const CString& _file, bool _enabled)
 CLog::~CLog()
 {
 	{
+#ifndef NO_BOOST
 		boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 		if (file)
 		{
 			fflush(file);
 			fclose(file);
 		}
 	}
+#ifndef NO_BOOST
 	delete m_write;
+#endif
 }
 
 void CLog::out(const CString format, ...)
@@ -55,7 +65,9 @@ void CLog::out(const CString format, ...)
 	va_list s_format_v;
 	va_start(s_format_v, format);
 
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 
 	// Log output to file.
 	if (true == enabled && 0 != file)
@@ -72,7 +84,9 @@ void CLog::out(const CString format, ...)
 
 void CLog::clear()
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "w");
@@ -82,7 +96,9 @@ void CLog::clear()
 
 void CLog::close()
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 	if (file) fclose(file);
 	file = 0;
 	enabled = false;
@@ -90,7 +106,9 @@ void CLog::close()
 
 void CLog::open()
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "a");
@@ -100,7 +118,9 @@ void CLog::open()
 
 void CLog::setFilename(const CString& filename)
 {
+#ifndef NO_BOOST
 	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
 	if (file) fclose(file);
 
 	this->filename = filename;
