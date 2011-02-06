@@ -1031,7 +1031,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				(*i)->reload();
 				++count;
 			}
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << "updated all the levels (" << CString((int)count) << " levels updated).");
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " updated all the levels (" << CString((int)count) << " levels updated).");
 			rclog.out(" (%d levels updated).\n", count);
 		}
 		else if (words[0] == "/restartserver" && words.size() == 1 && hasRight(PLPERM_MODIFYSTAFFACCOUNT))
