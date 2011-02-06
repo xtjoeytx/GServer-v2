@@ -9,7 +9,7 @@ class TPlayer;
 class TLevelItem
 {
 	public:
-		TLevelItem(float pX, float pY, char pItem) : x(pX), y(pY), item(pItem), modTime(time(0)) { timeout.setTimeout(10); }
+		TLevelItem(float pX, float pY, signed char pItem) : x(pX), y(pY), item(pItem), modTime(time(0)) { timeout.setTimeout(10); }
 
 		// Return the packet to be sent to the player.
 		CString getItemStr() const;
@@ -17,13 +17,13 @@ class TLevelItem
 		// Static functions.
 		static int getItemId(const CString& pItemName);
 		static CString getItemName(const unsigned char id);
-		static CString getItemPlayerProp(const char pItemId, TPlayer* player);
+		static CString getItemPlayerProp(const signed char pItemId, TPlayer* player);
 		static CString getItemPlayerProp(const CString& pItemName, TPlayer* player);
 
 		// Get functions.
 		float getX() const			{ return x; }
 		float getY() const			{ return y; }
-		char getItem() const		{ return item; }
+		signed char getItem() const	{ return item; }
 		time_t getModTime() const	{ return modTime; }
 
 		CTimeout timeout;
@@ -31,7 +31,7 @@ class TLevelItem
 	private:
 		float x;
 		float y;
-		char item;
+		signed char item;
 		time_t modTime;
 };
 
