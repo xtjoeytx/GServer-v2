@@ -385,7 +385,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				int sp = pPacket.readGUChar();
 				if (sp <= 4)
+				{
+					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
 					swordImg = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
+				}
 				else
 				{
 					sp -= 30;
@@ -406,7 +409,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			{
 				int sp = pPacket.readGUChar();
 				if (sp <= 3)
+				{
+					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
 					shieldImg = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
+				}
 				else
 				{
 					// This fixes an odd bug with the 1.41 client.
