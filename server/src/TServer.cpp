@@ -646,6 +646,7 @@ void TServer::loadWeapons(bool print)
 			{
 				delete w;
 				weaponList[weapon->getName()] = weapon;
+				NC_UpdateWeapon(weapon);
 				if (print) serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
 			}
 			else
