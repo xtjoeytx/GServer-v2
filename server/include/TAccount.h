@@ -153,6 +153,8 @@ class TAccount
 		CString getAccountName() const	{ return accountName; }
 		CString getNickname() const		{ return nickName; }
 		float getPower() const			{ return power; }
+		int getSwordPower() const		{ return swordPower; }
+		int getShieldPower() const		{ return shieldPower; }
 		int getStatus() const			{ return status; }
 		int getOnlineTime() const		{ return onlineTime; }
 		int getKills() const			{ return kills; }
