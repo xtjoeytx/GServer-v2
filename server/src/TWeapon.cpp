@@ -7,7 +7,7 @@
 #include "IUtil.h"
 
 // -- Constructor: Default Weapons -- //
-TWeapon::TWeapon(const char pId) : mModTime(0), mWeaponDefault(pId)
+TWeapon::TWeapon(const signed char pId) : mModTime(0), mWeaponDefault(pId)
 {
 	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
 }

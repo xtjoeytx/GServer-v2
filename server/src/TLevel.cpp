@@ -481,9 +481,9 @@ bool TLevel::loadZelda(const CString& pLevelName)
 	{
 		while (fileData.bytesLeft())
 		{
-			char x = fileData.readChar();
-			char y = fileData.readChar();
-			char type = fileData.readChar();
+			signed char x = fileData.readChar();
+			signed char y = fileData.readChar();
+			signed char type = fileData.readChar();
 
 			// Ends with an invalid baddy.
 			if (x == -1 && y == -1 && type == -1)
@@ -517,8 +517,8 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0) break;
 
-			char x = line.readGChar();
-			char y = line.readGChar();
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
 			CString text = line.readString("");
 
 			levelSigns.push_back(new TLevelSign(x, y, text, true));
@@ -663,9 +663,9 @@ bool TLevel::loadGraal(const CString& pLevelName)
 	{
 		while (fileData.bytesLeft())
 		{
-			char x = fileData.readChar();
-			char y = fileData.readChar();
-			char type = fileData.readChar();
+			signed char x = fileData.readChar();
+			signed char y = fileData.readChar();
+			signed char type = fileData.readChar();
 
 			// Ends with an invalid baddy.
 			if (x == -1 && y == -1 && type == -1)
@@ -695,8 +695,8 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			char x = line.readGChar();
-			char y = line.readGChar();
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
 			CString image = line.readString("#");
 			CString code = line.readString("");
 
@@ -713,10 +713,10 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			char x = line.readGChar();
-			char y = line.readGChar();
-			char item = line.readGChar();
-			char signindex = line.readGChar();
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
+			signed char item = line.readGChar();
+			signed char signindex = line.readGChar();
 
 			levelChests.push_back(new TLevelChest(x, y, item, signindex));
 		}
@@ -729,8 +729,8 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0) break;
 
-			char x = line.readGChar();
-			char y = line.readGChar();
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
 			CString text = line.readString("");
 
 			levelSigns.push_back(new TLevelSign(x, y, text, true));
@@ -1065,14 +1065,14 @@ bool TLevel::addItem(float pX, float pY, char pItem)
 	return true;
 }
 
-char TLevel::removeItem(float pX, float pY)
+signed char TLevel::removeItem(float pX, float pY)
 {
 	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
 	{
 		TLevelItem* item = *i;
 		if (item->getX() == pX && item->getY() == pY)
 		{
-			char itemType = item->getItem();
+			signed char itemType = item->getItem();
 			delete item;
 			levelItems.erase(i);
 			return itemType;
