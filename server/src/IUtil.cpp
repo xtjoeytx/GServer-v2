@@ -232,7 +232,7 @@ int getRCVersionID(const CString& version)
 	return RCVER_UNKNOWN;
 }
 
-char getColor(const CString& color)
+signed char getColor(const CString& color)
 {
 	int i = 0;
 	while (colors[i] != 0)
