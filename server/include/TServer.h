@@ -5,7 +5,10 @@
 #include <map>
 #include <set>
 
-#include <boost/thread.hpp>
+#ifndef NO_BOOST
+#	include <boost/thread.hpp>
+#endif
+
 #include "CString.h"
 
 #include "CLog.h"
@@ -60,6 +63,7 @@ class TServer : public CSocketStub
 		void operator()();
 		void cleanup();
 		void restart();
+		bool running;
 
 		int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
 		bool doMain();
@@ -197,7 +201,9 @@ class TServer : public CSocketStub
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 
 		CUPNP upnp;
+#ifndef NO_BOOST
 		boost::thread upnp_thread;
+#endif
 
 		// NPC-Server Functionality
 		TPlayer *mNpcServer;
