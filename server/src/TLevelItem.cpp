@@ -53,7 +53,7 @@ CString TLevelItem::getItemName(const unsigned char id)
 	return CString(__itemList[id]);
 }
 
-CString TLevelItem::getItemPlayerProp(const char pItemId, TPlayer* player)
+CString TLevelItem::getItemPlayerProp(const signed char pItemId, TPlayer* player)
 {
 	return TLevelItem::getItemPlayerProp(__itemList[(int)pItemId], player);
 }
