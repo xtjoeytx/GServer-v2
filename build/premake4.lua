@@ -8,6 +8,11 @@ newoption {
 	description	= "Don't compile as a static runtime."
 }
 
+newoption {
+	trigger		= "no-boost",
+	description = "Don't compile with boost.thread support."
+}
+
 solution "gserver2"
 	configurations { "Debug", "Release" }
 	platforms { "native", "x32" }
@@ -26,6 +31,9 @@ solution "gserver2"
 		includedirs { "../server/include" }
 		if not _OPTIONS["no-static"] then
 			defines { "STATICLIB" }  -- For the UPnP library.
+		end
+		if _OPTIONS["no-boost"] then
+			defines { "NO_BOOST" }
 		end
 		
 		-- Dependencies.

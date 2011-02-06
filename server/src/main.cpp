@@ -1,5 +1,7 @@
 #include "IDebug.h"
-#include <boost/thread.hpp>
+#ifndef NO_BOOST
+#	include <boost/thread.hpp>
+#endif
 #include <signal.h>
 #include <stdlib.h>
 #include <map>
@@ -23,7 +25,10 @@
 typedef void (*sighandler_t)(int);
 
 std::map<CString, TServer*> serverList;
+#ifndef NO_BOOST
 std::map<CString, boost::thread*> serverThreads;
+#endif
+
 CLog serverlog("startuplog.txt");
 CString overrideServer;
 
@@ -107,8 +112,12 @@ int main(int argc, char* argv[])
 				}
 				serverList[name] = server;
 
+#ifndef NO_BOOST
 				// Put the server in its own thread.
 				serverThreads[name] = new boost::thread(boost::ref(*server));
+#else
+				break;
+#endif
 			}
 		}
 		else
@@ -123,8 +132,10 @@ int main(int argc, char* argv[])
 			}
 			serverList[overrideServer] = server;
 
+#ifndef NO_BOOST
 			// Put the server in its own thread.
 			serverThreads[overrideServer] = new boost::thread(boost::ref(*server));
+#endif
 		}
 
 		// Announce that the program is now running.
@@ -133,6 +144,7 @@ int main(int argc, char* argv[])
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
 
+#ifndef NO_BOOST
 		// Wait on each thread to end.
 		// Once all threads have ended, the program has terminated.
 		for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
@@ -145,6 +157,14 @@ int main(int argc, char* argv[])
 				++i;
 			}
 		}
+#else
+		// Run the server.
+		std::map<CString, TServer*>::iterator i = serverList.begin();
+		if (i != serverList.end())
+		{
+			(*i->second)();
+		}
+#endif
 
 		// Delete all the servers.
 		for (std::map<CString, TServer*>::iterator i = serverList.begin(); i != serverList.end(); )
@@ -236,6 +256,7 @@ void shutdownServer(int sig)
 {
 	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
 
+#ifndef NO_BOOST
 	// Interrupt each thread.  We are shutting down the server.
 	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end(); ++i)
 	{
@@ -245,6 +266,13 @@ void shutdownServer(int sig)
 		t->detach();
 		serverThreads[i->first] = 0;
 	}
+#else
+	std::map<CString, TServer*>::iterator i = serverList.begin();
+	if (i != serverList.end())
+	{
+		i->second->running = false;
+	}
+#endif
 }
 
 void getBasePath()
