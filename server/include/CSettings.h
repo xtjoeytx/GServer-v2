@@ -37,6 +37,7 @@ class CSettings
 		void setSeparator(const CString& pSeparator);
 		void clear();
 
+		bool exists(const CString& pKey) const;
 		CKey* addKey(const CString& pKey, const CString& pValue);
 
 		// Get Type
