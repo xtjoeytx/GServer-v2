@@ -206,11 +206,31 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	// Comment out this line if you are actually going to use community names.
 	communityName = accountName;
 
-	// If we loaded from the default account, save our account now and add it to the file system.
-	if (loadedFromDefault && !isLoadOnly)
+	// If we loaded from the default account...
+	if (loadedFromDefault)
 	{
-		saveAccount();
-		accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
+		CSettings* settings = server->getSettings();
+
+		// Check to see if we are overriding our start level and position.
+		if (settings->exists("startlevel"))
+			levelName = settings->getStr("startlevel", "onlinestartlocal.nw");
+		if (settings->exists("startx"))
+		{
+			x = settings->getFloat("startx", 30.0f);
+			x2 = (int)(x * 16);
+		}
+		if (settings->exists("starty"))
+		{
+			y = settings->getFloat("starty", 30.5f);
+			y2 = (int)(y * 16);
+		}
+
+		// Save our account now and add it to the file system.
+		if (!isLoadOnly)
+		{
+			saveAccount();
+			accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
+		}
 	}
 
 	return true;
