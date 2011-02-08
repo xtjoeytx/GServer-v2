@@ -123,6 +123,21 @@ void CSettings::clear()
 	keys.clear();
 }
 
+bool CSettings::exists(const CString& pKey) const
+{
+	// Lowercase Name
+	CString strName = pKey.toLower();
+
+	// Iterate key List
+	for (std::vector<CKey *>::const_iterator i = keys.begin(); i != keys.end(); ++i)
+	{
+		if ((*i)->name == strName)
+			return true;
+	}
+
+	return false;
+}
+
 CKey* CSettings::addKey(const CString& pKey, const CString& pValue)
 {
 	CKey* k = getKey(pKey);
