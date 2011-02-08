@@ -1,3 +1,10 @@
+# Sets the location where new players start on the server.
+# By default, the server uses the values inside the defaultaccount.
+# These values will override defaultaccount.
+#startlevel = onlinestartlocal.nw
+#startx = 30
+#starty = 30.5
+
 # Specifies where players go when they say "unstick me".
 unstickmelevel = onlinestartlocal.nw
 unstickmex = 30
