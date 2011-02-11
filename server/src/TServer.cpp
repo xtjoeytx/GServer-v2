@@ -120,7 +120,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
 	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
 	{
-		serverlog.out("[%s] ** [Error] Cound not initialize serverlist socket.\n", name.text());
+		serverlog.out("[%s] ** [Error] Could not initialize serverlist socket.\n", name.text());
 		return ERR_LISTEN;
 	}
 	serverlist.connectServer();
