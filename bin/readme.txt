@@ -156,6 +156,9 @@ Controlled by the setting triggerhack_props:
     triggeraction 0,0,gr.attr1,data;
         Sets data on the specified attribute.  gr.attr1 - gr.attr30 work.
 
+    triggeraction 0,0,gr.fullhearts,amount;
+        Sets the player's fullhearts to the specified amount.
+
 Controlled by the setting triggerhack_levels:
     triggeraction 0,0,gr.updatelevel;
         Updates the current level.
