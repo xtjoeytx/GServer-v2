@@ -3450,6 +3450,16 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					}
 				}
 			}
+			if (action.find("gr.fullhearts") == 0)
+			{
+				int start = action.find(",");
+				if (start != -1)
+				{
+					++start;
+					int hearts = strtoint(action.subString(start).trim());
+					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, true, true);
+				}
+			}
 		}
 
 		if (settings->getBool("triggerhack_levels", false) == true)
