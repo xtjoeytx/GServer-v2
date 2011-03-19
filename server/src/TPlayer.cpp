@@ -3475,7 +3475,10 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 						level->reload();
 					else
 					{
-						TLevel* targetLevel = server->getLevel(levelName);
+						TLevel* targetLevel = 0;
+						if (getExtension(levelName) == ".singleplayer")
+							targetLevel = spLevels[removeExtension(levelName)];
+						else targetLevel = server->getLevel(levelName);
 						if (targetLevel != 0)
 							targetLevel->reload();
 					}
