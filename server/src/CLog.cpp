@@ -94,6 +94,29 @@ void CLog::out(const CString format, ...)
 	va_end(s_format_v);
 }
 
+void CLog::append(const CString format, ...)
+{
+	va_list s_format_v;
+	va_start(s_format_v, format);
+
+#ifndef NO_BOOST
+	boost::recursive_mutex::scoped_lock lock(*m_write);
+#endif
+
+	// Log output to file.
+	if (true == enabled && 0 != file)
+	{
+		// Write the message to the file.
+		vfprintf(file, format.text(), s_format_v);
+		fflush(file);
+	}
+
+	// Display message.
+	vprintf(format.text(), s_format_v);
+
+	va_end(s_format_v);
+}
+
 void CLog::clear()
 {
 #ifndef NO_BOOST
