@@ -152,6 +152,7 @@ class TAccount
 		float getY() const				{ return y; }
 		CString getAccountName() const	{ return accountName; }
 		CString getNickname() const		{ return nickName; }
+		CString getHeadImage() const	{ return headImg; }
 		float getPower() const			{ return power; }
 		int getSwordPower() const		{ return swordPower; }
 		int getShieldPower() const		{ return shieldPower; }
