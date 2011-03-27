@@ -511,8 +511,8 @@ int TServer::loadConfigFiles()
 	serverlog.out("[%s]      Folder config: ", name.text());
 	if (settings.getBool("nofoldersconfig", false) == false)
 	{
-		serverlog.out("ENABLED\n");
-	} else serverlog.out("disabled\n");
+		serverlog.append("ENABLED\n");
+	} else serverlog.append("disabled\n");
 	serverlog.out("[%s]      Loading file system...\n", name.text());
 	loadFileSystem();
 
