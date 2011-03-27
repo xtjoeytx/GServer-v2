@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -69,9 +70,20 @@ void CLog::out(const CString format, ...)
 	boost::recursive_mutex::scoped_lock lock(*m_write);
 #endif
 
+	// Assemble and print the timestamp.
+	char timestr[60];
+	time_t curtime = time(0);
+	strftime(timestr, sizeof(timestr), "%I:%M %p", localtime(&curtime));
+	printf("[%s] ", timestr);
+
 	// Log output to file.
 	if (true == enabled && 0 != file)
 	{
+		// Save the timestamp to the file.
+		strftime(timestr, sizeof(timestr), "%a %b %d %X %Y", localtime(&curtime));
+		fprintf(file, "[%s] ", timestr);
+
+		// Write the message to the file.
 		vfprintf(file, format.text(), s_format_v);
 		fflush(file);
 	}
