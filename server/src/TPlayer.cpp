@@ -2083,37 +2083,37 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	switch (type)
 	{
 		case PLTYPE_CLIENT:
-			serverlog.out("Client\n");
+			serverlog.append("Client\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case PLTYPE_RC:
-			serverlog.out("RC\n");
+			serverlog.append("RC\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		case PLTYPE_NPCSERVER:
-			serverlog.out("NPCSERVER\n");
+			serverlog.append("NPCSERVER\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
 		//case PLTYPE_NC:
-		//	serverlog.out("NC\n");
+		//	serverlog.append("NC\n");
 		//	in_codec.setGen(ENCRYPT_GEN_3);
 		//	getKey = false;
 		//	break;
 		case PLTYPE_CLIENT2:
-			serverlog.out("New Client (2.19 - 2.21, 3 - 3.01)\n");
+			serverlog.append("New Client (2.19 - 2.21, 3 - 3.01)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
 			break;
 		case PLTYPE_CLIENT3:
-			serverlog.out("New Client (2.22+)\n");
+			serverlog.append("New Client (2.22+)\n");
 			in_codec.setGen(ENCRYPT_GEN_5);
 			break;
 		case PLTYPE_RC2:
-			serverlog.out("New RC (2.22+)\n");
+			serverlog.append("New RC (2.22+)\n");
 			in_codec.setGen(ENCRYPT_GEN_5);
 			getKey = true;
 			break;
 		default:
-			serverlog.out("Unknown (%d)\n", type);
+			serverlog.append("Unknown (%d)\n", type);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the Graal Reborn staff.  Type: " << CString((int)type) << ".");
 			return false;
 			break;

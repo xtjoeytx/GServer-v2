@@ -31,6 +31,7 @@ class CLog
 			\param format Format string.
 		*/
 		void out(const CString format, ...);
+		void append(const CString format, ...);
 
 		//! Clears the output file.
 		void clear();
