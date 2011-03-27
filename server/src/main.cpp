@@ -71,10 +71,10 @@ int main(int argc, char* argv[])
 			CSettings serversettings(CString(homepath) << "servers.txt");
 			if (!serversettings.isOpened())
 			{
-				serverlog.out("FAILED!\n");
+				serverlog.append("FAILED!\n");
 				return ERR_SETTINGS;
 			}
-			serverlog.out("success\n");
+			serverlog.append("success\n");
 
 			// Make sure we actually have a server.
 			if (serversettings.getInt("servercount", 0) == 0)
