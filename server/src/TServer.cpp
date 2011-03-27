@@ -920,7 +920,7 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC, settings.getBool("trimnpccode", false));
+	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC, settings.getBool("trimnpccode", true));
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
@@ -1066,6 +1066,10 @@ bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 	// delete flag
 	if (pFlagValue.isEmpty())
 		return deleteFlag(pFlagName);
+
+	// optimize
+	if (mServerFlags[pFlagName] == pFlagValue)
+		return true;
 
 	// set flag
 	if (settings.getBool("cropflags", true))
