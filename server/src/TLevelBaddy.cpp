@@ -19,11 +19,6 @@ const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-const int baddypropcount = 11;
-const bool baddyPropsReinit[baddypropcount] = {
-	false, true, true, true, true,
-	true, true, true, false, false, false
-};
 
 TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer)
 : level(pLevel), server(pServer), type(pType), id(0),
@@ -127,7 +122,7 @@ CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 CString TLevelBaddy::getProps(int clientVersion) const
 {
 	CString retVal;
-	for (int i = 1; i < baddypropcount; i++)
+	for (int i = 1; i < BDPROP_COUNT; i++)
 		retVal >> (char)i << getProp(i, clientVersion);
 	return retVal;
 }
@@ -183,12 +178,23 @@ void TLevelBaddy::setProps(CString &pProps)
 
 			case BDPROP_MODE:
 				mode = pProps.readGChar();
-				if (mode == BDMODE_DIE)
+				if (type == 4 && mode == BDMODE_HURT)
 				{
+					// Workaround for buggy client.  In 2 seconds, set us back to BDMODE_SWAMPSHOT from
+					// inside TLevel.cpp.
+					timeout.setTimeout(2);
+				}
+				else if (mode == BDMODE_DIE)
+				{
+					// In 2 seconds, set our mode to BDMODE_DEAD inside TLevel.cpp.
+					timeout.setTimeout(2);
+
 					// Drop items when dead.
 					if (server->getSettings()->getBool("baddyitems", false) == true)
 						dropItem();
-
+				}
+				else if (mode == BDMODE_DEAD)
+				{
 					if (respawn)
 						timeout.setTimeout(server->getSettings()->getInt("baddyrespawntime", 60));
 					else

@@ -1257,7 +1257,7 @@ bool TLevel::doTimedEvents()
 		else ++i;
 	}
 
-	// Check if any baddies need to be respawned.
+	// Check if any baddies need to be marked as dead or respawned.
 	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
 	{
 		TLevelBaddy* baddy = *i;
@@ -1266,11 +1266,33 @@ bool TLevel::doTimedEvents()
 		int respawnTimer = baddy->timeout.doTimeout();
 		if (respawnTimer == 0)
 		{
-			baddy->reset();
-			for (std::vector<TPlayer*>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+			if (baddy->getType() == 4 /*swamp arrow baddy*/ && baddy->getMode() == BDMODE_HURT)
 			{
-				TPlayer* p = *i;
-				p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
+				if (baddy->getPower() == 1)
+				{
+					// Unset the hurt mode on the baddy.
+					CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_SWAMPSHOT;
+					baddy->setProps(props);
+					for (unsigned int i = 1; i < levelPlayerList.size(); ++i)
+						levelPlayerList[i]->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+				}
+			}
+			else if (baddy->getMode() == BDMODE_DIE)
+			{
+				// Set the baddy as dead for all the other players in the level.
+				CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
+				baddy->setProps(props);
+				for (unsigned int i = 1; i < levelPlayerList.size(); ++i)
+					levelPlayerList[i]->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+			}
+			else
+			{
+				baddy->reset();
+				for (std::vector<TPlayer*>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+				{
+					TPlayer* p = *i;
+					p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
+				}
 			}
 		}
 	}
