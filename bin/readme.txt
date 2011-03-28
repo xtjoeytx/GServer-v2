@@ -166,6 +166,13 @@ Controlled by the setting triggerhack_levels:
     triggeraction 0,0,gr.updatelevel,levelname;
         Updates the specified level.
 
+Not controlled by any option:
+    triggeraction 0,0,gr.npc.move,id,dx,dy,duration,options;
+        Creates a serverside move command for the specified NPC.
+
+    triggeraction 0,0,gr.npc.setpos,id,x,y;
+        Sets an NPC's position.
+
 
 -------------------
 | Weapon bytecode |
