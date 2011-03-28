@@ -739,7 +739,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	if (isBigFile)
 	{
 		sendPacket(CString() >> (char)PLO_LARGEFILESTART << pFile);
-		//sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
 	}
 
 	// Send the file now.
@@ -2585,7 +2585,7 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 	TPlayer* leader = level->getPlayer(0);
 
 	// Set the props and send to everybody in the level, except the leader.
-	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props, 0, level, leader);
+	server->sendPacketToLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, 0, level, leader);
 	baddy->setProps(props);
 	return true;
 }

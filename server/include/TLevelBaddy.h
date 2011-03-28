@@ -18,6 +18,7 @@ enum {
 	BDPROP_VERSESIGHT	= 8,
 	BDPROP_VERSEHURT	= 9,
 	BDPROP_VERSEATTACK	= 10,
+	BDPROP_COUNT
 };
 
 // Baddy modes
@@ -32,6 +33,7 @@ enum {
 	BDMODE_HAREJUMP		= 7,
 	BDMODE_OCTOSHOT		= 8,
 	BDMODE_DEAD			= 9,
+	BDMODE_COUNT
 };
 
 class TServer;
@@ -45,9 +47,16 @@ class TLevelBaddy
 		void dropItem();
 
 		// get functions
+		unsigned char getType() const			{ return type; }
 		char getId() const						{ return id; }
+		char getPower() const					{ return power; }
+		char getMode() const					{ return mode; }
+		char getAni() const						{ return ani; }
+		char getDir() const						{ return dir; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
+		float getStartX() const					{ return startX; }
+		float getStartY() const					{ return startY; }
 		CString getProp(const int propId, int clientVersion = CLVER_2_17) const;
 		CString getProps(int clientVersion = CLVER_2_17) const;
 
