@@ -32,7 +32,16 @@ const char* __defaultfiles[] = {
 	"shield?.png", "shield?.gif",
 	"body.png", "body2.png", "body3.png",
 	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
-	"pics1.png",
+	"pics1.png"
+};
+const char* __defaultbodies[] = {
+	"body.png", "body2.png", "body3.png"
+};
+const char* __defaultswords[] = {
+	"sword1.png", "sword2.png", "sword3.png", "sword4.png"
+};
+const char* __defaultshields[] = {
+	"shield1.png", "shield2.png", "shield3.png"
 };
 
 // Enum per Attr
@@ -914,19 +923,6 @@ bool TPlayer::processChat(CString pChat)
 		if (server->getSettings()->getBool("setheadallowed", true) == false) return false;
 		processed = true;
 
-		// Make sure it isn't one of the default files.
-		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
-
-		// Don't search for the file if it is one of the defaults.  This protects against
-		// malicious gservers.
-		if (isDefault)
-		{
-			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
-			return false;
-		}
-
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
 		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
@@ -961,10 +957,10 @@ bool TPlayer::processChat(CString pChat)
 		if (server->getSettings()->getBool("setbodyallowed", true) == false) return false;
 		processed = true;
 
-		// Make sure it isn't one of the default files.
+		// Check to see if it is a default body.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+		for (unsigned int i = 0; i < sizeof(__defaultbodies) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultbodies[i])) == true) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
@@ -1008,10 +1004,10 @@ bool TPlayer::processChat(CString pChat)
 		if (server->getSettings()->getBool("setswordallowed", true) == false) return false;
 		processed = true;
 
-		// Make sure it isn't one of the default files.
+		// Check to see if it is a default sword.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+		for (unsigned int i = 0; i < sizeof(__defaultswords) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultswords[i])) == true) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
@@ -1055,10 +1051,10 @@ bool TPlayer::processChat(CString pChat)
 		if (server->getSettings()->getBool("setshieldallowed", true) == false) return false;
 		processed = true;
 
-		// Make sure it isn't one of the default files.
+		// Check to see if it is a default shield.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultfiles[i])) == true) isDefault = true;
+		for (unsigned int i = 0; i < sizeof(__defaultshields) / sizeof(char*); ++i)
+			if (chatParse[1].match(CString(__defaultshields[i])) == true) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
