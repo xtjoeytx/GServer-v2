@@ -2341,9 +2341,9 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	if (npc->getLevel() != level)
 		return true;
 
-	CString packet = CString() >> (char)PLO_NPCPROPS << (pPacket.text() + 1);
+	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
+	packet << npc->setProps(npcProps, versionID);
 	server->sendPacketToLevel(packet, pmap, this, false, true);
-	npc->setProps(npcProps, versionID);
 
 	return true;
 }
@@ -3480,6 +3480,58 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					}
 				}
 				else level->reload();
+			}
+		}
+
+		if (action.find("gr.npc.move") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 6)
+			{
+				unsigned int id = strtoint(actionParts[1]);
+				int dx = strtoint(actionParts[2]);
+				int dy = strtoint(actionParts[3]);
+				float duration = strtofloat(actionParts[4]);
+				int options = strtoint(actionParts[5]);
+
+				TNPC* npc = server->getNPC(id);
+				if (npc)
+				{
+					CString packet;
+					packet >> (char)(npc->getX() * 2.0f) >> (char)(npc->getY() * 2.0f);
+					packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
+					packet >> (short)(duration / 0.05f);
+					packet >> (char)options;
+					server->sendPacketToLevel(CString() >> (char)PLO_MOVE >> (int)id << packet, 0, this, true);
+
+					npc->setX(npc->getX() + dx);
+					npc->setY(npc->getY() + dy);
+					//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
+				}
+			}
+		}
+
+		if (action.find("gr.npc.setpos") == 0)
+		{
+			std::vector<CString> actionParts = action.tokenize(",");
+			if (actionParts.size() == 4)
+			{
+				unsigned int id = strtoint(actionParts[1]);
+				float x = (float)strtofloat(actionParts[2]);
+				float y = (float)strtofloat(actionParts[3]);
+
+				TNPC* npc = server->getNPC(id);
+				if (npc)
+				{
+					npc->setX(x);
+					npc->setY(y);
+
+					// Send the prop packet to the level.
+					CString packet;
+					packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
+					packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
+					server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, 0, this, true);
+				}
 			}
 		}
 	}
