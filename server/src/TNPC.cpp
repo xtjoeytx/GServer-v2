@@ -15,6 +15,7 @@ static CString doJoins(const CString& code, CFileSystem* fs);
 
 TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC, bool trimCode)
 :
+blockPositionUpdates(false),
 levelNPC(pLevelNPC),
 x(pX), y(pY), hurtX(32.0f), hurtY(32.0f),
 x2((int)(pX*16)), y2((int)(pY*16)),
@@ -67,25 +68,42 @@ level(pLevel), server(pServer)
 		levelModificationNPCHack = true;
 	}
 
-	// Remove comments and separate clientside and serverside scripts.
-	CString nocomments = removeComments(pScript, "\xa7");
+	// Separate clientside and serverside scripts.
 	if (server->hasNPCServer())
 	{
 		if (levelModificationNPCHack)
-			serverScript = clientScript = nocomments;
+			serverScript = clientScript = pScript;
 		else
 		{
-			serverScript = nocomments.readString("//#CLIENTSIDE");
-			clientScript = nocomments.readString("");
+			CString s = pScript;
+			serverScript = s.readString("//#CLIENTSIDE");
+			clientScript = s.readString("");
 		}
 	}
-	else clientScript = nocomments;
+	else clientScript = pScript;
 
-	// Trim the code if specified.
+	// Do joins.
+	if (!serverScript.isEmpty()) serverScript = doJoins(serverScript, server->getFileSystem());
+	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
+
+	// See if the NPC should block position updates from the level leader.
+	if (server->hasNPCServer())
+	{
+		if (serverScript.find("//#BLOCKPOSITIONUPDATES") != -1)
+			blockPositionUpdates = true;
+	}
+	else
+	{
+		if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
+			blockPositionUpdates = true;
+	}
+
+	// Remove comments and trim the code if specified.
 	if (trimCode)
 	{
 		if (!serverScript.isEmpty())
 		{
+			serverScript = removeComments(serverScript, "\xa7");
 			std::vector<CString> code = serverScript.tokenize("\xa7");
 			serverScript.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
@@ -93,16 +111,13 @@ level(pLevel), server(pServer)
 		}
 		if (!clientScript.isEmpty())
 		{
+			clientScript = removeComments(clientScript, "\xa7");
 			std::vector<CString> code = clientScript.tokenize("\xa7");
 			clientScript.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
 				clientScript << (*i).trim() << "\xa7";
 		}
 	}
-
-	// Do joins.
-	if (!serverScript.isEmpty()) serverScript = doJoins(serverScript, server->getFileSystem());
-	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
 
 	// Search for toweapons in the clientside code and extract the name of the weapon.
 	weaponName = toWeaponName(clientScript);
@@ -293,8 +308,9 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	return retVal;
 }
 
-void TNPC::setProps(CString& pProps, int clientVersion)
+CString TNPC::setProps(CString& pProps, int clientVersion)
 {
+	CString ret;
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
 	{
@@ -314,11 +330,21 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			break;
 
 			case NPCPROP_X:
+				if (blockPositionUpdates)
+				{
+					pProps.readGChar();
+					continue;
+				}
 				x = (float)(pProps.readGChar()) / 2.0f;
 				x2 = (int)(x * 16);
 			break;
 
 			case NPCPROP_Y:
+				if (blockPositionUpdates)
+				{
+					pProps.readGChar();
+					continue;
+				}
 				y = (float)(pProps.readGChar()) / 2.0f;
 				y2 = (int)(y * 16);
 			break;
@@ -492,6 +518,12 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			// Bit 0x0001 controls if it is negative or not.
 			// Bits 0xFFFE are the actual value.
 			case NPCPROP_X2:
+				if (blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
 				x2 = len = pProps.readGUShort();
 
 				// If the first bit is 1, our position is negative.
@@ -503,6 +535,12 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 				break;
 
 			case NPCPROP_Y2:
+				if (blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
 				y2 = len = pProps.readGUShort();
 
 				// If the first bit is 1, our position is negative.
@@ -563,7 +601,7 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 					printf("%02x ", (unsigned char)pProps[i]);
 				printf("\n");
 			}
-			return;
+			return ret;
 		}
 
 		// If a prop changed, adjust its mod time.
@@ -572,7 +610,11 @@ void TNPC::setProps(CString& pProps, int clientVersion)
 			if (oldProp != getProp(propId))
 				modTime[propId] = time(0);
 		}
+
+		// Add to ret.
+		ret >> (char)propId << getProp(propId, clientVersion);
 	}
+	return ret;
 }
 
 CString toWeaponName(const CString& code)
@@ -616,7 +658,8 @@ CString doJoins(const CString& code, CFileSystem* fs)
 		c = fs->load(*i);
 		c.removeAllI("\r");
 		c.replaceAllI("\n", "\xa7");
-		ret << removeComments(c, "\xa7");
+		ret << c;
+		//ret << removeComments(c, "\xa7");
 	}
 
 	return ret;

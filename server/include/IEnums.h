@@ -216,7 +216,9 @@ enum
 	PLO_NC_CONTROL				= 78,	// HIJACKED BY GR!  No clue as to its official purpose.
 	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}
+	PLO_UNKNOWN81				= 81,
 	PLO_SERVERTEXT				= 82,	// Answer to PLI_REQUESTTEXT and PLI_SENDTEXT.
+	PLO_UNKNOWN83				= 83,
 	PLO_LARGEFILESIZE			= 84,
 	PLO_RAWDATA					= 100,	// {100}{INT3 length}
 	PLO_BOARDPACKET				= 101,
@@ -238,6 +240,7 @@ enum
 	PLO_NC_CLASSGET				= 162,	// {162}{CHAR name length}{name}{GSTRING script}
 	PLO_NC_CLASSADD				= 163,	// {163}{class}
 	PLO_NC_LEVELDUMP			= 164,
+	PLO_MOVE					= 165,
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...
 	PLO_UNKNOWN168				= 168,	// Login server sends this.  Blank packet.
 	PLO_GHOSTMODE				= 170,
