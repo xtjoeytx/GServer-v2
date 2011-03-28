@@ -111,15 +111,19 @@ class TNPC
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
 		CString getProps(time_t newTime, int clientVersion = CLVER_2_17) const;
-		void setProps(CString& pProps, int clientVersion = CLVER_2_17);
+		CString setProps(CString& pProps, int clientVersion = CLVER_2_17);
 
 		// set functions
 		void setId(unsigned int pId)	{ id = pId; }
 		void setLevel(TLevel* pLevel)	{ level = pLevel; }
+		void setX(float val)			{ x = val; }
+		void setY(float val)			{ y = val; }
 
 		// get functions
 		unsigned int getId() const		{ return id; }
 		TLevel* getLevel()				{ return level; }
+		float getX() const				{ return x; }
+		float getY() const				{ return y; }
 		CString getWeaponName() const	{ return weaponName; }
 		CString getServerScript() const	{ return serverScript; }
 		CString getClientScript() const	{ return clientScript; }
@@ -128,6 +132,7 @@ class TNPC
 		bool isLevelNPC()				{ return levelNPC; }
 
 	private:
+		bool blockPositionUpdates;
 		bool levelNPC;
 		time_t modTime[NPCPROP_COUNT];
 		float x, y, hurtX, hurtY;
