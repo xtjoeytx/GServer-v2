@@ -48,7 +48,7 @@ solution "gserver2"
 		configuration "windows"
 			links { "ws2_32", "Iphlpapi" }
 		if not _OPTIONS["no-boost"] then
-			configuration { "linux", "macosx", "bsd", "solaris" }
+			configuration { "linux or macosx or bsd or solaris" }
 				links { "boost_thread" }
 		end
 		
