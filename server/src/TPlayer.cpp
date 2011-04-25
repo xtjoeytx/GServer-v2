@@ -2596,6 +2596,10 @@ bool TPlayer::msgPLI_BADDYHURT(CString& pPacket)
 
 bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 {
+	// Don't add a baddy if we aren't in a level!
+	if (level == 0)
+		return true;
+
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char bType = pPacket.readGUChar();
 	unsigned char bPower = pPacket.readGUChar();
