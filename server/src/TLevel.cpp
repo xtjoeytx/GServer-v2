@@ -1,3 +1,4 @@
+#include <set>
 #include "IDebug.h"
 #include "IEnums.h"
 #include "TServer.h"
@@ -1258,9 +1259,16 @@ bool TLevel::doTimedEvents()
 	}
 
 	// Check if any baddies need to be marked as dead or respawned.
-	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
+	std::set<TLevelBaddy*> set_dead;
+	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); )
 	{
 		TLevelBaddy* baddy = *i;
+		if (baddy == 0)
+		{
+			i = levelBaddies.erase(i);
+			continue;
+		}
+		++i;
 
 		// See if we can respawn him.
 		int respawnTimer = baddy->timeout.doTimeout();
@@ -1279,9 +1287,12 @@ bool TLevel::doTimedEvents()
 			}
 			else if (baddy->getMode() == BDMODE_DIE)
 			{
+				// Setting the baddy props could delete the baddy and invalidate our iterator.
+				// So, save a list of all the baddies we are setting as dead and do it after this loop.
+				set_dead.insert(baddy);
+
 				// Set the baddy as dead for all the other players in the level.
 				CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
-				baddy->setProps(props);
 				for (unsigned int i = 1; i < levelPlayerList.size(); ++i)
 					levelPlayerList[i]->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
 			}
@@ -1296,5 +1307,14 @@ bool TLevel::doTimedEvents()
 			}
 		}
 	}
+	{	// Mark all the baddies as dead now.
+		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
+		for (std::set<TLevelBaddy*>::iterator i = set_dead.begin(); i != set_dead.end(); ++i)
+		{
+			TLevelBaddy* baddy = *i;
+			baddy->setProps(props);
+		}
+	}
+
 	return true;
 }
