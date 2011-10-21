@@ -123,8 +123,8 @@ level(pLevel), server(pServer)
 	weaponName = toWeaponName(clientScript);
 
 	// Just a little warning for people who don't know.
-	if (clientScript.length() > 0x2FDF)
-		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 12255 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
+	if (clientScript.length() > 0x3FFF)
+		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 16383 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
 }
