@@ -1048,7 +1048,7 @@ int CString::readInt()
 */
 CString& CString::writeGChar(const char pData)
 {
-	char val = pData+32;
+	unsigned char val = max((unsigned char)pData, 223) + 32;
 	write((char*)&val, 1);
 	return *this;
 }
@@ -1056,8 +1056,8 @@ CString& CString::writeGChar(const char pData)
 CString& CString::writeGShort(const short pData)
 {
 	char val[2];
-	val[0] = ((pData >> 7) & 0x7F)+32;
-	val[1] = (pData & 0x7F)+32;
+	val[0] = ((pData >> 7) & 0x7F) + 32;
+	val[1] = (pData & 0x7F) + 32;
 	write((char*)&val, 2);
 	return *this;
 }
@@ -1065,9 +1065,9 @@ CString& CString::writeGShort(const short pData)
 CString& CString::writeGInt(const int pData)
 {
 	char val[3];
-	val[0] = ((pData >> 14) & 0x7F)+32;
-	val[1] = ((pData >> 7) & 0x7F)+32;
-	val[2] = (pData & 0x7F)+32;
+	val[0] = ((pData >> 14) & 0x7F) + 32;
+	val[1] = ((pData >> 7) & 0x7F) + 32;
+	val[2] = (pData & 0x7F) + 32;
 	write((char *)&val, 3);
 	return *this;
 }
@@ -1075,10 +1075,10 @@ CString& CString::writeGInt(const int pData)
 CString& CString::writeGInt4(const int pData)
 {
 	char val[4];
-	val[0] = ((pData >> 21) & 0x7F)+32;
-	val[1] = ((pData >> 14) & 0x7F)+32;
-	val[2] = ((pData >> 7) & 0x7F)+32;
-	val[3] = (pData & 0x7F)+32;
+	val[0] = ((pData >> 21) & 0x7F) + 32;
+	val[1] = ((pData >> 14) & 0x7F) + 32;
+	val[2] = ((pData >> 7) & 0x7F) + 32;
+	val[3] = (pData & 0x7F) + 32;
 	write((char *)&val, 4);
 	return *this;
 }
@@ -1086,11 +1086,11 @@ CString& CString::writeGInt4(const int pData)
 CString& CString::writeGInt5(const long long pData)
 {
 	char val[5];
-	val[0] = ((pData >> 28) & 0x7F)+32;
-	val[1] = ((pData >> 21) & 0x7F)+32;
-	val[2] = ((pData >> 14) & 0x7F)+32;
-	val[3] = ((pData >> 7) & 0x7F)+32;
-	val[4] = (pData & 0x7F)+32;
+	val[0] = ((pData >> 28) & 0x7F) + 32;
+	val[1] = ((pData >> 21) & 0x7F) + 32;
+	val[2] = ((pData >> 14) & 0x7F) + 32;
+	val[3] = ((pData >> 7) & 0x7F) + 32;
+	val[4] = (pData & 0x7F) + 32;
 	write((char *)&val, 5);
 	return *this;
 }
@@ -1103,7 +1103,7 @@ char CString::readGChar()
 	return val-32;
 }
 
-// max: 0x2FDF 12255
+// max: 0x3FFF 16383
 short CString::readGShort()
 {
 	unsigned char val[2];
@@ -1111,7 +1111,7 @@ short CString::readGShort()
 	return ((val[0]-32) << 7) + val[1]-32;
 }
 
-// max: 0x17EFDF 1568735
+// max: 0x1FFFFF 2097151
 int CString::readGInt()
 {
 	unsigned char val[3];
@@ -1119,7 +1119,7 @@ int CString::readGInt()
 	return ((val[0]-32) << 14) + ((val[1]-32) << 7) + val[2]-32;
 }
 
-// max: 0xBF7EFDF 200798175
+// max: 0xFFFFFFF 268435455
 int CString::readGInt4()
 {
 	unsigned char val[4];
@@ -1127,7 +1127,7 @@ int CString::readGInt4()
 	return ((val[0]-32) << 21) + ((val[1]-32) << 14) + ((val[2]-32) << 7) + val[3]-32;
 }
 
-// max: 0x5FBF7EFDF 25702166495
+// max: 0x7FFFFFFFF 34359738367
 int CString::readGInt5()
 {
 	unsigned char val[5];
