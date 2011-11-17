@@ -43,8 +43,8 @@ class CUPNP
 		// Removes all the port forwards created by the add_port_forward command.
 		void remove_all_forwarded_ports()
 		{
-			for (std::set<CString>::iterator i = ports_forwarded.begin(); i != ports_forwarded.end(); ++i)
-				remove_port_forward(*i);
+			while (!ports_forwarded.empty())
+				remove_port_forward(*ports_forwarded.rbegin());
 			ports_forwarded.clear();
 		}
 

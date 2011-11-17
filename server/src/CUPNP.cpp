@@ -90,7 +90,7 @@ void CUPNP::remove_port_forward(const CString& port)
 {
 	if (urls.controlURL == 0 || urls.controlURL[0] == '\0')
 		return;
-			
+
 	UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.text(), "TCP", 0);
 	server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", server->getName().text(), port.text());
 	ports_forwarded.erase(port);
