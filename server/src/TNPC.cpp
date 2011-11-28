@@ -103,19 +103,19 @@ level(pLevel), server(pServer)
 	{
 		if (!serverScript.isEmpty())
 		{
-			serverScript = removeComments(serverScript, "\xa7");
-			std::vector<CString> code = serverScript.tokenize("\xa7");
-			serverScript.clear();
+			serverScriptFormatted = removeComments(serverScript, "\xa7");
+			std::vector<CString> code = serverScriptFormatted.tokenize("\xa7");
+			serverScriptFormatted.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				serverScript << (*i).trim() << "\xa7";
+				serverScriptFormatted << (*i).trim() << "\xa7";
 		}
 		if (!clientScript.isEmpty())
 		{
-			clientScript = removeComments(clientScript, "\xa7");
-			std::vector<CString> code = clientScript.tokenize("\xa7");
-			clientScript.clear();
+			clientScriptFormatted = removeComments(clientScript, "\xa7");
+			std::vector<CString> code = clientScriptFormatted.tokenize("\xa7");
+			clientScriptFormatted.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				clientScript << (*i).trim() << "\xa7";
+				clientScriptFormatted << (*i).trim() << "\xa7";
 		}
 	}
 
@@ -123,7 +123,7 @@ level(pLevel), server(pServer)
 	weaponName = toWeaponName(clientScript);
 
 	// Just a little warning for people who don't know.
-	if (clientScript.length() > 0x3FFF)
+	if (clientScriptFormatted.length() > 0x3FFF)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 16383 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
@@ -143,9 +143,9 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		case NPCPROP_SCRIPT:
 		{
 			if (clientVersion != NSVER_GENERIC)
-				return CString() >> (short)(clientScript.length() > 0x2FDF ? 0x2FDF : clientScript.length()) << clientScript.subString(0, 0x2FDF);
+				return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.subString(0, 0x3FFF);
 			else
-				return CString() >> (long long)serverScript.length() << serverScript;
+				return CString() >> (long long)serverScriptFormatted.length() << serverScriptFormatted;
 		}
 
 		case NPCPROP_X:
