@@ -2977,7 +2977,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// Get the NPC id.
 		unsigned int npcId = pPacket.readGUInt();
 		TNPC* npc = server->getNPC(npcId);
-		if (npc == 0)
+		if (npc == 0 || npc->getLevel() == 0)
 			return true;
 
 		// Get the name of the weapon.
@@ -2991,7 +2991,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is 0, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == 0)
 		{
-			weapon = new TWeapon(server, name, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getProp(NPCPROP_SCRIPT).subString(2), npc->getLevel()->getModTime(), true);
+			weapon = new TWeapon(server, name, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 
@@ -3000,7 +3000,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(server, npc->getProp(NPCPROP_IMAGE).subString(1), npc->getClientScript(), npc->getLevel()->getModTime());
+			weapon->updateWeapon(server, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
 
 			// Send to Players
 			server->NC_UpdateWeapon(weapon);
@@ -3495,7 +3495,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				unsigned int id = strtoint(actionParts[1]);
 				int dx = strtoint(actionParts[2]);
 				int dy = strtoint(actionParts[3]);
-				float duration = strtofloat(actionParts[4]);
+				float duration = (float)strtofloat(actionParts[4]);
 				int options = strtoint(actionParts[5]);
 
 				TNPC* npc = server->getNPC(id);

@@ -124,6 +124,7 @@ class TNPC
 		TLevel* getLevel()				{ return level; }
 		float getX() const				{ return x; }
 		float getY() const				{ return y; }
+		CString getImage() const		{ return image; }
 		CString getWeaponName() const	{ return weaponName; }
 		CString getServerScript() const	{ return serverScript; }
 		CString getClientScript() const	{ return clientScript; }
@@ -146,6 +147,7 @@ class TNPC
 		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage, gani;
 		CString nickName, imagePart, chatMsg, weaponName;
 		CString serverScript, clientScript;
+		CString serverScriptFormatted, clientScriptFormatted;
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
