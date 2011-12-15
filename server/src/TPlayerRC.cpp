@@ -1007,6 +1007,12 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed the server message.");
 			rclog.out("%s refreshed the server message.\n", accountName.text());
 		}
+		else if (words[0] == "/refreshfilesystem" && words.size() == 1)
+		{
+			server->loadFileSystem();
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed the server file list.");
+			rclog.out("%s refreshed the server file list.\n", accountName.text());
+		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && hasRight(PLPERM_UPDATELEVEL))
 		{
 			std::vector<CString> levels = words[1].tokenize(",");
