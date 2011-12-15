@@ -7,6 +7,7 @@ Available commands for GServer:
 /openrights accountname: Opens the player's rights window.
 /reset accountname: Resets the account.
 /refreshservermessage: Reloads servermessage.html.
+/refreshfilesystem: Reloads the server's known file list.
 /updatelevel level[,level]: Reloads levels from hard disk.
 /updatelevelall: updates all loaded levels.
 /restartserver: Restarts the server, kicking all joined players.
