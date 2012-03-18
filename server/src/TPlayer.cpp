@@ -2645,6 +2645,9 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	// Add a little hack for our special gr.strings.
 	if (flagName.find("gr.") != -1)
 	{
+		if (flagName == "gr.fileerror" || flagName == "gr.filedata")
+			return true;
+
 		if (settings->getBool("flaghack_movement", true) == true)
 		{
 			// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
@@ -3408,7 +3411,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				int finish = action.find(",", start) + 1;
 				if (finish == 0) return true;
 
-				// Load the file.
+				// Grab the filename.
 				CString filename = action.subString(start, finish - start - 1);
 				filename.removeAllI("../");
 				filename.removeAllI("..\\");
@@ -3417,6 +3420,48 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				CString file = action.subString(finish) << "\r\n";
 				file.save(server->getServerPath() << "logs/" << filename);
 				return true;
+			}
+			else if (action.find("gr.readfile") == 0)
+			{
+				int start = action.find(",") + 1;
+				if (start == 0) return true;
+				int finish = action.find(",", start) + 1;
+				if (finish == 0) return true;
+
+				// Grab the filename.
+				CString filename = action.subString(start, finish - start - 1);
+				filename.removeAllI("../");
+				filename.removeAllI("..\\");
+
+				// Load the file.
+				CString filedata;
+				filedata.load(server->getServerPath() << "logs/" << filename);
+				filedata.removeAllI("\r");
+
+				// Tokenize it.
+				std::vector<CString> tokens = filedata.tokenize("\n");
+
+				// Find the line.
+				int id = rand() % 0xFFFF;
+				CString error;
+				int line = strtoint(action.subString(finish));
+				if (line >= tokens.size())
+				{
+					// We asked for a line that doesn't exist.  Mark it as an error!
+					line = tokens.size() - 1;
+					error << CString("1,") + line;
+				}
+
+				// Check if an error was set.
+				if (error.isEmpty())
+					error = "0";
+
+				// Apply the ID.
+				error = CString(id) << "," << error;
+
+				// Send it back to the player.
+				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.fileerror=" << error);
+				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.filedata=" << tokens[line]);
 			}
 		}
 
