@@ -134,6 +134,12 @@ Controlled by the setting triggerhack_files:
     triggeraction 0,0,gr.writefile,filename,text;
         Opens the file specified, located in the server's logs directory, erases all of its contents, and writes a line of text.
 
+    triggeraction 0,0,gr.readfile,filename,line_pos;
+        Opens the file specified, located in the server's logs directory, reads the given line number, and returns the contents to the player.
+        File contents are returned on the following flags:
+            gr.fileerror: String list.  First index is a random number, subsequent indexes are error values.  Error 1 = line_pos was outside of range.  In this case, the next value is the line number returned.
+            gr.filedata: The file data.
+
 Controlled by the setting triggerhack_rc:
     triggeraction 0,0,gr.rcchat,Some chat text;
         Sends some chat text to any logged in RC's.
