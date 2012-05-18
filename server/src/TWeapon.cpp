@@ -3,6 +3,7 @@
 #include "TWeapon.h"
 #include "TServer.h"
 #include "TLevelItem.h"
+#include "TNPC.h"
 #include "IEnums.h"
 #include "IUtil.h"
 
@@ -154,15 +155,15 @@ CString TWeapon::getWeaponPacket() const
 	{
 		return CString() >> (char)PLO_NPCWEAPONADD
 			>> (char)mWeaponName.length() << mWeaponName
-			>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
-			>> (char)1 >> (short)mScriptClient.length() << mScriptClient;
+			>> (char)NPCPROP_IMAGE >> (char)mWeaponImage.length() << mWeaponImage
+			>> (char)NPCPROP_SCRIPT >> (short)mScriptClient.length() << mScriptClient;
 	}
 	else
 	{
 		CString out;
 		out >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
-			>> (char)0 >> (char)mWeaponImage.length() << mWeaponImage
-			>> (char)74 >> (short)0 << "\n";
+			>> (char)NPCPROP_IMAGE >> (char)mWeaponImage.length() << mWeaponImage
+			>> (char)NPCPROP_CLASS >> (short)0 << "\n";
 
 		for (std::vector<std::pair<CString, CString> >::const_iterator i = mByteCode.begin(); i != mByteCode.end(); ++i)
 		{
