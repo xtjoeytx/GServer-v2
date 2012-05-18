@@ -1053,12 +1053,33 @@ CString& CString::writeGChar(const char pData)
 	return *this;
 }
 
+/*
 CString& CString::writeGShort(const short pData)
 {
 	char val[2];
 	val[0] = ((pData >> 7) & 0x7F) + 32;
 	val[1] = (pData & 0x7F) + 32;
 	write((char*)&val, 2);
+	return *this;
+}
+*/
+
+// Improved version of writeGShort by Codr that exploits how the client reads
+// shorts in order to send a slightly higher value.
+CString& CString::writeGShort(const short pData)
+{
+	unsigned short t = (unsigned short)pData;
+	if (t > 28767) t = 28767;
+
+	unsigned char val[2];
+	val[0] = t / 128;
+	if (val[0] > 223) val[0] = 223;
+	val[1] = t - val[0] * 128;
+
+	val[0] += 32;
+	val[1] += 32;
+	write((char*)&val, 2);
+
 	return *this;
 }
 
