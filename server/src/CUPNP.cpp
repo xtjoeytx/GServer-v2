@@ -17,7 +17,7 @@ void CUPNP::discover()
 	memset(&urls, 0, sizeof(UPNPUrls));
 	memset(&data, 0, sizeof(IGDdatas));
 
-	device_list = upnpDiscover(2000, 0, 0, 0);
+	device_list = upnpDiscover(2000, 0, 0, 0, 0, 0);
 	if (device_list)
 	{
 		device = device_list;
@@ -61,7 +61,7 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 		return;
 
 	CLog& serverlog = server->getServerLog();
-	int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0);
+	int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
 	if (r != 0)
 	{
 		serverlog.out("[%s] ** [UPnP] Failed to forward port %s to %s: ", server->getName().text(), port.text(), addr.text());
