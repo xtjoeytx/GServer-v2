@@ -1,17 +1,11 @@
 #include "IDebug.h"
-#if defined(_WIN32) || defined(_WIN64)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
 
-	//#define WINVER 0x0501
-	#include <winsock2.h>
-	#include <ws2tcpip.h>
-	#include <windows.h>
+#if defined(_WIN32) || defined(_WIN64)
 
 #ifndef __GNUC__ // rain
 	#pragma comment(lib, "ws2_32.lib")
 #endif
+
 	// Some of these might not be valid in Linux, but I don't really care right now.
 	//#define WSANOTINITIALISED	WSANOTINITIALISED
 	#define ENETDOWN			WSAENETDOWN
@@ -52,13 +46,8 @@
 	#include <unistd.h>
 	#include <fcntl.h>
 
-	#include <sys/socket.h>
-	#include <netinet/in.h>
 	#include <netinet/tcp.h>
 	#define SOCKET_ERROR	-1
-	#define INVALID_SOCKET	(unsigned int)-1
-
-	typedef unsigned int SOCKET;
 #endif
 
 // Don't send a signal.  Should only affect Linux.
