@@ -933,7 +933,11 @@ const char* errorMessage(int error)
 		default:
 		{
 			static char buf[32];
-			snprintf(buf, 32, "%d", error);
+			#ifdef __GNUC__
+				__gnu_cxx::snprintf(buf, 32, "%d", error);
+			#else
+				snprintf(buf, 32, "%d", error);
+			#endif 
 			return buf;
 		}
 	}
