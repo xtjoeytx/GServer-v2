@@ -55,6 +55,9 @@ solution "gserver2"
 		-- Windows defines.
 		configuration "windows"
 			defines { "WIN32", "_WIN32" }
+			-- Miniunpnc need Windows XP and more recent (VINVER >=0x0501 )
+			-- without it, MinGW would give linking error for freeaddrinfo
+			defines ( "WINVER=0x0501")
 		if not _OPTIONS["no-64bit"] then 
 			configuration { "windows", "x64" }
 				defines { "WIN64", "_WIN64" }
