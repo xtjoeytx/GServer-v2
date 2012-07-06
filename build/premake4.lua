@@ -62,6 +62,10 @@ solution "gserver2"
 			configuration { "windows", "x64" }
 				defines { "WIN64", "_WIN64" }
 		end
+
+		-- Linux defines.
+		configuration "Linux"
+			defines { "_BSD_SOURCE", "_POSIX_C_SOURCE=1" }
 		
 		-- Debug options.
 		configuration "Debug"
