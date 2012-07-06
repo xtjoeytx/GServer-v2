@@ -35,14 +35,21 @@ solution "gserver2"
 		if _OPTIONS["no-boost"] then
 			defines { "NO_BOOST" }
 		end
-		
-		-- Dependencies.
-		files { "../dependencies/zlib/**" }
-		files { "../dependencies/bzip2/**" }
+
+		-- miniupnpc for every os since it is uncommon to have them on Linux distro (I think!)
 		files { "../dependencies/miniupnpc/**" }
+
+		files { "../dependencies/bzip2/**" }
 		includedirs { "../dependencies" }
-		includedirs { "../dependencies/zlib" }
 		includedirs { "../dependencies/bzip2" }
+		if os.findlib("z") then
+			printf("found zlib on the system, using it")
+			links {"z"}
+		else
+			printf("zlib not found on the system, we'll use the one in the project")
+			files { "../dependencies/zlib/**" }
+			includedirs { "../dependencies/zlib" }
+		end
 		
 		-- Libraries.
 		configuration "windows"
@@ -62,6 +69,7 @@ solution "gserver2"
 			configuration { "windows", "x64" }
 				defines { "WIN64", "_WIN64" }
 		end
+		-- Dependencies (Windows only, we expect others to have those)
 
 		-- Linux defines.
 		configuration "Linux"
