@@ -36,20 +36,16 @@ solution "gserver2"
 			defines { "NO_BOOST" }
 		end
 
-		-- miniupnpc for every os since it is uncommon to have them on Linux distro (I think!)
 		files { "../dependencies/miniupnpc/**" }
-
 		files { "../dependencies/bzip2/**" }
+
+	-- It bugs if I remove next line, but why? paul
 		includedirs { "../dependencies" }
+		
 		includedirs { "../dependencies/bzip2" }
-		if os.findlib("z") then
-			printf("found zlib on the system, using it")
-			links {"z"}
-		else
-			printf("zlib not found on the system, we'll use the one in the project")
-			files { "../dependencies/zlib/**" }
-			includedirs { "../dependencies/zlib" }
-		end
+
+		files { "../dependencies/zlib/**" }
+		includedirs { "../dependencies/zlib" }
 		
 		-- Libraries.
 		configuration "windows"
