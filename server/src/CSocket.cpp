@@ -39,7 +39,10 @@
 	#define SHUT_RDWR			SD_BOTH
 
 	#define sleep Sleep
-	#define snprintf _snprintf
+	// The following #define would cause some snprintf linking errors in cstdio with MinGW
+	#ifndef __GNUC__
+	  #define snprintf _snprintf
+	#endif
 #else
 	#include <netdb.h>
 	#include <errno.h>
@@ -933,11 +936,11 @@ const char* errorMessage(int error)
 		default:
 		{
 			static char buf[32];
-			#ifdef __GNUC__
-				__gnu_cxx::snprintf(buf, 32, "%d", error);
-			#else
+			//#ifdef __GNUC__
+			//	__gnu_cxx::snprintf(buf, 32, "%d", error);
+			//#else
 				snprintf(buf, 32, "%d", error);
-			#endif 
+			//#endif 
 			return buf;
 		}
 	}
