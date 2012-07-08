@@ -8,7 +8,6 @@ In file included from ../../server/include/CString.h:7:0,
                  from ../../server/src/CSocket.cpp:71:
 c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snprintf' has not been declared
 */
-#define _GLIBCXX_USE_C99_DYNAMIC 1
 
 #define _WINSOCKAPI_
 #include <cstdlib>
