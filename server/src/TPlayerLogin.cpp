@@ -87,8 +87,13 @@ bool TPlayer::sendLogin()
 		// Server Signature
 		// 0x49 (73) is used to tell the client that more than eight
 		// players will be playing.
-		sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-
+		//sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+                sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+                sendPacket(CString() >> (char)45 << "basepackage.gupd");
+		sendPacket(CString() >> (char)45 << "basepackage.gupd");
+//		sendPacket(CString() >> (char)44);
+//		sendPacket(CString() >> (char)176);
+		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
 		if (server->hasNPCServer())
@@ -302,8 +307,7 @@ bool TPlayer::sendLoginClient()
 	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 
-	//sendPacket(CString() >> (char)PLO_EMPTY190);
-	//sendPacket(CString() >> (char)PLO_EMPTY194);
+	sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// Delete the bomb and bow.  They get automagically added by the client for
 	// God knows which reason.  Bomb and Bow must be capitalized.
@@ -339,6 +343,7 @@ bool TPlayer::sendLoginClient()
 			>> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
+	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	if (warp(levelName, x, y) == false)
