@@ -164,7 +164,7 @@ static const char* const clientVersionString[] =
 	"5.12",		// CLVER_5_12,
 	"5.31x",	// CLVER_5_31x,
 
-	"6.015"		// CLVER_6_015,
+	"6.015",		// CLVER_6_015,
 
 	"iPhone 1.1",	// CLVER_IPHONE_1_1
 	"iPhone 1.5",	// CLVER_IPHONE_1_5
