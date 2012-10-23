@@ -1124,12 +1124,13 @@ char CString::readGChar()
 	return val-32;
 }
 
-// max: 0x3FFF 16383
+// max: 0x705F 28767
 short CString::readGShort()
 {
 	unsigned char val[2];
 	read((char*)val, 2);
-	return ((val[0]-32) << 7) + val[1]-32;
+	return ((val[0]-32) * 128) + (val[1]-32);
+	//return ((val[0]-32) << 7) + val[1]-32;
 }
 
 // max: 0x1FFFFF 2097151
