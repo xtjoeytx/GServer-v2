@@ -204,7 +204,10 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	}
 
 	// Comment out this line if you are actually going to use community names.
-	communityName = accountName;
+	if (isGuest)
+		communityName = "guest";
+	else
+		communityName = accountName;
 
 	// If we loaded from the default account...
 	if (loadedFromDefault)
