@@ -3645,7 +3645,38 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 
 bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
 {
-	// Stub.
+	CFileSystem* fileSystem = server->getFileSystem();
+
+	// Get the packet data and file mod time.
+	time_t modTime = pPacket.readGUInt5();
+	CString file = pPacket.readString("");
+	time_t fModTime = fileSystem->getModTime(file);
+
+	// If we are the 1.41 client, make sure a file extension was sent.
+	if (versionID < CLVER_2_1 && getExtension(file).isEmpty())
+		file << ".gif";
+
+	printf("UPDATEFILE: %s\n", file.text());
+
+	// Make sure it isn't one of the default files.
+	bool isDefault = false;
+	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+	{
+		if (file.match(CString(__defaultfiles[i])) == true)
+		{
+			isDefault = true;
+			break;
+		}
+	}
+
+	// If the file on disk is different, send it to the player.
+	file.setRead(0);
+	if (isDefault == false && fModTime > modTime)
+		return msgPLI_WANTFILE(file);
+
+	if (versionID < CLVER_2_1)
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
+	else sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
 	return true;
 }
 
