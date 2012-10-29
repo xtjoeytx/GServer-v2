@@ -2055,6 +2055,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
+	/*
 	invalidPackets++;
 	if (invalidPackets > 5)
 	{
@@ -2062,7 +2063,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 		return false;
 	}
-
+	*/
 	return true;
 }
 
