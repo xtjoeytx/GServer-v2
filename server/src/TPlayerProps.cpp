@@ -318,6 +318,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				else setNick(nick, doOverride);
 
 				globalBuff >> (char)propId << getProp(propId);
+				globalBuff >> (char)81;
 				if (!pForwardToSelf)
 					selfBuff >> (char)propId << getProp(propId);
 			}
