@@ -61,7 +61,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 {
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
-	playerIds.resize(2);
+	playerIds.resize(16000);
 	npcIds.resize(1);
 
 	// Load the config files.

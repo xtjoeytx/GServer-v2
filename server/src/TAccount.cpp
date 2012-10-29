@@ -185,7 +185,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	}
 
 	// If this is a guest account, loadonly is set to true.
-	if (pAccount == "guest")
+	if (pAccount.toLower() == "guest")
 	{
 		isLoadOnly = true;
 		isGuest = true;
@@ -197,15 +197,15 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 			int v = (rand() * rand()) % 9999999;
 			if (server->getPlayer("pc:" + CString(v)) == 0)
 			{
-				accountName = "pc:" + CString(v);
+				communityName = "pc:" + CString(v);
 				break;
 			}
 		}
 	}
 
 	// Comment out this line if you are actually going to use community names.
-	if (isGuest)
-		communityName = pAccount;
+	if (pAccount.toLower() == "guest")
+		// Do nothing.
 	else
 		communityName = accountName;
 
