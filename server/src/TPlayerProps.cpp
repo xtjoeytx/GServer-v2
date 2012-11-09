@@ -318,7 +318,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				else setNick(nick, doOverride);
 
 				globalBuff >> (char)propId << getProp(propId);
-				globalBuff >> (char)81;
+
+				// Send this if the player is located on another server
+				// globalBuff >> (char)81;
+
 				if (!pForwardToSelf)
 					selfBuff >> (char)propId << getProp(propId);
 			}

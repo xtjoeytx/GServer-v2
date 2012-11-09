@@ -61,7 +61,10 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 {
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
 	// Don't allow anything to have one of those ids.
-	playerIds.resize(16000);
+	// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
+	// The players from other servers should be unique lists for each player as they are fetched depending on
+	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
+	playerIds.resize(2);
 	npcIds.resize(1);
 
 	// Load the config files.
