@@ -206,7 +206,9 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	// Comment out this line if you are actually going to use community names.
 	if (pAccount.toLower() == "guest")
 	{
-		// Do nothing.
+		// The PC:123123123 should only be sent to other players, the logged in player should see it as guest.
+		// Setting it back to only show as guest to everyone until that's fixed.
+		communityName = accountName;
 	}
 	else
 		communityName = accountName;
