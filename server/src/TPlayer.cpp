@@ -217,6 +217,7 @@ void TPlayer::createFunctions()
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
 	TPLFunc[PLI_UNKNOWN47] = &TPlayer::msgPLI_UNKNOWN47;
+	TPLFunc[PLI_UPDATECLASS] = &TPlayer::msgPLI_UPDATECLASS;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
 	TPLFunc[PLI_RC_SERVEROPTIONSGET] = &TPlayer::msgPLI_RC_SERVEROPTIONSGET;
@@ -2055,7 +2056,6 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
-	/*
 	invalidPackets++;
 	if (invalidPackets > 5)
 	{
@@ -2063,7 +2063,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 		return false;
 	}
-	*/
+	
 	return true;
 }
 
@@ -3678,6 +3678,47 @@ bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
 	if (versionID < CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
 	else sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+	return true;
+}
+
+bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
+{
+	CFileSystem* fileSystem = server->getFileSystem();
+	std::vector<std::pair<CString, CString> > byteCode;
+	// Get the packet data and file mod time.
+	time_t modTime = pPacket.readGUInt5();
+	CString fname = pPacket.readString("");
+	CString bytecode, out;
+	bytecode.load(server->getServerPath() << "class_bytecode/" << fname << ".txt");
+	printf("UPDATECLASS: %s\n", fname.text());
+	if (!bytecode.isEmpty())
+	{
+		byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+
+		for (std::vector<std::pair<CString, CString> >::const_iterator i = byteCode.begin(); i != byteCode.end(); ++i)
+		{
+			CString b = i->second;
+
+			unsigned char id = b.readGUChar();
+			CString header = b.readChars(b.readGUShort());
+			CString header2 = header.guntokenize();
+
+			CString type = header2.readString("\n");
+			CString name = header2.readString("\n");
+			CString unknown = header2.readString("\n");
+			CString hash = header2.readString("\n");
+
+			// Get the mod time and send packet 197.
+			CString smod = CString() >> (long long)time(0);
+			smod.gtokenizeI();
+			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
+
+			// Add to the output stream.
+			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+			out << b;
+		}
+		sendPacket(CString() << out);
+	}
 	return true;
 }
 
