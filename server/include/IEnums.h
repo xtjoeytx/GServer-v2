@@ -130,7 +130,7 @@ enum
 	PLI_UNKNOWN157				= 157,	// Something to do with ganis.
 	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
 	PLI_RC_FOLDERDELETE			= 160,
-	PLI_UNKNOWN161				= 161,	// {161}{INT5 modtime}{name} iPhone client.
+	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
 };
 
 enum
