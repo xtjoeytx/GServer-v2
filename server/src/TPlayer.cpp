@@ -3646,6 +3646,7 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 
 bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
 {
+	/*
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Get the packet data and file mod time.
@@ -3678,11 +3679,13 @@ bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
 	if (versionID < CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
 	else sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+	*/
 	return true;
 }
 
 bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 {
+	/*
 	CFileSystem* fileSystem = server->getFileSystem();
 	std::vector<std::pair<CString, CString> > byteCode;
 	// Get the packet data and file mod time.
@@ -3719,6 +3722,7 @@ bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 		}
 		sendPacket(CString() << out);
 	}
+	*/
 	return true;
 }
 
@@ -3760,9 +3764,13 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(accountName << "\n" << weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 		else if (option == "rebornlist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+		else if (option == "subscriptions")
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "subscriptions2" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+		else if (option == "getglobalitems")
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI());
 	}
 	else if (type == "pmservers")
 		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
