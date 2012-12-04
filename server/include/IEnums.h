@@ -223,6 +223,7 @@ enum
 	PLO_RAWDATA					= 100,	// {100}{INT3 length}
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
+	PLO_UNKNOWN103				= 103,  // RC packet. [103] ‡ *   87 20 2a 20 20 20
 	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
 	PLO_UNKNOWN134				= 134,	// Might be used for package downloads.
 	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{INT2 info_length}{script}
@@ -372,6 +373,7 @@ enum
 	SVO_REQUESTLIST		= 26,
 	SVO_REQUESTSVRINFO	= 27,
 	SVO_REQUESTBUDDIES	= 28,
+	SVO_PMPLAYER		= 29,
 };
 
 enum
@@ -396,6 +398,7 @@ enum
 	SVI_FILEEND3		= 17,
 	SVI_SERVERINFO		= 18,
 	SVI_REQUESTTEXT		= 19,
+	SVI_PMPLAYER		= 29,
 	SVI_PING			= 99,
 	SVI_RAWDATA			= 100
 };

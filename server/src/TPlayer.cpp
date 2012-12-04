@@ -299,6 +299,11 @@ packetCount(0), firstLevel(true), invalidPackets(0)
 {
 	lastData = lastMovement = lastSave = last1m = time(0);
 	lastChat = lastMessage = lastNick = 0;
+	isExternal = false;
+	serverName = server->getName();
+	externalPlayerIds.resize(16000);
+	//unsigned int newId = 15999;
+	//externalPlayerIds[newId] = this;
 
 	srand((unsigned int)time(0));
 
@@ -614,6 +619,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 
 		// Call the function assigned to the packet id.
 		packetCount++;
+		//"Packet: (%i)%s", id,curPacket);
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -918,6 +924,16 @@ bool TPlayer::processChat(CString pChat)
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
+	}
+	else if (chatParse[0] == "addpmserver")
+	{	
+		CString newName = pChat.subString(12).trim();
+		addPMServer(newName);
+	}
+	else if (chatParse[0] == "rempmserver")
+	{	
+		CString newName = pChat.subString(12).trim();
+		remPMServer(newName);
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -1819,6 +1835,7 @@ void TPlayer::setChat(const CString& pChat)
 void TPlayer::setNick(const CString& pNickName, bool force)
 {
 	CString newNick, nick, guild;
+
 	int guild_start = pNickName.find('(');
 	int guild_end = pNickName.find(')', guild_start);
 
@@ -1937,6 +1954,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 		}
 		else nickName = CString() << newNick << " (Server)";
 	}
+	
+	if (isExternal)
+	{
+		nickName = pNickName;
+	}
+	
 }
 
 bool TPlayer::addWeapon(int defaultWeapon)
@@ -2911,22 +2934,33 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	// Send the message out.
 	for (std::vector<unsigned short>::iterator i = pmPlayers.begin(); i != pmPlayers.end(); ++i)
 	{
-		TPlayer* pmPlayer = server->getPlayer(*i);
-		if (pmPlayer == 0 || pmPlayer == this) continue;
-
-		// Don't send to people who don't want mass messages.
-		if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
-			continue;
-
-		// Jailed people cannot send PMs to normal players.
-		if (jailed && !isStaff() && !pmPlayer->isStaff())
+		if (*i >= 16000)
 		{
-			sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
-			continue;
+			TPlayer* pmPlayer = getExternalPlayer(*i);
+			serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname());
+			pmMessage.guntokenizeI();
+			pmExternalPlayer(pmPlayer->getServerName(),pmPlayer->getAccountName(),pmMessage);
+			pmMessage.gtokenizeI();
 		}
+		else
+		{
+			TPlayer* pmPlayer = server->getPlayer(*i);
+			if (pmPlayer == 0 || pmPlayer == this) continue;
 
-		// Send the message.
-		pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
+			// Don't send to people who don't want mass messages.
+			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
+				continue;
+
+			// Jailed people cannot send PMs to normal players.
+			if (jailed && !isStaff() && !pmPlayer->isStaff())
+			{
+				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
+				continue;
+			}
+
+			// Send the message.
+			pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
+		}
 	}
 
 	return true;
@@ -3751,6 +3785,216 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	return true;
 }
 
+std::vector<CString> TPlayer::getPMServerList()
+{
+	return PMServerList;
+}
+
+bool TPlayer::addPMServer(CString& option)
+{
+	TServerList* list = server->getServerList();
+	
+	bool PMSrvExist = false;
+	for (std::vector<CString>::const_iterator ij = PMServerList.begin(); ij != PMServerList.end(); ++ij)
+	{
+		if ((ij)->text() == option)
+		{
+			PMSrvExist = true;
+		}
+	}
+
+	if (!PMSrvExist)
+	{
+		PMServerList.push_back(option);
+		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << accountName << "\n" << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		return true;
+	}
+	else
+		return false;
+}
+
+
+bool TPlayer::remPMServer(CString& option)
+{
+	if (PMServerList.size() == 0)
+		return true;
+
+	if (externalPlayerList.size() != 0)	
+	{
+		// Check if a player has disconnected
+		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		{
+			TPlayer* p = *ij;
+
+			if (option == p->getServerName())
+			{
+				short pid = p->getId();
+				delete p;
+				ij = externalPlayerList.erase(ij);
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+			}
+			else
+				++ij;
+		}
+	}
+
+	// Find the player and remove him.
+	for (std::vector<CString>::const_iterator i = PMServerList.begin(); i != PMServerList.end(); )
+	{
+		//CString pl = i;
+		if ((i)->text() == option)
+		{
+			//delete (i);
+			i = PMServerList.erase(i);
+		}
+		else
+			++i;
+	}
+
+	return true;
+}
+
+bool TPlayer::updatePMPlayers(CString& servername, CString& players)
+{
+	std::vector<CString> players2 = players.tokenize("\n");
+	int i22 = 0;
+
+	if (externalPlayerList.size() != 0)	
+	{
+		// Check if a player has disconnected
+		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		{
+			TPlayer* p = *ij;
+			bool exist2 = false;
+			for (std::vector<CString>::const_iterator i = players2.begin(); i != players2.end(); ++i)
+			{
+				CString tmpPlyr = (i)->guntokenize();
+				CString account = tmpPlyr.readString("\n");
+				CString nick = tmpPlyr.readString("\n");
+				if (servername == p->getServerName() && account == p->getAccountName())
+				{
+					exist2 = true;
+					p->setNick(CString() << nick << " (on " << servername << ")");
+			
+				}
+
+			}
+			if (servername == p->getServerName())
+			{
+				if (!exist2)
+				{
+					short pid = p->getId();
+					delete p;
+					ij = externalPlayerList.erase(ij);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+				}
+				else
+					++ij;
+			}
+			else
+				++ij;
+		}
+	}
+
+	for (std::vector<CString>::const_iterator i = players2.begin(); i != players2.end(); ++i)
+	{
+		CString tmpPlyr = (i)->guntokenize();
+		CString account = tmpPlyr.readString("\n");
+		CString nick = tmpPlyr.readString("\n");
+
+		bool exist = false;
+		if (externalPlayerList.size() != 0)	
+		{
+			for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+			{
+				TPlayer* p = *ij;
+				if (servername == p->getServerName() && account == p->getAccountName())
+				{
+					p->setNick(CString() << nick << " (on " << servername << ")");
+					exist = true;
+				}
+				++ij;
+			}
+		}
+
+		if (!exist)
+		{
+			i22 = externalPlayerList.size();
+			// Get a free id to be assigned to the new player.
+			unsigned int newId = 0;
+			for (unsigned int i = 16000; i < externalPlayerIds.size(); ++i)
+			{
+				if (externalPlayerIds[i] == 0)
+				{
+					newId = i;
+					i = externalPlayerIds.size();
+				}
+			}
+			if (newId == 0)
+			{
+				newId = externalPlayerIds.size();
+				externalPlayerIds.push_back(0);
+			}
+
+			TPlayer* tmpPlyr2 = new TPlayer(server, 0, newId);
+			externalPlayerIds[newId] = tmpPlyr2;
+			tmpPlyr2->loadAccount(account);
+			tmpPlyr2->setAccountName(account);
+			tmpPlyr2->setServerName(servername);
+			tmpPlyr2->setExternal(true);
+			tmpPlyr2->setNick(CString() << nick << " (on " << servername << ")");
+			tmpPlyr2->setId(newId);
+
+			externalPlayerList.push_back(tmpPlyr2);
+			
+		}
+	}
+
+	if (externalPlayerList.size() != 0)
+	{
+		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		{
+			sendPacket((*ij)->getProps(__getLogin,83));
+			serverlog.out("Test: %s\n",(*ij)->getProps(__getLogin,83));
+			++ij;
+		}
+	}
+
+	return true;
+}
+
+bool TPlayer::pmExternalPlayer(CString& servername, CString& account, CString& pmMessage)
+{
+	TServerList* list = server->getServerList();
+	list->sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
+	return true;
+}
+
+TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
+{
+	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
+	if (!includeRC && externalPlayerIds[id]->isRC()) return 0;
+	return externalPlayerIds[id];
+}
+
+TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) const
+{
+	for (std::vector<TPlayer *>::const_iterator i = externalPlayerList.begin(); i != externalPlayerList.end(); ++i)
+	{
+		TPlayer *player = (TPlayer*)*i;
+		if (player == 0)
+			continue;
+
+		if (!includeRC && player->isRC())
+			continue;
+
+		// Compare account names.
+		if (player->getAccountName().toLower() == account.toLower())
+			return player;
+	}
+	return 0;
+}
+
 bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 {
 	CString packet = pPacket.readString();
@@ -3764,17 +4008,27 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(accountName << "\n" << weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << accountName << "\n" << weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 		else if (option == "rebornlist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
 		else if (option == "subscriptions")
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "subscriptions2" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions2" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+		else if (option == "bantypes")
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
+		/*
 		else if (option == "getglobalitems")
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI());
+		*/
 	}
-	else if (type == "pmservers")
-		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+	else if (type == "pmservers" || type == "pmguilds")
+		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << accountName.gtokenize() << "," << packet);
+	else if (type == "pmserverplayers")
+		addPMServer(option);
+	else if (type == "pmunmapserver")
+		remPMServer(option);
+		
 
+	serverlog.out("Request: %s,%s\n", accountName.gtokenize().text(),packet);
 	return true;
 }
 
@@ -3794,7 +4048,11 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		if (option == "serverinfo")
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
 		else if (option == "verifybuddies" && !getGuest())
+		{
 			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
+
+			//server->sendPacketTo(PLTYPE_ANYRC, CString() << "W%*irc:#graal ,#graal (1,0)q#");
+		}
 	}
 
 	return true;
