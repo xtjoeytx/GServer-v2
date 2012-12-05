@@ -3955,7 +3955,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
 		{
 			sendPacket((*ij)->getProps(__getLogin,83));
-			serverlog.out("Test: %s\n",(*ij)->getProps(__getLogin,83));
+			//serverlog.out("Test: %s\n",(*ij)->getProps(__getLogin,83));
 			++ij;
 		}
 	}
