@@ -270,7 +270,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 	}
 
 	// Gani attributes.
-	if (inrange(pId, 36, 40) || inrange(pId, 44, 68))
+	if (inrange(pId, NPCPROP_GATTRIB1, NPCPROP_GATTRIB5) || inrange(pId, NPCPROP_GATTRIB6, NPCPROP_GATTRIB9) || inrange(pId, NPCPROP_GATTRIB10, NPCPROP_GATTRIB30))
 	{
 		for (unsigned int i = 0; i < sizeof(__nAttrPackets); i++)
 		{
