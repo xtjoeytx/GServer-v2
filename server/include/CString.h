@@ -151,16 +151,16 @@ class CString
 		int readInt();
 
 		// Graal Packing <.<.
-		CString& writeGChar(const char pData);
-		CString& writeGShort(const short pData);
-		CString& writeGInt(const int pData);
-		CString& writeGInt4(const int pData);
-		CString& writeGInt5(const long long pData);
+		CString& writeGChar(const unsigned char pData);
+		CString& writeGShort(const unsigned short pData);
+		CString& writeGInt(const unsigned int pData);
+		CString& writeGInt4(const unsigned int pData);
+		CString& writeGInt5(const unsigned long long pData);
 		char readGChar();
 		short readGShort();
 		int readGInt();
 		int readGInt4();
-		int readGInt5();
+		unsigned int readGInt5();
 
 		inline unsigned char readGUChar();
 		inline unsigned short readGUShort();
