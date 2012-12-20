@@ -279,12 +279,13 @@ void getBasePath()
 {
 	#if defined(_WIN32) || defined(_WIN64)
 	// Get the path.
-	char path[ MAX_PATH ];
-	GetModuleFileNameA(0, path, MAX_PATH);
+	char path[MAX_PATH];
+	GetCurrentDirectoryA(MAX_PATH,path);
 
 	// Find the program exe and remove it from the path.
 	// Assign the path to homepath.
 	homepath = path;
+	homepath += "\\";
 	int pos = homepath.findl('\\');
 	if (pos == -1) homepath.clear();
 	else if (pos != (homepath.length() - 1))
