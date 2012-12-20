@@ -644,10 +644,17 @@ CString doJoins(const CString& code, CFileSystem* fs)
 	while (c.bytesLeft())
 	{
 		ret << c.readString("join ");
-		if (c.bytesLeft())
+
+		int pos = c.readPos();
+		int loc = c.find(";", pos);
+		if (loc != -1)
 		{
-			ret << ";\xa7";
-			joinList.push_back(CString() << c.readString(";") << ".txt");
+			CString spacecheck = c.subString(pos, loc - pos);
+			if (!spacecheck.contains(" \t") && c.bytesLeft())
+			{
+				ret << ";\xa7";
+				joinList.push_back(CString() << c.readString(";") << ".txt");
+			}
 		}
 	}
 
