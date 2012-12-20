@@ -13,6 +13,11 @@ newoption {
 	description = "Don't compile with boost.thread support."
 }
 
+newoption {
+	trigger		= "no-upnp",
+	description	= "Don't compile with universal plug and play support."
+}
+
 solution "gserver2"
 	configurations { "Debug", "Release" }
 	platforms { "native", "x32" }
@@ -29,14 +34,17 @@ solution "gserver2"
 		targetname "gserver2"
 		files { "../server/include/**", "../server/src/**" }
 		includedirs { "../server/include" }
-		if not _OPTIONS["no-static"] then
-			defines { "STATICLIB" }  -- For the UPnP library.
-		end
 		if _OPTIONS["no-boost"] then
 			defines { "NO_BOOST" }
 		end
+		if not _OPTIONS["no-upnp"] then
+			if not _OPTIONS["no-static"] then
+				defines { "STATICLIB" }  -- For the UPnP library.
+			end
+			defines { "UPNP" }
+			files { "../dependencies/miniupnpc/**" }
+		end
 
-		files { "../dependencies/miniupnpc/**" }
 		files { "../dependencies/bzip2/**" }
 
 	-- It bugs if I remove next line, but why? paul

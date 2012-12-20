@@ -200,9 +200,11 @@ class TServer : public CSocketStub
 		TServerList serverlist;
 		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 
+#ifdef UPNP
 		CUPNP upnp;
 #ifndef NO_BOOST
 		boost::thread upnp_thread;
+#endif
 #endif
 
 		// NPC-Server Functionality
