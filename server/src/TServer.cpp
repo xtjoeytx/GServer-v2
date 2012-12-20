@@ -25,7 +25,11 @@ static const char* const filesystemTypes[] =
 };
 
 TServer::TServer(CString pName)
+#ifdef UPNP
 : running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this), upnp(this)
+#else 
+: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+#endif
 {
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
 
@@ -112,11 +116,13 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
+#ifdef UPNP
 	upnp.initialize(playerSock.getLocalIp(), settings.getStr("serverport").text());
 #ifndef NO_BOOST
 	upnp_thread = boost::thread(boost::ref(upnp));
 #else
 	upnp();
+#endif
 #endif
 
 	// Connect to the serverlist.
@@ -203,10 +209,12 @@ void TServer::cleanup()
 	// Close our UPNP port forward.
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
+#ifdef UPNP
 #ifndef NO_BOOST
 	upnp_thread.join();
 #endif
 	upnp.remove_all_forwarded_ports();
+#endif
 
 	// Save translations.
 	this->TS_Save();

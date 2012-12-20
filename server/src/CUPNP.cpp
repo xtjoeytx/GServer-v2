@@ -1,3 +1,4 @@
+#ifdef UPNP
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
@@ -95,3 +96,4 @@ void CUPNP::remove_port_forward(const CString& port)
 	server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", server->getName().text(), port.text());
 	ports_forwarded.erase(port);
 }
+#endif
