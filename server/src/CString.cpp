@@ -1046,35 +1046,22 @@ int CString::readInt()
 /*
 	Additional Functions for Data-Packing (GRAAL)
 */
-CString& CString::writeGChar(const char pData)
+CString& CString::writeGChar(const unsigned char pData)
 {
 	unsigned char val = (unsigned char)(pData < 223 ? pData : 223) + 32;
 	write((char*)&val, 1);
 	return *this;
 }
 
-/*
-CString& CString::writeGShort(const short pData)
+CString& CString::writeGShort(const unsigned short pData)
 {
-	char val[2];
-	val[0] = ((pData >> 7) & 0x7F) + 32;
-	val[1] = (pData & 0x7F) + 32;
-	write((char*)&val, 2);
-	return *this;
-}
-*/
-
-// Improved version of writeGShort by Codr that exploits how the client reads
-// shorts in order to send a slightly higher value.
-CString& CString::writeGShort(const short pData)
-{
-	unsigned short t = (unsigned short)pData;
+	unsigned short t = pData;
 	if (t > 28767) t = 28767;
 
 	unsigned char val[2];
-	val[0] = t / 128;
+	val[0] = t >> 7;
 	if (val[0] > 223) val[0] = 223;
-	val[1] = t - val[0] * 128;
+	val[1] = t - (val[0] << 7);
 
 	val[0] += 32;
 	val[1] += 32;
@@ -1083,36 +1070,69 @@ CString& CString::writeGShort(const short pData)
 	return *this;
 }
 
-CString& CString::writeGInt(const int pData)
+CString& CString::writeGInt(const unsigned int pData)
 {
-	char val[3];
-	val[0] = ((pData >> 14) & 0x7F) + 32;
-	val[1] = ((pData >> 7) & 0x7F) + 32;
-	val[2] = (pData & 0x7F) + 32;
-	write((char *)&val, 3);
+	unsigned int t = pData;
+	if (t > 3682399) t = 3682399;
+
+	unsigned char val[3];
+	val[0] = t >> 14;
+	if (val[0] > 223) val[0] = 223;
+	t -= val[0] << 14;
+	val[1] = t >> 7;
+	if (val[1] > 223) val[1] = 223;
+	val[2] = t - (val[1] << 7);
+
+	for (int a = 0;a < 3;++a) val[a] += 32;
+	write((char *)&val,3);
+
 	return *this;
 }
 
-CString& CString::writeGInt4(const int pData)
+CString& CString::writeGInt4(const unsigned int pData)
 {
-	char val[4];
-	val[0] = ((pData >> 21) & 0x7F) + 32;
-	val[1] = ((pData >> 14) & 0x7F) + 32;
-	val[2] = ((pData >> 7) & 0x7F) + 32;
-	val[3] = (pData & 0x7F) + 32;
-	write((char *)&val, 4);
+	unsigned int t = pData;
+	if (t > 471347295) t = 471347295;
+
+	unsigned char val[4];
+	val[0] = t >> 21;
+	if (val[0] > 223) val[0] = 223;
+	t -= val[0] << 21;
+	val[1] = t >> 14;
+	if (val[1] > 223) val[1] = 223;
+	t -= val[1] << 14;
+	val[2] = t >> 7;
+	if (val[2] > 223) val[2] = 223;
+	val[3] = t - (val[2] << 7);
+
+	for (int a = 0;a < 4;++a) val[a] += 32;
+	write((char *)&val,4);
+
 	return *this;
 }
 
-CString& CString::writeGInt5(const long long pData)
+CString& CString::writeGInt5(const unsigned long long pData)
 {
-	char val[5];
-	val[0] = ((pData >> 28) & 0x7F) + 32;
-	val[1] = ((pData >> 21) & 0x7F) + 32;
-	val[2] = ((pData >> 14) & 0x7F) + 32;
-	val[3] = ((pData >> 7) & 0x7F) + 32;
-	val[4] = (pData & 0x7F) + 32;
-	write((char *)&val, 5);
+	unsigned long long t = pData;
+	if (t > 0xFFFFFFFF) t = 0xFFFFFFFF;
+
+	unsigned char val[5];
+	val[0] = t >> 28;
+	if (val[0] > 15) val[0] = 15; //This is capped low because higher just results in values over 0xFFFFFFFF.
+	t -= val[0] << 28;
+	val[1] = t >> 21;
+	if (val[1] > 223) val[1] = 223;
+	t -= val[1] << 21;
+	val[2] = t >> 14;
+	if (val[2] > 223) val[2] = 223;
+	t -= val[2] << 14;
+	val[3] = t >> 7;
+	if (val[3] > 223) val[3] = 223;
+	val[4] = t - (val[3] << 7);
+
+	for (int a = 1;a < 5;++a) val[a] += 32; //For whatever reason, the client doesn't subtract 32 from the MSB here.
+	write((char *)&val,5);
+
 	return *this;
 }
 
@@ -1121,7 +1141,7 @@ char CString::readGChar()
 {
 	char val;
 	read(&val, 1);
-	return val-32;
+	return val - 32;
 }
 
 // max: 0x705F 28767
@@ -1129,32 +1149,32 @@ short CString::readGShort()
 {
 	unsigned char val[2];
 	read((char*)val, 2);
-	return ((val[0]-32) * 128) + (val[1]-32);
-	//return ((val[0]-32) << 7) + val[1]-32;
+	return (val[0] << 7) + val[1] - 0x1020;
 }
 
-// max: 0x1FFFFF 2097151
+// max: 0x38305F 3682399
 int CString::readGInt()
 {
 	unsigned char val[3];
 	read((char*)val, 3);
-	return ((val[0]-32) << 14) + ((val[1]-32) << 7) + val[2]-32;
+	return ((val[0] << 7) + val[1] << 7) + val[2] - 0x81020;
 }
 
-// max: 0xFFFFFFF 268435455
+// max: 0x1C18305F 471347295
 int CString::readGInt4()
 {
 	unsigned char val[4];
 	read((char*)val, 4);
-	return ((val[0]-32) << 21) + ((val[1]-32) << 14) + ((val[2]-32) << 7) + val[3]-32;
+	return (((val[0] << 7) + val[1] << 7) + val[2] << 7) + val[3] - 0x4081020;
 }
 
-// max: 0x7FFFFFFFF 34359738367
-int CString::readGInt5()
+// max: 0xFFFFFFFF 4294967295
+//The client doesn't store these in multiple registers, so the maximum value is capped.
+unsigned int CString::readGInt5()
 {
 	unsigned char val[5];
 	read((char*)val, 5);
-	return ((val[0]-32) << 28) + ((val[1]-32) << 21) + ((val[2]-32) << 14) + ((val[3]-32) << 7) + val[4]-32;
+	return ((((val[0] << 7) + val[1] << 7) + val[2] << 7) + val[3] << 7) + val[4] - 0x4081020;
 }
 
 /*
