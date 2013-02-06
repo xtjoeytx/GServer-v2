@@ -40,6 +40,7 @@ void TServerList::createFunctions()
 	TSLFunc[SVI_FILEEND3] = &TServerList::msgSVI_FILEEND3;
 	TSLFunc[SVI_SERVERINFO] = &TServerList::msgSVI_SERVERINFO;
 	TSLFunc[SVI_REQUESTTEXT] = &TServerList::msgSVI_REQUESTTEXT;
+	TSLFunc[SVI_PMPLAYER] = &TServerList::msgSVI_PMPLAYER;
 
 	// Finished
 	TServerList::created = true;
@@ -157,10 +158,27 @@ bool TServerList::doTimedEvents()
 	{
 		lastPing = lastTimer;
 		sendPacket(CString() >> (char)SVO_PING);
+
+		std::vector<TPlayer *> playerListTmp = *server->getPlayerList();
+		for (std::vector<TPlayer *>::const_iterator i = playerListTmp.begin(); i != playerListTmp.end(); ++i)
+		{
+			if (server->hasNPCServer() && (*i)->isNPCServer()) continue;
+
+			std::vector<CString> pmServers = (*i)->getPMServerList();
+
+			if (!pmServers.empty())
+			{
+
+				for (std::vector<CString>::const_iterator ij = pmServers.begin(); ij != pmServers.end(); ++ij)
+				{
+					sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)(*i)->getId() << CString(CString() << (*i)->getAccountName() << "\n" << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << (ij)->text() << "\n").gtokenizeI());
+				}
+			}
+		}
 	}
 
-	// Synchronize players every 5 minutes.
-	if ((int)difftime(lastTimer, lastPlayerSync) >= 300)
+	// Synchronize players every minute.
+	if ((int)difftime(lastTimer, lastPlayerSync) >= 60)
 	{
 		lastPlayerSync = lastTimer;
 		sendPlayers();
@@ -763,11 +781,59 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 {
 	unsigned short pid = pPacket.readGUShort();
 	CString message = pPacket.readString("");
+	CString data = message.guntokenize();
 
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString option = data.readString("\n");
+	CString params = data.readString("");
+	
 	TPlayer* p = server->getPlayer(pid);
-	if (p && p->isClient())
+	if (p && (p->isClient() || p->isRC()))
 	{
-		if (p->getVersion() >= CLVER_2_1)
-			p->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+		if (type == "pmserverplayers")
+		{
+
+			p->updatePMPlayers(option, params);
+		}
+		else
+		{
+			server->getServerLog().out("Requesttext: %s\n", message);
+
+			if (p->getVersion() >= CLVER_2_1)
+				p->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+			
+		}
 	}
+}
+
+void TServerList::msgSVI_PMPLAYER(CString& pPacket)
+{
+	CString message = pPacket.readString("");
+	CString data = message.guntokenize();
+
+	CString servername = data.readString("\n");
+	CString account = data.readString("\n");
+	CString nick = data.readString("\n");
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString account2 = data.readString("\n");
+	
+	CString message2 = data.readString("");
+	CString message3 = message2.gtokenizeI();
+	
+	CString player = CString(CString() << account << "\n" << nick << "\n").gtokenizeI() << "\n";
+	CString pmMessageType("\"\",");
+	pmMessageType << "\"Private message:\",";
+
+	TPlayer* p = server->getPlayer(account2);
+	if (p && (p->isClient() || p->isRC()))
+	{
+		p->addPMServer(servername);
+		p->updatePMPlayers(servername, player);
+		TPlayer* tmpPlyr = p->getExternalPlayer(account);
+		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3,true);
+	}
+
+	message2 = "";
 }

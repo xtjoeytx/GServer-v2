@@ -978,7 +978,11 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 			if (pProps[i])
 				propPacket >> (char)i << getProp(i);
 		}
+
 	}
 
+	if (isExternal)
+		propPacket >> (char)81 << "!";
+	
 	return propPacket;
 }
