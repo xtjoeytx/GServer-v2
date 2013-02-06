@@ -89,10 +89,12 @@ bool TPlayer::sendLogin()
 		// players will be playing.
 		//sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
                 sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-                sendPacket(CString() >> (char)45 << "basepackage.gupd");
-		sendPacket(CString() >> (char)45 << "basepackage.gupd");
+        //        sendPacket(CString() >> (char)45 << "basepackage.gupd");
+		//sendPacket(CString() >> (char)45 << "basepackage.gupd");
 //		sendPacket(CString() >> (char)44);
-//		sendPacket(CString() >> (char)176);
+		sendPacket(CString() >> (char)103 << " *");
+		sendPacket(CString() >> (char)194);
+		sendPacket(CString() >> (char)190);
 		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
