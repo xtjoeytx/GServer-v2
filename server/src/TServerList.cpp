@@ -820,6 +820,7 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString account2 = data.readString("\n");
 	
 	CString message2 = data.readString("");
+	CString message3 = message2.gtokenizeI();
 	
 	CString player = CString(CString() << account << "\n" << nick << "\n").gtokenizeI() << "\n";
 	CString pmMessageType("\"\",");
@@ -831,8 +832,7 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);
 		TPlayer* tmpPlyr = p->getExternalPlayer(account);
-		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message2.gtokenizeI());
-		server->getServerLog().out(CString() << "Servername: " << servername << "\n" << "Account: " << account << "\n" << "Nick: " << nick << "\n" << "Weapon: " << weapon << "\n" << "Type: " << type << "\n" << "Account2: " << account2 << "\n" << "Message: " << message2.gtokenizeI()<< "\n");
+		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3,true);
 	}
 
 	message2 = "";
