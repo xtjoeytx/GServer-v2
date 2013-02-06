@@ -85,6 +85,7 @@ class TServerList : public CSocketStub
 		void msgSVI_FILEEND3(CString& pPacket);
 		void msgSVI_SERVERINFO(CString& pPacket);
 		void msgSVI_REQUESTTEXT(CString& pPacket);
+		void msgSVI_PMPLAYER(CString& pPacket);
 		
 	protected:
 		// Packet Functions

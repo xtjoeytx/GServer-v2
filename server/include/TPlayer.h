@@ -56,6 +56,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int getVersion() const			{ return versionID; }
 		CString getVersionStr() const	{ return version; }
 		bool isUsingFileBrowser() const	{ return isFtp; }
+		CString getServerName()	const	{ return serverName; }
 
 		// Set Properties
 		void setChat(const CString& pChat);
@@ -65,6 +66,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setGroup(CString group)	{ levelGroup = group; }
 		void setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
 		void setMap(TMap* map)			{ pmap = map; }
+		void setServerName(CString& tmpServerName)	{ serverName = tmpServerName; }
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
@@ -105,6 +107,13 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(int defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
+		bool addPMServer(CString& option);
+		bool remPMServer(CString& option);
+		bool updatePMPlayers(CString& servername, CString& players);
+		bool pmExternalPlayer(CString& servername, CString& account, CString& pmMessage);
+		std::vector<CString> getPMServerList();
+		TPlayer* getExternalPlayer(const unsigned short id, bool includeRC = true) const;
+		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 		// NPC-Server Functionality
 		void sendNCAddr();
@@ -250,7 +259,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CEncryption in_codec;
 
 		// Variables
-		CString version, os;
+		CString version, os, serverName;
 		int codepage;
 		TLevel *level;
 		int id, type, versionID;
@@ -258,6 +267,7 @@ class TPlayer : public TAccount, public CSocketStub
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;
+		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
 		bool allowBomb, allowBow;
 		TMap* pmap;
 		unsigned int carryNpcId;

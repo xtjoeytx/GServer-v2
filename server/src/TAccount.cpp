@@ -86,6 +86,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	flagList.clear();
 	folderList.clear();
 	weaponList.clear();
+	PMServerList.clear();
 
 	// Parse File
 	for (unsigned int i = 0; i < fileData.size(); i++)
@@ -195,9 +196,9 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v)) == 0)
+			if (server->getPlayer("pc:" + CString(v).subString(0,6)) == 0)
 			{
-				communityName = "pc:" + CString(v);
+				communityName = "pc:" + CString(v).subString(0,6);
 				break;
 			}
 		}
@@ -208,7 +209,8 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	{
 		// The PC:123123123 should only be sent to other players, the logged in player should see it as guest.
 		// Setting it back to only show as guest to everyone until that's fixed.
-		communityName = accountName;
+		accountName = communityName;
+		communityName = "guest";
 	}
 	else
 		communityName = accountName;

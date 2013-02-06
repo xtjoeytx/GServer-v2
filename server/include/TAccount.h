@@ -181,6 +181,7 @@ class TAccount
 		void setKills(int newKills)					{ kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
+		void setExternal(bool external)				{ isExternal = external; }
 		void setBanned(bool banned)					{ isBanned = banned; }
 		void setBanReason(CString reason)			{ banReason = reason; }
 		void setBanLength(CString length)			{ banLength = length; }
@@ -197,6 +198,7 @@ class TAccount
 
 		// Player-Account
 		bool isBanned, isLoadOnly, isGuest;
+		bool isExternal;
 		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
 		long accountIp;
@@ -215,7 +217,7 @@ class TAccount
 		time_t lastSparTime;
 		unsigned char statusMsg;
 		std::map<CString, CString> flagList;
-		std::vector<CString> chestList, folderList, weaponList;
+		std::vector<CString> chestList, folderList, weaponList, PMServerList;
 };
 
 #endif // TACCOUNT_H

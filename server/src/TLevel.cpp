@@ -13,6 +13,7 @@ CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 short respawningTiles[] = {
 	0x1ff, 0x3ff, 0x2ac, 0x002, 0x200,
 	0x022, 0x3de, 0x1a4, 0x14a, 0x674,
+	0x72a,
 };
 
 /*
