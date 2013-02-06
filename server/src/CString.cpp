@@ -1048,7 +1048,7 @@ int CString::readInt()
 */
 CString& CString::writeGChar(const unsigned char pData)
 {
-	unsigned char val = (unsigned char)(pData < 223 ? pData : 223) + 32;
+	unsigned char val = (pData < 223 ? pData : 223) + 32;
 	write((char*)&val, 1);
 	return *this;
 }
@@ -1130,7 +1130,7 @@ CString& CString::writeGInt5(const unsigned long long pData)
 	if (val[3] > 223) val[3] = 223;
 	val[4] = t - (val[3] << 7);
 
-	for (int a = 1;a < 5;++a) val[a] += 32; //For whatever reason, the client doesn't subtract 32 from the MSB here.
+	for (int a = 0;a < 5;++a) val[a] += 32;
 	write((char *)&val,5);
 
 	return *this;
