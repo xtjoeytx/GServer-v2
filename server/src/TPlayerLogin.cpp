@@ -381,7 +381,7 @@ bool TPlayer::sendLoginClient()
 
 	// Send out RPG Window greeting.
 	if (isClient() && versionID >= CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\"" );
+		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by Joey and Nalin.\",\"Additions and fixes by Codr and Cadavre.\"" );
 
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
@@ -403,9 +403,9 @@ bool TPlayer::sendLoginRC()
 	headImg = server->getSettings()->getStr("staffhead", "head25.png");
 
 	// Send the RC join message to the RC.
-	CString rcmessage;
-	rcmessage.load(CString() << server->getServerPath() << "config/rcmessage.txt");
-	sendPacket(CString() >> (char)PLO_RC_CHAT << rcmessage);
+	std::vector<CString> rcmessage = CString::loadToken(CString() << server->getServerPath() << "config/rcmessage.txt", "\n", true);
+	for (std::vector<CString>::iterator i = rcmessage.begin(); i != rcmessage.end(); ++i)
+		sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
 
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;
