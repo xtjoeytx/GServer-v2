@@ -110,7 +110,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool updatePMPlayers(CString& servername, CString& players);
-		bool pmExternalPlayer(CString& servername, CString& account, CString& pmMessage);
+		bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 		std::vector<CString> getPMServerList();
 		TPlayer* getExternalPlayer(const unsigned short id, bool includeRC = true) const;
 		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;

@@ -2937,7 +2937,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		if (*i >= 16000)
 		{
 			TPlayer* pmPlayer = getExternalPlayer(*i);
-			serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname());
+			serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname().text());
 			pmMessage.guntokenizeI();
 			pmExternalPlayer(pmPlayer->getServerName(),pmPlayer->getAccountName(),pmMessage);
 			pmMessage.gtokenizeI();
@@ -3793,7 +3793,7 @@ std::vector<CString> TPlayer::getPMServerList()
 bool TPlayer::addPMServer(CString& option)
 {
 	TServerList* list = server->getServerList();
-	
+
 	bool PMSrvExist = false;
 	for (std::vector<CString>::const_iterator ij = PMServerList.begin(); ij != PMServerList.end(); ++ij)
 	{
@@ -3819,7 +3819,7 @@ bool TPlayer::remPMServer(CString& option)
 	if (PMServerList.size() == 0)
 		return true;
 
-	if (externalPlayerList.size() != 0)	
+	if (externalPlayerList.size() != 0)
 	{
 		// Check if a player has disconnected
 		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
@@ -3839,16 +3839,16 @@ bool TPlayer::remPMServer(CString& option)
 	}
 
 	// Find the player and remove him.
-	for (std::vector<CString>::const_iterator i = PMServerList.begin(); i != PMServerList.end(); )
+	for (std::vector<CString>::iterator ip = PMServerList.begin(); ip != PMServerList.end(); )
 	{
 		//CString pl = i;
-		if ((i)->text() == option)
+		if ((ip)->text() == option)
 		{
 			//delete (i);
-			i = PMServerList.erase(i);
+			ip = PMServerList.erase(ip);
 		}
 		else
-			++i;
+			++ip;
 	}
 
 	return true;
@@ -3859,7 +3859,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 	std::vector<CString> players2 = players.tokenize("\n");
 	int i22 = 0;
 
-	if (externalPlayerList.size() != 0)	
+	if (externalPlayerList.size() != 0)
 	{
 		// Check if a player has disconnected
 		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
@@ -3875,7 +3875,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 				{
 					exist2 = true;
 					p->setNick(CString() << nick << " (on " << servername << ")");
-			
+
 				}
 
 			}
@@ -3946,7 +3946,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 			tmpPlyr2->setId(newId);
 
 			externalPlayerList.push_back(tmpPlyr2);
-			
+
 		}
 	}
 
@@ -3963,7 +3963,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 	return true;
 }
 
-bool TPlayer::pmExternalPlayer(CString& servername, CString& account, CString& pmMessage)
+bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
 	TServerList* list = server->getServerList();
 	list->sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
@@ -4028,7 +4028,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		remPMServer(option);
 		
 
-	serverlog.out("Request: %s,%s\n", accountName.gtokenize().text(),packet);
+	serverlog.out("Request: %s,%s\n", accountName.gtokenize().text(),packet.text());
 	return true;
 }
 
