@@ -110,6 +110,8 @@ void CLog::append(const CString format, ...)
 		// Write the message to the file.
 		vfprintf(file, format.text(), s_format_v);
 		fflush(file);
+		va_end(s_format_v);
+		va_start(s_format_v, format);
 	}
 
 	// Display message.
