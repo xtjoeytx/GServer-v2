@@ -50,6 +50,7 @@ class TMap
 		CString getMapName() const			{ return mapName; }
 		int getType() const					{ return type; }
 		bool isGroupMap() const				{ return groupMap; }
+		CString getLevels();
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
