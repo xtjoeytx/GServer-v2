@@ -234,10 +234,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-		return CString() >> (char)gmaplevelx;
+		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelX(level->getActualLevelName()) : 0);
 
 		case NPCPROP_GMAPLEVELY:
-		return CString() >> (char)gmaplevely;
+		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
 
 		case NPCPROP_CLASS:
 		return CString() >> (short)0;
