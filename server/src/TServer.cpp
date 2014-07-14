@@ -1002,9 +1002,12 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 		TPlayer* p = *i;
 		if (p->isRC()) continue;
 
+		CString tmpLvlName = (npc->getLevel() && npc->getLevel()->getMap() ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
 		if (p->getVersion() < CLVER_2_1 && !p->isNPCServer())
 			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+		else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		tmpLvlName.clear();
+		tmpLvlName = NULL;
 	}
 
 	// Delete the NPC from memory.
