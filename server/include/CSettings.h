@@ -2,6 +2,7 @@
 #define CSETTINGS_H
 
 #include <vector>
+#include <mutex>
 #include "CString.h"
 
 struct CKey
@@ -15,13 +16,6 @@ struct CKey
 	CString name;
 	CString value;
 };
-
-#ifndef NO_BOOST
-namespace boost
-{
-	class recursive_mutex;
-}
-#endif
 
 class CSettings
 {
@@ -57,9 +51,7 @@ class CSettings
 		std::vector<CKey *> keys;
 		std::vector<CString> strList;
 
-#ifndef NO_BOOST
-		mutable boost::recursive_mutex* m_preventChange;
-#endif
+		mutable std::recursive_mutex* m_preventChange;
 };
 
 #endif // CSETTINGS_H

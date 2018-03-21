@@ -1,7 +1,4 @@
 #include "IDebug.h"
-#ifndef NO_BOOST
-#	include <boost/thread.hpp>
-#endif
 #include "CSettings.h"
 
 /*
@@ -9,16 +6,13 @@
 */
 CSettings::CSettings()
 {
-#ifndef NO_BOOST
-	m_preventChange = new boost::recursive_mutex();
-#endif
+	m_preventChange = new std::recursive_mutex();
 }
 
 CSettings::CSettings(const CString& pStr, const CString& pSeparator)
 {
-#ifndef NO_BOOST
-	m_preventChange = new boost::recursive_mutex();
-#endif
+	m_preventChange = new std::recursive_mutex();
+
 	strSep = pSeparator;
 	opened = loadFile(pStr);
 }
@@ -26,9 +20,7 @@ CSettings::CSettings(const CString& pStr, const CString& pSeparator)
 CSettings::~CSettings()
 {
 	clear();
-#ifndef NO_BOOST
 	delete m_preventChange;
-#endif
 }
 
 /*
@@ -36,25 +28,19 @@ CSettings::~CSettings()
 */
 bool CSettings::isOpened() const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 	return opened;
 }
 
 void CSettings::setSeparator(const CString& pSeparator)
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 	strSep = pSeparator;
 }
 
 bool CSettings::loadFile(const CString& pStr)
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// definitions
 	CString fileData;
@@ -113,9 +99,7 @@ bool CSettings::loadFile(const CString& pStr)
 
 void CSettings::clear()
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Clear Keys
 	for (unsigned int i = 0; i < keys.size(); i++)
@@ -157,9 +141,7 @@ CKey* CSettings::addKey(const CString& pKey, const CString& pValue)
 */
 CKey * CSettings::getKey(const CString& pStr)
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Lowercase Name
 	CString strName = pStr.toLower();
@@ -177,9 +159,7 @@ CKey * CSettings::getKey(const CString& pStr)
 
 const CKey* CSettings::getKey(const CString& pStr) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Lowercase Name
 	CString strName = pStr.toLower();
@@ -197,53 +177,45 @@ const CKey* CSettings::getKey(const CString& pStr) const
 
 bool CSettings::getBool(const CString& pStr, bool pDefault) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+
 	const CKey *key = getKey(pStr);
 	return (key == 0 ? pDefault : (key->value == "true" || key->value == "1"));
 }
 
 float CSettings::getFloat(const CString& pStr, float pDefault) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+
 	const CKey *key = getKey(pStr);
 	return (key == 0 ? pDefault : (float)strtofloat(key->value));
 }
 
 int CSettings::getInt(const CString& pStr, int pDefault) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+
 	const CKey *key = getKey(pStr);
 	return (key == 0 ? pDefault : strtoint(key->value));
 }
 
 const CString CSettings::getStr(const CString& pStr, const CString& pDefault) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+
 	const CKey *key = getKey(pStr);
 	return (key == 0 ? pDefault : key->value);
 }
 
 const CString CSettings::operator[](int pIndex) const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 	return strList[pIndex].trim();
 }
 
 std::vector<CString> CSettings::getFile() const
 {
-#ifndef NO_BOOST
-	boost::recursive_mutex::scoped_lock lock(*m_preventChange);
-#endif
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	std::vector<CString> newStrList;
 	std::copy(strList.begin(), strList.end(), newStrList.begin());
