@@ -2,14 +2,8 @@
 #define CFILESYSTEM_H
 
 #include <map>
+#include <mutex>
 #include "CString.h"
-
-#ifndef NO_BOOST
-namespace boost
-{
-	class recursive_mutex;
-}
-#endif
 
 class TServer;
 class CFileSystem
@@ -38,9 +32,7 @@ class CFileSystem
 		std::map<CString, CString>* getFileList()	{ return &fileList; }
 		std::vector<CString>* getDirList()			{ return &dirList; }
 
-#ifndef NO_BOOST
-		mutable boost::recursive_mutex* m_preventChange;
-#endif
+		mutable std::recursive_mutex* m_preventChange;
 
 		static void fixPathSeparators(CString* pPath);
 		static char getPathSeparator();

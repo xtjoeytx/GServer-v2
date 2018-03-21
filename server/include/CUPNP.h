@@ -18,7 +18,7 @@ class CUPNP
 			this->server = server;
 		}
 
-		// Allows boost::thread to work.
+		// Allows std::thread to work.
 		void operator()()
 		{
 			discover();
