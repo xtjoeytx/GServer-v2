@@ -1,7 +1,7 @@
 #include "IDebug.h"
-#ifndef NO_BOOST
-#	include <boost/thread.hpp>
-#endif
+#include <thread>
+#include <atomic>
+#include <functional>
 
 #include "TServer.h"
 #include "main.h"
@@ -23,6 +23,8 @@ static const char* const filesystemTypes[] =
 	"shield",
 	0
 };
+
+extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
 #ifdef UPNP
@@ -118,11 +120,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
 #ifdef UPNP
 	upnp.initialize(playerSock.getLocalIp(), settings.getStr("serverport").text());
-#ifndef NO_BOOST
-	upnp_thread = boost::thread(boost::ref(upnp));
-#else
-	upnp();
-#endif
+	upnp_thread = std::thread(std::ref(upnp));
 #endif
 
 	// Connect to the serverlist.
@@ -163,16 +161,8 @@ void TServer::operator()()
 				break;
 		}
 
-#ifndef NO_BOOST
-		try
-		{
-			boost::this_thread::interruption_point();
-		}
-		catch (boost::thread_interrupted)
-		{
+		if (shutdownProgram)
 			running = false;
-		}
-#endif
 	}
 	cleanup();
 }
@@ -210,9 +200,7 @@ void TServer::cleanup()
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
 #ifdef UPNP
-#ifndef NO_BOOST
 	upnp_thread.join();
-#endif
 	upnp.remove_all_forwarded_ports();
 #endif
 

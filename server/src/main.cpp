@@ -1,7 +1,7 @@
 #include "IDebug.h"
-#ifndef NO_BOOST
-#	include <boost/thread.hpp>
-#endif
+#include <thread>
+#include <atomic>
+#include <functional>
 #include <signal.h>
 #include <stdlib.h>
 #include <map>
@@ -25,9 +25,7 @@
 typedef void (*sighandler_t)(int);
 
 std::map<CString, TServer*> serverList;
-#ifndef NO_BOOST
-std::map<CString, boost::thread*> serverThreads;
-#endif
+std::map<CString, std::thread*> serverThreads;
 
 CLog serverlog("startuplog.txt");
 CString overrideServer;
@@ -35,6 +33,8 @@ CString overrideServer;
 // Home path of the gserver.
 CString homepath;
 static void getBasePath();
+
+std::atomic_bool shutdownProgram = false;
 
 #ifdef _WINDLL
 struct GServer
@@ -153,12 +153,8 @@ int main(int argc, char* argv[])
 				}
 				serverList[name] = server;
 
-#ifndef NO_BOOST
 				// Put the server in its own thread.
-				serverThreads[name] = new boost::thread(boost::ref(*server));
-#else
-				break;
-#endif
+				serverThreads[name] = new std::thread(std::ref(*server));
 			}
 		}
 		else
@@ -173,10 +169,8 @@ int main(int argc, char* argv[])
 			}
 			serverList[overrideServer] = server;
 
-#ifndef NO_BOOST
 			// Put the server in its own thread.
-			serverThreads[overrideServer] = new boost::thread(boost::ref(*server));
-#endif
+			serverThreads[overrideServer] = new std::thread(std::ref(*server));
 		}
 
 		// Announce that the program is now running.
@@ -185,12 +179,11 @@ int main(int argc, char* argv[])
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
 
-#ifndef NO_BOOST
 		// Wait on each thread to end.
 		// Once all threads have ended, the program has terminated.
-		for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
+		for (std::map<CString, std::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
 		{
-			boost::thread* t = i->second;
+			std::thread* t = i->second;
 			if (t == 0) serverThreads.erase(i++);
 			else
 			{
@@ -198,14 +191,6 @@ int main(int argc, char* argv[])
 				++i;
 			}
 		}
-#else
-		// Run the server.
-		std::map<CString, TServer*>::iterator i = serverList.begin();
-		if (i != serverList.end())
-		{
-			(*i->second)();
-		}
-#endif
 
 		// Delete all the servers.
 		for (std::map<CString, TServer*>::iterator i = serverList.begin(); i != serverList.end(); )
@@ -297,23 +282,7 @@ void shutdownServer(int sig)
 {
 	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
 
-#ifndef NO_BOOST
-	// Interrupt each thread.  We are shutting down the server.
-	for (std::map<CString, boost::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end(); ++i)
-	{
-		boost::thread* t = i->second;
-		t->interrupt();
-		t->join();
-		t->detach();
-		serverThreads[i->first] = 0;
-	}
-#else
-	std::map<CString, TServer*>::iterator i = serverList.begin();
-	if (i != serverList.end())
-	{
-		i->second->running = false;
-	}
-#endif
+	shutdownProgram = true;
 }
 
 void getBasePath()

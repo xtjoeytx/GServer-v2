@@ -40,7 +40,7 @@
 
 	#define sleep Sleep
 	// The following #define would cause some snprintf linking errors in cstdio with MinGW
-	#ifndef __GNUC__
+	#if !defined(__GNUC__) && !(defined(_WIN32) || defined(_WIN64))
 	  #define snprintf _snprintf
 	#endif
 #else

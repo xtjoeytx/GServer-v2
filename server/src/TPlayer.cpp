@@ -1,7 +1,4 @@
 #include "IDebug.h"
-#ifndef NO_BOOST
-#	include <boost/thread.hpp>
-#endif
 #include <time.h>
 #include <math.h>
 #include <sys/stat.h>

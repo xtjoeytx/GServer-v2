@@ -4,10 +4,7 @@
 #include <vector>
 #include <map>
 #include <set>
-
-#ifndef NO_BOOST
-#	include <boost/thread.hpp>
-#endif
+#include <thread>
 
 #include "CString.h"
 
@@ -202,9 +199,7 @@ class TServer : public CSocketStub
 
 #ifdef UPNP
 		CUPNP upnp;
-#ifndef NO_BOOST
-		boost::thread upnp_thread;
-#endif
+		std::thread upnp_thread;
 #endif
 
 		// NPC-Server Functionality

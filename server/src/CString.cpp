@@ -4,7 +4,6 @@
 #if defined(_WIN32) || defined(_WIN64)
 	#ifdef _MSC_VER
 		#define strncasecmp _strnicmp
-		#define snprintf _snprintf
 	#endif
 #endif
 
@@ -1157,7 +1156,7 @@ int CString::readGInt()
 {
 	unsigned char val[3];
 	read((char*)val, 3);
-	return ((val[0] << 7) + val[1] << 7) + val[2] - 0x81020;
+	return (((val[0] << 7) + val[1]) << 7) + val[2] - 0x81020;
 }
 
 // max: 0x1C18305F 471347295
@@ -1165,7 +1164,7 @@ int CString::readGInt4()
 {
 	unsigned char val[4];
 	read((char*)val, 4);
-	return (((val[0] << 7) + val[1] << 7) + val[2] << 7) + val[3] - 0x4081020;
+	return (((((val[0] << 7) + val[1]) << 7) + val[2]) << 7) + val[3] - 0x4081020;
 }
 
 // max: 0xFFFFFFFF 4294967295
@@ -1174,7 +1173,7 @@ unsigned int CString::readGInt5()
 {
 	unsigned char val[5];
 	read((char*)val, 5);
-	return ((((val[0] << 7) + val[1] << 7) + val[2] << 7) + val[3] << 7) + val[4] - 0x4081020;
+	return (((((((val[0] << 7) + val[1]) << 7) + val[2]) << 7) + val[3]) << 7) + val[4] - 0x4081020;
 }
 
 /*
