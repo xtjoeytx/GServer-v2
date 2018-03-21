@@ -1,5 +1,32 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v2.5.0
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Fixed some bugs with gr.updatelevel.
+* Fixed bugs with baddies.
+* You can no longer set your shield to be sword1.png.  Default sword/shield/body images are properly locked to their type.
+* Fixed gani attributes 10-30.
+* Fixed a bug with the join script command.
+* Various gmap fixes.
+* All sorts of other bug fixes.
++ We can now write slightly larger scripts.  From 16383 bytes to 28767 bytes.
++ Added the startlevel, startx, and starty server options.  They override defaultaccount.
++ Added the //#BLOCKPOSITIONUPDATES script command.  It blocks NPC position updates for that specific NPC.
++ Added gr.fullhearts triggeraction hack to set the player's fullhearts to a specific amount.
++ Added gr.npc.move triggeraction hack for sending serverside move packets.
++ Added gr.npc.setpos triggeraction hack for positioning an NPC that blocks position updates.
++ Added gr.readfile triggeraction hack.
++ Added /refreshfilesystem RC command to re-scan the server's files.
++ Support multi-line rcmessage.txt.
+o Added timestamps to log messages.
+o We now keep a copy of the untrimmed script so we don't write the trimmed script back to the disk.
+o Various changes were added for support for later clients (nothing much came of this).
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v2.4.0
 
   * bug fix, + new feature, o other
