@@ -1,5 +1,5 @@
 Graal Reborn GServer
-Created by: Joey, Nalin.
+Created by: Joey, Nalin, dufresnep, Codr, Marlon.
 Based off the original work by 39ster.
 For their additional work on the old gserver, special thanks go to:
 	Agret, Beholder, Joey, Marlon, Nalin, and Pac.
