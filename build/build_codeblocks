@@ -1,3 +1,3 @@
 #!/bin/bash
-premake5 codeblocks
+./premake5 codeblocks
 
