@@ -74,8 +74,11 @@ project "gserver2"
 	links {
 		"bzip2",
 		"zlib",
-		"miniupnpc"
 	}
+
+	if not _OPTIONS["no-upnp"] then
+		links { "miniupnpc" }
+	end
 
 	filter "system:linux"
 		defines { "_BSD_SOURCE", "_POSIX_C_SOURCE=1" }
