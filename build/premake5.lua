@@ -80,8 +80,11 @@ project "gserver2"
 		links { "miniupnpc" }
 	end
 
+	dependson { "bzip2", "zlib" }
+
 	filter "system:linux"
 		defines { "_BSD_SOURCE", "_POSIX_C_SOURCE=1" }
+		links { "pthread" }
 
 	filter "system:windows"
 		links { "ws2_32", "Iphlpapi" }
@@ -102,6 +105,10 @@ project "bzip2"
 		"../dependencies/bzip2/unzcrash.c"
 	}
 
+	-- I give up.
+	filter "system:linux"
+		kind "SharedLib"
+
 
 project "zlib"
 	kind "StaticLib"
@@ -109,6 +116,10 @@ project "zlib"
 	location "projects"
 	files { "../dependencies/zlib/*.h", "../dependencies/zlib/*.c" }
 	includedirs { "../dependencies/zlib/" }
+
+	-- I give up.
+	filter "system:linux"
+		kind "SharedLib"
 
 
 if not _OPTIONS["no-upnp"] then
