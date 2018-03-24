@@ -38,8 +38,8 @@ workspace "gserver2"
 		architecture "x64"
 
 	-- C++17 support.
-	filter { "language:C++", "toolset:clang*" }
-		links { "c++experimental" }
+	-- filter { "language:C++", "toolset:clang*" }
+	-- 	links { "c++experimental" }
 
 	-- Windows defines.
 	filter "system:windows"
@@ -57,8 +57,8 @@ project "gserver2"
 	debugdir "../bin"
 	targetname "gserver2"
 
-	-- C++17 support
-	cppdialect "C++17"
+	-- C++14 support
+	cppdialect "C++14"
 
 	vectorextensions "SSE2"
 
