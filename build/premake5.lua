@@ -18,9 +18,6 @@ workspace "gserver2"
 	configuration "vs*"
 	defines { "_CRT_SECURE_NO_WARNINGS" }	
 
-	-- C++17 support
-	cppdialect "C++17"
-
 	if not _OPTIONS["no-static"] then flags { "StaticRuntime" } end
 
 	filter "configurations:Debug"
@@ -59,6 +56,9 @@ project "gserver2"
 	targetdir "../bin"
 	debugdir "../bin"
 	targetname "gserver2"
+
+	-- C++17 support
+	cppdialect "C++17"
 
 	vectorextensions "SSE2"
 
