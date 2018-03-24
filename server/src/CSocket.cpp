@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <thread>
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -38,7 +39,6 @@
 	#define SHUT_RD				SD_RECEIVE
 	#define SHUT_RDWR			SD_BOTH
 
-	#define sleep Sleep
 	// The following #define would cause some snprintf linking errors in cstdio with MinGW
 	#if !defined(__GNUC__) && !(defined(_WIN32) || defined(_WIN64))
 	  #define snprintf _snprintf
@@ -488,7 +488,11 @@ int CSocket::reconnect(long delay, int tries)
 				// Do nothing.
 				break;
 		}
-		if (delay != 0) sleep(delay);
+		if (delay != 0)
+		{
+			std::chrono::milliseconds dur{ delay };
+			std::this_thread::sleep_for(dur);
+		}
 	}
 	return SOCKET_CONNECT_ERROR;
 }
@@ -858,7 +862,8 @@ int CSocket::socketSystemInit()
 
 void CSocket::socketSystemDestroy()
 {
-//	errorOut("debuglog.txt", ":: Destroying socket system...");
+	using namespace std::chrono_literals;
+	// errorOut("debuglog.txt", ":: Destroying socket system...");
 #if defined(_WIN32) || defined(_WIN64)
 	int intTimeCheck = 0;
 
@@ -866,7 +871,7 @@ void CSocket::socketSystemDestroy()
 	{
 		if (WSACleanup() == SOCKET_ERROR)
 			SLOG("[CSocket::socketSystemDestroy] WSACleanup() returned error: %s\n", errorMessage(identifyError()));
-		sleep(1000);
+		std::this_thread::sleep_for(1s);
 	}
 #endif
 }
