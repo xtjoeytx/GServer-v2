@@ -720,7 +720,7 @@ void TServer::loadMaps(bool print)
 
 		// Load the bigmap.
 		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
-		if (bigmap->load(*i, this) == false)
+		if (bigmap->load((*i).trim(), this) == false)
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << *i << "\n");
 			delete bigmap;
