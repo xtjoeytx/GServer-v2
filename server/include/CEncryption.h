@@ -4,6 +4,7 @@
 #ifndef ENC_CODEC_HPP
 #define ENC_CODEC_HPP
 
+#include <cstdint>
 #include "CString.h"
 
 enum

@@ -16,6 +16,7 @@
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
+	#include <unistd.h>
 	#ifndef SIGBREAK
 		#define SIGBREAK SIGQUIT
 	#endif
@@ -34,7 +35,7 @@ CString overrideServer;
 CString homepath;
 static void getBasePath();
 
-std::atomic_bool shutdownProgram = false;
+std::atomic_bool shutdownProgram{ false };
 
 #ifdef _WINDLL
 struct GServer
