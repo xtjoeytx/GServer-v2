@@ -2056,7 +2056,7 @@ void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 	if (sendToPlayer)
 	{
 		if (pFlagValue.isEmpty())
-			sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName);
 		else
 			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
 	}
