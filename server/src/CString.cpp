@@ -706,6 +706,10 @@ CString CString::gtokenize() const
 					complex = true;
 			}
 
+			// If it is entirely whitespace, put it inside quotation marks.
+			if (temp.trim().isEmpty())
+				complex = true;
+
 			// Put complex words inside quotation marks.
 			if (complex)
 			{
@@ -745,7 +749,11 @@ CString CString::guntokenize() const
 		if (buffer[i] == ',' && !is_paren)
 		{
 			retVal << "\n";
-			
+
+			// Ignore whitespace.
+			while (i + 1 < length() && buffer[i + 1] == ' ')
+				++i;
+
 			// Check to see if the next string is quoted.
 			if (i + 1 < length() && buffer[i + 1] == '"')
 			{
