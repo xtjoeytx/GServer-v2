@@ -1618,9 +1618,23 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	{
 		// Send NPCs.
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
+		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
-		else sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
-		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
+			CString pmapLevels = pmap->getLevels();
+			TLevel* tmpLvl;
+			while (pmapLevels.bytesLeft() > 0)
+			{
+				CString tmpLvlName = pmapLevels.readString("\n");
+				tmpLvl = TLevel::findLevel(tmpLvlName.guntokenizeI(), server);
+				if (tmpLvl != NULL)
+					sendPacket(CString() << tmpLvl->getNpcsPacket(l_time, versionID));
+			}
+		}
+		else
+		{
+			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+			sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
+		}
 	}
 
 	// Do props stuff.

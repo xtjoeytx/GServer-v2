@@ -232,3 +232,15 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 
 	return true;
 }
+
+CString TMap::getLevels()
+{
+	CString retVal;
+	
+	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
+	{
+		retVal << i->first << "\n";
+	}
+	
+	return retVal;
+}
