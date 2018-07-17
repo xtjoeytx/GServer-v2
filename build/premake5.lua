@@ -133,4 +133,7 @@ project "miniupnpc"
 	if not _OPTIONS["no-static"] then
 		defines { "STATICLIB" }  -- For the UPnP library.
 	end
+
+	filter "system:bsd"
+		defines { "_BSD_SOURCE" }
 end
