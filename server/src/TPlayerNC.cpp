@@ -365,7 +365,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 				// Send the packet to all nearby players now.
 				if (npc->getLevel() != 0)
-					server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 << (pPacket.text() + 2), npc->getLevel()->getMap(), npc->getLevel(), false, true);
+					server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 << (pPacket.text() + 2), npc->getLevel()->getMap(), npc->getLevel(), nullptr, true);
 			}
 		}
 	}
