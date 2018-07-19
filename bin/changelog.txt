@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v2.5.1
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* The bigmap name is properly trimmed so whitespace in the settings won't break the load.
+* Empty flags work again.
+* Joey forgot how to version control and deleted lots of fixes.  They have been restored.  This fixes regressions in things like gmaps and level loading.
+* Fixed an npc-server movement packet.
+o Lots of build system fixes to make it easier to compile your own version of the gserver.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v2.5.0
 
   * bug fix, + new feature, o other
