@@ -588,6 +588,9 @@ int CSocket::sendData(char* data, unsigned int* dsize)
 				disconnect();
 				return 0;
 				break;
+			case EAGAIN:
+				return 0;
+				break;
 		}
 		disconnect();
 		return 0;
