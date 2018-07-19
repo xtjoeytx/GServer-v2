@@ -134,6 +134,6 @@ project "miniupnpc"
 		defines { "STATICLIB" }  -- For the UPnP library.
 	end
 
-	filter "system:bsd"
-		defines { "_BSD_SOURCE" }
+	filter "system:linux"
+		defines { "_BSD_SOURCE", "_POSIX_C_SOURCE=1" }
 end
