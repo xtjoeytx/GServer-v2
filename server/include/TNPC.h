@@ -159,6 +159,9 @@ class TNPC
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
+	
+		// npc-server
+		int timeout;
 };
 
 inline
