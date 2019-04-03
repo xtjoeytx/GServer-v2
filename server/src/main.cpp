@@ -37,47 +37,6 @@ static void getBasePath();
 
 std::atomic_bool shutdownProgram{ false };
 
-#ifdef _WINDLL
-struct GServer
-{
-	const char *name;
-	int port;
-};
-
-#include <windows.h>
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
-{
-	switch (ul_reason_for_call)
-	{
-		case DLL_PROCESS_ATTACH:
-		case DLL_THREAD_ATTACH:
-		case DLL_THREAD_DETACH:
-		case DLL_PROCESS_DETACH:
-			break;
-	}
-	return TRUE;
-}
-
-extern "C" __declspec(dllexport) void getServers(GServer *servers, int& count)
-{
-	count = (int)serverList.size();
-	servers = new GServer[count];
-
-	int c = 0;
-	for (std::map<CString, TServer *>::iterator i = serverList.begin(); i != serverList.end(); ++i)
-	{
-		servers[c].name = i->second->getName().text();
-		servers[c].port = i->second->getSettings()->getInt("serverport");
-		c++;
-	}
-}
-
-typedef void (__cdecl *func_type)(int count);
-
-void __cdecl SetCallback( func_type func );
-
-#endif
-
 int main(int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))
