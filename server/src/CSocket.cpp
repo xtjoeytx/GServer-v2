@@ -317,7 +317,10 @@ int CSocket::init(const char* host, const char* port, int protocol)
 		return SOCKET_HOST_UNKNOWN;
 	}
 	else
+	{
 		memcpy((void*)&properties.address, res->ai_addr, res->ai_addrlen);
+		properties.addresslen = res->ai_addrlen;
+	}
 
 	return SOCKET_OK;
 }
@@ -351,9 +354,9 @@ int CSocket::connect()
 		// Let us reuse the address.  Freaking bind.
 		int value = 1;
 		setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
-
+		
 		// Bind the socket.
-		if (::bind(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
+		if (::bind(properties.handle, (struct sockaddr *)&properties.address, properties.addresslen) == SOCKET_ERROR)
 		{
 			SLOG("[CSocket::connect] bind() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
