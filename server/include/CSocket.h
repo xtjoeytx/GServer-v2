@@ -132,6 +132,7 @@ struct sock_properties
 	int state;
 	char description[SOCKET_MAX_DESCRIPTION];
 	sockaddr_storage address;
+	size_t addresslen;
 };
 
 //! Socket class.
