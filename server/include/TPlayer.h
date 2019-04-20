@@ -98,6 +98,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isAdminIp();
 		bool isStaff();
 		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
+		bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
 		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
 		bool isLoaded()			{ return loaded; }
@@ -226,14 +227,25 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_LARGEFILEEND(CString& pPacket);
 		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
 
+#ifdef V8NPCSERVER
+		bool msgPLI_NC_LOCALNPCSGET(CString& pPacket);
+		bool msgPLI_NC_WEAPONLISTGET(CString& pPacket);
+		bool msgPLI_NC_WEAPONGET(CString& pPacket);
+		bool msgPLI_NC_WEAPONADD(CString& pPacket);
+		bool msgPLI_NC_WEAPONDELETE(CString& pPacket);
+		bool msgPLI_NC_LEVELLISTGET(CString& pPacket);
+#endif
+	
 		bool msgPLI_REQUESTTEXT(CString& pPacket);
 		bool msgPLI_SENDTEXT(CString& pPacket);
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 
+#ifndef V8NPCSERVER
 		bool msgPLI_NC_QUERY(CString& pPacket);
-
+#endif
+	
 	private:
 		// Login functions.
 		bool sendLoginClient();
