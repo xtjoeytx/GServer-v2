@@ -16,6 +16,104 @@
 typedef bool (TPlayer::*TPLSock)(CString&);
 extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
 
+#ifdef V8NPCSERVER
+bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
+{
+	// {114}{level}
+	CString level = pPacket.readString("");
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
+{
+	// Start our packet.
+	CString ret;
+	ret >> (char)PLO_NC_WEAPONLISTGET;
+
+	// Iterate weapon list and send names
+	auto weaponList = server->getWeaponList();
+	for (auto it = weaponList->begin(); it != weaponList->end(); ++it)
+	{
+		if (it->second->isDefault())
+			continue;
+
+		CString weaponName = it->second->getName();
+		ret >> (char)weaponName.length() << weaponName;
+	}
+	
+	sendPacket(ret);
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
+{
+	// {116}{weapon}
+	CString weaponName = pPacket.readString("");
+	
+	TWeapon *weapon = server->getWeapon(weaponName);
+	if (weapon != 0 && !weapon->isDefault())
+	{
+		sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
+			(char)weaponName.length() << weaponName >>
+			(char)weapon->getImage().length() << weapon->getImage() <<
+			weapon->getFullScript().replaceAll("\n", "\xa7"));
+	}
+	else server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
+{
+	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
+	CString weaponName = pPacket.readChars(pPacket.readGUChar());
+	CString weaponImage = pPacket.readChars(pPacket.readGUChar());
+	CString weaponCode = pPacket.readString("");
+
+	// Find Weapon
+	TWeapon *weaponObj = server->getWeapon(weaponName);
+	if (weaponObj != 0)
+	{
+		// default weapon, don't update!
+		if (weaponObj->isDefault())
+			return true;
+
+		// Update Weapon
+		weaponObj->updateWeapon(server, weaponImage, weaponCode);
+
+		// Update Player-Weapons
+		server->NC_UpdateWeapon(weaponObj);
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "Weapon/GUI-script " << weaponName << " updated by " << accountName);
+		return true;
+	}
+
+	// add weapon
+	bool success = server->NC_AddWeapon(new TWeapon(server, weaponName, weaponImage, weaponCode, 0, true));
+	if (success)
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "Weapon/GUI-script " << weaponName << " added by " << accountName);
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
+{
+	// {118}{weapon}
+	CString weaponName = pPacket.readString("");
+	
+	if (server->NC_DelWeapon(weaponName))
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "Weapon " << weaponName << " deleted by " << accountName);
+	else
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
+{
+	// {150}
+	return true;
+}
+#endif
+
 /*
 	NPC-Server Functionality
 */
@@ -63,6 +161,10 @@ void TPlayer::sendNCAddr()
 		return;
 
 	// Grab NPCServer & Send
+#ifdef V8NPCSERVER
+	CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
+	sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)0 << npcServerIp << "," << CString(server->getNCPort()));
+#else
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != 0)
 	{
@@ -71,6 +173,7 @@ void TPlayer::sendNCAddr()
 			npcServerIp = npcServer->getSocket()->getRemoteIp();
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
 	}
+#endif
 }
 
 void TPlayer::sendNC_GMapList()
@@ -92,7 +195,7 @@ void TPlayer::sendNC_GMapList()
 	sendPacket(packet);
 }
 
-
+#ifndef V8NPCSERVER
 // Request Query from NPC-Server
 bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 {
@@ -351,7 +454,7 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 				delta[1] = (short)((unsigned short)delta[1] >> 1) * ((delta[1] & 0x0001) ? -1 : 1);
 
 				// Calculate the finish location.
-				unsigned short finish_pos[] = {start_pos[0] + delta[0], start_pos[1] + delta[1]};
+				unsigned short finish_pos[] = {static_cast<unsigned short>(start_pos[0] + delta[0]), static_cast<unsigned short>(start_pos[1] + delta[1])};
 
 				// Repackage the positions.
 				start_pos[0] = (short)((unsigned short)abs(start_pos[0]) << 1) | (start_pos[0] < 0 ? 0x0001 : 0x0000);
@@ -372,3 +475,4 @@ bool TPlayer::msgPLI_NC_QUERY(CString& pPacket)
 
 	return true;
 }
+#endif
