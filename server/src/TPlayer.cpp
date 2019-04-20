@@ -273,8 +273,17 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
 
 	// NPC-Server Functions
+#ifdef V8NPCSERVER
+	TPLFunc[PLI_NC_LOCALNPCSGET] = &TPlayer::msgPLI_NC_LOCALNPCSGET;
+	TPLFunc[PLI_NC_WEAPONLISTGET] = &TPlayer::msgPLI_NC_WEAPONLISTGET;
+	TPLFunc[PLI_NC_WEAPONGET] = &TPlayer::msgPLI_NC_WEAPONGET;
+	TPLFunc[PLI_NC_WEAPONADD] = &TPlayer::msgPLI_NC_WEAPONADD;
+	TPLFunc[PLI_NC_WEAPONDELETE] = &TPlayer::msgPLI_NC_WEAPONDELETE;
+	TPLFunc[PLI_NC_LEVELLISTGET] = &TPlayer::msgPLI_NC_LEVELLISTGET;
+#else
 	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_QUERY;
-
+#endif
+	
 	// Finished
 	TPlayer::created = true;
 }
@@ -317,10 +326,12 @@ TPlayer::~TPlayer()
 
 	if (id >= 0 && server != 0 && loaded)
 	{
+#ifndef V8NPCSERVER
 		// NPC-Server
 		if (isNPCServer() && server->getNPCServer() == this)
 			server->setNPCServer(0);
-
+#endif
+		
 		// Save account.
 		if (isClient() && !isLoadOnly)
 			saveAccount();
@@ -616,7 +627,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 
 		// Call the function assigned to the packet id.
 		packetCount++;
-		//"Packet: (%i)%s", id,curPacket);
+		//printf("Packet: (%i) %s\n", id, curPacket);
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -2050,9 +2061,11 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 		// Send delete notice.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
 
+#ifndef V8NPCSERVER
 		// Send to npc-server.
 		if (server->hasNPCServer())
 			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL >> (short)id >> (char)0 << weapon->getName());
+#endif
 	}
 
 	return true;
@@ -2125,11 +2138,11 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			serverlog.append("NPCSERVER\n");
 			in_codec.setGen(ENCRYPT_GEN_3);
 			break;
-		//case PLTYPE_NC:
-		//	serverlog.append("NC\n");
-		//	in_codec.setGen(ENCRYPT_GEN_3);
-		//	getKey = false;
-		//	break;
+		case PLTYPE_NC:
+			serverlog.append("NC\n");
+			in_codec.setGen(ENCRYPT_GEN_3);
+			getKey = false;
+			break;
 		case PLTYPE_CLIENT2:
 			serverlog.append("New Client (2.19 - 2.21, 3 - 3.01)\n");
 			in_codec.setGen(ENCRYPT_GEN_4);
@@ -2159,7 +2172,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		if (in_codec.getGen() > ENCRYPT_GEN_3)
 			fileQueue.setCodec(in_codec.getGen(), key);
 	}
-
+	
 	// Read Client-Version
 	version = pPacket.readChars(8);
 	if (isClient() || isNPCServer()) versionID = getVersionID(version);
@@ -2359,7 +2372,12 @@ bool TPlayer::msgPLI_PLAYERPROPS(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 {
+	// Dont accept npc-properties from clients when an npc-server is present
+#ifdef V8NPCSERVER
+	return true;
+#else
 	if (server->hasNPCServer()) return true;
+#endif
 
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcProps = pPacket.readString("");
@@ -2538,12 +2556,12 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		if (CString(playerSock->getRemoteIp()) == CString(player->getSocket()->getRemoteIp()))
 			return true;
 
-		float gSpar[2] = {1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[3],2))/pow(3.14159265f,2)),0.5f),	//Winner
-					  	  1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[1],2))/pow(3.14159265f,2)),0.5f)};	//Loser
+		float gSpar[2] = {static_cast<float>(1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[3],2))/pow(3.14159265f,2)),0.5f)),	//Winner
+			static_cast<float>(1.0f / pow((1.0f+3.0f*pow(0.0057565f,2)*(pow(oldStats[1],2))/pow(3.14159265f,2)),0.5f))};	//Loser
 		float ESpar[2] = {1.0f / (1.0f + pow(10.0f,(-gSpar[1]*(oldStats[2]-oldStats[0])/400.0f))),					//Winner
 						  1.0f / (1.0f + pow(10.0f,(-gSpar[0]*(oldStats[0]-oldStats[2])/400.0f)))};					//Loser
-		float dSpar[2] = {1.0f / (pow(0.0057565f,2)*pow(gSpar[0],2)*ESpar[0]*(1.0f-ESpar[0])),						//Winner
-						  1.0f / (pow(0.0057565f,2)*pow(gSpar[1],2)*ESpar[1]*(1.0f-ESpar[1]))};						//Loser
+		float dSpar[2] = {static_cast<float>(1.0f / (pow(0.0057565f,2)*pow(gSpar[0],2)*ESpar[0]*(1.0f-ESpar[0]))),						//Winner
+			static_cast<float>(1.0f / (pow(0.0057565f,2)*pow(gSpar[1],2)*ESpar[1]*(1.0f-ESpar[1])))};						//Loser
 
 		float tWinRating = oldStats[2] + (0.0057565f / ( 1.0f / pow(oldStats[3],2) + 1.0f/dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
 		float tLoseRating = oldStats[0] + (0.0057565f / ( 1.0f / pow(oldStats[1],2) + 1.0f/dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));

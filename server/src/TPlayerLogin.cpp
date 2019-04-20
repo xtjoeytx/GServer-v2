@@ -44,7 +44,7 @@ bool TPlayer::sendLogin()
 	if (!isNPCServer())
 	{
 		// We don't need to check if this fails.. because the defaults have already been loaded :)
-		loadAccount(accountName, (isRC() ? true : false));
+		loadAccount(accountName, (isRC() || isNC() ? true : false));
 
 		// Check to see if the player is banned or not.
 		if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
@@ -54,7 +54,7 @@ bool TPlayer::sendLogin()
 		}
 
 		// If we are an RC, check to see if we can log in.
-		if (isRC())
+		if (isRC() || isNC())
 		{
 			// Check and see if we are allowed in.
 			if (!isStaff() || !isAdminIp())
@@ -63,6 +63,20 @@ bool TPlayer::sendLogin()
 				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 				return false;
 			}
+		}
+
+		// NPC-Control login, just send chat and return true.
+		if (isNC())
+		{
+			std::vector<TPlayer*>* playerList = server->getPlayerList();
+			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			{
+				TPlayer *pl = *i;
+				if (pl->isNC())
+					sendPacket(CString() >> (char)PLO_RC_CHAT << "New NC: " << pl->getAccountName());
+			}
+
+			return true;
 		}
 
 		// Check to see if we can log in if we are a client.
@@ -98,7 +112,9 @@ bool TPlayer::sendLogin()
 		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
+#ifndef V8NPCSERVER
 		if (server->hasNPCServer())
+#endif
 			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 		// Check if the account is already in use.
@@ -158,6 +174,20 @@ bool TPlayer::sendLogin()
 		CString myNCProps;
 		if (server->hasNPCServer())
 			myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
+
+#ifdef V8NPCSERVER
+		if (isRC())
+		{
+			// Triggers the RC client to request the NPC-Server address
+			this->sendPacket(CString()
+				>> (char)PLO_ADDPLAYER >> (short)0
+				>> (char)4 << "test"
+				>> (char)PLPROP_CURLEVEL >> (char)1 << " "
+				>> (char)PLPROP_PSTATUSMSG >> (char)0
+				>> (char)PLPROP_NICKNAME >> (char)strlen("NPC-Server (Server)") << "NPC-Server (Server)");
+				//>> (char)PLPROP_COMMUNITYNAME << (char)strlen("(npcserver)") << "(npcserver)");
+		}
+#endif
 
 		CString rcsOnline;
 		std::vector<TPlayer*>* playerList = server->getPlayerList();

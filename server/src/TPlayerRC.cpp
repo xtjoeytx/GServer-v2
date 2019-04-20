@@ -2046,18 +2046,22 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
 {
+#ifndef V8NPCSERVER
 	// No npc-server, don't continue!
 	if (!server->hasNPCServer())
 		return true;
+#endif
 
 	// Read Packet Data
 	unsigned short pid = pPacket.readGUShort();
 	CString message = pPacket.readString("");
-
+	
+#ifndef V8NPCSERVER
 	// Check if player id is of the NPC Server.
 	TPlayer *npcserver = server->getNPCServer();
 	if (npcserver->getId() != pid)
 		return true;
+#endif
 
 	// Enact upon the message.
 	if (message == "location")
