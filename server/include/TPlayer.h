@@ -10,6 +10,10 @@
 #include "CEncryption.h"
 #include "CSocket.h"
 
+#ifdef V8NPCSERVER
+#include "ScriptWrapped.h"
+#endif
+
 class TLevel;
 class TServer;
 class TMap;
@@ -122,6 +126,16 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendNC_Levels();
 		void sendNC_Weapons();
 		void sendNC_GMapList();
+	
+#ifdef V8NPCSERVER
+	inline IScriptWrapped<TPlayer> * getScriptObject() const {
+		return _scriptObject;
+	}
+	
+	inline void setScriptObject(IScriptWrapped<TPlayer> *object) {
+		_scriptObject = object;
+	}
+#endif
 
 		// Packet-Functions
 		static bool created;
@@ -228,6 +242,15 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_RC_FOLDERDELETE(CString& pPacket);
 
 #ifdef V8NPCSERVER
+		bool msgPLI_NC_NPCGET(CString& pPacket);
+		bool msgPLI_NC_NPCDELETE(CString& pPacket);
+		bool msgPLI_NC_NPCRESET(CString& pPacket);
+		bool msgPLI_NC_NPCSCRIPTGET(CString& pPacket);
+		bool msgPLI_NC_NPCWARP(CString& pPacket);
+		bool msgPLI_NC_NPCFLAGSGET(CString& pPacket);
+		bool msgPLI_NC_NPCSCRIPTSET(CString& pPacket);
+		bool msgPLI_NC_NPCFLAGSSET(CString& pPacket);
+		bool msgPLI_NC_NPCADD(CString& pPacket);
 		bool msgPLI_NC_LOCALNPCSGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONLISTGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONGET(CString& pPacket);
@@ -258,6 +281,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Collision detection stuff.
 		bool testSign();
+		void testTouch();
 
 		// Misc.
 		void dropItemsOnDeath();
@@ -301,6 +325,10 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// File queue.
 		CFileQueue fileQueue;
+	
+#ifdef V8NPCSERVER
+		IScriptWrapped<TPlayer> *_scriptObject;
+#endif
 };
 
 inline bool TPlayer::isLoggedIn() const

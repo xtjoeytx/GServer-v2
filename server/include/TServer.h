@@ -5,6 +5,12 @@
 #include <map>
 #include <set>
 #include <thread>
+#include <chrono>
+#ifdef V8NPCSERVER
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#endif
 
 #include "CString.h"
 
@@ -18,6 +24,14 @@
 #include "TServerList.h"
 
 #include "CUPNP.h"
+
+#ifdef V8NPCSERVER
+#include "CScriptEngine.h"
+
+// TODO(joey): remove below
+#include "ScriptAction.h"
+#include "ScriptWrapped.h"
+#endif
 
 class TPlayer;
 class TLevel;
@@ -164,6 +178,12 @@ class TServer : public CSocketStub
 		void NC_UpdateWeapon(TWeapon *pWeapon);
 		bool NC_SendMap(TMap *map);
 		bool NC_SendLevel(TLevel *level);
+	
+#ifdef V8NPCSERVER
+		inline CScriptEngine * getScriptEngine() {
+			return &mScriptEngine;
+		}
+#endif
 
 	private:
 		bool doTimedEvents();
@@ -195,8 +215,11 @@ class TServer : public CSocketStub
 		std::set<TPlayer *> deletedPlayers;
 
 		TServerList serverlist;
-		time_t lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
-
+		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+#ifdef V8NPCSERVER
+		std::chrono::high_resolution_clock::time_point lastScriptTimer;
+#endif
+	
 #ifdef UPNP
 		CUPNP upnp;
 		std::thread upnp_thread;
@@ -205,6 +228,10 @@ class TServer : public CSocketStub
 		// NPC-Server Functionality
 		TPlayer *mNpcServer;
 		int mNCPort;
+	
+#ifdef V8NPCSERVER
+		CScriptEngine mScriptEngine;
+#endif
 };
 
 #endif
