@@ -1,6 +1,7 @@
 #include "IDebug.h"
 #include <thread>
 #include <atomic>
+#include <chrono>
 #include <functional>
 
 #include "TServer.h"
@@ -27,13 +28,19 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
+	: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+#ifdef V8NPCSERVER
+	, mScriptEngine(this)
+#endif
 #ifdef UPNP
-: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this), upnp(this)
-#else 
-: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+	, upnp(this)
 #endif
 {
-	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time(0);
+	auto time_now = std::chrono::high_resolution_clock::now();
+	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
+#ifdef V8NPCSERVER
+	lastScriptTimer = time_now;
+#endif
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
@@ -124,6 +131,19 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	upnp_thread = std::thread(std::ref(upnp));
 #endif
 
+#ifdef V8NPCSERVER
+	// Initialize the Script Engine
+	if (!mScriptEngine.Initialize())
+	{
+		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
+		// TODO(joey): new error number? log is probably enough
+		return ERR_SETTINGS;
+	}
+
+	// Setup NPC Control port
+	mNCPort = strtoint(settings.getStr("serverport"));
+#endif
+
 	// Connect to the serverlist.
 	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
 	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
@@ -171,10 +191,31 @@ void TServer::operator()()
 void TServer::cleanupDeletedPlayers()
 {
 	if (deletedPlayers.empty()) return;
-	for (std::set<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end(); ++i)
+	for (std::set<TPlayer*>::iterator i = deletedPlayers.begin(); i != deletedPlayers.end();)
 	{
 		TPlayer* player = *i;
-		if (player == 0) continue;
+		if (player == 0)
+		{
+			i = deletedPlayers.erase(i);
+			continue;
+		}
+
+#ifdef V8NPCSERVER
+		IScriptWrapped<TPlayer> *playerObject = player->getScriptObject();
+		if (playerObject != 0)
+		{
+			// Leave the level now so the player object is still alive 
+			if (player->getLevel() != 0)
+				player->leaveLevel();
+
+			if (playerObject->isReferenced())
+			{
+				printf("Reference count: %d\n", playerObject->getReferenceCount());
+				++i;
+				continue;
+			}
+		}
+#endif
 
 		// Get rid of the player now.
 		playerIds[player->getId()] = 0;
@@ -191,8 +232,10 @@ void TServer::cleanupDeletedPlayers()
 			}
 			else ++j;
 		}
+
+		i = deletedPlayers.erase(i);
 	}
-	deletedPlayers.clear();
+	//deletedPlayers.clear();
 }
 
 void TServer::cleanup()
@@ -248,6 +291,11 @@ void TServer::cleanup()
 	}
 	weaponList.clear();
 
+#ifdef V8NPCSERVER
+	// Clean up the script engine
+	mScriptEngine.Cleanup();
+#endif
+
 	playerSock.disconnect();
 	serverlist.getSocket()->disconnect();
 
@@ -269,16 +317,40 @@ bool TServer::doMain()
 	// Update our socket manager.
 	sockManager.update(0, 5000);		// 5ms
 
-	// Every second, do some events.
-	if (time(0) != lastTimer) doTimedEvents();
+	//
+	auto currentTimer = std::chrono::high_resolution_clock::now();
+	
+#ifdef V8NPCSERVER
+	// Run scripts every 0.05 seconds (incl. catching up)
+	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastScriptTimer);
+	auto time_ms = time_diff.count();
+	
+	// TODO(joey): maybe run events at any time
+	if (time_ms >= 50)
+	{
+		lastScriptTimer = currentTimer;
 
+		do {
+			mScriptEngine.RunScripts(true);
+			time_ms -= 50;
+		} while (time_ms >= 50);
+	}
+	else mScriptEngine.RunScripts();
+#endif
+
+	// Every second, do some events.
+	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
+	if (time_diff.count() >= 1000)
+	{
+		lastTimer = currentTimer;
+		doTimedEvents();
+	}
+	
 	return true;
 }
 
 bool TServer::doTimedEvents()
 {
-	lastTimer = time(0);
-
 	// Do serverlist events.
 	serverlist.doTimedEvents();
 
@@ -321,14 +393,16 @@ bool TServer::doTimedEvents()
 	}
 
 	// Send NW time.
-	if ((int)difftime(lastTimer, lastNWTimer) >= 5)
+	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - lastNWTimer);
+	if (time_diff.count() >= 5)
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 	}
 
 	// Stuff that happens every minute.
-	if ((int)difftime(lastTimer, last1mTimer) >= 60)
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last1mTimer);
+	if (time_diff.count() >= 60)
 	{
 		last1mTimer = lastTimer;
 
@@ -337,7 +411,8 @@ bool TServer::doTimedEvents()
 	}
 
 	// Stuff that happens every 3 minutes.
-	if ((int)difftime(lastTimer, last3mTimer) >= 180)
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last3mTimer);
+	if (time_diff.count() >= 180)
 	{
 		last3mTimer = lastTimer;
 
@@ -348,7 +423,8 @@ bool TServer::doTimedEvents()
 	}
 
 	// Save stuff every 5 minutes.
-	if ((int)difftime(lastTimer, last5mTimer) >= 300)
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last5mTimer);
+	if (time_diff.count() >= 300)
 	{
 		last5mTimer = lastTimer;
 
@@ -392,7 +468,7 @@ bool TServer::doTimedEvents()
 			}
 		}
 	}
-
+	
 	return true;
 }
 
@@ -428,6 +504,10 @@ bool TServer::onRecv()
 
 	// Add them to the socket manager.
 	sockManager.registerSocket((CSocketStub*)newPlayer);
+
+#ifdef V8NPCSERVER
+	mScriptEngine.CreatePlayer(newPlayer);
+#endif
 
 	return true;
 }
@@ -951,10 +1031,22 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		TMap* map = getMap(pLevel);
 		sendPacketToLevel(packet, map, pLevel, 0, true);
 
+#ifndef V8NPCSERVER
 		// Send to npc-server.
 		if (mNpcServer != 0)
 			mNpcServer->sendPacket(packet);
+#endif
 	}
+	
+#ifdef V8NPCSERVER
+	bool executed = mScriptEngine.ExecuteNpc(newNPC);
+	if (executed) {
+		V8ENV_D("SCRIPT COMPILED\n");
+//		newNPC->queueNpcAction("npc.created");
+	}
+	else
+		V8ENV_D("Could not compile npc script\n");
+#endif
 
 	return newNPC;
 }

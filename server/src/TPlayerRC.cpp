@@ -942,6 +942,14 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		return true;
 	}
 
+#ifdef V8NPCSERVER
+	if (isNC())
+	{
+		// Both the RC and NC send this packet when connected.
+		return true;
+	}
+#endif
+
 	CString message = pPacket.readString("");
 	if (message.isEmpty()) return true;
 	std::vector<CString> words = message.tokenize();

@@ -1,3 +1,9 @@
 NPC ids < 1000 cannot be deleted.  Why?
+^--- not sure why this message is here, but I noticed database npcs start with 1000
 
 hay!
+
+
+---------------------------
+
+- RC requests address of npc-server once it receives a player with the (Server) nickname. Not sure if it makes a difference, but level is set as a space " ", account can be anything.

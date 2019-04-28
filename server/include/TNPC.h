@@ -5,6 +5,13 @@
 #include "CString.h"
 #include "IUtil.h"
 
+#ifdef V8NPCSERVER
+#include "ScriptWrapped.h"
+
+class ScriptAction;
+
+#endif
+
 enum
 {
 	NPCPROP_IMAGE			= 0,
@@ -108,8 +115,21 @@ enum
 	NPCBLOCKFLAG_NOBLOCK	= 0x01,
 };
 
+#ifdef V8NPCSERVER
+//! NPC Event Flags
+enum
+{
+	NPCEVENTFLAG_CREATED		= (int)(1 << 0),
+	NPCEVENTFLAG_TIMEOUT		= (int)(1 << 1),
+	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 2),
+	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 3),
+	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 4),
+};
+#endif
+
 class TServer;
 class TLevel;
+class TPlayer;
 class TNPC
 {
 	public:
@@ -119,7 +139,7 @@ class TNPC
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
 		CString getProps(time_t newTime, int clientVersion = CLVER_2_17) const;
-		CString setProps(CString& pProps, int clientVersion = CLVER_2_17);
+		CString setProps(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
 
 		// set functions
 		void setId(unsigned int pId)	{ id = pId; }
@@ -132,6 +152,10 @@ class TNPC
 		TLevel* getLevel()				{ return level; }
 		float getX() const				{ return x; }
 		float getY() const				{ return y; }
+#ifdef V8NPCSERVER
+		inline int getPixelX() const	{ return x2; }
+		inline int getPixelY() const	{ return y2; }
+#endif
 		CString getImage() const		{ return image; }
 		CString getWeaponName() const	{ return weaponName; }
 		CString getServerScript() const	{ return serverScript; }
@@ -140,6 +164,62 @@ class TNPC
 
 		bool isLevelNPC()				{ return levelNPC; }
 
+#ifdef V8NPCSERVER
+		inline int getBlockFlags() const {
+			return blockFlags;
+		}
+
+		inline int getVisFlags() const {
+			return visFlags;
+		}
+
+		//
+		inline int getWidth() const {
+			return width;
+		}
+
+		inline void setWidth(int newWidth) {
+			width = newWidth;
+		}
+
+		//
+		inline int getHeight() const {
+			return height;
+		}
+
+		inline void setHeight(int newHeight) {
+			height = newHeight;
+		}
+
+		//
+		inline int getTimeout() const {
+			return timeout;
+		}
+
+		void setTimeout(int newTimeout);
+
+		// 
+		inline bool hasScriptEvent(int flag) const {
+			return ((_scriptEventsMask & flag) == flag);
+		}
+
+		inline void setScriptEvents(int mask) {
+			_scriptEventsMask = mask;
+		}
+
+		inline IScriptWrapped<TNPC> * getScriptObject() const {
+			return _scriptObject;
+		}
+	
+		inline void setScriptObject(IScriptWrapped<TNPC> *object) {
+			_scriptObject = object;
+		}
+
+		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
+		bool runScriptTimer();
+		void runScriptEvents();
+#endif
+	
 	private:
 		bool blockPositionUpdates;
 		bool levelNPC;
@@ -160,8 +240,15 @@ class TNPC
 		TLevel* level;
 		TServer* server;
 	
+#ifdef V8NPCSERVER
 		// npc-server
+		int width, height;
 		int timeout;
+
+		int _scriptEventsMask;
+		IScriptWrapped<TNPC> *_scriptObject;
+		std::vector<ScriptAction *> _actions;
+#endif
 };
 
 inline
