@@ -180,6 +180,12 @@ class TLevel
 		//! \return Currently, it always returns true.
 		bool doTimedEvents();
 
+#ifdef V8NPCSERVER
+		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
+		bool isOnWall(double pX, double pY);
+		bool isOnWater(double pX, double pY);
+#endif
+
 	private:
 		TLevel(TServer* pServer);
 

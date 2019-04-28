@@ -17,8 +17,202 @@ typedef bool (TPlayer::*TPLSock)(CString&);
 extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
 
 #ifdef V8NPCSERVER
+bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to get a database npc.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	printf("NPC Get: %d\n", npcId);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to delete a database npc.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	printf("NPC Delete: %d\n", npcId);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to reset a database npc.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	printf("NPC Reset: %d\n", npcId);
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to get a database npc script.\n", accountName.text());
+		return false;
+	}
+
+	// {160}{INT id}{GSTRING script}
+	int npcId = pPacket.readGUInt();
+	printf("NPC Get Script: %d\n", npcId);
+
+	// TODO(joey): temporarily used weapons to get this setup
+	auto weaponList = server->getWeaponList();
+	if (!weaponList->empty())
+	{
+		auto it = weaponList->begin();
+		TWeapon *weapon = it->second;
+		if (weapon != 0)
+		{
+			CString ret;
+			ret >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << weapon->getFullScript().replaceAll("\xa7", "\n").gtokenize();
+			sendPacket(ret);
+		}
+	}
+	else printf("no weapons exist\n");
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to warp a database npc.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	float npcX = (float)pPacket.readGUChar() / 2.0f;
+	float npcY = (float)pPacket.readGUChar() / 2.0f;
+	CString npcLevel = pPacket.readString("");
+	printf("NPC Warp: %d\n", npcId);
+	printf("NPC X: %f\n", npcX);
+	printf("NPC Y: %f\n", npcX);
+	printf("NPC Level: %s\n", npcLevel.text());
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to get a database npc flags.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	printf("NPC Get Flags: %d\n", npcId);
+
+	// TODO(joey): temporarily used weapons to get this setup
+	auto weaponList = server->getWeaponList();
+	if (!weaponList->empty())
+	{
+		auto it = weaponList->begin();
+		TWeapon *weapon = it->second;
+		if (weapon != 0)
+		{
+			CString ret;
+			ret >> (char)PLO_NC_NPCFLAGS >> (int)npcId << weapon->getFullScript().replaceAll("\xa7", "\n").gtokenize();
+			sendPacket(ret);
+		}
+	}
+	else printf("no weapons exist\n");
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to set a database npc script.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	CString npcScript = pPacket.readString("").guntokenize();
+	printf("NPC Set Script: %d\n", npcId);
+	printf("NPC Script: %s\n", npcScript.text());
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to set a database npc flags.\n", accountName.text());
+		return false;
+	}
+
+	int npcId = pPacket.readGUInt();
+	CString npcFlags = pPacket.readString("").guntokenize();
+	printf("NPC Set Flags: %d\n", npcId);
+	printf("NPC Flags: %s\n", npcFlags.text());
+
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to add a database npc.\n", accountName.text());
+		return false;
+	}
+
+	CString npcData = pPacket.readString("").guntokenize();
+	CString npcName = npcData.readString("\n");
+	CString npcId = npcData.readString("\n");
+	CString npcType = npcData.readString("\n");
+	CString npcScripter = npcData.readString("\n");
+	CString npcLevel = npcData.readString("\n");
+	CString npcX = npcData.readString("\n");
+	CString npcY = npcData.readString("\n");
+
+	printf("NPC Name: %s\n", npcName.text());
+	printf("NPC Id: %s\n", npcId.text());
+	printf("NPC Type: %s\n", npcType.text());
+	printf("NPC Scripter: %s\n", npcScripter.text());
+	printf("NPC Level: %s\n", npcLevel.text());
+	printf("NPC X: %s\n", npcX.text());
+	printf("NPC Y: %s\n", npcY.text());
+
+	// {158}{INT id}{CHAR 50}{CHAR name length}{name}{CHAR 51}{CHAR type length}{type}{CHAR 52}{CHAR level length}{level} 
+	
+	// Start our packet.
+	CString ret;
+	ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
+	sendPacket(ret);
+
+	return true;
+}
+
 bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to view level npcs.\n", accountName.text());
+		return false;
+	}
+
 	// {114}{level}
 	CString level = pPacket.readString("");
 	return true;
@@ -26,6 +220,12 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 
 bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to view the weapon list.\n", accountName.text());
+		return false;
+	}
+
 	// Start our packet.
 	CString ret;
 	ret >> (char)PLO_NC_WEAPONLISTGET;
@@ -47,16 +247,23 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 
 bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to view a weapon.\n", accountName.text());
+		return false;
+	}
+
 	// {116}{weapon}
 	CString weaponName = pPacket.readString("");
 	
 	TWeapon *weapon = server->getWeapon(weaponName);
 	if (weapon != 0 && !weapon->isDefault())
 	{
+		// TODO(joey): this isnt working on versions < RC 2.05
 		sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
 			(char)weaponName.length() << weaponName >>
 			(char)weapon->getImage().length() << weapon->getImage() <<
-			weapon->getFullScript().replaceAll("\n", "\xa7"));
+			weapon->getFullScript()); // .replaceAll("\n", "\xa7")); // getFullScript() returns a string already processed
 	}
 	else server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
 
@@ -65,6 +272,12 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to add a weapon.\n", accountName.text());
+		return false;
+	}
+
 	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
 	CString weaponName = pPacket.readChars(pPacket.readGUChar());
 	CString weaponImage = pPacket.readChars(pPacket.readGUChar());
@@ -96,6 +309,12 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 
 bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to delete a weapon.\n", accountName.text());
+		return false;
+	}
+
 	// {118}{weapon}
 	CString weaponName = pPacket.readString("");
 	
@@ -109,7 +328,23 @@ bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 
 bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 {
-	// {150}
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to view the level list.\n", accountName.text());
+		return false;
+	}
+
+	// Start our packet.
+	CString ret = CString() >> (char)PLO_NC_LEVELLIST;
+
+	auto levelList = server->getLevelList();
+	if (!levelList->empty())
+	{
+		for (auto it = levelList->begin(); it != levelList->end(); ++it)
+			ret << (*it)->getActualLevelName() << "\n";
+	}
+
+	sendPacket(ret);
 	return true;
 }
 #endif
