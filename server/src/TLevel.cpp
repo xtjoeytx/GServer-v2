@@ -274,12 +274,14 @@ bool TLevel::reload()
 	// Re-load the level now.
 	bool ret = loadLevel(levelName);
 
+#ifndef V8NPCSERVER
 	// Update the npc-server of the level change.
 	if (server->hasNPCServer())
 	{
 		server->NC_SendLevel(this);
 		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
 	}
+#endif
 
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
 	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -946,13 +948,15 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 		return 0;
 	}
 
+#ifndef V8NPCSERVER
 	// Send NC Level
 	if (server->hasNPCServer())
 	{
 		server->NC_SendLevel(level);
 		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
 	}
-
+#endif
+	
 	// Return Level
 	levelList->push_back(level);
 	return level;
@@ -1166,6 +1170,16 @@ TLevelBaddy* TLevel::getBaddy(char id)
 int TLevel::addPlayer(TPlayer* player)
 {
 	levelPlayerList.push_back(player);
+
+#ifdef V8NPCSERVER
+	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
+			npc->queueNpcAction("npc.playerenters", player);
+	}
+#endif
+
 	return levelPlayerList.size() - 1;
 }
 
@@ -1178,6 +1192,14 @@ void TLevel::removePlayer(TPlayer* player)
 			i = levelPlayerList.erase(i);
 		else ++i;
 	}
+
+#ifdef V8NPCSERVER
+	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it) {
+		TNPC *npc = *it;
+		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
+			npc->queueNpcAction("npc.playerleaves", player);
+	}
+#endif
 }
 
 TPlayer* TLevel::getPlayer(unsigned int id)
@@ -1319,3 +1341,41 @@ bool TLevel::doTimedEvents()
 
 	return true;
 }
+
+#ifdef V8NPCSERVER
+TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
+{
+	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (checkEventFlag && !npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME))
+			continue;
+
+		//if (!npc->getImage().isEmpty())
+		{
+			if ((npc->getVisFlags() & 1) != 0)
+			{
+				if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
+					(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
+				{
+					// what if it touches multiple npcs? hm. not sure how graal did it.
+					return npc;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+bool TLevel::isOnWall(double pX, double pY)
+{
+	return false;
+}
+
+bool TLevel::isOnWater(double pX, double pY)
+{
+	return false;
+}
+
+#endif

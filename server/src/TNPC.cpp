@@ -7,6 +7,11 @@
 #include "TMap.h"
 #include "TLevel.h"
 
+#ifdef V8NPCSERVER
+#include "CScriptEngine.h"
+#include "TPlayer.h"
+#endif
+
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
@@ -25,6 +30,9 @@ darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
+#ifdef V8NPCSERVER
+, width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
+#endif
 {
 	memset((void*)colors, 0, sizeof(colors));
 	memset((void*)saves, 0, sizeof(saves));
@@ -69,6 +77,11 @@ level(pLevel), server(pServer)
 	}
 
 	// Separate clientside and serverside scripts.
+#ifdef V8NPCSERVER
+	CString s = pScript;
+	serverScript = s.readString("//#CLIENTSIDE");
+	clientScript = s.readString("");
+#else
 	if (server->hasNPCServer())
 	{
 		if (levelModificationNPCHack)
@@ -81,6 +94,7 @@ level(pLevel), server(pServer)
 		}
 	}
 	else clientScript = pScript;
+#endif
 
 	// Do joins.
 	if (!serverScript.isEmpty()) serverScript = doJoins(serverScript, server->getFileSystem());
@@ -131,6 +145,14 @@ level(pLevel), server(pServer)
 
 TNPC::~TNPC()
 {
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->UnregisterNpcUpdate(this);
+	for (auto it = _actions.begin(); it != _actions.end(); ++it)
+		delete *it;
+
+	if (_scriptObject)
+		delete _scriptObject;
+#endif
 }
 
 CString TNPC::getProp(unsigned char pId, int clientVersion) const
@@ -308,7 +330,7 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	return retVal;
 }
 
-CString TNPC::setProps(CString& pProps, int clientVersion)
+CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 {
 	CString ret;
 	int len = 0;
@@ -529,7 +551,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion)
 				// If the first bit is 1, our position is negative.
 				x2 >>= 1;
 				if ((short)len & 0x0001) x2 = -x2;
-
+				
 				// Let pre-2.3+ clients see 2.3+ movement.
 				x = (float)x2 / 16.0f;
 				break;
@@ -614,8 +636,94 @@ CString TNPC::setProps(CString& pProps, int clientVersion)
 		// Add to ret.
 		ret >> (char)propId << getProp(propId, clientVersion);
 	}
+
+	if (pForward) {
+		// Find the level.
+		TMap* map = 0;
+		if (level != 0) map = level->getMap();
+
+		// Send the props.
+		// TODO(joey): only gmap? why is this?
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
+	}
+
 	return ret;
 }
+
+#ifdef V8NPCSERVER
+
+void TNPC::setTimeout(int newTimeout) {
+	if (newTimeout > 0)
+		server->getScriptEngine()->RegisterNpcTimer(this);
+	else if (timeout <= 0)
+		server->getScriptEngine()->UnregisterNpcTimer(this);
+	timeout = newTimeout;
+}
+
+void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
+{
+	// TODO(joey): profile strings in release, it is slowing down execution in debug.
+	
+	// TODO(joey): ScriptArguments does not do sanity checks on passed objects
+	// still debating on whether I should check prior to running the action or
+	// implement sanity check in the Server.
+	
+	ScriptAction *scriptAction = 0;
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	IScriptWrapped<TPlayer> *playerObject = 0;
+	if (player != 0)
+	{
+		auto playerObject = player->getScriptObject();
+		if (playerObject != 0)
+			scriptAction = scriptEngine->CreateAction(action, _scriptObject, playerObject);
+	}
+	
+	if (!scriptAction)
+		scriptAction = scriptEngine->CreateAction(action, _scriptObject);
+
+	//IScriptWrapped<TPlayer> *playerObject = 0;
+	//if (player != 0)
+	//	playerObject = player->getScriptObject();
+
+	//CScriptEngine *scriptEngine = server->getScriptEngine();
+	//ScriptAction *scriptAction = scriptEngine->CreateAction(action, playerObject);
+	
+	_actions.push_back(scriptAction);
+	if (registerAction)
+		scriptEngine->RegisterNpcUpdate(this);
+}
+
+bool TNPC::runScriptTimer()
+{
+	if (timeout > 0)
+	{
+		timeout--;
+		if (timeout == 0)
+			queueNpcAction("npc.timeout", 0, true);
+	}
+	
+	// return value dictates if this gets deregistered from updates
+	return (timeout > 0);
+}
+
+void TNPC::runScriptEvents()
+{
+	// iterate over queued actions
+	for (auto it = _actions.begin(); it != _actions.end(); ++it)
+	{
+		ScriptAction *action = *it;
+		if (action != 0)
+		{
+			V8ENV_D("Running action: %s\n", action->getAction().c_str());
+			action->Invoke();
+			delete action;
+		}
+	}
+	_actions.clear();
+}
+
+#endif
 
 CString toWeaponName(const CString& code)
 {

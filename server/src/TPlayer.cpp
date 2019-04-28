@@ -274,6 +274,15 @@ void TPlayer::createFunctions()
 
 	// NPC-Server Functions
 #ifdef V8NPCSERVER
+	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_NPCGET;
+	TPLFunc[PLI_NC_NPCDELETE] = &TPlayer::msgPLI_NC_NPCDELETE;
+	TPLFunc[PLI_NC_NPCRESET] = &TPlayer::msgPLI_NC_NPCRESET;
+	TPLFunc[PLI_NC_NPCSCRIPTGET] = &TPlayer::msgPLI_NC_NPCSCRIPTGET;
+	TPLFunc[PLI_NC_NPCWARP] = &TPlayer::msgPLI_NC_NPCWARP;
+	TPLFunc[PLI_NC_NPCFLAGSGET] = &TPlayer::msgPLI_NC_NPCFLAGSGET;
+	TPLFunc[PLI_NC_NPCSCRIPTSET] = &TPlayer::msgPLI_NC_NPCSCRIPTSET;
+	TPLFunc[PLI_NC_NPCFLAGSSET] = &TPlayer::msgPLI_NC_NPCFLAGSSET;
+	TPLFunc[PLI_NC_NPCADD] = &TPlayer::msgPLI_NC_NPCADD;
 	TPLFunc[PLI_NC_LOCALNPCSGET] = &TPlayer::msgPLI_NC_LOCALNPCSGET;
 	TPLFunc[PLI_NC_WEAPONLISTGET] = &TPlayer::msgPLI_NC_WEAPONLISTGET;
 	TPLFunc[PLI_NC_WEAPONGET] = &TPlayer::msgPLI_NC_WEAPONGET;
@@ -302,6 +311,9 @@ nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true), invalidPackets(0)
+#ifdef V8NPCSERVER
+, _scriptObject(0)
+#endif
 {
 	lastData = lastMovement = lastSave = last1m = time(0);
 	lastChat = lastMessage = lastNick = 0;
@@ -370,6 +382,13 @@ TPlayer::~TPlayer()
 
 	if (playerSock)
 		delete playerSock;
+
+#ifdef V8NPCSERVER
+	if (_scriptObject) {
+		printf("References: %d\n", _scriptObject->getReferenceCount());
+		delete _scriptObject;
+	}
+#endif
 }
 
 bool TPlayer::onRecv()
@@ -814,6 +833,19 @@ bool TPlayer::testSign()
 		}
 	}
 	return true;
+}
+
+void TPlayer::testTouch()
+{
+#ifdef V8NPCSERVER
+	// 2, 3
+	static int touchtestd[] = { 24,16, 8,32, 24,48, 40,32 };
+	int dir = sprite % 4;
+
+	TNPC *npcTouched = level->isOnNPC(x2 + touchtestd[dir*2], y2 + touchtestd[dir*2+1], true);
+	if (npcTouched != 0)
+		npcTouched->queueNpcAction("npc.playertouchsme", this);
+#endif
 }
 
 void TPlayer::dropItemsOnDeath()
