@@ -252,7 +252,7 @@ void NPC_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, con
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
-	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 }
 
