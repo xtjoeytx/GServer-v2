@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <mutex>
+#include <condition_variable>
 #include "CString.h"
 
 //! Logger class for logging information to a file.

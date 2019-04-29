@@ -143,6 +143,10 @@ else()
     set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
+if(V8NPCSERVER)
+    include_directories(${V8_INCLUDE_DIR})
+endif()
+
 if(APPLE)
     add_executable(${TARGET_NAME} MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 
