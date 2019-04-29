@@ -318,10 +318,11 @@ bool TServer::doMain()
 
 	//
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-	
+	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
+
 #ifdef V8NPCSERVER
 	// Run scripts every 0.05 seconds (incl. catching up)
-	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastScriptTimer);
+	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastScriptTimer);
 	auto time_ms = time_diff.count();
 	
 	// TODO(joey): maybe run events at any time
