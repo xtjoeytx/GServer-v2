@@ -17,6 +17,10 @@
 #if defined(_WIN32) || defined(_WIN64)
 	const char fSep = '\\';
 	const char fSep_O = '/';
+	#ifndef __GNUC__ // rain
+	#include <mutex>
+    #include <condition_variable>
+	#endif
 #else
 	const char fSep = '/';
 	const char fSep_O = '\\';

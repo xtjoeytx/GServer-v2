@@ -1,101 +1,97 @@
-# - Find V8
-# Find the V8 includes and library
+# Courtesy of: https://raw.githubusercontent.com/gwaldron/osgearth/master/CMakeModules/FindV8.cmake
 #
-#  V8_INCLUDE_DIR - Where to find V8 includes
-#  V8_LIBRARIES   - List of libraries when using V8
-#  V8_FOUND       - True if V8 was found
+# Locate V8
+# This module defines
+# V8_LIBRARY
+# V8_FOUND, if false, do not try to link to V8
+# V8_INCLUDE_DIR, where to find the headers
 
-IF(V8_INCLUDE_DIR)
-  SET(V8_FIND_QUIETLY TRUE)
-ENDIF(V8_INCLUDE_DIR)
+IF (NOT $ENV{V8_DIR} STREQUAL "")
+  SET(V8_DIR $ENV{V8_DIR})
+ENDIF()
 
-FIND_PATH(V8_INCLUDE_DIR "v8.h"
-  PATHS
-  $ENV{V8_HOME}/include
-  $ENV{EXTERNLIBS}/v8/include
-  ~/Library/Frameworks/include
-  /Library/Frameworks/include
+
+SET(V8_LIBRARY_SEARCH_PATHS
+  ${V8_DIR}/
+  ${V8_DIR}/lib/
+  ${V8_DIR}/build/Release/lib/
+  ${V8_DIR}/build/Release/lib/third_party/icu/
+  ${V8_DIR}/build/Release/obj/
+  ${V8_DIR}/build/Release/obj/third_party/icu/
+  ${V8_DIR}/out/ia32.release/lib.target/
+  ${V8_DIR}/out/ia32.release/lib.target/third_party/icu/
+  ${V8_DIR}/out/ia32.release/obj/
+  ${V8_DIR}/out/ia32.release/obj/third_party/icu/
+  ${V8_DIR}/out.gn/ia32.release/lib.target/
+  ${V8_DIR}/out.gn/ia32.release/lib.target/third_party/icu/
+  ${V8_DIR}/out.gn/ia32.release/obj/
+  ${V8_DIR}/out.gn/ia32.release/obj/third_party/icu/
+  ${V8_DIR}/out/x64.release/lib.target/
+  ${V8_DIR}/out/x64.release/lib.target/third_party/icu/
+  ${V8_DIR}/out/x64.release/obj/
+  ${V8_DIR}/out/x64.release/obj/third_party/icu/
+  ${V8_DIR}/out.gn/x64.release/lib.target/
+  ${V8_DIR}/out.gn/x64.release/lib.target/third_party/icu/
+  ${V8_DIR}/out.gn/x64.release/obj/
+  ${V8_DIR}/out.gn/x64.release/obj/third_party/icu/
+  ~/Library/Frameworks
+  /Library/Frameworks
+  /usr/local/lib
+  /usr/lib
+  /sw/lib
+  /opt/local/lib
+  /opt/csw/lib
+  /opt/lib
+  /usr/freeware/lib64
+)
+
+FIND_PATH(V8_INCLUDE_DIR v8.h
+  ${V8_DIR}
+  ${V8_DIR}/include
+  ~/Library/Frameworks
+  /Library/Frameworks
   /usr/local/include
   /usr/include
   /sw/include # Fink
   /opt/local/include # DarwinPorts
   /opt/csw/include # Blastwave
   /opt/include
-  DOC "V8 - Headers"
+  /usr/freeware/include
+  /devel
 )
 
-SET(V8_NAMES v8 v8_base v8_base.lib)
-SET(V8_DBG_NAMES v8D v8_baseD v8_baseD.lib)
-SET(V8S_NAMES v8_snapshot v8_snapshot.lib)
-SET(V8S_DBG_NAMES v8_snapshotD v8_snapshotD.lib)
-
-FIND_LIBRARY(V8_LIBRARY NAMES ${V8_NAMES}
-  PATHS
-  $ENV{V8_HOME}
-  $ENV{EXTERNLIBS}/v8
-  ~/Library/Frameworks
-  /Library/Frameworks
-  /usr/local
-  /usr
-  /sw
-  /opt/local
-  /opt/csw
-  /opt
-  PATH_SUFFIXES lib lib64
-  DOC "V8 - Library"
+FIND_LIBRARY(V8_BASE_LIBRARY
+  NAMES libv8_base.a v8_base.a v8 v8_base libv8_base
+  PATHS ${V8_LIBRARY_SEARCH_PATHS}
 )
 
-FIND_LIBRARY(V8S_LIBRARY NAMES ${V8S_NAMES}
-  PATHS
-  $ENV{V8_HOME}
-  $ENV{EXTERNLIBS}/v8
-  ~/Library/Frameworks
-  /Library/Frameworks
-  /usr/local
-  /usr
-  /sw
-  /opt/local
-  /opt/csw
-  /opt
-  PATH_SUFFIXES lib lib64
-  DOC "V8S - Library"
+FIND_LIBRARY(V8_LIBPLATFORM_LIBRARY
+  NAMES v8_libplatform libv8_libplatform
+  PATHS ${V8_LIBRARY_SEARCH_PATHS}
 )
 
-INCLUDE(FindPackageHandleStandardArgs)
+FIND_LIBRARY(V8_LIBBASE_LIBRARY
+  NAMES v8_libbase libv8_libbase
+  PATHS ${V8_LIBRARY_SEARCH_PATHS}
+)
 
-IF(MSVC)
-  # VisualStudio needs a debug version
-  FIND_LIBRARY(V8_LIBRARY_DEBUG NAMES ${V8_DBG_NAMES}
-    PATHS
-    $ENV{V8_HOME}/lib
-    $ENV{EXTERNLIBS}/v8/lib
-    DOC "V8 - Library (Debug)"
-  )
-  FIND_LIBRARY(V8S_LIBRARY_DEBUG NAMES ${V8S_DBG_NAMES}
-    PATHS
-    $ENV{V8_HOME}/lib
-    $ENV{EXTERNLIBS}/v8/lib
-    DOC "V8S - Library (Debug)"
-  )
-  
-  IF(V8_LIBRARY_DEBUG AND V8_LIBRARY)
-    SET(V8_LIBRARIES optimized ${V8_LIBRARY} debug ${V8_LIBRARY_DEBUG} optimized ${V8S_LIBRARY} debug ${V8S_LIBRARY_DEBUG} optimized Winmm.lib debug Winmm.lib)
-  ENDIF(V8_LIBRARY_DEBUG AND V8_LIBRARY)
+FIND_LIBRARY(V8_SNAPSHOT_LIBRARY
+  NAMES v8_snapshot libv8_snapshot
+  PATHS ${V8_LIBRARY_SEARCH_PATHS}
+)
 
-  FIND_PACKAGE_HANDLE_STANDARD_ARGS(V8 DEFAULT_MSG V8_LIBRARY V8_LIBRARY_DEBUG V8_INCLUDE_DIR)
+FIND_LIBRARY(V8_LIBSAMPLER_LIBRARY
+  NAMES v8_libsampler libv8_libsampler
+  PATHS ${V8_LIBRARY_SEARCH_PATHS}
+)
 
-  MARK_AS_ADVANCED(V8_LIBRARY V8_LIBRARY_DEBUG V8_INCLUDE_DIR)
-  
-ELSE(MSVC)
-  # rest of the world
-  SET(V8_LIBRARIES ${V8_LIBRARY})
+SET(V8_FOUND "NO")
 
-  FIND_PACKAGE_HANDLE_STANDARD_ARGS(V8 DEFAULT_MSG V8_LIBRARY V8_INCLUDE_DIR)
-  
-  MARK_AS_ADVANCED(V8_LIBRARY V8_INCLUDE_DIR)
-  
-ENDIF(MSVC)
+IF (NOT UNIX)
+  IF (V8_BASE_LIBRARY AND V8_SNAPSHOT_LIBRARY AND V8_ICUUC_LIBRARY AND V8_ICUI18N_LIBRARY AND V8_INCLUDE_DIR)
+    SET(V8_FOUND "YES")
+  ENDIF()
+ELSEIF(V8_LIBRARY AND V8_ICUUC_LIBRARY AND V8_ICUI18N_LIBRARY AND V8_INCLUDE_DIR)
+  SET(V8_FOUND "YES")
+ENDIF(NOT UNIX)
 
-IF(V8_FOUND)
-  SET(V8_INCLUDE_DIRS ${V8_INCLUDE_DIR})
-ENDIF(V8_FOUND)
