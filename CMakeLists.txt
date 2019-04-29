@@ -22,9 +22,20 @@
 cmake_minimum_required(VERSION 2.8.5)
 project(GS2Emu C CXX)
 
+set(CMAKE_DEBUG_POSTFIX _d)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+
+# Second, for multi-config builds (e.g. msvc)
+foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+	string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+	set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/lib )
+	set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/lib )
+	set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/bin )
+endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 
 # Adhere to GNU filesystem layout conventions
@@ -161,10 +172,6 @@ elseif(WIN32)
         # Suppress secure string function warnings
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
-		#set_target_properties(${PROJECT_NAME} PROPERTIES 
-		#	LINK_FLAGS /SUBSYSTEM:CONSOLE
-		#)
-
         # Enable parallel compilation
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
@@ -181,9 +188,8 @@ elseif(WIN32)
             "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
         )
         set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
-
 		cmake_policy(SET CMP0043 NEW)
-endif()
+	endif()
 
     # Prevent Windows.h from clashing with the Standard Template Library so we
     # can use std::min/std::max (see https://support.microsoft.com/kb/143208)

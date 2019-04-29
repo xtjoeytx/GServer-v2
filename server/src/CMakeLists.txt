@@ -100,8 +100,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/server/include
 )
 
-add_definitions(-DMILKYTRACKER)
-
 # Set target names for the executables
 if(APPLE OR WIN32)
     # OS X and Windows get a mixed-case binary name
@@ -165,6 +163,7 @@ if(APPLE)
 elseif(WIN32)
 
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
+
     add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
 
 	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
@@ -175,6 +174,7 @@ elseif(WIN32)
 	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
 
     add_dependencies(${TARGET_NAME} bzip2 z)
+	target_link_libraries(${TARGET_NAME} z bzip2 ${CMAKE_THREAD_LIBS_INIT})
 
 	if(NOT NOUPNP)
 		if(NOSTATIC)
@@ -182,10 +182,8 @@ elseif(WIN32)
 		else()
 			add_dependencies(${TARGET_NAME} libminiupnpc-static)
 		endif()
-		target_link_libraries(${TARGET_NAME} libminiupnpc ws2_32)
+		target_link_libraries(${TARGET_NAME} libminiupnpc ws2_32 wsock32 iphlpapi)
 	endif()
-
-    target_link_libraries(${TARGET_NAME} z bzip2 ${CMAKE_THREAD_LIBS_INIT})
 elseif(AROS)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
