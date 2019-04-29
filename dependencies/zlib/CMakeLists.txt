@@ -1,5 +1,5 @@
 #
-#  server/src/CMakeLists.txt
+#  dependencies/zlib/CMakeLists.txt
 #
 #  Copyright 2019 死体
 #
@@ -21,95 +21,39 @@
 
 set(
     SOURCES
-    CUPNP.cpp
-    TLevelSign.cpp
-    TMap.cpp
-    TLevelHorse.cpp
-    CPluginManager.cpp
-    CFileSystem.cpp
-    TPlayerNC.cpp
-    TPlayer.cpp
-    TAccount.cpp
-    CEncryption.cpp
-    CWordFilter.cpp
-    TServerList.cpp
-    CLog.cpp
-    TLevelItem.cpp
-    TWeapon.cpp
-    TLevelChest.cpp
-    TPlayerLogin.cpp
-    CSocket.cpp
-    md5.cpp
-    CString.cpp
-    TLevelLink.cpp
-    TLevelBaddy.cpp
-    CFileQueue.cpp
-    CSettings.cpp
-    CTranslationManager.cpp
-    TServer.cpp
-    TLevel.cpp
-    TNPC.cpp
-    TLevelBoardChange.cpp
-    TPlayerRC.cpp
-    TPlayerProps.cpp
-    IUtil.cpp
-    main.cpp
+    compress.c
+    deflate.c
+    infback.c
+    crc32.c
+    gzwrite.c
+    gzlib.c
+    inflate.c
+    adler32.c
+    uncompr.c
+    gzclose.c
+    inftrees.c
+    trees.c
+    inffast.c
+    zutil.c
+    gzread.c
 )
 
 set(
     HEADERS
-    ${PROJECT_BINARY_DIR}/server/include/IConfig.h
-    ../include/TLevelHorse.h
-    ../include/CFileSystem.h
-    ../include/IEnums.h
-    ../include/CString.h
-    ../include/TLevelChest.h
-    ../include/TAccount.h
-    ../include/TPlayer.h
-    ../include/CPlugin.h
-    ../include/TLevelItem.h
-    ../include/md5.h
-    ../include/TServerList.h
-    ../include/TNPC.h
-    ../include/TLevelLink.h
-    ../include/CPluginManager.h
-    ../include/TLevelSign.h
-    ../include/CWordFilter.h
-    ../include/CSettings.h
-    ../include/TLevelBoardChange.h
-    ../include/CTimeout.h
-    ../include/CEncryption.h
-    ../include/IUtil.h
-    ../include/CUPNP.h
-    ../include/TLevelBaddy.h
-    ../include/CFileQueue.h
-    ../include/TServer.h
-    ../include/IDebug.h
-    ../include/TMap.h
-    ../include/CLog.h
-    ../include/CTranslationManager.h
-    ../include/TWeapon.h
-    ../include/main.h
-    ../include/TLevel.h
-    ../include/CSocket.h
+    trees.h
+    zconf.h
+    inffixed.h
+    gzguts.h
+    zutil.h
+    inffast.h
+    inftrees.h
+    crc32.h
+    zlib.h
+    inflate.h
+    deflate.h
 )
 
-include_directories(
-    # Include the CMake-generated version header from the build directory
-    ${PROJECT_BINARY_DIR}/server/include
-    ${PROJECT_SOURCE_DIR}/server/include
-)
-
-add_definitions(-DMILKYTRACKER)
-
-# Set target names for the executables
-if(APPLE OR WIN32)
-    # OS X and Windows get a mixed-case binary name
-    set(TARGET_NAME ${PROJECT_NAME})
-else()
-    # Linux/other UNIX get a lower-case binary name
-    set(TARGET_NAME ${PROJECT_NAME_LOWER})
-endif()
+set(TARGET_NAME "z")
 
 if(APPLE)
     add_executable(${TARGET_NAME} MACOSX_BUNDLE ${SOURCES} ${HEADERS})
@@ -163,10 +107,7 @@ if(APPLE)
 
     target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 elseif(WIN32)
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib)
-    add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
-
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 elseif(AROS)
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 

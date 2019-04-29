@@ -53,7 +53,7 @@ configure_file(
 # Force SDL if requested
 option(NOSTATIC "Don't compile as a static runtime." OFF)
 if(NOSTATIC)
-
+    message("TEST")
 endif()
 
 # Packaging
@@ -158,13 +158,18 @@ elseif(WIN32)
     # Prevent Windows.h from clashing with the Standard Template Library so we
     # can use std::min/std::max (see https://support.microsoft.com/kb/143208)
     add_definitions(-DNOMINMAX)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/zlib)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/miniupnpc)
 elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
     #find_package(SDL 1.2 REQUIRED)
 else()
     add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
-    cmake_policy(SET CMP0028 OLD)
+    find_package(ZLIB REQUIRED)
+    find_package(BZip2 REQUIRED)
+    find_package(Miniupnpc REQUIRED)
 endif()
 
 # Prefer static linkage under OS X for libraries located with find_package()
@@ -173,9 +178,6 @@ if(APPLE)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
-find_package(ZLIB REQUIRED)
-find_package(BZip2 REQUIRED)
-find_package(Miniupnpc REQUIRED)
 find_package(Threads REQUIRED)
 
 # Restore library suffixes
