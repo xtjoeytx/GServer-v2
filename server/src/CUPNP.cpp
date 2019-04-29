@@ -3,6 +3,11 @@
 	#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
 	#endif
+
+	#ifndef __GNUC__ // rain
+	#pragma comment(lib, "ws2_32.lib")
+	#endif
+
 	#include <windows.h>
 #endif
 #include "CUPNP.h"
@@ -18,7 +23,7 @@ void CUPNP::discover()
 	memset(&urls, 0, sizeof(UPNPUrls));
 	memset(&data, 0, sizeof(IGDdatas));
 
-	device_list = upnpDiscover(2000, 0, 0, 0, 0, 0);
+	device_list = upnpDiscover(2000, 0, 0, 0, 0, 0, 0);
 	if (device_list)
 	{
 		device = device_list;
@@ -37,7 +42,7 @@ void CUPNP::discover()
 		//server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", server->getName().text(), device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
-		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize);
+		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, (int*)200);
 		if (xmlDescription)
 		{
 			// Parse the XML description.
@@ -46,7 +51,7 @@ void CUPNP::discover()
 			xmlDescription = 0;
 
 			// Get the UPNP urls from the description.
-			GetUPNPUrls(&urls, &data, device->descURL);
+			GetUPNPUrls(&urls, &data, device->descURL, 0);
 		}
 		freeUPNPDevlist(device_list);
 	}
