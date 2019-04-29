@@ -3,3 +3,4 @@ bin/servers/default/logs/npclog.txt
 bin/startuplog.txt
 build*/*
 bin/Debug/
+lib/
