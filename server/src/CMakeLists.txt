@@ -148,6 +148,9 @@ if(V8NPCSERVER)
 endif()
 
 if(APPLE)
+    if(NOT NOUPNP)
+        include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
+    endif()
     add_executable(${TARGET_NAME} MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 
     # Xcode can deal with Interface Builder xibs automatically - if we are not
@@ -185,19 +188,27 @@ if(APPLE)
 
     # Pass in the Info.plist template, whose variables are defined in the
     # top-level CMakeLists.txt
-    set_target_properties(
-        ${TARGET_NAME}
-        PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST
-        ${PROJECT_SOURCE_DIR}/src/tracker/cocoa/resources/Info.plist.in
-    )
+#    set_target_properties(
+#        ${TARGET_NAME}
+#        PROPERTIES
+#        MACOSX_BUNDLE_INFO_PLIST
+#        ${PROJECT_SOURCE_DIR}/ser/tracker/cocoa/resources/Info.plist.in
+#    )
 
     # Enable ARC (automatic reference counting) for OS X build
     set_property(
         TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
     )
 
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${TARGET_NAME} bzip2 z ${CMAKE_THREAD_LIBS_INIT})
+    if(NOT NOUPNP)
+        if(NOSTATIC)
+            add_dependencies(${TARGET_NAME} libminiupnpc-shared)
+        else()
+            add_dependencies(${TARGET_NAME} libminiupnpc-static)
+        endif()
+        target_link_libraries(${TARGET_NAME} miniupnpc)
+    endif()
 elseif(WIN32)
 
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
@@ -242,6 +253,10 @@ else()
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
     target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if(V8NPCSERVER)
+	target_link_libraries(${TARGET_NAME} ${V8_LIBBASE_LIBRARY} ${V8_LIBPLATFORM_LIBRARY})
 endif()
 
 set(INSTALL_DEST .)
