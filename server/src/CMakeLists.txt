@@ -176,11 +176,16 @@ elseif(WIN32)
 
     target_link_libraries(${TARGET_NAME} z bzip2 miniupnp ${CMAKE_THREAD_LIBS_INIT})
 elseif(AROS)
+    include_directories(${PROJECT_SOURCE_DIR}/dependencies ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnpc)
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+    add_dependencies(${TARGET_NAME} bzip2 z miniupnp)
 
     target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 elseif(AMIGA)
+    include_directories(${PROJECT_SOURCE_DIR}/dependencies ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnpc)
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+    add_dependencies(${TARGET_NAME} bzip2 z miniupnp)
+
     if(MORPHOS OR AMIGAOS3 AND NOT WARPOS)
         target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
     else()
