@@ -25,6 +25,7 @@ project(GS2Emu C CXX)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+link_directories(${PROJECT_SOURCE_DIR}/lib)
 
 # Adhere to GNU filesystem layout conventions
 include(GNUInstallDirs)
@@ -53,7 +54,30 @@ configure_file(
 # Force SDL if requested
 option(NOSTATIC "Don't compile as a static runtime." OFF)
 if(NOSTATIC)
-    message("TEST")
+    message("Don't compile as a static runtime.")
+else()
+	message("Compile as static runtime.")
+	add_definitions(-DSTATICLIB)
+endif()
+option(NOUPNP "Don't compile with UPNP support" OFF)
+if(NOT NOUPNP)
+	message("Enabling UPNP support.")
+	add_definitions(-DUPNP)
+	if(NOT NOSTATIC)
+		add_definitions(-DMINIUPNP_STATICLIB)
+		set(UPNPC_BUILD_STATIC TRUE)
+		set(UPNPC_BUILD_SHARED FALSE)
+	else()
+		set(UPNPC_BUILD_STATIC FALSE)
+		set(UPNPC_BUILD_SHARED TRUE)
+	endif()
+
+	set(UPNPC_BUILD_TESTS FALSE)
+	set(UPNPC_BUILD_SAMPLE FALSE)
+	set(NO_GETADDRINFO FALSE)
+	set(UPNPC_NO_INSTALL TRUE)
+else()
+	message("Disabling UPNP support.")
 endif()
 
 # Packaging
@@ -157,6 +181,8 @@ elseif(WIN32)
             "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
         )
         set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
+
+		cmake_policy(SET CMP0043 NEW)
 endif()
 
     # Prevent Windows.h from clashing with the Standard Template Library so we
@@ -164,7 +190,7 @@ endif()
     add_definitions(-DNOMINMAX)
     add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/zlib)
     add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/miniupnpc)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
