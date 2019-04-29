@@ -137,6 +137,10 @@ elseif(WIN32)
         # Suppress secure string function warnings
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
+		#set_target_properties(${PROJECT_NAME} PROPERTIES 
+		#	LINK_FLAGS /SUBSYSTEM:CONSOLE
+		#)
+
         # Enable parallel compilation
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
@@ -153,7 +157,7 @@ elseif(WIN32)
             "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
         )
         set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
-    endif()
+endif()
 
     # Prevent Windows.h from clashing with the Standard Template Library so we
     # can use std::min/std::max (see https://support.microsoft.com/kb/143208)

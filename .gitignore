@@ -1,0 +1,5 @@
+bin/servers/default/logs/serverlog.txt
+bin/servers/default/logs/npclog.txt
+bin/startuplog.txt
+build*/*
+bin/Debug/
