@@ -21,83 +21,117 @@
 
 set(
     SOURCES
-    CUPNP.cpp
-    TLevelSign.cpp
-    TMap.cpp
-    TLevelHorse.cpp
-    CPluginManager.cpp
-    CFileSystem.cpp
-    TPlayerNC.cpp
-    TPlayer.cpp
-    TAccount.cpp
     CEncryption.cpp
-    CWordFilter.cpp
-    TServerList.cpp
-    CLog.cpp
-    TLevelItem.cpp
-    TWeapon.cpp
-    TLevelChest.cpp
-    TPlayerLogin.cpp
-    CSocket.cpp
-    md5.cpp
-    CString.cpp
-    TLevelLink.cpp
-    TLevelBaddy.cpp
     CFileQueue.cpp
+    CFileSystem.cpp
+    CLog.cpp
+    CPluginManager.cpp
     CSettings.cpp
+    CSocket.cpp
+    CString.cpp
     CTranslationManager.cpp
-    TServer.cpp
-    TLevel.cpp
-    TNPC.cpp
-    TLevelBoardChange.cpp
-    TPlayerRC.cpp
-    TPlayerProps.cpp
+    CUPNP.cpp
+    CWordFilter.cpp
     IUtil.cpp
     main.cpp
+    md5.cpp
+    TAccount.cpp
+    TLevel.cpp
+    TLevelBaddy.cpp
+    TLevelBoardChange.cpp
+    TLevelChest.cpp
+    TLevelHorse.cpp
+    TLevelItem.cpp
+    TLevelLink.cpp
+    TLevelSign.cpp
+    TMap.cpp
+    TNPC.cpp
+    TPlayer.cpp
+    TPlayerLogin.cpp
+    TPlayerNC.cpp
+    TPlayerProps.cpp
+    TPlayerRC.cpp
+    TServer.cpp
+    TServerList.cpp
+    TWeapon.cpp
 )
 
 set(
     HEADERS
     ${PROJECT_BINARY_DIR}/server/include/IConfig.h
-    ../include/TLevelHorse.h
-    ../include/CFileSystem.h
-    ../include/IEnums.h
-    ../include/CString.h
-    ../include/TLevelChest.h
-    ../include/TAccount.h
-    ../include/TPlayer.h
-    ../include/CPlugin.h
-    ../include/TLevelItem.h
-    ../include/md5.h
-    ../include/TServerList.h
-    ../include/TNPC.h
-    ../include/TLevelLink.h
-    ../include/CPluginManager.h
-    ../include/TLevelSign.h
-    ../include/CWordFilter.h
-    ../include/CSettings.h
-    ../include/TLevelBoardChange.h
-    ../include/CTimeout.h
     ../include/CEncryption.h
-    ../include/IUtil.h
-    ../include/CUPNP.h
-    ../include/TLevelBaddy.h
     ../include/CFileQueue.h
-    ../include/TServer.h
-    ../include/IDebug.h
-    ../include/TMap.h
+    ../include/CFileSystem.h
     ../include/CLog.h
-    ../include/CTranslationManager.h
-    ../include/TWeapon.h
-    ../include/main.h
-    ../include/TLevel.h
+    ../include/CPlugin.h
+    ../include/CPluginManager.h
+    ../include/CSettings.h
     ../include/CSocket.h
+    ../include/CString.h
+    ../include/CTimeout.h
+    ../include/CTranslationManager.h
+    ../include/CUPNP.h
+    ../include/CWordFilter.h
+    ../include/IConfig.h
+    ../include/IConfig.h.in
+    ../include/IDebug.h
+    ../include/IEnums.h
+    ../include/IUtil.h
+    ../include/main.h
+    ../include/md5.h
+    ../include/TAccount.h
+    ../include/TLevel.h
+    ../include/TLevelBaddy.h
+    ../include/TLevelBoardChange.h
+    ../include/TLevelChest.h
+    ../include/TLevelHorse.h
+    ../include/TLevelItem.h
+    ../include/TLevelLink.h
+    ../include/TLevelSign.h
+    ../include/TMap.h
+    ../include/TNPC.h
+    ../include/TPlayer.h
+    ../include/TServer.h
+    ../include/TServerList.h
+    ../include/TWeapon.h
 )
+
+if(V8NPCSERVER)
+	list(
+		APPEND
+		SOURCES
+		CScriptEngine.cpp
+		script/V8FunctionsImpl.cpp
+		script/V8NPCImpl.cpp
+		script/V8PlayerImpl.cpp
+		script/V8ScriptEnv.cpp
+		script/V8ServerImpl.cpp
+	)
+
+	list(
+		APPEND
+		HEADERS
+		../include/CScriptEngine.h
+		../include/script/ScriptAction.h
+		../include/script/ScriptArguments.h
+		../include/script/ScriptEnv.h
+		../include/script/ScriptFactory.h
+		../include/script/ScriptFunction.h
+		../include/script/ScriptRunError.h
+		../include/script/ScriptWrapped.h
+		../include/script/V8Macros.h
+		../include/script/V8ScriptArguments.h
+		../include/script/V8ScriptEnv.h
+		../include/script/V8ScriptFunction.h
+		../include/script/V8ScriptWrapped.h
+	)
+endif()
 
 include_directories(
     # Include the CMake-generated version header from the build directory
     ${PROJECT_BINARY_DIR}/server/include
     ${PROJECT_SOURCE_DIR}/server/include
+	${PROJECT_SOURCE_DIR}/server/include/script
 )
 
 # Set target names for the executables
