@@ -2,5 +2,8 @@ bin/servers/default/logs/serverlog.txt
 bin/servers/default/logs/npclog.txt
 bin/startuplog.txt
 build*/*
+cmake-build-*/*
+.idea/*
 bin/Debug/
 lib/
+..gitignore.swp
