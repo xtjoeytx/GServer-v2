@@ -163,10 +163,18 @@ if(APPLE)
 
     target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 elseif(WIN32)
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib)
-    add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
 
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    include_directories(${PROJECT_SOURCE_DIR}/dependencies ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnpc)
+    add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
+	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+	set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
+	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
+	set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
+	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
+    add_dependencies(${TARGET_NAME} bzip2 z miniupnp)
+
+    target_link_libraries(${TARGET_NAME} z bzip2 miniupnp ${CMAKE_THREAD_LIBS_INIT})
 elseif(AROS)
     add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
