@@ -6,6 +6,7 @@
 #include "CFileSystem.h"
 #include "TMap.h"
 #include "TLevel.h"
+#include "IEnums.h"
 
 #ifdef V8NPCSERVER
 #include "CScriptEngine.h"
