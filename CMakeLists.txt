@@ -194,7 +194,7 @@ elseif(AMIGA)
 	#find_package(SDL 1.2 REQUIRED)
 else()
 	if(NOT NOSTATIC)
-		SET(CMAKE_EXE_LINKER_FLAGS "-static")
+	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
