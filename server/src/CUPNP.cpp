@@ -1,4 +1,6 @@
 #ifdef UPNP
+#define UPNPCOMMAND_CONFLICTING_MAPPING 718
+
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
@@ -18,7 +20,7 @@ void CUPNP::discover()
 	struct UPNPDev* device_list;
 	struct UPNPDev* device;
 	char* xmlDescription;
-	int xmlDescriptionSize = 0;
+	int xmlDescriptionSize = 0, responseCode = 0;
 
 	memset(&urls, 0, sizeof(UPNPUrls));
 	memset(&data, 0, sizeof(IGDdatas));
@@ -42,7 +44,7 @@ void CUPNP::discover()
 		//server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", server->getName().text(), device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
-		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, (int*)200);
+		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode);
 		if (xmlDescription)
 		{
 			// Parse the XML description.
@@ -79,6 +81,9 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 			case UPNPCOMMAND_HTTP_ERROR:
 				serverlog.out("HTTP error.\n");
 				break;
+		    case UPNPCOMMAND_CONFLICTING_MAPPING:
+		        serverlog.out("Port mapping already exists.\n");
+		        break;
 			default:
 			case UPNPCOMMAND_UNKNOWN_ERROR:
 				serverlog.out("Unknown error.\n");
