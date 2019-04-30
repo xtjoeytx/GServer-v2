@@ -256,7 +256,7 @@ else()
 endif()
 
 if(V8NPCSERVER)
-	target_link_libraries(${TARGET_NAME} ${V8_LIBBASE_LIBRARY} ${V8_LIBPLATFORM_LIBRARY})
+	target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 endif()
 
 set(INSTALL_DEST .)
