@@ -34,6 +34,10 @@ SET(V8_LIBRARY_SEARCH_PATHS
   ${V8_DIR}/out.gn/x64.release/lib.target/third_party/icu/
   ${V8_DIR}/out.gn/x64.release/obj/
   ${V8_DIR}/out.gn/x64.release/obj/third_party/icu/
+  ${V8_DIR}/out.gn/x64.release.sample/lib.target/
+  ${V8_DIR}/out.gn/x64.release.sample/lib.target/third_party/icu/
+  ${V8_DIR}/out.gn/x64.release.sample/obj/
+  ${V8_DIR}/out.gn/x64.release.sample/obj/third_party/icu/
   ~/Library/Frameworks
   /Library/Frameworks
   /usr/local/lib
@@ -60,38 +64,18 @@ FIND_PATH(V8_INCLUDE_DIR v8.h
   /devel
 )
 
-FIND_LIBRARY(V8_BASE_LIBRARY
-  NAMES libv8_base.a v8_base.a v8 v8_base libv8_base
-  PATHS ${V8_LIBRARY_SEARCH_PATHS}
-)
-
-FIND_LIBRARY(V8_LIBPLATFORM_LIBRARY
-  NAMES v8_libplatform libv8_libplatform
-  PATHS ${V8_LIBRARY_SEARCH_PATHS}
-)
-
-FIND_LIBRARY(V8_LIBBASE_LIBRARY
-  NAMES v8_libbase libv8_libbase
-  PATHS ${V8_LIBRARY_SEARCH_PATHS}
-)
-
-FIND_LIBRARY(V8_SNAPSHOT_LIBRARY
-  NAMES v8_snapshot libv8_snapshot
-  PATHS ${V8_LIBRARY_SEARCH_PATHS}
-)
-
-FIND_LIBRARY(V8_LIBSAMPLER_LIBRARY
-  NAMES v8_libsampler libv8_libsampler
+FIND_LIBRARY(V8_LIBRARY
+  NAMES libv8_monolith.a v8_monolith.a v8_monolith libv8_monolith
   PATHS ${V8_LIBRARY_SEARCH_PATHS}
 )
 
 SET(V8_FOUND "NO")
 
 IF (NOT UNIX)
-  IF (V8_BASE_LIBRARY AND V8_SNAPSHOT_LIBRARY AND V8_ICUUC_LIBRARY AND V8_ICUI18N_LIBRARY AND V8_INCLUDE_DIR)
+  IF (V8_LIBRARY AND V8_INCLUDE_DIR)
     SET(V8_FOUND "YES")
   ENDIF()
-ELSEIF(V8_LIBRARY AND V8_ICUUC_LIBRARY AND V8_ICUI18N_LIBRARY AND V8_INCLUDE_DIR)
+ELSEIF(V8_LIBRARY AND V8_INCLUDE_DIR)
   SET(V8_FOUND "YES")
 ENDIF(NOT UNIX)
 

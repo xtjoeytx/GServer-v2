@@ -218,7 +218,7 @@ endif()
 if(NOT NOUPNP)
 	find_package(Miniupnpc)
 
-	if(NOT Miniupnpc_FOUND)
+	if(NOT MINIUPNPC_FOUND)
 		message("MiniUPNPC not found in system. Compiling it ourselves.")
 
 		if(NOT NOSTATIC)
