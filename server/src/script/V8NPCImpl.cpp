@@ -212,7 +212,7 @@ void NPC_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
-	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	npcObject->setProps(CString() >> (char)NPCPROP_NICKNAME >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 }
 
@@ -232,7 +232,7 @@ void NPC_SetStr_Message(v8::Local<v8::String> props, v8::Local<v8::Value> value,
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
-	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 }
 
@@ -274,7 +274,7 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// Unwrap Object
 		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
-		v8::String::Utf8Value newValue = v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
 		npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 	}
 }
@@ -304,7 +304,7 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
 
 	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
-	v8::String::Utf8Value newValue = v8::String::Utf8Value(isolate, args[1]->ToString(isolate));
+	v8::String::Utf8Value newValue(isolate, args[1]->ToString(isolate));
 	
 	if (code[0] == '#')
 	{
