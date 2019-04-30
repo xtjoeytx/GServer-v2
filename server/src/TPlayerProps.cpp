@@ -332,6 +332,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				maxPower = clip(maxPower, 0, settings->getInt("heartlimit", 3));
 				maxPower = clip(maxPower, 0, 20);
 				power = (float)maxPower;
+#ifdef V8NPCSERVER
+				levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+				selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+#endif
 				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
 				selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
 			break;

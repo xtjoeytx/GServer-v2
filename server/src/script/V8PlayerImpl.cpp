@@ -18,6 +18,79 @@ void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 	info.GetReturnValue().Set(playerObject->getId());
 }
 
+// PROPERTY: X Position
+void Player_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->getX());
+}
+
+void Player_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	
+	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	int newValueInt = 16 * (int)newValue;
+	if (newValueInt < 0) {
+		newValueInt = (-newValueInt << 1) | 0x0001;
+	}
+	else newValueInt <<= 1;
+	
+	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt, true, true);
+}
+
+// PROPERTY: Y Position
+void Player_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->getY());
+}
+
+void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	
+	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	int newValueInt = 16 * (int)newValue;
+	if (newValueInt < 0) {
+		newValueInt = (-newValueInt << 1) | 0x0001;
+	}
+	else newValueInt <<= 1;
+	
+	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, true, true);
+}
+
+// PROPERTY: Hearts
+void Player_GetNum_Hearts(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->getPower());
+}
+
+void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	
+	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	int newValueInt = (int)newValue * 2;
+	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)newValueInt, true, true);
+}
+
+// PROPERTY: Maxhearts
+void Player_GetInt_Maxhearts(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->getMaxPower());
+}
+
+void Player_SetInt_Maxhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	
+	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)newValue, true, true);
+}
+
 // PROPERTY: Nickname
 void Player_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -33,7 +106,7 @@ void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	v8::Local<v8::Object> self = info.This();
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 
-	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
 	playerObject->setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newValue.length() << *newValue, true, true);
 }
 
@@ -89,11 +162,10 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	// Properties...?
 	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
 	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), Player_GetStr_Nickname, Player_SetStr_Nickname);
-	//proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);
-	//proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_x, NPC_SetNum_x);
-	//proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_y, NPC_SetNum_y);
-	//proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt32_power, NPC_SetInt32_power);
-	//proto->SetAccessor(v8::String::NewFromUtf8(isolate, "maxhearts"), NPC_GetInt32_maxpower, NPC_SetInt32_maxpower);
+	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
+	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
+	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
+	proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Maxhearts, Player_SetInt_Maxhearts);
 	
 	// Persist the npc constructor
 	env->SetConstructor(ScriptConstructorId<TPlayer>::result, ctor);
