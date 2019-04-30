@@ -211,7 +211,7 @@ if(APPLE)
     endif()
 elseif(WIN32)
 
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
+    include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/bzip2 ${PROJECT_SOURCE_DIR}/dependencies/zlib ${PROJECT_BINARY_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 
     add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
 
@@ -222,8 +222,18 @@ elseif(WIN32)
 	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
 	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
 
-    add_dependencies(${TARGET_NAME} bzip2 z)
-	target_link_libraries(${TARGET_NAME} z bzip2 ${CMAKE_THREAD_LIBS_INIT})
+    add_dependencies(${TARGET_NAME} bzip2 )
+	target_link_libraries(${TARGET_NAME} bzip2 ${CMAKE_THREAD_LIBS_INIT})
+
+	if(NOT ZLIB_FOUND AND NOT NOSTATIC)
+		add_dependencies(${TARGET_NAME} zlibstatic)
+		target_link_libraries(${TARGET_NAME} zlibstatic)
+	elseif(NOT ZLIB_FOUND AND NOSTATIC)
+		add_dependencies(${TARGET_NAME} zlib)
+		target_link_libraries(${TARGET_NAME} zlib)
+	else()
+		target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES})
+	endif()
 
 	if(NOT NOUPNP)
 		if(NOSTATIC)

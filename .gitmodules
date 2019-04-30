@@ -1,3 +1,6 @@
 [submodule "dependencies/miniupnp"]
 	path = dependencies/miniupnp
 	url = https://github.com/miniupnp/miniupnp.git
+[submodule "dependencies/zlib"]
+	path = dependencies/zlib
+	url = https://github.com/madler/zlib.git
