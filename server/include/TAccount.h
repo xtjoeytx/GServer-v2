@@ -192,6 +192,10 @@ class TAccount
 		void setComments(CString comments)			{ accountComments = comments; }
 
 		bool hasRight(int mask)		{ return (adminRights & mask) ? true : false; }
+	
+#ifdef V8NPCSERVER
+		int getMaxPower() const			{ return maxPower; }
+#endif
 
 	protected:
 		TServer* server;
