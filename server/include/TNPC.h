@@ -6,6 +6,7 @@
 #include "IUtil.h"
 
 #ifdef V8NPCSERVER
+#include <unordered_map>
 #include "ScriptWrapped.h"
 
 class ScriptAction;
@@ -215,6 +216,13 @@ class TNPC
 			_scriptObject = object;
 		}
 
+		// -- triggeractions
+		inline IScriptFunction * getTriggerAction(const std::string& action) const;
+		void clearTriggerActions();
+		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
+		void queueNpcTrigger(const std::string& action, const std::string& data);
+
+		//
 		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
 		bool runScriptTimer();
 		void runScriptEvents();
@@ -248,6 +256,7 @@ class TNPC
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
+		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 #endif
 };
 
@@ -257,5 +266,18 @@ time_t TNPC::getPropModTime(unsigned char pId)
 	if (pId < NPCPROP_COUNT) return modTime[pId];
 	return 0;
 }
+
+#ifdef V8NPCSERVER
+
+inline IScriptFunction * TNPC::getTriggerAction(const std::string& action) const
+{
+	auto it = _triggerActions.find(action);
+	if (it != _triggerActions.end())
+		return it->second;
+
+	return 0;
+}
+
+#endif
 
 #endif
