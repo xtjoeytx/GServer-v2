@@ -148,8 +148,11 @@ TNPC::~TNPC()
 {
 #ifdef V8NPCSERVER
 	server->getScriptEngine()->UnregisterNpcUpdate(this);
+
 	for (auto it = _actions.begin(); it != _actions.end(); ++it)
 		delete *it;
+
+	this->clearTriggerActions();
 
 	if (_scriptObject)
 		delete _scriptObject;
@@ -653,7 +656,41 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 #ifdef V8NPCSERVER
 
-void TNPC::setTimeout(int newTimeout) {
+void TNPC::clearTriggerActions()
+{
+	// clear callbacks
+	for (auto it = _triggerActions.begin(); it != _triggerActions.end(); ++it)
+		delete it->second;
+	_triggerActions.clear();
+}
+
+// Set callbacks for triggeractions!
+void TNPC::registerTriggerAction(const std::string& action, IScriptFunction *cbFunc)
+{
+	// clear old callback if it was set
+	auto it = _triggerActions.find(action);
+	if (it != _triggerActions.end())
+		delete it->second;
+
+	// register new trigger
+	_triggerActions[action] = cbFunc;
+}
+
+void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
+{
+	auto cbFunc = getTriggerAction(action);
+	if (cbFunc == 0) 
+		return;
+
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+	ScriptAction *scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, cbFunc, data);
+
+	_actions.push_back(scriptAction);
+	scriptEngine->RegisterNpcUpdate(this);
+}
+
+void TNPC::setTimeout(int newTimeout)
+{
 	if (newTimeout > 0)
 		server->getScriptEngine()->RegisterNpcTimer(this);
 	else if (timeout <= 0)

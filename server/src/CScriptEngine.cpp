@@ -79,6 +79,11 @@ void CScriptEngine::Cleanup()
 		return;
 	}
 
+	for (auto it = _callbacks.begin(); it != _callbacks.end(); ++it) {
+		delete it->second;
+	}
+	_callbacks.clear();
+
 	if (_bootstrapFunction) {
 		delete _bootstrapFunction;
 	}
