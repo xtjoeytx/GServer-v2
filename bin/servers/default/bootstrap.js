@@ -82,10 +82,29 @@ callbacks["testFunc"]();
         }
 	});
 
+    /**
+	 * Event -> onTimeout(npc, args...)
+	 */
     env.setCallBack("npc.timeout", function (npc, ...args) {
         try {
             if (npc.onTimeout)
                 npc.onTimeout.apply(npc, args);
+        } catch (e) {
+            print("Exception thrown in onTmeout by NPC: ", e);
+        }
+    });
+
+    /*
+     * Event -> Triggeractions
+     */
+    env.setCallBack("npc.trigger", function (npc, func, data) {
+        print("NPC TRIGGER ACTION RECEIVED\n");
+        print("NPC: " + npc);
+        print("FUNCTION: " + func);
+        print("DATA: " + data);
+
+        try {
+            func.call(npc, data);
         } catch (e) {
             print("Exception thrown in onTmeout by NPC: ", e);
         }

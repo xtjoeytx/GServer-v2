@@ -371,6 +371,42 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// NPC Method: npc.registerAction(string, function);
+void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	V8ENV_D("Begin NPC::registerAction()\n");
+
+	if (args[0]->IsString() && args[1]->IsFunction())
+	{
+		V8ENV_D(" - Register npc action %s with: %s\n",
+			*v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked()),
+			*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
+
+		v8::Local<v8::External> data = args.Data().As<v8::External>();
+		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+
+		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+		// Callback name
+		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+
+		// Persist the callback function so we can retrieve it later on
+		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
+		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
+
+		// Unwrap Object
+		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+		npcObject->registerTriggerAction(eventName, cbFuncWrapper);
+	}
+
+	V8ENV_D("End NPC::registerAction()\n");
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Npc_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -477,6 +513,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
 
 	// Properties...?
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_id);
