@@ -1,3 +1,2 @@
 #!/bin/bash
-./premake5 codeblocks
-
+cmake.exe -G"CodeBlocks - Unix Makefiles" ..

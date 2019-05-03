@@ -1,2 +1,2 @@
-premake5.exe %* vs2015
+cmake -G"Visual Studio 14 2015" ..
 pause

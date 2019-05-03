@@ -1,2 +1,2 @@
-premake5.exe %* codeblocks
+cmake.exe -G"CodeBlocks - MinGW Makefiles" ..
 pause
