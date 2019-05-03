@@ -1,3 +1,2 @@
 #!/bin/bash
-./premake5 gmake
-
+cmake.exe -G"Unix Makefiles" ..
