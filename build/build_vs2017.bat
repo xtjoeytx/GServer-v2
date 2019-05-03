@@ -1,2 +1,2 @@
-premake5.exe %* vs2017
+cmake -G"Visual Studio 15 2017" ..
 pause
