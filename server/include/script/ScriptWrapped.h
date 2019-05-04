@@ -1,10 +1,12 @@
 #pragma once
 
+#include <assert.h>
+
 // default implementation
 template <typename T>
 struct TypeName
 {
-	static const char* Get()
+	static const char * Get()
 	{
 		return typeid(T).name();
 	}
@@ -19,6 +21,7 @@ public:
 	}
 	
 	virtual ~IScriptWrapped() {
+		assert(_referenceCount == 0);
 	}
 	
 	inline T * Object() const {

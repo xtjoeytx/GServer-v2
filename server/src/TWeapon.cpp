@@ -195,6 +195,14 @@ CString TWeapon::getWeaponPacket() const
 // -- Function: Update Weapon Image/Script -- //
 void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
+#ifdef V8NPCSERVER
+	CScriptEngine *scriptEngine = pServer->getScriptEngine();
+
+	// Clear script function
+	//if (!mScriptServer.isEmpty())
+	//	scriptEngine->ClearCache(mScriptServer.text());
+#endif
+
 	// Copy Data
 	this->setFullScript(pCode);
 	this->setImage(pImage);
