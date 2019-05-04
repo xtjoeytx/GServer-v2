@@ -61,6 +61,7 @@ bool CScriptEngine::Initialize()
 
 		// Create a new context (occurs on initial compile)
 		_bootstrapFunction = env->Compile("bootstrap", bootstrapScript.text());
+		assert(_bootstrapFunction);
 
 		v8::Context::Scope context_scope(env->Context());
 		_serverObject = env->Wrap(ScriptConstructorId<TServer>::result, this->_server);
