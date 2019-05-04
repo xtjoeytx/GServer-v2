@@ -33,9 +33,10 @@ callbacks["testFunc"]();
 			env.setNpcEvents(npc,
 				(npc.onCreated && 1 << 0) |
 				(npc.onTimeout && 1 << 1) |
-				(npc.onPlayerEnters && 1 << 2) |
-				(npc.onPlayerLeaves && 1 << 3) |
-				(npc.onPlayerTouchsMe && 1 << 4)
+				(npc.onPlayerChats && 1 << 2) |
+				(npc.onPlayerEnters && 1 << 3) |
+				(npc.onPlayerLeaves && 1 << 4) |
+				(npc.onPlayerTouchsMe && 1 << 5)
 			);
 
             if (npc.onCreated)
@@ -45,6 +46,18 @@ callbacks["testFunc"]();
         }
     });
 
+	/**
+	 * Event -> onPlayerChats(npc, player, message)
+	 */
+    env.setCallBack("npc.playerchats", function (npc, player, message) {
+        try {
+            if (npc.onPlayerChats)
+                npc.onPlayerChats(player, message);
+        } catch (e) {
+            print("Exception thrown in onPlayerChats by NPC: ", e);
+        }
+    });
+    
 	/**
 	 * Event -> onPlayerEnters(npc, player)
 	 */
@@ -78,7 +91,7 @@ callbacks["testFunc"]();
             if (npc.onPlayerTouchsMe)
                 npc.onPlayerTouchsMe(player);
         } catch (e) {
-            print("Exception thrown in onPlayerLeaves by NPC: ", e);
+            print("Exception thrown in onPlayerTouchsMe by NPC: ", e);
         }
 	});
 

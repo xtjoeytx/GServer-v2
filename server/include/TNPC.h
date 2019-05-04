@@ -122,9 +122,10 @@ enum
 {
 	NPCEVENTFLAG_CREATED		= (int)(1 << 0),
 	NPCEVENTFLAG_TIMEOUT		= (int)(1 << 1),
-	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 2),
-	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 3),
-	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 4),
+	NPCEVENTFLAG_PLAYERCHATS	= (int)(1 << 2),
+	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 3),
+	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 4),
+	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 5),
 };
 #endif
 
@@ -199,6 +200,9 @@ class TNPC
 		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
 		bool runScriptTimer();
 		void runScriptEvents();
+
+		template<class... Args>
+		inline void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 #endif
 	
 	private:
@@ -294,6 +298,16 @@ inline void TNPC::setScriptObject(IScriptWrapped<TNPC> *object) {
 	_scriptObject = object;
 }
 
+template<class... Args>
+inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+	ScriptAction *scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
+
+	_actions.push_back(scriptAction);
+	if (registerAction)
+		scriptEngine->RegisterNpcUpdate(this);
+}
 #endif
 
 #endif

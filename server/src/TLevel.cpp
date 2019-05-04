@@ -1378,4 +1378,14 @@ bool TLevel::isOnWater(double pX, double pY)
 	return false;
 }
 
+void TLevel::sendChatToLevel(const TPlayer *player, const CString& message)
+{
+	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
+			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), std::string(message.text()));
+	}
+}
+
 #endif
