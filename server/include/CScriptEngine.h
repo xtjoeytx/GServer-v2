@@ -58,6 +58,7 @@ public:
 		_updateNpcs.insert(npc);
 	}
 
+	//
 	inline IScriptFunction * getCallBack(const std::string& callback) const {
 		auto it = _callbacks.find(callback);
 		if (it != _callbacks.end())
@@ -74,13 +75,16 @@ public:
 	IScriptFunction * CompileCache(const std::string& code);
 	bool ClearCache(const std::string& code);
 
-	bool CreatePlayer(TPlayer *player);
 	bool ExecuteNpc(TNPC *npc);
-	inline std::string WrapNPCScript(const std::string& code) const;
-
-	// TODO(joey): Need to figure out how I should make this generic
+	
 	template<class... Args>
 	ScriptAction * CreateAction(const std::string& action, Args... An);
+
+	template<class T>
+	inline IScriptWrapped<T> * WrapObject(T *obj) const;
+
+	template <typename T>
+	static inline std::string WrapScript(const std::string& code);
 
 protected:
 	std::unordered_map<std::string, IScriptFunction *> _cachedScripts;
@@ -94,23 +98,6 @@ private:
 	IScriptWrapped<TServer> *_serverObject;
 	TServer *_server;
 };
-
-std::string CScriptEngine::WrapNPCScript(const std::string& code) const
-{
-	static const char *prefixNpcString = "(function(npc) {" \
-		"var onCreated, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
-		"const self = npc;" \
-		"self.onCreated = onCreated;" \
-		"self.onPlayerEnters = onPlayerEnters;" \
-		"self.onPlayerLeaves = onPlayerLeaves;" \
-		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
-		"self.onTimeout = onTimeout;";
-
-	std::string wrappedCode = std::string(prefixNpcString);
-	wrappedCode.append(code);
-	wrappedCode.append("});");
-	return wrappedCode;
-}
 
 template<class... Args>
 ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An)
@@ -137,6 +124,42 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 
 	ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
 	return newScriptAction;
+}
+
+template<class T>
+inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const {
+	V8ENV_D("Begin Global::WrapObject()\n");
+
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
+
+	// Wrap object, and set the object to the class
+	IScriptWrapped<T> *wrappedObject = env->Wrap(ScriptConstructorId<T>::result, obj);
+	obj->setScriptObject(wrappedObject);
+
+	V8ENV_D("End Global::WrapObject()\n\n");
+	return wrappedObject;
+}
+
+template <typename T>
+static inline std::string CScriptEngine::WrapScript(const std::string& code) {
+	return code;
+}
+
+template <>
+static inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
+	static const char *prefixString = "(function(npc) {" \
+		"var onCreated, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
+		"const self = npc;" \
+		"self.onCreated = onCreated;" \
+		"self.onPlayerEnters = onPlayerEnters;" \
+		"self.onPlayerLeaves = onPlayerLeaves;" \
+		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
+		"self.onTimeout = onTimeout;";
+
+	std::string wrappedCode = std::string(prefixString);
+	wrappedCode.append(code);
+	wrappedCode.append("});");
+	return wrappedCode;
 }
 
 #endif

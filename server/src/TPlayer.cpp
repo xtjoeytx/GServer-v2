@@ -647,6 +647,9 @@ bool TPlayer::parsePacket(CString& pPacket)
 		// Call the function assigned to the packet id.
 		packetCount++;
 		//printf("Packet: (%i) %s\n", id, curPacket.text() + 1);
+
+		// Forwards packets from server back to client as rc chat (for debugging)
+		//sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Data [" << CString(id) << "]:" << (curPacket.text() + 1));
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -3689,13 +3692,14 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	}
 	else
 	{
-		int triggerX = 16 * loc[0];
-		int triggerY = 16 * loc[1];
 		int start = action.find(",");
 		if (start != -1)
 		{
 			CString triggerAction = action.subString(0, start);
 			CString triggerData = action.subString(start + 1);
+			int triggerX = 16 * loc[0];
+			int triggerY = 16 * loc[1];
+
 			TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
 			if (npcTouched != 0)
 				npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());

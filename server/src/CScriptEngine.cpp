@@ -123,6 +123,7 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code)
 
 bool CScriptEngine::ClearCache(const std::string& code)
 {
+	// TODO(joey): hey what if two scripts have the same code.. hm
 	auto it = _cachedScripts.find(code);
 	if (it == _cachedScripts.end())
 		return false;
@@ -132,38 +133,15 @@ bool CScriptEngine::ClearCache(const std::string& code)
 	return true;
 }
 
-bool CScriptEngine::CreatePlayer(TPlayer *player)
-{
-	V8ENV_D("Begin Global::CreatePlayer()\n\n");
-
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-
-	// Fetch the v8 isolate and context
-	v8::Isolate *isolate = env->Isolate();
-	v8::Local<v8::Context> context = env->Context();
-	assert(!context.IsEmpty());
-
-	// Create a stack-allocated scope for v8 calls, and enter context
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope handle_scope(isolate);
-	v8::Context::Scope context_scope(context);
-
-	// Wrap object
-	IScriptWrapped<TPlayer> *wrappedObject = env->Wrap(ScriptConstructorId<TPlayer>::result, player);
-	player->setScriptObject(wrappedObject);
-
-	V8ENV_D("End Global::CreatePlayer()\n\n");
-	return true;
-}
-
 bool CScriptEngine::ExecuteNpc(TNPC *npc)
 {
+
 	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 	V8ENV_D("Begin Global::ExecuteNPC()\n\n");
-
+	
 	// Wrap user code in a function-object, returning some useful symbols to call for events
-	CString npcScript = npc->getServerScript().replaceAll("\xa7", "\n");
-	std::string codeStr = WrapNPCScript(npcScript.text());
+	CString npcScript = npc->getServerScript();
+	std::string codeStr = WrapScript<TNPC>(npcScript.text());
 
 	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
 
@@ -188,8 +166,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	v8::Context::Scope context_scope(context);
 
 	// Wrap object
-	IScriptWrapped<TNPC> *wrappedObject = env->Wrap(ScriptConstructorId<TNPC>::result, npc);
-	npc->setScriptObject(wrappedObject);
+	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
 
 	// Cast object
 	V8ScriptWrapped<TNPC> *v8_wrappedObject = static_cast<V8ScriptWrapped<TNPC> *>(wrappedObject);
@@ -200,13 +177,10 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 		wrappedObjectHandle
 	};
 
-	v8::TryCatch try_catch(isolate);
-
-	// TODO(joey): Abstract this out, possibly into V8ScriptArguments or V8ScriptFunction.
-
 	// Execute the compiled script with the instance from the newly-wrapped object
 	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(compiledScript);
 
+	v8::TryCatch try_catch(isolate);
 	v8::Local<v8::Function> scriptFunction = v8_function->Function();
 	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
 	if (scriptTableRet.IsEmpty())
@@ -222,14 +196,6 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 			return false;
 		}
 	}
-
-	// Define the property '_script' on the wrapped instance as the returning table from executing the compiled script
-	//v8::Local<v8::Object> scriptTableRetVal = scriptTableRet.ToLocalChecked().As<v8::Object>();
-	//v8::PropertyAttribute propertyAttrs = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
-	//wrappedObjectHandle->DefineOwnProperty(context, v8::String::NewFromUtf8(isolate, "_script", v8::NewStringType::kInternalized).ToLocalChecked(), scriptTableRetVal, propertyAttrs).FromJust();
-
-	// Queue onCreated for the npc
-	npc->queueNpcAction("npc.created");
 
 	V8ENV_D("End Global::ExecuteNPC()\n\n");
 	return true;

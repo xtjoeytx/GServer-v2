@@ -855,7 +855,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			while (i != fileData.end())
 			{
 				if (*i == "NPCEND") break;
-				code << *i << "\xa7";
+				code << *i << "\n";
 				++i;
 			}
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
