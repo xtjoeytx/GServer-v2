@@ -141,12 +141,12 @@ inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const {
 }
 
 template <typename T>
-static inline std::string CScriptEngine::WrapScript(const std::string& code) {
+inline std::string CScriptEngine::WrapScript(const std::string& code) {
 	return code;
 }
 
 template <>
-static inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
+inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 	static const char *prefixString = "(function(npc) {" \
 		"var onCreated, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
 		"const self = npc;" \
