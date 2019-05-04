@@ -942,6 +942,14 @@ void TPlayer::dropItemsOnDeath()
 
 bool TPlayer::processChat(CString pChat)
 {
+#ifdef V8NPCSERVER
+	if (!pChat.isEmpty())
+	{
+		if (level != 0)
+			level->sendChatToLevel(this, pChat.text());
+	}
+#endif
+
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
 	bool processed = false;
