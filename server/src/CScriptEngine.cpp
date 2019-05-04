@@ -102,34 +102,44 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code)
 	// TODO(joey): Temporary naming conventions, maybe pass an optional reference to an object which holds info for the compiler (name, ignore wrap code based off spaces/lines, and execution results?)
 	static int SCRIPT_ID = 1;
 
-	auto it = _cachedScripts.find(code);
-	if (it != _cachedScripts.end())
-		return it->second;
+	auto scriptFunctionIter = _cachedScripts.find(code);
+	if (scriptFunctionIter != _cachedScripts.end())
+	{
+		scriptFunctionIter->second->increaseReference();
+		return scriptFunctionIter->second;
+	}
 
 	// Compile script, handle errors
 	IScriptFunction *compiledScript = _env->Compile(std::to_string(SCRIPT_ID++), code);
-	if (compiledScript == 0)
+	if (compiledScript == nullptr)
 	{
 		// TODO(joey): Delete? Let the caller handle the errors
 		auto error = _env->getScriptError();
 		error.DebugPrint();
-		return 0;
+		return nullptr;
 	}
 
+	compiledScript->increaseReference();
 	_cachedScripts[code] = compiledScript;
+
 	V8ENV_D("---COMPILED---\n");
 	return compiledScript;
 }
 
 bool CScriptEngine::ClearCache(const std::string& code)
 {
-	// TODO(joey): hey what if two scripts have the same code.. hm
-	auto it = _cachedScripts.find(code);
-	if (it == _cachedScripts.end())
+	auto scriptFunctionIter = _cachedScripts.find(code);
+	if (scriptFunctionIter == _cachedScripts.end())
 		return false;
 
-	delete it->second;
-	_cachedScripts.erase(it);
+	IScriptFunction *scriptFunction = scriptFunctionIter->second;
+	scriptFunction->decreaseReference();
+	if (!scriptFunction->isReferenced())
+	{
+		_cachedScripts.erase(scriptFunctionIter);
+		delete scriptFunction;
+	}
+
 	return true;
 }
 
@@ -139,15 +149,25 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 	V8ENV_D("Begin Global::ExecuteNPC()\n\n");
 	
+
+	// We always want to create an object for the npc
+	// Wrap object
+	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
+
 	// Wrap user code in a function-object, returning some useful symbols to call for events
 	CString npcScript = npc->getServerScript();
+	//if (npcScript.isEmpty)
 	std::string codeStr = WrapScript<TNPC>(npcScript.text());
 
 	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
 
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
-	assert(compiledScript != 0);
+	if (compiledScript == nullptr)
+	{
+		// script failed to execute
+		return false;
+	}
 
 	//
 	// Execute the compiled script
@@ -164,9 +184,6 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope handle_scope(isolate);
 	v8::Context::Scope context_scope(context);
-
-	// Wrap object
-	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
 
 	// Cast object
 	V8ScriptWrapped<TNPC> *v8_wrappedObject = static_cast<V8ScriptWrapped<TNPC> *>(wrappedObject);
