@@ -507,7 +507,7 @@ bool TServer::onRecv()
 	sockManager.registerSocket((CSocketStub*)newPlayer);
 
 #ifdef V8NPCSERVER
-	mScriptEngine.CreatePlayer(newPlayer);
+	mScriptEngine.WrapObject(newPlayer);
 #endif
 
 	return true;
@@ -1039,16 +1039,6 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 #endif
 	}
 	
-#ifdef V8NPCSERVER
-	bool executed = mScriptEngine.ExecuteNpc(newNPC);
-	if (executed) {
-		V8ENV_D("SCRIPT COMPILED\n");
-//		newNPC->queueNpcAction("npc.created");
-	}
-	else
-		V8ENV_D("Could not compile npc script\n");
-#endif
-
 	return newNPC;
 }
 

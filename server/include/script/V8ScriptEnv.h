@@ -25,14 +25,14 @@ public:
 	void Cleanup() override;
 	IScriptFunction * Compile(const std::string& name, const std::string& source) override;
 
-	// TODO(joey): Need to figure out how I should make this generic
+	// --
 	template<class T>
 	inline IScriptWrapped<T> * Wrap(size_t idx, T *obj);
 	
-	// TODO(joey): Need to figure out how I should make this generic
 	template<class T>
 	inline T * Unwrap(v8::Local<v8::Value> value);
 	
+	// --
 	inline v8::Isolate * Isolate() const {
 		return _isolate;
 	}
@@ -45,14 +45,14 @@ public:
 		return PersistentToLocal(Isolate(), _global);
 	}
 	
-	inline v8::Local<v8::ObjectTemplate> GlobalTemplate() const {
-		return PersistentToLocal(Isolate(), _global_tpl);
-	}
-	
 	inline void SetGlobal(v8::Local<v8::Object> global) {
 		_global.Reset(Isolate(), global);
 	}
 	
+	inline v8::Local<v8::ObjectTemplate> GlobalTemplate() const {
+		return PersistentToLocal(Isolate(), _global_tpl);
+	}
+
 	inline void SetGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl) {
 		_global_tpl.Reset(Isolate(), global_tpl);
 	}
@@ -81,26 +81,38 @@ private:
 };
 
 template<class T>
-IScriptWrapped<T> * V8ScriptEnv::Wrap(size_t idx, T *obj) {
+IScriptWrapped<T> * V8ScriptEnv::Wrap(size_t idx, T *obj)
+{
+	// Fetch the v8 isolate and context
+	v8::Isolate *isolate = Isolate();
+	v8::Local<v8::Context> context = Context();
+	assert(!context.IsEmpty());
+
+	// Create a stack-allocated scope for v8 calls, and enter context
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope handle_scope(isolate);
+	v8::Context::Scope context_scope(context);
+
+	// Create an instance for the wrapped object
 	v8::Local<v8::FunctionTemplate> ctor_tpl = GetConstructor(idx);
 	v8::Local<v8::ObjectTemplate> obj_tpl = ctor_tpl->InstanceTemplate();
-	
-	// NOTE(joey): needs to be in the correct context scope or crash! Use Maybe version, requires context to be passed in.
-	v8::Local<v8::Object> new_instance = obj_tpl->NewInstance(Context()).ToLocalChecked();
+	v8::Local<v8::Object> new_instance = obj_tpl->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, obj);
 	
-	V8ScriptWrapped<T> *wrapped_object = new V8ScriptWrapped<T>(obj, Isolate(), new_instance);
+	// TODO(joey): Use unique_ptr for this
+	V8ScriptWrapped<T> *wrapped_object = new V8ScriptWrapped<T>(obj, isolate, new_instance);
 	return wrapped_object;
 }
 
 template<class T>
-T * V8ScriptEnv::Unwrap(v8::Local<v8::Value> value) {
+T * V8ScriptEnv::Unwrap(v8::Local<v8::Value> value)
+{
 	T *obj = 0;
-	if (value->IsObject()) {
+	if (value->IsObject())
+	{
 		v8::MaybeLocal<v8::Object> handle = value->ToObject(Context());
-		if (!handle.IsEmpty()) {
+		if (!handle.IsEmpty())
 			obj = static_cast<T *>(handle.ToLocalChecked()->GetAlignedPointerFromInternalField(0));
-		}
 	}
 	
 	return obj;
