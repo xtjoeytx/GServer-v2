@@ -118,9 +118,7 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 	}
 
 	// total temp
-	V8ScriptEnv *_env = 0;
-
-	IScriptArguments *args = ScriptArgumentsFactory::Create(_env, std::forward<Args>(An)...);
+	IScriptArguments *args = ScriptArgumentsFactory::Create((V8ScriptEnv *)nullptr, std::forward<Args>(An)...);
 
 	ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
 	return newScriptAction;
@@ -148,9 +146,10 @@ inline std::string CScriptEngine::WrapScript(const std::string& code) {
 template <>
 inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 	static const char *prefixString = "(function(npc) {" \
-		"var onCreated, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
+		"var onCreated, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
 		"const self = npc;" \
 		"self.onCreated = onCreated;" \
+		"self.onPlayerChats = onPlayerChats;" \
 		"self.onPlayerEnters = onPlayerEnters;" \
 		"self.onPlayerLeaves = onPlayerLeaves;" \
 		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
