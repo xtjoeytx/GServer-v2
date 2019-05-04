@@ -298,6 +298,9 @@ inline void TNPC::setScriptObject(IScriptWrapped<TNPC> *object) {
 	_scriptObject = object;
 }
 
+// TODO(joey): hm
+#include "TServer.h"
+
 template<class... Args>
 inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
