@@ -1013,6 +1013,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 			npcIds[i] = newNPC;
 			newNPC->setId(i);
 			assignedId = true;
+			break;
 		}
 	}
 
@@ -1055,11 +1056,11 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
-
+	
 	// Remove the NPC from all the lists.
 	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
-
+		
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		if ((*i) == npc)
