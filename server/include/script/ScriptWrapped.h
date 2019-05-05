@@ -21,6 +21,10 @@ public:
 	}
 	
 	virtual ~IScriptWrapped() {
+		// TODO(joey): This assert is triggered when updating levels quickly. The reason for this
+		// is because npcs may have actions queued up, and referenceCount doesn't decrease on destructor
+		// only when the action is invoked and the arguments are parsed. Will look into this, but shouldn't
+		// have any side effects anyway.
 		assert(_referenceCount == 0);
 	}
 	
