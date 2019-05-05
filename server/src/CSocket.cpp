@@ -63,7 +63,7 @@
 #include "CSocket.h"
 
 // Change this to any printf()-like function you use for logging purposes.
-#define SLOG(x, ...)		if (0) printf(x, ## __VA_ARGS__)
+#define SLOG(x, ...)		 printf(x, ## __VA_ARGS__)
 //////
 
 // Function declarations.
@@ -367,7 +367,7 @@ int CSocket::connect()
 	// Connect the socket.
 	if (properties.type != SOCKET_TYPE_SERVER)
 	{
-		if (::connect(properties.handle, (struct sockaddr *)&properties.address, sizeof(properties.address)) == SOCKET_ERROR)
+		if (::connect(properties.handle, (struct sockaddr *)&properties.address, properties.addresslen) == SOCKET_ERROR)
 		{
 			SLOG("[CSocket::connect] connect() returned error: %s\n", errorMessage(identifyError()));
 			disconnect();
