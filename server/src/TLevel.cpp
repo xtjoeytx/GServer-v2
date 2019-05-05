@@ -204,10 +204,6 @@ bool TLevel::reload()
 	// Don't delete NPCs if this level is on a gmap!  If we are on a gmap, just set them
 	// back to their original positions.
 	{
-		// Get some pointers.
-		std::vector<TNPC*>* npcList = server->getNPCList();
-		std::vector<TNPC*>* npcIds = server->getNPCIdList();
-
 		// Remove every NPC in the level.
 		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end();)
 		{
