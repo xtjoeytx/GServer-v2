@@ -34,6 +34,15 @@ void V8ScriptEnv::Initialize()
 		v8::V8::Initialize();
 	}
 	
+#ifndef WIN32
+	// TODO(joey): Temporary bug fix, not much resources on this so something must be wrong with my v8 implementation.
+	// Fixes a bug on linux/osx:
+	// https://fw.hardijzer.nl/?p=97
+	v8::ResourceConstraints rc;
+	rc.set_stack_limit((uint32_t *)(((uint64_t)&rc)/2));
+	create_params.constraints = rc;
+#endif
+
 	// Create v8 isolate
 	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 	_isolate = v8::Isolate::New(create_params);
