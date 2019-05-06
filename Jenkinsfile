@@ -93,6 +93,16 @@ node('master') {
 			node {			
 				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Static', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
+		},
+		'Linux x86': {
+			node {			
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux 32bit Static', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86_64': {
+			node {			
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Lnux 32bit Static', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
 		}
     )
 }
