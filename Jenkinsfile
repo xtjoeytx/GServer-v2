@@ -50,7 +50,6 @@ def buildStep(dockerImage, generator, os, defines) {
 			docker.image("${dockerImage}").inside {
                 if (env.CHANGE_ID) {
                     echo 'Trying to build pull request'
-                    sh "echo \$HOSTNAME "
                 }
 
                 if (!env.CHANGE_ID) {
@@ -63,7 +62,9 @@ def buildStep(dockerImage, generator, os, defines) {
 
 			    slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 
-	    		sh "cd build/ && cmake -G\"${generator}\" ${defines} .."
+                dir("build") {
+                    sh "cmake -G\"${generator}\" ${defines} .."
+                }
 
 	    		sh "cmake --build build --target package --config Release"
 		
