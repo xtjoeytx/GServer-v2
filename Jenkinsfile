@@ -46,7 +46,7 @@ def buildStep(dockerImage, generator, os, defines) {
 			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
 
 			checkout scm
-			docker.image(dockerImage)/*.withRun('-e "MYSQL_ROOT_PASSWORD=my-secret-pw"')*/ { c ->
+			docker.image("${dockerImage}")/*.withRun('-e "MYSQL_ROOT_PASSWORD=my-secret-pw"')*/ { c ->
                 if (env.CHANGE_ID) {
                     echo 'Trying to build pull request'
                 }
