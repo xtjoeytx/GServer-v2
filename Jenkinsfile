@@ -58,8 +58,6 @@ def buildStep(dockerImage, generator, os, defines) {
 
 			    slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 
-			    freshUpRoot(ext, binutilsver, gccver)
-
 	    		sh "cd ${env.WORKSPACE}/build && cmake -G\"${generator}\" .. ${defines} "
 
 	    		sh "cd ${env.WORKSPACE}/build && cmake --build . --target package --config Release"
