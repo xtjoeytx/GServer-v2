@@ -40,13 +40,14 @@ def killall_jobs() {
 
 def buildStep(dockerImage, generator, os, defines) {
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
+    def fixed_os = os.replace(' ','_')
 	try{
 		stage("Building on \"${dockerImage}\" with \"${generator}\" for \"${os}\"...") {
 			properties([pipelineTriggers([githubPush()])])
 			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
 
 			checkout scm
-			docker.image("${dockerImage}").withRun('')  { c ->
+			docker.image("${dockerImage}").withRun("-ti --name dockcross_${fixed_os} -v ${env.WORKSPACE}:/work -v /home/marlon/.ssh:/home/marlon/.ssh -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=marlon -e BUILDER_GROUP=marlon bash")  { c ->
                 if (env.CHANGE_ID) {
                     echo 'Trying to build pull request'
                 }
