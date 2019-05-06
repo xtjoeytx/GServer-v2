@@ -82,12 +82,12 @@ node('master') {
 	parallel (
 		'Win64': {
 			node {			
-				buildStep('vsundin/buildtools2017native:latest', 'Visual Studio 15 2017 Win64', 'Windows 64bit', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows 64bit Static', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		},
 		'Win32': {
 			node {			
-				buildStep('vsundin/buildtools2017native:latest', 'Visual Studio 15 2017', 'Windows 32bit', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Static', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		}
     )
