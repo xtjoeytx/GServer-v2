@@ -646,7 +646,10 @@ bool TPlayer::parsePacket(CString& pPacket)
 
 		// Call the function assigned to the packet id.
 		packetCount++;
-		//printf("Packet: (%i) %s\n", id, curPacket);
+		//printf("Packet: (%i) %s\n", id, curPacket.text() + 1);
+
+		// Forwards packets from server back to client as rc chat (for debugging)
+		//sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Data [" << CString(id) << "]:" << (curPacket.text() + 1));
 		if (!(*this.*TPLFunc[id])(curPacket))
 			return false;
 	}
@@ -939,6 +942,14 @@ void TPlayer::dropItemsOnDeath()
 
 bool TPlayer::processChat(CString pChat)
 {
+#ifdef V8NPCSERVER
+	if (!pChat.isEmpty())
+	{
+		if (level != 0)
+			level->sendChatToLevel(this, pChat.text());
+	}
+#endif
+
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
 	bool processed = false;
@@ -3681,12 +3692,35 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		}
 	}
 
-	// Send to the level.
-	server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+#ifdef V8NPCSERVER
+	if (action.find("serverside") == 0)
+	{
+		// Trigger weapon!
+		printf("Serverside weapon trigger\n");
+	}
+	else
+	{
+		int start = action.find(",");
+		if (start != -1)
+		{
+			CString triggerAction = action.subString(0, start);
+			CString triggerData = action.subString(start + 1);
+			int triggerX = 16 * loc[0];
+			int triggerY = 16 * loc[1];
 
+			TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
+			if (npcTouched != 0)
+				npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
+		}
+	}
+#else
 	// Send to the NPC-server.
 	if (server->hasNPCServer())
 		server->getNPCServer()->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1));
+#endif
+
+	// Send to the level.
+	server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
 
 	return true;
 }

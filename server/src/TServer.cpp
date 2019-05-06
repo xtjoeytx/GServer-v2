@@ -507,7 +507,7 @@ bool TServer::onRecv()
 	sockManager.registerSocket((CSocketStub*)newPlayer);
 
 #ifdef V8NPCSERVER
-	mScriptEngine.CreatePlayer(newPlayer);
+	mScriptEngine.WrapObject(newPlayer);
 #endif
 
 	return true;
@@ -1013,6 +1013,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 			npcIds[i] = newNPC;
 			newNPC->setId(i);
 			assignedId = true;
+			break;
 		}
 	}
 
@@ -1039,16 +1040,6 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 #endif
 	}
 	
-#ifdef V8NPCSERVER
-	bool executed = mScriptEngine.ExecuteNpc(newNPC);
-	if (executed) {
-		V8ENV_D("SCRIPT COMPILED\n");
-//		newNPC->queueNpcAction("npc.created");
-	}
-	else
-		V8ENV_D("Could not compile npc script\n");
-#endif
-
 	return newNPC;
 }
 
@@ -1065,11 +1056,11 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
-
+	
 	// Remove the NPC from all the lists.
 	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
-
+		
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		if ((*i) == npc)

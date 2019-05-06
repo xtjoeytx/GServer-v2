@@ -184,6 +184,7 @@ class TLevel
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
 		bool isOnWall(double pX, double pY);
 		bool isOnWater(double pX, double pY);
+		void sendChatToLevel(const TPlayer *player, const CString& message);
 #endif
 
 	private:

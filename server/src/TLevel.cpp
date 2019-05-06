@@ -204,10 +204,6 @@ bool TLevel::reload()
 	// Don't delete NPCs if this level is on a gmap!  If we are on a gmap, just set them
 	// back to their original positions.
 	{
-		// Get some pointers.
-		std::vector<TNPC*>* npcList = server->getNPCList();
-		std::vector<TNPC*>* npcIds = server->getNPCIdList();
-
 		// Remove every NPC in the level.
 		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end();)
 		{
@@ -855,7 +851,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			while (i != fileData.end())
 			{
 				if (*i == "NPCEND") break;
-				code << *i << "\xa7";
+				code << *i << "\n";
 				++i;
 			}
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
@@ -1376,6 +1372,16 @@ bool TLevel::isOnWall(double pX, double pY)
 bool TLevel::isOnWater(double pX, double pY)
 {
 	return false;
+}
+
+void TLevel::sendChatToLevel(const TPlayer *player, const CString& message)
+{
+	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
+			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), std::string(message.text()));
+	}
 }
 
 #endif
