@@ -47,7 +47,7 @@ def buildStep(dockerImage, generator, os, defines) {
 			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
 
 			checkout scm
-			docker.image("${dockerImage}").inside("-v ${env.WORKSPACE}:/work -v /home/marlon/.ssh:/home/marlon/.ssh -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=marlon -e BUILDER_GROUP=marlon") {
+			docker.image("${dockerImage}").inside {
                 if (env.CHANGE_ID) {
                     echo 'Trying to build pull request'
                     sh "echo \$HOSTNAME "
