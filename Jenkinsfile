@@ -54,15 +54,17 @@ def buildStep(dockerImage, generator, os, defines) {
                 }
 
                 if (!env.CHANGE_ID) {
-                    sh "rm -rfv ${env.WORKSPACE}/publishing/deploy/*"
-                    sh "mkdir -p ${env.WORKSPACE}/publishing/deploy/gs2emu"
+                    sh "rm -rfv publishing/deploy/*"
+                    sh "mkdir -p publishing/deploy/gs2emu"
                 }
+
+                sh "rm -rfv build/*"
 
 			    slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 
-	    		sh "cd ${env.WORKSPACE}/build && cmake -G\"${generator}\" .. ${defines} "
+	    		sh "cmake -G\"${generator}\" .. ${defines} -Bbuild -S ."
 
-	    		sh "cd ${env.WORKSPACE}/build && cmake --build . --target package --config Release"
+	    		sh "cmake --build build --target package --config Release"
 		
 				slackSend color: "good", channel: "#jenkins", message: "Build ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!"
 			}
