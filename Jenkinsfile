@@ -58,11 +58,12 @@ def buildStep(dockerImage, generator, os, defines) {
                     sh "mkdir -p publishing/deploy/gs2emu"
                 }
 
+                sh "mkdir -p build/"
                 sh "rm -rfv build/*"
 
 			    slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 
-	    		sh "cmake -G\"${generator}\" .. ${defines} -Bbuild -S ."
+	    		sh "cd build/ && cmake -G\"${generator}\" ${defines}"
 
 	    		sh "cmake --build build --target package --config Release"
 		
