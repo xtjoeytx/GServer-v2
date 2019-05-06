@@ -6,6 +6,7 @@
 #include "IUtil.h"
 
 #ifdef V8NPCSERVER
+#include <unordered_map>
 #include "ScriptWrapped.h"
 
 class ScriptAction;
@@ -121,9 +122,10 @@ enum
 {
 	NPCEVENTFLAG_CREATED		= (int)(1 << 0),
 	NPCEVENTFLAG_TIMEOUT		= (int)(1 << 1),
-	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 2),
-	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 3),
-	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 4),
+	NPCEVENTFLAG_PLAYERCHATS	= (int)(1 << 2),
+	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 3),
+	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 4),
+	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 5),
 };
 #endif
 
@@ -135,6 +137,8 @@ class TNPC
 	public:
 		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
 		~TNPC();
+
+		void setScriptCode(const CString& pScript, bool trimCode = false);
 
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
@@ -165,59 +169,40 @@ class TNPC
 		bool isLevelNPC()				{ return levelNPC; }
 
 #ifdef V8NPCSERVER
-		inline int getBlockFlags() const {
-			return blockFlags;
-		}
-
-		inline int getVisFlags() const {
-			return visFlags;
-		}
+		inline int getBlockFlags() const;
+		inline int getVisFlags() const;
 
 		//
-		inline int getWidth() const {
-			return width;
-		}
-
-		inline void setWidth(int newWidth) {
-			width = newWidth;
-		}
+		inline int getWidth() const;
+		inline void setWidth(int newWidth);
 
 		//
-		inline int getHeight() const {
-			return height;
-		}
-
-		inline void setHeight(int newHeight) {
-			height = newHeight;
-		}
+		inline int getHeight() const;
+		inline void setHeight(int newHeight);
 
 		//
-		inline int getTimeout() const {
-			return timeout;
-		}
-
+		inline int getTimeout() const;
 		void setTimeout(int newTimeout);
 
 		// 
-		inline bool hasScriptEvent(int flag) const {
-			return ((_scriptEventsMask & flag) == flag);
-		}
+		inline bool hasScriptEvent(int flag) const;
+		inline void setScriptEvents(int mask);
 
-		inline void setScriptEvents(int mask) {
-			_scriptEventsMask = mask;
-		}
+		inline IScriptWrapped<TNPC> * getScriptObject() const;
+		inline void setScriptObject(IScriptWrapped<TNPC> *object);
 
-		inline IScriptWrapped<TNPC> * getScriptObject() const {
-			return _scriptObject;
-		}
-	
-		inline void setScriptObject(IScriptWrapped<TNPC> *object) {
-			_scriptObject = object;
-		}
+		// -- triggeractions
+		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
+		void queueNpcTrigger(const std::string& action, const std::string& data);
 
+		//
+		void freeScriptResources();
 		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
 		bool runScriptTimer();
 		void runScriptEvents();
+
+		template<class... Args>
+		inline void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 #endif
 	
 	private:
@@ -248,6 +233,7 @@ class TNPC
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
+		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 #endif
 };
 
@@ -257,5 +243,74 @@ time_t TNPC::getPropModTime(unsigned char pId)
 	if (pId < NPCPROP_COUNT) return modTime[pId];
 	return 0;
 }
+
+#ifdef V8NPCSERVER
+
+/**
+ * NPC Properties Getter/Setters
+ */
+inline int TNPC::getBlockFlags() const {
+	return blockFlags;
+}
+
+inline int TNPC::getVisFlags() const {
+	return visFlags;
+}
+
+//
+inline int TNPC::getWidth() const {
+	return width;
+}
+
+inline void TNPC::setWidth(int newWidth) {
+	width = newWidth;
+}
+
+//
+inline int TNPC::getHeight() const {
+	return height;
+}
+
+inline void TNPC::setHeight(int newHeight) {
+	height = newHeight;
+}
+
+inline int TNPC::getTimeout() const {
+	return timeout;
+}
+
+/**
+ * Script Engine 
+ */
+inline bool TNPC::hasScriptEvent(int flag) const {
+	return ((_scriptEventsMask & flag) == flag);
+}
+
+inline void TNPC::setScriptEvents(int mask) {
+	_scriptEventsMask = mask;
+}
+
+inline IScriptWrapped<TNPC> * TNPC::getScriptObject() const {
+	return _scriptObject;
+}
+
+inline void TNPC::setScriptObject(IScriptWrapped<TNPC> *object) {
+	_scriptObject = object;
+}
+
+// TODO(joey): hm
+#include "TServer.h"
+
+template<class... Args>
+inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+	ScriptAction *scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
+
+	_actions.push_back(scriptAction);
+	if (registerAction)
+		scriptEngine->RegisterNpcUpdate(this);
+}
+#endif
 
 #endif

@@ -164,7 +164,7 @@ elseif(WIN32)
 		CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
 		if (_cpp_latest_flag_supported)
 			add_compile_options("/std:c++latest")
-			add_link_options("/SUBSYSTEM:CONSOLE")
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")
 		endif()
 
 		# Enable parallel compilation

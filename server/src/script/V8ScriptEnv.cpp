@@ -34,6 +34,15 @@ void V8ScriptEnv::Initialize()
 		v8::V8::Initialize();
 	}
 	
+#ifndef WIN32
+	// TODO(joey): Temporary bug fix, not much resources on this so something must be wrong with my v8 implementation.
+	// Fixes a bug on linux/osx:
+	// https://fw.hardijzer.nl/?p=97
+	v8::ResourceConstraints rc;
+	rc.set_stack_limit((uint32_t *)(((uint64_t)&rc)/2));
+	create_params.constraints = rc;
+#endif
+
 	// Create v8 isolate
 	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 	_isolate = v8::Isolate::New(create_params);
@@ -90,12 +99,16 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 		v8::Local<v8::Context> context = this->Context();
 		
 		v8::Handle<v8::Message> message = tryCatch->Message();
-		_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
-		_lastScriptError.filename  = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
-		_lastScriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
-		_lastScriptError.lineno = message->GetLineNumber(context).ToChecked();
-		_lastScriptError.startcol = message->GetStartColumn(context).ToChecked();
-		_lastScriptError.endcol = message->GetEndColumn(context).ToChecked();
+		if (!message.IsEmpty())
+		{
+			// TODO(joey): this throws a seg-fault, pretty sure this is the correct way to do it though. untested
+			//_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
+			_lastScriptError.filename = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
+			_lastScriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
+			_lastScriptError.lineno = message->GetLineNumber(context).ToChecked();
+			_lastScriptError.startcol = message->GetStartColumn(context).ToChecked();
+			_lastScriptError.endcol = message->GetEndColumn(context).ToChecked();
+		}
 		return true;
 	}
 	
@@ -131,9 +144,9 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
 	v8::Local<v8::Script> script;
 	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script)) {
-		printf("Script compile error\n");
+		printf("Script compile error: %s\n", source.c_str());
 		ParseErrors(&try_catch);
-		return 0;
+		return nullptr;
 	}
 	
 	// Run the script to get the result.
@@ -144,7 +157,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 		// TODO(joey): script execution errors
 		printf("Script run error\n");
 		ParseErrors(&try_catch);
-		return 0;
+		return nullptr;
 	}
 
 	assert(!try_catch.HasCaught());

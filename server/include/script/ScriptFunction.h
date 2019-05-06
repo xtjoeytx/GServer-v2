@@ -5,9 +5,28 @@ class IScriptArguments;
 class IScriptFunction
 {
 public:
-	IScriptFunction() = default;
+	IScriptFunction() : _referenceCount(0) { }
 	
 	virtual ~IScriptFunction() = 0;
+
+	inline bool isReferenced() const {
+		return _referenceCount > 0;
+	}
+
+	inline int getReferenceCount() const {
+		return _referenceCount;
+	}
+
+	inline void increaseReference() {
+		_referenceCount++;
+	}
+
+	inline void decreaseReference() {
+		_referenceCount--;
+	}
+
+private:
+	int _referenceCount;
 };
 
 inline IScriptFunction::~IScriptFunction() = default;

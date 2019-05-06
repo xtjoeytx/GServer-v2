@@ -61,19 +61,40 @@ level(pLevel), server(pServer)
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
+	// TODO: Create plugin hook so NPCServer can acquire/format code.
+	setScriptCode(pScript, trimCode);
+}
+
+TNPC::~TNPC()
+{
+#ifdef V8NPCSERVER
+	freeScriptResources();
+
+	if (_scriptObject)
+		delete _scriptObject;
+#endif
+}
+
+void TNPC::setScriptCode(const CString& pScript, bool trimCode)
+{
+#ifdef V8NPCSERVER
+	if (!serverScript.isEmpty())
+		freeScriptResources();
+#endif
+
 	bool levelModificationNPCHack = false;
 
 	// See if the NPC sets the level as a sparring zone.
 	if (pScript.subString(0, 12) == "sparringzone")
 	{
-		pLevel->setSparringZone(true);
+		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
 
 	// See if the NPC sets the level as singleplayer.
 	if (pScript.subString(0, 12) == "singleplayer")
 	{
-		pLevel->setSingleplayer(true);
+		level->setSingleplayer(true);
 		levelModificationNPCHack = true;
 	}
 
@@ -114,26 +135,28 @@ level(pLevel), server(pServer)
 	}
 
 	// Remove comments and trim the code if specified.
+	// TODO(joey): Just a note for the future, but if trimCode is false the formatted script is never set so scripts wouldn't send to client.
+	// Is there a reason why we shouldn't always trim the code sent to the client?
 	if (trimCode)
 	{
 		if (!serverScript.isEmpty())
 		{
-			serverScriptFormatted = removeComments(serverScript, "\xa7");
-			std::vector<CString> code = serverScriptFormatted.tokenize("\xa7");
+			serverScriptFormatted = removeComments(serverScript, "\n");
+			std::vector<CString> code = serverScriptFormatted.tokenize("\n");
 			serverScriptFormatted.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
 				serverScriptFormatted << (*i).trim() << "\xa7";
 		}
 		if (!clientScript.isEmpty())
 		{
-			clientScriptFormatted = removeComments(clientScript, "\xa7");
-			std::vector<CString> code = clientScriptFormatted.tokenize("\xa7");
+			clientScriptFormatted = removeComments(clientScript, "\n");
+			std::vector<CString> code = clientScriptFormatted.tokenize("\n");
 			clientScriptFormatted.clear();
 			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
 				clientScriptFormatted << (*i).trim() << "\xa7";
 		}
 	}
-
+	
 	// Search for toweapons in the clientside code and extract the name of the weapon.
 	weaponName = toWeaponName(clientScript);
 
@@ -141,18 +164,15 @@ level(pLevel), server(pServer)
 	if (clientScriptFormatted.length() > 0x705F)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
-	// TODO: Create plugin hook so NPCServer can acquire/format code.
-}
-
-TNPC::~TNPC()
-{
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->UnregisterNpcUpdate(this);
-	for (auto it = _actions.begin(); it != _actions.end(); ++it)
-		delete *it;
-
-	if (_scriptObject)
-		delete _scriptObject;
+	// Compile and execute the script.
+	bool executed = server->getScriptEngine()->ExecuteNpc(this);
+	if (executed) {
+		V8ENV_D("SCRIPT COMPILED\n");
+		this->queueNpcAction("npc.created");
+	}
+	else
+		V8ENV_D("Could not compile npc script\n");
 #endif
 }
 
@@ -653,7 +673,64 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 #ifdef V8NPCSERVER
 
-void TNPC::setTimeout(int newTimeout) {
+void TNPC::freeScriptResources()
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(serverScript.text()));
+
+	// Clear any queued actions
+	if (!_actions.empty())
+	{
+		// Unregister npc from any queued event calls
+		scriptEngine->UnregisterNpcUpdate(this);
+
+		for (auto it = _actions.begin(); it != _actions.end(); ++it)
+			delete *it;
+		_actions.clear();
+	}
+
+	// Clear timeouts
+	if (timeout > 0)
+	{
+		scriptEngine->UnregisterNpcTimer(this);
+		timeout = 0;
+	}
+
+	// Clear triggeraction functions
+	for (auto it = _triggerActions.begin(); it != _triggerActions.end(); ++it)
+		delete it->second;
+	_triggerActions.clear();
+}
+
+// Set callbacks for triggeractions!
+void TNPC::registerTriggerAction(const std::string& action, IScriptFunction *cbFunc)
+{
+	// clear old callback if it was set
+	auto triggerIter = _triggerActions.find(action);
+	if (triggerIter != _triggerActions.end())
+		delete triggerIter->second;
+
+	// register new trigger
+	_triggerActions[action] = cbFunc;
+}
+
+void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
+{
+	// Check if we respond to this trigger
+	auto triggerIter = _triggerActions.find(action);
+	if (triggerIter == _triggerActions.end())
+		return;
+
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	ScriptAction *scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, data);
+	_actions.push_back(scriptAction);
+	scriptEngine->RegisterNpcUpdate(this);
+}
+
+void TNPC::setTimeout(int newTimeout)
+{
 	if (newTimeout > 0)
 		server->getScriptEngine()->RegisterNpcTimer(this);
 	else if (timeout <= 0)
@@ -663,15 +740,12 @@ void TNPC::setTimeout(int newTimeout) {
 
 void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
 {
-	// TODO(joey): profile strings in release, it is slowing down execution in debug.
-	
-	// TODO(joey): ScriptArguments does not do sanity checks on passed objects
-	// still debating on whether I should check prior to running the action or
-	// implement sanity check in the Server.
-	
 	ScriptAction *scriptAction = 0;
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
+	// TODO(joey): ScriptArguments does not do sanity checks on passed objects
+	// still debating on whether I should check prior to running the action or
+	// implement sanity check in the Server.
 	IScriptWrapped<TPlayer> *playerObject = 0;
 	if (player != 0)
 	{
@@ -683,13 +757,6 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 	if (!scriptAction)
 		scriptAction = scriptEngine->CreateAction(action, _scriptObject);
 
-	//IScriptWrapped<TPlayer> *playerObject = 0;
-	//if (player != 0)
-	//	playerObject = player->getScriptObject();
-
-	//CScriptEngine *scriptEngine = server->getScriptEngine();
-	//ScriptAction *scriptAction = scriptEngine->CreateAction(action, playerObject);
-	
 	_actions.push_back(scriptAction);
 	if (registerAction)
 		scriptEngine->RegisterNpcUpdate(this);
