@@ -63,7 +63,7 @@ def buildStep(dockerImage, generator, os, defines) {
 
 			    slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 
-	    		sh "cd build/ && cmake -G\"${generator}\" ${defines}"
+	    		sh "cd build/ && cmake -G\"${generator}\" ${defines} .."
 
 	    		sh "cmake --build build --target package --config Release"
 		
