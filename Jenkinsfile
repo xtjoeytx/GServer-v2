@@ -70,9 +70,9 @@ def buildStep(dockerImage, generator, os, defines) {
 				dir("build") {
 					sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
 					sh "cmake --build . --config Release --target package -- -j 8"
-				}
 
-				archiveArtifacts artifacts: 'build/*.zip'
+					archiveArtifacts artifacts: '*.zip', '*.tar.gz', '*.tgz'
+				}
 
 				slackSend color: "good", channel: "#jenkins", message: "Build ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!"
 			}
