@@ -11,17 +11,7 @@ public:
 	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = std::string())
 		: _function(function), _args(args), _action(action) {
 	}
-
-	ScriptAction(const ScriptAction& other)
-		: _function(other.getFunction()), _args(other.getArguments()), _action(other.getAction()) {
-		printf("Copy ctor\n");
-	}
-
-	ScriptAction(ScriptAction&& other) noexcept
-		: _function(std::move(other.getFunction())), _args(std::move(other.getArguments())), _action(std::move(other.getAction())) {
-		printf("Move ctor\n");
-	}
-
+	
 	~ScriptAction() {
 		if (_args) {
 			delete _args;

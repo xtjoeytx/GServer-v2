@@ -101,6 +101,7 @@ if(V8NPCSERVER)
 		APPEND
 		SOURCES
 		CScriptEngine.cpp
+		script/V8EnvironmentImpl.cpp
 		script/V8FunctionsImpl.cpp
 		script/V8NPCImpl.cpp
 		script/V8PlayerImpl.cpp

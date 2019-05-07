@@ -1,25 +1,5 @@
 'use strict';
 
-/*
-var callbacks = (function() {
-  console.log("Start: ", this)
-  function testFunc() {
-    console.log("testFunc(): ", this);
-    testFunc2();
-  }
-
-  function testFunc2() {
-    console.log("testFunc2(): ", this);
-  }
-  return {
-    "testFunc": testFunc,
-    "testFunc2": testFunc2
-  };
-})();
-
-callbacks["testFunc"]();
-*/
-
 (function (env) {
     print("Test Environment ", env);
     print("Test Environment Type: ", typeof env);
