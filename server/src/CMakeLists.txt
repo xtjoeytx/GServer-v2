@@ -248,6 +248,14 @@ if(V8NPCSERVER)
 	target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 endif()
 
+file(GLOB TEXT
+    ${PROJECT_NAME_LOWER}.wasm
+)
+
+set(INSTALL_DEST ".")
+
+install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
+	
 set(INSTALL_DEST .)
 
 install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
