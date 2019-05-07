@@ -75,6 +75,15 @@ void Ext_PrintMessage(const v8::FunctionCallbackInfo<v8::Value>& args)
 	//V8ENV_D("End Global::Print()\n\n");
 }
 
+void Global_GetServer(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+    v8::Local<v8::External> data = info.Data().As<v8::External>();
+    CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+
+    V8ScriptWrapped<TServer> *v8_serverObject = static_cast<V8ScriptWrapped<TServer> *>(scriptEngine->getServerObject());
+
+    info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
+}
+
 void bindGlobalFunctions(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
@@ -86,7 +95,9 @@ void bindGlobalFunctions(CScriptEngine *scriptEngine)
 	
 	// Fetch global template
 	v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
-	
+
+	global->SetAccessor(v8::String::NewFromUtf8(isolate, "server"), Global_GetServer, nullptr, engine_ref);
+
 	// Bind functions
 	global->Set(v8::String::NewFromUtf8(isolate, "print"), v8::FunctionTemplate::New(isolate, Ext_PrintMessage));
 	global->Set(v8::String::NewFromUtf8(isolate, "testFunc"), v8::FunctionTemplate::New(isolate, Ext_TestFunc, engine_ref));
