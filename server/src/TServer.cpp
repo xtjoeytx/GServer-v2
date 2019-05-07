@@ -127,7 +127,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 #ifdef UPNP
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
-	upnp.initialize(playerSock.getLocalIp(), settings.getStr("serverport").text());
+	upnp.initialize((oInter.isEmpty() ? playerSock.getLocalIp() : oInter.text()), settings.getStr("serverport").text());
 	upnp_thread = std::thread(std::ref(upnp));
 #endif
 
