@@ -51,7 +51,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(VER_X 2)
 set(VER_Y 6)
 set(VER_Z x)
-option(VER_EXTRA "Extra version string" " GIT NPC Server")
+set(VER_EXTRA " GIT" CACHE STRING "Extra version")
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
