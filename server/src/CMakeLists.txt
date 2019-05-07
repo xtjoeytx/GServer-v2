@@ -19,6 +19,9 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+include(CheckFunctionExists)
+include(CheckSymbolExists)
+
 set(
     SOURCES
     CEncryption.cpp
