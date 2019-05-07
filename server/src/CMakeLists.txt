@@ -154,6 +154,8 @@ include_directories(
 if(APPLE OR WIN32)
     # OS X and Windows get a mixed-case binary name
     set(TARGET_NAME ${PROJECT_NAME})
+elseif(EMSCRIPTEN)
+	set(TARGET_NAME ${PROJECT_NAME_LOWER}.html)
 else()
     # Linux/other UNIX get a lower-case binary name
     set(TARGET_NAME ${PROJECT_NAME_LOWER})
@@ -207,7 +209,7 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_executable(${TARGET_NAME}.html ${SOURCES} ${HEADERS})
+	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 else()
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 endif()
