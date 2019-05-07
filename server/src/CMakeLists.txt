@@ -30,7 +30,6 @@ set(
     CSocket.cpp
     CString.cpp
     CTranslationManager.cpp
-    CUPNP.cpp
     CWordFilter.cpp
     IUtil.cpp
     main.cpp
@@ -70,7 +69,6 @@ set(
     ../include/CString.h
     ../include/CTimeout.h
     ../include/CTranslationManager.h
-    ../include/CUPNP.h
     ../include/CWordFilter.h
     ../include/IConfig.h
     ../include/IConfig.h.in
@@ -95,6 +93,21 @@ set(
     ../include/TServerList.h
     ../include/TWeapon.h
 )
+
+
+if(NOT NOUPNP)
+	list(
+		APPEND
+		SOURCES
+		CUPNP.cpp
+	)
+
+	list(
+		APPEND
+		HEADERS
+		../include/CUPNP.h
+	)
+endif()
 
 if(V8NPCSERVER)
 	list(
@@ -167,17 +180,19 @@ if(APPLE)
         TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
     )
 elseif(WIN32)
-    add_executable(${TARGET_NAME} WIN32 ${SOURCES} ${HEADERS})
-	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
-	set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+    add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	if(MSVC)
+		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-	if(V8NPCSERVER)
-		target_link_libraries(${TARGET_NAME} v8.dll.lib v8_libbase.dll.lib v8_libplatform.dll.lib)
+		if(V8NPCSERVER)
+			target_link_libraries(${TARGET_NAME} v8.dll.lib v8_libbase.dll.lib v8_libplatform.dll.lib)
+		endif()
 	endif()
 else()
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
@@ -202,12 +217,12 @@ endif()
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
+if(WIN32)
+	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
+endif()
+
 if(NOT NOUPNP)
 	if(NOT MINIUPNPC_FOUND)
-		if(WIN32)
-			target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
-		endif()
-
 		if(NOSTATIC)
 			add_dependencies(${TARGET_NAME} libminiupnpc-shared)
 			target_link_libraries(${TARGET_NAME} libminiupnpc-shared)

@@ -45,25 +45,14 @@ if(APPLE)
     set_property(
         TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
     )
-
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 elseif(WIN32)
     add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 elseif(AROS)
-    add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
-
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 elseif(AMIGA)
-    add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
-    if(MORPHOS OR AMIGAOS3 AND NOT WARPOS)
-        target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-    else()
-        target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-    endif()
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 else()
-    add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
-
-    target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${MINIUPNP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 endif()
 
 set(INSTALL_DEST .)

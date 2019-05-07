@@ -23,7 +23,9 @@
 #include "CWordFilter.h"
 #include "TServerList.h"
 
+#ifdef UPNP
 #include "CUPNP.h"
+#endif
 
 #ifdef V8NPCSERVER
 #include "CScriptEngine.h"
