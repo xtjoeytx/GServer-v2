@@ -172,6 +172,9 @@ if(NOT BZip2_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
 endif()
 
+check_function_exists(inet_pton HAVE_INET_PTON)
+
+
 if(APPLE)
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
