@@ -172,8 +172,14 @@ if(NOT BZip2_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
 endif()
 
-check_function_exists(inet_pton HAVE_INET_PTON)
+check_symbol_exists(inet_pton "ws2tcpip.h" HAVE_INET_PTON)
+if (NOT HAVE_INET_PTON)
+	check_function_exists(inet_pton HAVE_INET_PTON)
+endif()
 
+if (HAVE_INET_PTON)
+	add_definition(-DHAVE_INET_PTON)
+endif()
 
 if(APPLE)
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
