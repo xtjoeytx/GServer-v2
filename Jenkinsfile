@@ -70,6 +70,7 @@ def buildStep(dockerImage, generator, os, defines) {
 				dir("build") {
 					sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
 					sh "cmake --build . --config Release --target package -- -j 8"
+					sh "cmake --build . --config Release --target package_source -- -j 8"
 
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 				}
