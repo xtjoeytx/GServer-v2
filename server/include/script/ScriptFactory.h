@@ -5,11 +5,12 @@
 
 enum
 {
-	ScriptConstructorNone,
-	ScriptConstructorServer,
-	ScriptConstructorNpc,
-	ScriptConstructorPlayer,
-	ScriptConstructorCount
+	ScriptConstructorNone           = 0,
+	ScriptConstructorEnvironment    = 1,
+	ScriptConstructorServer         = 2,
+	ScriptConstructorNpc            = 3,
+	ScriptConstructorPlayer         = 4,
+	ScriptConstructorCount          = 5,
 };
 
 template<typename T>
@@ -23,6 +24,13 @@ class TServer;
 template<> struct ScriptConstructorId<TServer> {
 	enum {
 		result = ScriptConstructorServer
+	};
+};
+
+class IScriptEnv;
+template<> struct ScriptConstructorId<IScriptEnv> {
+	enum {
+		result = ScriptConstructorEnvironment
 	};
 };
 

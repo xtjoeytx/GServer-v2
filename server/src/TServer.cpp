@@ -976,7 +976,13 @@ TWeapon* TServer::getWeapon(const CString& name)
 
 CString TServer::getFlag(const CString& pFlagName)
 {
+#ifdef V8NPCSERVER
+	if (mServerFlags.find(pFlagName) != mServerFlags.end())
+		return mServerFlags[pFlagName];
+	return "";
+#else
 	return mServerFlags[pFlagName];
+#endif
 }
 
 CFileSystem* TServer::getFileSystemByType(CString& type)
