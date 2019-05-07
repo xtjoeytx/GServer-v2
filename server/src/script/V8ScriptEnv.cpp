@@ -4,6 +4,7 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptArguments.h"
 
+bool _v8_initialized = false;
 int V8ScriptEnv::s_count = 0;
 std::unique_ptr<v8::Platform> V8ScriptEnv::s_platform;
 
@@ -27,11 +28,12 @@ void V8ScriptEnv::Initialize()
 	v8::V8::InitializeExternalStartupData(".");
 
 	// Initialize v8 if this is the first vm
-	if (V8ScriptEnv::s_count == 0)
+	if (!_v8_initialized)
 	{
 		s_platform = v8::platform::NewDefaultPlatform();
 		v8::V8::InitializePlatform(s_platform.get());
 		v8::V8::Initialize();
+		_v8_initialized = true;
 	}
 	
 #ifndef WIN32
@@ -54,7 +56,7 @@ void V8ScriptEnv::Initialize()
 
 	// Increment v8 environment counter
 	V8ScriptEnv::s_count++;
-
+	
 	// Initialized
 	_initialized = true;
 }
@@ -81,8 +83,9 @@ void V8ScriptEnv::Cleanup()
 	// Cleanup v8
 	if (V8ScriptEnv::s_count == 1)
 	{
-		v8::V8::Dispose();
-		v8::V8::ShutdownPlatform();
+		// TODO(joey): This needs to be called when the application is exiting only
+		//v8::V8::Dispose();
+		//v8::V8::ShutdownPlatform();
 	}
 	
 	// Decrease v8 environment counter
