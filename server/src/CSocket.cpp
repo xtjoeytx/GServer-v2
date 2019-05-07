@@ -63,7 +63,7 @@
 #include "CSocket.h"
 
 // Change this to any printf()-like function you use for logging purposes.
-#define SLOG(x, ...)		 printf(x, ## __VA_ARGS__)
+#define SLOG(x, ...)		 if (0) printf(x, ## __VA_ARGS__)
 //////
 
 // Function declarations.
