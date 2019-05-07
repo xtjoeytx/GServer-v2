@@ -4,3 +4,6 @@
 [submodule "dependencies/zlib"]
 	path = dependencies/zlib
 	url = https://github.com/madler/zlib.git
+[submodule "dependencies/v8"]
+	path = dependencies/v8
+	url = https://chromium.googlesource.com/v8/v8.git
