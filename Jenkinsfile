@@ -91,29 +91,89 @@ node('master') {
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
 	slackSend color: "good", channel: "#jenkins", message: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 	parallel (
-		'Win64': {
+		'Win64-static': {
 			node {			
 				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows 64bit Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		},
-		'Win32': {
+		'Win32-static': {
 			node {			
 				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		},
-		'Linux x86': {
+		'Linux x86-static': {
 			node {			
 				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux 32bit Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		},
-		'Linux x86_64': {
+		'Linux x86_64-static': {
 			node {			
 				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux 64bit Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		},
+		'Win64-shared': {
+			node {			
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows 64bit Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Win32-shared': {
+			node {			
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86-shared': {
+			node {			
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux 32bit Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86_64-shared': {
+			node {			
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux 64bit Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Win64-static-NoUPNP': {
+			node {			
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows 64bit Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Win32-static-NoUPNP': {
+			node {			
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86-static-NoUPNP': {
+			node {			
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux 32bit Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86_64-static-NoUPNP': {
+			node {			
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux 64bit Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Win64-shared-NoUPNP': {
+			node {			
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows 64bit Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Win32-shared-NoUPNP': {
+			node {			
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows 32bit Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86-shared-NoUPNP': {
+			node {			
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux 32bit Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux x86_64-shared-NoUPNP': {
+			node {			
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux 64bit Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+			}
+		},
 		'WebASM': {
 			node {			
-				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
 			}
 		}
     )
