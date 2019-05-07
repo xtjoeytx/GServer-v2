@@ -8,6 +8,7 @@
 #include "TServer.h"
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
+extern void bindClass_Environment(CScriptEngine *scriptEngine);
 extern void bindClass_NPC(CScriptEngine *scriptEngine);
 extern void bindClass_Player(CScriptEngine *scriptEngine);
 extern void bindClass_Server(CScriptEngine *scriptEngine);
@@ -55,6 +56,7 @@ bool CScriptEngine::Initialize()
 		bindGlobalFunctions(this);
 
 		// Bind classes to be used for scripts
+		bindClass_Environment(this);
 		bindClass_Server(this);
 		bindClass_NPC(this);
 		bindClass_Player(this);
@@ -64,9 +66,10 @@ bool CScriptEngine::Initialize()
 		assert(_bootstrapFunction);
 
 		v8::Context::Scope context_scope(env->Context());
-		_serverObject = env->Wrap(ScriptConstructorId<TServer>::result, this->_server);
+        _environmentObject = env->Wrap(ScriptConstructorId<IScriptEnv>::result, this->_server); //server);
+        _serverObject = env->Wrap(ScriptConstructorId<TServer>::result, this->_server);
 
-		IScriptArguments *args = ScriptArgumentsFactory::Create(env, _serverObject);
+		IScriptArguments *args = ScriptArgumentsFactory::Create(env, _environmentObject);
 		args->Invoke(_bootstrapFunction);
 		delete args;
 	}
@@ -87,6 +90,10 @@ void CScriptEngine::Cleanup()
 
 	if (_bootstrapFunction) {
 		delete _bootstrapFunction;
+	}
+
+	if (_environmentObject) {
+	    delete _environmentObject;
 	}
 
 	if (_serverObject) {
@@ -146,10 +153,8 @@ bool CScriptEngine::ClearCache(const std::string& code)
 
 bool CScriptEngine::ExecuteNpc(TNPC *npc)
 {
-
 	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 	V8ENV_D("Begin Global::ExecuteNPC()\n\n");
-	
 
 	// We always want to create an object for the npc
 	// Wrap object
@@ -157,7 +162,11 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 
 	// Wrap user code in a function-object, returning some useful symbols to call for events
 	CString npcScript = npc->getServerScript();
-	//if (npcScript.isEmpty)
+	if (npcScript.isEmpty())
+    {
+		V8ENV_D("Empty code, maybe we shouldn't execute\n");
+    }
+
 	std::string codeStr = WrapScript<TNPC>(npcScript.text());
 
 	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
