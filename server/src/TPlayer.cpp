@@ -2161,7 +2161,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 {
 	// Read Player-Ip
 	accountIpStr = playerSock->getRemoteIp();
-	accountIp = inet_addr(accountIpStr.text());
+	inet_pton(AF_INET, accountIpStr.text(), &accountIp);
 
 	// Read Client-Type
 	serverlog.out("[%s] :: New login:\t", server->getName().text());
