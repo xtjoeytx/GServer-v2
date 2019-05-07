@@ -113,7 +113,7 @@ node('master') {
 		},
 		'Linux ARMv6-static': {
 			node {
-				buildStep('dockcross/linux-armv6:latest', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
+				buildStep('dockcross/linux-armv7:latest', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
 			}
 		},
 		'WebASM': {
