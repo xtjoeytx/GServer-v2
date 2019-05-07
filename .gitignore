@@ -7,3 +7,4 @@ cmake-build-*/*
 bin/Debug/
 lib/
 ..gitignore.swp
+.vs/

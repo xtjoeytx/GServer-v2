@@ -19,7 +19,7 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-file(GLOB FILES "*.po")
+file(GLOB FILES "english.po")
 
 set(INSTALL_DEST "./servers/default/translations")
 
