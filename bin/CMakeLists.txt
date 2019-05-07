@@ -26,6 +26,7 @@ file(GLOB TEXT
     miniupnp_licence.txt
     servers.txt
     readme.txt
+	${PROJECT_NAME_LOWER}.wasm
 )
 
 set(INSTALL_DEST ".")
