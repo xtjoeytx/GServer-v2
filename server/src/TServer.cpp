@@ -1004,6 +1004,54 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 	return &filesystem[fs];
 }
 
+// TODO(joey): Database npcs
+TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::string& object, const std::string& scripter, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
+{
+	// Make sure the npc id isn't in use
+	if (npcId < npcIds.size() && npcIds[npcId] != 0)
+	{
+		printf("Error creating database npc: Id is in use!\n");
+		return nullptr;
+	}
+
+	CString testScript = "function onCreated() { self.showcharacter(); }";
+
+	// Create the npc
+	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false, settings.getBool("trimnpccode", true));
+	newNPC->setId(npcId);
+	npcList.push_back(newNPC);
+
+	if (npcIds.size() < npcId)
+		npcIds.resize(npcId + 1);
+	npcIds[npcId] = newNPC;
+
+	// Add the npc to the level
+	pLevel->addNPC(newNPC);
+
+	// Send the NPC's props to everybody in range.
+	if (sendToPlayers)
+	{
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
+
+		// Send to level.
+		TMap* map = getMap(pLevel);
+		sendPacketToLevel(packet, map, pLevel, 0, true);
+	}
+
+	/*
+	NPC Get Script: 1000
+	NPC Name: asdf
+	NPC Id: 1001
+	NPC Type: OBJECT
+	NPC Scripter: Stefan Knorr
+	NPC Level: worldu-15.nw
+	NPC X: 30.5
+	NPC Y: 30
+	*/
+
+	return newNPC;
+}
+
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc

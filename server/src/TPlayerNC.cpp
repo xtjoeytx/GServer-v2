@@ -97,14 +97,22 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	float npcX = (float)pPacket.readGUChar() / 2.0f;
 	float npcY = (float)pPacket.readGUChar() / 2.0f;
 	CString npcLevel = pPacket.readString("");
-	printf("NPC Warp: %d\n", npcId);
-	printf("NPC X: %f\n", npcX);
-	printf("NPC Y: %f\n", npcX);
-	printf("NPC Level: %s\n", npcLevel.text());
+
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
+	{
+		TLevel *newLevel = server->getLevel(npcLevel);
+		if (newLevel == 0) {
+			printf("Err finding level\n");
+			return true;
+		}
+		
+		npc->warpNPC(newLevel, npcX, npcY);
+	}
 
 	return true;
 }
@@ -195,12 +203,23 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	printf("NPC X: %s\n", npcX.text());
 	printf("NPC Y: %s\n", npcY.text());
 
-	// {158}{INT id}{CHAR 50}{CHAR name length}{name}{CHAR 51}{CHAR type length}{type}{CHAR 52}{CHAR level length}{level} 
+	TLevel *level = server->getLevel(npcLevel);
+	if (level == nullptr)
+	{
+		printf("Error adding database npc: Level does not exist!\n");
+		return true;
+	}
+	// {158}{INT id}{CHAR 50}{CHAR name length}{name}{CHAR 51}{CHAR type length}{type}{CHAR 52}{CHAR level length}{level}
 	
-	// Start our packet.
-	CString ret;
-	ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
-	sendPacket(ret);
+	TNPC *newNpc = server->addServerNpc(strtoint(npcId), npcName.text(), npcType.text(), npcScripter.text(), strtofloat(npcX), strtofloat(npcY), level, true);
+	if (newNpc != nullptr)
+	{
+		// TODO(joey): Should this packet be sent to every NC connected?
+		// Send packet to player about new npc
+		CString ret;
+		ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
+		sendPacket(ret);
+	}
 
 	return true;
 }
