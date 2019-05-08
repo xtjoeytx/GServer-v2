@@ -143,7 +143,9 @@ class TServer : public CSocketStub
 		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
 		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 
+#ifdef V8NPCSERVER
 		TNPC* addServerNpc(int npcId, const std::string& name, const std::string& object, const std::string& scripter, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
+#endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0, bool eraseFromLevel = true);
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0, bool eraseFromLevel = true);
