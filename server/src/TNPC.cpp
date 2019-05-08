@@ -664,8 +664,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 		// Add to ret.
 		ret >> (char)propId << getProp(propId, clientVersion);
-
-		if (hasMoved) testTouch();
 	}
 
 	if (pForward)
@@ -678,6 +676,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		// TODO(joey): only gmap? why is this?
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
+
+	if (hasMoved) testTouch();
 
 	return ret;
 }
