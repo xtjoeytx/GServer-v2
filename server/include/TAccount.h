@@ -142,7 +142,7 @@ class TAccount
 		bool hasWeapon(const CString& pWeapon);
 
 		// Flag-Managing
-		CString getFlag(const CString& pFlagName)	{ return flagList[pFlagName]; }
+		inline CString getFlag(const CString& pFlagName) const;
 		void setFlag(CString pFlag);
 		void setFlag(const CString& pFlagName, const CString& pFlagValue);
 		void deleteFlag(const CString& pFlagName);
@@ -223,5 +223,13 @@ class TAccount
 		std::map<CString, CString> flagList;
 		std::vector<CString> chestList, folderList, weaponList, PMServerList;
 };
+
+inline CString TAccount::getFlag(const CString& pFlagName) const
+{
+	auto it = flagList.find(pFlagName);
+	if (it != flagList.end())
+		return it->second;
+	return "";
+}
 
 #endif // TACCOUNT_H

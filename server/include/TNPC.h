@@ -169,6 +169,14 @@ class TNPC
 		bool isLevelNPC()				{ return levelNPC; }
 
 #ifdef V8NPCSERVER
+		inline const CString& getScriptCode() const { return origScript; }
+
+		inline const CString& getName() const;
+		inline void setName(const CString& pName);
+
+		inline const CString& getScripter() const;
+		inline void setScripter(const CString& pScripter);
+
 		inline int getBlockFlags() const;
 		inline int getVisFlags() const;
 
@@ -201,6 +209,11 @@ class TNPC
 		bool runScriptTimer();
 		void runScriptEvents();
 
+
+		inline void allowNpcWarping(bool canwarp);
+		void resetNPC();
+		void warpNPC(TLevel *pLevel, float pX, float pY);
+
 		template<class... Args>
 		inline void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 #endif
@@ -226,7 +239,14 @@ class TNPC
 		TServer* server;
 	
 #ifdef V8NPCSERVER
+		// Defaults
+		CString origImage, origScript;
+		float origX, origY;
+		TLevel *origLevel;
+
 		// npc-server
+		CString scriptName, scripter;
+		bool canWarp;
 		int width, height;
 		int timeout;
 
@@ -245,6 +265,31 @@ time_t TNPC::getPropModTime(unsigned char pId)
 }
 
 #ifdef V8NPCSERVER
+
+
+inline const CString& TNPC::getName() const
+{
+	return scriptName;
+}
+inline void TNPC::setName(const CString& pName)
+{
+	scriptName = pName;
+}
+
+inline const CString& TNPC::getScripter() const
+{
+	return scripter;
+}
+inline void TNPC::setScripter(const CString& pScripter)
+{
+	scripter = pScripter;
+}
+
+inline void TNPC::allowNpcWarping(bool canwarp)
+{
+	if (!isLevelNPC())
+		canWarp = canwarp;
+}
 
 /**
  * NPC Properties Getter/Setters

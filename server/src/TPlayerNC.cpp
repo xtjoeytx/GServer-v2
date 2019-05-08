@@ -53,6 +53,7 @@ bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
 		return false;
 	}
 
+	// NPC `NAME` reset by `ACCOUNT`
 	int npcId = pPacket.readGUInt();
 	printf("NPC Reset: %d\n", npcId);
 
@@ -69,22 +70,13 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 
 	// {160}{INT id}{GSTRING script}
 	int npcId = pPacket.readGUInt();
-	printf("NPC Get Script: %d\n", npcId);
-
-	// TODO(joey): temporarily used weapons to get this setup
-	auto weaponList = server->getWeaponList();
-	if (!weaponList->empty())
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
 	{
-		auto it = weaponList->begin();
-		TWeapon *weapon = it->second;
-		if (weapon != 0)
-		{
-			CString ret;
-			ret >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << weapon->getFullScript().replaceAll("\xa7", "\n").gtokenize();
-			sendPacket(ret);
-		}
+		CString code = npc->getScriptCode();
+		sendPacket(CString() >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << code.replaceAll("\xa7", "\n").gtokenize());
 	}
-	else printf("no weapons exist\n");
+//	else printf("no weapons exist\n");
 
 	return true;
 }
@@ -97,14 +89,22 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	float npcX = (float)pPacket.readGUChar() / 2.0f;
 	float npcY = (float)pPacket.readGUChar() / 2.0f;
 	CString npcLevel = pPacket.readString("");
-	printf("NPC Warp: %d\n", npcId);
-	printf("NPC X: %f\n", npcX);
-	printf("NPC Y: %f\n", npcX);
-	printf("NPC Level: %s\n", npcLevel.text());
+
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
+	{
+		TLevel *newLevel = server->getLevel(npcLevel);
+		if (newLevel == 0) {
+			printf("Err finding level\n");
+			return true;
+		}
+		
+		npc->warpNPC(newLevel, npcX, npcY);
+	}
 
 	return true;
 }
@@ -148,8 +148,13 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 
 	int npcId = pPacket.readGUInt();
 	CString npcScript = pPacket.readString("").guntokenize();
-	printf("NPC Set Script: %d\n", npcId);
-	printf("NPC Script: %s\n", npcScript.text());
+
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
+	{
+		npc->setScriptCode(npcScript, true);
+		server->sendToNC(CString("Script ") << npc->getName() << " updated by " << accountName);
+	}
 
 	return true;
 }
@@ -187,22 +192,63 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	CString npcX = npcData.readString("\n");
 	CString npcY = npcData.readString("\n");
 
-	printf("NPC Name: %s\n", npcName.text());
-	printf("NPC Id: %s\n", npcId.text());
-	printf("NPC Type: %s\n", npcType.text());
-	printf("NPC Scripter: %s\n", npcScripter.text());
-	printf("NPC Level: %s\n", npcLevel.text());
-	printf("NPC X: %s\n", npcX.text());
-	printf("NPC Y: %s\n", npcY.text());
+	TLevel *level = server->getLevel(npcLevel);
+	if (level == nullptr)
+	{
+		server->sendToNC("Error adding database npc: Level does not exist");
+		return true;
+	}
 
-	// {158}{INT id}{CHAR 50}{CHAR name length}{name}{CHAR 51}{CHAR type length}{type}{CHAR 52}{CHAR level length}{level} 
-	
-	// Start our packet.
-	CString ret;
-	ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
-	sendPacket(ret);
+	TNPC *newNpc = server->addServerNpc(strtoint(npcId), npcName.text(), npcType.text(), npcScripter.text(), strtofloat(npcX), strtofloat(npcY), level, true);
+	if (newNpc != nullptr)
+	{
+		// Send packet to npc controls about new npc
+		CString ret;
+		ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
+		server->sendPacketTo(PLTYPE_ANYNC, ret);
+	}
 
 	return true;
+}
+
+bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to add a class.\n", accountName.text());
+		return false;
+	}
+
+	// {112}{class}
+	CString className = pPacket.readString("");
+	printf("Update Class by Name: %s\n", className.text());
+
+	// {162}{CHAR name length}{name}{GSTRING script}
+	CString testScript = CString() << "function onCreated() {"
+			<< "  var test = \"hey\" + \"you\""
+			<< "}";
+
+	CString ret;
+	ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << testScript.gtokenize();
+	sendPacket(ret);
+	return true;
+}
+
+bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
+{
+	// {113}{CHAR name length}{name}{GSTRING script}
+	CString className = pPacket.readChars(pPacket.readGUChar());
+	CString classData = pPacket.readString("").guntokenize();
+
+	printf("Class %s => \n%s\n", className.text(), classData.text());
+
+	CString ret;
+	ret >> (char)PLO_NC_CLASSADD << className;
+	sendPacket(ret);
+
+
+	return true;
+
 }
 
 bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
@@ -255,7 +301,8 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 	// {116}{weapon}
 	CString weaponName = pPacket.readString("");
-	
+	printf("Get weapon: %s\n", weaponName.text());
+
 	TWeapon *weapon = server->getWeapon(weaponName);
 	if (weapon != 0 && !weapon->isDefault())
 	{
@@ -282,6 +329,8 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	CString weaponName = pPacket.readChars(pPacket.readGUChar());
 	CString weaponImage = pPacket.readChars(pPacket.readGUChar());
 	CString weaponCode = pPacket.readString("");
+
+	// Weapon `NAME` added/updated by `ACCOUNT`
 
 	// Find Weapon
 	TWeapon *weaponObj = server->getWeapon(weaponName);
