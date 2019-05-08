@@ -28,6 +28,10 @@ public:
 	void Cleanup();
 	void RunScripts(bool timedCall = false);
 
+	inline IScriptWrapped<TServer> * getServerObject() const {
+		return _serverObject;
+	}
+
 	inline TServer * getServer() const {
 		return _server;
 	}
@@ -96,6 +100,7 @@ private:
 	IScriptEnv *_env;
 	IScriptFunction *_bootstrapFunction;
 	IScriptWrapped<TServer> *_serverObject;
+	IScriptWrapped<TServer> *_environmentObject;
 	TServer *_server;
 };
 

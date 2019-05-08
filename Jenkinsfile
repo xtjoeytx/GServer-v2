@@ -93,87 +93,32 @@ node('master') {
 	parallel (
 		'Win64-static': {
 			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=FALSE")
 			}
 		},
 		'Win32-static': {
 			node {			
-				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Static', "-DV8NPCSERVER=FALSE")
 			}
 		},
 		'Linux x86-static': {
 			node {			
-				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Static', "-DV8NPCSERVER=FALSE")
 			}
 		},
 		'Linux x86_64-static': {
 			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static', "-DNOUPNP=FALSE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=FALSE")
 			}
 		},
-		'Win64-shared': {
-			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Win32-shared': {
-			node {			
-				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86-shared': {
-			node {			
-				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86_64-shared': {
-			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Shared', "-DNOUPNP=FALSE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Win64-static-NoUPNP': {
-			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Win32-static-NoUPNP': {
-			node {			
-				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86-static-NoUPNP': {
-			node {			
-				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86_64-static-NoUPNP': {
-			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Win64-shared-NoUPNP': {
-			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Win32-shared-NoUPNP': {
-			node {			
-				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86-shared-NoUPNP': {
-			node {			
-				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
-			}
-		},
-		'Linux x86_64-shared-NoUPNP': {
-			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Shared NoUPNP', "-DNOUPNP=TRUE -DNOSTATIC=TRUE -DV8NPCSERVER=FALSE")
+		'Linux ARMv6-static': {
+			node {
+				buildStep('dockcross/linux-armv7:latest', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
 			}
 		},
 		'WebASM': {
 			node {			
-				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DNOUPNP=TRUE -DNOSTATIC=FALSE -DV8NPCSERVER=FALSE")
+				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DV8NPCSERVER=FALSE")
 			}
 		}
     )
