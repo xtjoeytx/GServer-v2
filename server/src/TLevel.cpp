@@ -1340,6 +1340,25 @@ bool TLevel::doTimedEvents()
 }
 
 #ifdef V8NPCSERVER
+TLevelLink * TLevel::isOnLink(int pX, int pY)
+{
+	if (!levelLinks.empty())
+	{
+		for (auto it = levelLinks.begin(); it != levelLinks.end(); ++it)
+		{
+			TLevelLink *levelLink = *it;
+//			printf("Check %d in %d, %d\nCheck %d in %d, %d\n", pX, levelLink->getX(), levelLink->getX() + levelLink->getWidth(), pY, levelLink->getY(), levelLink->getY() + levelLink->getHeight());
+			if ((pX >= levelLink->getX() && pX <= levelLink->getX() + levelLink->getWidth()) &&
+				(pY >= levelLink->getY() && pY <= levelLink->getY() + levelLink->getHeight()))
+			{
+				return levelLink;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 {
 	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
@@ -1362,7 +1381,7 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 		}
 	}
 
-	return 0;
+	return nullptr;
 }
 
 bool TLevel::isOnWall(double pX, double pY)
