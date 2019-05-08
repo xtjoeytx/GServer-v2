@@ -251,6 +251,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_NC_NPCSCRIPTSET(CString& pPacket);
 		bool msgPLI_NC_NPCFLAGSSET(CString& pPacket);
 		bool msgPLI_NC_NPCADD(CString& pPacket);
+		bool msgPLI_NC_CLASSEDIT(CString& pPacket);
+		bool msgPLI_NC_CLASSADD(CString& pPacket);
 		bool msgPLI_NC_LOCALNPCSGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONLISTGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONGET(CString& pPacket);
