@@ -213,6 +213,7 @@ bool TLevel::reload()
 				server->deleteNPC(n, this, false);
 				i = levelNPCs.erase(i);
 			}
+			else i++;
 		}
 		//levelNPCs.clear();
 	}

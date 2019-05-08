@@ -148,7 +148,6 @@ void Player_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
 	v8::String::Utf8Value utf8(isolate, name);
 
-	// TODO(joey): Currently accessing a flag that doesn't exist creates a flag will need to be fixed in getFlag or add a new function hasFlag. TBD
 	// Get server flag with the property
 	CString flagValue = playerObject->getFlag(*utf8);
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, flagValue.text());
