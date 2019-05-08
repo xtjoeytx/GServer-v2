@@ -3,10 +3,10 @@ set(BASE ${CMAKE_SOURCE_DIR}/dependencies/v8)
 set(BASE_TOOLS ${CMAKE_SOURCE_DIR}/dependencies/depot_tools)
 project(v8)
 
-if(NOT EXISTS "${BASE}/../.gclient")
+#if(NOT EXISTS "${BASE}/../.gclient")
 	add_custom_command(
 		COMMAND
-			rm -rf ${BASE}
+			rm -rf ${BASE}/../.gclient ${BASE}/../.gclient_entries ${BASE} 
 		WORKING_DIRECTORY
 			${BASE}/../
 		DEPENDS
@@ -27,18 +27,18 @@ if(NOT EXISTS "${BASE}/../.gclient")
 		OUTPUT
 			${BASE}/output-fetch.txt
 	)
-else()
-	add_custom_command(
-		COMMAND
-			${BASE_TOOLS}/gclient sync -D
-		WORKING_DIRECTORY
-			${BASE}/
-		DEPENDS
-			${BASE_TOOLS}/gclient
-		OUTPUT
-			${BASE}/output-fetch.txt
-	)
-endif()
+#else()
+#	add_custom_command(
+#		COMMAND
+#			${BASE_TOOLS}/gclient sync -D
+#		WORKING_DIRECTORY
+#			${BASE}/
+#		DEPENDS
+#			${BASE_TOOLS}/gclient
+#		OUTPUT
+#			${BASE}/output-fetch.txt
+#	)
+#endif()
 
 add_custom_command(
 	COMMAND
