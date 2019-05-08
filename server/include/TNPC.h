@@ -210,7 +210,7 @@ class TNPC
 		void runScriptEvents();
 
 
-		inline void allowNpcWarping(bool canwarp);
+		inline void allowNpcWarping(bool canWarp);
 		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
@@ -239,6 +239,8 @@ class TNPC
 		TServer* server;
 	
 #ifdef V8NPCSERVER
+		void testTouch();
+
 		// Defaults
 		CString origImage, origScript;
 		float origX, origY;
@@ -266,29 +268,32 @@ time_t TNPC::getPropModTime(unsigned char pId)
 
 #ifdef V8NPCSERVER
 
-
+//
 inline const CString& TNPC::getName() const
 {
 	return scriptName;
 }
+
 inline void TNPC::setName(const CString& pName)
 {
 	scriptName = pName;
 }
 
+//
 inline const CString& TNPC::getScripter() const
 {
 	return scripter;
 }
+
 inline void TNPC::setScripter(const CString& pScripter)
 {
 	scripter = pScripter;
 }
 
-inline void TNPC::allowNpcWarping(bool canwarp)
+inline void TNPC::allowNpcWarping(bool canWarp)
 {
 	if (!isLevelNPC())
-		canWarp = canwarp;
+		canWarp = canWarp;
 }
 
 /**

@@ -16,13 +16,13 @@ class TLevelLink
 		void parseLinkStr(const std::vector<CString>& pLink);
 
 		// get private variables
-		inline CString getNewLevel();
-		inline CString getNewX();
-		inline CString getNewY();
-		inline int getX();
-		inline int getY();
-		inline int getWidth();
-		inline int getHeight();
+		inline CString getNewLevel() const;
+		inline CString getNewX() const;
+		inline CString getNewY() const;
+		inline int getX() const;
+		inline int getY() const;
+		inline int getWidth() const;
+		inline int getHeight() const;
 
 	private:
 		CString newLevel, newX, newY;
@@ -32,37 +32,37 @@ class TLevelLink
 /*
 	TLevelLink: Get Private Variables
 */
-inline CString TLevelLink::getNewLevel()
+inline CString TLevelLink::getNewLevel() const
 {
 	return newLevel;
 }
 
-inline CString TLevelLink::getNewX()
+inline CString TLevelLink::getNewX() const
 {
 	return newX;
 }
 
-inline CString TLevelLink::getNewY()
+inline CString TLevelLink::getNewY() const
 {
 	return newY;
 }
 
-inline int TLevelLink::getX()
+inline int TLevelLink::getX() const
 {
 	return x;
 }
 
-inline int TLevelLink::getY()
+inline int TLevelLink::getY() const
 {
 	return y;
 }
 
-inline int TLevelLink::getWidth()
+inline int TLevelLink::getWidth() const
 {
 	return width;
 }
 
-inline int TLevelLink::getHeight()
+inline int TLevelLink::getHeight() const
 {
 	return height;
 }
