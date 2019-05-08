@@ -283,6 +283,8 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_NC_NPCSCRIPTSET] = &TPlayer::msgPLI_NC_NPCSCRIPTSET;
 	TPLFunc[PLI_NC_NPCFLAGSSET] = &TPlayer::msgPLI_NC_NPCFLAGSSET;
 	TPLFunc[PLI_NC_NPCADD] = &TPlayer::msgPLI_NC_NPCADD;
+	TPLFunc[PLI_NC_CLASSEDIT] = &TPlayer::msgPLI_NC_CLASSEDIT;
+	TPLFunc[PLI_NC_CLASSADD] = &TPlayer::msgPLI_NC_CLASSADD;
 	TPLFunc[PLI_NC_LOCALNPCSGET] = &TPlayer::msgPLI_NC_LOCALNPCSGET;
 	TPLFunc[PLI_NC_WEAPONLISTGET] = &TPlayer::msgPLI_NC_WEAPONLISTGET;
 	TPLFunc[PLI_NC_WEAPONGET] = &TPlayer::msgPLI_NC_WEAPONGET;
@@ -4150,7 +4152,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		{
 			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
 
-			//server->sendPacketTo(PLTYPE_ANYRC, CString() << "W%*irc:#graal ,#graal (1,0)q#");
+			//server->sendPacketTo(PLTYPE_ANYRC, CString() << "Wï¿½%*irc:#graal ,#graal (1,0)q#");
 		}
 	}
 

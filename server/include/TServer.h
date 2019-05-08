@@ -143,6 +143,7 @@ class TServer : public CSocketStub
 		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
 		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 
+		TNPC* addServerNpc(int npcId, const std::string& name, const std::string& object, const std::string& scripter, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0, bool eraseFromLevel = true);
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0, bool eraseFromLevel = true);
@@ -152,7 +153,11 @@ class TServer : public CSocketStub
 		bool deleteFlag(const CString& pFlagName, bool pSendToPlayers = true);
 		bool setFlag(CString pFlag, bool pSendToPlayers = true);
 		bool setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
-		
+
+		// Admin chat functions
+		inline void sendToRC(const CString& pMessage, TPlayer *pPlayer = 0) const;
+		inline void sendToNC(const CString& pMessage, TPlayer *pPlayer = 0) const;
+
 		// Packet sending.
 		void sendPacketToAll(CString pPacket, TPlayer *pPlayer = 0, bool pNpcServer = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
@@ -235,5 +240,18 @@ class TServer : public CSocketStub
 		CScriptEngine mScriptEngine;
 #endif
 };
+
+#include "IEnums.h"
+
+inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
+{
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+}
+
+inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
+{
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+}
+
 
 #endif
