@@ -93,22 +93,22 @@ node('master') {
 	parallel (
 		'Win64-static': {
 			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
 		'Win32-static': {
 			node {			
-				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Static', "-DV8NPCSERVER=FALSE")
+				buildStep('dockcross/windows-static-x86:latest', 'Unix Makefiles', 'Windows x86 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
 		'Linux x86-static': {
 			node {			
-				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Static', "-DV8NPCSERVER=FALSE")
+				buildStep('dockcross/linux-x86:latest', 'Unix Makefiles', 'Linux x86 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
 		'Linux x86_64-static': {
 			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=FALSE")
+				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
 		'Linux ARMv6-static': {
