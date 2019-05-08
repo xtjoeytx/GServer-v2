@@ -32,9 +32,12 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
+, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel)
 , width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
+	// TODO(joey): Move the initialization to TNPC::resetNPC() and call it here.
+
 	memset((void*)colors, 0, sizeof(colors));
 	memset((void*)saves, 0, sizeof(saves));
 	memset((void*)modTime, 0, sizeof(modTime));
@@ -69,9 +72,6 @@ TNPC::~TNPC()
 {
 #ifdef V8NPCSERVER
 	freeScriptResources();
-
-	if (_scriptObject)
-		delete _scriptObject;
 #endif
 }
 
@@ -701,6 +701,10 @@ void TNPC::freeScriptResources()
 	for (auto it = _triggerActions.begin(); it != _triggerActions.end(); ++it)
 		delete it->second;
 	_triggerActions.clear();
+
+	// Delete script object
+	if (_scriptObject)
+		delete _scriptObject;
 }
 
 // Set callbacks for triggeractions!
@@ -743,9 +747,6 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 	ScriptAction *scriptAction = 0;
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	// TODO(joey): ScriptArguments does not do sanity checks on passed objects
-	// still debating on whether I should check prior to running the action or
-	// implement sanity check in the Server.
 	IScriptWrapped<TPlayer> *playerObject = 0;
 	if (player != 0)
 	{
@@ -764,14 +765,16 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 
 bool TNPC::runScriptTimer()
 {
+	// TODO(joey): Scheduled events
+
 	if (timeout > 0)
 	{
 		timeout--;
 		if (timeout == 0)
 			queueNpcAction("npc.timeout", 0, true);
 	}
-	
-	// return value dictates if this gets deregistered from updates
+
+	// return value dictates if this gets unregistered from updates
 	return (timeout > 0);
 }
 
@@ -789,6 +792,36 @@ void TNPC::runScriptEvents()
 		}
 	}
 	_actions.clear();
+
+	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
+}
+
+void TNPC::resetNPC()
+{
+
+}
+
+void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
+{
+	// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
+	//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
+	//  such for PLO_NPCDEL
+	server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int)id, level->getMap(), level);
+
+	// Remove the npc from the old level, and add it to the new level
+	level->removeNPC(this);
+	pLevel->addNPC(this);
+	level = pLevel;
+
+	// Adjust the position of the npc
+	x = (float)pX;
+	x2 = 16 * (int)pX;
+
+	y = (float)pY;
+	y2 = 16 * (int)pY;
+
+	// Send the properties to the players in the new level
+	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
 }
 
 #endif
