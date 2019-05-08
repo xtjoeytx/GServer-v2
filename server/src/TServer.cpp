@@ -1004,6 +1004,7 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 	return &filesystem[fs];
 }
 
+#ifdef V8NPCSERVER
 // TODO(joey): Database npcs
 TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::string& object, const std::string& scripter, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
@@ -1042,6 +1043,7 @@ TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::strin
 
 	return newNPC;
 }
+#endif
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
