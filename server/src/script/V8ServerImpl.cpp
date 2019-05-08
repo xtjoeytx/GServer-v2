@@ -97,6 +97,40 @@ void Server_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_D("End Server::setNpcEvents()\n\n");
 }
 
+void Server_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1)
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+		v8::String::Utf8Value message(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		TServer *serverObject = UnwrapObject<TServer>(args.This());
+		serverObject->sendToNC(CString("[NPC-Server]: ") << *message);
+	}
+}
+
+void Server_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1)
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+		v8::String::Utf8Value message(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		TServer *serverObject = UnwrapObject<TServer>(args.This());
+		serverObject->sendToRC(CString("[Server]: ") << *message);
+	}
+}
+
 // PROPERTY: Server Flags
 void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -202,8 +236,10 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 			v8::PropertyHandlerFlags::kOnlyInterceptStrings));
 	_persist_server_flags_ctor.Reset(isolate, server_flags_ctor);
 
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "name"), v8::FunctionTemplate::New(isolate, Server_SetCallBack, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Server_SetNpcEvents, engine_ref));
+	//server_proto->Set(v8::String::NewFromUtf8(isolate, "name"), v8::FunctionTemplate::New(isolate, Server_SetCallBack, engine_ref));
+	//server_proto->Set(v8::String::NewFromUtf8(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Server_SetNpcEvents, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_SendToNC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_SendToRC, engine_ref));
 
 	// Properties...?
 	//server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt32_npc_id, NPC_SetInt32_npc_id);

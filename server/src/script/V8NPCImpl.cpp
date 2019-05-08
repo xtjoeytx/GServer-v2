@@ -256,6 +256,32 @@ void NPC_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, con
 	npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 }
 
+// NPC Method: npc.canwarp();
+void NPC_Function_CanWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+	npcObject->allowNpcWarping(true);
+}
+
+// NPC Method: npc.cannotwarp();
+void NPC_Function_CannotWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+	npcObject->allowNpcWarping(false);
+}
+
 // NPC Method: npc.message();
 void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -510,6 +536,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	
 	// Method functions
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "test"), v8::FunctionTemplate::New(isolate, Npc_testFunction, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));

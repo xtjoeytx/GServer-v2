@@ -942,21 +942,24 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		return true;
 	}
 
-#ifdef V8NPCSERVER
-	if (isNC())
-	{
-		// Both the RC and NC send this packet when connected.
-		return true;
-	}
-#endif
-
 	CString message = pPacket.readString("");
 	if (message.isEmpty()) return true;
 	std::vector<CString> words = message.tokenize();
 
+#ifdef V8NPCSERVER
+	if (isNC())
+	{
+		// TODO(joey): All RC's with NC support are sending two messages at a time. Commenting this out
+		//  breaks standalone npc-server though.
+		//server->sendToNC(CString(nickName) << ": " << message);
+
+		return true;
+	}
+#endif
+
 	if (words[0].text()[0] != '/')
 	{
-		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << nickName << ": " << message);
+		server->sendToRC(CString(nickName) << ": " << message);
 		return true;
 	}
 	else
