@@ -2910,7 +2910,10 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 
 bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 {
+#ifndef V8NPCSERVER
+	// TODO(joey): If I recall, showimg worked on server if id was less than 200? Will need to confirm this.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
+#endif
 	return true;
 }
 

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "IUtil.h"
 #include "CScriptEngine.h"
+#include "TLevel.h"
 #include "TNPC.h"
 
 #include "V8ScriptFunction.h"
@@ -58,6 +59,20 @@ void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 	else newValueInt <<= 1;
 
 	npcObject->setProps(CString() >> (char)NPCPROP_Y2 >> (short)newValueInt, CLVER_2_17, true);
+}
+
+// PROPERTY: Level
+void NPC_GetStr_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	TLevel *npcLevel = npcObject->getLevel();
+	CString levelName("");
+	if (npcLevel != 0)
+		levelName = npcLevel->getLevelName();
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text());
+	info.GetReturnValue().Set(strText);
 }
 
 // PROPERTY: Timeout
@@ -547,6 +562,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_id);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetStr_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), NPC_GetInt_Bombs, NPC_SetInt_Bombs);

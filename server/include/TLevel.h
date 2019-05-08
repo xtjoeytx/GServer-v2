@@ -181,6 +181,7 @@ class TLevel
 		bool doTimedEvents();
 
 #ifdef V8NPCSERVER
+		TLevelLink *isOnLink(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
 		bool isOnWall(double pX, double pY);
 		bool isOnWater(double pX, double pY);
