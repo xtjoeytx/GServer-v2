@@ -253,11 +253,16 @@ if(NOT NOUPNP)
 endif()
 
 if(V8NPCSERVER)
-	target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
+	if(NOT V8_FOUND)
+		add_dependencies(${TARGET_NAME} v8)
+		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY2})
+	else()
+		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
+	endif()
 endif()
 
 file(GLOB TEXT
-    ${PROJECT_NAME_LOWER}.wasm
+    "${PROJECT_NAME_LOWER}.wasm"
 )
 
 set(INSTALL_DEST ".")
