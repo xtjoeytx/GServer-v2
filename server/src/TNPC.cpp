@@ -32,8 +32,8 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel)
-, width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
+, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), scriptName(""), scripter("")
+, canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
 	// TODO(joey): Move the initialization to TNPC::resetNPC() and call it here.
@@ -798,7 +798,9 @@ void TNPC::runScriptEvents()
 
 void TNPC::resetNPC()
 {
+	canWarp = false;
 
+	warpNPC(origLevel, origX, origY);
 }
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)

@@ -1019,6 +1019,8 @@ TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::strin
 	// Create the npc
 	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false, settings.getBool("trimnpccode", true));
 	newNPC->setId(npcId);
+	newNPC->setScripter(scripter.c_str());
+	newNPC->setName(name.c_str());
 	npcList.push_back(newNPC);
 
 	if (npcIds.size() < npcId)
@@ -1037,17 +1039,6 @@ TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::strin
 		TMap* map = getMap(pLevel);
 		sendPacketToLevel(packet, map, pLevel, 0, true);
 	}
-
-	/*
-	NPC Get Script: 1000
-	NPC Name: asdf
-	NPC Id: 1001
-	NPC Type: OBJECT
-	NPC Scripter: Stefan Knorr
-	NPC Level: worldu-15.nw
-	NPC X: 30.5
-	NPC Y: 30
-	*/
 
 	return newNPC;
 }
