@@ -73,11 +73,10 @@ else()
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
 endif()
 
-option(V8NPCSERVER "Compile built-in V8 NPC-Server." OFF)
+option(V8NPCSERVER "Compile built-in V8 NPC-Server." ON)
 if(V8NPCSERVER)
 	message("Enabling built-in V8 NPC-Server.")
 	add_definitions(-DV8NPCSERVER)
-	find_package(V8 REQUIRED)
 else()
 	message("Disabling built-in V8 NPC-Server.")
 endif()
@@ -124,17 +123,6 @@ set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
 if(APPLE)
-	# Warn if deployment target isn't set to Lion
-	if(NOT CMAKE_OSX_DEPLOYMENT_TARGET MATCHES "10.7")
-		message(WARNING
-			"Your deployment target is either unset or not set to \"10.7\", "
-			"which means that the binaries produced may not run on earlier "
-			"versions of macOS.\n"
-			"Please re-run CMake with '-DCMAKE_OSX_DEPLOYMENT_TARGET=10.7' "
-			"or change the variable in the CMake GUI to target Lion and newer."
-		)
-	endif()
-
 	# Set variables for generating the Info.plist file
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
 	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
@@ -148,18 +136,6 @@ if(APPLE)
 elseif(WIN32)
 	# Visual C++ Compiler options
 	if(MSVC)
-		# Warn if platform toolset may not be targetting Windows XP upwards
-		if(NOT CMAKE_VS_PLATFORM_TOOLSET MATCHES "xp")
-			message(WARNING
-				"Your currently-selected platform toolset may generate "
-				"executables which are incompatible with Windows XP.\n"
-				"Please set your toolset to be one of v110_xp, v120_xp or "
-				"v140_xp for VS2012, VS2013, and VS2015 respectively.\n"
-				"You can do so with the '-T' argument to CMake, or by entering "
-				"it in the CMake GUI."
-			)
-		endif()
-
 		# Suppress secure string function warnings
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
@@ -201,9 +177,7 @@ elseif(WIN32)
 	add_definitions(-DNOMINMAX)
 
 elseif(AROS)
-	# AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
-	#find_package(SDL 1.2 REQUIRED)
 else()
 	if(NOT NOSTATIC)
 	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
@@ -215,6 +189,12 @@ else()
 
 endif()
 
+# Prefer static linkage under OS X for libraries located with find_package()
+if(APPLE)
+	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+endif()
+
 find_package(ZLIB)
 if(NOT ZLIB_FOUND)
 	message("Zlib not found in system. Compiling it ourselves.")
@@ -223,6 +203,14 @@ if(NOT ZLIB_FOUND)
 		set_target_properties(zlibstatic minigzip example PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 	else()
 		set_target_properties(zlib minigzip example PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+	endif()
+endif()
+
+if(V8NPCSERVER)
+	find_package(V8)
+	if(NOT V8_FOUND)
+		message("v8 not found in system. Compiling it ourselves.")
+		add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
 	endif()
 endif()
 
@@ -254,12 +242,6 @@ if(NOT NOUPNP)
 
 		add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc EXCLUDE_FROM_ALL)
 	endif()
-endif()
-
-# Prefer static linkage under OS X for libraries located with find_package()
-if(APPLE)
-	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
 find_package(Threads REQUIRED)
