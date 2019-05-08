@@ -201,6 +201,9 @@ class TNPC
 		bool runScriptTimer();
 		void runScriptEvents();
 
+		void resetNPC();
+		void warpNPC(TLevel *pLevel, float pX, float pY);
+
 		template<class... Args>
 		inline void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 #endif
@@ -226,6 +229,11 @@ class TNPC
 		TServer* server;
 	
 #ifdef V8NPCSERVER
+		// Defaults
+		CString origImage, origScript;
+		float origX, origY;
+		TLevel *origLevel;
+
 		// npc-server
 		int width, height;
 		int timeout;

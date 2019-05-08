@@ -159,7 +159,7 @@ enum
 	PLO_THROWCARRIED			= 21,
 	PLO_ITEMADD					= 22,
 	PLO_ITEMDEL					= 23,
-	PLO_NPCMOVED				= 24,	// What does this do?
+	PLO_NPCMOVED				= 24,	// What does this do? Joey: Apparently just hides the npc ... for level warps??
 	PLO_SIGNATURE				= 25,
 	PLO_NPCACTION				= 26,	// What does this do?  Codr note: Unhandled by 6.037.
 	PLO_BADDYHURT				= 27,
