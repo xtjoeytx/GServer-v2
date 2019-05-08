@@ -8,3 +8,4 @@ bin/Debug/
 lib/
 ..gitignore.swp
 .vs/
+dependencies/.cipd/
