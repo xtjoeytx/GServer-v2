@@ -141,6 +141,10 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_SendToNC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_SendToRC, engine_ref));
+
+	// Properties
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags);
 
     // Create the server flags template
@@ -151,9 +155,6 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 			Server_Flags_Getter, Server_Flags_Setter, nullptr, nullptr, Server_Flags_Enumerator, v8::Local<v8::Value>(),
 			v8::PropertyHandlerFlags::kOnlyInterceptStrings));
 	_persist_server_flags_ctor.Reset(isolate, server_flags_ctor);
-
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_SendToNC, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_SendToRC, engine_ref));
 
 	// Properties...?
 	//server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt32_npc_id, NPC_SetInt32_npc_id);
