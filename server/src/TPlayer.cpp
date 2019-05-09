@@ -387,10 +387,8 @@ TPlayer::~TPlayer()
 		delete playerSock;
 
 #ifdef V8NPCSERVER
-	if (_scriptObject) {
-		printf("References: %d\n", _scriptObject->getReferenceCount());
+	if (_scriptObject)
 		delete _scriptObject;
-	}
 #endif
 }
 

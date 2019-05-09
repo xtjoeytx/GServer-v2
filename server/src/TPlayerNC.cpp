@@ -25,8 +25,12 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
-	printf("NPC Get: %d\n", npcId);
+	// RC3 keeps sending empty packets of this, yet still uses NPCGET to fetch npcs.
+	if (pPacket.bytesLeft())
+	{
+		int npcId = pPacket.readGUInt();
+		printf("NPC Get: %d\n", npcId);
+	}
 
 	return true;
 }
