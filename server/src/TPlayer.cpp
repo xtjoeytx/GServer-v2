@@ -271,6 +271,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
+	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
 
 	// NPC-Server Functions
 #ifdef V8NPCSERVER
@@ -2114,6 +2115,19 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	}
 
 	return true;
+}
+
+
+bool TPlayer::enableWeapons()
+{
+	this->status |= PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+}
+
+bool TPlayer::disableWeapons()
+{
+	this->status &= ~PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
 /*
@@ -4183,6 +4197,12 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 }
 
 bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+{
+	// Stub.
+	return true;
+}
+
+bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
 {
 	// Stub.
 	return true;

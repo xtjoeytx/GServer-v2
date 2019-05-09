@@ -112,6 +112,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(int defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
+		bool disableWeapons();
+		bool enableWeapons();
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool updatePMPlayers(CString& servername, CString& players);
@@ -126,7 +128,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendNC_Levels();
 		void sendNC_Weapons();
 		void sendNC_GMapList();
-	
+
 #ifdef V8NPCSERVER
 	inline IScriptWrapped<TPlayer> * getScriptObject() const {
 		return _scriptObject;
@@ -266,6 +268,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
+		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
 #ifndef V8NPCSERVER
 		bool msgPLI_NC_QUERY(CString& pPacket);
