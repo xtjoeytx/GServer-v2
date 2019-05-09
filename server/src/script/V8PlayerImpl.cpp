@@ -188,6 +188,101 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
+// NPC Method: player.addweapon("weaponName");
+void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		// Unwrap Object
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+
+		bool result = playerObject->addWeapon(*newValue);
+		args.GetReturnValue().Set(result);
+		return;
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// NPC Method: player.hasweapon("weaponName");
+void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		// Unwrap Object
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+
+		bool result = playerObject->hasWeapon(*newValue);
+		args.GetReturnValue().Set(result);
+		return;
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// NPC Method: player.removeweapon("weaponName");
+void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		// Unwrap Object
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+
+		bool result = playerObject->deleteWeapon(*newValue);
+		args.GetReturnValue().Set(result);
+		return;
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// NPC Method: player.disableweapons();
+void Player_Function_DisableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+	playerObject->disableWeapons();
+}
+
+// NPC Method: player.enableweapons();
+void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+	playerObject->enableWeapons();
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Player_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -231,7 +326,19 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_ctor->SetClassName(className);
     player_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
-	// Properties...?
+	// Method functions
+	// TODO(joey): Implement these functions
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
+
+	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), Player_GetStr_Nickname, Player_SetStr_Nickname);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), Player_GetNum_X, Player_SetNum_X);

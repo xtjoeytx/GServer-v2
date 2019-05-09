@@ -1024,7 +1024,7 @@ TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::strin
 	newNPC->setName(name.c_str());
 	npcList.push_back(newNPC);
 
-	if (npcIds.size() < npcId)
+	if (npcIds.size() <= npcId)
 		npcIds.resize(npcId + 1);
 	npcIds[npcId] = newNPC;
 
