@@ -331,6 +331,8 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Unwrap Object
 	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
 	npcObject->setProps(CString() >> (char)NPCPROP_IMAGE >> (char)3 << "#c#", CLVER_2_17, true);
+	npcObject->setWidth(32);
+	npcObject->setHeight(48);
 }
 
 // NPC Method: npc.setcharprop(code, value);
@@ -547,34 +549,53 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	
 	// Static functions on the npc object
-	npc_ctor->Set(v8::String::NewFromUtf8(isolate, "create"), v8::FunctionTemplate::New(isolate, Npc_createFunction, engine_ref));
+	//npc_ctor->Set(v8::String::NewFromUtf8(isolate, "create"), v8::FunctionTemplate::New(isolate, Npc_createFunction, engine_ref));
 	
 	// Method functions
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "test"), v8::FunctionTemplate::New(isolate, Npc_testFunction, engine_ref));
+	// TODO(joey): Implement these functions
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "dontblock"), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "hide"), v8::FunctionTemplate::New(isolate, NPC_Function_Hide, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
+//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
 
-	// Properties...?
+	// Properties
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Ap, NPC_SetInt_Ap);
+	//npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "body"), NPC_GetInt_Ap, NPC_SetInt_Ap);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), NPC_GetInt_Bombs, NPC_SetInt_Bombs);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), NPC_GetStr_Message, NPC_SetStr_Message);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), NPC_GetInt_Darts, NPC_SetInt_Darts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir"), NPC_GetInt_Dir, NPC_SetInt_Dir);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower"), NPC_GetInt_GlovePower, NPC_SetInt_GlovePower);
+	//npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "head"), NPC_GetInt_Ap, NPC_SetInt_Ap);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_id);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetStr_Level);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetStr_Level);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), NPC_GetInt_Bombs, NPC_SetInt_Bombs);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), NPC_GetInt_Darts, NPC_SetInt_Darts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower"), NPC_GetInt_GlovePower, NPC_SetInt_GlovePower);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir"), NPC_GetInt_Dir, NPC_SetInt_Dir);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Ap, NPC_SetInt_Ap);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), NPC_GetStr_Message, NPC_SetStr_Message);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);
-	
+
 	// Persist the npc constructor
 	env->SetConstructor(ScriptConstructorId<TNPC>::result, npc_ctor);
 
