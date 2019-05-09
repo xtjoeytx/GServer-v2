@@ -22,6 +22,9 @@ short respawningTiles[] = {
 TLevel::TLevel(TServer* pServer)
 :
 server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
+#ifdef V8NPCSERVER
+, _scriptObject(0)
+#endif
 {
 	memset(levelTiles, 0, sizeof(levelTiles));
 
@@ -76,6 +79,11 @@ TLevel::~TLevel()
 	// Delete board changes.
 	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
 	levelBoardChanges.clear();
+
+#ifdef V8NPCSERVER
+	if (_scriptObject)
+		delete _scriptObject;
+#endif
 }
 
 /*
@@ -306,6 +314,10 @@ TLevel* TLevel::clone()
 
 bool TLevel::loadLevel(const CString& pLevelName)
 {
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->WrapObject(this);
+#endif
+
 	CString ext(getExtension(pLevelName));
 	if (ext == ".nw") return loadNW(pLevelName);
 	else if (ext == ".graal") return loadGraal(pLevelName);

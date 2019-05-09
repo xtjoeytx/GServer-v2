@@ -9,6 +9,7 @@
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
+extern void bindClass_Level(CScriptEngine *scriptEngine);
 extern void bindClass_NPC(CScriptEngine *scriptEngine);
 extern void bindClass_Player(CScriptEngine *scriptEngine);
 extern void bindClass_Server(CScriptEngine *scriptEngine);
@@ -58,6 +59,7 @@ bool CScriptEngine::Initialize()
 		// Bind classes to be used for scripts
 		bindClass_Environment(this);
 		bindClass_Server(this);
+		bindClass_Level(this);
 		bindClass_NPC(this);
 		bindClass_Player(this);
 

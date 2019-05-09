@@ -119,6 +119,7 @@ if(V8NPCSERVER)
 		CScriptEngine.cpp
 		script/V8EnvironmentImpl.cpp
 		script/V8FunctionsImpl.cpp
+		script/V8LevelImpl.cpp
 		script/V8NPCImpl.cpp
 		script/V8PlayerImpl.cpp
 		script/V8ScriptEnv.cpp
