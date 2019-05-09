@@ -62,7 +62,25 @@ void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 }
 
 // PROPERTY: Level
-void NPC_GetStr_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+void NPC_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	TLevel *npcLevel = npcObject->getLevel();
+	if (npcLevel != 0)
+	{
+		V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(npcLevel->getScriptObject());
+		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
+		return;
+	}
+
+	info.GetReturnValue().SetNull();
+}
+
+// PROPERTY: LevelName
+void NPC_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
@@ -610,7 +628,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_id);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetStr_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);

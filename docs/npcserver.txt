@@ -23,6 +23,12 @@ Server Object:
 		flags['key'] - retrieve/manipulate server flags
 		npcs - can iterate only (untested)
 
+Level Object:
+    Functions:
+
+    Properties:
+        name
+
 NPC Object:
 	Functions:
 		canwarp() - allows database npc to test for links
@@ -43,7 +49,8 @@ NPC Object:
 		dir
 		glovepower
 		hearts
-		level
+		level - the level object
+		levelname
 		nick
 		rupees
 		timeout
