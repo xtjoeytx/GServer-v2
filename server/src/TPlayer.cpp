@@ -2118,13 +2118,13 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 }
 
 
-bool TPlayer::enableWeapons()
+void TPlayer::enableWeapons()
 {
 	this->status |= PLSTATUS_ALLOWWEAPONS;
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
-bool TPlayer::disableWeapons()
+void TPlayer::disableWeapons()
 {
 	this->status &= ~PLSTATUS_ALLOWWEAPONS;
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));

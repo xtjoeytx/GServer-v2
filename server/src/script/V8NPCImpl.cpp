@@ -414,6 +414,31 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// NPC Method: npc.setshape(type, pixelWidth, pixelHeight);
+void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	if (args[0]->IsInt32() && args[1]->IsInt32() && args[2]->IsInt32())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+		// Unwrap Object
+		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+
+		int width = args[1]->IntegerValue(context).ToChecked();
+		int height = args[2]->IntegerValue(context).ToChecked();
+		npcObject->setWidth(width);
+		npcObject->setHeight(height);
+	}
+}
+
 // NPC Method: npc.registerAction(string, function);
 void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -565,7 +590,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
