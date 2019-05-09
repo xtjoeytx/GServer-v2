@@ -186,6 +186,14 @@ class TLevel
 		bool isOnWall(double pX, double pY);
 		bool isOnWater(double pX, double pY);
 		void sendChatToLevel(const TPlayer *player, const CString& message);
+
+		inline IScriptWrapped<TLevel> * getScriptObject() const {
+			return _scriptObject;
+		}
+
+		inline void setScriptObject(IScriptWrapped<TLevel> *object) {
+			_scriptObject = object;
+		}
 #endif
 
 	private:
@@ -214,6 +222,10 @@ class TLevel
 		std::vector<TLevelSign *> levelSigns;
 		std::vector<TNPC *> levelNPCs;
 		std::vector<TPlayer *> levelPlayerList;
+
+#ifdef V8NPCSERVER
+	IScriptWrapped<TLevel> *_scriptObject;
+#endif
 };
 
 #endif // TLEVEL_H
