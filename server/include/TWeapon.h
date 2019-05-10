@@ -5,6 +5,13 @@
 #include <time.h>
 #include "CString.h"
 
+#ifdef V8NPCSERVER
+#include <string>
+#include "ScriptWrapped.h"
+
+class TPlayer;
+#endif
+
 class TServer;
 class TWeapon
 {
@@ -12,6 +19,7 @@ class TWeapon
 		// -- Constructor | Destructor -- //
 		TWeapon(const signed char pId);
 		TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
+		~TWeapon();
 
 		// -- Functions -- //
 		bool saveWeapon(TServer* server);
@@ -36,7 +44,18 @@ class TWeapon
 		void setServerScript(const CString& pScript)	{ mScriptServer = pScript; }
 		void setFullScript(const CString& pScript)		{ mWeaponScript = pScript; }
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
-		
+
+#ifdef V8NPCSERVER
+		void queueWeaponAction(TServer *server, TPlayer *player, const std::string& args);
+
+		inline IScriptWrapped<TWeapon> * getScriptObject() const {
+			return _scriptObject;
+		}
+
+		inline void setScriptObject(IScriptWrapped<TWeapon> *object) {
+			_scriptObject = object;
+		}
+#endif
 	protected:
 		// Varaibles -> Weapon Data
 		signed char mWeaponDefault;
@@ -44,6 +63,10 @@ class TWeapon
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;
 		time_t mModTime;
+
+#ifdef V8NPCSERVER
+		IScriptWrapped<TWeapon> *_scriptObject;
+#endif
 };
 
 #endif

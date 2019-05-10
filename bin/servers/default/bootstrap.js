@@ -83,7 +83,7 @@
             if (npc.onTimeout)
                 npc.onTimeout.apply(npc, args);
         } catch (e) {
-            print("Exception thrown in onTmeout by NPC: ", e);
+            print("Exception thrown in onTimeout by NPC: ", e);
         }
     });
 
@@ -91,15 +91,34 @@
      * Event -> Triggeractions
      */
     env.setCallBack("npc.trigger", function (npc, func, data) {
-        print("NPC TRIGGER ACTION RECEIVED\n");
-        print("NPC: " + npc);
-        print("FUNCTION: " + func);
-        print("DATA: " + data);
-
         try {
             func.call(npc, data);
         } catch (e) {
-            print("Exception thrown in onTmeout by NPC: ", e);
+            print("Exception thrown in trigger by NPC: ", e);
+        }
+    });
+
+    /**
+	 * Events -> weapon.onCreated(npc, args...)
+	 */
+    env.setCallBack("weapon.created", function (weapon, ...args) {
+        try {
+            if (weapon.onCreated)
+                weapon.onCreated.apply(weapon, args);
+        } catch (e) {
+            print("Exception thrown in onCreated by Weapon: ", e);
+        }
+    });
+
+    /*
+     * Event -> weapon.onActionServerSide(player, data)
+     */
+    env.setCallBack("weapon.serverside", function (weapon, player, data) {
+        try {
+            if (weapon.onActionServerSide)
+                weapon.onActionServerSide(player, data);
+        } catch (e) {
+            print("Exception thrown in onActionServerSide by Weapon: ", e);
         }
     });
 });

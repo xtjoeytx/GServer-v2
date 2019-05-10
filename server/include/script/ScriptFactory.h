@@ -11,6 +11,7 @@ enum
 	ScriptConstructorLevel         	= 3,
 	ScriptConstructorNpc            = 4,
 	ScriptConstructorPlayer         = 5,
+	ScriptConstructorWeapon         = 6,
 	ScriptConstructorCount,
 };
 
@@ -34,6 +35,7 @@ SCRIPTFACTORY_CONSTRUCTOR(TServer, Server)
 SCRIPTFACTORY_CONSTRUCTOR(TLevel, Level)
 SCRIPTFACTORY_CONSTRUCTOR(TNPC, Npc)
 SCRIPTFACTORY_CONSTRUCTOR(TPlayer, Player)
+SCRIPTFACTORY_CONSTRUCTOR(TWeapon, Weapon)
 
 #undef SCRIPTFACTORY_CONSTRUCTOR
 

@@ -6,6 +6,7 @@
 #include "TNPC.h"
 #include "TPlayer.h"
 #include "TServer.h"
+#include "TWeapon.h"
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
@@ -13,6 +14,7 @@ extern void bindClass_Level(CScriptEngine *scriptEngine);
 extern void bindClass_NPC(CScriptEngine *scriptEngine);
 extern void bindClass_Player(CScriptEngine *scriptEngine);
 extern void bindClass_Server(CScriptEngine *scriptEngine);
+extern void bindClass_Weapon(CScriptEngine *scriptEngine);
 
 CScriptEngine::CScriptEngine(TServer *server)
 	: _server(server), _env(nullptr), _bootstrapFunction(0), _serverObject(0)
@@ -62,6 +64,7 @@ bool CScriptEngine::Initialize()
 		bindClass_Level(this);
 		bindClass_NPC(this);
 		bindClass_Player(this);
+		bindClass_Weapon(this);
 
 		// Create a new context (occurs on initial compile)
 		_bootstrapFunction = env->Compile("bootstrap", bootstrapScript.text());
@@ -230,6 +233,83 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	return true;
 }
 
+bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
+{
+	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
+	V8ENV_D("Begin Global::ExecuteWeapon()\n\n");
+
+	// We always want to create an object for the weapon
+	// Wrap object
+	IScriptWrapped<TWeapon> *wrappedObject = WrapObject(weapon);
+
+	// Wrap user code in a function-object, returning some useful symbols to call for events
+	CString weaponScript = weapon->getServerScript();
+	if (weaponScript.isEmpty())
+	{
+		V8ENV_D("Empty code, maybe we shouldn't execute\n");
+	}
+
+	std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
+
+	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
+
+	// Search the cache, or compile the script
+	IScriptFunction *compiledScript = CompileCache(codeStr);
+	if (compiledScript == nullptr)
+	{
+		// script failed to execute
+		return false;
+	}
+
+	//
+	// Execute the compiled script
+	//
+
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
+
+	// Fetch the v8 isolate and context
+	v8::Isolate *isolate = env->Isolate();
+	v8::Local<v8::Context> context = env->Context();
+	assert(!context.IsEmpty());
+
+	// Create a stack-allocated scope for v8 calls, and enter context
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope handle_scope(isolate);
+	v8::Context::Scope context_scope(context);
+
+	// Cast object
+	V8ScriptWrapped<TWeapon> *v8_wrappedObject = static_cast<V8ScriptWrapped<TWeapon> *>(wrappedObject);
+	v8::Local<v8::Object> wrappedObjectHandle = v8_wrappedObject->Handle(isolate);
+
+	// Arguments to call function
+	v8::Local<v8::Value> scriptFunctionArgs[1] = {
+			wrappedObjectHandle
+	};
+
+	// Execute the compiled script with the instance from the newly-wrapped object
+	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(compiledScript);
+
+	v8::TryCatch try_catch(isolate);
+	v8::Local<v8::Function> scriptFunction = v8_function->Function();
+	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
+	if (scriptTableRet.IsEmpty())
+	{
+		V8ENV_D("Failed when executing weapon script\n");
+		if (try_catch.HasCaught())
+		{
+			v8::Handle<v8::Message> message = try_catch.Message();
+			ScriptRunError scriptError;
+			scriptError.filename  = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
+			scriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
+			V8ENV_D("Error Line: %s\n", scriptError.error_line.c_str());
+			return false;
+		}
+	}
+
+	V8ENV_D("End Global::ExecuteWeapon()\n\n");
+	return true;
+}
+
 void CScriptEngine::RunScripts(bool timedCall)
 {
 	if (timedCall && !_updateNpcsTimer.empty())
@@ -265,6 +345,32 @@ void CScriptEngine::RunScripts(bool timedCall)
 			npc->runScriptEvents();
 		}
 		_updateNpcs.clear();
+	}
+
+	if (!_actions.empty())
+	{
+		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
+
+		// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
+		v8::Isolate *isolate = env->Isolate();
+		v8::Isolate::Scope isolate_scope(isolate);
+		v8::HandleScope handle_scope(isolate);
+
+		// Enter context scope
+		v8::Context::Scope context_scope(env->Context());
+
+		// iterate over queued actions
+		for (auto it = _actions.begin(); it != _actions.end(); ++it)
+		{
+			ScriptAction *action = *it;
+			if (action != 0)
+			{
+				V8ENV_D("Running action: %s\n", action->getAction().c_str());
+				action->Invoke();
+				delete action;
+			}
+		}
+		_actions.clear();
 	}
 }
 
