@@ -866,6 +866,27 @@ void TNPC::runScriptEvents()
 	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
 }
 
+void TNPC::moveNPC(int dx, int dy, double time, int options)
+{
+	// TODO(joey): Implement options? Or does the client handle them? TBD
+
+	int start_x = (abs(x2) << 1) | (x2 < 0 ? 0x0001 : 0x0000);
+	int start_y = (abs(y2) << 1) | (y2 < 0 ? 0x0001 : 0x0000);
+	int delta_x = (abs(dx) << 1) | (dx < 0 ? 0x0001 : 0x0000);
+	int delta_y = (abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
+	short itime = (short)(time / 0.05);
+
+	// TODO(joey): maybe its time to get rid of this old x/y and keep everything in pixel x/y
+	x += (dx / 16);
+	y += (dy / 16);
+
+	x2 += dx;
+	y2 += dy;
+
+	if (level != nullptr)
+		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
+}
+
 void TNPC::resetNPC()
 {
 	canWarp = false;
@@ -875,8 +896,6 @@ void TNPC::resetNPC()
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 {
-	printf("Warp NPC to %s at %f, %f\n", pLevel->getLevelName().text(), pX, pY);
-
 	// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 	//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 	//  such for PLO_NPCDEL
@@ -889,11 +908,11 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	level = pLevel;
 
 	// Adjust the position of the npc
-	x = (float)pX;
-	x2 = 16 * (int)pX;
+	x = pX;
+	x2 = 16 * pX;
 
-	y = (float)pY;
-	y2 = 16 * (int)pY;
+	y = pY;
+	y2 = 16 * pY;
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
