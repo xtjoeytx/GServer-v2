@@ -42,7 +42,10 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	//level_proto->Set(v8::String::NewFromUtf8(isolate, "setCallBack"), v8::FunctionTemplate::New(isolate, Level_SetCallBack, engine_ref));
 
 	// Properties
+	// TODO(joey): implement
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), Level_GetStr_Name);
+	//level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Level_GetStr_Name);
+	//level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Level_GetStr_Name);
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);
