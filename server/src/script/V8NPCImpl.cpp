@@ -633,6 +633,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
+//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);

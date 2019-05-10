@@ -80,6 +80,16 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	playerIds.resize(2);
 	npcIds.resize(10001); // Starting npc ids at 10,000 for now on..
 
+#ifdef V8NPCSERVER
+	// Initialize the Script Engine
+	if (!mScriptEngine.Initialize())
+	{
+		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
+		// TODO(joey): new error number? log is probably enough
+		return ERR_SETTINGS;
+	}
+#endif
+
 	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
@@ -132,14 +142,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 #endif
 
 #ifdef V8NPCSERVER
-	// Initialize the Script Engine
-	if (!mScriptEngine.Initialize())
-	{
-		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
-		// TODO(joey): new error number? log is probably enough
-		return ERR_SETTINGS;
-	}
-
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
 #endif

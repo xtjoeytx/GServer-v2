@@ -123,7 +123,6 @@ class TServer : public CSocketStub
 		std::map<CString, CString>* getServerFlags()	{ return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
-		std::vector<TPlayer *>* getPlayerIdList()		{ return &playerIds; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
 		std::vector<TMap *>* getMapList()				{ return &mapList; }
