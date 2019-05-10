@@ -131,6 +131,7 @@ enum
 	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
 	PLI_RC_FOLDERDELETE			= 160,
 	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
+	PLI_RC_UNKNOWN162			= 162	// Blank packet, sent by RC3 beta.
 };
 
 enum
@@ -316,6 +317,7 @@ enum
 	PLTYPE_ANYCLIENT	= (int)(PLTYPE_CLIENT | PLTYPE_CLIENT2 | PLTYPE_CLIENT3),
 	PLTYPE_ANYRC		= (int)(PLTYPE_RC | PLTYPE_RC2),
 	PLTYPE_ANYNC		= (int)(PLTYPE_NC),
+	PLTYPE_ANYREMOTE	= (int)(PLTYPE_ANYRC | PLTYPE_ANYNC),
 };
 
 

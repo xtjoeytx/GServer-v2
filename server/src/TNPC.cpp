@@ -32,7 +32,7 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), scriptName(""), scripter("")
+, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), npcName(""), scripterName("")
 , canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
@@ -282,6 +282,23 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		case NPCPROP_GMAPLEVELY:
 		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
 
+#ifdef V8NPCSERVER
+		case NPCPROP_SCRIPTER:
+		return CString() >> (char)scripterName.length() << scripterName;
+
+		case NPCPROP_NAME:
+		return CString() >> (char)npcName.length() << npcName;
+
+		case NPCPROP_TYPE:
+		return CString() >> (char)npcType.length() << npcType;
+
+		case NPCPROP_CURLEVEL:
+		{
+			CString tmpLevelName = (level ? level->getLevelName() : "");
+			return CString() >> (char)tmpLevelName.length() << tmpLevelName;
+		}
+#endif
+
 		case NPCPROP_CLASS:
 		return CString() >> (short)0;
 
@@ -353,6 +370,8 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 
 CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 {
+	bool hasMoved = false;
+
 	CString ret;
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
@@ -380,6 +399,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				}
 				x = (float)(pProps.readGChar()) / 2.0f;
 				x2 = (int)(x * 16);
+				hasMoved = true;
 			break;
 
 			case NPCPROP_Y:
@@ -390,7 +410,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				}
 				y = (float)(pProps.readGChar()) / 2.0f;
 				y2 = (int)(y * 16);
-			break;
+				hasMoved = true;
+				break;
 
 			case NPCPROP_POWER:
 				power = pProps.readGUChar();
@@ -553,6 +574,25 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				gmaplevely = pProps.readGUChar();
 			break;
 
+#ifdef V8NPCSERVER
+			case NPCPROP_SCRIPTER:
+				scripterName = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_NAME:
+				npcName = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_TYPE:
+				npcType = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_CURLEVEL:
+				// TODO(joey): We don't set the level like this, maybe we should? TBD
+				pProps.readChars(pProps.readGUChar());
+				break;
+#endif
+
 			case NPCPROP_CLASS:
 				pProps.readChars(pProps.readGShort());
 			break;
@@ -575,6 +615,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				
 				// Let pre-2.3+ clients see 2.3+ movement.
 				x = (float)x2 / 16.0f;
+
+				hasMoved = true;
 				break;
 
 			case NPCPROP_Y2:
@@ -592,6 +634,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 				// Let pre-2.3+ clients see 2.3+ movement.
 				y = (float)y2 / 16.0f;
+
+				hasMoved = true;
 				break;
 
 			case NPCPROP_SAVE0: saves[0] = pProps.readGUChar(); break;
@@ -658,7 +702,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		ret >> (char)propId << getProp(propId, clientVersion);
 	}
 
-	if (pForward) {
+	if (pForward)
+	{
 		// Find the level.
 		TMap* map = 0;
 		if (level != 0) map = level->getMap();
@@ -668,10 +713,35 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
 
+	if (hasMoved) testTouch();
+
 	return ret;
 }
 
 #ifdef V8NPCSERVER
+
+void TNPC::testTouch()
+{
+	if (level == 0)
+		return;
+
+	// 2, 3
+	static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+	int dir = sprite % 4;
+
+	TLevelLink *linkTouched = level->isOnLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
+	if (linkTouched != 0)
+	{
+		printf("Touched a link! Warp npc!\n");
+		TLevel *newLevel = server->getLevel(linkTouched->getNewLevel());
+		if (newLevel != 0)
+		{
+			float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
+			float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+			this->warpNPC(newLevel, newX, newY);
+		}
+	}
+}
 
 void TNPC::freeScriptResources()
 {
@@ -805,10 +875,13 @@ void TNPC::resetNPC()
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 {
+	printf("Warp NPC to %s at %f, %f\n", pLevel->getLevelName().text(), pX, pY);
+
 	// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 	//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 	//  such for PLO_NPCDEL
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int)id, level->getMap(), level);
+	//server->sendPacketToAll(CString() >> (char)PLO_NPCMOVED >> (int)id);
 
 	// Remove the npc from the old level, and add it to the new level
 	level->removeNPC(this);

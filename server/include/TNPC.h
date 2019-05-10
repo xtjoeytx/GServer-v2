@@ -67,10 +67,10 @@ enum
 	NPCPROP_GATTRIB9		= 47,
 
 	NPCPROP_UNKNOWN48		= 48,
-	NPCPROP_UNKNOWN49		= 49,
-	NPCPROP_UNKNOWN50		= 50,
-	NPCPROP_UNKNOWN51		= 51,
-	NPCPROP_UNKNOWN52		= 52,
+	NPCPROP_SCRIPTER		= 49, // My guess is UNKNOWN48 or this is the scripter's name
+	NPCPROP_NAME			= 50,
+	NPCPROP_TYPE			= 51,
+	NPCPROP_CURLEVEL		= 52,
 
 	NPCPROP_GATTRIB10		= 53,
 	NPCPROP_GATTRIB11		= 54,
@@ -210,7 +210,7 @@ class TNPC
 		void runScriptEvents();
 
 
-		inline void allowNpcWarping(bool canwarp);
+		inline void allowNpcWarping(bool canWarp);
 		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
@@ -239,13 +239,15 @@ class TNPC
 		TServer* server;
 	
 #ifdef V8NPCSERVER
+		void testTouch();
+
 		// Defaults
 		CString origImage, origScript;
 		float origX, origY;
 		TLevel *origLevel;
 
 		// npc-server
-		CString scriptName, scripter;
+		CString npcName, npcType, scripterName;
 		bool canWarp;
 		int width, height;
 		int timeout;
@@ -266,29 +268,32 @@ time_t TNPC::getPropModTime(unsigned char pId)
 
 #ifdef V8NPCSERVER
 
-
+//
 inline const CString& TNPC::getName() const
 {
-	return scriptName;
+	return npcName;
 }
+
 inline void TNPC::setName(const CString& pName)
 {
-	scriptName = pName;
+	npcName = pName;
 }
 
+//
 inline const CString& TNPC::getScripter() const
 {
-	return scripter;
-}
-inline void TNPC::setScripter(const CString& pScripter)
-{
-	scripter = pScripter;
+	return scripterName;
 }
 
-inline void TNPC::allowNpcWarping(bool canwarp)
+inline void TNPC::setScripter(const CString& pScripter)
+{
+	scripterName = pScripter;
+}
+
+inline void TNPC::allowNpcWarping(bool canWarp)
 {
 	if (!isLevelNPC())
-		canWarp = canwarp;
+		canWarp = canWarp;
 }
 
 /**

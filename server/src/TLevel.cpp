@@ -22,6 +22,9 @@ short respawningTiles[] = {
 TLevel::TLevel(TServer* pServer)
 :
 server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
+#ifdef V8NPCSERVER
+, _scriptObject(0)
+#endif
 {
 	memset(levelTiles, 0, sizeof(levelTiles));
 
@@ -76,6 +79,11 @@ TLevel::~TLevel()
 	// Delete board changes.
 	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
 	levelBoardChanges.clear();
+
+#ifdef V8NPCSERVER
+	if (_scriptObject)
+		delete _scriptObject;
+#endif
 }
 
 /*
@@ -306,6 +314,10 @@ TLevel* TLevel::clone()
 
 bool TLevel::loadLevel(const CString& pLevelName)
 {
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->WrapObject(this);
+#endif
+
 	CString ext(getExtension(pLevelName));
 	if (ext == ".nw") return loadNW(pLevelName);
 	else if (ext == ".graal") return loadGraal(pLevelName);
@@ -925,6 +937,7 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	// Find Appropriate Level by Name
 	for (std::vector<TLevel *>::iterator i = levelList->begin(); i != levelList->end(); )
 	{
+		// TODO(joey): Would this ever even happen? Why is this here. Maybe we should use a hashmap for levels?
 		if ((*i) == 0)
 		{
 			i = levelList->erase(i);
@@ -1340,6 +1353,25 @@ bool TLevel::doTimedEvents()
 }
 
 #ifdef V8NPCSERVER
+TLevelLink * TLevel::isOnLink(int pX, int pY)
+{
+	if (!levelLinks.empty())
+	{
+		for (auto it = levelLinks.begin(); it != levelLinks.end(); ++it)
+		{
+			TLevelLink *levelLink = *it;
+//			printf("Check %d in %d, %d\nCheck %d in %d, %d\n", pX, levelLink->getX(), levelLink->getX() + levelLink->getWidth(), pY, levelLink->getY(), levelLink->getY() + levelLink->getHeight());
+			if ((pX >= levelLink->getX() && pX <= levelLink->getX() + levelLink->getWidth()) &&
+				(pY >= levelLink->getY() && pY <= levelLink->getY() + levelLink->getHeight()))
+			{
+				return levelLink;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 {
 	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
@@ -1362,7 +1394,7 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 		}
 	}
 
-	return 0;
+	return nullptr;
 }
 
 bool TLevel::isOnWall(double pX, double pY)
