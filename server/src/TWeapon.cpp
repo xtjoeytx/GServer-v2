@@ -7,6 +7,10 @@
 #include "IEnums.h"
 #include "IUtil.h"
 
+#ifdef V8NPCSERVER
+#include "TPlayer.h"
+#endif
+
 // -- Constructor: Default Weapons -- //
 TWeapon::TWeapon(const signed char pId) : mModTime(0), mWeaponDefault(pId)
 {
@@ -19,6 +23,14 @@ TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, 
 {
 	// Update Weapon
 	this->updateWeapon(pServer, pImage, pScript, pModTime, pSaveWeapon);
+}
+
+TWeapon::~TWeapon()
+{
+#ifdef V8NPCSERVER
+	if (_scriptObject)
+		delete _scriptObject;
+#endif
 }
 
 // -- Function: Load Weapon -- //
@@ -199,8 +211,8 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 	CScriptEngine *scriptEngine = pServer->getScriptEngine();
 
 	// Clear script function
-	//if (!mScriptServer.isEmpty())
-	//	scriptEngine->ClearCache(mScriptServer.text());
+	if (!mScriptServer.isEmpty())
+		scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(mScriptServer.text()));
 #endif
 
 	// Copy Data
@@ -218,14 +230,40 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 		script << (*i).trim() << "\xa7";
 	
 	// Parse Text
+#ifdef V8NPCSERVER
+	setServerScript(script.readString("//#CLIENTSIDE").replaceAll("\xa7", "\n"));
+	setClientScript(script.readString(""));
+
+	// Compile and execute the script.
+	bool executed = scriptEngine->ExecuteWeapon(this);
+	if (executed) {
+		V8ENV_D("SCRIPT COMPILED\n");
+
+		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
+		scriptEngine->QueueAction(scriptAction);
+	}
+	else
+		V8ENV_D("Could not compile weapon script\n");
+#else
 	if (pServer->hasNPCServer())
 	{
 		setServerScript(script.readString("//#CLIENTSIDE"));
 		setClientScript(script.readString(""));
 	}
 	else setClientScript(script);
+#endif
 
 	// Save Weapon
 	if (pSaveWeapon)
 		saveWeapon(pServer);
 }
+
+#ifdef V8NPCSERVER
+void TWeapon::queueWeaponAction(TServer *server, TPlayer *player, const std::string& args)
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	scriptEngine->QueueAction(scriptAction);
+}
+#endif

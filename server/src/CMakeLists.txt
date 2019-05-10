@@ -124,6 +124,7 @@ if(V8NPCSERVER)
 		script/V8PlayerImpl.cpp
 		script/V8ScriptEnv.cpp
 		script/V8ServerImpl.cpp
+		script/V8WeaponImpl.cpp
 	)
 
 	list(

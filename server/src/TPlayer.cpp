@@ -3714,24 +3714,28 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	}
 
 #ifdef V8NPCSERVER
-	if (action.find("serverside") == 0)
+	CString triggerAction = action.readString(",");
+	if (triggerAction == "serverside")
 	{
-		// Trigger weapon!
-		printf("Serverside weapon trigger\n");
+		CString weaponName = action.readString(",");
+
+		TWeapon *weaponObject = server->getWeapon(weaponName);
+		if (weaponObject != nullptr)
+		{
+			CString triggerData = action.readString("");
+			weaponObject->queueWeaponAction(server, this, triggerData.text());
+		}
 	}
 	else
 	{
-		int start = action.find(",");
-		if (start != -1)
-		{
-			CString triggerAction = action.subString(0, start);
-			CString triggerData = action.subString(start + 1);
-			int triggerX = 16 * loc[0];
-			int triggerY = 16 * loc[1];
+		int triggerX = 16 * loc[0];
+		int triggerY = 16 * loc[1];
 
-			TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
-			if (npcTouched != 0)
-				npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
+		TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
+		if (npcTouched != nullptr)
+		{
+			CString triggerData = action.readString("");
+			npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
 		}
 	}
 #else
