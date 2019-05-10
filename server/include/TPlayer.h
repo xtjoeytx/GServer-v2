@@ -105,6 +105,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
 		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
+		bool isRemoteClient()	{ return (type & PLTYPE_ANYREMOTE) ? true : false; }
 		bool isLoaded()			{ return loaded; }
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
@@ -277,6 +278,7 @@ class TPlayer : public TAccount, public CSocketStub
 	private:
 		// Login functions.
 		bool sendLoginClient();
+		bool sendLoginNC();
 		bool sendLoginRC();
 		bool sendLoginNPCServer();
 
