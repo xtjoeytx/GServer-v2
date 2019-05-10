@@ -78,7 +78,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// The players from other servers should be unique lists for each player as they are fetched depending on
 	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 	playerIds.resize(2);
-	npcIds.resize(1);
+	npcIds.resize(10001); // Starting npc ids at 10,000 for now on..
 
 	// Load the config files.
 	int ret = loadConfigFiles();
@@ -1008,6 +1008,13 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 // TODO(joey): Database npcs
 TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
+	// Force database npc ids to be >= 1000
+	if (npcId < 1000)
+	{
+		printf("Database npcs need to be greater than 1000\n");
+		return nullptr;
+	}
+
 	// Make sure the npc id isn't in use
 	if (npcId < npcIds.size() && npcIds[npcId] != 0)
 	{
@@ -1051,7 +1058,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 
 	// Assign NPC Id
 	bool assignedId = false;
-	for (unsigned int i = 1; i < npcIds.size(); ++i)
+	for (unsigned int i = 10000; i < npcIds.size(); ++i)
 	{
 		if (npcIds[i] == 0)
 		{

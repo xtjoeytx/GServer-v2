@@ -125,7 +125,6 @@ class TServer : public CSocketStub
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TPlayer *>* getPlayerIdList()		{ return &playerIds; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
-		std::vector<TNPC *>* getNPCIdList()				{ return &npcIds; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
 		std::vector<TMap *>* getMapList()				{ return &mapList; }
 		std::vector<CString>* getStatusList()			{ return &statusList; }
