@@ -1,9 +1,76 @@
 NPC ids < 1000 cannot be deleted.  Why?
 ^--- not sure why this message is here, but I noticed database npcs start with 1000
 
-hay!
-
 
 ---------------------------
 
 - RC requests address of npc-server once it receives a player with the (Server) nickname. Not sure if it makes a difference, but level is set as a space " ", account can be anything.
+
+---------------------------
+
+Scripting Reference:
+
+Global:
+	Properties:
+		server (readonly, Server object)
+
+Server Object:
+	Functions:
+		sendtonc("message") - outputs `message` to RC's with NC-access
+		sendtorc("message") - outputs `message` to RC's
+
+	Properties:
+		flags['key'] - retrieve/manipulate server flags
+		npcs - can iterate only (untested)
+
+Level Object:
+    Functions:
+
+    Properties:
+        name
+
+NPC Object:
+	Functions:
+		canwarp() - allows database npc to test for links
+		cannotwarp() - disables database npc link testing (default)
+		message("message") - sets npc chat
+		showcharacter() - displays a character instead of an image
+		setcharprop("code", "value") - sets character prop
+		setshape(type, width, height) - sets shape of npc
+		registerTrigger("action", function) - registers an action for triggeractions
+
+	Properties:
+		id - (read-only)
+		ani
+		ap
+		bombs
+		chat
+		darts
+		dir
+		glovepower
+		hearts
+		level - the level object
+		levelname
+		nick
+		rupees
+		timeout
+		x
+		y
+
+
+Player Object:
+	Functions:
+		addweapon("weapon") - adds a weapon to the player
+		hasweapon("weapon") - checks if a player has a weapon
+		removeweapon("weapon") - removes a weapon from a player
+		disableweapons() - disables players weapons
+		enableweapons() - enables player weapons
+
+	Properties:
+		id - (read-only)
+		nick
+		x
+		y
+		hearts
+		fullhearts
+		flags['key'] - retrieve/manipulate player flags

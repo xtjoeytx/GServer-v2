@@ -76,13 +76,13 @@ void bindClass_Environment(CScriptEngine *scriptEngine)
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
-	// Create V8 string for "server"
-	v8::Local<v8::String> serverStr = v8::String::NewFromUtf8(isolate, "Environment", v8::NewStringType::kInternalized).ToLocalChecked();
+	// Create V8 string for "Environment"
+	v8::Local<v8::String> envStr = v8::String::NewFromUtf8(isolate, "Environment", v8::NewStringType::kInternalized).ToLocalChecked();
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> environment_ctor = v8::FunctionTemplate::New(isolate);
 	v8::Local<v8::ObjectTemplate> environment_proto = environment_ctor->PrototypeTemplate();
-	environment_ctor->SetClassName(serverStr);
+	environment_ctor->SetClassName(envStr);
 	environment_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions

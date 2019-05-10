@@ -271,6 +271,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
+	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
 
 	// NPC-Server Functions
 #ifdef V8NPCSERVER
@@ -386,10 +387,8 @@ TPlayer::~TPlayer()
 		delete playerSock;
 
 #ifdef V8NPCSERVER
-	if (_scriptObject) {
-		printf("References: %d\n", _scriptObject->getReferenceCount());
+	if (_scriptObject)
 		delete _scriptObject;
-	}
 #endif
 }
 
@@ -2116,6 +2115,19 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	return true;
 }
 
+
+void TPlayer::enableWeapons()
+{
+	this->status |= PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+}
+
+void TPlayer::disableWeapons()
+{
+	this->status &= ~PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+}
+
 /*
 	TPlayer: Flag Functions
 */
@@ -2910,7 +2922,10 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 
 bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 {
+#ifndef V8NPCSERVER
+	// TODO(joey): If I recall, showimg worked on server if id was less than 200? Will need to confirm this.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
+#endif
 	return true;
 }
 
@@ -4074,7 +4089,7 @@ bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmM
 TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
-	if (!includeRC && externalPlayerIds[id]->isRC()) return 0;
+	if (!includeRC && externalPlayerIds[id]->isRemoteClient()) return 0;
 	return externalPlayerIds[id];
 }
 
@@ -4086,7 +4101,7 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRC())
+		if (!includeRC && player->isRemoteClient())
 			continue;
 
 		// Compare account names.
@@ -4180,6 +4195,12 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 }
 
 bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+{
+	// Stub.
+	return true;
+}
+
+bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
 {
 	// Stub.
 	return true;
