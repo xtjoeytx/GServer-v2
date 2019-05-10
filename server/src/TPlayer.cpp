@@ -4089,7 +4089,7 @@ bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmM
 TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
-	if (!includeRC && externalPlayerIds[id]->isRC()) return 0;
+	if (!includeRC && externalPlayerIds[id]->isRemoteClient()) return 0;
 	return externalPlayerIds[id];
 }
 
@@ -4101,7 +4101,7 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRC())
+		if (!includeRC && player->isRemoteClient())
 			continue;
 
 		// Compare account names.

@@ -31,7 +31,7 @@ void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * (int)newValue;
+	int newValueInt = 16 * newValue;
 	if (newValueInt < 0) {
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
@@ -52,7 +52,7 @@ void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * (int)newValue;
+	int newValueInt = 16 * newValue;
 	if (newValueInt < 0) {
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
