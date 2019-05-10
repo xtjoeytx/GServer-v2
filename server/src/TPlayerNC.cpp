@@ -25,7 +25,8 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 		return false;
 	}
 
-	// RC3 keeps sending empty packets of this, yet still uses NPCGET to fetch npcs.
+	// RC3 keeps sending empty packets of this, yet still uses NPCGET to fetch npcs. Maybe its for pinging the server
+	// for updated level information on database npcs? Just a thought..
 	if (pPacket.bytesLeft())
 	{
 		int npcId = pPacket.readGUInt();
@@ -44,7 +45,14 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 	}
 
 	int npcId = pPacket.readGUInt();
-	printf("NPC Delete: %d\n", npcId);
+	TNPC *npc = server->getNPC(npcId);
+
+	if (npc != 0 && !npc->isLevelNPC())
+	{
+		bool result = server->deleteNPC(npc, npc->getLevel(), true);
+		if (result)
+			server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
+	}
 
 	return true;
 }
@@ -203,13 +211,20 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 		return true;
 	}
 
-	TNPC *newNpc = server->addServerNpc(strtoint(npcId), npcName.text(), npcType.text(), npcScripter.text(), strtofloat(npcX), strtofloat(npcY), level, true);
+	TNPC *newNpc = server->addServerNpc(strtoint(npcId), strtofloat(npcX), strtofloat(npcY), level, true);
+
 	if (newNpc != nullptr)
 	{
+		CString npcProps = CString()
+				>> (char)NPCPROP_NAME >> (char)npcName.length() << npcName
+				>> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType
+				>> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
+
+		// NOTE: This can't be sent to other clients, so rather than assemble the same packet twice just set the scripter separately.
+		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
+
 		// Send packet to npc controls about new npc
-		CString ret;
-		ret >> (char)PLO_NC_NPCADD >> (int)strtoint(npcId) >> (char)50 >> (char)npcName.length() << npcName >> (char)51 >> (char)npcType.length() << npcType >> (char)52 >> (char)npcLevel.length() << npcLevel;
-		server->sendPacketTo(PLTYPE_ANYNC, ret);
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);
 	}
 
 	return true;
@@ -265,6 +280,14 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 
 	// {114}{level}
 	CString level = pPacket.readString("");
+
+	CString msg =  "Variables dump from npc\n\nASDFG";
+	msg.gtokenizeI();
+
+	CString ret;
+	ret >> (char)PLO_NC_LEVELDUMP << msg;
+	sendPacket(ret);
+
 	return true;
 }
 

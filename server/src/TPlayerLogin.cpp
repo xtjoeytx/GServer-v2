@@ -7,6 +7,7 @@
 #include "IUtil.h"
 #include "TLevel.h"
 #include "TMap.h"
+#include "TNPC.h"
 #include "TWeapon.h"
 
 #define serverlog	server->getServerLog()
@@ -65,19 +66,9 @@ bool TPlayer::sendLogin()
 			}
 		}
 
-		// NPC-Control login, just send chat and return true.
+		// NPC-Control login, then return.
 		if (isNC())
-		{
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer *pl = *i;
-				if (pl->isNC())
-					sendPacket(CString() >> (char)PLO_RC_CHAT << "New NC: " << pl->getAccountName());
-			}
-
-			return true;
-		}
+			return sendLoginNC();
 
 		// Check to see if we can log in if we are a client.
 		if (isClient())
@@ -181,7 +172,7 @@ bool TPlayer::sendLogin()
 			// Triggers the RC client to request the NPC-Server address
 			this->sendPacket(CString()
 				>> (char)PLO_ADDPLAYER >> (short)0
-				>> (char)4 << "test"
+				>> (char)12 << "(npc-server)"
 				>> (char)PLPROP_CURLEVEL >> (char)1 << " "
 				>> (char)PLPROP_PSTATUSMSG >> (char)0
 				>> (char)PLPROP_NICKNAME >> (char)strlen("NPC-Server (Server)") << "NPC-Server (Server)");
@@ -195,6 +186,9 @@ bool TPlayer::sendLogin()
 		{
 			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
+
+			// Don't send npc-control players to others
+			if (player->isNC()) continue;
 
 			// Send the other player my props.
 			// Send my flags to the npcserver.
@@ -419,6 +413,37 @@ bool TPlayer::sendLoginClient()
 	// This will allow serverwarp and some other things, for some reason.
 	sendPacket(CString() >> (char)PLO_SERVERTEXT);
 
+	return true;
+}
+
+bool TPlayer::sendLoginNC()
+{
+	// Send database npcs
+	std::vector<TNPC *> *npcList = server->getNPCList();
+	for (auto it = npcList->begin(); it != npcList->end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (!npc->isLevelNPC())
+		{
+			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId()
+				>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
+				>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
+				>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
+			sendPacket(npcPacket);
+		}
+	}
+
+	// Send list of currently connected NC's
+	std::vector<TPlayer*>* playerList = server->getPlayerList();
+	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+	{
+		TPlayer *player = *i;
+		if (player != this && player->isNC())
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "New NC: " << player->getAccountName());
+	}
+
+	// Announce to other nc's that we logged in
+	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "New NC: " << accountName, this);
 	return true;
 }
 

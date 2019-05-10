@@ -887,7 +887,7 @@ void TServer::saveWeapons()
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includeRC && playerIds[id]->isRC()) return 0;
+	if (!includeRC && playerIds[id]->isRemoteClient()) return 0;
 	return playerIds[id];
 }
 
@@ -899,7 +899,7 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRC())
+		if (!includeRC && player->isRemoteClient())
 			continue;
 
 		// Compare account names.
@@ -1006,7 +1006,7 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 
 #ifdef V8NPCSERVER
 // TODO(joey): Database npcs
-TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::string& object, const std::string& scripter, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
+TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
 	// Make sure the npc id isn't in use
 	if (npcId < npcIds.size() && npcIds[npcId] != 0)
@@ -1020,8 +1020,6 @@ TNPC* TServer::addServerNpc(int npcId, const std::string& name, const std::strin
 	// Create the npc
 	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false, settings.getBool("trimnpccode", true));
 	newNPC->setId(npcId);
-	newNPC->setScripter(scripter.c_str());
-	newNPC->setName(name.c_str());
 	npcList.push_back(newNPC);
 
 	if (npcIds.size() <= npcId)
@@ -1099,11 +1097,12 @@ bool TServer::deleteNPC(const unsigned int pId, TLevel* pLevel, bool eraseFromLe
 	return deleteNPC(npc, pLevel, eraseFromLevel);
 }
 
+// TODO(joey): Do we need to pass the level into this function? Likely can use npc->getLevel()
 bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
-	
+
 	// Remove the NPC from all the lists.
 	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
@@ -1116,16 +1115,18 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	//sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCDEL2 >> (char)npc->getLevel()->getLevelName().length() << npc->getLevel()->getLevelName() >> (int)npc->getId());
+	bool isOnMap = (npc->getLevel() && npc->getLevel()->getMap() ? true : false);
+	CString tmpLvlName = (isOnMap ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
+
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer* p = *i;
-		if (p->isRC()) continue;
+		if (p->isRemoteClient()) continue;
 
-		CString tmpLvlName = (npc->getLevel() && npc->getLevel()->getMap() ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
-		if (p->getVersion() < CLVER_2_1 && !p->isNPCServer())
+		if ((isOnMap || p->getVersion() < CLVER_2_1) && !p->isNPCServer())
 			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		else p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		//else
+			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
 	}
 
 	// Delete the NPC from memory.
