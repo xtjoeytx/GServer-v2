@@ -32,7 +32,7 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), scriptName(""), scripter("")
+, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), npcName(""), scripterName("")
 , canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
@@ -281,6 +281,23 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 		case NPCPROP_GMAPLEVELY:
 		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
+
+#ifdef V8NPCSERVER
+		case NPCPROP_SCRIPTER:
+		return CString() >> (char)scripterName.length() << scripterName;
+
+		case NPCPROP_NAME:
+		return CString() >> (char)npcName.length() << npcName;
+
+		case NPCPROP_TYPE:
+		return CString() >> (char)npcType.length() << npcType;
+
+		case NPCPROP_CURLEVEL:
+		{
+			CString tmpLevelName = (level ? level->getLevelName() : "");
+			return CString() >> (char)tmpLevelName.length() << tmpLevelName;
+		}
+#endif
 
 		case NPCPROP_CLASS:
 		return CString() >> (short)0;
@@ -556,6 +573,25 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 			case NPCPROP_GMAPLEVELY:
 				gmaplevely = pProps.readGUChar();
 			break;
+
+#ifdef V8NPCSERVER
+			case NPCPROP_SCRIPTER:
+				scripterName = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_NAME:
+				npcName = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_TYPE:
+				npcType = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCPROP_CURLEVEL:
+				// TODO(joey): We don't set the level like this, maybe we should? TBD
+				pProps.readChars(pProps.readGUChar());
+				break;
+#endif
 
 			case NPCPROP_CLASS:
 				pProps.readChars(pProps.readGShort());
