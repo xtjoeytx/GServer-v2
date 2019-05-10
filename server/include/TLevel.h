@@ -74,6 +74,10 @@ class TLevel
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
+		std::vector<TNPC *>* getLevelNPCs()		{ return &levelNPCs; }
+
+		//! Gets a vector full of the level signs.
+		//! \return The level signs.
 		std::vector<TLevelSign *>* getLevelSigns()		{ return &levelSigns; }
 
 		//! Gets a vector full of the players on the level.
@@ -181,6 +185,7 @@ class TLevel
 		bool doTimedEvents();
 
 #ifdef V8NPCSERVER
+		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
 		TLevelLink *isOnLink(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
 		bool isOnWall(double pX, double pY);

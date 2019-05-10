@@ -338,6 +338,30 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// NPC Method: npc.move(x, y, time, options);
+void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 4);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	// Argument parsing
+	int delta_x = 16 * args[0]->NumberValue(context).ToChecked();
+	int delta_y = 16 * args[1]->NumberValue(context).ToChecked();
+	double time_fps = args[2]->NumberValue(context).ToChecked();
+	int options = args[3]->IntegerValue(context).ToChecked();
+	
+	// Unwrap Object
+	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+	npcObject->moveNPC(delta_x, delta_y, time_fps, options);
+}
+
 // NPC Method: npc.showcharacter();
 void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -603,6 +627,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "dontblock"), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "hide"), v8::FunctionTemplate::New(isolate, NPC_Function_Hide, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "move"), v8::FunctionTemplate::New(isolate, NPC_Function_Move, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);

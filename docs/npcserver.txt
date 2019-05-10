@@ -25,9 +25,11 @@ Server Object:
 
 Level Object:
     Functions:
+        findareanpcs(x, y, width, height) - get an array of npcs in this area
 
     Properties:
         name
+        npcs - list of level npcs
 
 NPC Object:
 	Functions:
@@ -68,9 +70,17 @@ Player Object:
 
 	Properties:
 		id - (read-only)
+		account - (read-only)
 		nick
 		x
 		y
 		hearts
 		fullhearts
 		flags['key'] - retrieve/manipulate player flags
+
+Weapon Object:
+    Functions:
+
+    Properties:
+        name
+        image
