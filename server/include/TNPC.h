@@ -116,6 +116,17 @@ enum
 	NPCBLOCKFLAG_NOBLOCK	= 0x01,
 };
 
+//! NPCMOVE_FLAGS values
+enum
+{
+	NPCMOVEFLAG_NOCACHE			= 0x00,
+	NPCMOVEFLAG_CACHE			= 0x01,
+	NPCMOVEFLAG_APPEND			= 0x02,
+	NPCMOVEFLAG_BLOCKCHECK		= 0x04,
+	NPCMOVEFLAG_EVENTWHENDONE 	= 0x08,
+	NPCMOVEFLAG_APPLYDIR		= 0x10
+};
+
 #ifdef V8NPCSERVER
 //! NPC Event Flags
 enum
@@ -211,6 +222,7 @@ class TNPC
 
 
 		inline void allowNpcWarping(bool canWarp);
+		void moveNPC(int dx, int dy, double time, int options);
 		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
