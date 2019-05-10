@@ -1346,6 +1346,26 @@ bool TLevel::doTimedEvents()
 }
 
 #ifdef V8NPCSERVER
+std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
+{
+	int testEndX = pX + pWidth;
+	int testEndY = pY + pHeight;
+
+	std::vector<TNPC *> npcList;
+	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+
+		if ((npc->getPixelX() >= pX && npc->getPixelX() <= testEndX) &&
+			(npc->getPixelY() >= pY && npc->getPixelY() <= testEndY))
+		{
+			npcList.push_back(npc);
+		}
+	}
+
+	return npcList;
+}
+
 TLevelLink * TLevel::isOnLink(int pX, int pY)
 {
 	if (!levelLinks.empty())

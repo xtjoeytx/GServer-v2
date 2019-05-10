@@ -110,12 +110,8 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 	if (npc != nullptr)
 	{
 		TLevel *newLevel = server->getLevel(npcLevel);
-		if (newLevel == 0) {
-			printf("Err finding level\n");
-			return true;
-		}
-		
-		npc->warpNPC(newLevel, npcX, npcY);
+		if (newLevel != nullptr)
+			npc->warpNPC(newLevel, npcX, npcY);
 	}
 
 	return true;
