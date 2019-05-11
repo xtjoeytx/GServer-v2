@@ -12,17 +12,19 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
-// PROPERTY: Id
-void NPC_GetInt_id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+// Property: npc.id
+void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
 	info.GetReturnValue().Set(npcObject->getId());
 }
 
-// PROPERTY: X Position
+// Property: npc.x
 void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
 	info.GetReturnValue().Set((double)npcObject->getPixelX() / 16.0f);
 }
 
@@ -31,19 +33,16 @@ void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * newValue;
-	if (newValueInt < 0) {
-		newValueInt = (-newValueInt << 1) | 0x0001;
-	}
-	else newValueInt <<= 1;
-
-	npcObject->setProps(CString() >> (char)NPCPROP_X2 >> (short)newValueInt, CLVER_2_17, true);
+	npcObject->setX(newValue);
+	//npcObject->updatePropModTime(NPCPROP_X, time(0));
+	npcObject->updatePropModTime(NPCPROP_X2, time(0));
 }
 
-// PROPERTY: Y Position
+// Property: npc.y
 void NPC_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
 	info.GetReturnValue().Set((double)npcObject->getPixelY() / 16.0f);
 }
 
@@ -52,13 +51,9 @@ void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const 
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * newValue;
-	if (newValueInt < 0) {
-		newValueInt = (-newValueInt << 1) | 0x0001;
-	}
-	else newValueInt <<= 1;
-
-	npcObject->setProps(CString() >> (char)NPCPROP_Y2 >> (short)newValueInt, CLVER_2_17, true);
+	npcObject->setY(newValue);
+	//npcObject->updatePropModTime(NPCPROP_Y, time(0));
+	npcObject->updatePropModTime(NPCPROP_Y2, time(0));
 }
 
 // PROPERTY: Level
@@ -94,7 +89,7 @@ void NPC_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallback
 }
 
 // PROPERTY: Timeout
-void NPC_GetNum_timeout(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+void NPC_GetNum_Timeout(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
@@ -102,7 +97,7 @@ void NPC_GetNum_timeout(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	info.GetReturnValue().Set(timeout);
 }
 
-void NPC_SetNum_timeout(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+void NPC_SetNum_Timeout(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
@@ -115,8 +110,7 @@ void NPC_GetInt_Rupees(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
-	CString npcProp = npcObject->getProp(NPCPROP_RUPEES);
-	info.GetReturnValue().Set(npcProp.readGUInt());
+	info.GetReturnValue().Set(npcObject->getRupees());
 }
 
 void NPC_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
@@ -124,7 +118,8 @@ void NPC_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	npcObject->setProps(CString() >> (char)NPCPROP_RUPEES >> (int)newValue, CLVER_2_17, true);
+	npcObject->setRupees(newValue);
+	npcObject->updatePropModTime(NPCPROP_RUPEES, time(0));
 }
 
 // PROPERTY: Bombs
@@ -229,15 +224,12 @@ void NPC_SetInt_Ap(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 	npcObject->setProps(CString() >> (char)NPCPROP_ALIGNMENT >> (char)newValue, CLVER_2_17, true);
 }
 
-// PROPERTY: Nickname
+// PROPERTY: npc.nick
 void NPC_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
-
-	CString npcProp = npcObject->getProp(NPCPROP_NICKNAME);
-	CString propValue = npcProp.readChars(npcProp.readGUChar());
 	
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getNickname().text());
 	info.GetReturnValue().Set(strText);
 }
 
@@ -246,7 +238,7 @@ void NPC_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setProps(CString() >> (char)NPCPROP_NICKNAME >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+	npcObject->setNickname(*newValue);
 }
 
 // PROPERTY: Message
@@ -287,6 +279,20 @@ void NPC_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, con
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+}
+
+// NPC Method: npc.blockagain()
+void NPC_Function_BlockAgain(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+	// TODO(joey): implement this
+	//npcObject->allowNpcWarping(true);
 }
 
 // NPC Method: npc.canwarp();
@@ -356,7 +362,7 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	int delta_y = 16 * args[1]->NumberValue(context).ToChecked();
 	double time_fps = args[2]->NumberValue(context).ToChecked();
 	int options = args[3]->IntegerValue(context).ToChecked();
-	
+
 	// Unwrap Object
 	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
 	npcObject->moveNPC(delta_x, delta_y, time_fps, options);
@@ -620,7 +626,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	
 	// Method functions
 	// TODO(joey): Implement these functions
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
@@ -651,7 +657,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_id);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_Id);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
@@ -661,7 +667,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_timeout, NPC_SetNum_timeout);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_Timeout, NPC_SetNum_Timeout);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);

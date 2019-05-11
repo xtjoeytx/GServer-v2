@@ -158,7 +158,6 @@ bool CScriptEngine::ClearCache(const std::string& code)
 
 bool CScriptEngine::ExecuteNpc(TNPC *npc)
 {
-	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 	V8ENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
@@ -220,6 +219,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 		V8ENV_D("Failed when executing script\n");
 		if (try_catch.HasCaught())
 		{
+			// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 			v8::Handle<v8::Message> message = try_catch.Message();
 			ScriptRunError scriptError;
 			scriptError.filename  = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
@@ -235,7 +235,6 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 
 bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 {
-	// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
 	V8ENV_D("Begin Global::ExecuteWeapon()\n\n");
 
 	// We always want to create an object for the weapon

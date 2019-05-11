@@ -65,9 +65,14 @@ bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
 		return false;
 	}
 
-	// NPC `NAME` reset by `ACCOUNT`
 	int npcId = pPacket.readGUInt();
-	printf("NPC Reset: %d\n", npcId);
+
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != 0 && !npc->isLevelNPC())
+	{
+		npc->resetNPC();
+		server->sendToNC(CString("NPC ") << npc->getName() << " reset by " << accountName);
+	}
 
 	return true;
 }
