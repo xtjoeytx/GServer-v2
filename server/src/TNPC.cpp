@@ -873,6 +873,8 @@ void TNPC::runScriptEvents()
 	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
 	if (!propModified.empty())
 	{
+		testTouch();
+
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
 		for (auto it = propModified.begin(); it != propModified.end(); ++it)
 			propPacket >> (char)(*it) << getProp(*it);
@@ -954,8 +956,14 @@ void TNPC::saveNPC()
 	fileData << "SCRIPTER " << scripterName << NL;
 	fileData << "IMAGE " << image << NL;
 	fileData << "STARTLEVEL " << origLevel << NL;
-	fileData << "STARTX " << CString(x) << NL;
-	fileData << "STARTY " << CString(y) << NL;
+	fileData << "STARTX " << CString(origX) << NL;
+	fileData << "STARTY " << CString(origY) << NL;
+	if (level)
+	{
+		fileData << "LEVEL " << level->getLevelName() << NL;
+		fileData << "X " << CString(x) << NL;
+		fileData << "Y " << CString(y) << NL;
+	}
 	fileData << "NICK " << nickName << NL;
 	fileData << "ANI " << gani << NL;
 	fileData << "HP " << CString(power) << NL;
@@ -1106,6 +1114,9 @@ bool TNPC::loadNPC(const CString& fileName)
 	}
 
 	setScriptCode(npcScript, true);
+
+	if (npcLevel.isEmpty())
+		npcLevel = origLevel;
 
 	if (!npcLevel.isEmpty())
 	{
