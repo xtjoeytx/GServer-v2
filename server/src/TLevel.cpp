@@ -1373,7 +1373,6 @@ TLevelLink * TLevel::isOnLink(int pX, int pY)
 		for (auto it = levelLinks.begin(); it != levelLinks.end(); ++it)
 		{
 			TLevelLink *levelLink = *it;
-//			printf("Check %d in %d, %d\nCheck %d in %d, %d\n", pX, levelLink->getX(), levelLink->getX() + levelLink->getWidth(), pY, levelLink->getY(), levelLink->getY() + levelLink->getHeight());
 			if ((pX >= levelLink->getX() && pX <= levelLink->getX() + levelLink->getWidth()) &&
 				(pY >= levelLink->getY() && pY <= levelLink->getY() + levelLink->getHeight()))
 			{
@@ -1395,7 +1394,7 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 
 		//if (!npc->getImage().isEmpty())
 		{
-			if ((npc->getVisFlags() & 1) != 0)
+			if ((npc->getVisibleFlags() & 1) != 0)
 			{
 				if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
 					(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
