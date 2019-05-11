@@ -114,6 +114,9 @@ class TServer : public CSocketStub
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
+#ifdef V8NPCSERVER
+		CLog& getScriptLog()							{ return scriptlog; }
+#endif
 		CPluginManager& getPluginManager()				{ return mPluginManager; }
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
@@ -207,6 +210,9 @@ class TServer : public CSocketStub
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
 		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
+#ifdef V8NPCSERVER
+		CLog scriptlog;
+#endif
 		CPluginManager mPluginManager;
 		CSettings adminsettings, settings;
 		CSocket playerSock;
