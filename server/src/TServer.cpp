@@ -28,7 +28,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
-	: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+	: running(false), doRestart(false), name(pName), wordFilter(this), mPluginManager(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this)
 #endif
@@ -58,6 +58,12 @@ TServer::TServer(CString pName)
 	rclog.setFilename(rcPath);
 	serverlog.setFilename(serverPath);
 
+#ifdef V8NPCSERVER
+	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
+	CFileSystem::fixPathSeparators(&scriptPath);
+	scriptlog.setFilename(scriptPath);
+#endif
+
 	// Announce ourself to other classes.
 	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
@@ -78,7 +84,17 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// The players from other servers should be unique lists for each player as they are fetched depending on
 	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 	playerIds.resize(2);
-	npcIds.resize(1);
+	npcIds.resize(10001); // Starting npc ids at 10,000 for now on..
+
+#ifdef V8NPCSERVER
+	// Initialize the Script Engine
+	if (!mScriptEngine.Initialize())
+	{
+		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
+		// TODO(joey): new error number? log is probably enough
+		return ERR_SETTINGS;
+	}
+#endif
 
 	// Load the config files.
 	int ret = loadConfigFiles();
@@ -132,14 +148,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 #endif
 
 #ifdef V8NPCSERVER
-	// Initialize the Script Engine
-	if (!mScriptEngine.Initialize())
-	{
-		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
-		// TODO(joey): new error number? log is probably enough
-		return ERR_SETTINGS;
-	}
-
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
 #endif
@@ -436,6 +444,9 @@ bool TServer::doTimedEvents()
 		
 		// Save some stuff.
 		saveWeapons();
+#ifdef V8NPCSERVER
+		saveNpcs();
+#endif
 
 		// Check all of the instanced maps to see if the players have left.
 		if (!groupLevels.empty())
@@ -617,6 +628,12 @@ int TServer::loadConfigFiles()
 	serverlog.out("[%s]      Loading maps...\n", name.text());
 	loadMaps(true);
 
+#ifdef V8NPCSERVER
+	// Load database npcs.
+	serverlog.out("[%s]      Loading npcs...\n", name.text());
+	loadNpcs(true);
+#endif
+
 	// Load translations.
 	serverlog.out("[%s]      Loading translations...\n", name.text());
 	loadTranslations();
@@ -742,6 +759,8 @@ void TServer::loadWeapons(bool print)
 			}
 			else
 			{
+				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
+				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
 				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().text());
 				delete weapon;
 			}
@@ -845,6 +864,46 @@ void TServer::loadMaps(bool print)
 	}
 }
 
+#ifdef V8NPCSERVER
+void TServer::loadNpcs(bool print)
+{
+	CFileSystem npcFS(this);
+	npcFS.addDir("npcs", "npc*.txt");
+	std::map<CString, CString> *npcFileList = npcFS.getFileList();
+	for (auto it = npcFileList->begin(); it != npcFileList->end(); ++it)
+	{
+		bool loaded = false;
+
+		// Create the npc
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false, true);
+		if (newNPC->loadNPC((*it).second))
+		{
+			int npcId = newNPC->getId();
+			if (npcId < 1000)
+			{
+				printf("Database npcs must be greater than 1000\n");
+			}
+			else if (npcId < npcIds.size() && npcIds[npcId] != 0)
+			{
+				printf("Error creating database npc: Id is in use!\n");
+			}
+			else
+			{
+				if (npcIds.size() <= npcId)
+					npcIds.resize(npcId + 10);
+
+				npcIds[npcId] = newNPC;
+				npcList.push_back(newNPC);
+				loaded = true;
+			}
+		}
+
+		if (!loaded)
+			delete newNPC;
+	}
+}
+#endif
+
 void TServer::loadTranslations()
 {
 	this->TS_Reload();
@@ -881,6 +940,21 @@ void TServer::saveWeapons()
 		}
 	}
 }
+
+#ifdef V8NPCSERVER
+
+void TServer::saveNpcs()
+{
+	// TODO(joey): implement
+	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (npc->getPersist())
+			npc->saveNPC();
+	}
+}
+
+#endif
 
 /////////////////////////////////////////////////////
 
@@ -1008,6 +1082,13 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 // TODO(joey): Database npcs
 TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
+	// Force database npc ids to be >= 1000
+	if (npcId < 1000)
+	{
+		printf("Database npcs need to be greater than 1000\n");
+		return nullptr;
+	}
+
 	// Make sure the npc id isn't in use
 	if (npcId < npcIds.size() && npcIds[npcId] != 0)
 	{
@@ -1051,7 +1132,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 
 	// Assign NPC Id
 	bool assignedId = false;
-	for (unsigned int i = 1; i < npcIds.size(); ++i)
+	for (unsigned int i = 10000; i < npcIds.size(); ++i)
 	{
 		if (npcIds[i] == 0)
 		{
@@ -1077,12 +1158,6 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		// Send to level.
 		TMap* map = getMap(pLevel);
 		sendPacketToLevel(packet, map, pLevel, 0, true);
-
-#ifndef V8NPCSERVER
-		// Send to npc-server.
-		if (mNpcServer != 0)
-			mNpcServer->sendPacket(packet);
-#endif
 	}
 	
 	return newNPC;
@@ -1123,9 +1198,9 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 		TPlayer* p = *i;
 		if (p->isRemoteClient()) continue;
 
-		if ((isOnMap || p->getVersion() < CLVER_2_1) && !p->isNPCServer())
+		if (isOnMap || p->getVersion() < CLVER_2_1)
 			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		//else
+		else
 			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
 	}
 
@@ -1226,7 +1301,6 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer, bool pNpcServer
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
-		if (pNpcServer && (*i)->isNPCServer()) continue;
 
 		(*i)->sendPacket(pPacket);
 	}
@@ -1346,12 +1420,6 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 /*
 	NPC-Server Functionality
 */
-void TServer::setNPCServer(TPlayer *pNpcServer, int pNCPort)
-{
-	mNpcServer = pNpcServer;
-	mNCPort = pNCPort;
-}
-
 bool TServer::NC_AddWeapon(TWeapon *pWeaponObj)
 {
 	if (pWeaponObj == 0)
@@ -1384,7 +1452,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	delete weaponObj;
 
 	// Delete from Players
-	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName); 
+	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
 	return true;
 }
 
@@ -1403,32 +1471,6 @@ void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
 			player->sendPacket(CString() << pWeapon->getWeaponPacket());
 		}
 	}
-}
-
-bool TServer::NC_SendMap(TMap *map)
-{
-	if (map == 0 || mNpcServer == 0) return false;
-
-	// Send the level name.
-	mNpcServer->sendFile(map->getMapName() << ".gmap");
-	return true;
-}
-
-bool TServer::NC_SendLevel(TLevel* level)
-{
-	if (level == 0 || mNpcServer == 0) return false;
-
-	// Send the level name.
-	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
-
-	// Send links, signs, and mod time.
-	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)level->getModTime());
-	mNpcServer->sendPacket(CString() << level->getLinksPacket());
-	mNpcServer->sendPacket(CString() << level->getSignsPacket(0));
-
-	// Send NPCs.
-	mNpcServer->sendPacket(CString() << level->getNpcsPacket(0, NSVER_GENERIC));
-	return true;
 }
 
 /*

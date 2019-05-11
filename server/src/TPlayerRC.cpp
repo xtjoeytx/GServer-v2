@@ -18,6 +18,7 @@
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()
+#define nclog		server->getNPCLog()
 extern bool __playerPropsRC[propscount];
 
 // Admin-only server options.  They are protected from being changed by people without the
@@ -101,8 +102,6 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 			hadBow = true;
 	}
 	if (id != -1) sendPacket(outPacket);
-	if (server->hasNPCServer())
-		server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)0 /*NCO_PLAYERWEAPONS*/ >> (short)id);
 
 	// If we never had the bomb or bow, don't let it come back.
 	if (hadBomb == false) allowBomb = false;
@@ -282,8 +281,10 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		if ((*i)->getType() & PLTYPE_ANYRC)
 		{
 			(*i)->sendPacket(outPacket);
+#ifdef V8NPCSERVER
 			if (hasRight(PLPERM_NPCCONTROL))
 				(*i)->sendNCAddr();
+#endif
 		}
 	}
 
@@ -1088,6 +1089,14 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			rclog.out("%s reloaded the weapons.\n", accountName.text());
 			server->loadWeapons();
 		}
+#ifdef V8NPCSERVER
+		else if (words[0] == "/savenpcs" && words.size() == 1)
+		{
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " saved npc to disk.");
+			nclog.out("%s saved the npcs to disk.\n", accountName.text());
+			server->saveNpcs();
+		}
+#endif
 		else if(words[0] == "/find" && words.size() > 1)
 		{
 			std::map<CString, CString> found;
@@ -1283,16 +1292,6 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	rclog.out("%s has set the rights of %s\n", accountName.text(), acc.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has set the rights of " << acc);
-
-	// Send the packet to the npc-server.
-	if (server->hasNPCServer())
-	{
-		folders.gtokenizeI();
-		server->getNPCServer()->sendPacket(CString() >> (char)PLO_RC_PLAYERRIGHTSGET >> (char)acc.length() << acc
-			>> (long long)p->getAdminRights()
-			>> (char)p->getAdminIp().length() << p->getAdminIp()
-			>> (short)folders.length() << folders);
-	}
 
 	if (offline) delete p;
 	return true;
@@ -2057,26 +2056,15 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
 {
-#ifndef V8NPCSERVER
-	// No npc-server, don't continue!
-	if (!server->hasNPCServer())
-		return true;
-#endif
-
+#ifdef V8NPCSERVER
 	// Read Packet Data
 	unsigned short pid = pPacket.readGUShort();
 	CString message = pPacket.readString("");
 	
-#ifndef V8NPCSERVER
-	// Check if player id is of the NPC Server.
-	TPlayer *npcserver = server->getNPCServer();
-	if (npcserver->getId() != pid)
-		return true;
-#endif
-
 	// Enact upon the message.
 	if (message == "location")
 		sendNCAddr();
+#endif
 
 	return true;
 }

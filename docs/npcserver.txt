@@ -1,7 +1,3 @@
-NPC ids < 1000 cannot be deleted.  Why?
-^--- not sure why this message is here, but I noticed database npcs start with 1000
-
-
 ---------------------------
 
 - RC requests address of npc-server once it receives a player with the (Server) nickname. Not sure if it makes a difference, but level is set as a space " ", account can be anything.
@@ -25,9 +21,11 @@ Server Object:
 
 Level Object:
     Functions:
+        findareanpcs(x, y, width, height) - get an array of npcs in this area
 
     Properties:
         name
+        npcs - list of level npcs
 
 NPC Object:
 	Functions:
@@ -68,9 +66,17 @@ Player Object:
 
 	Properties:
 		id - (read-only)
+		account - (read-only)
 		nick
 		x
 		y
 		hearts
 		fullhearts
 		flags['key'] - retrieve/manipulate player flags
+
+Weapon Object:
+    Functions:
+
+    Properties:
+        name
+        image

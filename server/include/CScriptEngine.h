@@ -17,6 +17,7 @@ class IScriptFunction;
 
 class TNPC;
 class TServer;
+class TWeapon;
 
 class CScriptEngine
 {
@@ -80,7 +81,12 @@ public:
 	bool ClearCache(const std::string& code);
 
 	bool ExecuteNpc(TNPC *npc);
-	
+	bool ExecuteWeapon(TWeapon *weapon);
+
+	inline void QueueAction(ScriptAction *action) {
+		_actions.push_back(action);
+	}
+
 	template<class... Args>
 	ScriptAction * CreateAction(const std::string& action, Args... An);
 
@@ -95,6 +101,7 @@ protected:
 	std::unordered_map<std::string, IScriptFunction *> _callbacks;
 	std::unordered_set<TNPC *> _updateNpcs;
 	std::unordered_set<TNPC *> _updateNpcsTimer;
+	std::vector<ScriptAction *> _actions;
 
 private:
 	IScriptEnv *_env;
@@ -158,7 +165,21 @@ inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 		"self.onPlayerEnters = onPlayerEnters;" \
 		"self.onPlayerLeaves = onPlayerLeaves;" \
 		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
-		"self.onTimeout = onTimeout;";
+		"self.onTimeout = onTimeout;\n";
+
+	std::string wrappedCode = std::string(prefixString);
+	wrappedCode.append(code);
+	wrappedCode.append("});");
+	return wrappedCode;
+}
+
+template <>
+inline std::string CScriptEngine::WrapScript<TWeapon>(const std::string& code) {
+	static const char *prefixString = "(function(weapon) {" \
+		"var onCreated, onActionServerSide;" \
+		"const self = weapon;" \
+		"self.onCreated = onCreated;" \
+		"self.onActionServerSide = onActionServerSide;\n";
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);

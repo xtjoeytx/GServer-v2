@@ -1,0 +1,91 @@
+Graal Word Filter Documentation
+
+1. Purpose of the word filter
+
+The word filter is part of the game server and can be used by administrators
+to prevent the usage of rude words in messages and names. It will not work for
+100% of all cases, but it will help to find people that use those words, and
+if users trick the system they know that they do something that is against the
+rules and will possibly be jailed or banned.
+
+The word filter allows different types of actions: it can log the usage of
+words, tell administrators that someone used a filtered word, replace the word
+with stars, block the message and warn the user. It's planned that you can directly send someone to jail or possibly ban someone if the word filter has detected
+something, that will mainly be used for preventing trial players to flood the
+servers with unwelcome messages.
+
+2. Configuration files 
+
+By default the filter rules are listed in the file 'wordfilter/rules.txt'.
+Modify that file to change the word filter rules, it will automatically reload
+the rules when you update the file. The filter log is saved to 'wordfiler/log.txt'.
+
+3. Global options
+
+In the rules file you can add following lines to change parameters that apply
+for all rules or are used when you don't specify the parameter in the rule
+itself:
+
+WARNMESSAGE message
+  sets the warn message that is displayed when 
+  the player uses a bad word and there is a rule
+  that matches a word in the text and has 'warn' as
+  action
+SHOWWORDSTORC true/false
+  enables/disables the display of the words that matched,
+  this is by default turned off to not annoy the staff
+  if it's turned off then you will only see the name 
+  of the player in the message that is sent to RCs
+
+4. Rules
+
+You can define several rules.
+A rule always starts with a 
+RULE
+line and ends with a
+RULEEND 
+line.
+
+Between those two lines you can specify the options for the rule. Following
+options can be set:
+
+MATCH word
+  defines the word to look for, format:
+    - '?'                  : all characters match
+    - upper case           : character must match exactly
+    - lower case character : will be counted when it matches
+        and at the end checked if the number of characters that
+        match is higher or equal to the requested precision
+  You can define more than one match per rule. Spaces
+  and some other characters are overread to allow easier
+  matching.
+  examples: F??K, BitcH 
+CHECK chat pm toall nick
+  list of text types to check, separated by spaces
+  the actions vary a little bit from type to type -
+  people that send bad PMs are warned by admin message,
+  otherwise it changes the chat text of the player
+WORDPOSITION full/start/part
+  says where the word must be appear in the text
+  to be recognized, 'full' means the rule only
+  matches full words, 'start' means the rule will
+  check the start of words if they match, 'part'
+  means it checks everything
+PRECISION matchcharacters/precision%
+  you can either give a number of characters that
+  must match to fire the action, or give a
+  percentage, add '%' at the end of that then
+ACTION log tellrc replace warn jail ban
+  list of actions to do when the word matches, separated by spaces
+  'log' will log to wordfilter/log.txt, 'tellrc' will
+  send a warning on the RC-chat, 'replace' will replace
+  the found words with stars, 'warn' will set the chat text 
+  of the player to the warn message or send an admin message
+  when the message was a PM, the PM will not be sent in
+  that case; 'jail' and 'ban' are planned for the future
+WARNMESSAGE message
+  sets the warning message
+
+
+
+

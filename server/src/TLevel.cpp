@@ -36,16 +36,9 @@ TLevel::~TLevel()
 {
 	// Delete NPCs.
 	{
-		// Get some pointers.
-		std::vector<TNPC*>* npcList = server->getNPCList();
-		std::vector<TNPC*>* npcIds = server->getNPCIdList();
-
 		// Remove every NPC in the level.
-		if (npcList->size() != 0 && npcIds->size() != 0)
-		{
-			for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
-				server->deleteNPC(*i, this, false);
-		}
+		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
+			server->deleteNPC(*i, this, false);
 		levelNPCs.clear();
 	}
 
@@ -278,15 +271,6 @@ bool TLevel::reload()
 
 	// Re-load the level now.
 	bool ret = loadLevel(levelName);
-
-#ifndef V8NPCSERVER
-	// Update the npc-server of the level change.
-	if (server->hasNPCServer())
-	{
-		server->NC_SendLevel(this);
-		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
-	}
-#endif
 
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
 	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -938,11 +922,11 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	for (std::vector<TLevel *>::iterator i = levelList->begin(); i != levelList->end(); )
 	{
 		// TODO(joey): Would this ever even happen? Why is this here. Maybe we should use a hashmap for levels?
-		if ((*i) == 0)
-		{
-			i = levelList->erase(i);
-			continue;
-		}
+//		if ((*i) == 0)
+//		{
+//			i = levelList->erase(i);
+//			continue;
+//		}
 
 		if ((*i)->getLevelName().toLower() == pLevelName.toLower())
 			return (*i);
@@ -958,15 +942,6 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 		return 0;
 	}
 
-#ifndef V8NPCSERVER
-	// Send NC Level
-	if (server->hasNPCServer())
-	{
-		server->NC_SendLevel(level);
-		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
-	}
-#endif
-	
 	// Return Level
 	levelList->push_back(level);
 	return level;
@@ -1353,6 +1328,26 @@ bool TLevel::doTimedEvents()
 }
 
 #ifdef V8NPCSERVER
+std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
+{
+	int testEndX = pX + pWidth;
+	int testEndY = pY + pHeight;
+
+	std::vector<TNPC *> npcList;
+	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	{
+		TNPC *npc = *it;
+
+		if ((npc->getPixelX() >= pX && npc->getPixelX() <= testEndX) &&
+			(npc->getPixelY() >= pY && npc->getPixelY() <= testEndY))
+		{
+			npcList.push_back(npc);
+		}
+	}
+
+	return npcList;
+}
+
 TLevelLink * TLevel::isOnLink(int pX, int pY)
 {
 	if (!levelLinks.empty())
@@ -1360,7 +1355,6 @@ TLevelLink * TLevel::isOnLink(int pX, int pY)
 		for (auto it = levelLinks.begin(); it != levelLinks.end(); ++it)
 		{
 			TLevelLink *levelLink = *it;
-//			printf("Check %d in %d, %d\nCheck %d in %d, %d\n", pX, levelLink->getX(), levelLink->getX() + levelLink->getWidth(), pY, levelLink->getY(), levelLink->getY() + levelLink->getHeight());
 			if ((pX >= levelLink->getX() && pX <= levelLink->getX() + levelLink->getWidth()) &&
 				(pY >= levelLink->getY() && pY <= levelLink->getY() + levelLink->getHeight()))
 			{
@@ -1382,7 +1376,7 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 
 		//if (!npc->getImage().isEmpty())
 		{
-			if ((npc->getVisFlags() & 1) != 0)
+			if ((npc->getVisibleFlags() & 1) != 0)
 			{
 				if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
 					(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
