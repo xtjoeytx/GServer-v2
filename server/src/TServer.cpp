@@ -1158,12 +1158,6 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		// Send to level.
 		TMap* map = getMap(pLevel);
 		sendPacketToLevel(packet, map, pLevel, 0, true);
-
-#ifndef V8NPCSERVER
-		// Send to npc-server.
-		if (mNpcServer != 0)
-			mNpcServer->sendPacket(packet);
-#endif
 	}
 	
 	return newNPC;
