@@ -358,10 +358,10 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	int delta_x = 16 * args[0]->NumberValue(context).ToChecked();
-	int delta_y = 16 * args[1]->NumberValue(context).ToChecked();
-	double time_fps = args[2]->NumberValue(context).ToChecked();
-	int options = args[3]->IntegerValue(context).ToChecked();
+	int delta_x = (int)(16 * args[0]->NumberValue(context).ToChecked());
+	int delta_y = (int)(16 * args[1]->NumberValue(context).ToChecked());
+	double time_fps = (int)(args[2]->NumberValue(context).ToChecked());
+	int options = args[3]->Int32Value(context).ToChecked();
 
 	// Unwrap Object
 	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
@@ -480,8 +480,8 @@ void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 		// Unwrap Object
 		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
 
-		int width = args[1]->IntegerValue(context).ToChecked();
-		int height = args[2]->IntegerValue(context).ToChecked();
+		int width = args[1]->Int32Value(context).ToChecked();
+		int height = args[2]->Int32Value(context).ToChecked();
 		npcObject->setWidth(width);
 		npcObject->setHeight(height);
 	}
