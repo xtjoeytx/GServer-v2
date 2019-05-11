@@ -113,18 +113,7 @@ void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 	serverScript = s.readString("//#CLIENTSIDE");
 	clientScript = s.readString("");
 #else
-	if (server->hasNPCServer())
-	{
-		if (levelModificationNPCHack)
-			serverScript = clientScript = pScript;
-		else
-		{
-			CString s = pScript;
-			serverScript = s.readString("//#CLIENTSIDE");
-			clientScript = s.readString("");
-		}
-	}
-	else clientScript = pScript;
+	clientScript = pScript;
 #endif
 
 	// Do joins.
