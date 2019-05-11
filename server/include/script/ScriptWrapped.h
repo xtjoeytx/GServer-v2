@@ -42,12 +42,10 @@ public:
 
 	inline void increaseReference() {
 		_referenceCount++;
-		printf("Increase reference: %d (%s)\n", _referenceCount, TypeName<T>::Get());
 	}
 
 	inline void decreaseReference() {
 		_referenceCount--;
-		printf("Decrease reference: %d (%s)\n", _referenceCount, TypeName<T>::Get());
 	}
 
 protected:
