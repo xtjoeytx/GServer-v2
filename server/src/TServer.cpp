@@ -438,6 +438,9 @@ bool TServer::doTimedEvents()
 		
 		// Save some stuff.
 		saveWeapons();
+#ifdef V8NPCSERVER
+		saveNpcs();
+#endif
 
 		// Check all of the instanced maps to see if the players have left.
 		if (!groupLevels.empty())
@@ -618,6 +621,12 @@ int TServer::loadConfigFiles()
 	// Load maps.
 	serverlog.out("[%s]      Loading maps...\n", name.text());
 	loadMaps(true);
+
+#ifdef V8NPCSERVER
+	// Load database npcs.
+	serverlog.out("[%s]      Loading npcs...\n", name.text());
+	loadNpcs(true);
+#endif
 
 	// Load translations.
 	serverlog.out("[%s]      Loading translations...\n", name.text());
@@ -847,6 +856,46 @@ void TServer::loadMaps(bool print)
 	}
 }
 
+#ifdef V8NPCSERVER
+void TServer::loadNpcs(bool print)
+{
+	CFileSystem npcFS(this);
+	npcFS.addDir("npcs", "npc*.txt");
+	std::map<CString, CString> *npcFileList = npcFS.getFileList();
+	for (auto it = npcFileList->begin(); it != npcFileList->end(); ++it)
+	{
+		bool loaded = false;
+
+		// Create the npc
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false, true);
+		if (newNPC->loadNPC((*it).second))
+		{
+			int npcId = newNPC->getId();
+			if (npcId < 1000)
+			{
+				printf("Database npcs must be greater than 1000\n");
+			}
+			else if (npcId < npcIds.size() && npcIds[npcId] != 0)
+			{
+				printf("Error creating database npc: Id is in use!\n");
+			}
+			else
+			{
+				if (npcIds.size() <= npcId)
+					npcIds.resize(npcId + 10);
+
+				npcIds[npcId] = newNPC;
+				npcList.push_back(newNPC);
+				loaded = true;
+			}
+		}
+
+		if (!loaded)
+			delete newNPC;
+	}
+}
+#endif
+
 void TServer::loadTranslations()
 {
 	this->TS_Reload();
@@ -883,6 +932,21 @@ void TServer::saveWeapons()
 		}
 	}
 }
+
+#ifdef V8NPCSERVER
+
+void TServer::saveNpcs()
+{
+	// TODO(joey): implement
+	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	{
+		TNPC *npc = *it;
+		if (npc->getPersist())
+			npc->saveNPC();
+	}
+}
+
+#endif
 
 /////////////////////////////////////////////////////
 
