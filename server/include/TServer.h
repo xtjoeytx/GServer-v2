@@ -92,6 +92,9 @@ class TServer : public CSocketStub
 		void loadIPBans();
 		void loadWeapons(bool print = false);
 		void loadMaps(bool print = false);
+#ifdef V8NPCSERVER
+		void loadNpcs(bool print = false);
+#endif
 		void loadTranslations();
 		void loadWordFilter();
 
@@ -100,6 +103,9 @@ class TServer : public CSocketStub
 
 		void saveServerFlags();
 		void saveWeapons();
+#ifdef V8NPCSERVER
+		void saveNpcs();
+#endif
 
 		// Get functions.
 		const CString& getName()						{ return name; }
@@ -108,6 +114,9 @@ class TServer : public CSocketStub
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
+#ifdef V8NPCSERVER
+		CLog& getScriptLog()							{ return scriptlog; }
+#endif
 		CPluginManager& getPluginManager()				{ return mPluginManager; }
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
@@ -123,9 +132,7 @@ class TServer : public CSocketStub
 		std::map<CString, CString>* getServerFlags()	{ return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
-		std::vector<TPlayer *>* getPlayerIdList()		{ return &playerIds; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
-		std::vector<TNPC *>* getNPCIdList()				{ return &npcIds; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
 		std::vector<TMap *>* getMapList()				{ return &mapList; }
 		std::vector<CString>* getStatusList()			{ return &statusList; }
@@ -167,11 +174,7 @@ class TServer : public CSocketStub
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 		// NPC-Server Functionality
-		inline bool hasNPCServer()		{ return mNpcServer != 0; }
-		inline TPlayer *getNPCServer()	{ return mNpcServer; }
-		inline int getNCPort()			{ return mNCPort; }
-
-		void setNPCServer(TPlayer * pNpcServer, int pNCPort = 0);
+		inline int getNCPort() const { return mNCPort; }
 
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);
@@ -181,13 +184,10 @@ class TServer : public CSocketStub
 
 		// Weapon Management
 		TWeapon *getWeapon(const CString& name);
-
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void NC_UpdateWeapon(TWeapon *pWeapon);
-		bool NC_SendMap(TMap *map);
-		bool NC_SendLevel(TLevel *level);
-	
+
 #ifdef V8NPCSERVER
 		inline CScriptEngine * getScriptEngine() {
 			return &mScriptEngine;
@@ -203,6 +203,9 @@ class TServer : public CSocketStub
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
 		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
+#ifdef V8NPCSERVER
+		CLog scriptlog;
+#endif
 		CPluginManager mPluginManager;
 		CSettings adminsettings, settings;
 		CSocket playerSock;
@@ -234,8 +237,6 @@ class TServer : public CSocketStub
 		std::thread upnp_thread;
 #endif
 
-		// NPC-Server Functionality
-		TPlayer *mNpcServer;
 		int mNCPort;
 	
 #ifdef V8NPCSERVER

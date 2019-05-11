@@ -7,6 +7,7 @@
 
 #ifdef V8NPCSERVER
 #include <unordered_map>
+#include <unordered_set>
 #include "ScriptWrapped.h"
 
 class ScriptAction;
@@ -60,7 +61,7 @@ enum
 	NPCPROP_GMAPLEVELY		= 42,
 
 	NPCPROP_UNKNOWN43		= 43,
-	
+
 	NPCPROP_GATTRIB6		= 44,
 	NPCPROP_GATTRIB7		= 45,
 	NPCPROP_GATTRIB8		= 46,
@@ -116,6 +117,17 @@ enum
 	NPCBLOCKFLAG_NOBLOCK	= 0x01,
 };
 
+//! NPCMOVE_FLAGS values
+enum
+{
+	NPCMOVEFLAG_NOCACHE			= 0x00,
+	NPCMOVEFLAG_CACHE			= 0x01,
+	NPCMOVEFLAG_APPEND			= 0x02,
+	NPCMOVEFLAG_BLOCKCHECK		= 0x04,
+	NPCMOVEFLAG_EVENTWHENDONE 	= 0x08,
+	NPCMOVEFLAG_APPLYDIR		= 0x10
+};
+
 #ifdef V8NPCSERVER
 //! NPC Event Flags
 enum
@@ -146,58 +158,52 @@ class TNPC
 		CString setProps(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
 
 		// set functions
-		void setId(unsigned int pId)	{ id = pId; }
-		void setLevel(TLevel* pLevel)	{ level = pLevel; }
-		void setX(float val)			{ x = val; }
-		void setY(float val)			{ y = val; }
+		void setId(unsigned int pId)			{ id = pId; }
+		void setLevel(TLevel* pLevel)			{ level = pLevel; }
+		void setX(float val)					{ x = val; x2 = (int)(16 * val); }
+		void setY(float val)					{ y = val; y2 = (int)(16 * val); }
+		void setHeight(int val)					{ height = val; }
+		void setWidth(int val)					{ width = val; }
+		void setRupees(int val)					{ rupees = val; }
+		void setName(const CString& name)		{ npcName = name; }
+		void setNickname(const CString& nick)	{ nickName = nick; }
+		void setScripter(const CString& name)	{ scripterName = name; }
 
 		// get functions
-		unsigned int getId() const		{ return id; }
-		TLevel* getLevel()				{ return level; }
-		float getX() const				{ return x; }
-		float getY() const				{ return y; }
-#ifdef V8NPCSERVER
-		inline int getPixelX() const	{ return x2; }
-		inline int getPixelY() const	{ return y2; }
-#endif
-		CString getImage() const		{ return image; }
-		CString getWeaponName() const	{ return weaponName; }
-		CString getServerScript() const	{ return serverScript; }
-		CString getClientScript() const	{ return clientScript; }
+		unsigned int getId() const				{ return id; }
+		TLevel* getLevel()						{ return level; }
+		float getX() const						{ return x; }
+		float getY() const						{ return y; }
+		int getPixelX() const					{ return x2; }
+		int getPixelY() const					{ return y2; }
+		int getHeight() const 					{ return height; }
+		int getWidth() const 					{ return width; }
+		int getRupees() const 					{ return rupees; }
+		int getBlockFlags() const 				{ return blockFlags; }
+		int getVisibleFlags() const 			{ return visFlags; }
+		int getTimeout() const 					{ return timeout; }
+		const CString& getImage() const			{ return image; }
+		const CString& getNickname() const 		{ return nickName; }
+		const CString& getName() const			{ return npcName; }
+		const CString& getWeaponName() const	{ return weaponName; }
+		const CString& getClientScript() const	{ return clientScript; }
+		const CString& getServerScript() const	{ return serverScript; }
+		const CString& getScriptCode() const	{ return originalScript; }
+		const CString& getScripter() const		{ return scripterName; }
 		time_t getPropModTime(unsigned char pId);
 
-		bool isLevelNPC()				{ return levelNPC; }
+		bool isLevelNPC() const					{ return levelNPC; }
 
 #ifdef V8NPCSERVER
-		inline const CString& getScriptCode() const { return origScript; }
-
-		inline const CString& getName() const;
-		inline void setName(const CString& pName);
-
-		inline const CString& getScripter() const;
-		inline void setScripter(const CString& pScripter);
-
-		inline int getBlockFlags() const;
-		inline int getVisFlags() const;
+		void setTimeout(int val);
+		void updatePropModTime(unsigned char propId, time_t modifyTime);
 
 		//
-		inline int getWidth() const;
-		inline void setWidth(int newWidth);
+		bool hasScriptEvent(int flag) const;
+		void setScriptEvents(int mask);
 
-		//
-		inline int getHeight() const;
-		inline void setHeight(int newHeight);
-
-		//
-		inline int getTimeout() const;
-		void setTimeout(int newTimeout);
-
-		// 
-		inline bool hasScriptEvent(int flag) const;
-		inline void setScriptEvents(int mask);
-
-		inline IScriptWrapped<TNPC> * getScriptObject() const;
-		inline void setScriptObject(IScriptWrapped<TNPC> *object);
+		IScriptWrapped<TNPC> * getScriptObject() const;
+		void setScriptObject(IScriptWrapped<TNPC> *object);
 
 		// -- triggeractions
 		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
@@ -209,15 +215,21 @@ class TNPC
 		bool runScriptTimer();
 		void runScriptEvents();
 
-
-		inline void allowNpcWarping(bool canWarp);
+		void allowNpcWarping(bool canWarp);
+		void moveNPC(int dx, int dy, double time, int options);
 		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
+		// file
+		bool getPersist() const			{ return persistNpc; }
+		void setPersist(bool persist)	{ persistNpc = persist; }
+		bool loadNPC(const CString& fileName);
+		void saveNPC();
+
 		template<class... Args>
-		inline void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
+		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 #endif
-	
+
 	private:
 		bool blockPositionUpdates;
 		bool levelNPC;
@@ -232,30 +244,33 @@ class TNPC
 		CString gAttribs[30];
 		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage, gani;
 		CString nickName, imagePart, chatMsg, weaponName;
-		CString serverScript, clientScript;
+		CString serverScript, clientScript, originalScript;
 		CString serverScriptFormatted, clientScriptFormatted;
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
-	
+
+		CString npcName, npcType, scripterName;
+		int timeout;
+		int width, height;
+
 #ifdef V8NPCSERVER
-		void testTouch();
+		std::unordered_set<int> propModified;
 
 		// Defaults
-		CString origImage, origScript;
+		CString origImage, origLevel;
 		float origX, origY;
-		TLevel *origLevel;
 
 		// npc-server
-		CString npcName, npcType, scripterName;
 		bool canWarp;
-		int width, height;
-		int timeout;
+		bool persistNpc;
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
+
+		void testTouch();
 #endif
 };
 
@@ -268,65 +283,19 @@ time_t TNPC::getPropModTime(unsigned char pId)
 
 #ifdef V8NPCSERVER
 
-//
-inline const CString& TNPC::getName() const
+inline void TNPC::updatePropModTime(unsigned char propId, time_t modifyTime)
 {
-	return npcName;
-}
-
-inline void TNPC::setName(const CString& pName)
-{
-	npcName = pName;
-}
-
-//
-inline const CString& TNPC::getScripter() const
-{
-	return scripterName;
-}
-
-inline void TNPC::setScripter(const CString& pScripter)
-{
-	scripterName = pScripter;
+	if (propId < NPCPROP_COUNT)
+	{
+		modTime[propId] = modifyTime;
+		propModified.insert(propId);
+	}
 }
 
 inline void TNPC::allowNpcWarping(bool canWarp)
 {
 	if (!isLevelNPC())
 		canWarp = canWarp;
-}
-
-/**
- * NPC Properties Getter/Setters
- */
-inline int TNPC::getBlockFlags() const {
-	return blockFlags;
-}
-
-inline int TNPC::getVisFlags() const {
-	return visFlags;
-}
-
-//
-inline int TNPC::getWidth() const {
-	return width;
-}
-
-inline void TNPC::setWidth(int newWidth) {
-	width = newWidth;
-}
-
-//
-inline int TNPC::getHeight() const {
-	return height;
-}
-
-inline void TNPC::setHeight(int newHeight) {
-	height = newHeight;
-}
-
-inline int TNPC::getTimeout() const {
-	return timeout;
 }
 
 /**

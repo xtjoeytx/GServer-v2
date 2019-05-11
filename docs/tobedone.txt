@@ -1,0 +1,27 @@
+
+		// Send PM
+		case NCI_SENDPM:
+		{
+			TPlayer *player = server->getPlayer(pPacket.readGUShort());
+			if (player != 0)
+				player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pPacket.readString(""));
+			break;
+		}
+
+	// Send RPG Message
+		case NCI_SENDRPGMESSAGE:
+		{
+			TPlayer *player = server->getPlayer(pPacket.readGUShort());
+			if (player != 0 && player->isClient() && player->getVersion() >= CLVER_2_1)
+				player->sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"" << pPacket.readString("") << "\"");
+			break;
+		}
+
+// NPCServer -> Player --> Sign Message
+		case NCI_SAY2SIGN:
+		{
+			TPlayer* pl = server->getPlayer(pPacket.readGUShort());
+			if (pl != 0)
+				pl->sendPacket(CString() >> (char)PLO_SAY2 << pPacket.readString("").replaceAll("\n", "#b"));
+			break;
+		}

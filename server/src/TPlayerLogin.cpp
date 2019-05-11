@@ -42,95 +42,91 @@ CString _zlibFix(
 */
 bool TPlayer::sendLogin()
 {
-	if (!isNPCServer())
-	{
-		// We don't need to check if this fails.. because the defaults have already been loaded :)
-		loadAccount(accountName, (isRC() || isNC() ? true : false));
+	// We don't need to check if this fails.. because the defaults have already been loaded :)
+	loadAccount(accountName, (isRC() || isNC() ? true : false));
 
-		// Check to see if the player is banned or not.
-		if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	// Check to see if the player is banned or not.
+	if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
+		return false;
+	}
+
+	// If we are an RC, check to see if we can log in.
+	if (isRC() || isNC())
+	{
+		// Check and see if we are allowed in.
+		if (!isStaff() || !isAdminIp())
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
+			rclog.out("[%s] Attempted RC login by %s.\n", server->getName().text(), accountName.text());
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
+			return false;
+		}
+	}
+
+	// NPC-Control login, then return.
+	if (isNC())
+		return sendLoginNC();
+
+	// Check to see if we can log in if we are a client.
+	if (isClient())
+	{
+		// Staff only.
+		if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
+		{
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
 			return false;
 		}
 
-		// If we are an RC, check to see if we can log in.
-		if (isRC() || isNC())
+		// Check and see if we are allowed in.
+		std::vector<CString> adminIps = adminIp.tokenize(",");
+		if (!isAdminIp() && vecSearch<CString>(adminIps, "0.0.0.0") == -1)
 		{
-			// Check and see if we are allowed in.
-			if (!isStaff() || !isAdminIp())
-			{
-				rclog.out("[%s] Attempted RC login by %s.\n", server->getName().text(), accountName.text());
-				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
-				return false;
-			}
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
+			return false;
 		}
-
-		// NPC-Control login, then return.
-		if (isNC())
-			return sendLoginNC();
-
-		// Check to see if we can log in if we are a client.
-		if (isClient())
-		{
-			// Staff only.
-			if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
-			{
-				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
-				return false;
-			}
-
-			// Check and see if we are allowed in.
-			std::vector<CString> adminIps = adminIp.tokenize(",");
-			if (!isAdminIp() && vecSearch<CString>(adminIps, "0.0.0.0") == -1)
-			{
-				sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
-				return false;
-			}
-		}
+	}
 	
-		// Server Signature
-		// 0x49 (73) is used to tell the client that more than eight
-		// players will be playing.
-		//sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-                sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-        //        sendPacket(CString() >> (char)45 << "basepackage.gupd");
-		//sendPacket(CString() >> (char)45 << "basepackage.gupd");
+	// Server Signature
+	// 0x49 (73) is used to tell the client that more than eight
+	// players will be playing.
+	//sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+            sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+    //        sendPacket(CString() >> (char)45 << "basepackage.gupd");
+	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
 //		sendPacket(CString() >> (char)44);
-		sendPacket(CString() >> (char)103 << " *");
-		sendPacket(CString() >> (char)194);
-		sendPacket(CString() >> (char)190);
-		sendPacket(CString() >> (char)PLO_UNKNOWN168);
-		// If we have an NPC Server, send this to prevent clients from sending
-		// npc props it modifies.
-#ifndef V8NPCSERVER
-		if (server->hasNPCServer())
+	sendPacket(CString() >> (char)103 << " *");
+	sendPacket(CString() >> (char)194);
+	sendPacket(CString() >> (char)190);
+	sendPacket(CString() >> (char)PLO_UNKNOWN168);
+	// If we have an NPC Server, send this to prevent clients from sending
+	// npc props it modifies.
+#ifdef V8NPCSERVER
+	sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
-			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
-		// Check if the account is already in use.
-		if (!getGuest())
+	// Check if the account is already in use.
+	if (!getGuest())
+	{
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			TPlayer* player = *i;
+			CString oacc = player->getAccountName();
+			unsigned short oid = (unsigned short)player->getId();
+			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
+			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
+			if (oacc == accountName && meClient == themClient && oid != id)
 			{
-				TPlayer* player = *i;
-				CString oacc = player->getAccountName();
-				unsigned short oid = (unsigned short)player->getId();
-				int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
-				int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
-				if (oacc == accountName && meClient == themClient && oid != id)
+				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{
-					if ((int)difftime(time(0), player->getLastData()) > 30)
-					{
-						player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
-						player->disconnect();
-					}
-					else
-					{
-						sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
-						return false;
-					}
+					player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
+					player->disconnect();
+				}
+				else
+				{
+					sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
+					return false;
 				}
 			}
 		}
@@ -140,7 +136,6 @@ bool TPlayer::sendLogin()
 	bool succeeded = false;
 	if (isClient()) succeeded = sendLoginClient();
 	else if (isRC()) succeeded = sendLoginRC();
-	else if (isNPCServer()) succeeded = sendLoginNPCServer();
 	if (succeeded == false) return false;
 
 	// Set loaded to true so our account is saved when we leave.
@@ -162,9 +157,9 @@ bool TPlayer::sendLogin()
 		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 
 		// Get our NC props.
-		CString myNCProps;
-		if (server->hasNPCServer())
-			myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
+		//CString myNCProps;
+		//if (server->hasNPCServer())
+		//	myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
 
 #ifdef V8NPCSERVER
 		if (isRC())
@@ -192,43 +187,11 @@ bool TPlayer::sendLogin()
 
 			// Send the other player my props.
 			// Send my flags to the npcserver.
-			if (player->isNPCServer())
-			{
-				// Send props.
-				player->sendPacket(myNCProps);
-
-				// Send flags.
-				for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
-					player->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << i->first << "=" << i->second);
-
-				// Send weapons.
-				CString packet;
-				for (std::vector<CString>::const_iterator i = weaponList.begin(); i != weaponList.end(); ++i)
-					packet >> (char)(*i).length() << (*i);
-				player->sendPacket(CString() >> (char)PLO_UNKNOWN60 >> (short)id << packet);
-			}
-			else player->sendPacket(player->isClient() ? myClientProps : myRCProps);
+			player->sendPacket(player->isClient() ? myClientProps : myRCProps);
 
 			// Add Player / RC.
 			if (isClient())
 				sendPacket(player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
-			else if (isNPCServer())
-			{
-				// Send props.
-				sendPacket(player->getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool)));
-
-				// Send flags.
-				std::map<CString, CString> *flags = player->getFlagList();
-				for (std::map<CString, CString>::const_iterator i = flags->begin(); i != flags->end(); ++i)
-					sendPacket(CString() >> (char)PLO_FLAGSET >> (short)player->getId() << i->first << "=" << i->second);
-
-				// Send weapons.
-				CString packet;
-				std::vector<CString> *weapons = player->getWeaponList();
-				for (std::vector<CString>::const_iterator i = weapons->begin(); i != weapons->end(); ++i)
-					packet >> (char)(*i).length() << (*i);
-				sendPacket(CString() >> (char)PLO_UNKNOWN60 >> (short)player->getId() << packet);
-			}
 			else
 			{
 				// Level name.  If no level, send an empty space.
@@ -308,7 +271,7 @@ bool TPlayer::sendLoginClient()
 	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
-	if ((isClient() && versionID >= CLVER_2_1) || isRC() || isNPCServer())
+	if ((isClient() && versionID >= CLVER_2_1) || isRC())
 	{
 		std::vector<CString>* plicons = server->getStatusList();
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
@@ -369,7 +332,9 @@ bool TPlayer::sendLoginClient()
 			>> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
+	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
+
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	if (warp(levelName, x, y) == false)
@@ -463,25 +428,5 @@ bool TPlayer::sendLoginRC()
 		sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
 
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
-	return true;
-}
-
-bool TPlayer::sendLoginNPCServer()
-{
-	// If no nickname was specified, set the nickname to the account name.
-	if (nickName.length() == 0)
-		nickName = "NPC-Server (Server)";
-
-	// Set the head to the server's set staff head.
-	headImg = server->getSettings()->getStr("staffhead", "head25.png");
-
-	// Send the server's flags to the player.
-	std::map<CString, CString> * serverFlags = server->getServerFlags();
-	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
-		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
-
-	// Send the server gmaps.
-	sendNC_GMapList();
-
 	return true;
 }

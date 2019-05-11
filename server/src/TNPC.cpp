@@ -32,12 +32,11 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), npcName(""), scripterName("")
+, origImage(pImage), originalScript(pScript), origX(pX), origY(pY), persistNpc(false)
 , canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
 	// TODO(joey): Move the initialization to TNPC::resetNPC() and call it here.
-
 	memset((void*)colors, 0, sizeof(colors));
 	memset((void*)saves, 0, sizeof(saves));
 	memset((void*)modTime, 0, sizeof(modTime));
@@ -50,11 +49,18 @@ level(pLevel), server(pServer)
 		imagePart.writeGChar(0);
 
 	// Set the gmap levels.
-	TMap* gmap = level->getMap();
-	if (gmap && gmap->getType() == MAPTYPE_GMAP)
+	if (level)
 	{
-		gmaplevelx = (unsigned char)gmap->getLevelX(level->getLevelName());
-		gmaplevely = (unsigned char)gmap->getLevelY(level->getLevelName());
+		TMap *gmap = level->getMap();
+		if (gmap && gmap->getType() == MAPTYPE_GMAP)
+		{
+			gmaplevelx = (unsigned char) gmap->getLevelX(level->getLevelName());
+			gmaplevely = (unsigned char) gmap->getLevelY(level->getLevelName());
+		}
+
+#ifdef V8NPCSERVER
+		origLevel = level->getLevelName();
+#endif
 	}
 
 	// We need to alter the modTime of the following props as they should be always sent.
@@ -65,7 +71,8 @@ level(pLevel), server(pServer)
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
-	setScriptCode(pScript, trimCode);
+	if (!pScript.isEmpty())
+		setScriptCode(pScript, trimCode);
 }
 
 TNPC::~TNPC()
@@ -77,6 +84,8 @@ TNPC::~TNPC()
 
 void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 {
+	originalScript = pScript;
+
 #ifdef V8NPCSERVER
 	if (!serverScript.isEmpty())
 		freeScriptResources();
@@ -104,18 +113,7 @@ void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 	serverScript = s.readString("//#CLIENTSIDE");
 	clientScript = s.readString("");
 #else
-	if (server->hasNPCServer())
-	{
-		if (levelModificationNPCHack)
-			serverScript = clientScript = pScript;
-		else
-		{
-			CString s = pScript;
-			serverScript = s.readString("//#CLIENTSIDE");
-			clientScript = s.readString("");
-		}
-	}
-	else clientScript = pScript;
+	clientScript = pScript;
 #endif
 
 	// Do joins.
@@ -123,16 +121,12 @@ void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
 
 	// See if the NPC should block position updates from the level leader.
-	if (server->hasNPCServer())
-	{
-		if (serverScript.find("//#BLOCKPOSITIONUPDATES") != -1)
-			blockPositionUpdates = true;
-	}
-	else
-	{
-		if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
-			blockPositionUpdates = true;
-	}
+#ifdef V8NPCSERVER
+		blockPositionUpdates = true;
+#else
+	if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
+		blockPositionUpdates = true;
+#endif
 
 	// Remove comments and trim the code if specified.
 	// TODO(joey): Just a note for the future, but if trimCode is false the formatted script is never set so scripts wouldn't send to client.
@@ -713,7 +707,9 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
 
+#ifdef V8NPCSERVER
 	if (hasMoved) testTouch();
+#endif
 
 	return ret;
 }
@@ -864,39 +860,262 @@ void TNPC::runScriptEvents()
 	_actions.clear();
 
 	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
+	if (!propModified.empty())
+	{
+		testTouch();
+
+		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
+		for (auto it = propModified.begin(); it != propModified.end(); ++it)
+			propPacket >> (char)(*it) << getProp(*it);
+		propModified.clear();
+
+		if (level != nullptr)
+			server->sendPacketToLevel(propPacket, level->getMap(), level, nullptr, true);
+	}
+}
+
+void TNPC::moveNPC(int dx, int dy, double time, int options)
+{
+	// TODO(joey): Implement options? Or does the client handle them? TBD
+
+	int start_x = (abs(x2) << 1) | (x2 < 0 ? 0x0001 : 0x0000);
+	int start_y = (abs(y2) << 1) | (y2 < 0 ? 0x0001 : 0x0000);
+	int delta_x = (abs(dx) << 1) | (dx < 0 ? 0x0001 : 0x0000);
+	int delta_y = (abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
+	short itime = (short)(time / 0.05);
+
+	// TODO(joey): maybe its time to get rid of this old x/y and keep everything in pixel x/y
+	x += (dx / 16);
+	y += (dy / 16);
+
+	x2 += dx;
+	y2 += dy;
+
+	if (level != nullptr)
+		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
 }
 
 void TNPC::resetNPC()
 {
 	canWarp = false;
 
-	warpNPC(origLevel, origX, origY);
+	if (!origLevel.isEmpty())
+		warpNPC(TLevel::findLevel(origLevel, server), origX, origY);
 }
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 {
-	printf("Warp NPC to %s at %f, %f\n", pLevel->getLevelName().text(), pX, pY);
+	if (!pLevel)
+		return;
 
-	// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
-	//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
-	//  such for PLO_NPCDEL
-	server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int)id, level->getMap(), level);
-	//server->sendPacketToAll(CString() >> (char)PLO_NPCMOVED >> (int)id);
+	if (level != nullptr)
+	{
+		// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
+		//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
+		//  such for PLO_NPCDEL
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int) id, level->getMap(), level);
 
-	// Remove the npc from the old level, and add it to the new level
-	level->removeNPC(this);
+		// Remove the npc from the old level
+		level->removeNPC(this);
+	}
+
+	// Add to the new level
 	pLevel->addNPC(this);
 	level = pLevel;
 
 	// Adjust the position of the npc
-	x = (float)pX;
-	x2 = 16 * (int)pX;
+	x = pX;
+	x2 = 16 * pX;
 
-	y = (float)pY;
-	y2 = 16 * (int)pY;
+	y = pY;
+	y2 = 16 * pY;
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
+}
+
+void TNPC::saveNPC()
+{
+	static const char *NL = "\r\n";
+	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
+	CString fileData = CString("GRNPC001") << NL;
+	fileData << "NAME " << npcName << NL;
+	fileData << "ID " << CString(id) << NL;
+	fileData << "TYPE " << npcType << NL;
+	fileData << "SCRIPTER " << scripterName << NL;
+	fileData << "IMAGE " << image << NL;
+	fileData << "STARTLEVEL " << origLevel << NL;
+	fileData << "STARTX " << CString(origX) << NL;
+	fileData << "STARTY " << CString(origY) << NL;
+	if (level)
+	{
+		fileData << "LEVEL " << level->getLevelName() << NL;
+		fileData << "X " << CString(x) << NL;
+		fileData << "Y " << CString(y) << NL;
+	}
+	fileData << "NICK " << nickName << NL;
+	fileData << "ANI " << gani << NL;
+	fileData << "HP " << CString(power) << NL;
+	fileData << "GRALATS " << CString(rupees) << NL;
+	fileData << "ARROWS " << CString(darts) << NL;
+	fileData << "BOMBS " << CString(bombs) << NL;
+	fileData << "GLOVEP " << CString(glovePower) << NL;
+	fileData << "SWORDP " << CString(swordPower) << NL;
+	fileData << "SHIELDP " << CString(shieldPower) << NL;
+	fileData << "HEAD " << headImage << NL;
+	fileData << "BODY " << bodyImage << NL;
+	fileData << "SWORD " << swordImage << NL;
+	fileData << "SHIELD " << shieldImage << NL;
+	fileData << "HORSE " << horseImage << NL;
+	fileData << "COLORS " << CString((int)colors[0]) << "," << CString((int)colors[1]) << "," << CString((int)colors[2]) << "," << CString((int)colors[3]) << "," << CString((int)colors[4]) << NL;
+	fileData << "SPRITE " << CString(sprite) << NL;
+	fileData << "AP " << CString(ap) << NL;
+	fileData << "TIMEOUT " << CString(timeout / 20) << NL;
+	fileData << "LAYER 0" << NL;
+	fileData << "SHAPETYPE 0" << NL;
+	fileData << "SHAPE " << CString(width) << " " << CString(height) << NL;
+	fileData << "SAVEARR " << CString((int)saves[0]) << "," << CString((int)saves[1]) << "," << CString((int)saves[2]) << ","
+			 << CString((int)saves[3]) << "," << CString((int)saves[4]) << "," << CString((int)saves[5]) << ","
+			 << CString((int)saves[6]) << "," << CString((int)saves[7]) << "," << CString((int)saves[8]) << ","
+			 << CString((int)saves[9]) << NL;
+	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL) << NL << "NPCSCRIPTEND" << NL;
+	fileData.save(fileName);
+}
+
+bool TNPC::loadNPC(const CString& fileName)
+{
+	// Load file
+	CString fileData;
+	if (!fileData.load(fileName))
+		return false;
+
+	fileData.replaceAllI("\r", "");
+
+	CString headerLine = fileData.readString("\n");
+	if (headerLine != "GRNPC001")
+		return false;
+
+	// TODO(joey): implement
+	//	SAVEARR 0,0,0,0,0,0,0,0,0,0
+	//	FLAG car="4,1.6,-0.7,0"
+	// 	JOINEDCLASSES staffblock
+	//	DONTBLOCK 1
+	//	ATTR11 ci_hair-2-4.png [not sure where this ends, i got up to 11 on one]
+
+	CString npcScript, npcLevel;
+
+	// Parse File
+	while (fileData.bytesLeft())
+	{
+		CString curLine = fileData.readString("\n");
+
+		// Find Command
+		CString curCommand = curLine.readString();
+
+		// Parse Line
+		if (curCommand == "NAME")
+			npcName = curLine.readString("");
+		else if (curCommand == "ID")
+			id = strtoint(curLine.readString(""));
+		else if (curCommand == "TYPE")
+			npcType = curLine.readString("");
+		else if (curCommand == "SCRIPTER")
+			scripterName = curLine.readString("");
+		else if (curCommand == "IMAGE")
+			image = curLine.readString("");
+		else if (curCommand == "STARTLEVEL")
+			origLevel = curLine.readString("");
+		else if (curCommand == "STARTX")
+			origX = strtofloat(curLine.readString(""));
+		else if (curCommand == "STARTY")
+			origY = strtofloat(curLine.readString(""));
+		else if (curCommand == "LEVEL")
+			npcLevel = curLine.readString("");
+		else if (curCommand == "X")
+			setX(strtofloat(curLine.readString("")));
+		else if (curCommand == "Y")
+			setY(strtofloat(curLine.readString("")));
+		else if (curCommand == "MAPX")
+			gmaplevelx = strtoint(curLine.readString(""));
+		else if (curCommand == "MAPY")
+			gmaplevely = strtoint(curLine.readString(""));
+		else if (curCommand == "NICK")
+			nickName = curLine.readString("");
+		else if (curCommand == "ANI")
+			gani = curLine.readString("");
+		else if (curCommand == "HP")
+			power = (int)(strtofloat(curLine.readString("")) * 2);
+		else if (curCommand == "GRALATS")
+			rupees = strtoint(curLine.readString(""));
+		else if (curCommand == "ARROWS")
+			darts = strtoint(curLine.readString(""));
+		else if (curCommand == "BOMBS")
+			bombs = strtoint(curLine.readString(""));
+		else if (curCommand == "GLOVEP")
+			glovePower = strtoint(curLine.readString(""));
+		else if (curCommand == "SWORDP")
+			swordPower = strtoint(curLine.readString(""));
+		else if (curCommand == "SHIELDP")
+			shieldPower = strtoint(curLine.readString(""));
+		else if (curCommand == "HEAD")
+			headImage = curLine.readString("");
+		else if (curCommand == "BODY")
+			bodyImage = curLine.readString("");
+		else if (curCommand == "SWORD")
+			swordImage = curLine.readString("");
+		else if (curCommand == "SHIELD")
+			shieldImage = curLine.readString("");
+		else if (curCommand == "HORSE")
+			horseImage = curLine.readString("");
+		else if (curCommand == "SPRITE")
+			sprite = strtoint(curLine.readString(""));
+		else if (curCommand == "AP")
+			ap = strtoint(curLine.readString(""));
+		else if (curCommand == "COLORS")
+		{
+			auto tokens = curLine.readString("").tokenize(",");
+			for (int colorIdx = 0; colorIdx < std::min((int) tokens.size(), 5); colorIdx++)
+				colors[colorIdx] = strtoint(tokens[colorIdx]);
+		}
+		else if (curCommand == "SHAPE")
+		{
+			width = strtoint(curLine.readString(" "));
+			height = strtoint(curLine.readString(" "));
+		}
+		else if (curCommand == "CANWARP")
+			canWarp = strtoint(curLine.readString("")) != 0;
+		//else if (curCommand == "CANWARP2")
+		//	canWarp = strtoint(curLine.readString("")) != 0;
+		else if (curCommand == "TIMEOUT")
+			timeout = strtoint(curLine.readString("")) * 20;
+		else if (curCommand == "NPCSCRIPT")
+		{
+			curLine = fileData.readString("\n");
+			while (fileData.bytesLeft())
+			{
+				if (curLine == "NPCSCRIPTEND")
+					break;
+
+				npcScript << curLine << "\n";
+				curLine = fileData.readString("\n");
+			}
+		}
+	}
+
+	setScriptCode(npcScript, true);
+
+	if (npcLevel.isEmpty())
+		npcLevel = origLevel;
+
+	if (!npcLevel.isEmpty())
+	{
+		level = TLevel::findLevel(npcLevel, server);
+		if (level)
+			level->addNPC(this);
+	}
+
+	persistNpc = true;
+	return true;
 }
 
 #endif
