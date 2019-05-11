@@ -28,7 +28,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
-	: running(false), doRestart(false), name(pName), wordFilter(this), mNpcServer(0), mPluginManager(this)
+	: running(false), doRestart(false), name(pName), wordFilter(this), mPluginManager(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this)
 #endif
@@ -1204,9 +1204,9 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 		TPlayer* p = *i;
 		if (p->isRemoteClient()) continue;
 
-		if ((isOnMap || p->getVersion() < CLVER_2_1) && !p->isNPCServer())
+		if (isOnMap || p->getVersion() < CLVER_2_1)
 			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		//else
+		else
 			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
 	}
 
@@ -1307,7 +1307,6 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer, bool pNpcServer
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		if ((*i) == pPlayer) continue;
-		if (pNpcServer && (*i)->isNPCServer()) continue;
 
 		(*i)->sendPacket(pPacket);
 	}
@@ -1427,12 +1426,6 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 /*
 	NPC-Server Functionality
 */
-void TServer::setNPCServer(TPlayer *pNpcServer, int pNCPort)
-{
-	mNpcServer = pNpcServer;
-	mNCPort = pNCPort;
-}
-
 bool TServer::NC_AddWeapon(TWeapon *pWeaponObj)
 {
 	if (pWeaponObj == 0)
@@ -1465,7 +1458,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	delete weaponObj;
 
 	// Delete from Players
-	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName); 
+	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
 	return true;
 }
 
@@ -1484,32 +1477,6 @@ void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
 			player->sendPacket(CString() << pWeapon->getWeaponPacket());
 		}
 	}
-}
-
-bool TServer::NC_SendMap(TMap *map)
-{
-	if (map == 0 || mNpcServer == 0) return false;
-
-	// Send the level name.
-	mNpcServer->sendFile(map->getMapName() << ".gmap");
-	return true;
-}
-
-bool TServer::NC_SendLevel(TLevel* level)
-{
-	if (level == 0 || mNpcServer == 0) return false;
-
-	// Send the level name.
-	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
-
-	// Send links, signs, and mod time.
-	mNpcServer->sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)level->getModTime());
-	mNpcServer->sendPacket(CString() << level->getLinksPacket());
-	mNpcServer->sendPacket(CString() << level->getSignsPacket(0));
-
-	// Send NPCs.
-	mNpcServer->sendPacket(CString() << level->getNpcsPacket(0, NSVER_GENERIC));
-	return true;
 }
 
 /*

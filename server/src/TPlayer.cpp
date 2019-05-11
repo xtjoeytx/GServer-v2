@@ -292,8 +292,6 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_NC_WEAPONADD] = &TPlayer::msgPLI_NC_WEAPONADD;
 	TPLFunc[PLI_NC_WEAPONDELETE] = &TPlayer::msgPLI_NC_WEAPONDELETE;
 	TPLFunc[PLI_NC_LEVELLISTGET] = &TPlayer::msgPLI_NC_LEVELLISTGET;
-#else
-	TPLFunc[PLI_NC_NPCGET] = &TPlayer::msgPLI_NC_QUERY;
 #endif
 	
 	// Finished
@@ -341,12 +339,6 @@ TPlayer::~TPlayer()
 
 	if (id >= 0 && server != 0 && loaded)
 	{
-#ifndef V8NPCSERVER
-		// NPC-Server
-		if (isNPCServer() && server->getNPCServer() == this)
-			server->setNPCServer(0);
-#endif
-		
 		// Save account.
 		if (isClient() && !isLoadOnly)
 			saveAccount();
@@ -365,8 +357,6 @@ TPlayer::~TPlayer()
 			serverlog.out("[%s] :: Client disconnected: %s\n", server->getName().text(), accountName.text());
 		else if (isRC())
 			serverlog.out("[%s] :: RC disconnected: %s\n", server->getName().text(), accountName.text());
-		else if (isNPCServer())
-			serverlog.out("[%s] :: NPC-Server disconnected.\n", server->getName().text());
 	}
 
 	// Clean up.
@@ -1945,7 +1935,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 	newNick << nick;
 
 	// If a guild was specified, add the guild.
-	if (guild.length() != 0 && !isNPCServer())
+	if (guild.length() != 0)
 	{
 		// Read the guild list.
 		CFileSystem guildFS(server);
@@ -2010,16 +2000,6 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 				);
 		}
 	}
-	else
-	{
-		if (!isNPCServer())
-		{
-			// Save it.
-			nickName = newNick;
-			this->guild.clear();
-		}
-		else nickName = CString() << newNick << " (Server)";
-	}
 	
 	if (isExternal)
 	{
@@ -2070,10 +2050,6 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 
 		// Send weapon.
 		sendPacket(CString() << weapon->getWeaponPacket());
-
-		// Send to npc-server.
-		if (server->hasNPCServer())
-			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NC_CONTROL >> (char)1 /*NCO_PLAYERWEAPONADD*/ >> (short)id << weapon->getName());
 	}
 
 	return true;
@@ -2104,12 +2080,6 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 
 		// Send delete notice.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
-
-#ifndef V8NPCSERVER
-		// Send to npc-server.
-		if (server->hasNPCServer())
-			server->getNPCServer()->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL >> (short)id >> (char)0 << weapon->getName());
-#endif
 	}
 
 	return true;
@@ -2144,10 +2114,6 @@ void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 		else
 			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
 	}
-
-	// Send to NPC-Server
-	if (sendToNPCServer && server->getNPCServer() != 0)
-		server->getNPCServer()->sendPacket(CString() >> (char)PLO_FLAGSET >> (short)id << pFlagName << "=" << pFlagValue);
 }
 
 /*
@@ -2236,7 +2202,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	
 	// Read Client-Version
 	version = pPacket.readChars(8);
-	if (isClient() || isNPCServer()) versionID = getVersionID(version);
+	if (isClient()) versionID = getVersionID(version);
 	else if (isRC()) versionID = getRCVersionID(version);
 	else versionID = CLVER_UNKNOWN;
 
@@ -2300,57 +2266,16 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Verify login details with the serverlist.
 	// TODO: localhost mode.
-	if (!isNPCServer())
+	if (server->getServerList()->getConnected() == false)
 	{
-		if (server->getServerList()->getConnected() == false)
-		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
-			return false;
-		}
-		server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
-			>> (char)accountName.length() << accountName
-			>> (char)password.length() << password
-			>> (short)id >> (char)type
-			);
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
+		return false;
 	}
-	else
-	{
-		// Check if we supplied the correct password.
-		CSettings* adminsettings = server->getAdminSettings();
-		if (password != adminsettings->getStr("ns_password"))
-		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Invalid password.");
-			return false;
-		}
-
-		// If an NPC-Server is already logged into the server, disconnect.
-		// TODO: Should we boot the other one off?
-		if (server->hasNPCServer())
-		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "An NPC-Server is already logged in.");
-			return false;
-		}
-
-		if (!sendLogin())
-		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "NPC-Server failed to login.");
-			return false;
-		}
-
-		// NPC-Server has full rights.
-		this->adminRights = 0xFFFFF;
-
-		// NPC-Server
-		int port = pPacket.readGShort();
-		server->setNPCServer(this, port);
-
-		// Send Levels & Weapons
-		this->sendNC_Maps();
-		this->sendNC_Levels();
-		this->sendNC_Weapons();
-
-		serverlog.out("[%s] :: NPC-Server connected on port: %d\n", server->getName().text(), port);
-	}
+	server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
+		>> (char)accountName.length() << accountName
+		>> (char)password.length() << password
+		>> (short)id >> (char)type
+		);
 
 	return true;
 }
@@ -2866,9 +2791,10 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 {
+#ifdef V8NPCSERVER
 	// Disable if we have an NPC-Server.
-	if (server->hasNPCServer())
-		return true;
+	return true;
+#endif
 
 	CSettings* settings = server->getSettings();
 
@@ -2893,9 +2819,10 @@ bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 
 bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 {
+#ifdef V8NPCSERVER
 	// Disable if we have an NPC-Server.
-	if (server->hasNPCServer())
-		return true;
+	return true;
+#endif
 
 	unsigned int nid = pPacket.readGUInt();
 
@@ -3067,10 +2994,6 @@ bool TPlayer::msgPLI_NPCWEAPONDEL(CString& pPacket)
 		if (*i == weapon)
 		{
 			i = weaponList.erase(i);
-
-			// send to npc-server
-			if (server->hasNPCServer())
-				server->getNPCServer()->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL >> (short)id >> (char)0 << weapon);
 		}
 		else ++i;
 	}
@@ -3091,9 +3014,10 @@ bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
 
 bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 {
-	// NPC-Server -- don't allow adding weapons
-	if (server->hasNPCServer())
-		return true;
+#ifdef V8NPCSERVER
+	// Disable if we have an NPC-Server.
+	return true;
+#endif
 
 	unsigned char type = pPacket.readGUChar();
 
@@ -3738,10 +3662,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
 		}
 	}
-#else
-	// Send to the NPC-server.
-	if (server->hasNPCServer())
-		server->getNPCServer()->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1));
 #endif
 
 	// Send to the level.

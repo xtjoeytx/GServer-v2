@@ -174,11 +174,7 @@ class TServer : public CSocketStub
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 		// NPC-Server Functionality
-		inline bool hasNPCServer()		{ return mNpcServer != 0; }
-		inline TPlayer *getNPCServer()	{ return mNpcServer; }
-		inline int getNCPort()			{ return mNCPort; }
-
-		void setNPCServer(TPlayer * pNpcServer, int pNCPort = 0);
+		inline int getNCPort() const { return mNCPort; }
 
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);
@@ -188,13 +184,10 @@ class TServer : public CSocketStub
 
 		// Weapon Management
 		TWeapon *getWeapon(const CString& name);
-
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void NC_UpdateWeapon(TWeapon *pWeapon);
-		bool NC_SendMap(TMap *map);
-		bool NC_SendLevel(TLevel *level);
-	
+
 #ifdef V8NPCSERVER
 		inline CScriptEngine * getScriptEngine() {
 			return &mScriptEngine;
@@ -244,8 +237,6 @@ class TServer : public CSocketStub
 		std::thread upnp_thread;
 #endif
 
-		// NPC-Server Functionality
-		TPlayer *mNpcServer;
 		int mNCPort;
 	
 #ifdef V8NPCSERVER
