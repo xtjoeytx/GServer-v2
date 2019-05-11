@@ -92,6 +92,9 @@ class TServer : public CSocketStub
 		void loadIPBans();
 		void loadWeapons(bool print = false);
 		void loadMaps(bool print = false);
+#ifdef V8NPCSERVER
+		void loadNpcs(bool print = false);
+#endif
 		void loadTranslations();
 		void loadWordFilter();
 
@@ -100,6 +103,9 @@ class TServer : public CSocketStub
 
 		void saveServerFlags();
 		void saveWeapons();
+#ifdef V8NPCSERVER
+		void saveNpcs();
+#endif
 
 		// Get functions.
 		const CString& getName()						{ return name; }

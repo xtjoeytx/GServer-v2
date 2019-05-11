@@ -197,13 +197,19 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	}
 
 	CString npcData = pPacket.readString("").guntokenize();
-	CString npcName = npcData.readString("\n");
+	CString npcName = npcData.readString("\n").trim();
 	CString npcId = npcData.readString("\n");
 	CString npcType = npcData.readString("\n");
 	CString npcScripter = npcData.readString("\n");
 	CString npcLevel = npcData.readString("\n");
 	CString npcX = npcData.readString("\n");
 	CString npcY = npcData.readString("\n");
+
+	// Require a name
+	if (npcName.isEmpty())
+		return true;
+
+	// TODO(joey): unique names for db-npcs!
 
 	TLevel *level = server->getLevel(npcLevel);
 	if (level == nullptr)
@@ -226,6 +232,10 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 
 		// Send packet to npc controls about new npc
 		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);
+
+		// Persist NPC
+		newNpc->setPersist(true);
+		newNpc->saveNPC();
 	}
 
 	return true;
