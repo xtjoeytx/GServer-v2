@@ -192,7 +192,7 @@ class TNPC
 		const CString& getScripter() const		{ return scripterName; }
 		time_t getPropModTime(unsigned char pId);
 
-		bool isLevelNPC()				{ return levelNPC; }
+		bool isLevelNPC() const					{ return levelNPC; }
 
 #ifdef V8NPCSERVER
 		void setTimeout(int val);
@@ -219,6 +219,12 @@ class TNPC
 		void moveNPC(int dx, int dy, double time, int options);
 		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
+
+		// file
+		bool getPersist() const			{ return persistNpc; }
+		void setPersist(bool persist)	{ persistNpc = persist; }
+		bool loadNPC(const CString& fileName);
+		void saveNPC();
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
@@ -252,12 +258,12 @@ class TNPC
 		std::unordered_set<int> propModified;
 
 		// Defaults
-		CString origImage;
+		CString origImage, origLevel;
 		float origX, origY;
-		TLevel *origLevel;
 
 		// npc-server
 		bool canWarp;
+		bool persistNpc;
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
