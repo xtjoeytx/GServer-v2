@@ -2000,6 +2000,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 				);
 		}
 	}
+	else
+	{
+		// Save it.
+		nickName = newNick;
+		this->guild.clear();
+	}
 	
 	if (isExternal)
 	{
