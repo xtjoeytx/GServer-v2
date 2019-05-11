@@ -306,6 +306,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
+				else setNick(nick);
 				
 				globalBuff >> (char)propId << getProp(propId);
 
