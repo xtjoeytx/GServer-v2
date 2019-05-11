@@ -101,10 +101,9 @@ bool TPlayer::sendLogin()
 	sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	// If we have an NPC Server, send this to prevent clients from sending
 	// npc props it modifies.
-#ifndef V8NPCSERVER
-	if (server->hasNPCServer())
+#ifdef V8NPCSERVER
+	sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
-		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 	// Check if the account is already in use.
 	if (!getGuest())
