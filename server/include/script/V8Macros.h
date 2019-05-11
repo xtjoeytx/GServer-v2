@@ -2,7 +2,7 @@
 
 #include <v8.h>
 
-#ifndef NDEBUG
+#ifdef NDEBUG
 	#define V8ENV_D(...) do {} while(0)
 #else
 	#define V8ENV_D(...) printf(__VA_ARGS__)

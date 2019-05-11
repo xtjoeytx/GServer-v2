@@ -1,5 +1,5 @@
-#
-#  bin/servers/default/CMakeLists.txt
+﻿#
+#  bin/servers/default/weapons/CMakeLists.txt
 #
 #  Copyright 2019 死体
 #
@@ -19,22 +19,10 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-add_subdirectory(accounts)
-add_subdirectory(config)
-add_subdirectory(documents)
-add_subdirectory(execscripts)
-add_subdirectory(guilds)
-add_subdirectory(logs)
-add_subdirectory(npcs)
-add_subdirectory(translations)
-add_subdirectory(weapons)
-add_subdirectory(world)
-
 file(GLOB FILES
-    bootstrap.js
-    serverflags.txt
+    npcControl-NPC.txt
 )
 
-set(INSTALL_DEST "./servers/default")
+set(INSTALL_DEST "./servers/default/npcs")
 
 install(FILES ${FILES} DESTINATION ${INSTALL_DEST})
