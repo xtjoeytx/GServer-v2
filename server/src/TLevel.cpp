@@ -931,11 +931,11 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	for (std::vector<TLevel *>::iterator i = levelList->begin(); i != levelList->end(); )
 	{
 		// TODO(joey): Would this ever even happen? Why is this here. Maybe we should use a hashmap for levels?
-		if ((*i) == 0)
-		{
-			i = levelList->erase(i);
-			continue;
-		}
+//		if ((*i) == 0)
+//		{
+//			i = levelList->erase(i);
+//			continue;
+//		}
 
 		if ((*i)->getLevelName().toLower() == pLevelName.toLower())
 			return (*i);
