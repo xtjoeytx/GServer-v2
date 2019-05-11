@@ -272,15 +272,6 @@ bool TLevel::reload()
 	// Re-load the level now.
 	bool ret = loadLevel(levelName);
 
-#ifndef V8NPCSERVER
-	// Update the npc-server of the level change.
-	if (server->hasNPCServer())
-	{
-		server->NC_SendLevel(this);
-		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
-	}
-#endif
-
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
 	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
 	float uX = server->getSettings()->getFloat("unstickmex", 30.0f);
@@ -951,15 +942,6 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 		return 0;
 	}
 
-#ifndef V8NPCSERVER
-	// Send NC Level
-	if (server->hasNPCServer())
-	{
-		server->NC_SendLevel(level);
-		server->getSocketManager()->updateSingle(server->getNPCServer(), false, true);
-	}
-#endif
-	
 	// Return Level
 	levelList->push_back(level);
 	return level;

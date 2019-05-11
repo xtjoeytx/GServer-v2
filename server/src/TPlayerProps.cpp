@@ -283,17 +283,8 @@ CString TPlayer::getProp(int pPropId)
 
 void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer *rc)
 {
-	// Forward to NPC-Server if the npc-server isn't setting them
-	if (server->hasNPCServer() && server->getNPCServer() != rc)
-	{
-		pPacket.removeI(0, pPacket.readPos());
-		pPacket.setRead(0);
-		server->getNPCServer()->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << pPacket);
-	}
-
 	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
-	bool doOverride = (server->hasNPCServer() && server->getNPCServer() == rc);
 	bool doSignCheck = false;
 	int len = 0;
 	bool sentInvalid = false;
@@ -315,8 +306,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick, doOverride);
-
+				
 				globalBuff >> (char)propId << getProp(propId);
 
 				// Send this if the player is located on another server

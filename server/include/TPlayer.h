@@ -103,7 +103,6 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isStaff();
 		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
 		bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
-		bool isNPCServer()		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
 		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
 		bool isRemoteClient()	{ return (type & PLTYPE_ANYREMOTE) ? true : false; }
 		bool isLoaded()			{ return loaded; }
@@ -123,21 +122,17 @@ class TPlayer : public TAccount, public CSocketStub
 		TPlayer* getExternalPlayer(const unsigned short id, bool includeRC = true) const;
 		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;
 
+#ifdef V8NPCSERVER
 		// NPC-Server Functionality
 		void sendNCAddr();
-		void sendNC_Maps();
-		void sendNC_Levels();
-		void sendNC_Weapons();
-		void sendNC_GMapList();
 
-#ifdef V8NPCSERVER
-	inline IScriptWrapped<TPlayer> * getScriptObject() const {
-		return _scriptObject;
-	}
+		inline IScriptWrapped<TPlayer> * getScriptObject() const {
+			return _scriptObject;
+		}
 	
-	inline void setScriptObject(IScriptWrapped<TPlayer> *object) {
-		_scriptObject = object;
-	}
+		inline void setScriptObject(IScriptWrapped<TPlayer> *object) {
+			_scriptObject = object;
+		}
 #endif
 
 		// Packet-Functions
@@ -271,16 +266,11 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
-#ifndef V8NPCSERVER
-		bool msgPLI_NC_QUERY(CString& pPacket);
-#endif
-	
 	private:
 		// Login functions.
 		bool sendLoginClient();
 		bool sendLoginNC();
 		bool sendLoginRC();
-		bool sendLoginNPCServer();
 
 		// Packet functions.
 		bool parsePacket(CString& pPacket);
