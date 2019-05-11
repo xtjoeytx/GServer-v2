@@ -32,7 +32,7 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), origScript(pScript), origX(pX), origY(pY), origLevel(pLevel), npcName(""), scripterName("")
+, origImage(pImage), originalScript(pScript), origX(pX), origY(pY), origLevel(pLevel), npcName(""), scripterName("")
 , canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
@@ -713,7 +713,9 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
 
+#ifdef V8NPCSERVER
 	if (hasMoved) testTouch();
+#endif
 
 	return ret;
 }
@@ -864,6 +866,16 @@ void TNPC::runScriptEvents()
 	_actions.clear();
 
 	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
+	if (!propModified.empty())
+	{
+		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
+		for (auto it = propModified.begin(); it != propModified.end(); ++it)
+			propPacket >> (char)(*it) << getProp(*it);
+		propModified.clear();
+
+		if (level != nullptr)
+			server->sendPacketToLevel(propPacket, level->getMap(), level, nullptr, true);
+	}
 }
 
 void TNPC::moveNPC(int dx, int dy, double time, int options)
