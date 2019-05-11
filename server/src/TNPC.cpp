@@ -132,16 +132,12 @@ void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
 
 	// See if the NPC should block position updates from the level leader.
-	if (server->hasNPCServer())
-	{
-		if (serverScript.find("//#BLOCKPOSITIONUPDATES") != -1)
-			blockPositionUpdates = true;
-	}
-	else
-	{
-		if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
-			blockPositionUpdates = true;
-	}
+#ifdef V8NPCSERVER
+		blockPositionUpdates = true;
+#else
+	if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
+		blockPositionUpdates = true;
+#endif
 
 	// Remove comments and trim the code if specified.
 	// TODO(joey): Just a note for the future, but if trimCode is false the formatted script is never set so scripts wouldn't send to client.

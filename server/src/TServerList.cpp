@@ -162,8 +162,6 @@ bool TServerList::doTimedEvents()
 		std::vector<TPlayer *> playerListTmp = *server->getPlayerList();
 		for (std::vector<TPlayer *>::const_iterator i = playerListTmp.begin(); i != playerListTmp.end(); ++i)
 		{
-			if (server->hasNPCServer() && (*i)->isNPCServer()) continue;
-
 			std::vector<CString> pmServers = (*i)->getPMServerList();
 
 			if (!pmServers.empty())
