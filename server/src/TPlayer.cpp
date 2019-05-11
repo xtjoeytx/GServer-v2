@@ -2361,8 +2361,6 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	// Dont accept npc-properties from clients when an npc-server is present
 #ifdef V8NPCSERVER
 	return true;
-#else
-	if (server->hasNPCServer()) return true;
 #endif
 
 	unsigned int npcId = pPacket.readGUInt();

@@ -245,12 +245,7 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 	else
 		V8ENV_D("Could not compile weapon script\n");
 #else
-	if (pServer->hasNPCServer())
-	{
-		setServerScript(script.readString("//#CLIENTSIDE"));
-		setClientScript(script.readString(""));
-	}
-	else setClientScript(script);
+	setClientScript(script);
 #endif
 
 	// Save Weapon
