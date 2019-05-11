@@ -1,0 +1,19 @@
+Available commands for GServer:
+/help: This message.
+/open accountname: Opens the player's attributes window.
+/openacc accountname: Opens the player's account window.
+/opencomments accountname: Opens the player's comments window.
+/openban accountname: Opens the player's ban info.
+/openrights accountname: Opens the player's rights window.
+/reset accountname: Resets the account.
+/refreshservermessage: Reloads servermessage.html.
+/refreshfilesystem: Reloads the server's known file list.
+/updatelevel level[,level]: Reloads levels from hard disk.
+/updatelevelall: updates all loaded levels.
+/restartserver: Restarts the server, kicking all joined players.
+/reloadserver: Reloads the server configuration files.
+/updateserverhq: Sends the ServerHQ information to the serverlist.
+/reloadwordfilter: Reloads the word filter rules.
+/reloadipbans: Reloads the ip bans.
+/reloadweapons: Reloads the weapons from disk.
+/find file: Finds a file.  Accepts wildcards.
