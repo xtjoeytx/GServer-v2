@@ -165,7 +165,7 @@ inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 		"self.onPlayerEnters = onPlayerEnters;" \
 		"self.onPlayerLeaves = onPlayerLeaves;" \
 		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
-		"self.onTimeout = onTimeout;";
+		"self.onTimeout = onTimeout;\n";
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);
@@ -179,7 +179,7 @@ inline std::string CScriptEngine::WrapScript<TWeapon>(const std::string& code) {
 		"var onCreated, onActionServerSide;" \
 		"const self = weapon;" \
 		"self.onCreated = onCreated;" \
-		"self.onActionServerSide = onActionServerSide;";
+		"self.onActionServerSide = onActionServerSide;\n";
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);

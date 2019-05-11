@@ -1,0 +1,42 @@
+GRNPC001
+NAME Control-NPC
+ID 10000
+TYPE CONTROL
+SCRIPTER 
+IMAGE 
+STARTLEVEL 
+STARTX 30.00
+STARTY 30.00
+NICK 
+ANI 
+HP 0
+GRALATS 0
+ARROWS 0
+BOMBS 0
+GLOVEP 0
+SWORDP 0
+SHIELDP 0
+HEAD 
+BODY 
+SWORD 
+SHIELD 
+HORSE 
+COLORS 2,0,10,4,18
+SPRITE 0
+AP 50
+TIMEOUT 0
+LAYER 0
+SHAPETYPE 0
+SHAPE 32 48
+SAVEARR 0,0,0,0,0,0,0,0,0,0
+NPCSCRIPT
+function onCreated() {
+  // nothing of use yet
+  server.sendtorc("Script Server Initialized!");
+}
+
+function onActionPlayerOnline(player)
+{
+  // not done yet
+}
+NPCSCRIPTEND

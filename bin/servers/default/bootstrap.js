@@ -22,7 +22,7 @@
             if (npc.onCreated)
                 npc.onCreated.apply(npc, args);
         } catch (e) {
-            print("Exception thrown in onCreated by NPC: ", e);
+            env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
     });
 
@@ -34,7 +34,7 @@
             if (npc.onPlayerChats)
                 npc.onPlayerChats(player, message);
         } catch (e) {
-            print("Exception thrown in onPlayerChats by NPC: ", e);
+            env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
     });
     
@@ -46,7 +46,7 @@
             if (npc.onPlayerEnters)
                 npc.onPlayerEnters(player);
         } catch (e) {
-            print("Exception thrown in onPlayerEnters by NPC: ", e);
+            env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
 	});
 	
@@ -58,7 +58,7 @@
             if (npc.onPlayerLeaves)
                 npc.onPlayerLeaves(player);
         } catch (e) {
-            print("Exception thrown in onPlayerLeaves by NPC: ", e);
+            env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
 	});
 	
@@ -71,7 +71,7 @@
             if (npc.onPlayerTouchsMe)
                 npc.onPlayerTouchsMe(player);
         } catch (e) {
-            print("Exception thrown in onPlayerTouchsMe by NPC: ", e);
+            env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
 	});
 
@@ -83,7 +83,7 @@
             if (npc.onTimeout)
                 npc.onTimeout.apply(npc, args);
         } catch (e) {
-            print("Exception thrown in onTimeout by NPC: ", e);
+            env.reportException("NPC Timeout Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
     });
 
@@ -94,7 +94,7 @@
         try {
             func.call(npc, data);
         } catch (e) {
-            print("Exception thrown in trigger by NPC: ", e);
+            env.reportException("NPC Trigger Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
         }
     });
 
@@ -106,7 +106,7 @@
             if (weapon.onCreated)
                 weapon.onCreated.apply(weapon, args);
         } catch (e) {
-            print("Exception thrown in onCreated by Weapon: ", e);
+            env.reportException("Weapon Exception at " + weapon.name + ": " + e.name + " - " + e.message);
         }
     });
 
@@ -118,7 +118,7 @@
             if (weapon.onActionServerSide)
                 weapon.onActionServerSide(player, data);
         } catch (e) {
-            print("Exception thrown in onActionServerSide by Weapon: ", e);
+            env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
         }
     });
 });

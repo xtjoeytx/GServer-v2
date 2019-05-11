@@ -71,7 +71,7 @@ bool CScriptEngine::Initialize()
 		assert(_bootstrapFunction);
 
 		v8::Context::Scope context_scope(env->Context());
-        _environmentObject = env->Wrap(ScriptConstructorId<IScriptEnv>::result, this->_server); //server);
+        _environmentObject = env->Wrap(ScriptConstructorId<IScriptEnv>::result, this->_server);
         _serverObject = env->Wrap(ScriptConstructorId<TServer>::result, this->_server);
 
 		IScriptArguments *args = ScriptArgumentsFactory::Create(env, _environmentObject);

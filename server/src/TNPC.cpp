@@ -32,7 +32,7 @@ visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 image(pImage), gani("idle"),
 level(pLevel), server(pServer)
 #ifdef V8NPCSERVER
-, origImage(pImage), originalScript(pScript), origX(pX), origY(pY)
+, origImage(pImage), originalScript(pScript), origX(pX), origY(pY), persistNpc(false)
 , canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
 #endif
 {
@@ -57,6 +57,10 @@ level(pLevel), server(pServer)
 			gmaplevelx = (unsigned char) gmap->getLevelX(level->getLevelName());
 			gmaplevely = (unsigned char) gmap->getLevelY(level->getLevelName());
 		}
+
+#ifdef V8NPCSERVER
+		origLevel = level->getLevelName();
+#endif
 	}
 
 	// We need to alter the modTime of the following props as they should be always sent.
@@ -989,7 +993,7 @@ void TNPC::saveNPC()
 			 << CString((int)saves[3]) << "," << CString((int)saves[4]) << "," << CString((int)saves[5]) << ","
 			 << CString((int)saves[6]) << "," << CString((int)saves[7]) << "," << CString((int)saves[8]) << ","
 			 << CString((int)saves[9]) << NL;
-	fileData << "NPCSCRIPT" << NL << originalScript << NL << "NPCSCRIPTEND" << NL;
+	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL) << NL << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
 }
 
