@@ -875,7 +875,7 @@ void TServer::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false, true);
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false);
 		if (newNPC->loadNPC((*it).second))
 		{
 			int npcId = newNPC->getId();
@@ -1099,12 +1099,12 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 	CString testScript = "function onCreated() { self.showcharacter(); }";
 
 	// Create the npc
-	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false, settings.getBool("trimnpccode", true));
+	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false);
 	newNPC->setId(npcId);
 	npcList.push_back(newNPC);
 
 	if (npcIds.size() <= npcId)
-		npcIds.resize(npcId + 1);
+		npcIds.resize(npcId + 10);
 	npcIds[npcId] = newNPC;
 
 	// Add the npc to the level
@@ -1127,7 +1127,7 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC, settings.getBool("trimnpccode", true));
+	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC);
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id

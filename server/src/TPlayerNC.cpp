@@ -167,7 +167,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	TNPC *npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		npc->setScriptCode(npcScript, true);
+		npc->setScriptCode(npcScript);
 		npc->saveNPC();
 
 		server->sendToNC(CString("Script ") << npc->getName() << " updated by " << accountName);
