@@ -332,7 +332,9 @@ bool TPlayer::sendLoginClient()
 			>> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
+	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
+
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	if (warp(levelName, x, y) == false)
