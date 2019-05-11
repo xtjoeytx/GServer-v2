@@ -147,10 +147,11 @@ class TPlayer;
 class TNPC
 {
 	public:
-		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
+		TNPC(TServer* pServer, bool pLevelNPC = false);
+		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true);
 		~TNPC();
 
-		void setScriptCode(const CString& pScript, bool trimCode = false);
+		void setScriptCode(const CString& pScript);
 
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
@@ -244,8 +245,7 @@ class TNPC
 		CString gAttribs[30];
 		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage, gani;
 		CString nickName, imagePart, chatMsg, weaponName;
-		CString serverScript, clientScript, originalScript;
-		CString serverScriptFormatted, clientScriptFormatted;
+		CString serverScript, clientScript, clientScriptFormatted, originalScript;
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
