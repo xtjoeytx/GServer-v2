@@ -58,6 +58,12 @@ TServer::TServer(CString pName)
 	rclog.setFilename(rcPath);
 	serverlog.setFilename(serverPath);
 
+#ifdef V8NPCSERVER
+	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
+	CFileSystem::fixPathSeparators(&scriptPath);
+	scriptlog.setFilename(scriptPath);
+#endif
+
 	// Announce ourself to other classes.
 	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
@@ -753,6 +759,8 @@ void TServer::loadWeapons(bool print)
 			}
 			else
 			{
+				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
+				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
 				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().text());
 				delete weapon;
 			}

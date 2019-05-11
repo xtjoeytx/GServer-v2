@@ -134,6 +134,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 	printf("NPC Get Flags: %d\n", npcId);
 
 	// TODO(joey): temporarily used weapons to get this setup
+	/*
 	auto weaponList = server->getWeaponList();
 	if (!weaponList->empty())
 	{
@@ -147,6 +148,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		}
 	}
 	else printf("no weapons exist\n");
+	*/
 
 	return true;
 }
@@ -166,6 +168,8 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	if (npc != nullptr)
 	{
 		npc->setScriptCode(npcScript, true);
+		npc->saveNPC();
+
 		server->sendToNC(CString("Script ") << npc->getName() << " updated by " << accountName);
 	}
 
@@ -339,7 +343,6 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 	// {116}{weapon}
 	CString weaponName = pPacket.readString("");
-	printf("Get weapon: %s\n", weaponName.text());
 
 	TWeapon *weapon = server->getWeapon(weaponName);
 	if (weapon != 0 && !weapon->isDefault())

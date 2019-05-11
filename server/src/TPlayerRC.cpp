@@ -18,6 +18,7 @@
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()
+#define nclog		server->getNPCLog()
 extern bool __playerPropsRC[propscount];
 
 // Admin-only server options.  They are protected from being changed by people without the
@@ -1088,6 +1089,14 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			rclog.out("%s reloaded the weapons.\n", accountName.text());
 			server->loadWeapons();
 		}
+#ifdef V8NPCSERVER
+		else if (words[0] == "/savenpcs" && words.size() == 1)
+		{
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " saved npc to disk.");
+			nclog.out("%s saved the npcs to disk.\n", accountName.text());
+			server->saveNpcs();
+		}
+#endif
 		else if(words[0] == "/find" && words.size() > 1)
 		{
 			std::map<CString, CString> found;
