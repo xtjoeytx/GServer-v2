@@ -259,6 +259,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_NC_WEAPONGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONADD(CString& pPacket);
 		bool msgPLI_NC_WEAPONDELETE(CString& pPacket);
+		bool msgPLI_NC_CLASSDELETE(CString& pPacket);
 		bool msgPLI_NC_LEVELLISTGET(CString& pPacket);
 #endif
 	

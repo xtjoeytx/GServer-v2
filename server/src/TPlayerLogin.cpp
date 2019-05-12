@@ -389,19 +389,23 @@ bool TPlayer::sendLoginClient()
 bool TPlayer::sendLoginNC()
 {
 	// Send database npcs
-	std::vector<TNPC *> *npcList = server->getNPCList();
+	std::unordered_map<std::string, TNPC *> *npcList = server->getNPCNameList();
 	for (auto it = npcList->begin(); it != npcList->end(); ++it)
 	{
-		TNPC *npc = *it;
-		if (!npc->isLevelNPC())
-		{
-			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId()
-				>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
-				>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
-				>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
-			sendPacket(npcPacket);
-		}
+		TNPC *npc = it->second;
+		CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId()
+			>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
+			>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
+			>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
+		sendPacket(npcPacket);
 	}
+
+	// Send classes
+	CString classPacket;
+	std::unordered_map<std::string, std::string> *classList = server->getClassList();
+	for (auto it = classList->begin(); it != classList->end(); ++it)
+		classPacket >> (char)PLO_NC_CLASSADD << it->first << "\n";
+	sendPacket(classPacket);
 
 	// Send list of currently connected NC's
 	std::vector<TPlayer*>* playerList = server->getPlayerList();

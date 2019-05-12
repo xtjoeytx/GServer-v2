@@ -639,6 +639,10 @@ int TServer::loadConfigFiles()
 	serverlog.out("[%s]      Loading weapons...\n", name.text());
 	loadWeapons(true);
 
+	// Load classes.
+	serverlog.out("[%s]      Loading classes...\n", name.text());
+	loadClasses(true);
+
 	// Load maps.
 	serverlog.out("[%s]      Loading maps...\n", name.text());
 	loadMaps(true);
@@ -742,6 +746,21 @@ void TServer::loadServerMessage()
 void TServer::loadIPBans()
 {
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+}
+
+void TServer::loadClasses(bool print)
+{
+	CFileSystem scriptFS(this);
+	scriptFS.addDir("scripts", "*.txt");
+	std::map<CString, CString> *scriptFileList = scriptFS.getFileList();
+	for (auto it = scriptFileList->begin(); it != scriptFileList->end(); ++it)
+	{
+		std::string className = it->first.subString(0, it->first.length() - 4).text();
+
+		CString scriptData;
+		scriptData.load(it->second);
+		classList[className] = scriptData.text();
+	}
 }
 
 void TServer::loadWeapons(bool print)
@@ -1250,6 +1269,32 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 	delete npc;
 
 	return true;
+}
+
+bool TServer::deleteClass(const std::string& className)
+{
+	auto classIter = classList.find(className);
+	if (classIter == classList.end())
+		return false;
+
+	classList.erase(classIter);
+	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CFileSystem::fixPathSeparators(&filePath);
+	remove(filePath.text());
+
+	return true;
+}
+
+void TServer::updateClass(const std::string& className, const std::string& classCode)
+{
+	// TODO(joey): filenames...
+	classList[className] = classCode;
+
+	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CFileSystem::fixPathSeparators(&filePath);
+	
+	CString fileData(classCode);
+	fileData.save(filePath);
 }
 
 bool TServer::deletePlayer(TPlayer* player)
