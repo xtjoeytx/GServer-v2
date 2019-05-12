@@ -25,7 +25,7 @@ void NPC_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<
 	v8::Local<v8::Object> self = info.This();
 	TNPC *npcObject = UnwrapObject<TNPC>(self);
 
-	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().text());
+	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().c_str());
 	info.GetReturnValue().Set(npcName);
 }
 

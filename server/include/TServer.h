@@ -153,8 +153,8 @@ class TServer : public CSocketStub
 		TNPC* addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(const unsigned int pId, TLevel* pLevel = 0, bool eraseFromLevel = true);
-		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0, bool eraseFromLevel = true);
+		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
+		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
 		void playerLoggedIn(TPlayer *player);
@@ -186,13 +186,8 @@ class TServer : public CSocketStub
 		void NC_UpdateWeapon(TWeapon *pWeapon);
 
 #ifdef V8NPCSERVER
-		CScriptEngine * getScriptEngine() {
-			return &mScriptEngine;
-		}
-
-		int getNCPort() const {
-			return mNCPort;
-		}
+		CScriptEngine * getScriptEngine()	{ return &mScriptEngine; }
+		int getNCPort() const 				{ return mNCPort; }
 #endif
 
 	private:

@@ -567,7 +567,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_NAME:
-				npcName = pProps.readChars(pProps.readGUChar());
+				npcName = pProps.readChars(pProps.readGUChar()).text();
 				break;
 
 			case NPCPROP_TYPE:
@@ -922,7 +922,7 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
 }
 
-void TNPC::saveNPC()
+void TNPC::saveNPC() const
 {
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
@@ -1002,7 +1002,7 @@ bool TNPC::loadNPC(const CString& fileName)
 
 		// Parse Line
 		if (curCommand == "NAME")
-			npcName = curLine.readString("");
+			npcName = curLine.readString("").text();
 		else if (curCommand == "ID")
 			id = strtoint(curLine.readString(""));
 		else if (curCommand == "TYPE")

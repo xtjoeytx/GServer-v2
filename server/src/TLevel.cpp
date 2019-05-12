@@ -37,8 +37,8 @@ TLevel::~TLevel()
 	// Delete NPCs.
 	{
 		// Remove every NPC in the level.
-		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
-			server->deleteNPC(*i, this, false);
+		for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+			server->deleteNPC(*it, false);
 		levelNPCs.clear();
 	}
 
@@ -206,15 +206,15 @@ bool TLevel::reload()
 	// back to their original positions.
 	{
 		// Remove every NPC in the level.
-		for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end();)
+		for (auto it = levelNPCs.begin(); it != levelNPCs.end();)
 		{
-			TNPC* n = *i;
-			if (n->isLevelNPC())
+			TNPC *npc = *it;
+			if (npc->isLevelNPC())
 			{
-				server->deleteNPC(n, this, false);
-				i = levelNPCs.erase(i);
+				server->deleteNPC(npc, false);
+				it = levelNPCs.erase(it);
 			}
-			else i++;
+			else it++;
 		}
 		//levelNPCs.clear();
 	}
@@ -918,20 +918,16 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 {
 	std::vector<TLevel*>* levelList = server->getLevelList();
 
+	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
+	// 	this is still going to break on the first occurence.
+
 	// Find Appropriate Level by Name
-	for (std::vector<TLevel *>::iterator i = levelList->begin(); i != levelList->end(); )
+	for (auto it = levelList->begin(); it != levelList->end(); )
 	{
-		// TODO(joey): Would this ever even happen? Why is this here. Maybe we should use a hashmap for levels?
-//		if ((*i) == 0)
-//		{
-//			i = levelList->erase(i);
-//			continue;
-//		}
+		if ((*it)->getLevelName().toLower() == pLevelName.toLower())
+			return (*it);
 
-		if ((*i)->getLevelName().toLower() == pLevelName.toLower())
-			return (*i);
-
-		++i;
+		++it;
 	}
 
 	// Load New Level
