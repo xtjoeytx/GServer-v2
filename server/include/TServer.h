@@ -29,10 +29,6 @@
 
 #ifdef V8NPCSERVER
 #include "CScriptEngine.h"
-
-// TODO(joey): remove below
-#include "ScriptAction.h"
-#include "ScriptWrapped.h"
 #endif
 
 class TPlayer;
