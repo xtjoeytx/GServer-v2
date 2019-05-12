@@ -12,6 +12,7 @@ Global:
 
 Server Object:
 	Functions:
+		findnpc(id/string) - finds an npc by id or name
 		sendtonc("message") - outputs `message` to RC's with NC-access
 		sendtorc("message") - outputs `message` to RC's
 
@@ -49,6 +50,7 @@ NPC Object:
 		hearts
 		level - the level object
 		levelname
+		name (read-only, only set for database npcs for now)
 		nick
 		rupees
 		timeout
@@ -72,6 +74,7 @@ Player Object:
 		y
 		hearts
 		fullhearts
+		rupees
 		flags['key'] - retrieve/manipulate player flags
 
 Weapon Object:
