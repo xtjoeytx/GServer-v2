@@ -147,6 +147,9 @@ class TServer : public CSocketStub
 		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
 
 #ifdef V8NPCSERVER
+		void assignNPCName(TNPC *npc, const std::string& name);
+		void removeNPCName(TNPC *npc);
+		TNPC* getNPCByName(const std::string& name) const;
 		TNPC* addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
@@ -154,6 +157,7 @@ class TServer : public CSocketStub
 		bool deleteNPC(TNPC* npc, TLevel* pLevel = 0, bool eraseFromLevel = true);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
+		void playerLoggedIn(TPlayer *player);
 
 		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
 		bool setFlag(CString pFlag, bool pSendToPlayers = true);
@@ -215,6 +219,7 @@ class TServer : public CSocketStub
 		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
 		std::map<CString, std::map<CString, TLevel*> > groupLevels;
+		std::unordered_map<std::string, TNPC *> npcNameList;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;
 		std::vector<TLevel *> levelList;
 		std::vector<TMap *> mapList;
@@ -250,5 +255,25 @@ inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
 	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
 }
 
+#ifdef V8NPCSERVER
+
+inline TNPC * TServer::getNPC(const unsigned int id) const
+{
+	if (id >= npcIds.size())
+		return nullptr;
+
+	return npcIds[id];
+}
+
+inline TNPC * TServer::getNPCByName(const std::string& name) const
+{
+	auto npcIter = npcNameList.find(name);
+	if (npcIter != npcNameList.end())
+		return npcIter->second;
+
+	return nullptr;
+}
+
+#endif
 
 #endif

@@ -20,6 +20,15 @@ void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8
 	info.GetReturnValue().Set(npcObject->getId());
 }
 
+// Property: npc.name
+void NPC_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().text());
+	info.GetReturnValue().Set(npcName);
+}
+
 // Property: npc.x
 void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -661,7 +670,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Name);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save);

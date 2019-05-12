@@ -10,6 +10,5 @@ hq_password =
 # 0 = Hidden
 hq_level = 1
 
-# NPC-Server password.
-ns_password = 
-ns_ip = AUTO
+# NPC-Server address (to send to RC's, should be same as gserver)
+ns_ip = 127.0.0.1

@@ -226,8 +226,10 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 
 	if (newNpc != nullptr)
 	{
+		server->assignNPCName(newNpc, npcName.text());
+
 		CString npcProps = CString()
-				>> (char)NPCPROP_NAME >> (char)npcName.length() << npcName
+				>> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME)
 				>> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType
 				>> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
 
