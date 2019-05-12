@@ -909,7 +909,7 @@ void TServer::loadNpcs(bool print)
 
 				npcIds[npcId] = newNPC;
 				npcList.push_back(newNPC);
-				assignNPCName(newNPC, newNPC->getName().text());
+				assignNPCName(newNPC, newNPC->getName());
 
 				loaded = true;
 			}
@@ -962,7 +962,6 @@ void TServer::saveWeapons()
 
 void TServer::saveNpcs()
 {
-	// TODO(joey): implement
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
@@ -1103,7 +1102,7 @@ void TServer::assignNPCName(TNPC *npc, const std::string& name)
 
 void TServer::removeNPCName(TNPC *npc)
 {
-	auto npcIter = npcNameList.find(npc->getName().text());
+	auto npcIter = npcNameList.find(npc->getName());
 	if (npcIter != npcNameList.end())
 		npcNameList.erase(npcIter);
 }
@@ -1189,23 +1188,25 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	return newNPC;
 }
 
-bool TServer::deleteNPC(const unsigned int pId, TLevel* pLevel, bool eraseFromLevel)
+bool TServer::deleteNPC(const unsigned int pId, bool eraseFromLevel)
 {
 	// Grab the NPC.
 	TNPC* npc = getNPC(pId);
 	if (npc == 0) return false;
 
-	return deleteNPC(npc, pLevel, eraseFromLevel);
+	return deleteNPC(npc, eraseFromLevel);
 }
 
-// TODO(joey): Do we need to pass the level into this function? Likely can use npc->getLevel()
-bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
+bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
+	TLevel *level = npc->getLevel();
+
 	// Remove the NPC from all the lists.
-	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
+	if (level != nullptr && eraseFromLevel)
+		level->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
 		
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
@@ -1216,7 +1217,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	bool isOnMap = (npc->getLevel() && npc->getLevel()->getMap() ? true : false);
+	bool isOnMap = (level && level->getMap() ? true : false);
 	CString tmpLvlName = (isOnMap ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
@@ -1241,7 +1242,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	}
 
 	// Remove npc name assignment
-	if (!npc->isLevelNPC() && !npc->getName().isEmpty())
+	if (!npc->isLevelNPC() && !npc->getName().empty())
 		removeNPCName(npc);
 #endif
 
@@ -1253,7 +1254,8 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 
 bool TServer::deletePlayer(TPlayer* player)
 {
-	if (player == 0) return true;
+	if (player == 0)
+		return true;
 
 	// Add the player to the set of players to delete.
 	if (deletedPlayers.insert(player).second == true)
@@ -1280,7 +1282,7 @@ bool TServer::isIpBanned(const CString& ip)
 	return false;
 }
 
-void TServer::playerLoggedIn(TPlayer * player)
+void TServer::playerLoggedIn(TPlayer *player)
 {
 #ifdef V8NPCSERVER
 	// Send event to server that player is logging out
