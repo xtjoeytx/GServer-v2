@@ -313,7 +313,7 @@ grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true), invalidPackets(0)
 #ifdef V8NPCSERVER
-, _scriptObject(0)
+, _processRemoval(false), _scriptObject(0)
 #endif
 {
 	lastData = lastMovement = lastSave = last1m = time(0);

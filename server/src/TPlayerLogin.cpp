@@ -132,6 +132,10 @@ bool TPlayer::sendLogin()
 		}
 	}
 
+	// TODO(joey): Placing this here so warp doesn't queue events for this player before
+	//	the login is finished. The server should get first dibs on the player.
+	server->playerLoggedIn(this);
+
 	// Player's load different than RCs.
 	bool succeeded = false;
 	if (isClient()) succeeded = sendLoginClient();
@@ -335,6 +339,7 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
+	// TODO(joey): If no level exists, maybe they should be sent to unstick me level?
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	if (warp(levelName, x, y) == false)

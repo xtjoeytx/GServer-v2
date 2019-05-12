@@ -212,10 +212,25 @@ void TServer::cleanupDeletedPlayers()
 		IScriptWrapped<TPlayer> *playerObject = player->getScriptObject();
 		if (playerObject != 0)
 		{
-			// Leave the level now so the player object is still alive 
-			if (player->getLevel() != 0)
-				player->leaveLevel();
+			// Process last script events for this player
+			if (!player->isProcessed())
+			{
+				// Leave the level now while the player object is still alive 
+				if (player->getLevel() != 0)
+					player->leaveLevel();
 
+				// Send event to server that player is logging out
+				for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+				{
+					TNPC *npcObject = (*it).second;
+					npcObject->queueNpcAction("npc.playerlogout", player);
+				}
+
+				// Set processed
+				player->setProcessed();
+			}
+
+			// If we just added events to the player, we will have to wait for them to run before removing player.
 			if (playerObject->isReferenced())
 			{
 				printf("Reference count: %d\n", playerObject->getReferenceCount());
@@ -890,10 +905,12 @@ void TServer::loadNpcs(bool print)
 			else
 			{
 				if (npcIds.size() <= npcId)
-					npcIds.resize(npcId + 10);
+					npcIds.resize((size_t)npcId + 10);
 
 				npcIds[npcId] = newNPC;
 				npcList.push_back(newNPC);
+				assignNPCName(newNPC, newNPC->getName().text());
+
 				loaded = true;
 			}
 		}
@@ -1008,12 +1025,6 @@ TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
 	return 0;
 }
 
-TNPC* TServer::getNPC(const unsigned int id) const
-{
-	if (id >= npcIds.size()) return 0;
-	return npcIds[id];
-}
-
 TLevel* TServer::getLevel(const CString& pLevel)
 {
 	return TLevel::findLevel(pLevel, this);
@@ -1079,7 +1090,24 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 }
 
 #ifdef V8NPCSERVER
-// TODO(joey): Database npcs
+void TServer::assignNPCName(TNPC *npc, const std::string& name)
+{
+	std::string newName = name;
+	int num = 0;
+	while (npcNameList.find(newName) != npcNameList.end())
+		newName = name + std::to_string(++num);
+
+	npc->setName(newName);
+	npcNameList[newName] = npc;
+}
+
+void TServer::removeNPCName(TNPC *npc)
+{
+	auto npcIter = npcNameList.find(npc->getName().text());
+	if (npcIter != npcNameList.end())
+		npcNameList.erase(npcIter);
+}
+
 TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
 	// Force database npc ids to be >= 1000
@@ -1096,15 +1124,13 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 		return nullptr;
 	}
 
-	CString testScript = "function onCreated() { self.showcharacter(); }";
-
 	// Create the npc
-	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false);
+	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, false);
 	newNPC->setId(npcId);
 	npcList.push_back(newNPC);
 
 	if (npcIds.size() <= npcId)
-		npcIds.resize(npcId + 10);
+		npcIds.resize((size_t)npcId + 10);
 	npcIds[npcId] = newNPC;
 
 	// Add the npc to the level
@@ -1204,6 +1230,12 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
 	}
 
+#ifdef V8NPCSERVER
+	// Remove npc name assignment
+	if (!npc->isLevelNPC() && !npc->getName().isEmpty())
+		removeNPCName(npc);
+#endif
+
 	// Delete the NPC from memory.
 	delete npc;
 
@@ -1237,6 +1269,18 @@ bool TServer::isIpBanned(const CString& ip)
 		if (ip.match(*i)) return true;
 	}
 	return false;
+}
+
+void TServer::playerLoggedIn(TPlayer * player)
+{
+#ifdef V8NPCSERVER
+	// Send event to server that player is logging out
+	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	{
+		TNPC *npcObject = (*it).second;
+		npcObject->queueNpcAction("npc.playerlogin", player);
+	}
+#endif
 }
 
 /*

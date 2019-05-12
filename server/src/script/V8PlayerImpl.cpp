@@ -94,6 +94,21 @@ void Player_SetInt_Maxhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> va
 	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)newValue, true, true);
 }
 
+// PROPERTY: player.rupees
+void Player_GetInt_Rupees(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->getRupees());
+}
+
+void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+
+	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue, true, true);
+}
+
 // PROPERTY: Account
 void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -344,6 +359,9 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
@@ -358,6 +376,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Maxhearts, Player_SetInt_Maxhearts);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), Player_GetInt_Rupees, Player_SetInt_Rupees);
 
 	// Create the player flags template
     v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
