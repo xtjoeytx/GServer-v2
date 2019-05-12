@@ -35,6 +35,13 @@ CString::CString(const char *pString)
 	else clear(30);
 }
 
+CString::CString(const std::string& pString)
+		: buffer(0), buffc(0), sizec(0), readc(0), writec(0)
+{
+	clear(pString.length());
+	write(pString.c_str(), pString.length());
+}
+
 CString::CString(const CString& pString)
 : buffer(0), buffc(0), sizec(0), readc(0), writec(0)
 {

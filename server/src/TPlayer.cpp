@@ -2107,7 +2107,7 @@ void TPlayer::disableWeapons()
 /*
 	TPlayer: Flag Functions
 */
-void TPlayer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer, bool sendToNPCServer)
+void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer, bool sendToNPCServer)
 {
 	// Call Default Set Flag
 	TAccount::setFlag(pFlagName, pFlagValue);
@@ -2733,33 +2733,33 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	// Server flags are handled differently than client flags.
 	if (flagName.find("server.") != -1)
 	{
-		server->setFlag(flagName, flagValue);
+		server->setFlag(flagName.text(), flagValue);
 		return true;
 	}
 
 	// Set Flag
-	this->setFlag(flagName, flagValue, false, true);
+	this->setFlag(flagName.text(), flagValue, false, true);
 	return true;
 }
 
 bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 {
 	CString flagPacket = pPacket.readString("");
-	CString flagName;
+	std::string flagName;
 	if (flagPacket.find("=") != -1)
-		flagName = flagPacket.readString("=").trim();
-	else flagName = flagPacket;
+		flagName = flagPacket.readString("=").trim().text();
+	else flagName = flagPacket.text();
 
 	// this.flags should never be in any server flag list, so just exit.
-	if (flagName.find("this.") != -1) return true;
+	if (flagName.find("this.") != std::string::npos) return true;
 
 	// Don't allow anybody to alter read-only strings.
-	if (flagName.find("clientr.") != -1) return true;
-	if (flagName.find("serverr.") != -1) return true;
+	if (flagName.find("clientr.") != std::string::npos) return true;
+	if (flagName.find("serverr.") != std::string::npos) return true;
 
 	// Server flags are handled differently than client flags.
 	// TODO: check serveroptions
-	if (flagName.find("server.") != -1)
+	if (flagName.find("server.") != std::string::npos)
 	{
 		server->deleteFlag(flagName);
 		return true;

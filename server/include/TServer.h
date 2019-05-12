@@ -129,7 +129,7 @@ class TServer : public CSocketStub
 		TServerList* getServerList()					{ return &serverlist; }
 		unsigned int getNWTime() const;
 
-		std::map<CString, CString>* getServerFlags()	{ return &mServerFlags; }
+		std::unordered_map<std::string, CString>* getServerFlags() { return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
@@ -140,7 +140,7 @@ class TServer : public CSocketStub
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
 		
 		CFileSystem* getFileSystemByType(CString& type);
-		CString getFlag(const CString& pFlagName);
+		CString getFlag(const std::string& pFlagName);
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
 		TMap* getMap(const TLevel* pLevel) const;
@@ -159,9 +159,9 @@ class TServer : public CSocketStub
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
 
-		bool deleteFlag(const CString& pFlagName, bool pSendToPlayers = true);
+		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
 		bool setFlag(CString pFlag, bool pSendToPlayers = true);
-		bool setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
+		bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 
 		// Admin chat functions
 		inline void sendToRC(const CString& pMessage, TPlayer *pPlayer = 0) const;
@@ -216,7 +216,7 @@ class TServer : public CSocketStub
 		CWordFilter wordFilter;
 		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
 
-		std::map<CString, CString> mServerFlags;
+		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
 		std::map<CString, std::map<CString, TLevel*> > groupLevels;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;

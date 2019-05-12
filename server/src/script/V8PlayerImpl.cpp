@@ -194,7 +194,7 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 
 	int idx = 0;
 	for (auto it = flagList->begin(); it != flagList->end(); ++it)
-		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.text())).Check();
+		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str())).Check();
 
 	info.GetReturnValue().Set(result);
 }
