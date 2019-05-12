@@ -264,6 +264,7 @@ class TNPC
 		// npc-server
 		bool canWarp;
 		bool persistNpc;
+		std::unordered_map<std::string, CString> flagList;
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;

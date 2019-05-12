@@ -693,7 +693,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		if (level != 0) map = level->getMap();
 
 		// Send the props.
-		// TODO(joey): only gmap? why is this?
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
 
@@ -849,7 +848,7 @@ void TNPC::runScriptEvents()
 	}
 	_actions.clear();
 
-	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
+	// Send properties modified by scripts
 	if (!propModified.empty())
 	{
 		testTouch();
@@ -874,12 +873,8 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 	int delta_y = (abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
 	short itime = (short)(time / 0.05);
 
-	// TODO(joey): maybe its time to get rid of this old x/y and keep everything in pixel x/y
-	x += (dx / 16);
-	y += (dy / 16);
-
-	x2 += dx;
-	y2 += dy;
+	setX(x + ((float)dx / 16));
+	setY(y + ((float)dy / 16));
 
 	if (level != nullptr)
 		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
