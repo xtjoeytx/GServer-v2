@@ -13,6 +13,37 @@
 // TODO(joey): Currently not cleaning this up
 v8::Persistent<v8::FunctionTemplate> _persist_server_flags_ctor;
 
+void Server_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	TServer *serverObject = UnwrapObject<TServer>(args.This());
+	
+	// Find npc object from user input
+	TNPC *npcObject = nullptr;
+	if (args[0]->IsString())
+	{
+		v8::String::Utf8Value npcName(isolate, args[0]->ToString(context).ToLocalChecked());
+		npcObject = serverObject->getNPCByName(*npcName);
+	}
+	else if (args[0]->IsInt32())
+	{
+		unsigned int npcId = args[0]->Uint32Value(context).ToChecked();
+		npcObject = serverObject->getNPC(npcId);
+	}
+
+	// Set the return value as the handle from the wrapped object
+	if (npcObject != nullptr)
+	{
+		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC>*>(npcObject->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
 void Server_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -163,6 +194,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_SendToNC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_SendToRC, engine_ref));
 

@@ -123,6 +123,9 @@ class TPlayer : public TAccount, public CSocketStub
 		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 #ifdef V8NPCSERVER
+		bool isProcessed() const { return _processRemoval;  }
+		void setProcessed() { _processRemoval = true; }
+
 		// NPC-Server Functionality
 		void sendNCAddr();
 
@@ -324,6 +327,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CFileQueue fileQueue;
 	
 #ifdef V8NPCSERVER
+		bool _processRemoval;
 		IScriptWrapped<TPlayer> *_scriptObject;
 #endif
 };

@@ -196,6 +196,7 @@ class TAccount
 	
 #ifdef V8NPCSERVER
 		int getMaxPower() const			{ return maxPower; }
+		int getRupees() const			{ return gralatc; }
 #endif
 
 	protected:
