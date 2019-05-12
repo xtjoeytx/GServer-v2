@@ -10,6 +10,7 @@
 
 #include "TLevel.h"
 #include "TNPC.h"
+#include "TPlayer.h"
 
 // PROPERTY: level.name
 void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -37,6 +38,28 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	int idx = 0;
 	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
 		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>((*it)->getScriptObject());
+		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
+// PROPERTY: level.players
+void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+	TLevel *levelObject = UnwrapObject<TLevel>(self);
+
+	// Get npcs list
+	auto playerList = levelObject->getPlayerList();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, playerList->size());
+
+	int idx = 0;
+	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
+		V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -101,10 +124,9 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
 
 	// Properties
-	// TODO(joey): implement
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), Level_GetStr_Name);
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Level_GetArray_Npcs);
-	//level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Level_GetStr_Name);
+	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Level_GetArray_Players);
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);
