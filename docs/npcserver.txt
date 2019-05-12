@@ -39,8 +39,9 @@ NPC Object:
 		showcharacter() - displays a character instead of an image
 		setcharprop("code", "value") - sets character prop
 		setshape(type, width, height) - sets shape of npc
+		join("className") - joins a class to the npc
 		registerTrigger("action", function) - registers an action for triggeractions
-
+		
 	Properties:
 		id - (read-only)
 		ani
@@ -68,6 +69,7 @@ Player Object:
 		removeweapon("weapon") - removes a weapon from a player
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
+		join("className") - joins a class to the player
 
 	Properties:
 		id - (read-only)
