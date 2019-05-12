@@ -250,8 +250,6 @@ inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
 	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
 }
 
-#ifdef V8NPCSERVER
-
 inline TNPC * TServer::getNPC(const unsigned int id) const
 {
 	if (id >= npcIds.size())
@@ -259,6 +257,8 @@ inline TNPC * TServer::getNPC(const unsigned int id) const
 
 	return npcIds[id];
 }
+
+#ifdef V8NPCSERVER
 
 inline TNPC * TServer::getNPCByName(const std::string& name) const
 {
