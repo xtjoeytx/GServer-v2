@@ -251,40 +251,66 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a class.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to edit a class.\n", accountName.text());
 		return false;
 	}
 
 	// {112}{class}
 	CString className = pPacket.readString("");
-	printf("Update Class by Name: %s\n", className.text());
-
-	// {162}{CHAR name length}{name}{GSTRING script}
-	CString testScript = CString() << "function onCreated() {"
-			<< "  var test = \"hey\" + \"you\""
-			<< "}";
+	
+	CString classCode = server->getClass(className.text());
 
 	CString ret;
-	ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << testScript.gtokenize();
+	ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();
 	sendPacket(ret);
+
 	return true;
 }
 
 bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 {
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to add a class.\n", accountName.text());
+		return false;
+	}
+
 	// {113}{CHAR name length}{name}{GSTRING script}
-	CString className = pPacket.readChars(pPacket.readGUChar());
-	CString classData = pPacket.readString("").guntokenize();
+	std::string className = pPacket.readChars(pPacket.readGUChar()).text();
+	CString classCode = pPacket.readString("").guntokenize();
 
-	printf("Class %s => \n%s\n", className.text(), classData.text());
+	bool hasClass = server->hasClass(className);
+	server->updateClass(className, classCode.text());
 
-	CString ret;
-	ret >> (char)PLO_NC_CLASSADD << className;
-	sendPacket(ret);
-
+	if (!hasClass)
+	{
+		CString ret;
+		ret >> (char)PLO_NC_CLASSADD << className;
+		server->sendPacketTo(PLTYPE_ANYNC, ret);
+	}
 
 	return true;
 
+}
+
+bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
+{
+	if (!isNC())
+	{
+		npclog.out("[Hack] %s attempted to delete a class.\n", accountName.text());
+		return false;
+	}
+
+	std::string className = pPacket.readString("").text();
+	
+	CString message;
+	if (server->deleteClass(className))
+		message << accountName << " has deleted class " << className << ".";
+	else
+		message << "error: " << className << " does not exist on this server!";
+
+	server->sendToNC(message);
+	return true;
 }
 
 bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)

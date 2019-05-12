@@ -86,6 +86,7 @@ class TServer : public CSocketStub
 		void loadServerFlags();
 		void loadServerMessage();
 		void loadIPBans();
+		void loadClasses(bool print = false);
 		void loadWeapons(bool print = false);
 		void loadMaps(bool print = false);
 #ifdef V8NPCSERVER
@@ -125,7 +126,9 @@ class TServer : public CSocketStub
 		TServerList* getServerList()					{ return &serverlist; }
 		unsigned int getNWTime() const;
 
-		std::unordered_map<std::string, CString>* getServerFlags() { return &mServerFlags; }
+		std::unordered_map<std::string, std::string>* getClassList()	{ return &classList; }
+		std::unordered_map<std::string, TNPC *>* getNPCNameList()		{ return &npcNameList; }
+		std::unordered_map<std::string, CString>* getServerFlags()		{ return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
@@ -155,6 +158,11 @@ class TServer : public CSocketStub
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
 		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
+		bool deleteClass(const std::string& className);
+		bool hasClass(const std::string& className) const;
+		std::string getClass(const std::string& className) const;
+		//void saveClass(const std::string& className) const;
+		void updateClass(const std::string& className, const std::string& classCode);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
 		void playerLoggedIn(TPlayer *player);
@@ -214,6 +222,7 @@ class TServer : public CSocketStub
 		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
 		std::map<CString, std::map<CString, TLevel*> > groupLevels;
+		std::unordered_map<std::string, std::string> classList;
 		std::unordered_map<std::string, TNPC *> npcNameList;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;
 		std::vector<TLevel *> levelList;
@@ -238,24 +247,26 @@ class TServer : public CSocketStub
 #endif
 };
 
-#include "IEnums.h"
-
-inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
-{
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
-}
-
-inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
-{
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
-}
-
 inline TNPC * TServer::getNPC(const unsigned int id) const
 {
 	if (id >= npcIds.size())
 		return nullptr;
 
 	return npcIds[id];
+}
+
+inline bool TServer::hasClass(const std::string& className) const
+{
+	return classList.find(className) != classList.end();
+}
+
+inline std::string TServer::getClass(const std::string& className) const
+{
+	auto classIter = classList.find(className);
+	if (classIter != classList.end())
+		return classIter->second;
+
+	return std::string();
 }
 
 #ifdef V8NPCSERVER
@@ -270,5 +281,17 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 }
 
 #endif
+
+#include "IEnums.h"
+
+inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
+{
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+}
+
+inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
+{
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+}
 
 #endif

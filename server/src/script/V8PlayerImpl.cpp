@@ -75,7 +75,7 @@ void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 	
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = (int)newValue * 2;
+	int newValueInt = (int)(newValue * 2);
 	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)newValueInt, true, true);
 }
 
@@ -309,6 +309,51 @@ void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& ar
 	playerObject->enableWeapons();
 }
 
+void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::Local<v8::External> data = args.Data().As<v8::External>();
+		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+
+		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		TServer *server = scriptEngine->getServer();
+		std::string classCode = server->getClass(className);
+
+		if (!classCode.empty())
+		{
+			// Wrap code
+			std::string classCodeWrap = CScriptEngine::WrapScript<TPlayer>(classCode);
+
+			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
+			// multiple wrappers.
+			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
+			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
+			v8::Local<v8::Value> newArgs[] = { args.This() };
+
+			// Execute
+			v8::TryCatch try_catch(isolate);
+			v8::Local<v8::Function> scriptFunction = v8_function->Function();
+			v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+			if (!scriptTableRet.IsEmpty())
+			{
+				args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+				return;
+			}
+
+			// TODO(joey): error handling
+
+		}
+	}
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Player_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -354,11 +399,11 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 
 	// Method functions
 	// TODO(joey): Implement these functions
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
@@ -366,6 +411,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
