@@ -132,6 +132,10 @@ bool TPlayer::sendLogin()
 		}
 	}
 
+	// TODO(joey): Placing this here so warp doesn't queue events for this player before
+	//	the login is finished. The server should get first dibs on the player.
+	server->playerLoggedIn(this);
+
 	// Player's load different than RCs.
 	bool succeeded = false;
 	if (isClient()) succeeded = sendLoginClient();
@@ -285,15 +289,15 @@ bool TPlayer::sendLoginClient()
 		this->setFlag("gr.ip", this->accountIpStr, true, true);
 
 	// Send the player's flags.
-	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
 		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 	}
 
 	// Send the server's flags to the player.
-	std::map<CString, CString> * serverFlags = server->getServerFlags();
-	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+	std::unordered_map<std::string, CString> * serverFlags = server->getServerFlags();
+	for (auto i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 
 	sendPacket(CString() >> (char)PLO_UNKNOWN194);
@@ -335,6 +339,7 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
+	// TODO(joey): If no level exists, maybe they should be sent to unstick me level?
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	if (warp(levelName, x, y) == false)
@@ -384,19 +389,23 @@ bool TPlayer::sendLoginClient()
 bool TPlayer::sendLoginNC()
 {
 	// Send database npcs
-	std::vector<TNPC *> *npcList = server->getNPCList();
+	std::unordered_map<std::string, TNPC *> *npcList = server->getNPCNameList();
 	for (auto it = npcList->begin(); it != npcList->end(); ++it)
 	{
-		TNPC *npc = *it;
-		if (!npc->isLevelNPC())
-		{
-			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId()
-				>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
-				>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
-				>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
-			sendPacket(npcPacket);
-		}
+		TNPC *npc = it->second;
+		CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId()
+			>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
+			>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
+			>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
+		sendPacket(npcPacket);
 	}
+
+	// Send classes
+	CString classPacket;
+	std::unordered_map<std::string, std::string> *classList = server->getClassList();
+	for (auto it = classList->begin(); it != classList->end(); ++it)
+		classPacket >> (char)PLO_NC_CLASSADD << it->first << "\n";
+	sendPacket(classPacket);
 
 	// Send list of currently connected NC's
 	std::vector<TPlayer*>* playerList = server->getPlayerList();

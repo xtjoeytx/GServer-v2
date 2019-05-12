@@ -212,10 +212,25 @@ void TServer::cleanupDeletedPlayers()
 		IScriptWrapped<TPlayer> *playerObject = player->getScriptObject();
 		if (playerObject != 0)
 		{
-			// Leave the level now so the player object is still alive 
-			if (player->getLevel() != 0)
-				player->leaveLevel();
+			// Process last script events for this player
+			if (!player->isProcessed())
+			{
+				// Leave the level now while the player object is still alive 
+				if (player->getLevel() != 0)
+					player->leaveLevel();
 
+				// Send event to server that player is logging out
+				for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+				{
+					TNPC *npcObject = (*it).second;
+					npcObject->queueNpcAction("npc.playerlogout", player);
+				}
+
+				// Set processed
+				player->setProcessed();
+			}
+
+			// If we just added events to the player, we will have to wait for them to run before removing player.
 			if (playerObject->isReferenced())
 			{
 				printf("Reference count: %d\n", playerObject->getReferenceCount());
@@ -624,6 +639,10 @@ int TServer::loadConfigFiles()
 	serverlog.out("[%s]      Loading weapons...\n", name.text());
 	loadWeapons(true);
 
+	// Load classes.
+	serverlog.out("[%s]      Loading classes...\n", name.text());
+	loadClasses(true);
+
 	// Load maps.
 	serverlog.out("[%s]      Loading maps...\n", name.text());
 	loadMaps(true);
@@ -727,6 +746,21 @@ void TServer::loadServerMessage()
 void TServer::loadIPBans()
 {
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+}
+
+void TServer::loadClasses(bool print)
+{
+	CFileSystem scriptFS(this);
+	scriptFS.addDir("scripts", "*.txt");
+	std::map<CString, CString> *scriptFileList = scriptFS.getFileList();
+	for (auto it = scriptFileList->begin(); it != scriptFileList->end(); ++it)
+	{
+		std::string className = it->first.subString(0, it->first.length() - 4).text();
+
+		CString scriptData;
+		scriptData.load(it->second);
+		classList[className] = scriptData.text();
+	}
 }
 
 void TServer::loadWeapons(bool print)
@@ -875,7 +909,7 @@ void TServer::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false, true);
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false);
 		if (newNPC->loadNPC((*it).second))
 		{
 			int npcId = newNPC->getId();
@@ -890,10 +924,12 @@ void TServer::loadNpcs(bool print)
 			else
 			{
 				if (npcIds.size() <= npcId)
-					npcIds.resize(npcId + 10);
+					npcIds.resize((size_t)npcId + 10);
 
 				npcIds[npcId] = newNPC;
 				npcList.push_back(newNPC);
+				assignNPCName(newNPC, newNPC->getName());
+
 				loaded = true;
 			}
 		}
@@ -917,7 +953,7 @@ void TServer::loadWordFilter()
 void TServer::saveServerFlags()
 {
 	CString out;
-	for (std::map<CString, CString>::iterator i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
+	for (auto i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
 		out << i->first << "=" << i->second << "\r\n";
 	out.save(CString() << serverpath << "serverflags.txt");
 }
@@ -945,7 +981,6 @@ void TServer::saveWeapons()
 
 void TServer::saveNpcs()
 {
-	// TODO(joey): implement
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
@@ -1008,12 +1043,6 @@ TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
 	return 0;
 }
 
-TNPC* TServer::getNPC(const unsigned int id) const
-{
-	if (id >= npcIds.size()) return 0;
-	return npcIds[id];
-}
-
 TLevel* TServer::getLevel(const CString& pLevel)
 {
 	return TLevel::findLevel(pLevel, this);
@@ -1048,7 +1077,7 @@ TWeapon* TServer::getWeapon(const CString& name)
 	return (weaponList.find(name) != weaponList.end() ? weaponList[name] : 0);
 }
 
-CString TServer::getFlag(const CString& pFlagName)
+CString TServer::getFlag(const std::string& pFlagName)
 {
 #ifdef V8NPCSERVER
 	if (mServerFlags.find(pFlagName) != mServerFlags.end())
@@ -1079,7 +1108,24 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 }
 
 #ifdef V8NPCSERVER
-// TODO(joey): Database npcs
+void TServer::assignNPCName(TNPC *npc, const std::string& name)
+{
+	std::string newName = name;
+	int num = 0;
+	while (npcNameList.find(newName) != npcNameList.end())
+		newName = name + std::to_string(++num);
+
+	npc->setName(newName);
+	npcNameList[newName] = npc;
+}
+
+void TServer::removeNPCName(TNPC *npc)
+{
+	auto npcIter = npcNameList.find(npc->getName());
+	if (npcIter != npcNameList.end())
+		npcNameList.erase(npcIter);
+}
+
 TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
 {
 	// Force database npc ids to be >= 1000
@@ -1096,15 +1142,13 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 		return nullptr;
 	}
 
-	CString testScript = "function onCreated() { self.showcharacter(); }";
-
 	// Create the npc
-	TNPC* newNPC = new TNPC("", testScript, pX, pY, this, pLevel, false, settings.getBool("trimnpccode", true));
+	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, false);
 	newNPC->setId(npcId);
 	npcList.push_back(newNPC);
 
 	if (npcIds.size() <= npcId)
-		npcIds.resize(npcId + 1);
+		npcIds.resize((size_t)npcId + 10);
 	npcIds[npcId] = newNPC;
 
 	// Add the npc to the level
@@ -1127,7 +1171,7 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC, settings.getBool("trimnpccode", true));
+	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC);
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
@@ -1163,23 +1207,25 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	return newNPC;
 }
 
-bool TServer::deleteNPC(const unsigned int pId, TLevel* pLevel, bool eraseFromLevel)
+bool TServer::deleteNPC(const unsigned int pId, bool eraseFromLevel)
 {
 	// Grab the NPC.
 	TNPC* npc = getNPC(pId);
 	if (npc == 0) return false;
 
-	return deleteNPC(npc, pLevel, eraseFromLevel);
+	return deleteNPC(npc, eraseFromLevel);
 }
 
-// TODO(joey): Do we need to pass the level into this function? Likely can use npc->getLevel()
-bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
+bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
+	TLevel *level = npc->getLevel();
+
 	// Remove the NPC from all the lists.
-	if (pLevel != 0 && eraseFromLevel) pLevel->removeNPC(npc);
+	if (level != nullptr && eraseFromLevel)
+		level->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
 		
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
@@ -1190,7 +1236,7 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	}
 
 	// Tell the client to delete the NPC.
-	bool isOnMap = (npc->getLevel() && npc->getLevel()->getMap() ? true : false);
+	bool isOnMap = (level && level->getMap() ? true : false);
 	CString tmpLvlName = (isOnMap ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
@@ -1204,15 +1250,57 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
 	}
 
+#ifdef V8NPCSERVER
+	// TODO(joey): Need to deal with illegal characters
+	// If we persist this npc, delete the file
+	if (npc->getPersist())
+	{
+		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
+		CFileSystem::fixPathSeparators(&filePath);
+		remove(filePath.text());
+	}
+
+	// Remove npc name assignment
+	if (!npc->isLevelNPC() && !npc->getName().empty())
+		removeNPCName(npc);
+#endif
+
 	// Delete the NPC from memory.
 	delete npc;
 
 	return true;
 }
 
+bool TServer::deleteClass(const std::string& className)
+{
+	auto classIter = classList.find(className);
+	if (classIter == classList.end())
+		return false;
+
+	classList.erase(classIter);
+	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CFileSystem::fixPathSeparators(&filePath);
+	remove(filePath.text());
+
+	return true;
+}
+
+void TServer::updateClass(const std::string& className, const std::string& classCode)
+{
+	// TODO(joey): filenames...
+	classList[className] = classCode;
+
+	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CFileSystem::fixPathSeparators(&filePath);
+	
+	CString fileData(classCode);
+	fileData.save(filePath);
+}
+
 bool TServer::deletePlayer(TPlayer* player)
 {
-	if (player == 0) return true;
+	if (player == 0)
+		return true;
 
 	// Add the player to the set of players to delete.
 	if (deletedPlayers.insert(player).second == true)
@@ -1239,15 +1327,27 @@ bool TServer::isIpBanned(const CString& ip)
 	return false;
 }
 
+void TServer::playerLoggedIn(TPlayer *player)
+{
+#ifdef V8NPCSERVER
+	// Send event to server that player is logging out
+	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	{
+		TNPC *npcObject = (*it).second;
+		npcObject->queueNpcAction("npc.playerlogin", player);
+	}
+#endif
+}
+
 /*
 	TServer: Server Flag Management
 */
-bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
+bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
 
-	std::map<CString, CString>::iterator i;
+	std::unordered_map<std::string, CString>::iterator i;
 	if ((i = mServerFlags.find(pFlagName)) != mServerFlags.end())
 	{
 		mServerFlags.erase(i);
@@ -1261,12 +1361,12 @@ bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
 
 bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
 {
-	CString flagName = pFlag.readString("=");
+	std::string flagName = pFlag.readString("=").text();
 	CString flagValue = pFlag.readString("");
 	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
-bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
+bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
@@ -1282,7 +1382,6 @@ bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool 
 	// set flag
 	if (settings.getBool("cropflags", true))
 	{
-		int totalLength = pFlagName.length() + 1 + pFlagValue.length();
 		int fixedLength = 223 - 1 - pFlagName.length();
 		mServerFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}

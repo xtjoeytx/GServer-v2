@@ -17,7 +17,7 @@ extern void bindClass_Server(CScriptEngine *scriptEngine);
 extern void bindClass_Weapon(CScriptEngine *scriptEngine);
 
 CScriptEngine::CScriptEngine(TServer *server)
-	: _server(server), _env(nullptr), _bootstrapFunction(0), _serverObject(0)
+	: _server(server), _env(nullptr), _bootstrapFunction(0), _environmentObject(0), _serverObject(0)
 {
 
 }
@@ -110,7 +110,7 @@ void CScriptEngine::Cleanup()
 	_env = 0;
 }
 
-IScriptFunction * CScriptEngine::CompileCache(const std::string& code)
+IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool referenceCount)
 {
 	// TODO(joey): Temporary naming conventions, maybe pass an optional reference to an object which holds info for the compiler (name, ignore wrap code based off spaces/lines, and execution results?)
 	static int SCRIPT_ID = 1;
@@ -118,10 +118,12 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code)
 	auto scriptFunctionIter = _cachedScripts.find(code);
 	if (scriptFunctionIter != _cachedScripts.end())
 	{
-		scriptFunctionIter->second->increaseReference();
+		if (referenceCount)
+			scriptFunctionIter->second->increaseReference();
 		return scriptFunctionIter->second;
 	}
 
+	// TODO(joey): move compile into its own function
 	// Compile script, handle errors
 	IScriptFunction *compiledScript = _env->Compile(std::to_string(SCRIPT_ID++), code);
 	if (compiledScript == nullptr)
@@ -132,7 +134,8 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code)
 		return nullptr;
 	}
 
-	compiledScript->increaseReference();
+	if (referenceCount)
+		compiledScript->increaseReference();
 	_cachedScripts[code] = compiledScript;
 
 	V8ENV_D("---COMPILED---\n");

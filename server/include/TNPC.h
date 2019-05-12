@@ -138,6 +138,8 @@ enum
 	NPCEVENTFLAG_PLAYERENTERS	= (int)(1 << 3),
 	NPCEVENTFLAG_PLAYERLEAVES	= (int)(1 << 4),
 	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 5),
+	NPCEVENTFLAG_PLAYERLOGIN	= (int)(1 << 6),
+	NPCEVENTFLAG_PLAYERLOGOUT	= (int)(1 << 7),
 };
 #endif
 
@@ -147,10 +149,11 @@ class TPlayer;
 class TNPC
 {
 	public:
-		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true, bool trimCode = false);
+		TNPC(TServer* pServer, bool pLevelNPC = false);
+		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true);
 		~TNPC();
 
-		void setScriptCode(const CString& pScript, bool trimCode = false);
+		void setScriptCode(const CString& pScript);
 
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
@@ -165,13 +168,13 @@ class TNPC
 		void setHeight(int val)					{ height = val; }
 		void setWidth(int val)					{ width = val; }
 		void setRupees(int val)					{ rupees = val; }
-		void setName(const CString& name)		{ npcName = name; }
+		void setName(const std::string& name)	{ npcName = name; }
 		void setNickname(const CString& nick)	{ nickName = nick; }
 		void setScripter(const CString& name)	{ scripterName = name; }
 
 		// get functions
 		unsigned int getId() const				{ return id; }
-		TLevel* getLevel()						{ return level; }
+		TLevel* getLevel() const				{ return level; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
 		int getPixelX() const					{ return x2; }
@@ -184,7 +187,7 @@ class TNPC
 		int getTimeout() const 					{ return timeout; }
 		const CString& getImage() const			{ return image; }
 		const CString& getNickname() const 		{ return nickName; }
-		const CString& getName() const			{ return npcName; }
+		const std::string& getName() const		{ return npcName; }
 		const CString& getWeaponName() const	{ return weaponName; }
 		const CString& getClientScript() const	{ return clientScript; }
 		const CString& getServerScript() const	{ return serverScript; }
@@ -224,7 +227,7 @@ class TNPC
 		bool getPersist() const			{ return persistNpc; }
 		void setPersist(bool persist)	{ persistNpc = persist; }
 		bool loadNPC(const CString& fileName);
-		void saveNPC();
+		void saveNPC() const;
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
@@ -244,13 +247,13 @@ class TNPC
 		CString gAttribs[30];
 		CString image, swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage, gani;
 		CString nickName, imagePart, chatMsg, weaponName;
-		CString serverScript, clientScript, originalScript;
-		CString serverScriptFormatted, clientScriptFormatted;
+		CString serverScript, clientScript, clientScriptFormatted, originalScript;
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
 
-		CString npcName, npcType, scripterName;
+		CString npcType, scripterName;
+		std::string npcName;
 		int timeout;
 		int width, height;
 
@@ -264,12 +267,12 @@ class TNPC
 		// npc-server
 		bool canWarp;
 		bool persistNpc;
+		std::unordered_map<std::string, CString> flagList;
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
-
 		void testTouch();
 #endif
 };

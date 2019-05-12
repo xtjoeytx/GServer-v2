@@ -70,7 +70,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
 
 	// Clear flags
-	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		outPacket >> (char)PLO_FLAGDEL << i->first;
 		if (!i->second.isEmpty()) outPacket << "=" << i->second;
@@ -112,7 +112,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	for (int i = pPacket.readGUShort(); i > 0; --i)
 	{
 		CString flag = pPacket.readChars(pPacket.readGUChar());
-		CString name = flag.readString("=");
+		std::string name = flag.readString("=").text();
 		CString val = flag.readString("");
 		if (id == -1) setFlag(name, val);
 		else setFlag(name, val, true, true);
@@ -180,9 +180,9 @@ CString TPlayer::getPropsRC()
 
 	// Add the player's flags.
 	ret >> (short)flagList.size();
-	for (std::map<CString, CString>::iterator i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		CString flag = CString() << i->first;
+		CString flag = i->first;
 		if (!i->second.isEmpty()) flag << "=" << i->second;
 		if (flag.length() > 0xDF) flag.removeI(0xDF);
 		ret >> (char)flag.length() << flag;
@@ -485,7 +485,7 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	}
 	CString ret;
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)server->getServerFlags()->size();
-	for (std::map<CString, CString>::iterator i = server->getServerFlags()->begin(); i != server->getServerFlags()->end(); ++i)
+	for (auto i = server->getServerFlags()->begin(); i != server->getServerFlags()->end(); ++i)
 	{
 		CString flag = CString() << i->first << "=" << i->second;
 		ret >> (char)flag.length() << flag;
@@ -504,10 +504,10 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	unsigned short count = pPacket.readGUShort();
-	std::map<CString, CString> * serverFlags = server->getServerFlags();
+	std::unordered_map<std::string, CString> * serverFlags = server->getServerFlags();
 
 	// Save server flags.
-	std::map<CString, CString> oldFlags = *serverFlags;
+	std::unordered_map<std::string, CString> oldFlags = *serverFlags;
 
 	// Delete server flags.
 	serverFlags->clear();
@@ -517,10 +517,10 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		server->setFlag(pPacket.readChars(pPacket.readGUChar()), false);
 
 	// Send flag changes to all players.
-	for (std::map<CString, CString>::iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+	for (auto i = serverFlags->begin(); i != serverFlags->end(); ++i)
 	{
 		bool found = false;
-		for (std::map<CString, CString>::iterator j = oldFlags.begin(); j != oldFlags.end();)
+		for (auto j = oldFlags.begin(); j != oldFlags.end();)
 		{
 			// Flag name
 			if (i->first == j->first)
@@ -546,7 +546,7 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	// If any flags were deleted, tell that to the players now.
-	for (std::map<CString, CString>::iterator i = oldFlags.begin(); i != oldFlags.end(); ++i)
+	for (auto i = oldFlags.begin(); i != oldFlags.end(); ++i)
 		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGDEL << i->first);
 
 	rclog.out("%s has updated the server flags.\n", accountName.text());
@@ -950,10 +950,9 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 #ifdef V8NPCSERVER
 	if (isNC())
 	{
-		// TODO(joey): All RC's with NC support are sending two messages at a time. Commenting this out
-		//  breaks standalone npc-server though.
+		// TODO(joey): All RC's with NC support are sending two messages at a time.
+		//  Can use this section for npc-server related commands though.
 		//server->sendToNC(CString(nickName) << ": " << message);
-
 		return true;
 	}
 #endif

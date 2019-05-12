@@ -68,7 +68,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
-		void setFlag(const CString& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
+		void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
 		void setMap(TMap* map)			{ pmap = map; }
 		void setServerName(CString& tmpServerName)	{ serverName = tmpServerName; }
 
@@ -123,6 +123,9 @@ class TPlayer : public TAccount, public CSocketStub
 		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 #ifdef V8NPCSERVER
+		bool isProcessed() const { return _processRemoval;  }
+		void setProcessed() { _processRemoval = true; }
+
 		// NPC-Server Functionality
 		void sendNCAddr();
 
@@ -256,6 +259,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_NC_WEAPONGET(CString& pPacket);
 		bool msgPLI_NC_WEAPONADD(CString& pPacket);
 		bool msgPLI_NC_WEAPONDELETE(CString& pPacket);
+		bool msgPLI_NC_CLASSDELETE(CString& pPacket);
 		bool msgPLI_NC_LEVELLISTGET(CString& pPacket);
 #endif
 	
@@ -324,6 +328,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CFileQueue fileQueue;
 	
 #ifdef V8NPCSERVER
+		bool _processRemoval;
 		IScriptWrapped<TPlayer> *_scriptObject;
 #endif
 };

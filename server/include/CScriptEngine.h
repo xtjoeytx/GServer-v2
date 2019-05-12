@@ -77,7 +77,7 @@ public:
 	}
 
 	// Script Compile / Cache
-	IScriptFunction * CompileCache(const std::string& code);
+	IScriptFunction * CompileCache(const std::string& code, bool referenceCount = true);
 	bool ClearCache(const std::string& code);
 
 	bool ExecuteNpc(TNPC *npc);
@@ -157,15 +157,30 @@ inline std::string CScriptEngine::WrapScript(const std::string& code) {
 
 template <>
 inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
+	// self.onCreated || onCreated, for first declared to take precedence
+	// if (onCreated) for latest function to override
 	static const char *prefixString = "(function(npc) {" \
-		"var onCreated, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onTimeout;" \
+		"var onCreated, onTimeout, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onPlayerLogin, onPlayerLogout;" \
 		"const self = npc;" \
-		"self.onCreated = onCreated;" \
-		"self.onPlayerChats = onPlayerChats;" \
-		"self.onPlayerEnters = onPlayerEnters;" \
-		"self.onPlayerLeaves = onPlayerLeaves;" \
-		"self.onPlayerTouchsMe = onPlayerTouchsMe;" \
-		"self.onTimeout = onTimeout;\n";
+		"if (onCreated) self.onCreated = onCreated;" \
+		"if (onTimeout) self.onTimeout = onTimeout;" \
+		"if (onPlayerChats) self.onPlayerChats = onPlayerChats;" \
+		"if (onPlayerEnters) self.onPlayerEnters = onPlayerEnters;" \
+		"if (onPlayerLeaves) self.onPlayerLeaves = onPlayerLeaves;" \
+		"if (onPlayerTouchsMe) self.onPlayerTouchsMe = onPlayerTouchsMe;" \
+		"if (onPlayerLogin) self.onPlayerLogin = onPlayerLogin;" \
+		"if (onPlayerLogout) self.onPlayerLogout = onPlayerLogout;\n";
+
+	std::string wrappedCode = std::string(prefixString);
+	wrappedCode.append(code);
+	wrappedCode.append("});");
+	return wrappedCode;
+}
+
+template <>
+inline std::string CScriptEngine::WrapScript<TPlayer>(const std::string& code) {
+	static const char *prefixString = "(function(player) {" \
+		"const self = player;\n";
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);

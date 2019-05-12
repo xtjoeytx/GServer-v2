@@ -1,8 +1,9 @@
 #ifndef TACCOUNT_H
 #define TACCOUNT_H
 
+#include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "CString.h"
 #include "TLevelChest.h"
 
@@ -142,10 +143,10 @@ class TAccount
 		bool hasWeapon(const CString& pWeapon);
 
 		// Flag-Managing
-		inline CString getFlag(const CString& pFlagName) const;
+		CString getFlag(const std::string& pFlagName) const;
 		void setFlag(CString pFlag);
-		void setFlag(const CString& pFlagName, const CString& pFlagValue);
-		void deleteFlag(const CString& pFlagName);
+		void setFlag(const std::string& pFlagName, const CString& pFlagValue);
+		void deleteFlag(const std::string& pFlagName);
 
 		// get functions
 		float getX() const				{ return x; }
@@ -170,9 +171,9 @@ class TAccount
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
 		bool getGuest()					{ return isGuest; }
-		std::map<CString, CString>* getFlagList()		{ return &flagList; }
-		std::vector<CString>* getFolderList()			{ return &folderList; }
-		std::vector<CString>* getWeaponList()			{ return &weaponList; }
+		std::unordered_map<std::string, CString>* getFlagList()	{ return &flagList; }
+		std::vector<CString>* getFolderList()					{ return &folderList; }
+		std::vector<CString>* getWeaponList()					{ return &weaponList; }
 		CString translate(const CString& pKey);
 
 		// set functions
@@ -195,6 +196,7 @@ class TAccount
 	
 #ifdef V8NPCSERVER
 		int getMaxPower() const			{ return maxPower; }
+		int getRupees() const			{ return gralatc; }
 #endif
 
 	protected:
@@ -220,16 +222,21 @@ class TAccount
 		unsigned int attachNPC;
 		time_t lastSparTime;
 		unsigned char statusMsg;
-		std::map<CString, CString> flagList;
+		std::unordered_map<std::string, CString> flagList;
 		std::vector<CString> chestList, folderList, weaponList, PMServerList;
 };
 
-inline CString TAccount::getFlag(const CString& pFlagName) const
+inline CString TAccount::getFlag(const std::string& pFlagName) const
 {
 	auto it = flagList.find(pFlagName);
 	if (it != flagList.end())
 		return it->second;
 	return "";
+}
+
+inline void TAccount::deleteFlag(const std::string& pFlagName)
+{
+	flagList.erase(pFlagName);
 }
 
 #endif // TACCOUNT_H

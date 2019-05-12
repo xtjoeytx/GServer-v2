@@ -19,34 +19,19 @@ const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55
 static CString toWeaponName(const CString& code);
 static CString doJoins(const CString& code, CFileSystem* fs);
 
-TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC, bool trimCode)
-:
-blockPositionUpdates(false),
-levelNPC(pLevelNPC),
-x(pX), y(pY), hurtX(32.0f), hurtY(32.0f),
-x2((int)(pX*16)), y2((int)(pY*16)),
-gmaplevelx(0), gmaplevely(0),
-id(0), rupees(0),
-darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
-visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
-image(pImage), gani("idle"),
-level(pLevel), server(pServer)
-#ifdef V8NPCSERVER
-, origImage(pImage), originalScript(pScript), origX(pX), origY(pY), persistNpc(false)
-, canWarp(false), width(32), height(32), timeout(0), _scriptEventsMask(0), _scriptObject(0)
-#endif
+TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC)
+	: TNPC(pServer, pLevelNPC)
 {
-	// TODO(joey): Move the initialization to TNPC::resetNPC() and call it here.
-	memset((void*)colors, 0, sizeof(colors));
-	memset((void*)saves, 0, sizeof(saves));
-	memset((void*)modTime, 0, sizeof(modTime));
-
-	// bowImage for pre-2.x clients.
-	bowImage >> (char)0;
-
-	// imagePart needs to be Graal-packed.
-	for (int i = 0; i < 6; i++)
-		imagePart.writeGChar(0);
+	setX(pX);
+	setY(pY);
+	image = pImage;
+	level = pLevel;
+	originalScript = pScript;
+#ifdef V8NPCSERVER
+	origImage = image;
+	origX = x;
+	origY = y;
+#endif
 
 	// Set the gmap levels.
 	if (level)
@@ -63,6 +48,35 @@ level(pLevel), server(pServer)
 #endif
 	}
 
+	// TODO: Create plugin hook so NPCServer can acquire/format code.
+	if (!pScript.isEmpty())
+		setScriptCode(pScript);
+}
+
+TNPC::TNPC(TServer *pServer, bool pLevelNPC)
+	: server(pServer), levelNPC(pLevelNPC), blockPositionUpdates(false),
+	x(30), y(30.5), x2((int)(x * 16)), y2((int)(y * 16)),
+	gmaplevelx(0), gmaplevely(0),
+	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
+	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
+	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
+	gani("idle"), level(nullptr)
+#ifdef V8NPCSERVER
+	, origX(x), origY(y), persistNpc(false), canWarp(false), width(32), height(32)
+	, timeout(0), _scriptEventsMask(0), _scriptObject(0)
+#endif
+{
+	memset((void*)colors, 0, sizeof(colors));
+	memset((void*)saves, 0, sizeof(saves));
+	memset((void*)modTime, 0, sizeof(modTime));
+
+	// bowImage for pre-2.x clients.
+	bowImage >> (char)0;
+
+	// imagePart needs to be Graal-packed.
+	for (int i = 0; i < 6; i++)
+		imagePart.writeGChar(0);
+
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y]
@@ -70,9 +84,6 @@ level(pLevel), server(pServer)
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
-	// TODO: Create plugin hook so NPCServer can acquire/format code.
-	if (!pScript.isEmpty())
-		setScriptCode(pScript, trimCode);
 }
 
 TNPC::~TNPC()
@@ -82,7 +93,7 @@ TNPC::~TNPC()
 #endif
 }
 
-void TNPC::setScriptCode(const CString& pScript, bool trimCode)
+void TNPC::setScriptCode(const CString& pScript)
 {
 	originalScript = pScript;
 
@@ -129,26 +140,13 @@ void TNPC::setScriptCode(const CString& pScript, bool trimCode)
 #endif
 
 	// Remove comments and trim the code if specified.
-	// TODO(joey): Just a note for the future, but if trimCode is false the formatted script is never set so scripts wouldn't send to client.
-	// Is there a reason why we shouldn't always trim the code sent to the client?
-	if (trimCode)
+	if (!clientScript.isEmpty())
 	{
-		if (!serverScript.isEmpty())
-		{
-			serverScriptFormatted = removeComments(serverScript, "\n");
-			std::vector<CString> code = serverScriptFormatted.tokenize("\n");
-			serverScriptFormatted.clear();
-			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				serverScriptFormatted << (*i).trim() << "\xa7";
-		}
-		if (!clientScript.isEmpty())
-		{
-			clientScriptFormatted = removeComments(clientScript, "\n");
-			std::vector<CString> code = clientScriptFormatted.tokenize("\n");
-			clientScriptFormatted.clear();
-			for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-				clientScriptFormatted << (*i).trim() << "\xa7";
-		}
+		clientScriptFormatted = removeComments(clientScript, "\n");
+		std::vector<CString> code = clientScriptFormatted.tokenize("\n");
+		clientScriptFormatted.clear();
+		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+			clientScriptFormatted << (*i).trim() << "\xa7";
 	}
 	
 	// Search for toweapons in the clientside code and extract the name of the weapon.
@@ -178,12 +176,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
-		{
-			if (clientVersion != NSVER_GENERIC)
-				return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.subString(0, 0x3FFF);
-			else
-				return CString() >> (long long)serverScriptFormatted.length() << serverScriptFormatted;
-		}
+			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.subString(0, 0x3FFF);
 
 		case NPCPROP_X:
 		return CString() >> (char)(x * 2);
@@ -574,7 +567,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_NAME:
-				npcName = pProps.readChars(pProps.readGUChar());
+				npcName = pProps.readChars(pProps.readGUChar()).text();
 				break;
 
 			case NPCPROP_TYPE:
@@ -703,7 +696,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		if (level != 0) map = level->getMap();
 
 		// Send the props.
-		// TODO(joey): only gmap? why is this?
 		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
 	}
 
@@ -859,7 +851,7 @@ void TNPC::runScriptEvents()
 	}
 	_actions.clear();
 
-	// TODO(joey): Maybe send changed npc props here, rather than on-the-fly setprops??
+	// Send properties modified by scripts
 	if (!propModified.empty())
 	{
 		testTouch();
@@ -884,12 +876,8 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 	int delta_y = (abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
 	short itime = (short)(time / 0.05);
 
-	// TODO(joey): maybe its time to get rid of this old x/y and keep everything in pixel x/y
-	x += (dx / 16);
-	y += (dy / 16);
-
-	x2 += dx;
-	y2 += dy;
+	setX(x + ((float)dx / 16));
+	setY(y + ((float)dy / 16));
 
 	if (level != nullptr)
 		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
@@ -934,7 +922,7 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
 }
 
-void TNPC::saveNPC()
+void TNPC::saveNPC() const
 {
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
@@ -1014,7 +1002,7 @@ bool TNPC::loadNPC(const CString& fileName)
 
 		// Parse Line
 		if (curCommand == "NAME")
-			npcName = curLine.readString("");
+			npcName = curLine.readString("").text();
 		else if (curCommand == "ID")
 			id = strtoint(curLine.readString(""));
 		else if (curCommand == "TYPE")
@@ -1102,7 +1090,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		}
 	}
 
-	setScriptCode(npcScript, true);
+	setScriptCode(npcScript);
 
 	if (npcLevel.isEmpty())
 		npcLevel = origLevel;
