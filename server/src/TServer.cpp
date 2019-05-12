@@ -917,7 +917,7 @@ void TServer::loadWordFilter()
 void TServer::saveServerFlags()
 {
 	CString out;
-	for (std::map<CString, CString>::iterator i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
+	for (auto i = mServerFlags.begin(); i != mServerFlags.end(); ++i)
 		out << i->first << "=" << i->second << "\r\n";
 	out.save(CString() << serverpath << "serverflags.txt");
 }
@@ -1048,7 +1048,7 @@ TWeapon* TServer::getWeapon(const CString& name)
 	return (weaponList.find(name) != weaponList.end() ? weaponList[name] : 0);
 }
 
-CString TServer::getFlag(const CString& pFlagName)
+CString TServer::getFlag(const std::string& pFlagName)
 {
 #ifdef V8NPCSERVER
 	if (mServerFlags.find(pFlagName) != mServerFlags.end())
@@ -1242,12 +1242,12 @@ bool TServer::isIpBanned(const CString& ip)
 /*
 	TServer: Server Flag Management
 */
-bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
+bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;
 
-	std::map<CString, CString>::iterator i;
+	std::unordered_map<std::string, CString>::iterator i;
 	if ((i = mServerFlags.find(pFlagName)) != mServerFlags.end())
 	{
 		mServerFlags.erase(i);
@@ -1261,12 +1261,12 @@ bool TServer::deleteFlag(const CString& pFlagName, bool pSendToPlayers)
 
 bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
 {
-	CString flagName = pFlag.readString("=");
+	std::string flagName = pFlag.readString("=").text();
 	CString flagValue = pFlag.readString("");
 	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
-bool TServer::setFlag(const CString& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
+bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false) == true)
 		return false;

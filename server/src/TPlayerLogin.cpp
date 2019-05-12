@@ -285,15 +285,15 @@ bool TPlayer::sendLoginClient()
 		this->setFlag("gr.ip", this->accountIpStr, true, true);
 
 	// Send the player's flags.
-	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = flagList.begin(); i != flagList.end(); ++i)
 	{
 		if (i->second.isEmpty()) sendPacket(CString() >> (char)PLO_FLAGSET << i->first);
 		else sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 	}
 
 	// Send the server's flags to the player.
-	std::map<CString, CString> * serverFlags = server->getServerFlags();
-	for (std::map<CString, CString>::const_iterator i = serverFlags->begin(); i != serverFlags->end(); ++i)
+	std::unordered_map<std::string, CString> * serverFlags = server->getServerFlags();
+	for (auto i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 
 	sendPacket(CString() >> (char)PLO_UNKNOWN194);
