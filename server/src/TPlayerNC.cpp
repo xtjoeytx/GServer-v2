@@ -49,7 +49,7 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 
 	if (npc != 0 && !npc->isLevelNPC())
 	{
-		bool result = server->deleteNPC(npc, npc->getLevel(), true);
+		bool result = server->deleteNPC(npc, true);
 		if (result)
 			server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
 	}
@@ -213,8 +213,6 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	if (npcName.isEmpty())
 		return true;
 
-	// TODO(joey): unique names for db-npcs!
-
 	TLevel *level = server->getLevel(npcLevel);
 	if (level == nullptr)
 	{
@@ -242,6 +240,8 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 		// Persist NPC
 		newNpc->setPersist(true);
 		newNpc->saveNPC();
+
+		// TODO(joey): Send successful message
 	}
 
 	return true;

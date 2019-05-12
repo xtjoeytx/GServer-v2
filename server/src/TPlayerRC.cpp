@@ -950,10 +950,9 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 #ifdef V8NPCSERVER
 	if (isNC())
 	{
-		// TODO(joey): All RC's with NC support are sending two messages at a time. Commenting this out
-		//  breaks standalone npc-server though.
+		// TODO(joey): All RC's with NC support are sending two messages at a time.
+		//  Can use this section for npc-server related commands though.
 		//server->sendToNC(CString(nickName) << ": " << message);
-
 		return true;
 	}
 #endif
