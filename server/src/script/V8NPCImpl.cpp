@@ -20,6 +20,15 @@ void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8
 	info.GetReturnValue().Set(npcObject->getId());
 }
 
+// Property: npc.name
+void NPC_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().c_str());
+	info.GetReturnValue().Set(npcName);
+}
+
 // Property: npc.x
 void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -523,6 +532,51 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 	V8ENV_D("End NPC::registerAction()\n");
 }
 
+void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::Local<v8::External> data = args.Data().As<v8::External>();
+		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+
+		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		TServer *server = scriptEngine->getServer();
+		std::string classCode = server->getClass(className);
+
+		if (!classCode.empty())
+		{
+			// Wrap code
+			std::string classCodeWrap = CScriptEngine::WrapScript<TNPC>(classCode);
+
+			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
+			// multiple wrappers.
+			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
+			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
+			v8::Local<v8::Value> newArgs[] = { args.This() };
+
+			// Execute
+			v8::TryCatch try_catch(isolate);
+			v8::Local<v8::Function> scriptFunction = v8_function->Function();
+			v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+			if (!scriptTableRet.IsEmpty())
+			{
+				args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+				return;
+			}
+
+			// TODO(joey): error handling
+
+		}
+	}
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Npc_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -642,8 +696,10 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
 
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
+	
 	// Properties
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Ap, NPC_SetInt_Ap);
@@ -661,7 +717,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Name);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save);

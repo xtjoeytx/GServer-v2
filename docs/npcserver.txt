@@ -12,12 +12,15 @@ Global:
 
 Server Object:
 	Functions:
+		findlevel(string) - finds a level by name
+		findnpc(id/string) - finds an npc by id or name
 		sendtonc("message") - outputs `message` to RC's with NC-access
 		sendtorc("message") - outputs `message` to RC's
 
 	Properties:
 		flags['key'] - retrieve/manipulate server flags
-		npcs - can iterate only (untested)
+		npcs - array of npcs on the server [probably shouldn't use this IMO]
+		players - array of players on the server
 
 Level Object:
     Functions:
@@ -26,6 +29,7 @@ Level Object:
     Properties:
         name
         npcs - list of level npcs
+        players - list of players in the level
 
 NPC Object:
 	Functions:
@@ -35,8 +39,9 @@ NPC Object:
 		showcharacter() - displays a character instead of an image
 		setcharprop("code", "value") - sets character prop
 		setshape(type, width, height) - sets shape of npc
+		join("className") - joins a class to the npc
 		registerTrigger("action", function) - registers an action for triggeractions
-
+		
 	Properties:
 		id - (read-only)
 		ani
@@ -49,6 +54,7 @@ NPC Object:
 		hearts
 		level - the level object
 		levelname
+		name (read-only, only set for database npcs for now)
 		nick
 		rupees
 		timeout
@@ -63,6 +69,7 @@ Player Object:
 		removeweapon("weapon") - removes a weapon from a player
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
+		join("className") - joins a class to the player
 
 	Properties:
 		id - (read-only)
@@ -72,6 +79,7 @@ Player Object:
 		y
 		hearts
 		fullhearts
+		rupees
 		flags['key'] - retrieve/manipulate player flags
 
 Weapon Object:

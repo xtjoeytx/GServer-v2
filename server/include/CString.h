@@ -13,6 +13,7 @@ c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snpr
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 #include "bzlib.h"
 #include "zlib.h"
@@ -35,6 +36,7 @@ class CString
 		CString();
 		CString(const char *pString);
 		CString(const CString& pString);
+		CString(const std::string& pString);
 		CString(char pChar);
 		CString(double pDouble);
 		CString(float pFloat);

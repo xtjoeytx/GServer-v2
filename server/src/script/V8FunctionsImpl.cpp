@@ -2,11 +2,11 @@
 
 #include <string>
 #include <unordered_map>
+#include "CScriptEngine.h"
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
-#include "CScriptEngine.h"
 
-// Global Method: npc.canwarp();
+// Global Method: print(arg0, arg1, arg2, arg3) [no format atm];
 void Global_Function_Print(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
