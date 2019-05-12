@@ -559,7 +559,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 
 					// Find Flag Name / Value
 					CString flagName = val.subString(0, pos[0]);
-					val = p2->getFlag(flagName);
+					val = p2->getFlag(flagName.text());
 
 					// If String-Array, Get Index
 					if (pos[2] >= 0)

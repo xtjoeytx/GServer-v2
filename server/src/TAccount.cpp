@@ -305,9 +305,9 @@ bool TAccount::saveAccount()
 		newFile << "WEAPON " << weaponList[i] << "\r\n";
 
 	// Flags
-	for (std::map<CString, CString>::const_iterator i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = flagList.begin(); i != flagList.end(); ++i)
 	{
-		newFile << "FLAG " << i->first;
+		newFile << "FLAG " << i->first.c_str();
 		if (!i->second.isEmpty()) newFile << "=" << i->second;
 		newFile << "\r\n";
 	}
@@ -589,10 +589,10 @@ void TAccount::setFlag(CString pFlag)
 {
 	CString flagName = pFlag.readString("=");
 	CString flagValue = pFlag.readString("");
-	this->setFlag(flagName, flagValue);
+	this->setFlag(flagName.text(), flagValue);
 }
 
-void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
+void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
 	if (server->getSettings()->getBool("cropflags", true))
 	{
@@ -601,11 +601,6 @@ void TAccount::setFlag(const CString& pFlagName, const CString& pFlagValue)
 		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
 	else flagList[pFlagName] = pFlagValue;
-}
-
-void TAccount::deleteFlag(const CString& pFlagName)
-{
-	flagList.erase(pFlagName);
 }
 
 /*
