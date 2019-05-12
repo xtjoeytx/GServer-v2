@@ -24,11 +24,14 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 {
 	setX(pX);
 	setY(pY);
-	image = origImage = pImage;
+	image = pImage;
 	level = pLevel;
 	originalScript = pScript;
+#ifdef V8NPCSERVER
+	origImage = image;
 	origX = x;
 	origY = y;
+#endif
 
 	// Set the gmap levels.
 	if (level)
