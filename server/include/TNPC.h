@@ -269,7 +269,6 @@ class TNPC
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
-
 		void testTouch();
 #endif
 };
