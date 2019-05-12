@@ -1231,6 +1231,15 @@ bool TServer::deleteNPC(TNPC* npc, TLevel* pLevel, bool eraseFromLevel)
 	}
 
 #ifdef V8NPCSERVER
+	// TODO(joey): Need to deal with illegal characters
+	// If we persist this npc, delete the file
+	if (npc->getPersist())
+	{
+		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
+		CFileSystem::fixPathSeparators(&filePath);
+		remove(filePath.text());
+	}
+
 	// Remove npc name assignment
 	if (!npc->isLevelNPC() && !npc->getName().isEmpty())
 		removeNPCName(npc);
