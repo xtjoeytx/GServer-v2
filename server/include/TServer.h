@@ -3,12 +3,12 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <thread>
 #include <chrono>
 #ifdef V8NPCSERVER
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #endif
 
