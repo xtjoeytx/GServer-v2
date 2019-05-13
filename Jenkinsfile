@@ -97,19 +97,24 @@ node('master') {
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
 	slackSend color: "good", channel: "#jenkins", message: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 	parallel (
-		'Win64-static': {
+		'Win64': {
 			node {			
-				buildStep('desertbit/crossbuild:windows-x86_64', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=TRUE")
+				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64', "-DV8NPCSERVER=FALSE")
 			}
 		},
-		'Linux x86_64-static': {
+		'Linux x86_64-NPCServer': {
 			node {			
-				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=TRUE")
+				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 NPCServer', "-DV8NPCSERVER=TRUE")
 			}
 		},
-		'Linux ARMv7-static': {
+		'Linux x86_64': {
+			node {			
+				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64', "-DV8NPCSERVER=FALSE")
+			}
+		},
+		'Linux ARMv7': {
 			node {
-				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
+				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi', '-DV8NPCSERVER=FALSE')
 			}
 		},
 		'WebASM': {
