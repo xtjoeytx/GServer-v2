@@ -66,12 +66,26 @@ add_custom_command(
         ${BASE}/output-gclient2.txt
 )
 
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+	set(V8_TARGET_CPU "arm64")
+else()
+	set(V8_TARGET_CPU "x64")
+endif()
+
+if(APPLE)
+        set(V8_TARGET_OS "mac")
+elseif(WIN32)
+	set(V8_TARGET_OS "win")
+else()
+	set(V8_TARGET_OS "linux")
+endif()
+
 add_custom_command(
     COMMAND
         ${BASE_TOOLS}/gn
 	gen
-	out.gn/x64.release.sample
-	--args='is_component_build=false is_debug=false target_cpu="x64" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
+	out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
+	--args='is_component_build=false is_debug=false target_os="${V8_TARGET_OS}" target_cpu="${V8_TARGET_CPU}" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
     WORKING_DIRECTORY
 	${BASE}/
     DEPENDS
@@ -85,7 +99,7 @@ add_custom_target(
 	v8
 	COMMAND
 		${BASE_TOOLS}/ninja -j 8
-		-C out.gn/x64.release.sample
+		-C out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
 		v8_monolith
 	WORKING_DIRECTORY
 		${BASE}/
@@ -95,4 +109,4 @@ add_custom_target(
 
 set(V8_DIR ${BASE})
 set(V8_INCLUDE_DIR "${BASE}/include" PARENT_SCOPE)
-set(V8_LIBRARY "${BASE}/out.gn/x64.release.sample/obj/libv8_monolith.a" PARENT_SCOPE)
+set(V8_LIBRARY "${BASE}/out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample/obj/libv8_monolith.a" PARENT_SCOPE)
