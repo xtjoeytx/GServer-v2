@@ -82,6 +82,18 @@ endif()
 
 add_custom_command(
     COMMAND
+        ${BASE}/build/linux/sysroot_scripts/install-sysroot.py --arch=${V8_TARGET_CPU}
+    WORKING_DIRECTORY
+        ${BASE}/
+    DEPENDS
+        ${BASE}/tools/dev/v8gen.py
+        ${BASE}/output-gclient2.txt
+    OUTPUT
+        ${BASE}/output-gclient3.txt
+)
+
+add_custom_command(
+    COMMAND
         ${BASE_TOOLS}/gn
 	gen
 	out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
@@ -90,7 +102,7 @@ add_custom_command(
 	${BASE}/
     DEPENDS
         ${BASE}/tools/dev/v8gen.py
-	${BASE}/output-gclient2.txt
+	${BASE}/output-gclient3.txt
     OUTPUT
         ${BASE}/output-v8gen.txt
 )
