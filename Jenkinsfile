@@ -53,7 +53,6 @@ def buildStep(dockerImage, generator, os, defines) {
 			}
 			
 			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
-				sh "sudo rm -rfv ${env.WORKSPACE}/*"
 
 				checkout scm
 
@@ -96,19 +95,19 @@ node('master') {
 	parallel (
 		'Win64-static': {
 			node {			
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=TRUE")
+				buildStep('desertbit/crossbuild:windows-x86_64', 'Unix Makefiles', 'Windows x86_64 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
 		'Linux x86_64-static': {
 			node {			
-				buildStep('dockcross/linux-x64:latest', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=TRUE")
+				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 Static', "-DV8NPCSERVER=TRUE")
 			}
 		},
-		//'Linux ARMv6-static': {
-		//	node {
-		//		buildStep('dockcross/linux-armv7:latest', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
-		//	}
-		//},
+		'Linux ARMv7-static': {
+			node {
+				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux-RasPi', '-DV8NPCSERVER=FALSE')
+			}
+		},
 		'WebASM': {
 			node {			
 				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DV8NPCSERVER=FALSE")
