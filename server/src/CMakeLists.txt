@@ -158,7 +158,7 @@ if(APPLE OR WIN32)
     # OS X and Windows get a mixed-case binary name
     set(TARGET_NAME ${PROJECT_NAME})
 elseif(EMSCRIPTEN)
-	set(TARGET_NAME ${PROJECT_NAME_LOWER}.html)
+	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 else()
     # Linux/other UNIX get a lower-case binary name
     set(TARGET_NAME ${PROJECT_NAME_LOWER})
