@@ -1,6 +1,13 @@
+bin/gs2emu
+bin/GS2Emu.*
+bin/*.a
+bin/*.dll
+bin/*.dat
+bin/*.bin
 bin/servers/default/logs/serverlog.txt
 bin/servers/default/logs/npclog.txt
 bin/startuplog.txt
+mybin/*
 build*/*
 cmake-build-*/*
 .idea/*
