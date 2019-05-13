@@ -150,7 +150,7 @@ include_directories(
     # Include the CMake-generated version header from the build directory
     ${PROJECT_BINARY_DIR}/server/include
     ${PROJECT_SOURCE_DIR}/server/include
-	${PROJECT_SOURCE_DIR}/server/include/script
+    ${PROJECT_SOURCE_DIR}/server/include/script
 )
 
 # Set target names for the executables
@@ -165,11 +165,8 @@ else()
 endif()
 
 if(V8NPCSERVER)
-	if(NOT V8_FOUND)
-		include_directories(${V8_INCLUDE_DIR2})
-	else()
-		include_directories(${V8_INCLUDE_DIR})
-	endif()
+	message("V8 include: ${V8_INCLUDE_DIR}")
+	include_directories(${V8_INCLUDE_DIR})
 endif()
 
 if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
@@ -261,7 +258,7 @@ endif()
 if(V8NPCSERVER)
 	if(NOT V8_FOUND)
 		add_dependencies(${TARGET_NAME} v8)
-		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY2})
+		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 	else()
 		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 	endif()
@@ -274,7 +271,7 @@ file(GLOB TEXT
 set(INSTALL_DEST ".")
 
 install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
-	
+
 set(INSTALL_DEST .)
 
 install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
