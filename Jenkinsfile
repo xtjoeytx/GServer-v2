@@ -66,7 +66,7 @@ def buildStep(dockerImage, generator, os, defines) {
 				sh "sudo rm -rfv build/*"
 
 				slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
-				withEnv(['PATH=' + env.PATH + ':' + env.WORKSPACE + '/dependencies/depot_tools']) {
+				withEnv(['PATH=$PATH:${env.WORKSPACE}/dependencies/depot_tools/']) {
 					dir("build") {
 						sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
 						sh "cmake --build . --config Release --target package -- -j 8"
