@@ -38,6 +38,14 @@ SET(V8_LIBRARY_SEARCH_PATHS
   ${V8_DIR}/out.gn/x64.release.sample/lib.target/third_party/icu/
   ${V8_DIR}/out.gn/x64.release.sample/obj/
   ${V8_DIR}/out.gn/x64.release.sample/obj/third_party/icu/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release/lib.target/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release/lib.target/third_party/icu/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release/obj/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release/obj/third_party/icu/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release.sample/lib.target/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release.sample/lib.target/third_party/icu/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release.sample/obj/
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/out.gn/x64.release.sample/obj/third_party/icu/
   ~/Library/Frameworks
   /Library/Frameworks
   /usr/local/lib
@@ -52,6 +60,8 @@ SET(V8_LIBRARY_SEARCH_PATHS
 FIND_PATH(V8_INCLUDE_DIR v8.h
   ${V8_DIR}
   ${V8_DIR}/include
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8
+  ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/v8/include
   ~/Library/Frameworks
   /Library/Frameworks
   /usr/local/include
