@@ -189,8 +189,8 @@ else()
 
 endif()
 
-# Prefer static linkage under OS X for libraries located with find_package()
-if(APPLE)
+# Prefer static linkage
+if(NOT NOSTATIC)
 	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
@@ -247,7 +247,7 @@ endif()
 find_package(Threads REQUIRED)
 
 # Restore library suffixes
-if(APPLE)
+if(NOT NOSTATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
