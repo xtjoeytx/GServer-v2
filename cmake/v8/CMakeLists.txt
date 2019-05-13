@@ -71,6 +71,8 @@ add_custom_command(
         ${PYTHON_EXECUTABLE}
         ${BASE}/tools/dev/v8gen.py
 		x64.release.sample
+	WORKING_DIRECTORY
+		${BASE}/
     DEPENDS
         ${BASE}/tools/dev/v8gen.py
 		${BASE}/output-gclient2.txt
@@ -84,6 +86,8 @@ add_custom_target(
 		${BASE_TOOLS}/ninja -j 8 
 		-C out.gn/x64.release.sample
 		v8_monolith
+	WORKING_DIRECTORY
+		${BASE}/
 	DEPENDS
 		${BASE}/output-v8gen.txt
 )
