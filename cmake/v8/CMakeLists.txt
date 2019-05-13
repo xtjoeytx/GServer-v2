@@ -95,3 +95,4 @@ add_custom_target(
 set(V8_DIR ${BASE})
 set(V8_INCLUDE_DIR2 ${BASE}/include)
 set(V8_LIBRARY2 ${BASE}/out.gn/x64.release/obj/v8_monolith)
+find_package(V8)
