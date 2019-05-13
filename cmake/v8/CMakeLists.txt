@@ -3,7 +3,7 @@ set(BASE ${CMAKE_SOURCE_DIR}/dependencies/v8)
 set(BASE_TOOLS ${CMAKE_SOURCE_DIR}/dependencies/depot_tools)
 project(v8)
 
-#if(NOT EXISTS "${BASE}/../.gclient")
+if(NOT EXISTS "${BASE}/../.gclient")
 	add_custom_command(
 		COMMAND
 			rm -rf ${BASE}/../.gclient ${BASE}/../.gclient_entries ${BASE} 
@@ -27,18 +27,18 @@ project(v8)
 		OUTPUT
 			${BASE}/output-fetch.txt
 	)
-#else()
-#	add_custom_command(
-#		COMMAND
-#			${BASE_TOOLS}/gclient sync -D
-#		WORKING_DIRECTORY
-#			${BASE}/
-#		DEPENDS
-#			${BASE_TOOLS}/gclient
-#		OUTPUT
-#			${BASE}/output-fetch.txt
-#	)
-#endif()
+else()
+	add_custom_command(
+		COMMAND
+			${BASE_TOOLS}/gclient sync -D
+		WORKING_DIRECTORY
+			${BASE}/
+		DEPENDS
+			${BASE_TOOLS}/gclient
+		OUTPUT
+			${BASE}/output-fetch.txt
+	)
+endif()
 
 add_custom_command(
 	COMMAND
@@ -93,6 +93,5 @@ add_custom_target(
 )
 
 set(V8_DIR ${BASE})
-set(V8_INCLUDE_DIR2 ${BASE}/include)
-set(V8_LIBRARY2 ${BASE}/out.gn/x64.release/obj/v8_monolith)
-find_package(V8)
+set(V8_INCLUDE_DIR "${BASE}/include" PARENT_SCOPE)
+set(V8_LIBRARY "${BASE}/out.gn/x64.release.sample/obj/libv8_monolith.a" PARENT_SCOPE)
