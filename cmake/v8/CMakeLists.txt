@@ -85,7 +85,7 @@ add_custom_command(
         ${BASE_TOOLS}/gn
 	gen
 	out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
-	--args='is_component_build=false is_debug=false target_os="${V8_TARGET_OS}" target_cpu="${V8_TARGET_CPU}" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
+	--args='is_component_build=false is_debug=false target_cpu="${V8_TARGET_CPU}" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
     WORKING_DIRECTORY
 	${BASE}/
     DEPENDS
