@@ -165,7 +165,11 @@ else()
 endif()
 
 if(V8NPCSERVER)
-    include_directories(${V8_INCLUDE_DIR})
+	if(NOT V8_FOUND)
+		include_directories(${V8_INCLUDE_DIR2})
+	else()
+		include_directories(${V8_INCLUDE_DIR})
+	endif()
 endif()
 
 if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
