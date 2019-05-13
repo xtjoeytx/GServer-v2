@@ -68,14 +68,15 @@ add_custom_command(
 
 add_custom_command(
     COMMAND
-        ${PYTHON_EXECUTABLE}
-        ${BASE}/tools/dev/v8gen.py
-		x64.release.sample
-	WORKING_DIRECTORY
-		${BASE}/
+        ${BASE_TOOLS}/gn
+	gen
+	out.gn/x64.release.sample
+	--args='is_component_build=false is_debug=false target_cpu="x64" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
+    WORKING_DIRECTORY
+	${BASE}/
     DEPENDS
         ${BASE}/tools/dev/v8gen.py
-		${BASE}/output-gclient2.txt
+	${BASE}/output-gclient2.txt
     OUTPUT
         ${BASE}/output-v8gen.txt
 )
@@ -83,7 +84,7 @@ add_custom_command(
 add_custom_target(
 	v8
 	COMMAND
-		${BASE_TOOLS}/ninja -j 8 
+		${BASE_TOOLS}/ninja -j 8
 		-C out.gn/x64.release.sample
 		v8_monolith
 	WORKING_DIRECTORY
