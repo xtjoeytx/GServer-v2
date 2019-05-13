@@ -47,8 +47,12 @@ def buildStep(dockerImage, generator, os, defines) {
 			properties([pipelineTriggers([githubPush()])])
 			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
 
-
+			def pathInContainer
 			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver") {
+				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
+			}
+			
+			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
 				sh "sudo rm -rfv ${env.WORKSPACE}/*"
 
 				checkout scm
@@ -68,6 +72,7 @@ def buildStep(dockerImage, generator, os, defines) {
 				slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 				withEnv(['PATH+EXTRA=$WORKSPACE/dependencies/depot_tools/']) {
 					dir("build") {
+						sh "echo $PATH"
 						sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
 						sh "cmake --build . --config Release --target package -- -j 8"
 						//sh "cmake --build . --config Release --target package_source -- -j 8"
