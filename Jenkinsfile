@@ -119,7 +119,7 @@ node('master') {
 		},
 		'Linux ARMv7-NPCServer': {
 			node {
-				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi NPCServer, '-DV8NPCSERVER=TRUE')
+				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi NPCServer', '-DV8NPCSERVER=TRUE')
 			}
 		},
 		'Linux ARMv7': {
