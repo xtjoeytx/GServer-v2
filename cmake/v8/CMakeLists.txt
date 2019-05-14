@@ -6,7 +6,7 @@ project(v8)
 if(NOT EXISTS "${BASE}/../.gclient")
 	add_custom_command(
 		COMMAND
-			rm -rf ${BASE}/../.gclient ${BASE}/../.gclient_entries ${BASE} 
+			echo "" 
 		WORKING_DIRECTORY
 			${BASE}/../
 		DEPENDS
