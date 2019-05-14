@@ -53,7 +53,7 @@ def buildStep(dockerImage, generator, os, defines) {
 			}
 			
 			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
-				sh "sudo rm -rfv ${env.WORKSPACE}/dependencies/*"
+				//sh "sudo rm -rfv ${env.WORKSPACE}/dependencies/*"
 
 				checkout scm
 
