@@ -8,11 +8,22 @@ if(NOT EXISTS "${BASE}")
 		COMMAND
 			${BASE_TOOLS}/fetch
 			v8
-			&> /dev/null
 		WORKING_DIRECTORY
 			${BASE}/../
 		DEPENDS
 			${BASE_TOOLS}/fetch
+		OUTPUT
+			${BASE}/output-fetch1.txt
+	)
+
+	add_custom_command(
+		COMMAND
+			${BASE_TOOLS}/gclient sync -D
+		WORKING_DIRECTORY
+			${BASE}/
+		DEPENDS
+			${BASE_TOOLS}/gclient
+			${BASE}/output-fetch1.txt
 		OUTPUT
 			${BASE}/output-fetch.txt
 	)
@@ -37,7 +48,6 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${BASE}/
 	DEPENDS
-		${BASE_TOOLS}/gclient
 		${BASE}/output-fetch.txt
 	OUTPUT
 		${BASE}/output-gclient1.txt
