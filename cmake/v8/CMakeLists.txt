@@ -3,7 +3,7 @@ set(BASE ${CMAKE_SOURCE_DIR}/dependencies/v8)
 set(BASE_TOOLS ${CMAKE_SOURCE_DIR}/dependencies/depot_tools)
 project(v8)
 
-if(NOT EXISTS "${BASE}")
+if(NOT EXISTS "${BASE}/../.gclient")
 	add_custom_command(
 		COMMAND
 			${BASE_TOOLS}/fetch
