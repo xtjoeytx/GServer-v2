@@ -8,6 +8,7 @@ if(NOT EXISTS "${BASE}")
 		COMMAND
 			${BASE_TOOLS}/fetch
 			v8
+			&> /dev/null
 		WORKING_DIRECTORY
 			${BASE}/../
 		DEPENDS
