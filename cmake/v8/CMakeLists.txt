@@ -6,24 +6,12 @@ project(v8)
 if(NOT EXISTS "${BASE}/../.gclient")
 	add_custom_command(
 		COMMAND
-			echo "" 
-		WORKING_DIRECTORY
-			${BASE}/../
-		DEPENDS
-			${BASE_TOOLS}/fetch
-		OUTPUT
-			${BASE}/output-rm.txt
-	)
-
-	add_custom_command(
-		COMMAND
 			${BASE_TOOLS}/fetch
 			v8
 		WORKING_DIRECTORY
 			${BASE}/../
 		DEPENDS
 			${BASE_TOOLS}/fetch
-			${BASE}/output-rm.txt
 		OUTPUT
 			${BASE}/output-fetch.txt
 	)
