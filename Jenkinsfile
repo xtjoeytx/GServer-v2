@@ -48,13 +48,13 @@ def buildStep(dockerImage, generator, os, defines) {
 			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
 
 			def pathInContainer
+			
 			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver") {
 				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
-			}
-			
-			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
-				//sh "sudo rm -rfv ${env.WORKSPACE}/dependencies/*"
 
+				sh "sudo apt update"
+				sh "sudo apt install -y gcc-multilib"
+				
 				checkout scm
 
 				if (env.CHANGE_ID) {
@@ -76,11 +76,10 @@ def buildStep(dockerImage, generator, os, defines) {
 					sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
 					sh "cmake --build . --config Release --target package -- -j 8"
 					//sh "cmake --build . --config Release --target package_source -- -j 8"
+					
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 				}
 				
-				sh "cp -fvr dependencies/v8 lib/"
-
 				slackSend color: "good", channel: "#jenkins", message: "Build ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!"
 			}
 		}
