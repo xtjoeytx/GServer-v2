@@ -923,12 +923,18 @@ void TServer::loadNpcs(bool print)
 			}
 			else
 			{
+				// Assign id to npc
 				if (npcIds.size() <= npcId)
 					npcIds.resize((size_t)npcId + 10);
 
 				npcIds[npcId] = newNPC;
 				npcList.push_back(newNPC);
 				assignNPCName(newNPC, newNPC->getName());
+
+				// Add npc to level
+				TLevel *level = newNPC->getLevel();
+				if (level)
+					level->addNPC(newNPC);
 
 				loaded = true;
 			}
@@ -1152,7 +1158,8 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 	npcIds[npcId] = newNPC;
 
 	// Add the npc to the level
-	pLevel->addNPC(newNPC);
+	if (pLevel)
+		pLevel->addNPC(newNPC);
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)

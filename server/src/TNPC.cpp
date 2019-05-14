@@ -1096,11 +1096,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		npcLevel = origLevel;
 
 	if (!npcLevel.isEmpty())
-	{
 		level = TLevel::findLevel(npcLevel, server);
-		if (level)
-			level->addNPC(this);
-	}
 
 	persistNpc = true;
 	return true;
