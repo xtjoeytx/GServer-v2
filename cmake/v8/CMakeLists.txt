@@ -67,7 +67,7 @@ add_custom_command(
 )
 
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-	set(V8_TARGET_CPU "arm64")
+	set(V8_TARGET_CPU "arm")
 else()
 	set(V8_TARGET_CPU "x64")
 endif()
