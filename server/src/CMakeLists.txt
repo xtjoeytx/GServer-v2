@@ -23,78 +23,78 @@ include(CheckFunctionExists)
 include(CheckSymbolExists)
 
 set(
-    SOURCES
-    CEncryption.cpp
-    CFileQueue.cpp
-    CFileSystem.cpp
-    CLog.cpp
-    CPluginManager.cpp
-    CSettings.cpp
-    CSocket.cpp
-    CString.cpp
-    CTranslationManager.cpp
-    CWordFilter.cpp
-    IUtil.cpp
-    main.cpp
-    md5.cpp
-    TAccount.cpp
-    TLevel.cpp
-    TLevelBaddy.cpp
-    TLevelBoardChange.cpp
-    TLevelChest.cpp
-    TLevelHorse.cpp
-    TLevelItem.cpp
-    TLevelLink.cpp
-    TLevelSign.cpp
-    TMap.cpp
-    TNPC.cpp
-    TPlayer.cpp
-    TPlayerLogin.cpp
-    TPlayerNC.cpp
-    TPlayerProps.cpp
-    TPlayerRC.cpp
-    TServer.cpp
-    TServerList.cpp
-    TWeapon.cpp
+	SOURCES
+	CEncryption.cpp
+	CFileQueue.cpp
+	CFileSystem.cpp
+	CLog.cpp
+	CPluginManager.cpp
+	CSettings.cpp
+	CSocket.cpp
+	CString.cpp
+	CTranslationManager.cpp
+	CWordFilter.cpp
+	IUtil.cpp
+	main.cpp
+	md5.cpp
+	TAccount.cpp
+	TLevel.cpp
+	TLevelBaddy.cpp
+	TLevelBoardChange.cpp
+	TLevelChest.cpp
+	TLevelHorse.cpp
+	TLevelItem.cpp
+	TLevelLink.cpp
+	TLevelSign.cpp
+	TMap.cpp
+	TNPC.cpp
+	TPlayer.cpp
+	TPlayerLogin.cpp
+	TPlayerNC.cpp
+	TPlayerProps.cpp
+	TPlayerRC.cpp
+	TServer.cpp
+	TServerList.cpp
+	TWeapon.cpp
 )
 
 set(
-    HEADERS
-    ${PROJECT_BINARY_DIR}/server/include/IConfig.h
-    ../include/CEncryption.h
-    ../include/CFileQueue.h
-    ../include/CFileSystem.h
-    ../include/CLog.h
-    ../include/CPlugin.h
-    ../include/CPluginManager.h
-    ../include/CSettings.h
-    ../include/CSocket.h
-    ../include/CString.h
-    ../include/CTimeout.h
-    ../include/CTranslationManager.h
-    ../include/CWordFilter.h
-    ../include/IConfig.h
-    ../include/IConfig.h.in
-    ../include/IDebug.h
-    ../include/IEnums.h
-    ../include/IUtil.h
-    ../include/main.h
-    ../include/md5.h
-    ../include/TAccount.h
-    ../include/TLevel.h
-    ../include/TLevelBaddy.h
-    ../include/TLevelBoardChange.h
-    ../include/TLevelChest.h
-    ../include/TLevelHorse.h
-    ../include/TLevelItem.h
-    ../include/TLevelLink.h
-    ../include/TLevelSign.h
-    ../include/TMap.h
-    ../include/TNPC.h
-    ../include/TPlayer.h
-    ../include/TServer.h
-    ../include/TServerList.h
-    ../include/TWeapon.h
+	HEADERS
+	${PROJECT_BINARY_DIR}/server/include/IConfig.h
+	../include/CEncryption.h
+	../include/CFileQueue.h
+	../include/CFileSystem.h
+	../include/CLog.h
+	../include/CPlugin.h
+	../include/CPluginManager.h
+	../include/CSettings.h
+	../include/CSocket.h
+	../include/CString.h
+	../include/CTimeout.h
+	../include/CTranslationManager.h
+	../include/CWordFilter.h
+	../include/IConfig.h
+	../include/IConfig.h.in
+	../include/IDebug.h
+	../include/IEnums.h
+	../include/IUtil.h
+	../include/main.h
+	../include/md5.h
+	../include/TAccount.h
+	../include/TLevel.h
+	../include/TLevelBaddy.h
+	../include/TLevelBoardChange.h
+	../include/TLevelChest.h
+	../include/TLevelHorse.h
+	../include/TLevelItem.h
+	../include/TLevelLink.h
+	../include/TLevelSign.h
+	../include/TMap.h
+	../include/TNPC.h
+	../include/TPlayer.h
+	../include/TServer.h
+	../include/TServerList.h
+	../include/TWeapon.h
 )
 
 
@@ -147,21 +147,21 @@ if(V8NPCSERVER)
 endif()
 
 include_directories(
-    # Include the CMake-generated version header from the build directory
-    ${PROJECT_BINARY_DIR}/server/include
-    ${PROJECT_SOURCE_DIR}/server/include
-    ${PROJECT_SOURCE_DIR}/server/include/script
+	# Include the CMake-generated version header from the build directory
+	${PROJECT_BINARY_DIR}/server/include
+	${PROJECT_SOURCE_DIR}/server/include
+	${PROJECT_SOURCE_DIR}/server/include/script
 )
 
 # Set target names for the executables
 if(APPLE OR WIN32)
-    # OS X and Windows get a mixed-case binary name
-    set(TARGET_NAME ${PROJECT_NAME})
+	# OS X and Windows get a mixed-case binary name
+	set(TARGET_NAME ${PROJECT_NAME})
 elseif(EMSCRIPTEN)
 	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 else()
-    # Linux/other UNIX get a lower-case binary name
-    set(TARGET_NAME ${PROJECT_NAME_LOWER})
+	# Linux/other UNIX get a lower-case binary name
+	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
 if(V8NPCSERVER)
@@ -170,7 +170,7 @@ if(V8NPCSERVER)
 endif()
 
 if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
+	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
 
 if(NOT ZLIB_FOUND)
@@ -193,12 +193,12 @@ endif()
 if(APPLE)
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
-    # Enable ARC (automatic reference counting) for OS X build
-    set_property(
-        TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
-    )
+	# Enable ARC (automatic reference counting) for OS X build
+	set_property(
+		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
+	)
 elseif(WIN32)
-    add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
@@ -265,7 +265,7 @@ if(V8NPCSERVER)
 endif()
 
 file(GLOB TEXT
-    "${PROJECT_NAME_LOWER}.wasm"
+	"${PROJECT_NAME_LOWER}.wasm"
 )
 
 set(INSTALL_DEST ".")

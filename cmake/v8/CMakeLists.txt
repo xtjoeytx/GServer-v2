@@ -55,15 +55,15 @@ add_custom_command(
 )
 
 add_custom_command(
-    COMMAND
-        ${BASE_TOOLS}/gclient sync -D
+	COMMAND
+		${BASE_TOOLS}/gclient sync -D
 	WORKING_DIRECTORY
 		${BASE}/
-    DEPENDS
-        ${BASE_TOOLS}/gclient
-		 ${BASE}/output-gclient1.txt
-    OUTPUT
-        ${BASE}/output-gclient2.txt
+	DEPENDS
+		${BASE_TOOLS}/gclient
+		${BASE}/output-gclient1.txt
+	OUTPUT
+		${BASE}/output-gclient2.txt
 )
 
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
@@ -73,7 +73,7 @@ else()
 endif()
 
 if(APPLE)
-        set(V8_TARGET_OS "mac")
+	set(V8_TARGET_OS "mac")
 elseif(WIN32)
 	set(V8_TARGET_OS "win")
 else()
@@ -81,30 +81,30 @@ else()
 endif()
 
 add_custom_command(
-    COMMAND
-        ${BASE}/build/linux/sysroot_scripts/install-sysroot.py --arch=${V8_TARGET_CPU}
-    WORKING_DIRECTORY
-        ${BASE}/
-    DEPENDS
-        ${BASE}/tools/dev/v8gen.py
-        ${BASE}/output-gclient2.txt
-    OUTPUT
-        ${BASE}/output-gclient3.txt
+	COMMAND
+		${BASE}/build/linux/sysroot_scripts/install-sysroot.py --arch=${V8_TARGET_CPU}
+	WORKING_DIRECTORY
+		${BASE}/
+	DEPENDS
+		${BASE}/tools/dev/v8gen.py
+		${BASE}/output-gclient2.txt
+	OUTPUT
+		${BASE}/output-gclient3.txt
 )
 
 add_custom_command(
-    COMMAND
-        ${BASE_TOOLS}/gn
-	gen
-	out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
-	--args='is_component_build=false is_debug=false target_cpu="${V8_TARGET_CPU}" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
-    WORKING_DIRECTORY
-	${BASE}/
-    DEPENDS
-        ${BASE}/tools/dev/v8gen.py
-	${BASE}/output-gclient3.txt
-    OUTPUT
-        ${BASE}/output-v8gen.txt
+	COMMAND
+		${BASE_TOOLS}/gn
+		gen
+		out.gn/${V8_TARGET_CPU}-${V8_TARGET_OS}.release.sample
+		--args='is_component_build=false is_debug=false target_cpu="${V8_TARGET_CPU}" use_custom_libcxx=false v8_monolithic=true v8_use_external_startup_data=false'
+	WORKING_DIRECTORY
+		${BASE}/
+	DEPENDS
+		${BASE}/tools/dev/v8gen.py
+		${BASE}/output-gclient3.txt
+	OUTPUT
+		${BASE}/output-v8gen.txt
 )
 
 add_custom_target(
