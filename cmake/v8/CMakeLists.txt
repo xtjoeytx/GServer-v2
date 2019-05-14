@@ -59,7 +59,6 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${BASE}/
 	DEPENDS
-		${BASE_TOOLS}/gclient
 		${BASE}/output-gclient1.txt
 	OUTPUT
 		${BASE}/output-gclient2.txt
@@ -85,7 +84,6 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${BASE}/
 	DEPENDS
-		${BASE}/tools/dev/v8gen.py
 		${BASE}/output-gclient2.txt
 	OUTPUT
 		${BASE}/output-gclient3.txt
@@ -100,7 +98,6 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${BASE}/
 	DEPENDS
-		${BASE}/tools/dev/v8gen.py
 		${BASE}/output-gclient3.txt
 	OUTPUT
 		${BASE}/output-v8gen.txt
