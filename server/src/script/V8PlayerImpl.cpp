@@ -416,6 +416,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "account"), Player_GetStr_Account);
+	//player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "guild"), Player_GetStr_Guild, Player_SetStr_Guild);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), Player_GetStr_Nickname, Player_SetStr_Nickname);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
@@ -423,6 +424,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Maxhearts, Player_SetInt_Maxhearts);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), Player_GetInt_Rupees, Player_SetInt_Rupees);
+	//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "type"), Player_GetInt_Type);	// rc or client - integer or string??
 
 	// Create the player flags template
     v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);

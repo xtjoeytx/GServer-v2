@@ -244,6 +244,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	// Method functions
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
+//	server_proto->Set(v8::String::NewFromUtf8(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
 
