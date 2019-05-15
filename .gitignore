@@ -10,6 +10,7 @@ bin/startuplog.txt
 mybin/*
 build*/*
 cmake-build-*/*
+dependencies/*
 .idea/*
 bin/Debug/
 lib/
