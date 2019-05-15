@@ -21,6 +21,13 @@ void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 	info.GetReturnValue().Set(playerObject->getId());
 }
 
+// PROPERTY: player.type
+void Player_GetInt_Type(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+	info.GetReturnValue().Set(playerObject->isClient() ? 1 : 0);
+}
+
 // PROPERTY: X Position
 void Player_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -120,7 +127,7 @@ void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set(strText);
 }
 
-// PROPERTY: Nickname
+// PROPERTY: player.nickname
 void Player_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
@@ -135,8 +142,8 @@ void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	v8::Local<v8::Object> self = info.This();
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 
-	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
-	playerObject->setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newValue.length() << *newValue, true, true);
+	playerObject->setNick(*newValue, true);
+
 }
 
 
@@ -354,6 +361,28 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void Player_Function_IsClient(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+	args.GetReturnValue().Set(playerObject->getType() & PLTYPE_ANYCLIENT);
+}
+
+void Player_Function_IsRemote(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Unwrap Object
+	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+	args.GetReturnValue().Set(playerObject->getType() & PLTYPE_ANYRC);
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Player_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -412,6 +441,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "isClient"), v8::FunctionTemplate::New(isolate, Player_Function_IsClient, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "isRC"), v8::FunctionTemplate::New(isolate, Player_Function_IsRemote, engine_ref));
 
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
@@ -424,7 +455,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Maxhearts, Player_SetInt_Maxhearts);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), Player_GetInt_Rupees, Player_SetInt_Rupees);
-	//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "type"), Player_GetInt_Type);	// rc or client - integer or string??
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "type"), Player_GetInt_Type);	// rc or client - integer or string??
 
 	// Create the player flags template
     v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
