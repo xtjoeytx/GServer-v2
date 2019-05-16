@@ -142,8 +142,10 @@ void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	v8::Local<v8::Object> self = info.This();
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 
-	playerObject->setNick(*newValue, true);
+//	playerObject->setNick(*newValue, true);
 
+	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
+	playerObject->setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newValue.length() << *newValue, true, true);
 }
 
 
