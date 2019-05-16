@@ -116,7 +116,7 @@ void Server_Function_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
 		v8::String::Utf8Value message(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		TServer *serverObject = UnwrapObject<TServer>(args.This());
-		serverObject->sendToNC(CString("[NPC-Server]: ") << *message);
+		serverObject->sendToNC(*message);
 	}
 }
 
