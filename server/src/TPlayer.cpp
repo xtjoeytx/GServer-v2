@@ -4104,8 +4104,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				CString msg = params[1];
 
 				// if channel exists, also check for malicious data
-				sendPacket(
-					CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
 			}
 		}
 		else if (type == "lister")
