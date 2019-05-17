@@ -137,6 +137,24 @@ void Server_Function_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// PROPERTY: server.timeva
+void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	TServer *serverObject = UnwrapObject<TServer>(info.This());
+	
+	unsigned int time = serverObject->getNWTime();
+	info.GetReturnValue().Set(time);
+}
+
+// PROPERTY: server.timevar2
+void Server_Get_TimeVar2(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	TServer *serverObject = UnwrapObject<TServer>(info.This());
+
+	time_t unixtime = time(0);
+	info.GetReturnValue().Set((unsigned int)time(0));
+}
+
 // PROPERTY: Server Flags
 void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -285,6 +303,8 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Server_GetArray_Npcs);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Server_GetArray_Players);
+	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar"), Server_Get_TimeVar);
+	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar2"), Server_Get_TimeVar2);
 
     // Create the server flags template
 	v8::Local<v8::FunctionTemplate> server_flags_ctor = v8::FunctionTemplate::New(isolate);
