@@ -315,10 +315,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 			v8::PropertyHandlerFlags::kOnlyInterceptStrings));
 	_persist_server_flags_ctor.Reset(isolate, server_flags_ctor);
 
-	// Properties...?
-	//server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt32_npc_id, NPC_SetInt32_npc_id);
-
-	// Persist the npc constructor
+	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TServer>::result, server_ctor);
 }
 

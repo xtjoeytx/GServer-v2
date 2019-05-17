@@ -73,7 +73,8 @@ Player Object:
 		enableweapons() - enables player weapons
 		join("className") - joins a class to the player
 		say("message") - sends a sign message to the player
-		sendrpgmessage("message") - sends a message to the players rpg window 
+		sendrpgmessage("message") - sends a message to the players rpg window
+		setlevel2("levelname", x, y) - warps a player to the level
 		triggeraction(x, y, "action", "args"..)
 
 	Properties:
