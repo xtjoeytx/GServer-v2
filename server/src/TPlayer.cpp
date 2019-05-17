@@ -1472,7 +1472,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	y =	pY;
 
 	// Try warping to the new level.
-	if (setLevel(pLevelName, modTime) == false)
+	bool warpSuccess = setLevel(pLevelName, modTime);
+	if (!warpSuccess)
 	{
 		// Failed, so try warping back to our old level.
 		bool warped = true;
@@ -1497,7 +1498,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 				return false;
 		}
 	}
-	return true;
+
+	return warpSuccess;
 }
 
 bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
