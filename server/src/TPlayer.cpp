@@ -4060,10 +4060,11 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions2" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
 		else if (option == "bantypes")
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
-		/*
 		else if (option == "getglobalitems")
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI());
-		*/
+		else if (option == "serverinfo")
+			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+
 	}
 	else if (type == "pmservers" || type == "pmguilds")
 		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << accountName.gtokenize() << "," << packet);
@@ -4095,16 +4096,26 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		{
 			if (option == "join")
 			{
-				//addchanneluser
-				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join,#graal");
+				CString channel = params[0]
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
 			}
 			else if (option == "privmsg")
 			{
 				CString channel = params[0];
 				CString msg = params[1];
 
-				// if channel exists, also check for malicious data
-				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+				if (channel == "IRCBot")
+				{
+                    std::vector<CString> params2 = params[1].readString("").tokenize("\n");
+                    if (params2[0] == "!getserverinfo") {
+                        list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << "GraalEngine,irc,privmsg," << params2[0]);
+                    }
+                }
+				else
+				{
+				    // if channel exists, also check for malicious data
+				    sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+				}
 			}
 		}
 		else if (type == "lister")
