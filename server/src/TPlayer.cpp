@@ -4108,7 +4108,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				{
                     std::vector<CString> params2 = params[1].readString("").tokenize("\n");
                     if (params2[0] == "!getserverinfo") {
-                        list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << "GraalEngine,irc,privmsg," << params2[0]);
+                        list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << "GraalEngine,irc,privmsg," << params2[1]);
                     }
                 }
 				else
