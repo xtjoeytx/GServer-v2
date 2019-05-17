@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "IUtil.h"
 #include "CScriptEngine.h"
+#include "TLevel.h"
 #include "TPlayer.h"
 #include "TServer.h"
 
@@ -111,29 +112,58 @@ void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue, true, true);
 }
 
-// PROPERTY: Account
-void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
-	v8::Local<v8::Object> self = info.This();
-	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
+// PROPERTY: player.account
+void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
+	CString accountName = playerObject->getAccountName();
 
-	CString propValue = playerObject->getAccountName();
-
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), accountName.text());
 	info.GetReturnValue().Set(strText);
 }
 
 // PROPERTY: player.isadmin
-void Player_GetBool_IsAdmin(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
-	// Unwrap Object
+void Player_GetBool_IsAdmin(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
 	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
 	info.GetReturnValue().Set((playerObject->getType() & PLTYPE_ANYRC) != 0);
 }
 
 // PROPERTY: player.isclient
-void Player_GetBool_IsClient(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
-	// Unwrap Object
+void Player_GetBool_IsClient(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
 	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
 	info.GetReturnValue().Set((playerObject->getType() & PLTYPE_ANYCLIENT) != 0);
+}
+
+// PROPERTY: player.level
+void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
+	TLevel *levelObject = playerObject->getLevel();
+
+	if (levelObject != 0)
+	{
+		V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(levelObject->getScriptObject());
+		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
+		return;
+	}
+
+	info.GetReturnValue().SetNull();
+}
+
+// PROPERTY: player.levelname
+void Player_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
+	TLevel *levelObject = playerObject->getLevel();
+
+	CString levelName;
+	if (levelObject != 0)
+		levelName = levelObject->getLevelName();
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text());
+	info.GetReturnValue().Set(strText);
 }
 
 // PROPERTY: player.nickname
@@ -470,6 +500,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isclient"), Player_GetBool_IsClient);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower"), Player_GetInt_GlovePower, Player_SetInt_GlovePower);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "guild"), Player_GetStr_Guild, Player_SetStr_Guild);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), Player_GetObject_Level);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), Player_GetStr_LevelName);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "mp"), Player_GetInt_MP, Player_SetInt_MP);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), Player_GetStr_Nickname, Player_SetStr_Nickname);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "platform"), Player_GetString_Platform);
@@ -485,8 +517,6 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "weapons"), Player_GetObject_Weapons);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), Player_GetInt_Rupees, Player_SetInt_Rupees);
-//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), Player_GetObject_Level);
-//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), Player_GetStr_LevelName);
 
 	// Create the player flags template
     v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
