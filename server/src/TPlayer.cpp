@@ -4042,7 +4042,7 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 
 bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 {
-	CString packet = pPacket.readString();
+	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
 	CString weapon = data.readString("\n");
@@ -4073,7 +4073,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		remPMServer(option);
 		
 
-	serverlog.out("Request: %s,%s\n", accountName.gtokenize().text(),packet.text());
+	serverlog.out("[ IN] [RequestText] %s,%s\n", accountName.gtokenize().text(),packet.text());
 	return true;
 }
 
@@ -4088,17 +4088,46 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	std::vector<CString> params = data.readString("").tokenize("\n");
 
 	TServerList* list = server->getServerList();
-	if (type == "lister")
-	{
-		if (option == "serverinfo")
-			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
-		else if (option == "verifybuddies" && !getGuest())
-		{
-			list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
 
-			//server->sendPacketTo(PLTYPE_ANYRC, CString() << "W�%*irc:#graal ,#graal (1,0)q#");
+	//if (weapon == "GraalEngine")
+	{
+		if (type == "irc")
+		{
+			if (option == "join")
+			{
+				//addchanneluser
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join,#graal");
+			}
+			else if (option == "privmsg")
+			{
+				CString channel = params[0];
+				CString msg = params[1];
+
+				// if channel exists, also check for malicious data
+				sendPacket(
+					CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+			}
 		}
+		else if (type == "lister")
+		{
+			if (option == "serverinfo")
+				list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+			else if (option == "verifybuddies" && !getGuest())
+			{
+				list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
+
+				//server->sendPacketTo(PLTYPE_ANYRC, CString() << "W�%*irc:#graal ,#graal (1,0)q#");
+			}
+		}
+		else if (type == "pmservers" || type == "pmguilds")
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << accountName.gtokenize() << "," << packet);
+		else if (type == "pmserverplayers")
+			addPMServer(option);
+		else if (type == "pmunmapserver")
+			remPMServer(option);
 	}
+
+	serverlog.out("[ IN] [SendText] %s,%s\n", accountName.gtokenize().text(), packet.text());
 
 	return true;
 }
