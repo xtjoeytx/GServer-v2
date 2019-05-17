@@ -82,12 +82,12 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 	TServer *serverObject = UnwrapObject<TServer>(args.This());
 
-	// Find npc object from user input
+	// Find player object from user input
 	TPlayer *playerObject = nullptr;
 	if (args[0]->IsString())
 	{
 		v8::String::Utf8Value accountName(isolate, args[0]->ToString(context).ToLocalChecked());
-		playerObject = serverObject->getPlayer(*accountName);
+		playerObject = serverObject->getPlayer(*accountName, false);
 	}
 	else if (args[0]->IsInt32())
 	{

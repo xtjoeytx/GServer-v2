@@ -70,6 +70,7 @@ Player Object:
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
 		join("className") - joins a class to the player
+		triggeraction(x, y, "action", "args"..)
 
 	Properties:
 		id - (read-only)
@@ -79,6 +80,8 @@ Player Object:
 		y
 		hearts
 		fullhearts
+		isadmin
+		isclient
 		rupees
 		flags['key'] - retrieve/manipulate player flags
 

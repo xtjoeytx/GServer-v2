@@ -26,8 +26,16 @@
 	}
 
 // Throw an exception if we didn't receive the correct amount of arguments
-#define V8ENV_THROW_ARGCOUNT(args, isolate, required_args)				\
+#define V8ENV_THROW_ARGCOUNT(args, isolate, required_args)			\
 	if (args.Length() != required_args) {							\
+		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
+			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str())); 			\
+		return;														\
+	}
+
+// Throw an exception if we receive less than the minimum amount of arguments
+#define V8ENV_THROW_MINARGCOUNT(args, isolate, required_args)		\
+	if (args.Length() < required_args) {							\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
 			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str())); 			\
 		return;														\

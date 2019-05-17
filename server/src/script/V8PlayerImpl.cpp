@@ -371,6 +371,29 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 4);
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString() && args[3]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		char trigx = (char)(args[0]->NumberValue(context).ToChecked() * 2);
+		char trigy = (char)(args[1]->NumberValue(context).ToChecked() * 2);
+		
+		CString trigaction = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+		for (int i = 3; i < args.Length(); i++)
+			trigaction << "," << *v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked());
+
+		// Unwrap Object
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+		playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)trigx >> (char)trigy << trigaction);
+	}
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Player_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -429,6 +452,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isClient"), v8::FunctionTemplate::New(isolate, Player_Function_IsClient, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isRC"), v8::FunctionTemplate::New(isolate, Player_Function_IsRemote, engine_ref));
 
