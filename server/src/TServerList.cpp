@@ -796,7 +796,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		}
 		else
 		{
-			server->getServerLog().out("Requesttext: %s\n", message.text());
+			server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (p->getVersion() >= CLVER_2_1)
 				p->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
