@@ -339,10 +339,10 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
-	// TODO(joey): If no level exists, maybe they should be sent to unstick me level?
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	if (warp(levelName, x, y) == false)
+	bool warpSuccess = warp(levelName, x, y);
+	if (!warpSuccess && level == 0)
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		serverlog.out(CString() << "[" << server->getName() << "] " << "Cannot find level for " << accountName << "\n");
