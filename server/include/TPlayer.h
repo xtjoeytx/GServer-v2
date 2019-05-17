@@ -114,6 +114,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(TWeapon* weapon);
 		void disableWeapons();
 		void enableWeapons();
+		void sendRPGMessage(const CString& message);
+		void sendSignMessage(const CString& message);
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool updatePMPlayers(CString& servername, CString& players);
