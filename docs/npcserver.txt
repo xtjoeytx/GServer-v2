@@ -82,6 +82,8 @@ Player Object:
 		fullhearts
 		isadmin
 		isclient
+		level - the level object
+		levelname
 		rupees
 		flags['key'] - retrieve/manipulate player flags
 
