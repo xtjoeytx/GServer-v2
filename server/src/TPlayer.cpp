@@ -4079,7 +4079,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 
 bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 {
-	CString packet = pPacket.readString();
+	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
 	CString weapon = data.readString("\n");
