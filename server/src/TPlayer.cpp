@@ -4096,7 +4096,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		{
 			if (option == "join")
 			{
-				CString channel = params[0]
+				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
 			}
 			else if (option == "privmsg")
