@@ -266,8 +266,8 @@ void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
-	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	// Validate arguments
 	if (args[0]->IsString())
@@ -289,8 +289,8 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
-	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	// Validate arguments
 	if (args[0]->IsString())
@@ -311,8 +311,8 @@ void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& arg
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
-	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	// Validate arguments
 	if (args[0]->IsString())
@@ -356,6 +356,7 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Isolate *isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	// Validate arguments
 	if (args[0]->IsString())
@@ -373,6 +374,7 @@ void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& a
 	v8::Isolate *isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	// Validate arguments
 	if (args[0]->IsString())
@@ -382,6 +384,32 @@ void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& a
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
 		playerObject->sendRPGMessage(*newValue);
 	}
+}
+
+// Player Function: player.setlevel2("levelname", x, y);
+void Player_Function_SetLevel2(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	// Validate arguments
+	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+
+		v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate));
+		double newX = args[1]->NumberValue(context).ToChecked();
+		double newY = args[2]->NumberValue(context).ToChecked();
+
+		bool result = playerObject->warp(*levelName, newX, newY);
+		args.GetReturnValue().Set(result);
+		return;
+	}
+
+	args.GetReturnValue().Set(false);
 }
 
 // Player Function: player.join("class");
@@ -508,7 +536,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
