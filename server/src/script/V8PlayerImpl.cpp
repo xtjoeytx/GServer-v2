@@ -261,7 +261,7 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
-// NPC Method: player.addweapon("weaponName");
+// Player Function: player.addweapon("weaponName");
 void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -284,7 +284,7 @@ void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 	args.GetReturnValue().Set(false);
 }
 
-// NPC Method: player.hasweapon("weaponName");
+// Player Function: player.hasweapon("weaponName");
 void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -295,7 +295,6 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Validate arguments
 	if (args[0]->IsString())
 	{
-		// Unwrap Object
 		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
 
@@ -307,7 +306,7 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 	args.GetReturnValue().Set(false);
 }
 
-// NPC Method: player.removeweapon("weaponName");
+// Player Function: player.removeweapon("weaponName");
 void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -318,7 +317,6 @@ void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& arg
 	// Validate arguments
 	if (args[0]->IsString())
 	{
-		// Unwrap Object
 		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
 
@@ -330,32 +328,63 @@ void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& arg
 	args.GetReturnValue().Set(false);
 }
 
-// NPC Method: player.disableweapons();
+// Player Function: player.disableweapons();
 void Player_Function_DisableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
-	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
-	// Unwrap Object
 	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
 	playerObject->disableWeapons();
 }
 
-// NPC Method: player.enableweapons();
+// Player Function: player.enableweapons();
 void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
-	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
-	// Unwrap Object
 	TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
 	playerObject->enableWeapons();
 }
 
+// Player Function: player.say("message");
+void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+		playerObject->sendSignMessage(*newValue);
+	}
+}
+
+// Player Function: player.sendrpgmessage("message");
+void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		TPlayer *playerObject = UnwrapObject<TPlayer>(args.This());
+
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+		playerObject->sendRPGMessage(*newValue);
+	}
+}
+
+// Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
@@ -474,17 +503,15 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isClient"), v8::FunctionTemplate::New(isolate, Player_Function_IsClient, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isRC"), v8::FunctionTemplate::New(isolate, Player_Function_IsRemote, engine_ref));
 
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);

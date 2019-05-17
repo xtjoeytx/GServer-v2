@@ -2092,6 +2092,11 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	return true;
 }
 
+void TPlayer::disableWeapons()
+{
+	this->status &= ~PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+}
 
 void TPlayer::enableWeapons()
 {
@@ -2099,10 +2104,14 @@ void TPlayer::enableWeapons()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
-void TPlayer::disableWeapons()
+void TPlayer::sendRPGMessage(const CString &message)
 {
-	this->status &= ~PLSTATUS_ALLOWWEAPONS;
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
+}
+
+void TPlayer::sendSignMessage(const CString &message)
+{
+	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
 }
 
 /*
@@ -4134,3 +4143,4 @@ bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
 	// Stub.
 	return true;
 }
+

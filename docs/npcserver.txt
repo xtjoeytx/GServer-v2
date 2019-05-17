@@ -72,6 +72,8 @@ Player Object:
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
 		join("className") - joins a class to the player
+		say("message") - sends a sign message to the player
+		sendrpgmessage("message") - sends a message to the players rpg window 
 		triggeraction(x, y, "action", "args"..)
 
 	Properties:
