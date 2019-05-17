@@ -21,6 +21,8 @@ Server Object:
 		flags['key'] - retrieve/manipulate server flags
 		npcs - array of npcs on the server [probably shouldn't use this IMO]
 		players - array of players on the server
+		timevar - new world time
+		timevar2 - time elappsed since 1970
 
 Level Object:
     Functions:
