@@ -90,11 +90,9 @@ bool TPlayer::sendLogin()
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
-	//sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-            sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-    //        sendPacket(CString() >> (char)45 << "basepackage.gupd");
-	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
-//		sendPacket(CString() >> (char)44);
+	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+	sendPacket(CString() >> (char)45 << "basepackage.gupd");
+    sendPacket(CString() >> (char)44);
 	sendPacket(CString() >> (char)103 << " *");
 	sendPacket(CString() >> (char)194);
 	sendPacket(CString() >> (char)190);
@@ -222,7 +220,7 @@ bool TPlayer::sendLogin()
 	}
 
 	// Ask for processes.
-	//sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	sendPacket(CString() >> (char)PLO_LISTPROCESSES);
 
 	// Tell the serverlist that the player connected.
 	server->getServerList()->addPlayer(this);
