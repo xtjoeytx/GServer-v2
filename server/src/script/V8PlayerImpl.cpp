@@ -429,8 +429,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "isClient"), v8::FunctionTemplate::New(isolate, Player_Function_IsClient, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8(isolate, "isRC"), v8::FunctionTemplate::New(isolate, Player_Function_IsRemote, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isClient"), v8::FunctionTemplate::New(isolate, Player_Function_IsClient, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8(isolate, "isRC"), v8::FunctionTemplate::New(isolate, Player_Function_IsRemote, engine_ref));
 
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), Player_GetInt_Id);
