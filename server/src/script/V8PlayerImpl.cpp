@@ -41,7 +41,7 @@ void Player_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 	
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * (int)newValue;
+	int newValueInt = (int)(16 * newValue);
 	if (newValueInt < 0) {
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
@@ -62,7 +62,7 @@ void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	TPlayer *playerObject = UnwrapObject<TPlayer>(self);
 	
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = 16 * (int)newValue;
+	int newValueInt = (int)(16 * newValue);
 	if (newValueInt < 0) {
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
@@ -116,6 +116,9 @@ void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	TPlayer *playerObject = UnwrapObject<TPlayer>(info.This());
+	if (!playerObject)
+		return;
+
 	CString accountName = playerObject->getAccountName();
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), accountName.text());
