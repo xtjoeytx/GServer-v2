@@ -17,3 +17,6 @@ lib/
 ..gitignore.swp
 .vs/
 dependencies/.cipd/
+bin/servers/*
+*.swp
+.svn/

@@ -91,16 +91,18 @@ bool TPlayer::sendLogin()
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-	sendPacket(CString() >> (char)45 << "basepackage.gupd");
-    sendPacket(CString() >> (char)44);
-	sendPacket(CString() >> (char)103 << " *");
-	sendPacket(CString() >> (char)194);
-	sendPacket(CString() >> (char)190);
+	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
+    //sendPacket(CString() >> (char)44);
+	sendPacket(CString() >> (char)PLO_UNKNOWN103 << " *");
+
+	//sendPacket(CString() >> (char)190);
+    //sendPacket(CString() >> (char)PLO_FULLSTOP);
 	sendPacket(CString() >> (char)PLO_UNKNOWN168);
+	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
 	// If we have an NPC Server, send this to prevent clients from sending
 	// npc props it modifies.
 #ifdef V8NPCSERVER
-	sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+        sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
 
 	// Check if the account is already in use.
@@ -282,6 +284,8 @@ bool TPlayer::sendLoginClient()
 		sendPacket(pliconPacket);
 	}
 
+    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
 		this->setFlag("gr.ip", this->accountIpStr, true, true);
@@ -297,8 +301,6 @@ bool TPlayer::sendLoginClient()
 	std::unordered_map<std::string, CString> * serverFlags = server->getServerFlags();
 	for (auto i = serverFlags->begin(); i != serverFlags->end(); ++i)
 		sendPacket(CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
-
-	sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// Delete the bomb and bow.  They get automagically added by the client for
 	// God knows which reason.  Bomb and Bow must be capitalized.
