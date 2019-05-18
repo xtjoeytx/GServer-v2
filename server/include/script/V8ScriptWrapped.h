@@ -8,11 +8,13 @@ class V8ScriptWrapped : public IScriptWrapped<T>
 {
 public:
 	V8ScriptWrapped(T *object, v8::Isolate *isolate, v8::Local<v8::Object> handle)
-		: IScriptWrapped<T>(object) {
+		: IScriptWrapped<T>(object), _isolate(isolate) {
 		_handle.Reset(isolate, handle);
 	}
 	
 	~V8ScriptWrapped() {
+		v8::Local<v8::Object> obj = Handle(_isolate);
+		obj->SetAlignedPointerInInternalField(0, nullptr);
 		_handle.Reset();
 	}
 
@@ -38,7 +40,7 @@ public:
 	//inline static void _V8WeakObjectCallback(const v8::WeakCallbackInfo<BaseObject>& data) {
 	//}
 
-	
 private:
+	v8::Isolate *_isolate;
 	v8::Persistent<v8::Object> _handle;
 };
