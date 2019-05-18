@@ -4094,7 +4094,16 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	{
 		if (type == "irc")
 		{
-			if (option == "join")
+            if (option == "login")
+            {
+                // If client/rc sends "GraalEngine,irc,login,-" it should return all existing "IRC" channels as players.
+                // How should we handle that?
+                CString channel = "#graal";
+                CString channelAccount = CString() << "irc:" << channel;
+                CString channelNick = channel << " (1,0)";
+                sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
+            }
+			else if (option == "join")
 			{
 				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
@@ -4106,15 +4115,19 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 
 				if (channel == "IRCBot")
 				{
-                    std::vector<CString> params2 = params[1].readString("").tokenize("\n");
+                    std::vector<CString> params2 = msg.guntokenize().tokenize("\n");
                     if (params2[0] == "!getserverinfo") {
-                        list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << "GraalEngine,irc,privmsg," << params2[1]);
+                        //list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params2[1].gtokenize());
+                        list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params2[1]); // <-- this solves it for now
+
+                        // I believe the following data is what it's looking for:
+                        // "era,Era,93,English,""Welcome to Era, a modernised server. Please visit the website for more information."",http://era.graal.net/,""Graal 5.1-5.2"""
                     }
                 }
 				else
 				{
 				    // if channel exists, also check for malicious data
-				    sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+				    sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
 				}
 			}
 		}
@@ -4125,8 +4138,6 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			else if (option == "verifybuddies" && !getGuest())
 			{
 				list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
-
-				//server->sendPacketTo(PLTYPE_ANYRC, CString() << "W�%*irc:#graal ,#graal (1,0)q#");
 			}
 		}
 		else if (type == "pmservers" || type == "pmguilds")
