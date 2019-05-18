@@ -49,7 +49,9 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 	}
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
-	if (!pScript.isEmpty())
+	
+	// Needs to be called so it creates a script-object
+	//if (!pScript.isEmpty())
 		setScriptCode(pScript);
 }
 
@@ -84,6 +86,8 @@ TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
 		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
+	// Needs to be called so it creates a script-object
+	setScriptCode("");
 }
 
 TNPC::~TNPC()
