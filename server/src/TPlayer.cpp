@@ -2027,7 +2027,7 @@ bool TPlayer::addWeapon(int defaultWeapon)
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
-		weapon = new TWeapon(defaultWeapon);
+		weapon = new TWeapon(server, defaultWeapon);
 		server->NC_AddWeapon(weapon);
 	}
 
@@ -3071,7 +3071,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(server, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
 
 			// Send to Players
 			server->NC_UpdateWeapon(weapon);
@@ -3663,7 +3663,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (weaponObject != nullptr)
 		{
 			CString triggerData = action.readString("");
-			weaponObject->queueWeaponAction(server, this, triggerData.text());
+			weaponObject->queueWeaponAction(this, triggerData.text());
 		}
 	}
 	else

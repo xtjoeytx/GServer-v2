@@ -51,10 +51,6 @@ public:
 	}
 
 	//
-	inline std::unordered_set<TNPC *> * GetNpcUpdateList() {
-		return &_updateNpcs;
-	}
-
 	inline void UnregisterNpcUpdate(TNPC *npc) {
 		_updateNpcs.erase(npc);
 	}
@@ -62,6 +58,16 @@ public:
 	inline void RegisterNpcUpdate(TNPC *npc) {
 		_updateNpcs.insert(npc);
 	}
+
+	//
+	inline void UnregisterWeaponUpdate(TWeapon *weapon) {
+		_updateWeapons.erase(weapon);
+	}
+
+	inline void RegisterWeaponUpdate(TWeapon *weapon) {
+		_updateWeapons.insert(weapon);
+	}
+
 
 	//
 	inline IScriptFunction * getCallBack(const std::string& callback) const {
@@ -83,24 +89,21 @@ public:
 	bool ExecuteNpc(TNPC *npc);
 	bool ExecuteWeapon(TWeapon *weapon);
 
-	inline void QueueAction(ScriptAction *action) {
-		_actions.push_back(action);
-	}
-
 	template<class... Args>
 	ScriptAction * CreateAction(const std::string& action, Args... An);
 
 	template<class T>
-	inline IScriptWrapped<T> * WrapObject(T *obj) const;
+	IScriptWrapped<T> * WrapObject(T *obj) const;
 
 	template <typename T>
-	static inline std::string WrapScript(const std::string& code);
+	static std::string WrapScript(const std::string& code);
 
 protected:
 	std::unordered_map<std::string, IScriptFunction *> _cachedScripts;
 	std::unordered_map<std::string, IScriptFunction *> _callbacks;
 	std::unordered_set<TNPC *> _updateNpcs;
 	std::unordered_set<TNPC *> _updateNpcsTimer;
+	std::unordered_set<TWeapon *> _updateWeapons;
 	std::vector<ScriptAction *> _actions;
 
 private:
@@ -137,7 +140,8 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 }
 
 template<class T>
-inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const {
+inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const
+{
 	V8ENV_D("Begin Global::WrapObject()\n");
 
 	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
