@@ -806,13 +806,13 @@ void TServer::loadWeapons(bool print)
 	}
 
 	// Add the default weapons.
-	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(TLevelItem::getItemId("bow"));
-	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(TLevelItem::getItemId("bomb"));
-	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(TLevelItem::getItemId("superbomb"));
-	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(TLevelItem::getItemId("fireball"));
-	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(TLevelItem::getItemId("fireblast"));
-	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(TLevelItem::getItemId("nukeshot"));
-	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(TLevelItem::getItemId("joltbomb"));
+	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(this, TLevelItem::getItemId("bow"));
+	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(this, TLevelItem::getItemId("bomb"));
+	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(this, TLevelItem::getItemId("superbomb"));
+	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(this, TLevelItem::getItemId("fireball"));
+	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(this, TLevelItem::getItemId("fireblast"));
+	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(this, TLevelItem::getItemId("nukeshot"));
+	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(this, TLevelItem::getItemId("joltbomb"));
 }
 
 void TServer::loadMaps(bool print)
@@ -981,7 +981,7 @@ void TServer::saveWeapons()
 		if (w->getModTime() > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
-			w->saveWeapon(this);
+			w->saveWeapon();
 			weaponFS.setModTime(weaponFS.find(i->first), w->getModTime());
 		}
 	}
