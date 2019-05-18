@@ -410,7 +410,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 			return true;
 
 		// Update Weapon
-		weaponObj->updateWeapon(server, weaponImage, weaponCode);
+		weaponObj->updateWeapon(weaponImage, weaponCode);
 
 		// Update Player-Weapons
 		server->NC_UpdateWeapon(weaponObj);

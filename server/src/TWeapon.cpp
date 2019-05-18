@@ -12,24 +12,24 @@
 #endif
 
 // -- Constructor: Default Weapons -- //
-TWeapon::TWeapon(const signed char pId) : mModTime(0), mWeaponDefault(pId)
+TWeapon::TWeapon(TServer *pServer, const signed char pId)
+: server(pServer), mModTime(0), mWeaponDefault(pId)
 {
 	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
 }
 
 // -- Constructor: Weapon Script -- //
 TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
-: mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
+: server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
 {
 	// Update Weapon
-	this->updateWeapon(pServer, pImage, pScript, pModTime, pSaveWeapon);
+	this->updateWeapon(pImage, pScript, pModTime, pSaveWeapon);
 }
 
 TWeapon::~TWeapon()
 {
 #ifdef V8NPCSERVER
-	if (_scriptObject)
-		delete _scriptObject;
+	freeScriptResources();
 #endif
 }
 
@@ -119,7 +119,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 }
 
 // -- Function: Save Weapon -- //
-bool TWeapon::saveWeapon(TServer* server)
+bool TWeapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
 	if (this->isDefault() || mWeaponName.isEmpty())
@@ -205,14 +205,12 @@ CString TWeapon::getWeaponPacket() const
 }
 
 // -- Function: Update Weapon Image/Script -- //
-void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
+void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
 #ifdef V8NPCSERVER
-	CScriptEngine *scriptEngine = pServer->getScriptEngine();
-
 	// Clear script function
-	if (!mScriptServer.isEmpty())
-		scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(mScriptServer.text()));
+	if (!mScriptServer.isEmpty() || !_actions.empty())
+		freeScriptResources();
 #endif
 
 	// Copy Data
@@ -234,13 +232,16 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 	setServerScript(script.readString("//#CLIENTSIDE").replaceAll("\xa7", "\n"));
 	setClientScript(script.readString(""));
 
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
 	// Compile and execute the script.
 	bool executed = scriptEngine->ExecuteWeapon(this);
 	if (executed) {
 		V8ENV_D("SCRIPT COMPILED\n");
 
 		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-		scriptEngine->QueueAction(scriptAction);
+		_actions.push_back(scriptAction);
+		scriptEngine->RegisterWeaponUpdate(this);
 	}
 	else
 		V8ENV_D("Could not compile weapon script\n");
@@ -250,15 +251,54 @@ void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CStrin
 
 	// Save Weapon
 	if (pSaveWeapon)
-		saveWeapon(pServer);
+		saveWeapon();
 }
 
 #ifdef V8NPCSERVER
-void TWeapon::queueWeaponAction(TServer *server, TPlayer *player, const std::string& args)
+void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
-	scriptEngine->QueueAction(scriptAction);
+	_actions.push_back(scriptAction);
+	scriptEngine->RegisterWeaponUpdate(this);
+}
+
+void TWeapon::freeScriptResources()
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
+
+	// Clear any queued actions
+	if (!_actions.empty())
+	{
+		// Unregister npc from any queued event calls
+		scriptEngine->UnregisterWeaponUpdate(this);
+
+		for (auto it = _actions.begin(); it != _actions.end(); ++it)
+			delete *it;
+		_actions.clear();
+	}
+
+	// Delete script object
+	if (_scriptObject)
+		delete _scriptObject;
+}
+
+void TWeapon::runScriptEvents()
+{
+	// iterate over queued actions
+	for (auto it = _actions.begin(); it != _actions.end(); ++it)
+	{
+		ScriptAction *action = *it;
+		if (action != 0)
+		{
+			V8ENV_D("Running action: %s\n", action->getAction().c_str());
+			action->Invoke();
+			delete action;
+		}
+	}
+	_actions.clear();
 }
 #endif
