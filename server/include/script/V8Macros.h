@@ -41,6 +41,12 @@
 		return;														\
 	}
 
+#define V8ENV_SAFE_UNWRAP(args, type, var_name)								\
+	(void)0; ## type * ## var_name = UnwrapObject<## type>(args.This());	\
+	if (! ## var_name) {													\
+		return;																\
+	}
+
 template <class TypeName>
 inline v8::Local<TypeName> PersistentToLocal(v8::Isolate *isolate, const v8::Persistent<TypeName>& persistent)
 {
