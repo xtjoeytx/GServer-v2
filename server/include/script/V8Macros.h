@@ -41,6 +41,7 @@
 		return;														\
 	}
 
+// Unwrap an object, and validate the pointer
 #define V8ENV_SAFE_UNWRAP(ARGS, TYPE, VAR_NAME)						\
 	TYPE * VAR_NAME = UnwrapObject<TYPE>(ARGS.This());				\
 	if (!VAR_NAME) {												\

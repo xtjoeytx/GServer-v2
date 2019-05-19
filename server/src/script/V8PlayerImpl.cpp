@@ -254,6 +254,8 @@ void Player_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 	
 	v8::Isolate *isolate = info.GetIsolate();
 	
+	// TODO(joey): playerObject is not getting unset here.
+
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
 	v8::String::Utf8Value utf8(isolate, name);

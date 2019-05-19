@@ -843,15 +843,17 @@ bool TNPC::runScriptTimer()
 void TNPC::runScriptEvents()
 {
 	// iterate over queued actions
-	for (auto it = _actions.begin(); it != _actions.end(); ++it)
+	for (auto it = _actions.begin(); it != _actions.end();)
 	{
 		ScriptAction *action = *it;
 		if (action != 0)
 		{
 			V8ENV_D("Running action: %s\n", action->getAction().c_str());
 			action->Invoke();
+			it = _actions.erase(it);
 			delete action;
 		}
+		else ++it;
 	}
 	_actions.clear();
 
