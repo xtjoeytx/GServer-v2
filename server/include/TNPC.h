@@ -171,7 +171,7 @@ class TNPC
 		void setName(const std::string& name)	{ npcName = name; }
 		void setNickname(const CString& nick)	{ nickName = nick; }
 		void setScripter(const CString& name)	{ scripterName = name; }
-
+		
 		// get functions
 		unsigned int getId() const				{ return id; }
 		TLevel* getLevel() const				{ return level; }
@@ -193,6 +193,7 @@ class TNPC
 		const CString& getServerScript() const	{ return serverScript; }
 		const CString& getScriptCode() const	{ return originalScript; }
 		const CString& getScripter() const		{ return scripterName; }
+		const CString& getAttribute(unsigned int index) const { return gAttribs[index]; }
 		time_t getPropModTime(unsigned char pId);
 
 		bool isLevelNPC() const					{ return levelNPC; }
