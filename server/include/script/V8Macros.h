@@ -41,10 +41,10 @@
 		return;														\
 	}
 
-#define V8ENV_SAFE_UNWRAP(args, type, var_name)								\
-	(void)0; ## type * ## var_name = UnwrapObject<## type>(args.This());	\
-	if (! ## var_name) {													\
-		return;																\
+#define V8ENV_SAFE_UNWRAP(ARGS, TYPE, VAR_NAME)						\
+	TYPE * VAR_NAME = UnwrapObject<TYPE>(ARGS.This());				\
+	if (!VAR_NAME) {												\
+		return;														\
 	}
 
 template <class TypeName>
