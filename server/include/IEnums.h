@@ -224,7 +224,7 @@ enum
 	PLO_RAWDATA					= 100,	// {100}{INT3 length}  Codr note: Unhandled by 5.07+.
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
-	PLO_UNKNOWN103              = 103,
+	PLO_UNKNOWN103				= 103,
 	PLO_UNKNOWN104				= 104,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UNKNOWN105				= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UNKNOWN106				= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
