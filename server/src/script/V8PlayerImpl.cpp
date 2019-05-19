@@ -184,6 +184,25 @@ void Player_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallb
 }
 
 // PROPERTY: player.nickname
+void Player_GetStr_Chat(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	CString propValue = playerObject->getChatMsg();
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
+	info.GetReturnValue().Set(strText);
+}
+
+void Player_SetStr_Chat(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
+	playerObject->setProps(CString() >> (char)PLPROP_CURCHAT >> (char)newValue.length() << *newValue, true, true);
+}
+
+// PROPERTY: player.nickname
 void Player_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
@@ -569,7 +588,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), Player_GetStr_Ani, Player_SetStr_Ani);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), Player_GetInt_AP, Player_SetInt_AP);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), Player_GetInt_Bombs, Player_SetInt_Bombs);
-//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), Player_GetStr_Chat, Player_SetStr_Chat);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), Player_GetStr_Chat, Player_SetStr_Chat);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), Player_GetInt_Darts, Player_SetInt_Darts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Maxhearts, Player_SetInt_Maxhearts);
