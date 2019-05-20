@@ -422,7 +422,7 @@ bool TServer::doTimedEvents()
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-		this->getServerList()->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+		this->getServerList()->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 	}
 
 	// Stuff that happens every minute.
