@@ -236,6 +236,23 @@ void NPC_SetInt_Ap(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 	npcObject->setProps(CString() >> (char)NPCPROP_ALIGNMENT >> (char)newValue, CLVER_2_17, true);
 }
 
+// PROPERTY: npc.image
+void NPC_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_Image(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info) {
+	v8::Local<v8::Object> self = info.This();
+	TNPC *npcObject = UnwrapObject<TNPC>(self);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	npcObject->setProps(CString() >> (char)NPCPROP_IMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+}
+
 // PROPERTY: npc.nick
 void NPC_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info) {
 	v8::Local<v8::Object> self = info.This();
@@ -805,7 +822,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 //	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_Id);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetStr_Image, NPC_SetStr_Image);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Name);
