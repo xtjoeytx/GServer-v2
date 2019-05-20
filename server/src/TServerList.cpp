@@ -795,9 +795,9 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		while (servers.bytesLeft() > 0)
 		{
 			CString serverData = servers.readString("\n").guntokenize();
-			CString serverId = serverData.readString("\n");
-			CString serverName = serverData.readString("\n");
-			CString serverPlayers = serverData.readString("\n");
+			CString serverId = serverData.readString("\n").guntokenize();
+			CString serverName = serverId.readString("\n");
+			CString serverPlayers = serverId.readString("\n");
 
 			serverNames << serverId << ",";
 			serverPCount << serverPlayers << ",";
