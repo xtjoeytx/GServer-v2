@@ -95,7 +95,6 @@ bool TPlayer::sendLogin()
     //sendPacket(CString() >> (char)44);
 	sendPacket(CString() >> (char)PLO_UNKNOWN103 << " *");
 
-	//sendPacket(CString() >> (char)190);
     //sendPacket(CString() >> (char)PLO_FULLSTOP);
 	sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
@@ -423,7 +422,9 @@ bool TPlayer::sendLoginNC()
 
 bool TPlayer::sendLoginRC()
 {
-	// If no nickname was specified, set the nickname to the account name.
+    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+
+    // If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
 		nickName = accountName;
 	levelName = " ";
@@ -436,6 +437,8 @@ bool TPlayer::sendLoginRC()
 	for (std::vector<CString>::iterator i = rcmessage.begin(); i != rcmessage.end(); ++i)
 		sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
 
-	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
+    sendPacket(CString() >> (char)PLO_UNKNOWN190);
+
+    server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << accountName);
 	return true;
 }

@@ -788,25 +788,23 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 	if (type == "lister" && option == "simpleserverlist")
 	{
-		CString servers = params.guntokenize();
-		CString serverNames = "server.servern=";
-		CString serverPCount = "server.serverp=";
+		CString servers = params;
+		CString serverNames = "serverr.servern=";
+		CString serverPCount = "serverr.serverp=";
 
 		while (servers.bytesLeft() > 0)
 		{
-			CString serverData = servers.readString("\n").guntokenize();
-			CString serverId = serverData.readString("\n").guntokenize();
-			CString serverName = serverId.readString("\n");
-			CString serverPlayers = serverId.readString("\n");
+			CString serverData = servers.readString("\n").guntokenizeI();
+			CString serverId = serverData.readString("\n");
+			CString serverName = serverData.readString("\n");
+			CString serverPlayers = serverData.readString("\n");
 
-			serverNames << serverId << ",";
+			serverNames << serverId.gtokenize() << ",";
 			serverPCount << serverPlayers << ",";
 		}
 
-		server->setFlag(serverNames, true);
-		server->setFlag(serverPCount, true);
-		server->getServerLog().out("[ServerFlag] %s\n", serverNames.text());
-		server->getServerLog().out("[ServerFlag] %s\n", serverPCount.text());
+		server->setFlag(serverNames.readChars(serverNames.length()-1), true);
+		server->setFlag(serverPCount.readChars(serverPCount.length()-1), true);
 	}
 
 	TPlayer* p = server->getPlayer(pid);
