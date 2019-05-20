@@ -805,6 +805,8 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 		server->setFlag(serverNames, true);
 		server->setFlag(serverPCount, true);
+		server->getServerLog().out("[ServerFlag] %s\n", serverNames.text());
+		server->getServerLog().out("[ServerFlag] %s\n", serverPCount.text());
 	}
 
 	TPlayer* p = server->getPlayer(pid);
