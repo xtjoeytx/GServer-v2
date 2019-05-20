@@ -785,7 +785,28 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
 	CString params = data.readString("");
-	
+
+	if (type == "lister" && option == "simpleserverlist")
+	{
+		CString servers = params.guntokenize();
+		CString serverNames = "server.servern=";
+		CString serverPCount = "server.serverp=";
+
+		while (servers.bytesLeft > 0)
+		{
+			CString serverData = servers.readString("\n").guntokenize();
+			CString serverId = serverData.readString("\n");
+			CString serverName = serverData.readString("\n");
+			CString serverPlayers = serverData.readString("\n");
+
+			serverNames << serverId << ",";
+			serverPCount << serverPlayers << ",";
+		}
+
+		server->setFlag(serverNames, true);
+		server->setFlag(serverPCount, true);
+	}
+
 	TPlayer* p = server->getPlayer(pid);
 	if (p && (p->isClient() || p->isRC()))
 	{
