@@ -24,6 +24,7 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
+	CCommon.cpp
 	CEncryption.cpp
 	CFileQueue.cpp
 	CFileSystem.cpp
@@ -61,6 +62,7 @@ set(
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
+	../include/CCommon.h
 	../include/CEncryption.h
 	../include/CFileQueue.h
 	../include/CFileSystem.h

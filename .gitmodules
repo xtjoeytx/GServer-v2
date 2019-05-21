@@ -7,3 +7,6 @@
 [submodule "dependencies/depot_tools"]
 	path = dependencies/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "dependencies/gs2lib"]
+	path = dependencies/gs2lib
+	url = https://github.com/xtjoeytx/gs2lib.git
