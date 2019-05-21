@@ -286,6 +286,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	bool doSignCheck = false;
+	bool doTouchTest = false;
 	int len = 0;
 	bool sentInvalid = false;
 
@@ -515,6 +516,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				x2 = (int)(x * 16);
@@ -526,6 +528,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				y2 = (int)(y * 16);
@@ -540,6 +543,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				z2 = (int)(z * 16);
@@ -799,6 +803,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				x2 >>= 1;
@@ -832,6 +837,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				z2 >>= 1;
@@ -917,7 +923,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		// Movement check.
 		if (doSignCheck) testSign();
 #ifdef V8NPCSERVER
-		if (grMovementUpdated) testTouch();
+		if (doTouchTest) testTouch();
 #endif
 	}
 
