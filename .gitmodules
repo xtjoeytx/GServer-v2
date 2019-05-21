@@ -1,9 +1,6 @@
 [submodule "dependencies/miniupnp"]
 	path = dependencies/miniupnp
 	url = https://github.com/miniupnp/miniupnp.git
-[submodule "dependencies/zlib"]
-	path = dependencies/zlib
-	url = https://github.com/madler/zlib.git
 [submodule "dependencies/depot_tools"]
 	path = dependencies/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
