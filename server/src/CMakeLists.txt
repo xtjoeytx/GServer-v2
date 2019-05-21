@@ -24,20 +24,10 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
-	CCommon.cpp
-	CEncryption.cpp
-	CFileQueue.cpp
 	CFileSystem.cpp
-	CLog.cpp
 	CPluginManager.cpp
-	CSettings.cpp
-	CSocket.cpp
-	CString.cpp
-	CTranslationManager.cpp
 	CWordFilter.cpp
-	IUtil.cpp
 	main.cpp
-	md5.cpp
 	TAccount.cpp
 	TLevel.cpp
 	TLevelBaddy.cpp
@@ -62,26 +52,13 @@ set(
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	../include/CCommon.h
-	../include/CEncryption.h
-	../include/CFileQueue.h
 	../include/CFileSystem.h
-	../include/CLog.h
 	../include/CPlugin.h
 	../include/CPluginManager.h
-	../include/CSettings.h
-	../include/CSocket.h
-	../include/CString.h
-	../include/CTimeout.h
-	../include/CTranslationManager.h
 	../include/CWordFilter.h
 	../include/IConfig.h
 	../include/IConfig.h.in
-	../include/IDebug.h
-	../include/IEnums.h
-	../include/IUtil.h
 	../include/main.h
-	../include/md5.h
 	../include/TAccount.h
 	../include/TLevel.h
 	../include/TLevelBaddy.h
@@ -98,7 +75,6 @@ set(
 	../include/TServerList.h
 	../include/TWeapon.h
 )
-
 
 if(NOT NOUPNP)
 	list(
@@ -175,22 +151,9 @@ if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
 
-if(NOT ZLIB_FOUND)
-	include_directories(${PROJECT_BINARY_DIR}/dependencies/zlib ${PROJECT_SOURCE_DIR}/dependencies/zlib)
-endif()
 
-if(NOT BZip2_FOUND)
-	include_directories(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
-endif()
 
-check_symbol_exists(inet_pton "ws2tcpip.h" HAVE_INET_PTON)
-if (NOT HAVE_INET_PTON)
-	check_function_exists(inet_pton HAVE_INET_PTON)
-endif()
 
-if (HAVE_INET_PTON)
-	add_definition(-DHAVE_INET_PTON)
-endif()
 
 if(APPLE)
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
@@ -220,22 +183,7 @@ else()
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 endif()
 
-if(NOT ZLIB_FOUND AND NOT NOSTATIC)
-	add_dependencies(${TARGET_NAME} zlibstatic)
-	target_link_libraries(${TARGET_NAME} zlibstatic)
-elseif(NOT ZLIB_FOUND AND NOSTATIC)
-	add_dependencies(${TARGET_NAME} zlib)
-	target_link_libraries(${TARGET_NAME} zlib)
-else()
-	target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES})
-endif()
 
-if(NOT BZip2_FOUND)
-	add_dependencies(${TARGET_NAME} bzip2)
-	target_link_libraries(${TARGET_NAME} bzip2)
-else()
-	target_link_libraries(${TARGET_NAME} ${BZIP2_LIBRARIES})
-endif()
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
