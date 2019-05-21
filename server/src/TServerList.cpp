@@ -788,23 +788,20 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 	if (type == "lister" && option == "simpleserverlist")
 	{
-		CString servers = params;
-		CString serverNames = "serverr.servern=";
-		CString serverPCount = "serverr.serverp=";
+		CString serverIds = "", serverNames = "", serverPCount = "";
 
-		while (servers.bytesLeft() > 0)
+		while (params.bytesLeft() > 0)
 		{
-			CString serverData = servers.readString("\n").guntokenizeI();
-			CString serverId = serverData.readString("\n");
-			CString serverName = serverData.readString("\n");
-			CString serverPlayers = serverData.readString("\n");
-
-			serverNames << serverId.gtokenize() << ",";
-			serverPCount << serverPlayers << ",";
+			CString serverData = params.readString("\n").guntokenizeI();
+			serverIds << serverData.readString("\n").gtokenize() << ",";
+			serverNames << serverData.readString("\n").gtokenize() << ",";
+			serverPCount << serverData.readString("\n") << ",";
+			serverData = NULL;
 		}
 
-		server->setFlag(serverNames.readChars(serverNames.length()-1), true);
-		server->setFlag(serverPCount.readChars(serverPCount.length()-1), true);
+		server->sendPacketToAll(CString() >> char(PLO_TRIGGERACTION) >> short(0) >> int(0) >> char(0) >> char(0) << "clientside" << "," << "-Serverlist_v4" << "," << "updateservernames" << "," << serverIds.readChars(serverIds.length() - 1));
+		server->sendPacketToAll(CString() >> char(PLO_TRIGGERACTION) >> short(0) >> int(0) >> char(0) >> char(0) << "clientside" << "," << "-Serverlist_v4" << "," << "updateserverplayers" << "," << serverPCount.readChars(serverPCount.length() - 1));
+		serverIds = serverNames = serverPCount = NULL;
 	}
 
 	TPlayer* p = server->getPlayer(pid);
@@ -820,7 +817,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 			server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if ((p->isClient() && p->getVersion() >= CLVER_4_0211) || (p->isRC() && p->getVersion() > RCVER_1_1) )
-				p->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+				p->sendPacket(CString() >> char(PLO_SERVERTEXT) << message);
 			
 		}
 	}
