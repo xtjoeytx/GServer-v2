@@ -151,9 +151,7 @@ if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
 
-
-
-
+include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
@@ -183,13 +181,14 @@ else()
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 endif()
 
-
-
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 if(WIN32)
 	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
+
+add_dependencies(${TARGET_NAME} gs2lib)
+target_link_libraries(${TARGET_NAME} gs2lib)
 
 if(NOT NOUPNP)
 	if(NOT MINIUPNPC_FOUND)
