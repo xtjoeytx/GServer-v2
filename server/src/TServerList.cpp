@@ -790,7 +790,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	if (type == "lister" && option == "simpleserverlist")
 	{
 		CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
-
+        int serverCount = 0;
 		while (params.bytesLeft() > 0)
 		{
 			CString serverData = params.readString("\n").guntokenizeI();
@@ -798,7 +798,11 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 			serverNames << serverData.readString("\n") << "\n";
 			serverPCount << serverData.readString("\n") << "\n";
 			serverData.clear();
+			serverCount++;
 		}
+
+		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
+        serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
