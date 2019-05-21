@@ -5,6 +5,9 @@
 #include <vector>
 #include "CPlugin.h"
 #include "CString.h"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 // Classes
 class TServer;

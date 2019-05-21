@@ -65,7 +65,6 @@ configure_file(
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
-# Force SDL if requested
 option(NOSTATIC "Don't compile as a static runtime." OFF)
 if(NOSTATIC)
 	message("Don't compile as a static runtime.")
@@ -76,7 +75,7 @@ else()
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
 endif()
 
-option(V8NPCSERVER "Compile built-in V8 NPC-Server." ON)
+option(V8NPCSERVER "Compile built-in V8 NPC-Server." OFF)
 if(V8NPCSERVER)
 	message("Enabling built-in V8 NPC-Server.")
 	add_definitions(-DV8NPCSERVER)
@@ -198,29 +197,12 @@ if(NOT NOSTATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
-find_package(ZLIB)
-if(NOT ZLIB_FOUND)
-	message("Zlib not found in system. Compiling it ourselves.")
-	add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/zlib EXCLUDE_FROM_ALL)
-	if(NOSTATIC)
-		set_target_properties(zlibstatic minigzip example PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
-	else()
-		set_target_properties(zlib minigzip example PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
-	endif()
-endif()
-
 if(V8NPCSERVER)
 	find_package(V8)
 	if(NOT V8_FOUND)
 		message("v8 not found in system. Compiling it ourselves.")
 		add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
 	endif()
-endif()
-
-find_package(BZip2)
-if(NOT BZip2_FOUND)
-	message("Bzip2 not found in system. Compiling it ourselves.")
-	add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/bzip2)
 endif()
 
 if(NOT NOUPNP)
@@ -254,5 +236,6 @@ if(NOT NOSTATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server/src)
