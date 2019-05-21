@@ -842,6 +842,7 @@ bool TNPC::runScriptTimer()
 
 void TNPC::runScriptEvents()
 {
+	// TODO(joey): deadlocking if an action invokes another action (ex. an action invoking setprops which invokes playertouchsme)
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end();)
 	{
@@ -860,7 +861,8 @@ void TNPC::runScriptEvents()
 	// Send properties modified by scripts
 	if (!propModified.empty())
 	{
-		testTouch();
+		if (canWarp)
+			testTouch();
 
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
 		for (auto it = propModified.begin(); it != propModified.end(); ++it)
