@@ -11,6 +11,7 @@ mybin/*
 build*/*
 cmake-build-*/*
 dependencies/*
+!dependencies/gs2lib
 .idea/*
 bin/Debug/
 lib/
