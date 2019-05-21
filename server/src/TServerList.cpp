@@ -1,6 +1,7 @@
 #include "IDebug.h"
 #include "IConfig.h"
 
+#include "CCommon.h"
 #include "TServerList.h"
 #include "IEnums.h"
 #include "TServer.h"
@@ -788,20 +789,22 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 	if (type == "lister" && option == "simpleserverlist")
 	{
-		CString serverIds = "", serverNames = "", serverPCount = "";
+		CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
 
 		while (params.bytesLeft() > 0)
 		{
 			CString serverData = params.readString("\n").guntokenizeI();
-			serverIds << serverData.readString("\n").gtokenize() << ",";
-			serverNames << serverData.readString("\n").gtokenize() << ",";
-			serverPCount << serverData.readString("\n") << ",";
-			serverData = NULL;
+			serverIds << serverData.readString("\n") << "\n";
+			serverNames << serverData.readString("\n") << "\n";
+			serverPCount << serverData.readString("\n") << "\n";
+			serverData.clear();
 		}
 
-		server->sendPacketToAll(CString() >> char(PLO_TRIGGERACTION) >> short(0) >> int(0) >> char(0) >> char(0) << "clientside" << "," << "-Serverlist_v4" << "," << "updateservernames" << "," << serverIds.readChars(serverIds.length() - 1));
-		server->sendPacketToAll(CString() >> char(PLO_TRIGGERACTION) >> short(0) >> int(0) >> char(0) >> char(0) << "clientside" << "," << "-Serverlist_v4" << "," << "updateserverplayers" << "," << serverPCount.readChars(serverPCount.length() - 1));
-		serverIds = serverNames = serverPCount = NULL;
+		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
+		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
+		serverIds.clear();
+		serverNames.clear();
+		serverPCount.clear();
 	}
 
 	TPlayer* p = server->getPlayer(pid);
