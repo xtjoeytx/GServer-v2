@@ -2,5 +2,6 @@
 #define ICONFIG_H
 
 #define GSERVER_VERSION		"${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}"
+#define GSERVER_CREDITS		"${GSERVER_CREDITS}"
 
 #endif
