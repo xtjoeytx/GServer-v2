@@ -16,7 +16,6 @@
 
 #include "CLog.h"
 #include "CFileSystem.h"
-#include "CPluginManager.h"
 #include "CSettings.h"
 #include "CSocket.h"
 #include "CTranslationManager.h"
@@ -114,7 +113,6 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		CLog& getScriptLog()							{ return scriptlog; }
 #endif
-		CPluginManager& getPluginManager()				{ return mPluginManager; }
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
 		CSocketManager* getSocketManager()				{ return &sockManager; }
@@ -210,7 +208,6 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		CLog scriptlog;
 #endif
-		CPluginManager mPluginManager;
 		CSettings adminsettings, settings;
 		CSocket playerSock;
 		CSocketManager sockManager;
