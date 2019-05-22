@@ -53,8 +53,6 @@ set(
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 	include/CFileSystem.h
 	include/CWordFilter.h
-	include/IConfig.h
-	include/IConfig.h.in
 	include/main.h
 	include/TAccount.h
 	include/TLevel.h
