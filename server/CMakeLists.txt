@@ -25,7 +25,6 @@ include(CheckSymbolExists)
 set(
 	SOURCES
 	src/CFileSystem.cpp
-	src/CPluginManager.cpp
 	src/CWordFilter.cpp
 	src/main.cpp
 	src/TAccount.cpp
@@ -53,8 +52,6 @@ set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 	include/CFileSystem.h
-	include/CPlugin.h
-	include/CPluginManager.h
 	include/CWordFilter.h
 	include/IConfig.h
 	include/IConfig.h.in
