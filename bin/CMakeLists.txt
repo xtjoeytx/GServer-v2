@@ -19,6 +19,32 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+if(V8NPCSERVER)
+	file(GLOB DOCS
+		 ../docs/npcserver.txt
+		 )
+
+	install(FILES ${DOCS} DESTINATION "./docs")
+
+	file(GLOB SERVERS_DEFAULT_BOOTSTRAP
+		 servers/default/bootstrap.js
+		 )
+
+	install(FILES ${SERVERS_DEFAULT_BOOTSTRAP} DESTINATION "./servers/default/")
+
+	file(GLOB SERVERS_DEFAULT_NPCS
+		 servers/default/npcs/npcControl-NPC.txt
+		 )
+
+	install(FILES ${SERVERS_DEFAULT_NPCS} DESTINATION "./servers/default/npcs")
+
+	file(GLOB SERVERS_DEFAULT_NPCLOGS
+			servers/default/logs/npclog.txt
+			servers/default/logs/scriptlog.txt
+		 )
+
+	install(FILES ${SERVERS_DEFAULT_NPCLOGS} DESTINATION "./servers/default/logs")
+endif()
 
 file(GLOB TEXT
 	 changelog.txt
@@ -29,14 +55,7 @@ file(GLOB TEXT
 
 install(FILES ${TEXT} DESTINATION ".")
 
-file(GLOB DOCS
-	 ../docs/npcserver.txt
-	 )
-
-install(FILES ${DOCS} DESTINATION "./docs")
-
 file(GLOB SERVERS_DEFAULT
-	 servers/default/bootstrap.js
 	 servers/default/serverflags.txt
 	 )
 
@@ -84,19 +103,12 @@ file(GLOB SERVERS_DEFAULT_GUILDS
 install(FILES ${SERVERS_DEFAULT_GUILDS} DESTINATION "./servers/default/guilds")
 
 file(GLOB SERVERS_DEFAULT_LOGS
-	 servers/default/logs/npclog.txt
 	 servers/default/logs/rclog.txt
 	 servers/default/logs/serverlog.txt
-	 servers/default/logs/scriptlog.txt
 	 )
 
 install(FILES ${SERVERS_DEFAULT_LOGS} DESTINATION "./servers/default/logs")
 
-file(GLOB SERVERS_DEFAULT_NPCS
-	 servers/default/npcs/npcControl-NPC.txt
-	 )
-
-install(FILES ${SERVERS_DEFAULT_NPCS} DESTINATION "./servers/default/npcs")
 
 file(GLOB SERVERS_DEFAULT_TRANSLATIONS
 	 servers/default/translations/english.po
