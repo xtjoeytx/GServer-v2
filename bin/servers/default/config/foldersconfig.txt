@@ -23,6 +23,10 @@ file    *.gmap
 level   *.graal
 level   *.nw
 level   *.gmap
+file    levels/*.gmap
+level   levels/*.nw
+level   levels/*.graal
+level   levels/*.gmap
 file    global/*
 head    global/heads/*
 body    global/bodies/*.png
