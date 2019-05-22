@@ -241,4 +241,4 @@ endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
-add_subdirectory(${PROJECT_SOURCE_DIR}/server/src)
+add_subdirectory(${PROJECT_SOURCE_DIR}/server)

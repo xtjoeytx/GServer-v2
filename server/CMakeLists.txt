@@ -24,69 +24,69 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
-	CFileSystem.cpp
-	CPluginManager.cpp
-	CWordFilter.cpp
-	main.cpp
-	TAccount.cpp
-	TLevel.cpp
-	TLevelBaddy.cpp
-	TLevelBoardChange.cpp
-	TLevelChest.cpp
-	TLevelHorse.cpp
-	TLevelItem.cpp
-	TLevelLink.cpp
-	TLevelSign.cpp
-	TMap.cpp
-	TNPC.cpp
-	TPlayer.cpp
-	TPlayerLogin.cpp
-	TPlayerNC.cpp
-	TPlayerProps.cpp
-	TPlayerRC.cpp
-	TServer.cpp
-	TServerList.cpp
-	TWeapon.cpp
+	src/CFileSystem.cpp
+	src/CPluginManager.cpp
+	src/CWordFilter.cpp
+	src/main.cpp
+	src/TAccount.cpp
+	src/TLevel.cpp
+	src/TLevelBaddy.cpp
+	src/TLevelBoardChange.cpp
+	src/TLevelChest.cpp
+	src/TLevelHorse.cpp
+	src/TLevelItem.cpp
+	src/TLevelLink.cpp
+	src/TLevelSign.cpp
+	src/TMap.cpp
+	src/TNPC.cpp
+	src/TPlayer.cpp
+	src/TPlayerLogin.cpp
+	src/TPlayerNC.cpp
+	src/TPlayerProps.cpp
+	src/TPlayerRC.cpp
+	src/TServer.cpp
+	src/TServerList.cpp
+	src/TWeapon.cpp
 )
 
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	../include/CFileSystem.h
-	../include/CPlugin.h
-	../include/CPluginManager.h
-	../include/CWordFilter.h
-	../include/IConfig.h
-	../include/IConfig.h.in
-	../include/main.h
-	../include/TAccount.h
-	../include/TLevel.h
-	../include/TLevelBaddy.h
-	../include/TLevelBoardChange.h
-	../include/TLevelChest.h
-	../include/TLevelHorse.h
-	../include/TLevelItem.h
-	../include/TLevelLink.h
-	../include/TLevelSign.h
-	../include/TMap.h
-	../include/TNPC.h
-	../include/TPlayer.h
-	../include/TServer.h
-	../include/TServerList.h
-	../include/TWeapon.h
+	include/CFileSystem.h
+	include/CPlugin.h
+	include/CPluginManager.h
+	include/CWordFilter.h
+	include/IConfig.h
+	include/IConfig.h.in
+	include/main.h
+	include/TAccount.h
+	include/TLevel.h
+	include/TLevelBaddy.h
+	include/TLevelBoardChange.h
+	include/TLevelChest.h
+	include/TLevelHorse.h
+	include/TLevelItem.h
+	include/TLevelLink.h
+	include/TLevelSign.h
+	include/TMap.h
+	include/TNPC.h
+	include/TPlayer.h
+	include/TServer.h
+	include/TServerList.h
+	include/TWeapon.h
 )
 
 if(NOT NOUPNP)
 	list(
 		APPEND
 		SOURCES
-		CUPNP.cpp
+		src/CUPNP.cpp
 	)
 
 	list(
 		APPEND
 		HEADERS
-		../include/CUPNP.h
+		include/CUPNP.h
 	)
 endif()
 
@@ -94,33 +94,33 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		SOURCES
-		CScriptEngine.cpp
-		script/V8EnvironmentImpl.cpp
-		script/V8FunctionsImpl.cpp
-		script/V8LevelImpl.cpp
-		script/V8NPCImpl.cpp
-		script/V8PlayerImpl.cpp
-		script/V8ScriptEnv.cpp
-		script/V8ServerImpl.cpp
-		script/V8WeaponImpl.cpp
+		src/CScriptEngine.cpp
+		src/script/V8EnvironmentImpl.cpp
+		src/script/V8FunctionsImpl.cpp
+		src/script/V8LevelImpl.cpp
+		src/script/V8NPCImpl.cpp
+		src/script/V8PlayerImpl.cpp
+		src/script/V8ScriptEnv.cpp
+		src/script/V8ServerImpl.cpp
+		src/script/V8WeaponImpl.cpp
 	)
 
 	list(
 		APPEND
 		HEADERS
-		../include/CScriptEngine.h
-		../include/script/ScriptAction.h
-		../include/script/ScriptArguments.h
-		../include/script/ScriptEnv.h
-		../include/script/ScriptFactory.h
-		../include/script/ScriptFunction.h
-		../include/script/ScriptRunError.h
-		../include/script/ScriptWrapped.h
-		../include/script/V8Macros.h
-		../include/script/V8ScriptArguments.h
-		../include/script/V8ScriptEnv.h
-		../include/script/V8ScriptFunction.h
-		../include/script/V8ScriptWrapped.h
+		include/CScriptEngine.h
+		include/script/ScriptAction.h
+		include/script/ScriptArguments.h
+		include/script/ScriptEnv.h
+		include/script/ScriptFactory.h
+		include/script/ScriptFunction.h
+		include/script/ScriptRunError.h
+		include/script/ScriptWrapped.h
+		include/script/V8Macros.h
+		include/script/V8ScriptArguments.h
+		include/script/V8ScriptEnv.h
+		include/script/V8ScriptFunction.h
+		include/script/V8ScriptWrapped.h
 	)
 endif()
 
