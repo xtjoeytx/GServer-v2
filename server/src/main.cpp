@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 
 		// Program announcements.
 		serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-		serverlog.out("Programmed by Joey and Nalin.\n\n");
+		serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
 
 		// Load Server Settings
 		if (overrideServer.isEmpty())
@@ -225,7 +225,7 @@ bool parseArgs(int argc, char* argv[])
 void printHelp(const char* pname)
 {
 	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-	serverlog.out("Programmed by Joey and Nalin.\n\n");
+	serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
 	serverlog.out("USAGE: %s [options]\n\n", pname);
 	serverlog.out("Commands:\n\n");
 	serverlog.out(" -h, --help\t\tPrints out this help text.\n");

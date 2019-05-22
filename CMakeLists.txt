@@ -57,6 +57,8 @@ set(VER_Z x)
 set(VER_EXTRA " GIT" CACHE STRING "Extra version")
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
+set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
+
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 
 # Generate version header from the above
