@@ -2,6 +2,7 @@
 #include <vector>
 #include <math.h>
 
+#include "IConfig.h"
 #include "TServer.h"
 #include "TPlayer.h"
 #include "IUtil.h"
