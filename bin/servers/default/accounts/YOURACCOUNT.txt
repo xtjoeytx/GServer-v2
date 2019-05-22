@@ -55,6 +55,7 @@ FOLDERRIGHT rw npcprops/*
 FOLDERRIGHT rw translations/*
 FOLDERRIGHT r weapons/*
 FOLDERRIGHT rw world/*
+FOLDERRIGHT rw world/levels/*
 FOLDERRIGHT rw world/bodies/*
 FOLDERRIGHT rw world/ganis/*
 FOLDERRIGHT rw world/global/*
