@@ -819,6 +819,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				y2 >>= 1;
