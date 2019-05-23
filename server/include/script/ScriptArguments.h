@@ -72,7 +72,7 @@ private:
 	template <std::size_t...Is>
 	inline void invalidate_args(std::index_sequence<Is...>) {
 		if constexpr (sizeof...(Is) > 0) {
-			int unused[] = { ((detail::ValidateBinding(std::get<Is>(_tuple))), void(), 0)... };
+			int unused[] = { ((detail::InvalidateBinding(std::get<Is>(_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}

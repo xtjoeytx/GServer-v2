@@ -35,9 +35,15 @@ Level Object:
 
 NPC Object:
 	Functions:
+		blockagain() - block players from moving through the npc
 		canwarp() - allows database npc to test for links
 		cannotwarp() - disables database npc link testing (default)
+		dontblock() - npc won't block player movement
+		drawoverplayer() - npc will draw over the player
+		drawunderplayer() - npc will draw under the player
+		hide() - hide the npc
 		message("message") - sets npc chat
+		show() - show the npc
 		showcharacter() - displays a character instead of an image
 		setcharprop("code", "value") - sets character prop
 		setshape(type, width, height) - sets shape of npc
@@ -48,6 +54,7 @@ NPC Object:
 		id - (read-only)
 		ani
 		ap
+		attr[idx] (index can be between 1-30)
 		bombs
 		chat
 		darts
@@ -59,6 +66,7 @@ NPC Object:
 		name (read-only, only set for database npcs for now)
 		nick
 		rupees
+		save[idx] - (index can be between 1-10)
 		timeout
 		x
 		y

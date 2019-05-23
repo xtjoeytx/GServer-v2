@@ -832,7 +832,7 @@ void TNPC::addClassCode(const std::string & className, const std::string & class
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
 	// Update prop for players
-	this->updatePropModTime(NPCPROP_SCRIPT, time(0));
+	this->updatePropModTime(NPCPROP_SCRIPT);
 }
 #endif
 
@@ -904,10 +904,16 @@ void TNPC::runScriptEvents()
 	{
 		if (canWarp)
 			testTouch();
+		
+		time_t newModTime = time(0);
 
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
 		for (auto it = propModified.begin(); it != propModified.end(); ++it)
-			propPacket >> (char)(*it) << getProp(*it);
+		{
+			char propId = *it;
+			modTime[propId] = newModTime;
+			propPacket >> (char)(propId) << getProp(propId);
+		}
 		propModified.clear();
 
 		if (level != nullptr)

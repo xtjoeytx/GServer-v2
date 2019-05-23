@@ -58,6 +58,17 @@ inline v8::Local<TypeName> PersistentToLocal(v8::Isolate *isolate, const v8::Per
 	}
 }
 
+template <class TypeName>
+inline v8::Local<TypeName> GlobalPersistentToLocal(v8::Isolate *isolate, const v8::Global<TypeName>& persistent)
+{
+	if (persistent.IsWeak()) {
+		return v8::Local<TypeName>::New(isolate, persistent);
+	}
+	else {
+		return *reinterpret_cast<v8::Local<TypeName> *>(const_cast<v8::Global<TypeName> *>(&persistent));
+	}
+}
+
 template <class Type>
 inline Type * UnwrapObject(v8::Local<v8::Object> self) {
 	return static_cast<Type *>(self->GetAlignedPointerFromInternalField(0));

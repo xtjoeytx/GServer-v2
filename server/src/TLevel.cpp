@@ -833,9 +833,9 @@ bool TLevel::loadNW(const CString& pLevelName)
 			CString image(curLine[1]);
 			if (curLine.size() > 4)
 			{
-				offset = curLine.size() - 4;
+				offset = (int)curLine.size() - 4;
 				for (unsigned int i = 0; i < offset; ++i)
-					image << " " << curLine[2 + i];
+					image << " " << curLine[i + 2];
 			}
 
 			// Grab the NPC location.
