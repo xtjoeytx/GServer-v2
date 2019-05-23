@@ -1,7 +1,0 @@
-[Fri May 17 14:47:06 2019] Weapon Exception at fgfghj: undefined - undefined
-[Fri May 17 14:49:07 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
-[Fri May 17 14:49:14 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
-[Fri May 17 14:49:33 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
-[Fri May 17 14:49:36 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
-[Fri May 17 14:49:56 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
-[Fri May 17 14:50:00 2019] Weapon Trigger Exception at fgfghj: undefined - undefined
