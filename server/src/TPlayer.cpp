@@ -3671,6 +3671,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		int triggerX = 16 * loc[0];
 		int triggerY = 16 * loc[1];
 
+		// TODO(joey): i think this should trigger everything it touches.
 		TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
 		if (npcTouched != nullptr)
 		{
