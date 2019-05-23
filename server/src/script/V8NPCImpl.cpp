@@ -749,6 +749,9 @@ void NPC_Attrs_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prop
 		strLength = 223;
 
 	npcObject->setProps(CString() >> (char)__nAttrPackets[index] >> (char)strLength << *newValue, CLVER_2_17, true);
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
 }
 
 
@@ -812,6 +815,9 @@ void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prope
 		newValue = 255;
 
 	npcObject->setProps(CString() >> (char)__nAttrPackets[index] >> (char)newValue, CLVER_2_17, true);
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
 }
 
 void bindClass_NPC(CScriptEngine *scriptEngine)
