@@ -171,7 +171,9 @@ class TNPC
 		void setName(const std::string& name)	{ npcName = name; }
 		void setNickname(const CString& nick)	{ nickName = nick; }
 		void setScripter(const CString& name)	{ scripterName = name; }
-		
+		void setBlockingFlags(int val)			{ blockFlags = val; }
+		void setVisibleFlags(int val)			{ visFlags = val; }
+
 		// get functions
 		unsigned int getId() const				{ return id; }
 		TLevel* getLevel() const				{ return level; }
@@ -201,7 +203,7 @@ class TNPC
 #ifdef V8NPCSERVER
 		void addClassCode(const std::string& className, const std::string& classCode);
 		void setTimeout(int val);
-		void updatePropModTime(unsigned char propId, time_t modifyTime);
+		void updatePropModTime(unsigned char propId);
 
 		//
 		bool hasScriptEvent(int flag) const;
@@ -289,13 +291,10 @@ time_t TNPC::getPropModTime(unsigned char pId)
 
 #ifdef V8NPCSERVER
 
-inline void TNPC::updatePropModTime(unsigned char propId, time_t modifyTime)
+inline void TNPC::updatePropModTime(unsigned char propId)
 {
 	if (propId < NPCPROP_COUNT)
-	{
-		modTime[propId] = modifyTime;
 		propModified.insert(propId);
-	}
 }
 
 inline void TNPC::allowNpcWarping(bool canWarp)

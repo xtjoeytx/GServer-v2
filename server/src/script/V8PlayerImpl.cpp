@@ -226,8 +226,6 @@ void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> va
 // PROPERTY: Player Flags
 void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
-	
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
@@ -239,9 +237,15 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 		return;
 	}
 
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
 	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_player_flags_ctor);
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalFlags, new_instance, propAttr).FromJust();
