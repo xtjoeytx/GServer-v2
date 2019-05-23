@@ -569,12 +569,20 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		TServer *server = scriptEngine->getServer();
-		std::string classCode = server->getClass(className);
+		CString classCode = server->getClass(className);
 
-		if (!classCode.empty())
+		if (!classCode.isEmpty())
 		{
+			// Split the code
+			std::string serverCode = classCode.readString("//#CLIENTSIDE").text();
+			std::string clientCode = classCode.readString("").text();
+
+			// Add class to npc
+			TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+			npcObject->addClassCode(className, clientCode);
+
 			// Wrap code
-			std::string classCodeWrap = CScriptEngine::WrapScript<TNPC>(classCode);
+			std::string classCodeWrap = CScriptEngine::WrapScript<TNPC>(serverCode);
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.

@@ -199,6 +199,7 @@ class TNPC
 		bool isLevelNPC() const					{ return levelNPC; }
 
 #ifdef V8NPCSERVER
+		void addClassCode(const std::string& className, const std::string& classCode);
 		void setTimeout(int val);
 		void updatePropModTime(unsigned char propId, time_t modifyTime);
 
@@ -259,6 +260,7 @@ class TNPC
 		int width, height;
 
 #ifdef V8NPCSERVER
+		std::map<std::string, std::string> classMap;
 		std::unordered_set<int> propModified;
 
 		// Defaults
