@@ -279,6 +279,9 @@ void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 	// Get new value
 	v8::String::Utf8Value newValue(isolate, value);
 	playerObject->setFlag(*utf8, *newValue, true);
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
 }
 
 void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
