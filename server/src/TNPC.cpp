@@ -65,7 +65,7 @@ TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	gani("idle"), level(nullptr)
 #ifdef V8NPCSERVER
 	, origX(x), origY(y), persistNpc(false), canWarp(false), width(32), height(32)
-	, timeout(0), _scriptEventsMask(0), _scriptObject(0)
+	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
 #endif
 {
 	memset((void*)colors, 0, sizeof(colors));
@@ -366,6 +366,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 {
 	bool hasMoved = false;
 
+	// TODO(joey): Most of these props will eventually be ignored
+
 	CString ret;
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
@@ -376,6 +378,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 		switch (propId)
 		{
 			case NPCPROP_IMAGE:
+				visFlags |= NPCVISFLAG_VISIBLE;
 				image = pProps.readChars(pProps.readGUChar());
 				if (!image.isEmpty() && clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
 					image << ".gif";
