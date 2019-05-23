@@ -102,6 +102,9 @@ void TNPC::setScriptCode(const CString& pScript)
 	originalScript = pScript;
 
 #ifdef V8NPCSERVER
+	// Clear any joined code
+	classMap.clear();
+
 	if (!serverScript.isEmpty())
 		freeScriptResources();
 #endif
@@ -794,6 +797,41 @@ void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
 	_actions.push_back(scriptAction);
 	scriptEngine->RegisterNpcUpdate(this);
 }
+
+#ifdef V8NPCSERVER
+void TNPC::addClassCode(const std::string & className, const std::string & classCode)
+{
+	classMap[className] = classCode;
+
+	// TODO(joey): We are not readding old join code back into here, just an fyi.
+
+	// Skip servercode, and read client script
+	CString script = originalScript;
+	script.readString("//#CLIENTSIDE");
+	clientScript = script.readString("");
+
+	// Iterate current classes, and add to end of code
+	for (auto it = classMap.begin(); it != classMap.end(); ++it)
+		clientScript << "\n" << (*it).second;
+
+	// Remove comments and trim the code if specified.
+	if (!clientScript.isEmpty())
+	{
+		clientScriptFormatted = removeComments(clientScript, "\n");
+		std::vector<CString> code = clientScriptFormatted.tokenize("\n");
+		clientScriptFormatted.clear();
+		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
+			clientScriptFormatted << (*i).trim() << "\xa7";
+	}
+
+	// Just a little warning for people who don't know.
+	if (clientScriptFormatted.length() > 0x705F)
+		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
+
+	// Update prop for players
+	this->updatePropModTime(NPCPROP_SCRIPT, time(0));
+}
+#endif
 
 void TNPC::setTimeout(int newTimeout)
 {
