@@ -924,7 +924,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		// Movement check.
 		if (doSignCheck) testSign();
 #ifdef V8NPCSERVER
-		if (doTouchTest) testTouch();
+		if (doTouchTest && !pForwardToSelf) testTouch();
 #endif
 	}
 

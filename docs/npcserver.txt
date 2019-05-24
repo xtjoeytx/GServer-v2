@@ -59,14 +59,16 @@ NPC Object:
 		chat
 		darts
 		dir
+		flags['key'] - retrieve/manipulate npc flags
 		glovepower
 		hearts
+		image
 		level - the level object
 		levelname
 		name (read-only, only set for database npcs for now)
 		nick
 		rupees
-		save[idx] - (index can be between 1-10)
+		save[idx] - (index can be between 0-9)
 		timeout
 		x
 		y
@@ -88,6 +90,7 @@ Player Object:
 	Properties:
 		id - (read-only)
 		account - (read-only)
+		chat
 		nick
 		x
 		y

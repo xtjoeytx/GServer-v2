@@ -99,6 +99,7 @@ TNPC::~TNPC()
 
 void TNPC::setScriptCode(const CString& pScript)
 {
+	bool firstExecution = originalScript.isEmpty();
 	originalScript = pScript;
 
 #ifdef V8NPCSERVER
@@ -164,6 +165,18 @@ void TNPC::setScriptCode(const CString& pScript)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
 #ifdef V8NPCSERVER
+	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
+	//	would need "update level" to take changes.
+	if (!firstExecution && !npcName.empty() && level)
+	{
+		// TODO(joey): refactor
+		TMap *map = level->getMap();
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), map, level, 0, true);
+
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
+		server->sendPacketToLevel(packet, map, level, 0, true);
+	}
+
 	// Compile and execute the script.
 	bool executed = server->getScriptEngine()->ExecuteNpc(this);
 	if (executed) {
@@ -314,18 +327,15 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 	}
 
 	// Saves.
-	if (inrange(pId, 23, 32))
+	if (inrange(pId, NPCPROP_SAVE0, NPCPROP_SAVE9))
 	{
-		for (unsigned int i = 0; i < sizeof(__nSavePackets); i++)
-		{
-			if (__nSavePackets[i] == pId)
-				return CString() >> (char)saves[i];
-		}
+		return CString() >> (char)saves[NPCPROP_SAVE0 - pId];
 	}
 
 	// Gani attributes.
 	if (inrange(pId, NPCPROP_GATTRIB1, NPCPROP_GATTRIB5) || inrange(pId, NPCPROP_GATTRIB6, NPCPROP_GATTRIB9) || inrange(pId, NPCPROP_GATTRIB10, NPCPROP_GATTRIB30))
 	{
+		// TODO(joey): Are we really looping every single possible attribute to find the one we want....??
 		for (unsigned int i = 0; i < sizeof(__nAttrPackets); i++)
 		{
 			if (__nAttrPackets[i] == pId)
@@ -801,7 +811,6 @@ void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
 	scriptEngine->RegisterNpcUpdate(this);
 }
 
-#ifdef V8NPCSERVER
 void TNPC::addClassCode(const std::string & className, const std::string & classCode)
 {
 	classMap[className] = classCode;
@@ -834,7 +843,6 @@ void TNPC::addClassCode(const std::string & className, const std::string & class
 	// Update prop for players
 	this->updatePropModTime(NPCPROP_SCRIPT);
 }
-#endif
 
 void TNPC::setTimeout(int newTimeout)
 {
@@ -884,6 +892,7 @@ bool TNPC::runScriptTimer()
 void TNPC::runScriptEvents()
 {
 	// TODO(joey): deadlocking if an action invokes another action (ex. an action invoking setprops which invokes playertouchsme)
+	
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end();)
 	{
@@ -897,7 +906,6 @@ void TNPC::runScriptEvents()
 		}
 		else ++it;
 	}
-	_actions.clear();
 
 	// Send properties modified by scripts
 	if (!propModified.empty())
@@ -1021,6 +1029,16 @@ void TNPC::saveNPC() const
 			 << CString((int)saves[3]) << "," << CString((int)saves[4]) << "," << CString((int)saves[5]) << ","
 			 << CString((int)saves[6]) << "," << CString((int)saves[7]) << "," << CString((int)saves[8]) << ","
 			 << CString((int)saves[9]) << NL;
+	
+	for (int i = 0; i < 30; i++)
+	{
+		if (!gAttribs[i].isEmpty())
+			fileData << "ATTR" << std::to_string(i+1) << " " << gAttribs[i] << NL;
+	}
+
+	for (auto it = flagList.begin(); it != flagList.end(); ++it)
+		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
+
 	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL) << NL << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
 }
@@ -1131,6 +1149,19 @@ bool TNPC::loadNPC(const CString& fileName)
 		//	canWarp = strtoint(curLine.readString("")) != 0;
 		else if (curCommand == "TIMEOUT")
 			timeout = strtoint(curLine.readString("")) * 20;
+		else if (curCommand == "FLAG")
+		{
+			CString flagName = curLine.readString("=");
+			CString flagValue = curLine.readString("");
+			setFlag(flagName.text(), flagValue);
+		}
+		else if (curCommand.subString(0, 4) == "ATTR")
+		{
+			CString attrIdStr = curCommand.subString(5);
+			int attrId = strtoint(attrIdStr);
+			if (attrId > 0 && attrId < 30)
+				gAttribs[attrId - 1] = curLine.readString("");
+		}
 		else if (curCommand == "NPCSCRIPT")
 		{
 			curLine = fileData.readString("\n");
