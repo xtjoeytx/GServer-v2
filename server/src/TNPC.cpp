@@ -932,6 +932,7 @@ void TNPC::runScriptEvents()
 void TNPC::moveNPC(int dx, int dy, double time, int options)
 {
 	// TODO(joey): Implement options? Or does the client handle them? TBD
+	//	- If we want function callbacks we will need to handle time, can schedule an event once that is implemented
 
 	int start_x = (abs(x2) << 1) | (x2 < 0 ? 0x0001 : 0x0000);
 	int start_y = (abs(y2) << 1) | (y2 < 0 ? 0x0001 : 0x0000);

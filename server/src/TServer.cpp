@@ -1363,6 +1363,21 @@ void TServer::playerLoggedIn(TPlayer *player)
 #endif
 }
 
+void TServer::logToFile(const std::string & fileName, const std::string & message)
+{
+	CString fileNamePath = CString() << getServerPath().remove(0, getHomePath().length()) << "logs/";
+	
+	// Remove leading characters that may try to go up a directory
+	int idx = 0;
+	while (fileName[idx] == '.' || fileName[idx] == '/' || fileName[idx] == '\\')
+		idx++;
+	fileNamePath << fileName.substr(idx);
+
+	CLog logFile(fileNamePath, true);
+	logFile.open();
+	logFile.out("\n%s\n", message.c_str());
+}
+
 /*
 	TServer: Server Flag Management
 */
