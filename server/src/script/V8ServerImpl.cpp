@@ -103,12 +103,47 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// TODO(joey): what is this bs..
+extern CString homepath;
+
+void Server_Function_SaveLog(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	if (args[0]->IsString() && args[1]->IsString())
+	{
+		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+		v8::String::Utf8Value filename(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value message(isolate, args[1]->ToString(context).ToLocalChecked());
+
+		V8ENV_SAFE_UNWRAP(args, TServer, serverObject);
+
+		// TODO(joey): move to TServer
+
+		CString fileBase = CString() << serverObject->getServerPath().remove(0, homepath.length()) << "logs/";
+		CString fileName(*filename);
+
+		int idx = 0;
+		while (fileName[idx] == '.' || fileName[idx] == '/' || fileName[idx] == '\\')
+			idx++;
+		if (idx > 0)
+			fileName.removeI(0, idx);
+
+		CLog logFile(fileBase + fileName, true);
+		logFile.open();
+		logFile.out("\n%s\n", *message);
+	}
+}
+
 void Server_Function_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-	V8ENV_THROW_ARGCOUNT(args, isolate, 1)
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	if (args[0]->IsString())
 	{
@@ -296,6 +331,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
 

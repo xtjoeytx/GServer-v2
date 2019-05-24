@@ -1057,12 +1057,10 @@ bool TNPC::loadNPC(const CString& fileName)
 		return false;
 
 	// TODO(joey): implement
-	//	SAVEARR 0,0,0,0,0,0,0,0,0,0
-	//	FLAG car="4,1.6,-0.7,0"
-	// 	JOINEDCLASSES staffblock
+	// 	JOINEDCLASSES staffblock (not really needed for us, so)
 	//	DONTBLOCK 1
-	//	ATTR11 ci_hair-2-4.png [not sure where this ends, i got up to 11 on one]
 
+	time_t updateTime = time(0);
 	CString npcScript, npcLevel;
 
 	// Parse File
@@ -1135,8 +1133,16 @@ bool TNPC::loadNPC(const CString& fileName)
 		else if (curCommand == "COLORS")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (int colorIdx = 0; colorIdx < std::min((int) tokens.size(), 5); colorIdx++)
-				colors[colorIdx] = strtoint(tokens[colorIdx]);
+			for (int idx = 0; idx < std::min((int) tokens.size(), 5); idx++)
+				colors[idx] = strtoint(tokens[idx]);
+		}
+		else if (curCommand == "SAVEARR")
+		{
+			auto tokens = curLine.readString("").tokenize(",");
+			for (int idx = 0; idx < std::min(tokens.size(), sizeof(saves) / sizeof(unsigned char)); idx++) {
+				saves[idx] = (unsigned char)strtoint(tokens[idx]);
+				modTime[NPCPROP_SAVE0 + idx] = updateTime;
+			}
 		}
 		else if (curCommand == "SHAPE")
 		{
@@ -1159,8 +1165,11 @@ bool TNPC::loadNPC(const CString& fileName)
 		{
 			CString attrIdStr = curCommand.subString(5);
 			int attrId = strtoint(attrIdStr);
-			if (attrId > 0 && attrId < 30)
-				gAttribs[attrId - 1] = curLine.readString("");
+			if (attrId > 0 && attrId < 30) {
+				int idx = attrId - 1;
+				gAttribs[idx] = curLine.readString("");
+				modTime[__nAttrPackets[idx]] = updateTime;
+			}
 		}
 		else if (curCommand == "NPCSCRIPT")
 		{
