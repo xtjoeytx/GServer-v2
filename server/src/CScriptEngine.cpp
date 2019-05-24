@@ -123,14 +123,11 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool refe
 		return scriptFunctionIter->second;
 	}
 
-	// TODO(joey): move compile into its own function
-	// Compile script, handle errors
+	// Compile script, send errors to server
 	IScriptFunction *compiledScript = _env->Compile(std::to_string(SCRIPT_ID++), code);
 	if (compiledScript == nullptr)
 	{
-		// TODO(joey): Delete? Let the caller handle the errors
-		auto error = _env->getScriptError();
-		error.DebugPrint();
+		_server->reportScriptException(_env->getScriptError());
 		return nullptr;
 	}
 

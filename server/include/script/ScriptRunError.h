@@ -5,17 +5,17 @@
 class ScriptRunError
 {
 public:
-	ScriptRunError() = default;
+	ScriptRunError() : lineno(0), startcol(0), endcol(0) {
+	}
+
 	~ScriptRunError() = default;
 	
-	// TODO(joey): Remove this
-	void DebugPrint()
-	{
-		printf("Error compiling: %s\n", error.c_str());
-		printf("\tLine: %s\n", error_line.c_str());
-		printf("\tFilename: %s\n", filename.c_str());
-		printf("\tLine Number: %d\n", lineno);
-		printf("\tSpecifically: %s\n", error_line.substr(startcol, endcol - startcol).c_str());
+	std::string getErrorString() const {
+		std::string error_message; // ("Error compiling: ");
+		error_message.append(error);
+		error_message.append(" at ");
+		error_message.append(error_line);
+		return error_message;
 	}
 	
 	std::string filename;
