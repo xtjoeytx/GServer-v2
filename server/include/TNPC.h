@@ -173,10 +173,11 @@ class TNPC
 		void setScripter(const CString& name)	{ scripterName = name; }
 		void setBlockingFlags(int val)			{ blockFlags = val; }
 		void setVisibleFlags(int val)			{ visFlags = val; }
+		void setSave(unsigned int idx, unsigned char val);
 
 		// get functions
 		unsigned int getId() const				{ return id; }
-		TLevel* getLevel() const				{ return level; }
+		bool isLevelNPC() const					{ return levelNPC; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
 		int getPixelX() const					{ return x2; }
@@ -195,12 +196,12 @@ class TNPC
 		const CString& getServerScript() const	{ return serverScript; }
 		const CString& getScriptCode() const	{ return originalScript; }
 		const CString& getScripter() const		{ return scripterName; }
-		const CString& getAttribute(unsigned int index) const { return gAttribs[index]; }
+		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
-
-		bool isLevelNPC() const					{ return levelNPC; }
+		unsigned char getSave(unsigned int idx) const;
 
 #ifdef V8NPCSERVER
+		// TODO(joey): clean this all up, some of this stuff can be taken out of the v8npcserver definition
 		void addClassCode(const std::string& className, const std::string& classCode);
 		void setTimeout(int val);
 		void updatePropModTime(unsigned char propId);
@@ -211,6 +212,12 @@ class TNPC
 
 		IScriptWrapped<TNPC> * getScriptObject() const;
 		void setScriptObject(IScriptWrapped<TNPC> *object);
+
+		// -- flags
+		CString getFlag(const std::string& pFlagName) const;
+		void setFlag(const std::string& pFlagName, const CString& pFlagValue);
+		void deleteFlag(const std::string& pFlagName);
+		std::unordered_map<std::string, CString>* getFlagList() { return &flagList; }
 
 		// -- triggeractions
 		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
@@ -235,6 +242,8 @@ class TNPC
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
+
+		void registerNpcUpdates();
 #endif
 
 	private:
@@ -289,12 +298,27 @@ time_t TNPC::getPropModTime(unsigned char pId)
 	return 0;
 }
 
+inline
+unsigned char TNPC::getSave(unsigned int idx) const
+{
+	if (idx < 10) return saves[idx];
+	return 0;
+}
+
+inline
+void TNPC::setSave(unsigned int idx, unsigned char val)
+{
+	if (idx < 10) saves[idx] = val;
+}
+
 #ifdef V8NPCSERVER
 
 inline void TNPC::updatePropModTime(unsigned char propId)
 {
-	if (propId < NPCPROP_COUNT)
+	if (propId < NPCPROP_COUNT) {
 		propModified.insert(propId);
+		registerNpcUpdates();
+	}
 }
 
 inline void TNPC::allowNpcWarping(bool canWarp)
@@ -322,6 +346,24 @@ inline void TNPC::setScriptObject(IScriptWrapped<TNPC> *object) {
 	_scriptObject = object;
 }
 
+inline CString TNPC::getFlag(const std::string& pFlagName) const
+{
+	auto it = flagList.find(pFlagName);
+	if (it != flagList.end())
+		return it->second;
+	return "";
+}
+
+inline void TNPC::setFlag(const std::string & pFlagName, const CString & pFlagValue)
+{
+	flagList[pFlagName] = pFlagValue;
+}
+
+inline void TNPC::deleteFlag(const std::string& pFlagName)
+{
+	flagList.erase(pFlagName);
+}
+
 // TODO(joey): hm
 #include "TServer.h"
 
@@ -335,6 +377,13 @@ inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, 
 	if (registerAction)
 		scriptEngine->RegisterNpcUpdate(this);
 }
+
+inline void TNPC::registerNpcUpdates()
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+	scriptEngine->RegisterNpcUpdate(this);
+}
+
 #endif
 
 #endif

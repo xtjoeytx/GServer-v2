@@ -465,14 +465,8 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	sendPacket(ret);
 	return true;
 }
-#endif
-
-/*
-	NPC-Server Functionality
-*/
 
 // Send's NC Address/Port to Player (RC Only)
-#ifdef V8NPCSERVER
 void TPlayer::sendNCAddr()
 {
 	// RC's only!
@@ -483,4 +477,5 @@ void TPlayer::sendNCAddr()
 	CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
 	sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)0 << npcServerIp << "," << CString(server->getNCPort()));
 }
+
 #endif
