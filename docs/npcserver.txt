@@ -14,6 +14,7 @@ Server Object:
 	Functions:
 		findlevel(string) - finds a level by name
 		findnpc(id/string) - finds an npc by id or name
+		savelog("filename", "message") - save a log message to a file in logs/
 		sendtonc("message") - outputs `message` to RC's with NC-access
 		sendtorc("message") - outputs `message` to RC's
 
