@@ -104,8 +104,8 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 		v8::Handle<v8::Message> message = tryCatch->Message();
 		if (!message.IsEmpty())
 		{
-			// TODO(joey): this throws a seg-fault, pretty sure this is the correct way to do it though. untested
-			//_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
+			// TODO(joey): this was throwing a seg-fault on other platforms, pretty sure this is the correct way to do it though. could of been due to the stack issue
+			_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
 			_lastScriptError.filename = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
 			_lastScriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
 			_lastScriptError.lineno = message->GetLineNumber(context).ToChecked();

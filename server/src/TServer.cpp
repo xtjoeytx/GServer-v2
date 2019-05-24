@@ -999,6 +999,19 @@ void TServer::saveNpcs()
 	}
 }
 
+void TServer::reportScriptException(const ScriptRunError& error)
+{
+	std::string error_message = error.getErrorString();
+	sendToNC(error_message);
+	getScriptLog().out(error_message + "\n");
+}
+
+void TServer::reportScriptException(const std::string& error_message)
+{
+	sendToNC(error_message);
+	getScriptLog().out(error_message + "\n");
+}
+
 #endif
 
 /////////////////////////////////////////////////////

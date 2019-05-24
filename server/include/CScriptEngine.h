@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <vector>
 #include "ScriptAction.h"
+#include "ScriptEnv.h"
 #include "ScriptFactory.h"
 #include "ScriptWrapped.h"
 
@@ -29,65 +30,30 @@ public:
 	void Cleanup();
 	void RunScripts(bool timedCall = false);
 
-	inline IScriptWrapped<TServer> * getServerObject() const {
-		return _serverObject;
-	}
+	TServer * getServer() const;
+	IScriptEnv * getScriptEnv() const;
+	IScriptWrapped<TServer> * getServerObject() const;
 
-	inline TServer * getServer() const {
-		return _server;
-	}
+	bool ExecuteNpc(TNPC *npc);
+	bool ExecuteWeapon(TWeapon *weapon);
 
-	inline IScriptEnv * getScriptEnv() const {
-		return _env;
-	}
+	void RegisterNpcTimer(TNPC *npc);
+	void RegisterNpcUpdate(TNPC *npc);
+	void RegisterWeaponUpdate(TWeapon *weapon);
 
-	//
-	inline void UnregisterNpcTimer(TNPC *npc) {
-		_updateNpcsTimer.erase(npc);
-	}
+	void UnregisterNpcTimer(TNPC *npc);
+	void UnregisterNpcUpdate(TNPC *npc);
+	void UnregisterWeaponUpdate(TWeapon *weapon);
 
-	inline void RegisterNpcTimer(TNPC *npc) {
-		_updateNpcsTimer.insert(npc);
-	}
-
-	//
-	inline void UnregisterNpcUpdate(TNPC *npc) {
-		_updateNpcs.erase(npc);
-	}
-
-	inline void RegisterNpcUpdate(TNPC *npc) {
-		_updateNpcs.insert(npc);
-	}
-
-	//
-	inline void UnregisterWeaponUpdate(TWeapon *weapon) {
-		_updateWeapons.erase(weapon);
-	}
-
-	inline void RegisterWeaponUpdate(TWeapon *weapon) {
-		_updateWeapons.insert(weapon);
-	}
-
-
-	//
-	inline IScriptFunction * getCallBack(const std::string& callback) const {
-		auto it = _callbacks.find(callback);
-		if (it != _callbacks.end())
-			return it->second;
-
-		return 0;
-	}
-
-	inline void setCallBack(const std::string& callback, IScriptFunction *cbFunc) {
-		_callbacks[callback] = cbFunc;
-	}
+	// callbacks
+	IScriptFunction * getCallBack(const std::string& callback) const;
+	void setCallBack(const std::string& callback, IScriptFunction *cbFunc);
 
 	// Script Compile / Cache
 	IScriptFunction * CompileCache(const std::string& code, bool referenceCount = true);
 	bool ClearCache(const std::string& code);
 
-	bool ExecuteNpc(TNPC *npc);
-	bool ExecuteWeapon(TWeapon *weapon);
+	const ScriptRunError& getScriptError() const;
 
 	template<class... Args>
 	ScriptAction * CreateAction(const std::string& action, Args... An);
@@ -113,6 +79,68 @@ private:
 	IScriptWrapped<TServer> *_environmentObject;
 	TServer *_server;
 };
+
+// Getters
+
+inline TServer * CScriptEngine::getServer() const {
+	return _server;
+}
+
+inline IScriptEnv * CScriptEngine::getScriptEnv() const {
+	return _env;
+}
+
+inline IScriptWrapped<TServer> * CScriptEngine::getServerObject() const {
+	return _serverObject;
+}
+
+inline IScriptFunction * CScriptEngine::getCallBack(const std::string& callback) const {
+	auto it = _callbacks.find(callback);
+	if (it != _callbacks.end())
+		return it->second;
+
+	return 0;
+}
+
+inline const ScriptRunError& CScriptEngine::getScriptError() const {
+	return _env->getScriptError();
+}
+
+// Setters
+
+inline void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction *cbFunc) {
+	_callbacks[callback] = cbFunc;
+}
+
+// Register scripts for processing
+
+inline void CScriptEngine::RegisterNpcTimer(TNPC *npc) {
+	_updateNpcsTimer.insert(npc);
+}
+
+inline void CScriptEngine::RegisterNpcUpdate(TNPC *npc) {
+	_updateNpcs.insert(npc);
+}
+
+inline void CScriptEngine::RegisterWeaponUpdate(TWeapon *weapon) {
+	_updateWeapons.insert(weapon);
+}
+
+// Unregister scripts from processing
+
+inline void CScriptEngine::UnregisterWeaponUpdate(TWeapon *weapon) {
+	_updateWeapons.erase(weapon);
+}
+
+inline void CScriptEngine::UnregisterNpcUpdate(TNPC *npc) {
+	_updateNpcs.erase(npc);
+}
+
+inline void CScriptEngine::UnregisterNpcTimer(TNPC *npc) {
+	_updateNpcsTimer.erase(npc);
+}
+
+//
 
 template<class... Args>
 ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An)

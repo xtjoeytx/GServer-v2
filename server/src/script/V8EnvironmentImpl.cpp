@@ -27,12 +27,9 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 		// Unwrap Object
 		TServer *serverObject = UnwrapObject<TServer>(args.This());
 
-		// Message
-		CString message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
-
-		// Report exception to NC / file
-		serverObject->sendToNC(message);
-		serverObject->getScriptLog().out(message << "\n");
+		// Report exception to server
+		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
+		serverObject->reportScriptException(message);
 	}
 
 	V8ENV_D("End Environment::reportException()\n\n");

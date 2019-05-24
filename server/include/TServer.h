@@ -101,6 +101,9 @@ class TServer : public CSocketStub
 		void saveWeapons();
 #ifdef V8NPCSERVER
 		void saveNpcs();
+
+		void reportScriptException(const ScriptRunError& error);
+		void reportScriptException(const std::string& error_message);
 #endif
 
 		// Get functions.
@@ -135,7 +138,12 @@ class TServer : public CSocketStub
 		std::vector<CString>* getStatusList()			{ return &statusList; }
 		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
-		
+
+#ifdef V8NPCSERVER
+		CScriptEngine * getScriptEngine() { return &mScriptEngine; }
+		int getNCPort() const { return mNCPort; }
+#endif
+
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
 		TLevel* getLevel(const CString& pLevel);
@@ -190,11 +198,6 @@ class TServer : public CSocketStub
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void NC_UpdateWeapon(TWeapon *pWeapon);
-
-#ifdef V8NPCSERVER
-		CScriptEngine * getScriptEngine()	{ return &mScriptEngine; }
-		int getNCPort() const 				{ return mNCPort; }
-#endif
 
 	private:
 		bool doTimedEvents();
