@@ -2,16 +2,6 @@
 
 #include <assert.h>
 
-// default implementation
-template <typename T>
-struct TypeName
-{
-	static const char * Get()
-	{
-		return typeid(T).name();
-	}
-};
-
 template<class T>
 class IScriptWrapped
 {
@@ -21,11 +11,12 @@ public:
 	}
 	
 	virtual ~IScriptWrapped() {
-		// TODO(joey): This assert is triggered when updating levels quickly. The reason for this
+		// This assert is triggered when updating levels quickly. The reason for this
 		// is because npcs may have actions queued up, and referenceCount doesn't decrease on destructor
 		// only when the action is invoked and the arguments are parsed. Will look into this, but shouldn't
 		// have any side effects anyway.
-		//assert(_referenceCount == 0);
+		// joey (5/24/19) - believe this is fixed, but leaving the note and enabling the assert
+		assert(_referenceCount == 0);
 	}
 	
 	inline T * Object() const {

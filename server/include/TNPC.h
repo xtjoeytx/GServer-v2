@@ -188,9 +188,11 @@ class TNPC
 		int getBlockFlags() const 				{ return blockFlags; }
 		int getVisibleFlags() const 			{ return visFlags; }
 		int getTimeout() const 					{ return timeout; }
+		const CString& getHeadImage() const		{ return headImage; }
 		const CString& getImage() const			{ return image; }
 		const CString& getNickname() const 		{ return nickName; }
 		const std::string& getName() const		{ return npcName; }
+		const CString& getType() const			{ return npcType; }
 		const CString& getWeaponName() const	{ return weaponName; }
 		const CString& getClientScript() const	{ return clientScript; }
 		const CString& getServerScript() const	{ return serverScript; }

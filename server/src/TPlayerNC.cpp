@@ -29,8 +29,43 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 	// for updated level information on database npcs? Just a thought..
 	if (pPacket.bytesLeft())
 	{
-		int npcId = pPacket.readGUInt();
-		printf("NPC Get: %d\n", npcId);
+		unsigned int npcId = pPacket.readGUInt();
+
+		TNPC *npc = server->getNPC(npcId);
+		if (npc != nullptr)
+		{
+			CString npcName = npc->getName();
+			
+			CString npcDump;
+			npcDump << "Variables dump from npc " << npcName << "\n\n";
+			npcDump << npcName << ".type: " << npc->getType() << "\n";
+			npcDump << npcName << ".scripter: " << npc->getScripter() << "\n";
+			if (npc->getLevel())
+				npcDump << npcName << ".level: " << npc->getLevel()->getLevelName() << "\n";
+			npcDump << "\nAttributes:\n";
+			npcDump << npcName << ".image: " << npc->getImage() << "\n";
+			npcDump << npcName << ".script: size: " << CString(npc->getScriptCode().length()) << "\n";
+			npcDump << npcName << ".visibility flags: " << (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE ? "visible" : "hidden") << "\n";
+			npcDump << npcName << ".id: " << CString(npc->getId()) << "\n";
+			npcDump << npcName << ".head: " << npc->getHeadImage() << "\n";
+			npcDump << npcName << ".xprecise: " << CString((float)(npc->getPixelX() / 16.0f)) << "\n";
+			npcDump << npcName << ".yprecise: " << CString((float)(npc->getPixelY() / 16.0f)) << "\n";
+			npcDump << npcName << ".timeout: " << CString(npc->getTimeout()) << "\n";
+			npcDump << npcName << ".scripttime (in the last min): " << "not implemented" << "\n";
+			npcDump << npcName << ".scriptcalls: " << "not implemented" << "\n";
+
+			// TODO(joey): npc.attr[]
+
+			auto npcFlags = npc->getFlagList();
+			if (!npcFlags->empty())
+			{
+				npcDump << "\nFlags:\n";
+				for (auto it = npcFlags->begin(); it != npcFlags->end(); ++it)
+					npcDump << npcName << ".flags[\"" << (*it).first << "\"]: " << (*it).second << "\n";
+			}
+
+			sendPacket(CString() >> (char)PLO_NC_NPCATTRIBUTES << npcDump.gtokenize());
+		}
 	}
 
 	return true;
@@ -44,10 +79,10 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	TNPC *npc = server->getNPC(npcId);
 
-	if (npc != 0 && !npc->isLevelNPC())
+	if (npc != nullptr && !npc->isLevelNPC())
 	{
 		bool result = server->deleteNPC(npc, true);
 		if (result)
@@ -65,10 +100,10 @@ bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 
 	TNPC *npc = server->getNPC(npcId);
-	if (npc != 0 && !npc->isLevelNPC())
+	if (npc != nullptr && !npc->isLevelNPC())
 	{
 		npc->resetNPC();
 		server->sendToNC(CString("NPC ") << npc->getName() << " reset by " << accountName);
@@ -86,7 +121,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	}
 
 	// {160}{INT id}{GSTRING script}
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	TNPC *npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
@@ -130,25 +165,18 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
-	printf("NPC Get Flags: %d\n", npcId);
-
-	// TODO(joey): temporarily used weapons to get this setup
-	/*
-	auto weaponList = server->getWeaponList();
-	if (!weaponList->empty())
+	unsigned int npcId = pPacket.readGUInt();
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
 	{
-		auto it = weaponList->begin();
-		TWeapon *weapon = it->second;
-		if (weapon != 0)
-		{
-			CString ret;
-			ret >> (char)PLO_NC_NPCFLAGS >> (int)npcId << weapon->getFullScript().replaceAll("\xa7", "\n").gtokenize();
-			sendPacket(ret);
-		}
+		CString flagListStr;
+
+		auto flagList = npc->getFlagList();
+		for (auto it = flagList->begin(); it != flagList->end(); ++it)
+			flagListStr << (*it).first << "=" << (*it).second << "\n";
+
+		sendPacket(CString() >> (char)PLO_NC_NPCFLAGS >> (int)npcId << flagListStr.gtokenize());
 	}
-	else printf("no weapons exist\n");
-	*/
 
 	return true;
 }
@@ -161,7 +189,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	CString npcScript = pPacket.readString("").guntokenize();
 
 	TNPC *npc = server->getNPC(npcId);
@@ -184,10 +212,27 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		return false;
 	}
 
-	int npcId = pPacket.readGUInt();
+	unsigned int npcId = pPacket.readGUInt();
 	CString npcFlags = pPacket.readString("").guntokenize();
-	printf("NPC Set Flags: %d\n", npcId);
-	printf("NPC Flags: %s\n", npcFlags.text());
+
+	TNPC *npc = server->getNPC(npcId);
+	if (npc != nullptr)
+	{
+		auto flagList = npc->getFlagList();
+		auto newFlags = npcFlags.tokenize("\n");
+		
+		// Clear flags
+		flagList->clear();
+
+		// Iterate new flags
+		for (auto it = newFlags.begin(); it != newFlags.end(); ++it)
+		{
+			CString flag = *it;
+			CString flagName = flag.readString("=");
+			CString flagValue = flag.readString("");
+			npc->setFlag(flagName.text(), flagValue);
+		}
+	}
 
 	return true;
 }
@@ -290,7 +335,6 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	}
 
 	return true;
-
 }
 
 bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)

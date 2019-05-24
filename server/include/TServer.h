@@ -167,11 +167,11 @@ class TServer : public CSocketStub
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
 		std::string getClass(const std::string& className) const;
-		//void saveClass(const std::string& className) const;
 		void updateClass(const std::string& className, const std::string& classCode);
 		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
 		void playerLoggedIn(TPlayer *player);
+		void logToFile(const std::string& fileName, const std::string& message);
 
 		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
 		bool setFlag(CString pFlag, bool pSendToPlayers = true);
