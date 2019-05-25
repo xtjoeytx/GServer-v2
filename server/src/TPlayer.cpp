@@ -3696,19 +3696,39 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 
 bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
-	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server.
+	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server. (5/25/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
 	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
 	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
 	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
 	CString sgani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char unknown2 = pPacket.readGUChar();
+	unsigned char shootParamsLength = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	CString shootparams = pPacket.readString("");
+
+	//printf("Shoot Params (%d): %s\n", shootparams.length(), shootparams.text());
+
+	// ActionProjectile on server.
+	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
+
+	//this.speed = (this.power > 0 ? 0 : 20 * 0.05);
+	//this.horzspeed = cos(this.zangle) * this.speed;
+	//this.vertspeed = sin(this.zangle) * this.speed;
+	//this.newx = playerx + 1.5; // offset
+	//this.newy = playery + 2; // offset
+	//function CalcPos() {
+	//	this.newx = this.newx + (cos(this.angle) * this.horzspeed);
+	//	this.newy = this.newy - (sin(this.angle) * this.horzspeed);
+	//	setplayerprop #c, Positions #v(this.newx), #v(this.newy);
+	//	if (onwall(this.newx, this.newy)) {
+	//		this.calcpos = 0;
+	//		this.hittime = timevar2;
+	//	}
+	//}
+
 
 	// Send data now.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);
 
-//	printf("shoot: %s\n", pPacket.text());
-//	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
 	return true;
 }
 
