@@ -147,7 +147,6 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
 	v8::Local<v8::Script> script;
 	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script)) {
-		printf("Script compile error: %s\n", source.c_str());
 		ParseErrors(&try_catch);
 		return nullptr;
 	}
@@ -157,8 +156,6 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 
 	// not catching errors here?? need to fix. throws an error under Server::addNpc call
 	if (!script->Run(context).ToLocal(&result)) {
-		// TODO(joey): script execution errors
-		printf("Script run error\n");
 		ParseErrors(&try_catch);
 		return nullptr;
 	}

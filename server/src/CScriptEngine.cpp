@@ -217,16 +217,8 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	if (scriptTableRet.IsEmpty())
 	{
 		V8ENV_D("Failed when executing script\n");
-		if (try_catch.HasCaught())
-		{
-			// TODO(joey): All this ScriptRunError is temporary, will likely make a member variable that holds the last script error.
-			v8::Handle<v8::Message> message = try_catch.Message();
-			ScriptRunError scriptError;
-			scriptError.filename  = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
-			scriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
-			V8ENV_D("Error Line: %s\n", scriptError.error_line.c_str());
-			return false;
-		}
+		env->ParseErrors(&try_catch);
+		_server->reportScriptException(_env->getScriptError());
 	}
 
 	V8ENV_D("End Global::ExecuteNPC()\n\n");
@@ -294,15 +286,8 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	if (scriptTableRet.IsEmpty())
 	{
 		V8ENV_D("Failed when executing weapon script\n");
-		if (try_catch.HasCaught())
-		{
-			v8::Handle<v8::Message> message = try_catch.Message();
-			ScriptRunError scriptError;
-			scriptError.filename  = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
-			scriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
-			V8ENV_D("Error Line: %s\n", scriptError.error_line.c_str());
-			return false;
-		}
+		env->ParseErrors(&try_catch);
+		_server->reportScriptException(_env->getScriptError());
 	}
 
 	V8ENV_D("End Global::ExecuteWeapon()\n\n");
