@@ -11,7 +11,7 @@
 #include "CSocket.h"
 
 #ifdef V8NPCSERVER
-#include "ScriptWrapped.h"
+#include "ScriptBindings.h"
 #endif
 
 class TLevel;

@@ -9,6 +9,7 @@
 #include "IEnums.h"
 
 #ifdef V8NPCSERVER
+#include <chrono>
 #include "CScriptEngine.h"
 #include "TPlayer.h"
 #endif
@@ -891,8 +892,11 @@ bool TNPC::runScriptTimer()
 
 void TNPC::runScriptEvents()
 {
+#ifndef NOSCRIPTPROFILING
+	auto currentTimer = std::chrono::high_resolution_clock::now();
+#endif
+
 	// TODO(joey): deadlocking if an action invokes another action (ex. an action invoking setprops which invokes playertouchsme)
-	
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end();)
 	{
@@ -906,6 +910,12 @@ void TNPC::runScriptEvents()
 		}
 		else ++it;
 	}
+
+#ifndef NOSCRIPTPROFILING
+	auto endTimer = std::chrono::high_resolution_clock::now();
+	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
+	_scriptTimeSamples.push_back({ endTimer + std::chrono::seconds(60), time_diff.count() });
+#endif
 
 	// Send properties modified by scripts
 	if (!propModified.empty())
@@ -927,6 +937,68 @@ void TNPC::runScriptEvents()
 		if (level != nullptr)
 			server->sendPacketToLevel(propPacket, level->getMap(), level, nullptr, true);
 	}
+}
+
+double TNPC::getExecutionTime()
+{
+	double exectime = 0.0;
+
+#ifndef NOSCRIPTPROFILING
+	auto time_now = std::chrono::high_resolution_clock::now();
+
+	for (auto it = _scriptTimeSamples.begin(); it != _scriptTimeSamples.end();)
+	{
+		auto sample_diff = std::chrono::duration_cast<std::chrono::seconds>((*it).expiration - time_now);
+		if (sample_diff.count() <= 0)
+		{
+			it = _scriptTimeSamples.erase(it);
+			continue;
+		}
+
+		exectime += (*it).sample;
+		++it;
+	}
+#endif
+
+	return exectime;
+}
+
+CString TNPC::getVariableDump()
+{
+	CString npcDump;
+	CString npcNameStr = npcName;
+	if (npcNameStr.isEmpty())
+		npcNameStr = CString(id);
+
+	npcDump << "Variables dump from npc " << npcNameStr << "\n\n";
+	if (!npcType.isEmpty())
+		npcDump << npcNameStr << ".type: " << npcType << "\n";
+	if (!scripterName.isEmpty())
+		npcDump << npcNameStr << ".scripter: " << scripterName << "\n";
+	if (level)
+		npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
+	npcDump << "\nAttributes:\n";
+	npcDump << npcNameStr << ".image: " << image << "\n";
+	npcDump << npcNameStr << ".script: size: " << CString(getScriptCode().length()) << "\n";
+	npcDump << npcNameStr << ".visibility flags: " << (visFlags & NPCVISFLAG_VISIBLE ? "visible" : "hidden") << "\n";
+	npcDump << npcNameStr << ".id: " << CString(id) << "\n";
+	npcDump << npcNameStr << ".head: " << headImage << "\n";
+	npcDump << npcNameStr << ".xprecise: " << CString((float)(x2 / 16.0f)) << "\n";
+	npcDump << npcNameStr << ".yprecise: " << CString((float)(y2 / 16.0f)) << "\n";
+	npcDump << npcNameStr << ".timeout: " << CString((float)(timeout * 0.05f)) << "\n";
+	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(getExecutionTime()) << "\n";
+	npcDump << npcNameStr << ".scriptcalls: " << CString(getExecutionCalls()) << "\n";
+
+	// TODO(joey): npc.attr[]
+
+	if (!flagList.empty())
+	{
+		npcDump << "\nFlags:\n";
+		for (auto it = flagList.begin(); it != flagList.end(); ++it)
+			npcDump << npcNameStr << ".flags[\"" << (*it).first << "\"]: " << (*it).second << "\n";
+	}
+
+	return npcDump;
 }
 
 void TNPC::moveNPC(int dx, int dy, double time, int options)

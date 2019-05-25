@@ -106,10 +106,11 @@ if(V8NPCSERVER)
 		include/CScriptEngine.h
 		include/script/ScriptAction.h
 		include/script/ScriptArguments.h
+		include/script/ScriptBindings.h
 		include/script/ScriptEnv.h
 		include/script/ScriptFactory.h
 		include/script/ScriptFunction.h
-		include/script/ScriptRunError.h
+		include/script/ScriptUtils.h
 		include/script/ScriptWrapped.h
 		include/script/V8Macros.h
 		include/script/V8ScriptArguments.h

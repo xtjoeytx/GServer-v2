@@ -1,6 +1,13 @@
 #pragma once
 
+#include <chrono>
 #include <string>
+
+struct ScriptTimeSample
+{
+	std::chrono::high_resolution_clock::time_point expiration;
+	double sample;
+};
 
 class ScriptRunError
 {

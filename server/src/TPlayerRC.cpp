@@ -1095,6 +1095,22 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			nclog.out("%s saved the npcs to disk.\n", accountName.text());
 			server->saveNpcs();
 		}
+		else if (words[0] == "/stats" && words.size() == 1)
+		{
+			auto npcStats = server->calculateNpcStats();
+
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
+
+			int idx = 0;
+			for (auto it = npcStats.begin(); it != npcStats.end(); ++it)
+			{
+				idx++;
+				sendPacket(CString() >> (char)PLO_RC_CHAT << CString(idx) << ". 	" << CString((*it).first) << "	" << (*it).second);
+				if (idx == 50)
+					break;
+			}
+			server->saveNpcs();
+		}
 #endif
 		else if(words[0] == "/find" && words.size() > 1)
 		{

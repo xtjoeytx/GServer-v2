@@ -34,36 +34,7 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 		TNPC *npc = server->getNPC(npcId);
 		if (npc != nullptr)
 		{
-			CString npcName = npc->getName();
-			
-			CString npcDump;
-			npcDump << "Variables dump from npc " << npcName << "\n\n";
-			npcDump << npcName << ".type: " << npc->getType() << "\n";
-			npcDump << npcName << ".scripter: " << npc->getScripter() << "\n";
-			if (npc->getLevel())
-				npcDump << npcName << ".level: " << npc->getLevel()->getLevelName() << "\n";
-			npcDump << "\nAttributes:\n";
-			npcDump << npcName << ".image: " << npc->getImage() << "\n";
-			npcDump << npcName << ".script: size: " << CString(npc->getScriptCode().length()) << "\n";
-			npcDump << npcName << ".visibility flags: " << (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE ? "visible" : "hidden") << "\n";
-			npcDump << npcName << ".id: " << CString(npc->getId()) << "\n";
-			npcDump << npcName << ".head: " << npc->getHeadImage() << "\n";
-			npcDump << npcName << ".xprecise: " << CString((float)(npc->getPixelX() / 16.0f)) << "\n";
-			npcDump << npcName << ".yprecise: " << CString((float)(npc->getPixelY() / 16.0f)) << "\n";
-			npcDump << npcName << ".timeout: " << CString(npc->getTimeout()) << "\n";
-			npcDump << npcName << ".scripttime (in the last min): " << "not implemented" << "\n";
-			npcDump << npcName << ".scriptcalls: " << "not implemented" << "\n";
-
-			// TODO(joey): npc.attr[]
-
-			auto npcFlags = npc->getFlagList();
-			if (!npcFlags->empty())
-			{
-				npcDump << "\nFlags:\n";
-				for (auto it = npcFlags->begin(); it != npcFlags->end(); ++it)
-					npcDump << npcName << ".flags[\"" << (*it).first << "\"]: " << (*it).second << "\n";
-			}
-
+			CString npcDump = npc->getVariableDump();
 			sendPacket(CString() >> (char)PLO_NC_NPCATTRIBUTES << npcDump.gtokenize());
 		}
 	}
@@ -368,12 +339,18 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	// {114}{level}
 	CString level = pPacket.readString("");
 
-	CString msg =  "Variables dump from npc\n\nASDFG";
-	msg.gtokenizeI();
+	TLevel *npcLevel = server->getLevel(level);
+	if (npcLevel != nullptr)
+	{
+		CString npcDump;
+		npcDump << "Level npcs dump for " << npcLevel->getLevelName() << "\n";
 
-	CString ret;
-	ret >> (char)PLO_NC_LEVELDUMP << msg;
-	sendPacket(ret);
+		auto npcList = npcLevel->getLevelNPCs();
+		for (auto it = npcList->begin(); it != npcList->end(); ++it)
+			npcDump << "\n" << (*it)->getVariableDump();
+
+		sendPacket(CString() >> (char)PLO_NC_LEVELDUMP << npcDump.gtokenize());
+	}
 
 	return true;
 }

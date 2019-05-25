@@ -282,7 +282,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 
 	// Arguments to call function
 	v8::Local<v8::Value> scriptFunctionArgs[1] = {
-			wrappedObjectHandle
+		wrappedObjectHandle
 	};
 
 	// Execute the compiled script with the instance from the newly-wrapped object
