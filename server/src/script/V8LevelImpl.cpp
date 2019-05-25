@@ -33,7 +33,7 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	// Get npcs list
 	auto npcList = levelObject->getLevelNPCs();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, npcList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList->size());
 
 	int idx = 0;
 	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
@@ -55,7 +55,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 	// Get npcs list
 	auto playerList = levelObject->getPlayerList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, playerList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerList->size());
 
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
@@ -90,7 +90,7 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	std::vector<TNPC *> npcList = levelObject->findAreaNpcs(startX, startY, endX, endY);
 
 	// Create array of objects
-	v8::Local<v8::Array> result = v8::Array::New(isolate, npcList.size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList.size());
 
 	int idx = 0;
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)

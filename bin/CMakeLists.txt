@@ -44,6 +44,8 @@ if(V8NPCSERVER)
 		 )
 
 	install(FILES ${SERVERS_DEFAULT_NPCLOGS} DESTINATION "./servers/default/logs")
+	
+	install(DIRECTORY DESTINATION "./servers/default/scripts")
 endif()
 
 file(GLOB TEXT

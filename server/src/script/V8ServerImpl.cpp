@@ -172,7 +172,7 @@ void Server_Get_TimeVar2(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	TServer *serverObject = UnwrapObject<TServer>(info.This());
 
-	unsigned int timevar = time(0);
+	unsigned int timevar = (unsigned int)time(0);
 	info.GetReturnValue().Set(timevar);
 }
 
@@ -241,7 +241,7 @@ void Server_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	// Get flags list
 	auto flagList = serverObject->getServerFlags();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, flagList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList->size());
 
 	int idx = 0;
 	for (auto it = flagList->begin(); it != flagList->end(); ++it)
@@ -261,7 +261,7 @@ void Server_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	// Get npcs list
 	auto npcList = serverObject->getNPCList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, npcList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList->size());
 
 	int idx = 0;
 	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
@@ -283,7 +283,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	// Get npcs list
 	auto playerList = serverObject->getPlayerList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, playerList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerList->size());
 
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {

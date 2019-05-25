@@ -8,10 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "ScriptAction.h"
-#include "ScriptEnv.h"
-#include "ScriptFactory.h"
-#include "ScriptWrapped.h"
+#include "ScriptBindings.h"
 
 class IScriptEnv;
 class IScriptFunction;

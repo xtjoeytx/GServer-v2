@@ -102,6 +102,7 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		void saveNpcs();
 
+		std::vector<std::pair<double, std::string>> calculateNpcStats();
 		void reportScriptException(const ScriptRunError& error);
 		void reportScriptException(const std::string& error_message);
 #endif

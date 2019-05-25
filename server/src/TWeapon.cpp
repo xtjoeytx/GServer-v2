@@ -8,6 +8,7 @@
 #include "IUtil.h"
 
 #ifdef V8NPCSERVER
+#include <chrono>
 #include "TPlayer.h"
 #endif
 
@@ -288,6 +289,10 @@ void TWeapon::freeScriptResources()
 
 void TWeapon::runScriptEvents()
 {
+#ifndef NOSCRIPTPROFILING
+	auto currentTimer = std::chrono::high_resolution_clock::now();
+#endif
+
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end(); ++it)
 	{
@@ -300,5 +305,11 @@ void TWeapon::runScriptEvents()
 		}
 	}
 	_actions.clear();
+
+#ifndef NOSCRIPTPROFILING
+	auto endTimer = std::chrono::high_resolution_clock::now();
+	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
+	_scriptTimeSamples.push_back({ endTimer + std::chrono::seconds(60), time_diff.count() });
+#endif
 }
 #endif

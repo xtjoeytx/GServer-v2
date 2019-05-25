@@ -8,10 +8,7 @@
 #ifdef V8NPCSERVER
 #include <unordered_map>
 #include <unordered_set>
-#include "ScriptWrapped.h"
-
-class ScriptAction;
-
+#include "ScriptBindings.h"
 #endif
 
 enum
@@ -221,16 +218,6 @@ class TNPC
 		void deleteFlag(const std::string& pFlagName);
 		std::unordered_map<std::string, CString>* getFlagList() { return &flagList; }
 
-		// -- triggeractions
-		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
-		void queueNpcTrigger(const std::string& action, const std::string& data);
-
-		//
-		void freeScriptResources();
-		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
-		bool runScriptTimer();
-		void runScriptEvents();
-
 		void allowNpcWarping(bool canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
 		void resetNPC();
@@ -242,10 +229,21 @@ class TNPC
 		bool loadNPC(const CString& fileName);
 		void saveNPC() const;
 
+		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
+		void queueNpcTrigger(const std::string& action, const std::string& data);
+
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 
 		void registerNpcUpdates();
+		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
+
+		bool runScriptTimer();
+		void runScriptEvents();
+
+		double getExecutionTime();
+		unsigned int getExecutionCalls() const { return (unsigned int)_scriptTimeSamples.size(); }
+		CString getVariableDump();
 #endif
 
 	private:
@@ -273,6 +271,9 @@ class TNPC
 		int width, height;
 
 #ifdef V8NPCSERVER
+		void testTouch();
+		void freeScriptResources();
+
 		std::map<std::string, std::string> classMap;
 		std::unordered_set<int> propModified;
 
@@ -288,8 +289,8 @@ class TNPC
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		std::vector<ScriptAction *> _actions;
+		std::vector<ScriptTimeSample> _scriptTimeSamples;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
-		void testTouch();
 #endif
 };
 

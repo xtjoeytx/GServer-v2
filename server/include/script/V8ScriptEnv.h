@@ -3,7 +3,7 @@
 #include <vector>
 #include <v8.h>
 #include "ScriptEnv.h"
-#include "ScriptRunError.h"
+#include "ScriptUtils.h"
 #include "V8Macros.h"
 #include "V8ScriptWrapped.h"
 

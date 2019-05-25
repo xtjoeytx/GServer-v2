@@ -999,6 +999,49 @@ void TServer::saveNpcs()
 	}
 }
 
+std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
+{
+	std::vector<std::pair<double, std::string>> script_profiles;
+
+	// Iterate npcs
+	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	{
+		TNPC *npc = *it;
+		double execTime = npc->getExecutionTime();
+		if (execTime > 0.0)
+		{
+			std::string npcName = npc->getName();
+			if (npcName.empty())
+				npcName = "Level npc " + std::to_string(npc->getId());
+
+			TLevel *npcLevel = npc->getLevel();
+			if (npcLevel != nullptr) {
+				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
+					append(" at pos (").append(CString((float)npc->getPixelX() / 16.0f).text()).
+					append(", ").append(CString((float)npc->getPixelY() / 16.0f).text()).append(")");
+			}
+
+			script_profiles.push_back(std::make_pair(execTime, npcName));
+		}
+	}
+
+	// Iterate weapons
+	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
+	{
+		TWeapon *weapon = (*it).second;
+		double execTime = weapon->getExecutionTime();
+		if (execTime > 0.0)
+		{
+			std::string weaponName("Weapon ");
+			weaponName.append((*it).first.text());
+			script_profiles.push_back(std::make_pair(execTime, weaponName));
+		}
+	}
+
+	std::sort(script_profiles.rbegin(), script_profiles.rend());
+	return script_profiles;
+}
+
 void TServer::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = error.getErrorString();
