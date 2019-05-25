@@ -24,6 +24,8 @@ public:
 	void Initialize() override;
 	void Cleanup() override;
 	IScriptFunction * Compile(const std::string& name, const std::string& source) override;
+	
+	bool ParseErrors(v8::TryCatch *tryCatch);
 
 	// --
 	template<class T>
@@ -66,8 +68,6 @@ public:
 	}
 
 private:
-	bool ParseErrors(v8::TryCatch *tryCatch);
-
 	static int s_count;
 	static std::unique_ptr<v8::Platform> s_platform;
 	
