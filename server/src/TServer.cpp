@@ -333,10 +333,6 @@ void TServer::restart()
 
 bool TServer::doMain()
 {
-	// If we aren't connected to the serverlist, reconnect.
-	if (!serverlist.getConnected())
-		serverlist.connectServer();
-
 	// Update our socket manager.
 	sockManager.update(0, 5000);		// 5ms
 
