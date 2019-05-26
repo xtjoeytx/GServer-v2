@@ -3,6 +3,8 @@
 #include <cassert>
 #include <v8.h>
 #include <stdio.h>
+#include <math.h>
+#include <algorithm>
 #include <unordered_map>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"

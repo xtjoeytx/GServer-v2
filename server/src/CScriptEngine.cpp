@@ -353,32 +353,6 @@ void CScriptEngine::RunScripts(bool timedCall)
 		}
 		_updateWeapons.clear();
 	}
-
-//	if (!_actions.empty())
-//	{
-//		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-//
-//		// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-//		v8::Isolate *isolate = env->Isolate();
-//		v8::Isolate::Scope isolate_scope(isolate);
-//		v8::HandleScope handle_scope(isolate);
-//
-//		// Enter context scope
-//		v8::Context::Scope context_scope(env->Context());
-//
-//		// iterate over queued actions
-//		for (auto it = _actions.begin(); it != _actions.end(); ++it)
-//		{
-//			ScriptAction *action = *it;
-//			if (action != 0)
-//			{
-//				V8ENV_D("Running action: %s\n", action->getAction().c_str());
-//				action->Invoke();
-//				delete action;
-//			}
-//		}
-//		_actions.clear();
-//	}
 }
 
 #endif
