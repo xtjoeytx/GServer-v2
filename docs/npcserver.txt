@@ -7,6 +7,9 @@
 Scripting Reference:
 
 Global:
+	Functions:
+		tokenize(string, token = ' ') - splits a string into tokens by the given character, defaults to space
+	
 	Properties:
 		server (readonly, Server object)
 
@@ -28,6 +31,8 @@ Server Object:
 Level Object:
     Functions:
         findareanpcs(x, y, width, height) - get an array of npcs in this area
+		findnearestplayers(x, y) - gets an array of pairs of the distance and player object from the x/y
+		putnpc(x, y, "script", options) - puts an npc in the level, options is currently unused as of now and can be left outputs
 
     Properties:
         name
@@ -39,6 +44,7 @@ NPC Object:
 		blockagain() - block players from moving through the npc
 		canwarp() - allows database npc to test for links
 		cannotwarp() - disables database npc link testing (default)
+		destroy() - only available for use on npcs created via putnpc
 		dontblock() - npc won't block player movement
 		drawoverplayer() - npc will draw over the player
 		drawunderplayer() - npc will draw under the player
@@ -91,17 +97,21 @@ Player Object:
 	Properties:
 		id - (read-only)
 		account - (read-only)
+		ani
+		ap
+		bombs
 		chat
-		nick
-		x
-		y
+		darts
 		hearts
 		fullhearts
 		isadmin
 		isclient
 		level - the level object
 		levelname
+		nick
 		rupees
+		x
+		y
 		flags['key'] - retrieve/manipulate player flags
 
 Weapon Object:

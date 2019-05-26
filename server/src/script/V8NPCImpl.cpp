@@ -296,7 +296,7 @@ void NPC_GetStr_Ani(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	CString npcProp = npcObject->getProp(NPCPROP_MESSAGE);
+	CString npcProp = npcObject->getProp(NPCPROP_GANI);
 	CString propValue = npcProp.readChars(npcProp.readGUChar());
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
@@ -333,6 +333,19 @@ void NPC_Function_CannotWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
 	npcObject->allowNpcWarping(false);
+}
+
+// NPC Method: npc.destroy();
+void NPC_Function_Destroy(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+	bool status = npcObject->deleteNPC();
+	args.GetReturnValue().Set(status);
 }
 
 // NPC Method: npc.blockagain();
@@ -657,6 +670,9 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.
 			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
+			if (function == nullptr)
+				return;
+
 			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
 			v8::Local<v8::Value> newArgs[] = { args.This() };
 
@@ -996,7 +1012,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "dontblock"), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawoverplayer"), v8::FunctionTemplate::New(isolate, NPC_Function_DrawOverPlayer, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawunderplayer"), v8::FunctionTemplate::New(isolate, NPC_Function_DrawUnderPlayer, engine_ref));

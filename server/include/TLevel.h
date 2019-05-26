@@ -74,7 +74,7 @@ class TLevel
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
-		std::vector<TNPC *>* getLevelNPCs()		{ return &levelNPCs; }
+		std::vector<TNPC *>* getLevelNPCs()				{ return &levelNPCs; }
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
@@ -83,6 +83,14 @@ class TLevel
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
 		std::vector<TPlayer *>* getPlayerList()			{ return &levelPlayerList; }
+
+		//! Gets the server this level belongs to.
+		//! \return The server this level belongs to.
+		TServer* getServer() const						{ return server; }
+
+		//! Gets the status on whether players are on the level.
+		//! \return The level has players.  If true, the level has players on it.
+		bool hasPlayers() const							{ return !levelPlayerList.empty(); }
 
 		//! Gets the sparring zone status of the level.
 		//! \return The sparring zone status.  If true, the level is a sparring zone.
@@ -229,7 +237,7 @@ class TLevel
 		std::vector<TPlayer *> levelPlayerList;
 
 #ifdef V8NPCSERVER
-	IScriptWrapped<TLevel> *_scriptObject;
+		IScriptWrapped<TLevel> *_scriptObject;
 #endif
 };
 

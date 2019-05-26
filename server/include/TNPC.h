@@ -167,10 +167,12 @@ class TNPC
 		void setRupees(int val)					{ rupees = val; }
 		void setName(const std::string& name)	{ npcName = name; }
 		void setNickname(const CString& nick)	{ nickName = nick; }
-		void setScripter(const CString& name)	{ scripterName = name; }
+		void setScripter(const CString& name)	{ npcScripter = name; }
+		void setType(const CString& type)		{ npcType = type; }
 		void setBlockingFlags(int val)			{ blockFlags = val; }
 		void setVisibleFlags(int val)			{ visFlags = val; }
 		void setSave(unsigned int idx, unsigned char val);
+		void setPropModTime(unsigned char pid, time_t time);
 
 		// get functions
 		unsigned int getId() const				{ return id; }
@@ -194,7 +196,7 @@ class TNPC
 		const CString& getClientScript() const	{ return clientScript; }
 		const CString& getServerScript() const	{ return serverScript; }
 		const CString& getScriptCode() const	{ return originalScript; }
-		const CString& getScripter() const		{ return scripterName; }
+		const CString& getScripter() const		{ return npcScripter; }
 		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getSave(unsigned int idx) const;
@@ -218,9 +220,12 @@ class TNPC
 		void deleteFlag(const std::string& pFlagName);
 		std::unordered_map<std::string, CString>* getFlagList() { return &flagList; }
 
+		bool deleteNPC();
+		void reloadNPC();
+		void resetNPC();
+
 		void allowNpcWarping(bool canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
-		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
 		// file
@@ -265,7 +270,7 @@ class TNPC
 		TLevel* level;
 		TServer* server;
 
-		CString npcType, scripterName;
+		CString npcScripter, npcType;
 		std::string npcName;
 		int timeout;
 		int width, height;
@@ -283,6 +288,7 @@ class TNPC
 
 		// npc-server
 		bool canWarp;
+		bool npcDeleteRequested;
 		bool persistNpc;
 		std::unordered_map<std::string, CString> flagList;
 
@@ -299,6 +305,13 @@ time_t TNPC::getPropModTime(unsigned char pId)
 {
 	if (pId < NPCPROP_COUNT) return modTime[pId];
 	return 0;
+}
+
+inline
+void TNPC::setPropModTime(unsigned char pId, time_t time)
+{
+	if (pId < NPCPROP_COUNT)
+		modTime[pId] = time;
 }
 
 inline

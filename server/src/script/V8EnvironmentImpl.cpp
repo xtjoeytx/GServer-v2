@@ -11,6 +11,18 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
+// PROPERTY: env.global
+void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	info.GetReturnValue().Set(env->Global());
+}
+
 void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -109,6 +121,9 @@ void bindClass_Environment(CScriptEngine *scriptEngine)
 	v8::Local<v8::ObjectTemplate> environment_proto = environment_ctor->PrototypeTemplate();
 	environment_ctor->SetClassName(envStr);
 	environment_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+	// Properties
+	environment_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "global"), Environment_GetObject_Global, nullptr, engine_ref);
 
 	// Method functions
 	environment_proto->Set(v8::String::NewFromUtf8(isolate, "reportException"), v8::FunctionTemplate::New(isolate, Environment_ReportException, engine_ref));

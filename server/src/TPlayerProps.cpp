@@ -307,7 +307,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick);
+				else setNick(nick, (rc != nullptr));
 				
 				globalBuff >> (char)propId << getProp(propId);
 
@@ -499,6 +499,15 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (pForwardToSelf == false && ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN)))
 						selfBuff >> (char)propId << getProp(propId);
 				}
+
+#ifdef V8NPCSERVER
+				// Send chat to npcs if this wasn't changed by the npcserver
+				if (!rc && !chatMsg.isEmpty())
+				{
+					if (level != nullptr)
+						level->sendChatToLevel(this, chatMsg.text());
+				}
+#endif
 			}
 			break;
 
@@ -922,9 +931,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
 
 		// Movement check.
-		if (doSignCheck) testSign();
+		if (!rc && doSignCheck) testSign();
 #ifdef V8NPCSERVER
-		if (doTouchTest && !pForwardToSelf) testTouch();
+		if (!rc)
+		{
+			if (doTouchTest) testTouch();
+		}
 #endif
 	}
 

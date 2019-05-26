@@ -220,10 +220,13 @@ void TServer::cleanupDeletedPlayers()
 					player->leaveLevel();
 
 				// Send event to server that player is logging out
-				for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+				if (player->isLoaded())
 				{
-					TNPC *npcObject = (*it).second;
-					npcObject->queueNpcAction("npc.playerlogout", player);
+					for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+					{
+						TNPC *npcObject = (*it).second;
+						npcObject->queueNpcAction("npc.playerlogout", player);
+					}
 				}
 
 				// Set processed
