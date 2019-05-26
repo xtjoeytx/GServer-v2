@@ -143,4 +143,58 @@
 			env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
 		}
 	});
+
+	/*
+	 * Global Function -> Tokenize
+	 */
+	env.global.tokenize = function(string, sep = ' ') {
+		let separator = sep[0];
+		let insideQuote = false;
+		let stringList = [];
+		let currentString = "";
+
+		let stringLength = string.length;
+		for (let i = 0; i < stringLength; i++) {
+			switch (string[i]) {
+				case separator: {
+					if (!insideQuote) {
+						stringList.push(currentString);
+						currentString = "";
+					}
+					else currentString += string[i];
+
+					break;
+				}
+
+				case '\"': {
+					insideQuote = !insideQuote;
+					break;
+				}
+
+				case '\\': {
+					if (i + 1 < stringLength) {
+						switch (string[i+1]) {
+							case '"':
+							case '\\':
+								i++;
+
+							default:
+								currentString += string[i];
+								break;
+						}
+					}
+					else currentString += string[i];
+					break;
+				}
+
+				default: {
+					currentString += string[i];
+					break;
+				}
+			}
+		}
+		
+		stringList.push(currentString);
+		return stringList;
+	};
 });

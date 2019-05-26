@@ -102,6 +102,102 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	args.GetReturnValue().Set(result);
 }
 
+// Level Method: level.findnearestplayers(x, y);
+void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		float targetX = (float)args[0]->NumberValue(context).ToChecked();
+		float targetY = (float)args[1]->NumberValue(context).ToChecked();
+
+		// Get distance for each player in the level, and sort it
+		std::vector<TPlayer *> *playerList = levelObject->getPlayerList();
+		std::vector<std::pair<double, TPlayer *>> playerListSorted;
+
+		for (auto it = playerList->begin(); it != playerList->end(); ++it)
+		{
+			TPlayer *pl = *it;
+			double distance = sqrt(pow(pl->getY() - targetY, 2) + pow(pl->getX() - targetX, 2));
+			playerListSorted.push_back({ distance, pl });
+		}
+
+		std::sort(playerListSorted.begin(), playerListSorted.end());
+
+		// Create array of objects
+		v8::Local<v8::String> key_distance = v8::String::NewFromUtf8(isolate, "distance", v8::NewStringType::kInternalized).ToLocalChecked();
+		v8::Local<v8::String> key_player = v8::String::NewFromUtf8(isolate, "player", v8::NewStringType::kInternalized).ToLocalChecked();
+		v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerListSorted.size());
+
+		int idx = 0;
+		for (auto it = playerListSorted.begin(); it != playerListSorted.end(); ++it)
+		{
+			V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it).second->getScriptObject());
+
+			v8::Local<v8::Object> object = v8::Object::New(isolate);
+			object->Set(key_distance, v8::Number::New(isolate, (*it).first));
+			object->Set(key_player, v8_wrapped->Handle(isolate));
+			result->Set(context, idx++, object).Check();
+		}
+
+		args.GetReturnValue().Set(result);
+	}
+}
+
+// Level Method: level.putnpc(x, y, script, options);
+void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		float npcX = (float)args[0]->NumberValue(context).ToChecked();
+		float npcY = (float)args[1]->NumberValue(context).ToChecked();
+		CString script = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+
+		// TODO(joey): additional options parsing
+		if (args.Length() == 4)
+		{
+
+		}
+
+		TServer *server = levelObject->getServer();
+		TNPC *npc = server->addNPC("", script, npcX, npcY, levelObject, false, true);
+		
+		if (npc != nullptr)
+		{
+			npc->setType("LOCALN");
+			levelObject->addNPC(npc);
+
+			V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npc->getScriptObject());
+			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		}
+	}
+}
+
 void bindClass_Level(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
@@ -122,13 +218,15 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 
 	// Method functions
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
-
+	level_proto->Set(v8::String::NewFromUtf8(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
+		
 	// Properties
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), Level_GetStr_Name);
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Level_GetArray_Npcs);
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Level_GetArray_Players);
-//	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "tiles"), Level_GetArray_Players);
+//	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "tiles"), Level_GetObject_Tiles);
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);

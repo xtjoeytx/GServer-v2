@@ -155,6 +155,9 @@ class TAccount
 		CString getNickname() const		{ return nickName; }
 		CString getHeadImage() const	{ return headImg; }
 		float getPower() const			{ return power; }
+		int getAlignment() const		{ return ap; }
+		int getArrowCount() const		{ return arrowc; }
+		int getBombCount() const		{ return bombc; }
 		int getSwordPower() const		{ return swordPower; }
 		int getShieldPower() const		{ return shieldPower; }
 		int getStatus() const			{ return status; }
@@ -171,6 +174,7 @@ class TAccount
 		CString getIpStr() const		{ return accountIpStr; }
 		CString getComments() const		{ return accountComments; }
 		bool getGuest()					{ return isGuest; }
+		const CString& getAnimation() const	{ return gani; }
 		std::unordered_map<std::string, CString>* getFlagList()	{ return &flagList; }
 		std::vector<CString>* getFolderList()					{ return &folderList; }
 		std::vector<CString>* getWeaponList()					{ return &weaponList; }

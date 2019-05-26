@@ -202,7 +202,7 @@ inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);
-	wrappedCode.append("});");
+	wrappedCode.append("\n});");
 	return wrappedCode;
 }
 
@@ -213,7 +213,7 @@ inline std::string CScriptEngine::WrapScript<TPlayer>(const std::string& code) {
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);
-	wrappedCode.append("});");
+	wrappedCode.append("\n});");
 	return wrappedCode;
 }
 
@@ -227,7 +227,7 @@ inline std::string CScriptEngine::WrapScript<TWeapon>(const std::string& code) {
 
 	std::string wrappedCode = std::string(prefixString);
 	wrappedCode.append(code);
-	wrappedCode.append("});");
+	wrappedCode.append("\n});");
 	return wrappedCode;
 }
 

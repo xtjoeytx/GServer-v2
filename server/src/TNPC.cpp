@@ -65,7 +65,7 @@ TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 	gani("idle"), level(nullptr)
 #ifdef V8NPCSERVER
-	, origX(x), origY(y), persistNpc(false), canWarp(false), width(32), height(32)
+	, origX(x), origY(y), persistNpc(false), npcDeleteRequested(false), canWarp(false), width(32), height(32)
 	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
 #endif
 {
@@ -166,18 +166,6 @@ void TNPC::setScriptCode(const CString& pScript)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.text()));
 
 #ifdef V8NPCSERVER
-	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
-	//	would need "update level" to take changes.
-	if (!firstExecution && !npcName.empty() && level)
-	{
-		// TODO(joey): refactor
-		TMap *map = level->getMap();
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), map, level, 0, true);
-
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
-		server->sendPacketToLevel(packet, map, level, 0, true);
-	}
-
 	// Compile and execute the script.
 	bool executed = server->getScriptEngine()->ExecuteNpc(this);
 	if (executed) {
@@ -186,6 +174,18 @@ void TNPC::setScriptCode(const CString& pScript)
 	}
 	else
 		V8ENV_D("Could not compile npc script\n");
+
+	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
+	//	would need "update level" to take changes.
+	if (!firstExecution && !levelNPC && level)
+	{
+		// TODO(joey): refactor
+		TMap *map = level->getMap();
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), map, level, 0, true);
+
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
+		server->sendPacketToLevel(packet, map, level, 0, true);
+	}
 #endif
 }
 
@@ -292,7 +292,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
-		return CString() >> (char)scripterName.length() << scripterName;
+		return CString() >> (char)npcScripter.length() << npcScripter;
 
 		case NPCPROP_NAME:
 		return CString() >> (char)npcName.length() << npcName;
@@ -584,7 +584,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 #ifdef V8NPCSERVER
 			case NPCPROP_SCRIPTER:
-				scripterName = pProps.readChars(pProps.readGUChar());
+				npcScripter = pProps.readChars(pProps.readGUChar());
 				break;
 
 			case NPCPROP_NAME:
@@ -897,18 +897,15 @@ void TNPC::runScriptEvents()
 #endif
 
 	// TODO(joey): deadlocking if an action invokes another action (ex. an action invoking setprops which invokes playertouchsme)
+	
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end();)
 	{
 		ScriptAction *action = *it;
-		if (action != 0)
-		{
-			V8ENV_D("Running action: %s\n", action->getAction().c_str());
-			action->Invoke();
-			it = _actions.erase(it);
-			delete action;
-		}
-		else ++it;
+		V8ENV_D("Running action: %s\n", action->getAction().c_str());
+		action->Invoke();
+		it = _actions.erase(it);
+		delete action;
 	}
 
 #ifndef NOSCRIPTPROFILING
@@ -936,6 +933,12 @@ void TNPC::runScriptEvents()
 
 		if (level != nullptr)
 			server->sendPacketToLevel(propPacket, level->getMap(), level, nullptr, true);
+	}
+
+	if (npcDeleteRequested)
+	{
+		server->deleteNPC(this);
+		npcDeleteRequested = false;
 	}
 }
 
@@ -973,8 +976,8 @@ CString TNPC::getVariableDump()
 	npcDump << "Variables dump from npc " << npcNameStr << "\n\n";
 	if (!npcType.isEmpty())
 		npcDump << npcNameStr << ".type: " << npcType << "\n";
-	if (!scripterName.isEmpty())
-		npcDump << npcNameStr << ".scripter: " << scripterName << "\n";
+	if (!npcScripter.isEmpty())
+		npcDump << npcNameStr << ".scripter: " << npcScripter << "\n";
 	if (level)
 		npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
 	npcDump << "\nAttributes:\n";
@@ -1001,6 +1004,29 @@ CString TNPC::getVariableDump()
 	return npcDump;
 }
 
+bool TNPC::deleteNPC()
+{
+	if (!isLevelNPC() && npcType == "LOCALN")
+		npcDeleteRequested = true;
+	return npcDeleteRequested;
+}
+
+void TNPC::reloadNPC()
+{
+	setScriptCode(originalScript);
+}
+
+void TNPC::resetNPC()
+{
+	// TODO(joey): reset script execution, clear flags.. may be better to just delete the npc and readd?
+	setScriptCode(originalScript);
+
+	canWarp = false;
+
+	if (!origLevel.isEmpty())
+		warpNPC(TLevel::findLevel(origLevel, server), origX, origY);
+}
+
 void TNPC::moveNPC(int dx, int dy, double time, int options)
 {
 	// TODO(joey): Implement options? Or does the client handle them? TBD
@@ -1017,14 +1043,6 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 
 	if (level != nullptr)
 		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
-}
-
-void TNPC::resetNPC()
-{
-	canWarp = false;
-
-	if (!origLevel.isEmpty())
-		warpNPC(TLevel::findLevel(origLevel, server), origX, origY);
 }
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
@@ -1066,7 +1084,7 @@ void TNPC::saveNPC() const
 	fileData << "NAME " << npcName << NL;
 	fileData << "ID " << CString(id) << NL;
 	fileData << "TYPE " << npcType << NL;
-	fileData << "SCRIPTER " << scripterName << NL;
+	fileData << "SCRIPTER " << npcScripter << NL;
 	fileData << "IMAGE " << image << NL;
 	fileData << "STARTLEVEL " << origLevel << NL;
 	fileData << "STARTX " << CString(origX) << NL;
@@ -1152,7 +1170,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		else if (curCommand == "TYPE")
 			npcType = curLine.readString("");
 		else if (curCommand == "SCRIPTER")
-			scripterName = curLine.readString("");
+			npcScripter = curLine.readString("");
 		else if (curCommand == "IMAGE")
 			image = curLine.readString("");
 		else if (curCommand == "STARTLEVEL")
