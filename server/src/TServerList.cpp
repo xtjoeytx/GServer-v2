@@ -82,10 +82,12 @@ bool TServerList::onRecv()
 	unsigned int size = 0;
 	char* data = sock.getData(&size);
 	if (size != 0)
+	{
 		rBuffer.write(data, size);
 
-	if (!main())
-		connectServer();
+		if (!main())
+			connectServer();
+	}
 
 	return true;
 }
@@ -154,10 +156,13 @@ bool TServerList::doTimedEvents()
 {
 	lastTimer = time(0);
 
+	bool isConnected = getConnected();
+
 	// Send a ping every 30 seconds.
-	if ((int)difftime(lastTimer, lastPing) >= 30)
+	if ((int)difftime(lastTimer, lastPing) >= 30 && isConnected)
 	{
 		lastPing = lastTimer;
+
 		sendPacket(CString() >> (char)SVO_PING);
 
 		std::vector<TPlayer *> playerListTmp = *server->getPlayerList();
@@ -167,7 +172,6 @@ bool TServerList::doTimedEvents()
 
 			if (!pmServers.empty())
 			{
-
 				for (std::vector<CString>::const_iterator ij = pmServers.begin(); ij != pmServers.end(); ++ij)
 				{
 					sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)(*i)->getId() << CString(CString() << (*i)->getAccountName() << "\n" << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << (ij)->text() << "\n").gtokenizeI());
@@ -180,7 +184,11 @@ bool TServerList::doTimedEvents()
 	if ((int)difftime(lastTimer, lastPlayerSync) >= 60)
 	{
 		lastPlayerSync = lastTimer;
-		sendPlayers();
+
+		if (isConnected)
+			sendPlayers();
+		else
+			connectServer();
 	}
 
 	return true;
