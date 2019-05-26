@@ -215,7 +215,9 @@ bool TLevel::reload()
 				it = levelNPCs.erase(it);
 			}
 			else {
+#ifdef V8NPCSERVER
 				npc->reloadNPC();
+#endif
 				it++;
 			}
 		}
