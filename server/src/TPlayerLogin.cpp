@@ -146,6 +146,25 @@ bool TPlayer::sendLogin()
 	// This also lets us send data.
 	loaded = true;
 
+	CSettings* settings = server->getSettings();
+
+	// Send out what guilds should be placed in the Staff section of the playerlist.
+	std::vector<CString> guilds = settings->getStr("staffguilds").tokenize(",");
+	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
+	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
+		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
+	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
+
+	// Send out the server's available status list options.
+	if ((isClient() && versionID >= CLVER_2_1) || isRC())
+	{
+		std::vector<CString>* plicons = server->getStatusList();
+		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
+		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
+			pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
+		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
+	}
+
 	// Exchange props with everybody on the server.
 	{
 		// RC props are sent in a "special" way.  As in retarded.
@@ -265,23 +284,6 @@ bool TPlayer::sendLoginClient()
 			if (map->getType() == MAPTYPE_BIGMAP)
 				msgPLI_WANTFILE(CString() << map->getMapName());
 		}
-	}
-
-	// Send out what guilds should be placed in the Staff section of the playerlist.
-	std::vector<CString> guilds = settings->getStr("staffguilds").tokenize(",");
-	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
-		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
-	sendPacket(guildPacket);
-
-	// Send out the server's available status list options.
-	if ((isClient() && versionID >= CLVER_2_1) || isRC())
-	{
-		std::vector<CString>* plicons = server->getStatusList();
-		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-			pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
-		sendPacket(pliconPacket);
 	}
 
     sendPacket(CString() >> (char)PLO_UNKNOWN194);
