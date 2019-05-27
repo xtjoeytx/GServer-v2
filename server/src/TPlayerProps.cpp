@@ -262,8 +262,9 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_GMAPLEVELY:
 		return CString() >> (char)gmaplevely;
 
-		// TODO(joey): figure this out. Something to do with guilds?
+		// TODO(joey): figure this out. Something to do with guilds? irc-related
 		//	(char)(some bitflag for something, uses the first 3 bits im not sure)
+		//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
 		case PLPROP_UNKNOWN81:
 			return CString();
 

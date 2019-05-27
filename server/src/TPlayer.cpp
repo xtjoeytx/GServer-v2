@@ -4129,7 +4129,14 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				CString channel = "#graal";
 				CString channelAccount = CString() << "irc:" << channel;
 				CString channelNick = channel << " (1,0)";
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
+				
+				// RC uses addplayer/delplayer
+				if (isRC())
+				{
+					// Irc players start at 16k
+					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)81 >> (char)3);
+				}
+				else sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
 			}
 			else if (option == "join")
 			{
@@ -4143,6 +4150,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			}
 			else if (option == "topic")
 			{
+				// GraalEngine,irc,topic,#graal,topic
 				//CString channel = params[0];
 				//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
 			}
@@ -4181,14 +4189,16 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			else if (isRC())
 			{
 				// TODO(joey): Implement for RC3
-				//	banhistory
-				//	staffactivity
-				//	localbans
-				//	ban
+				//	banhistory - each comma separated item per line, just text
+				//	staffactivity - each comma separated item per line, just text
+				//	localbans - each comma separated item per line, just text (each person banned)
+				//	ban - read below
 
 				if (option == "getban")
 				{
-					msgPLI_RC_PLAYERBANGET(params[0]);
+					// Send param is computer id. Either 0, or the id. It is required though
+					sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << params[0] << "," << "0");
+					//msgPLI_RC_PLAYERBANGET(params[0]);
 				}
 			}
 		}
