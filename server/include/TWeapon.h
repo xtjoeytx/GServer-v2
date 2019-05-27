@@ -54,8 +54,9 @@ class TWeapon
 		IScriptWrapped<TWeapon> * getScriptObject() const;
 		void setScriptObject(IScriptWrapped<TWeapon> *object);
 
-		double getExecutionTime();
-		unsigned int getExecutionCalls() const { return (unsigned int)_scriptTimeSamples.size(); }
+		unsigned int getExecutionCalls() const { return _scriptExecutionContext.getExecutionCalls(); }
+		double getExecutionTime() { return _scriptExecutionContext.getExecutionTime(); }
+
 #endif
 	protected:
 		// Varaibles -> Weapon Data
@@ -68,8 +69,7 @@ class TWeapon
 
 #ifdef V8NPCSERVER
 		IScriptWrapped<TWeapon> *_scriptObject;
-		std::vector<ScriptAction *> _actions;
-		std::vector<ScriptTimeSample> _scriptTimeSamples;
+		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
 
@@ -81,28 +81,6 @@ inline IScriptWrapped<TWeapon> * TWeapon::getScriptObject() const {
 
 inline void TWeapon::setScriptObject(IScriptWrapped<TWeapon> *object) {
 	_scriptObject = object;
-}
-
-inline double TWeapon::getExecutionTime()
-{
-	double exectime = 0.0;
-
-	auto time_now = std::chrono::high_resolution_clock::now();
-
-	for (auto it = _scriptTimeSamples.begin(); it != _scriptTimeSamples.end();)
-	{
-		auto sample_diff = std::chrono::duration_cast<std::chrono::seconds>((*it).expiration - time_now);
-		if (sample_diff.count() <= 0)
-		{
-			it = _scriptTimeSamples.erase(it);
-			continue;
-		}
-
-		exectime += (*it).sample;
-		++it;
-	}
-
-	return exectime;
 }
 
 #endif

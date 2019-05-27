@@ -108,6 +108,7 @@ if(V8NPCSERVER)
 		include/script/ScriptArguments.h
 		include/script/ScriptBindings.h
 		include/script/ScriptEnv.h
+		include/script/ScriptExecutionContext.h
 		include/script/ScriptFactory.h
 		include/script/ScriptFunction.h
 		include/script/ScriptUtils.h

@@ -210,7 +210,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 {
 #ifdef V8NPCSERVER
 	// Clear script function
-	if (!mScriptServer.isEmpty() || !_actions.empty())
+	if (!mScriptServer.isEmpty() || _scriptExecutionContext.hasActions())
 		freeScriptResources();
 #endif
 
@@ -241,7 +241,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		V8ENV_D("SCRIPT COMPILED\n");
 
 		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-		_actions.push_back(scriptAction);
+		_scriptExecutionContext.addAction(scriptAction);
 		scriptEngine->RegisterWeaponUpdate(this);
 	}
 	else
@@ -261,7 +261,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
-	_actions.push_back(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }
 
@@ -272,14 +272,13 @@ void TWeapon::freeScriptResources()
 	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
 
 	// Clear any queued actions
-	if (!_actions.empty())
+	if (_scriptExecutionContext.hasActions())
 	{
 		// Unregister npc from any queued event calls
 		scriptEngine->UnregisterWeaponUpdate(this);
 
-		for (auto it = _actions.begin(); it != _actions.end(); ++it)
-			delete *it;
-		_actions.clear();
+		// Reset execution
+		_scriptExecutionContext.resetExecution();
 	}
 
 	// Delete script object
@@ -289,27 +288,7 @@ void TWeapon::freeScriptResources()
 
 void TWeapon::runScriptEvents()
 {
-#ifndef NOSCRIPTPROFILING
-	auto currentTimer = std::chrono::high_resolution_clock::now();
-#endif
-
-	// iterate over queued actions
-	for (auto it = _actions.begin(); it != _actions.end(); ++it)
-	{
-		ScriptAction *action = *it;
-		if (action != 0)
-		{
-			V8ENV_D("Running action: %s\n", action->getAction().c_str());
-			action->Invoke();
-			delete action;
-		}
-	}
-	_actions.clear();
-
-#ifndef NOSCRIPTPROFILING
-	auto endTimer = std::chrono::high_resolution_clock::now();
-	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
-	_scriptTimeSamples.push_back({ endTimer + std::chrono::seconds(60), time_diff.count() });
-#endif
+	_scriptExecutionContext.runExecution();
 }
+
 #endif
