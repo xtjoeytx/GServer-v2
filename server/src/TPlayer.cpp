@@ -4066,6 +4066,8 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 
 bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 {
+	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
+
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
@@ -4096,6 +4098,8 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		addPMServer(option);
 	else if (type == "pmunmapserver")
 		remPMServer(option);
+	else if (type == "irc") {
+	}
 		
 
 	serverlog.out("[ IN] [RequestText] %s,%s\n", accountName.gtokenize().text(),packet.text());
@@ -4132,6 +4136,16 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
 			}
+			else if (option == "part")
+			{
+				CString channel = params[0];
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
+			}
+			else if (option == "topic")
+			{
+				//CString channel = params[0];
+				//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
+			}
 			else if (option == "privmsg")
 			{
 				CString channel = params[0];
@@ -4163,6 +4177,19 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			else if (option == "verifybuddies" && !getGuest())
 			{
 				list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
+			}
+			else if (isRC())
+			{
+				// TODO(joey): Implement for RC3
+				//	banhistory
+				//	staffactivity
+				//	localbans
+				//	ban
+
+				if (option == "getban")
+				{
+					msgPLI_RC_PLAYERBANGET(params[0]);
+				}
 			}
 		}
 		else if (type == "pmservers" || type == "pmguilds")

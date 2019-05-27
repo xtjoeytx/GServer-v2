@@ -82,12 +82,9 @@ bool TServerList::onRecv()
 	unsigned int size = 0;
 	char* data = sock.getData(&size);
 	if (size != 0)
-	{
 		rBuffer.write(data, size);
 
-		if (!main())
-			connectServer();
-	}
+	main();
 
 	return true;
 }
@@ -812,6 +809,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
         serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
+		// TODO(joey): This is spamming clients non-stop!!!!!
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
 		serverIds.clear();

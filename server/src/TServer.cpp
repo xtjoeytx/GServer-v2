@@ -422,6 +422,8 @@ bool TServer::doTimedEvents()
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 
+		// TODO(joey): no no no no no no no this is not how it is done! a server will announce to the serverlist a new player
+		// and then it will be added! you can't just spam everything!!!
 		TServerList* list = this->getServerList();
 		if (list)
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
@@ -1372,10 +1374,25 @@ bool TServer::deletePlayer(TPlayer* player)
 	if (deletedPlayers.insert(player).second == true)
 	{
 		// Remove the player from the serverlist.
-		serverlist.remPlayer(player->getAccountName(), player->getType());
+		getServerList()->remPlayer(player->getAccountName(), player->getType());
 	}
 
 	return true;
+}
+
+void TServer::playerLoggedIn(TPlayer *player)
+{
+	// Tell the serverlist that the player connected.
+	getServerList()->addPlayer(player);
+
+#ifdef V8NPCSERVER
+	// Send event to server that player is logging out
+	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	{
+		TNPC *npcObject = (*it).second;
+		npcObject->queueNpcAction("npc.playerlogin", player);
+	}
+#endif
 }
 
 unsigned int TServer::getNWTime() const
@@ -1391,18 +1408,6 @@ bool TServer::isIpBanned(const CString& ip)
 		if (ip.match(*i)) return true;
 	}
 	return false;
-}
-
-void TServer::playerLoggedIn(TPlayer *player)
-{
-#ifdef V8NPCSERVER
-	// Send event to server that player is logging out
-	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
-	{
-		TNPC *npcObject = (*it).second;
-		npcObject->queueNpcAction("npc.playerlogin", player);
-	}
-#endif
 }
 
 void TServer::logToFile(const std::string & fileName, const std::string & message)

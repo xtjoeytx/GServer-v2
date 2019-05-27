@@ -262,6 +262,11 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_GMAPLEVELY:
 		return CString() >> (char)gmaplevely;
 
+		// TODO(joey): figure this out. Something to do with guilds?
+		//	(char)(some bitflag for something, uses the first 3 bits im not sure)
+		case PLPROP_UNKNOWN81:
+			return CString();
+
 		case PLPROP_COMMUNITYNAME:
 		return CString() >> (char)communityName.length() << communityName;
 	}
@@ -741,6 +746,37 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				levelBuff >> (char)PLPROP_ATTACHNPC << getProp(PLPROP_ATTACHNPC);
 				break;
 			}
+
+			case PLPROP_GMAPLEVELX:
+			{
+				gmaplevelx = pPacket.readGUChar();
+				if (pmap)
+				{
+					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					leaveLevel();
+					setLevel(levelName, -1);
+				}
+#ifdef DEBUG
+				printf("gmap level x: %d\n", gmaplevelx);
+#endif
+				break;
+			}
+
+			case PLPROP_GMAPLEVELY:
+			{
+				gmaplevely = pPacket.readGUChar();
+				if (pmap)
+				{
+					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					leaveLevel();
+					setLevel(levelName, -1);
+				}
+#ifdef DEBUG
+				printf("gmap level y: %d\n", gmaplevely);
+#endif
+				break;
+			}
+
 /*
 			case PLPROP_UNKNOWN50:
 				break;
@@ -857,36 +893,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
 				break;
-
-			case PLPROP_GMAPLEVELX:
-			{
-				gmaplevelx = pPacket.readGUChar();
-				if (pmap)
-				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
-					leaveLevel();
-					setLevel(levelName, -1);
-				}
-#ifdef DEBUG
-				printf("gmap level x: %d\n", gmaplevelx);
-#endif
-				break;
-			}
-
-			case PLPROP_GMAPLEVELY:
-			{
-				gmaplevely = pPacket.readGUChar();
-				if (pmap)
-				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
-					leaveLevel();
-					setLevel(levelName, -1);
-				}
-#ifdef DEBUG
-				printf("gmap level y: %d\n", gmaplevely);
-#endif
-				break;
-			}
 
 			case PLPROP_COMMUNITYNAME:
 				pPacket.readChars(pPacket.readGUChar());

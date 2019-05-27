@@ -27,6 +27,7 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 
 	// RC3 keeps sending empty packets of this, yet still uses NPCGET to fetch npcs. Maybe its for pinging the server
 	// for updated level information on database npcs? Just a thought..
+	// 5/26/2019 - confirmed, this is the npc-server pinging the gserver.
 	if (pPacket.bytesLeft())
 	{
 		unsigned int npcId = pPacket.readGUInt();
@@ -338,6 +339,8 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 
 	// {114}{level}
 	CString level = pPacket.readString("");
+	if (level.isEmpty())
+		return true;
 
 	TLevel *npcLevel = server->getLevel(level);
 	if (npcLevel != nullptr)

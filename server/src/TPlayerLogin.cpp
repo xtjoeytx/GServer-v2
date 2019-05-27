@@ -93,17 +93,20 @@ bool TPlayer::sendLogin()
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
 	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
-    //sendPacket(CString() >> (char)44);
-	sendPacket(CString() >> (char)PLO_UNKNOWN103 << " *");
 
     //sendPacket(CString() >> (char)PLO_FULLSTOP);
-	sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
-	// If we have an NPC Server, send this to prevent clients from sending
-	// npc props it modifies.
+
+	if (isClient())
+	{
 #ifdef V8NPCSERVER
-        sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+		// If we have an NPC Server, send this to prevent clients from sending
+		// npc props it modifies.
+		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
+
+		sendPacket(CString() >> (char)PLO_UNKNOWN168);
+	}
 
 	// Check if the account is already in use.
 	if (!getGuest())
@@ -158,12 +161,19 @@ bool TPlayer::sendLogin()
 	// Send out the server's available status list options.
 	if ((isClient() && versionID >= CLVER_2_1) || isRC())
 	{
+		// graal doesn't quote these
 		std::vector<CString>* plicons = server->getStatusList();
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
 		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-			pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
+			pliconPacket << ((CString)(*i)).trim() << ",";
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}
+
+	// This comes after status icons for RC
+	if (isRC())
+		sendPacket(CString() >> (char)PLO_RC_MAXUPLOADFILESIZE >> (long long)(1048576 * 20));
+
+	// Then during iterating the playerlist to send players to the rc client, it sends addplayer followed by rc chat per person.
 
 	// Exchange props with everybody on the server.
 	{
@@ -190,7 +200,7 @@ bool TPlayer::sendLogin()
 			// Triggers the RC client to request the NPC-Server address
 			this->sendPacket(CString()
 				>> (char)PLO_ADDPLAYER >> (short)0
-				>> (char)12 << "(npc-server)"
+				>> (char)strlen("(npc-server)") << "(npc-server)"
 				>> (char)PLPROP_CURLEVEL >> (char)1 << " "
 				>> (char)PLPROP_PSTATUSMSG >> (char)0
 				>> (char)PLPROP_NICKNAME >> (char)strlen("NPC-Server (Server)") << "NPC-Server (Server)");
@@ -242,9 +252,6 @@ bool TPlayer::sendLogin()
 
 	// Ask for processes.
 	sendPacket(CString() >> (char)PLO_LISTPROCESSES);
-
-	// Tell the serverlist that the player connected.
-	server->getServerList()->addPlayer(this);
 	return true;
 }
 
@@ -286,6 +293,7 @@ bool TPlayer::sendLoginClient()
 		}
 	}
 
+	// Sent to rc and client, but rc ignores it so...
     sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
