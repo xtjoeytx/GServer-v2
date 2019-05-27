@@ -3,41 +3,57 @@
 #ifndef SCRIPTEXECUTION_H
 #define SCRIPTEXECUTION_H
 
+#include <chrono>
 #include <vector>
 #include "ScriptAction.h"
 #include "ScriptUtils.h"
+#include "CScriptEngine.h"
 
 class ScriptAction;
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
+#include <v8.h>
+
+extern std::atomic<bool> shutdownProgram;
+
+static v8::Isolate *isolate = nullptr;
 
 class ScriptExecutionContext
 {
 public:
-	ScriptExecutionContext() { }
+	ScriptExecutionContext(CScriptEngine *scriptEngine)
+		: _scriptEngine(scriptEngine)
+	{
+		if (!isolate) {
+
+			V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+			isolate = env->Isolate();
+		}
+	}
+
 	~ScriptExecutionContext() { resetExecution(); }
+
+	unsigned int getExecutionCalls() const;
+	double getExecutionTime();
 
 	bool hasActions() const;
 	void addAction(ScriptAction *action);
-
-	double getExecutionTime();
-	unsigned int getExecutionCalls() const;
-
 	void resetExecution();
 	void runExecution();
 
+	void addSample(ScriptTimeSample sample) {
+		_scriptTimeSamples.push_back(sample);
+	}
+
 private:
+	CScriptEngine *_scriptEngine;
 	std::vector<ScriptAction *> _actions;
 	std::vector<ScriptTimeSample> _scriptTimeSamples;
 };
-
-inline bool ScriptExecutionContext::hasActions() const
-{
-	return !_actions.empty();
-}
-
-inline void ScriptExecutionContext::addAction(ScriptAction *action)
-{
-	_actions.push_back(action);
-}
 
 inline unsigned int ScriptExecutionContext::getExecutionCalls() const
 {
@@ -68,6 +84,16 @@ inline double ScriptExecutionContext::getExecutionTime()
 	return exectime;
 }
 
+inline bool ScriptExecutionContext::hasActions() const
+{
+	return !_actions.empty();
+}
+
+inline void ScriptExecutionContext::addAction(ScriptAction *action)
+{
+	_actions.push_back(action);
+}
+
 inline void ScriptExecutionContext::resetExecution()
 {
 	for (auto it = _actions.begin(); it != _actions.end(); ++it)
@@ -79,9 +105,45 @@ inline void ScriptExecutionContext::resetExecution()
 
 inline void ScriptExecutionContext::runExecution()
 {
-#ifndef NOSCRIPTPROFILING
+	static std::atomic<bool> running(false);
+	static std::chrono::high_resolution_clock::time_point start_time;
+	static std::mutex time_mutex;
+
+	static std::thread thread_object([](v8::Isolate *isolate)
+	{
+		while (!shutdownProgram.load())
+		{
+			if (running.load())
+			{
+				auto time_now = std::chrono::high_resolution_clock::now();
+				std::chrono::milliseconds time_diff;
+				{
+					std::lock_guard<std::mutex> guard(time_mutex);
+					time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - start_time);
+				}
+
+				if (time_diff.count() >= 500) {
+					isolate->TerminateExecution();
+					running.store(false);
+					printf("Killed execution for running too long!\n");
+				}
+			}
+			
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+	}, isolate);
+
+//#ifndef NOSCRIPTPROFILING
+	// TODO(joey): needed to kill scripts
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-#endif
+//#endif
+
+	{
+		std::lock_guard<std::mutex> guard(time_mutex);
+		start_time = currentTimer;
+	}
+
+	running.store(true);
 
 	// iterate over queued actions
 	for (auto it = _actions.begin(); it != _actions.end();)
@@ -92,6 +154,11 @@ inline void ScriptExecutionContext::runExecution()
 		it = _actions.erase(it);
 		delete action;
 	}
+
+	if (!running.load()) {
+		printf("Oh no we were killed!!\n");
+	}
+	else running.store(false);
 
 #ifndef NOSCRIPTPROFILING
 	auto endTimer = std::chrono::high_resolution_clock::now();

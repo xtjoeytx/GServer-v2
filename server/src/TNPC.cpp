@@ -65,6 +65,7 @@ TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 	gani("idle"), level(nullptr)
 #ifdef V8NPCSERVER
+	, _scriptExecutionContext(pServer->getScriptEngine())
 	, origX(x), origY(y), persistNpc(false), npcDeleteRequested(false), canWarp(false), width(32), height(32)
 	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
 #endif

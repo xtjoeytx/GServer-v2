@@ -12,6 +12,5 @@
 
 // TODO(joey): likely removed
 #include "ScriptAction.h"
-#include "ScriptExecutionContext.h"
 
 #endif
