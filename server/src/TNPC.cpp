@@ -759,14 +759,13 @@ void TNPC::freeScriptResources()
 	scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(serverScript.text()));
 
 	// Clear any queued actions
-	if (!_actions.empty())
+	if (_scriptExecutionContext.hasActions())
 	{
 		// Unregister npc from any queued event calls
 		scriptEngine->UnregisterNpcUpdate(this);
 
-		for (auto it = _actions.begin(); it != _actions.end(); ++it)
-			delete *it;
-		_actions.clear();
+		// Reset execution
+		_scriptExecutionContext.resetExecution();
 	}
 
 	// Clear timeouts
@@ -808,7 +807,7 @@ void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	ScriptAction *scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, data);
-	_actions.push_back(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterNpcUpdate(this);
 }
 
@@ -870,7 +869,7 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 	if (!scriptAction)
 		scriptAction = scriptEngine->CreateAction(action, _scriptObject);
 
-	_actions.push_back(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)
 		scriptEngine->RegisterNpcUpdate(this);
 }
@@ -892,27 +891,7 @@ bool TNPC::runScriptTimer()
 
 void TNPC::runScriptEvents()
 {
-#ifndef NOSCRIPTPROFILING
-	auto currentTimer = std::chrono::high_resolution_clock::now();
-#endif
-
-	// TODO(joey): deadlocking if an action invokes another action (ex. an action invoking setprops which invokes playertouchsme)
-	
-	// iterate over queued actions
-	for (auto it = _actions.begin(); it != _actions.end();)
-	{
-		ScriptAction *action = *it;
-		V8ENV_D("Running action: %s\n", action->getAction().c_str());
-		action->Invoke();
-		it = _actions.erase(it);
-		delete action;
-	}
-
-#ifndef NOSCRIPTPROFILING
-	auto endTimer = std::chrono::high_resolution_clock::now();
-	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
-	_scriptTimeSamples.push_back({ endTimer + std::chrono::seconds(60), time_diff.count() });
-#endif
+	_scriptExecutionContext.runExecution();
 
 	// Send properties modified by scripts
 	if (!propModified.empty())
@@ -940,30 +919,6 @@ void TNPC::runScriptEvents()
 		server->deleteNPC(this);
 		npcDeleteRequested = false;
 	}
-}
-
-double TNPC::getExecutionTime()
-{
-	double exectime = 0.0;
-
-#ifndef NOSCRIPTPROFILING
-	auto time_now = std::chrono::high_resolution_clock::now();
-
-	for (auto it = _scriptTimeSamples.begin(); it != _scriptTimeSamples.end();)
-	{
-		auto sample_diff = std::chrono::duration_cast<std::chrono::seconds>((*it).expiration - time_now);
-		if (sample_diff.count() <= 0)
-		{
-			it = _scriptTimeSamples.erase(it);
-			continue;
-		}
-
-		exectime += (*it).sample;
-		++it;
-	}
-#endif
-
-	return exectime;
 }
 
 CString TNPC::getVariableDump()

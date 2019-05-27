@@ -246,8 +246,8 @@ class TNPC
 		bool runScriptTimer();
 		void runScriptEvents();
 
-		double getExecutionTime();
-		unsigned int getExecutionCalls() const { return (unsigned int)_scriptTimeSamples.size(); }
+		double getExecutionTime() { return _scriptExecutionContext.getExecutionTime(); }
+		unsigned int getExecutionCalls() const { return _scriptExecutionContext.getExecutionCalls(); }
 		CString getVariableDump();
 #endif
 
@@ -294,8 +294,7 @@ class TNPC
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
-		std::vector<ScriptAction *> _actions;
-		std::vector<ScriptTimeSample> _scriptTimeSamples;
+		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 #endif
 };
@@ -389,7 +388,7 @@ inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, 
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	ScriptAction *scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
 
-	_actions.push_back(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)
 		scriptEngine->RegisterNpcUpdate(this);
 }
