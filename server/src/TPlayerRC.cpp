@@ -964,6 +964,12 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 	}
 	else
 	{
+#ifndef NDEBUG
+		if (words[0] == "/sendtext") {
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << message.subString(10) << "\n");
+		}
+		else
+#endif
 		if (words[0] == "/help" && words.size() == 1)
 		{
 			std::vector<CString> commands = CString::loadToken(CString() << server->getServerPath() << "config/rchelp.txt", "\n", true);
