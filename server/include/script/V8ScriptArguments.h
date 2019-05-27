@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <v8.h>
 #include "ScriptArguments.h"
@@ -57,6 +56,9 @@ public:
 		{
 			V8ScriptFunction *v8_func = static_cast<V8ScriptFunction *>(func);
 			V8ScriptEnv *v8_env = static_cast<V8ScriptEnv *>(v8_func->Env());
+			
+			v8::Isolate *isolate = v8_env->Isolate();
+			v8::Local<v8::Context> context = v8_env->Context();
 
 			// get a v8 handle for the function to be executed
 			v8::Local<v8::Function> cbFunc = v8_func->Function();
@@ -67,9 +69,9 @@ public:
 			base::_resolved = true;
 
 			// call function
-			v8::MaybeLocal<v8::Value> ret = cbFunc->Call(v8_env->Context(), v8::Null(v8_env->Isolate()), base::Argc, _args);
+			v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, v8::Null(isolate), base::Argc, _args);
 			if (!ret.IsEmpty())
-				V8ENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(v8_env->Isolate(), ret.ToLocalChecked())));
+				V8ENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
 		}
 
 		V8ENV_D("Finish Script Argument\n");

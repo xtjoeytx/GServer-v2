@@ -15,6 +15,9 @@
 // -- Constructor: Default Weapons -- //
 TWeapon::TWeapon(TServer *pServer, const signed char pId)
 : server(pServer), mModTime(0), mWeaponDefault(pId)
+#ifdef V8NPCSERVER
+, _scriptExecutionContext(pServer->getScriptEngine())
+#endif
 {
 	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
 }
@@ -22,6 +25,9 @@ TWeapon::TWeapon(TServer *pServer, const signed char pId)
 // -- Constructor: Weapon Script -- //
 TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
 : server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
+#ifdef V8NPCSERVER
+, _scriptExecutionContext(pServer->getScriptEngine())
+#endif
 {
 	// Update Weapon
 	this->updateWeapon(pImage, pScript, pModTime, pSaveWeapon);

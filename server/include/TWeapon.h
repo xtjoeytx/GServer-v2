@@ -8,6 +8,7 @@
 #ifdef V8NPCSERVER
 #include <string>
 #include "ScriptBindings.h"
+#include "ScriptExecutionContext.h"
 
 class TPlayer;
 #endif
