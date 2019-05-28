@@ -945,8 +945,8 @@ CString TNPC::getVariableDump()
 	npcDump << npcNameStr << ".xprecise: " << CString((float)(x2 / 16.0f)) << "\n";
 	npcDump << npcNameStr << ".yprecise: " << CString((float)(y2 / 16.0f)) << "\n";
 	npcDump << npcNameStr << ".timeout: " << CString((float)(timeout * 0.05f)) << "\n";
-	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(getExecutionTime()) << "\n";
-	npcDump << npcNameStr << ".scriptcalls: " << CString(getExecutionCalls()) << "\n";
+	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(_scriptExecutionContext.getExecutionTime()) << "\n";
+	npcDump << npcNameStr << ".scriptcalls: " << CString(_scriptExecutionContext.getExecutionCalls()) << "\n";
 
 	// TODO(joey): npc.attr[]
 
@@ -1086,7 +1086,10 @@ void TNPC::saveNPC() const
 	for (auto it = flagList.begin(); it != flagList.end(); ++it)
 		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
 
-	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL) << NL << "NPCSCRIPTEND" << NL;
+	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL);
+	if (originalScript[originalScript.length() - 1] != '\n')
+		fileData << NL; 
+	fileData << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
 }
 
@@ -1097,7 +1100,7 @@ bool TNPC::loadNPC(const CString& fileName)
 	if (!fileData.load(fileName))
 		return false;
 
-	fileData.replaceAllI("\r", "");
+	fileData.removeAllI("\r");
 
 	CString headerLine = fileData.readString("\n");
 	if (headerLine != "GRNPC001")
@@ -1220,15 +1223,13 @@ bool TNPC::loadNPC(const CString& fileName)
 		}
 		else if (curCommand == "NPCSCRIPT")
 		{
-			curLine = fileData.readString("\n");
-			while (fileData.bytesLeft())
-			{
+			do {
+				curLine = fileData.readString("\n");
 				if (curLine == "NPCSCRIPTEND")
 					break;
 
 				npcScript << curLine << "\n";
-				curLine = fileData.readString("\n");
-			}
+			} while (fileData.bytesLeft());
 		}
 	}
 

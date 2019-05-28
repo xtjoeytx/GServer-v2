@@ -445,6 +445,8 @@ bool TServer::doTimedEvents()
 	{
 		last3mTimer = lastTimer;
 
+		// TODO(joey): probably a better way to do this..
+
 		// Resynchronize the file systems.
 		filesystem_accounts.resync();
 		for (int i = 0; i < FS_COUNT; ++i)
@@ -463,6 +465,7 @@ bool TServer::doTimedEvents()
 		loadIPBans();
 		
 		// Save some stuff.
+		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
 		saveWeapons();
 #ifdef V8NPCSERVER
 		saveNpcs();
@@ -975,15 +978,20 @@ void TServer::saveWeapons()
 	weaponFS.addDir("weapons", "weapon*.txt");
 	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
 
-	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
 	{
-		TWeapon* w = i->second;
-		time_t mod = weaponFS.getModTime(i->first);
-		if (w->getModTime() > mod)
+		TWeapon *weaponObject = it->second;
+		if (weaponObject->isDefault())
+			continue;
+
+		// TODO(joey): add a function to weapon to get the filename?
+		CString weaponFile = CString("weapon") << it->first << ".txt";
+		time_t mod = weaponFS.getModTime(weaponFile);
+		if (weaponObject->getModTime() > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
-			w->saveWeapon();
-			weaponFS.setModTime(weaponFS.find(i->first), w->getModTime());
+			weaponObject->saveWeapon();
+			weaponFS.setModTime(weaponFS.find(weaponFile), weaponObject->getModTime());
 		}
 	}
 }
@@ -1008,7 +1016,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
-		double execTime = npc->getExecutionTime();
+		ScriptExecutionContext *context = npc->getExecutionContext();
+		double execTime = context->getExecutionTime();
 		if (execTime > 0.0)
 		{
 			std::string npcName = npc->getName();
@@ -1030,7 +1039,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
 	{
 		TWeapon *weapon = (*it).second;
-		double execTime = weapon->getExecutionTime();
+		ScriptExecutionContext *context = weapon->getExecutionContext();
+		double execTime = context->getExecutionTime();
 		if (execTime > 0.0)
 		{
 			std::string weaponName("Weapon ");

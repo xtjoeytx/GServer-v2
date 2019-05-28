@@ -41,25 +41,22 @@ class TWeapon
 
 		// Functions -> Set Variables
 		void setImage(const CString& pImage)			{ mWeaponImage = pImage; }
-		void setClientScript(const CString& pScript)	{ mScriptClient = pScript; }
-		void setServerScript(const CString& pScript)	{ mScriptServer = pScript; }
 		void setFullScript(const CString& pScript)		{ mWeaponScript = pScript; }
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 
 #ifdef V8NPCSERVER
-		void queueWeaponAction(TPlayer *player, const std::string& args);
-
-		void freeScriptResources();
-		void runScriptEvents();
-
+		ScriptExecutionContext * getExecutionContext();
 		IScriptWrapped<TWeapon> * getScriptObject() const;
+		
+		void freeScriptResources();
+		void queueWeaponAction(TPlayer *player, const std::string& args);
+		void runScriptEvents();
 		void setScriptObject(IScriptWrapped<TWeapon> *object);
-
-		unsigned int getExecutionCalls() const { return _scriptExecutionContext.getExecutionCalls(); }
-		double getExecutionTime() { return _scriptExecutionContext.getExecutionTime(); }
-
 #endif
 	protected:
+		void setClientScript(const CString& pScript);
+		void setServerScript(const CString& pScript) { mScriptServer = pScript; }
+
 		// Varaibles -> Weapon Data
 		signed char mWeaponDefault;
 		CString mWeaponImage, mWeaponName, mWeaponScript;
@@ -68,6 +65,7 @@ class TWeapon
 		time_t mModTime;
 		TServer *server;
 
+	private:
 #ifdef V8NPCSERVER
 		IScriptWrapped<TWeapon> *_scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
@@ -76,8 +74,16 @@ class TWeapon
 
 #ifdef V8NPCSERVER
 
+inline ScriptExecutionContext * TWeapon::getExecutionContext() {
+	return &_scriptExecutionContext;
+}
+
 inline IScriptWrapped<TWeapon> * TWeapon::getScriptObject() const {
 	return _scriptObject;
+}
+
+inline void TWeapon::runScriptEvents() {
+	_scriptExecutionContext.runExecution();
 }
 
 inline void TWeapon::setScriptObject(IScriptWrapped<TWeapon> *object) {

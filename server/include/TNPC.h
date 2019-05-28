@@ -212,6 +212,7 @@ class TNPC
 		bool hasScriptEvent(int flag) const;
 		void setScriptEvents(int mask);
 
+		ScriptExecutionContext * getExecutionContext();
 		IScriptWrapped<TNPC> * getScriptObject() const;
 		void setScriptObject(IScriptWrapped<TNPC> *object);
 
@@ -247,8 +248,6 @@ class TNPC
 		bool runScriptTimer();
 		void runScriptEvents();
 
-		double getExecutionTime() { return _scriptExecutionContext.getExecutionTime(); }
-		unsigned int getExecutionCalls() const { return _scriptExecutionContext.getExecutionCalls(); }
 		CString getVariableDump();
 #endif
 
@@ -352,6 +351,10 @@ inline bool TNPC::hasScriptEvent(int flag) const {
 
 inline void TNPC::setScriptEvents(int mask) {
 	_scriptEventsMask = mask;
+}
+
+inline ScriptExecutionContext * TNPC::getExecutionContext() {
+	return &_scriptExecutionContext;
 }
 
 inline IScriptWrapped<TNPC> * TNPC::getScriptObject() const {
