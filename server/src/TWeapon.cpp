@@ -60,7 +60,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	// Parse header
 	CString headerLine = fileData.readString("\n");
 	if (headerLine != "GRAWP001")
-		return false;
+		return nullptr;
 
 	// Definitions
 	CString weaponImage, weaponName, weaponScript;
@@ -105,7 +105,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 	// Valid Weapon Name?
 	if (weaponName.isEmpty())
-		return 0;
+		return nullptr;
 
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
@@ -251,7 +251,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	else
 		V8ENV_D("Could not compile weapon script\n");
 #else
-	setClientScript(script);
+	setClientScript(fixedScript);
 #endif
 
 	// Save Weapon
