@@ -36,14 +36,13 @@ void V8ScriptEnv::Initialize()
 		_v8_initialized = true;
 	}
 	
-#ifndef WIN32
-	// TODO(joey): Temporary bug fix, not much resources on this so something must be wrong with my v8 implementation.
-	// Fixes a bug on linux/osx:
-	// https://fw.hardijzer.nl/?p=97
+	// Sets the lower limit of the stack, as far as I know std::thread does not let me control the size
+	//	of the stack, or lets me know how large it is. This fix seems to work for now, if it causes issues we can
+	//	most-likely figure out what the default stack size is per thread and set the constraints through that.
+	//	Fix from https://fw.hardijzer.nl/?p=97
 	v8::ResourceConstraints rc;
 	rc.set_stack_limit((uint32_t *)(((uint64_t)&rc)/2));
 	create_params.constraints = rc;
-#endif
 
 	// Create v8 isolate
 	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
