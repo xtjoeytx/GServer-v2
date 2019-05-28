@@ -399,11 +399,11 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 	TWeapon *weapon = server->getWeapon(weaponName);
 	if (weapon != 0 && !weapon->isDefault())
 	{
-		// TODO(joey): this isnt working on versions < RC 2.05
+		// TODO(joey): this isnt working on versions < RC 2
 		sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
 			(char)weaponName.length() << weaponName >>
 			(char)weapon->getImage().length() << weapon->getImage() <<
-			weapon->getFullScript()); // .replaceAll("\n", "\xa7")); // getFullScript() returns a string already processed
+			weapon->getFullScript().replaceAll("\n", "\xa7"));
 	}
 	else server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
 
