@@ -924,35 +924,239 @@ void TNPC::runScriptEvents()
 
 CString TNPC::getVariableDump()
 {
+	static const char *propNames[NPCPROP_COUNT] = {
+		"image", "script", "x", "y", "power", "rupees",
+		"arrows", "bombs", "glovepower", "bombpower", "sword", "shield",
+		"animation", "visibility flags", "blocking flags", "message", "hurtdxdy",
+		"id", "sprite", "colors", "nickname", "horse", "head",
+		"save[0]", "save[1]", "save[2]", "save[3]", "save[4]", "save[5]",
+		"save[6]", "save[7]", "save[8]", "save[9]",
+		"alignment", "imagepart", "body",
+		"ganiattr1", "ganiattr2", "ganiattr3", "ganiattr4", "ganiattr5",
+		"mapx", "mapy", "UNKNOWN43", "ganiattr6", "ganiattr7", "ganiattr8",
+		"ganiattr9", "UNKNOWN48", "scripter", "name", "type", "level",
+		"ganiattr10", "ganiattr11", "ganiattr12", "ganiattr13", "ganiattr14",
+		"ganiattr15", "ganiattr16", "ganiattr17", "ganiattr18", "ganiattr19",
+		"ganiattr20", "ganiattr21", "ganiattr22", "ganiattr23", "ganiattr24",
+		"ganiattr25", "ganiattr26", "ganiattr27", "ganiattr28", "ganiattr29",
+		"ganiattr30", "joinedclasses", "xprecise", "yprecise"
+	};
+
+	static char propList[] = {
+		NPCPROP_ID, NPCPROP_IMAGE, NPCPROP_SCRIPT, NPCPROP_VISFLAGS, NPCPROP_BLOCKFLAGS,
+		NPCPROP_HEADIMAGE, NPCPROP_BODYIMAGE, NPCPROP_SWORDIMAGE, NPCPROP_SHIELDIMAGE,
+		NPCPROP_NICKNAME, NPCPROP_SPRITE, NPCPROP_GANI,
+		NPCPROP_GATTRIB1, NPCPROP_GATTRIB2, NPCPROP_GATTRIB3, NPCPROP_GATTRIB4, NPCPROP_GATTRIB5,
+		NPCPROP_GATTRIB6, NPCPROP_GATTRIB7, NPCPROP_GATTRIB8, NPCPROP_GATTRIB9, NPCPROP_GATTRIB10,
+		NPCPROP_GATTRIB11, NPCPROP_GATTRIB12, NPCPROP_GATTRIB13, NPCPROP_GATTRIB14, NPCPROP_GATTRIB15,
+		NPCPROP_GATTRIB16, NPCPROP_GATTRIB17, NPCPROP_GATTRIB18, NPCPROP_GATTRIB19, NPCPROP_GATTRIB20,
+		NPCPROP_GATTRIB21, NPCPROP_GATTRIB22, NPCPROP_GATTRIB23, NPCPROP_GATTRIB24, NPCPROP_GATTRIB25,
+		NPCPROP_GATTRIB26, NPCPROP_GATTRIB27, NPCPROP_GATTRIB28, NPCPROP_GATTRIB29, NPCPROP_GATTRIB30,
+		NPCPROP_SAVE0, NPCPROP_SAVE1, NPCPROP_SAVE2, NPCPROP_SAVE3, NPCPROP_SAVE4,
+		NPCPROP_SAVE5, NPCPROP_SAVE6, NPCPROP_SAVE7, NPCPROP_SAVE8, NPCPROP_SAVE9,
+		NPCPROP_GMAPLEVELX, NPCPROP_GMAPLEVELY, NPCPROP_X2, NPCPROP_Y2
+	};
+
+	const int propsCount = sizeof(propList) / sizeof(char);
+
+	// Create the npc dump...
 	CString npcDump;
 	CString npcNameStr = npcName;
 	if (npcNameStr.isEmpty())
-		npcNameStr = CString(id);
+		npcNameStr = CString() << "npcs[" << CString(id) << "]";
 
 	npcDump << "Variables dump from npc " << npcNameStr << "\n\n";
-	if (!npcType.isEmpty())
-		npcDump << npcNameStr << ".type: " << npcType << "\n";
-	if (!npcScripter.isEmpty())
-		npcDump << npcNameStr << ".scripter: " << npcScripter << "\n";
-	if (level)
-		npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
-	npcDump << "\nAttributes:\n";
-	npcDump << npcNameStr << ".image: " << image << "\n";
-	npcDump << npcNameStr << ".script: size: " << CString(getScriptCode().length()) << "\n";
-	npcDump << npcNameStr << ".visibility flags: " << (visFlags & NPCVISFLAG_VISIBLE ? "visible" : "hidden") << "\n";
-	npcDump << npcNameStr << ".id: " << CString(id) << "\n";
-	npcDump << npcNameStr << ".head: " << headImage << "\n";
-	npcDump << npcNameStr << ".xprecise: " << CString((float)(x2 / 16.0f)) << "\n";
-	npcDump << npcNameStr << ".yprecise: " << CString((float)(y2 / 16.0f)) << "\n";
-	npcDump << npcNameStr << ".timeout: " << CString((float)(timeout * 0.05f)) << "\n";
+	if (!npcType.isEmpty()) npcDump << npcNameStr << ".type: " << npcType << "\n";
+	if (!npcScripter.isEmpty()) npcDump << npcNameStr << ".scripter: " << npcScripter << "\n";
+	if (level) npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
+
+	npcDump << "\nAttributes:\n";	
+	for (int i = 0; i < propsCount; i++)
+	{
+		int propId = propList[i];
+		CString prop = getProp(propId);
+		switch (propId)
+		{
+			case NPCPROP_ID:
+			{
+				int id = prop.readGUInt();
+				npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((int)id) << "\n";
+				break;
+			}
+
+			case NPCPROP_SCRIPT:
+			{
+				int len = prop.readGUShort();
+				if (len > 0)
+					npcDump << npcNameStr << "." << propNames[propId] << ": size: " << CString(len) << "\n";
+					break;
+			}
+
+			case NPCPROP_SWORDIMAGE:
+			{
+				int power = prop.readGUChar();
+				CString image;
+				if (power > 30) {
+					image = prop.readChars(prop.readGUChar());
+					power -= 30;
+				}
+				else if (power > 0)
+					image = CString() << "sword" << CString(power) << ".png";
+
+				if (!image.isEmpty())
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(power) << ")\n";
+
+				break;
+			}
+
+			case NPCPROP_SHIELDIMAGE:
+			{
+				int power = prop.readGUChar();
+				CString image;
+				if (power > 10)
+				{
+					image = prop.readChars(prop.readGUChar());
+					power -= 10;
+				}
+				else if (power > 0)
+					image = CString() << "shield" << CString(power) << ".png";
+
+				if (!image.isEmpty())
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(power) << ")\n";
+
+				break;
+			}
+
+			case NPCPROP_VISFLAGS:
+			{
+				char value = prop.readGUChar();
+				npcDump << npcNameStr << "." << propNames[propId] << ": ";
+				npcDump << (value & NPCVISFLAG_VISIBLE ? "visible" : "hidden");
+				if (value & NPCVISFLAG_DRAWOVERPLAYER)
+					npcDump << ", drawoverplayer";
+				if (value & NPCVISFLAG_DRAWUNDERPLAYER)
+					npcDump << ", drawunderplayer";
+				npcDump << "\n";
+
+				break;
+			}
+
+			case NPCPROP_BLOCKFLAGS:
+			{
+				char value = prop.readGUChar();
+				if (value & NPCBLOCKFLAG_NOBLOCK)
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << "dontblock" << "\n";
+				break;
+			}
+
+			case NPCPROP_SPRITE:
+			{
+				char value = prop.readGUChar();
+				if (value > 0)
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((int)value) << "\n";
+				break;
+			}
+
+			case NPCPROP_GMAPLEVELX:
+			case NPCPROP_GMAPLEVELY:
+			{
+				char value = prop.readGUChar();
+				if (level && level->getMap() != nullptr)
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((int)value) << "\n";
+				break;
+			}
+
+			case NPCPROP_IMAGE:
+			case NPCPROP_GANI:
+			case NPCPROP_MESSAGE:
+			case NPCPROP_NICKNAME:
+			case NPCPROP_HORSEIMAGE:
+			case NPCPROP_HEADIMAGE:
+			case NPCPROP_BODYIMAGE:
+			case NPCPROP_SCRIPTER:
+			case NPCPROP_NAME:
+			case NPCPROP_TYPE:
+			case NPCPROP_CURLEVEL:
+			case NPCPROP_GATTRIB1:
+			case NPCPROP_GATTRIB2:
+			case NPCPROP_GATTRIB3:
+			case NPCPROP_GATTRIB4:
+			case NPCPROP_GATTRIB5:
+			case NPCPROP_GATTRIB6:
+			case NPCPROP_GATTRIB7:
+			case NPCPROP_GATTRIB8:
+			case NPCPROP_GATTRIB9:
+			case NPCPROP_GATTRIB10:
+			case NPCPROP_GATTRIB11:
+			case NPCPROP_GATTRIB12:
+			case NPCPROP_GATTRIB13:
+			case NPCPROP_GATTRIB14:
+			case NPCPROP_GATTRIB15:
+			case NPCPROP_GATTRIB16:
+			case NPCPROP_GATTRIB17:
+			case NPCPROP_GATTRIB18:
+			case NPCPROP_GATTRIB19:
+			case NPCPROP_GATTRIB20:
+			case NPCPROP_GATTRIB21:
+			case NPCPROP_GATTRIB22:
+			case NPCPROP_GATTRIB23:
+			case NPCPROP_GATTRIB24:
+			case NPCPROP_GATTRIB25:
+			case NPCPROP_GATTRIB26:
+			case NPCPROP_GATTRIB27:
+			case NPCPROP_GATTRIB28:
+			case NPCPROP_GATTRIB29:
+			case NPCPROP_GATTRIB30:
+			{
+				int len = prop.readGUChar();
+				if (len > 0)
+				{
+					CString value = prop.readChars(len).trim();
+					if (!value.isEmpty())
+						npcDump << npcNameStr << "." << propNames[propId] << ": " << value << "\n";
+				}
+				break;
+			}
+
+			case NPCPROP_SAVE0:
+			case NPCPROP_SAVE1:
+			case NPCPROP_SAVE2:
+			case NPCPROP_SAVE3:
+			case NPCPROP_SAVE4:
+			case NPCPROP_SAVE5:
+			case NPCPROP_SAVE6:
+			case NPCPROP_SAVE7:
+			case NPCPROP_SAVE8:
+			case NPCPROP_SAVE9:
+			{
+				char saveValue = prop.readGUChar();
+				if (saveValue > 0)
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((int)saveValue) << "\n";
+				break;
+			}
+
+			case NPCPROP_X2:
+			case NPCPROP_Y2:
+			{
+				short pos = prop.readGUShort();
+				pos = (pos & 0x0001 ? -(pos >> 1) : pos >> 1);
+				npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((double)pos / 16.0) << "\n";
+				break;
+			}
+
+			default:
+				continue;
+		}
+	}
+
+	if (timeout > 0)
+		npcDump << npcNameStr << ".timeout: " << CString((float)(timeout * 0.05f)) << "\n";
 	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(_scriptExecutionContext.getExecutionTime()) << "\n";
 	npcDump << npcNameStr << ".scriptcalls: " << CString(_scriptExecutionContext.getExecutionCalls()) << "\n";
 
-	// TODO(joey): npc.attr[]
-
 	if (!flagList.empty())
 	{
-		npcDump << "\nFlags:\n";
+		npcDump << "\nnpc.Flags:\n";
 		for (auto it = flagList.begin(); it != flagList.end(); ++it)
 			npcDump << npcNameStr << ".flags[\"" << (*it).first << "\"]: " << (*it).second << "\n";
 	}
