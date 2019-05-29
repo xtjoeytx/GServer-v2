@@ -346,11 +346,12 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	if (npcLevel != nullptr)
 	{
 		CString npcDump;
-		npcDump << "Level npcs dump for " << npcLevel->getLevelName() << "\n";
+		// Variables dump from level mapname (level.nw) 
+		npcDump << "Variables dump from level " << npcLevel->getLevelName() << "\n";
 
 		auto npcList = npcLevel->getLevelNPCs();
 		for (auto it = npcList->begin(); it != npcList->end(); ++it)
-			npcDump << "\n" << (*it)->getVariableDump();
+			npcDump << "\n" << (*it)->getVariableDump() << "\n";
 
 		sendPacket(CString() >> (char)PLO_NC_LEVELDUMP << npcDump.gtokenize());
 	}
