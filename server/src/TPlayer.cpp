@@ -3376,7 +3376,8 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 						TPlayer* p = *i;
 						if (p->getGuild() == guild)
 						{
-							p->setNick(p->getNickname().readString("(").trimI());
+							CString nick = p->getNickname();
+							p->setNick(nick.readString("(").trimI());
 							p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
 							server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
 						}

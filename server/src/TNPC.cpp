@@ -924,7 +924,7 @@ void TNPC::runScriptEvents()
 
 CString TNPC::getVariableDump()
 {
-	static const char *propNames[NPCPROP_COUNT] = {
+	static const char * const propNames[NPCPROP_COUNT] = {
 		"image", "script", "x", "y", "power", "rupees",
 		"arrows", "bombs", "glovepower", "bombpower", "sword", "shield",
 		"animation", "visibility flags", "blocking flags", "message", "hurtdxdy",
@@ -942,7 +942,7 @@ CString TNPC::getVariableDump()
 		"ganiattr30", "joinedclasses", "xprecise", "yprecise"
 	};
 
-	static char propList[] = {
+	static const char propList[] = {
 		NPCPROP_ID, NPCPROP_IMAGE, NPCPROP_SCRIPT, NPCPROP_VISFLAGS, NPCPROP_BLOCKFLAGS,
 		NPCPROP_HEADIMAGE, NPCPROP_BODYIMAGE, NPCPROP_SWORDIMAGE, NPCPROP_SHIELDIMAGE,
 		NPCPROP_NICKNAME, NPCPROP_SPRITE, NPCPROP_GANI,

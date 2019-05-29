@@ -188,16 +188,21 @@ class TNPC
 		int getBlockFlags() const 				{ return blockFlags; }
 		int getVisibleFlags() const 			{ return visFlags; }
 		int getTimeout() const 					{ return timeout; }
+
+		const CString& getBodyImage() const		{ return bodyImage; }
 		const CString& getHeadImage() const		{ return headImage; }
+		const CString& getHorseImage() const	{ return horseImage; }
+		const CString& getShieldImage() const	{ return shieldImage; }
+		const CString& getSwordImage() const	{ return swordImage; }
 		const CString& getImage() const			{ return image; }
 		const CString& getNickname() const 		{ return nickName; }
 		const std::string& getName() const		{ return npcName; }
 		const CString& getType() const			{ return npcType; }
-		const CString& getWeaponName() const	{ return weaponName; }
 		const CString& getClientScript() const	{ return clientScript; }
 		const CString& getServerScript() const	{ return serverScript; }
 		const CString& getScriptCode() const	{ return originalScript; }
 		const CString& getScripter() const		{ return npcScripter; }
+		const CString& getWeaponName() const	{ return weaponName; }
 		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getSave(unsigned int idx) const;

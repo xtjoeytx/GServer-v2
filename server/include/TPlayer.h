@@ -42,7 +42,6 @@ class TPlayer : public TAccount, public CSocketStub
 		// Constructor - Deconstructor
 		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
 		~TPlayer();
-		void operator()();
 
 		// Manage Account
 		inline bool isLoggedIn() const;
@@ -61,6 +60,7 @@ class TPlayer : public TAccount, public CSocketStub
 		CString getVersionStr() const	{ return version; }
 		bool isUsingFileBrowser() const	{ return isFtp; }
 		CString getServerName()	const	{ return serverName; }
+		const CString& getPlatform() const { return os; }
 
 		// Set Properties
 		void setChat(const CString& pChat);

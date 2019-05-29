@@ -186,6 +186,22 @@ void NPC_SetInt_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 	npcObject->setProps(CString() >> (char)NPCPROP_POWER >> (char)clip(newValue, 0, 40), CLVER_2_17, true);
 }
 
+// PROPERTY: npc.height
+void NPC_GetInt_Height(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	info.GetReturnValue().Set(npcObject->getHeight());
+}
+
+// PROPERTY: npc.width
+void NPC_GetInt_Width(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	info.GetReturnValue().Set(npcObject->getWidth());
+}
+
 // PROPERTY: Glove Power
 void NPC_GetInt_GlovePower(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -221,7 +237,7 @@ void NPC_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, cons
 }
 
 // PROPERTY: Ap
-void NPC_GetInt_Ap(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+void NPC_GetInt_Alignment(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
@@ -229,12 +245,84 @@ void NPC_GetInt_Ap(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8
 	info.GetReturnValue().Set(npcProp.readGUChar());
 }
 
-void NPC_SetInt_Ap(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void NPC_SetInt_Alignment(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	int newValue = clip(value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked(), 0, 100);
 	npcObject->setProps(CString() >> (char)NPCPROP_ALIGNMENT >> (char)newValue, CLVER_2_17, true);
+}
+
+// PROPERTY: npc.bodyimg
+void NPC_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getBodyImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_BodyImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
+}
+
+// PROPERTY: npc.headimg
+void NPC_GetStr_HeadImage(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHeadImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_HEADIMAGE >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
+}
+
+// PROPERTY: npc.horseimg
+void NPC_GetStr_HorseImage(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHorseImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_HorseImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
 }
 
 // PROPERTY: npc.image
@@ -269,6 +357,54 @@ void NPC_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	npcObject->setNickname(*newValue);
+}
+
+// PROPERTY: npc.shieldimg
+void NPC_GetStr_ShieldImage(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getShieldImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_ShieldImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
+}
+
+// PROPERTY: npc.swordimg
+void NPC_GetStr_SwordImage(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getSwordImage().text());
+	info.GetReturnValue().Set(strText);
+}
+
+void NPC_SetStr_SwordImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	v8::String::Utf8Value newValue(info.GetIsolate(), value);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_SWORDIMAGE >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
 }
 
 // PROPERTY: Message
@@ -1033,17 +1169,17 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	// Properties
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Ap, NPC_SetInt_Ap);
-	//npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "body"), NPC_GetInt_Ap, NPC_SetInt_Ap);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Alignment, NPC_SetInt_Alignment);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bodyimg"), NPC_GetStr_BodyImage, NPC_SetStr_BodyImage);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), NPC_GetInt_Bombs, NPC_SetInt_Bombs);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), NPC_GetStr_Message, NPC_SetStr_Message);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), NPC_GetInt_Darts, NPC_SetInt_Darts);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir"), NPC_GetInt_Dir, NPC_SetInt_Dir);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower"), NPC_GetInt_GlovePower, NPC_SetInt_GlovePower);
-	//npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "head"), NPC_GetInt_Ap, NPC_SetInt_Ap);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "headimg"), NPC_GetStr_HeadImage, NPC_SetStr_HeadImage);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Height);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetStr_HorseImage, NPC_SetStr_HorseImage);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_Id);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetStr_Image, NPC_SetStr_Image);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
@@ -1051,10 +1187,10 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Name);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetStr_ShieldImage, NPC_SetStr_ShieldImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetStr_SwordImage, NPC_SetStr_SwordImage);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_Timeout, NPC_SetNum_Timeout);
-//	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width"), NPC_GetInt_Width);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
 
