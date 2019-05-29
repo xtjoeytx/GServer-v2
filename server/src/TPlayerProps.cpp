@@ -485,7 +485,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				}
 				else if (len > 100)
 				{
-					headImg = pPacket.readChars(len-100);
+					headImg = pPacket.readChars(len - 100);
+					// TODO(joey): We need to check properties for newline, especially if they are sending to other clients
+					//	as it causes havoc on the client...
+					int check = headImg.find("\n", 0);
+					if (check > 0)
+						headImg = headImg.readChars(check);
 					if (!headImg.isEmpty() && versionID < CLVER_2_1 && getExtension(headImg).isEmpty())
 						headImg << ".gif";
 

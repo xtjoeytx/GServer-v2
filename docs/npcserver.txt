@@ -62,6 +62,7 @@ NPC Object:
 		ani
 		ap
 		attr[idx] (index can be between 1-30)
+		bodyimg
 		bombs
 		chat
 		darts
@@ -69,6 +70,9 @@ NPC Object:
 		flags['key'] - retrieve/manipulate npc flags
 		glovepower
 		hearts
+		headimg
+		height (read-only)
+		horseimg
 		image
 		level - the level object
 		levelname
@@ -76,10 +80,12 @@ NPC Object:
 		nick
 		rupees
 		save[idx] - (index can be between 0-9)
+		shieldimg
+		swordimg
 		timeout
+		width (read-only)
 		x
 		y
-
 
 Player Object:
 	Functions:
@@ -99,17 +105,27 @@ Player Object:
 		account - (read-only)
 		ani
 		ap
+		bodyimg
 		bombs
 		chat
 		darts
 		hearts
+		headimg
 		fullhearts
+		glovepower
+		guild
 		isadmin
 		isclient
 		level - the level object
 		levelname
+		mp
 		nick
+		platform - os type (win/linux?)
 		rupees
+		shieldimg
+		shieldpower
+		swordimg
+		swordpower
 		x
 		y
 		flags['key'] - retrieve/manipulate player flags
