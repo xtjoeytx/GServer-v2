@@ -1,10 +1,12 @@
 #pragma once
 
+#ifndef V8SCRIPTFUNCTION_H
+#define V8SCRIPTFUNCTION_H
+
 #include <cassert>
-#include "ScriptArguments.h"
-#include "ScriptFunction.h"
-#include "V8Macros.h"
+#include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
+#include "V8ScriptUtils.h"
 
 class V8ScriptFunction : public IScriptFunction
 {
@@ -31,3 +33,5 @@ private:
 	v8::Persistent<v8::Function> _function;
 	V8ScriptEnv *_env;
 };
+
+#endif

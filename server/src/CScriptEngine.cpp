@@ -1,8 +1,7 @@
 #ifdef V8NPCSERVER
 
 #include "CScriptEngine.h"
-#include "V8ScriptEnv.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptBindings.h"
 #include "TNPC.h"
 #include "TPlayer.h"
 #include "TServer.h"
@@ -40,45 +39,42 @@ bool CScriptEngine::Initialize()
 	}
 
 	// bootstrap file print
-	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", bootstrapScript.text());
+	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", bootstrapScript.text());
 
 	// TODO(joey): Clean this the fuck up
 	_env = new V8ScriptEnv();
+	_env->Initialize();
 
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-	env->Initialize();
-
-	{
-		// TODO(joey): get this out of here? possibly?
-		// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-		v8::Isolate *isolate = env->Isolate();
-		v8::Isolate::Scope isolate_scope(isolate);
-		v8::HandleScope handle_scope(isolate);
+	_env->CallFunctionInScope([&]() -> void {
+		CScriptEngine *engine = this;
 
 		// Bind global functions
-		bindGlobalFunctions(this);
+		bindGlobalFunctions(engine);
 
 		// Bind classes to be used for scripts
-		bindClass_Environment(this);
-		bindClass_Server(this);
-		bindClass_Level(this);
-		bindClass_NPC(this);
-		bindClass_Player(this);
-		bindClass_Weapon(this);
+		bindClass_Environment(engine);
+		bindClass_Server(engine);
+		bindClass_Level(engine);
+		bindClass_NPC(engine);
+		bindClass_Player(engine);
+		bindClass_Weapon(engine);
+	});
 
-		// Create a new context (occurs on initial compile)
-		_bootstrapFunction = env->Compile("bootstrap", bootstrapScript.text());
-		assert(_bootstrapFunction);
+	// Create a new context (occurs on initial compile)
+	_bootstrapFunction = _env->Compile("bootstrap", bootstrapScript.text());
+	assert(_bootstrapFunction);
 
-		v8::Context::Scope context_scope(env->Context());
-        _environmentObject = env->Wrap(ScriptConstructorId<IScriptEnv>::result, this->_server);
-        _serverObject = env->Wrap(ScriptConstructorId<TServer>::result, this->_server);
+	// Bind the server into two separate objects
+	_environmentObject = ScriptFactory::WrapObject(_env, "environment", _server);
+	_serverObject = ScriptFactory::WrapObject(_env, "server", _server);
 
-		IScriptArguments *args = ScriptArgumentsFactory::Create(env, _environmentObject);
+	// Execute the bootstrap function
+	_env->CallFunctionInScope([&]() -> void {
+		IScriptArguments *args = ScriptFactory::CreateArguments(_env, _environmentObject);
 		args->Invoke(_bootstrapFunction);
 		delete args;
-	}
-
+	});
+	
 	return true;
 }
 
@@ -135,7 +131,7 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool refe
 		compiledScript->increaseReference();
 	_cachedScripts[code] = compiledScript;
 
-	V8ENV_D("---COMPILED---\n");
+	SCRIPTENV_D("---COMPILED---\n");
 	return compiledScript;
 }
 
@@ -158,7 +154,7 @@ bool CScriptEngine::ClearCache(const std::string& code)
 
 bool CScriptEngine::ExecuteNpc(TNPC *npc)
 {
-	V8ENV_D("Begin Global::ExecuteNPC()\n\n");
+	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
 	// Wrap object
@@ -168,12 +164,12 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	CString npcScript = npc->getServerScript();
 	if (npcScript.isEmpty())
     {
-		V8ENV_D("Empty code, maybe we shouldn't execute\n");
+		SCRIPTENV_D("Empty code, maybe we shouldn't execute\n");
     }
 
 	std::string codeStr = WrapScript<TNPC>(npcScript.text());
 
-	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
+	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
 
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
@@ -186,6 +182,8 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	//
 	// Execute the compiled script
 	//
+
+	// TODO(joey): Get rid of v8 usage here
 
 	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
 
@@ -216,18 +214,18 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
 	if (scriptTableRet.IsEmpty())
 	{
-		V8ENV_D("Failed when executing script\n");
+		SCRIPTENV_D("Failed when executing script\n");
 		env->ParseErrors(&try_catch);
 		_server->reportScriptException(_env->getScriptError());
 	}
 
-	V8ENV_D("End Global::ExecuteNPC()\n\n");
+	SCRIPTENV_D("End Global::ExecuteNPC()\n\n");
 	return true;
 }
 
 bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 {
-	V8ENV_D("Begin Global::ExecuteWeapon()\n\n");
+	SCRIPTENV_D("Begin Global::ExecuteWeapon()\n\n");
 
 	// We always want to create an object for the weapon
 	// Wrap object
@@ -237,12 +235,12 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	CString weaponScript = weapon->getServerScript();
 	if (weaponScript.isEmpty())
 	{
-		V8ENV_D("Empty code, maybe we shouldn't execute\n");
+		SCRIPTENV_D("Empty code, maybe we shouldn't execute\n");
 	}
 
 	std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
 
-	V8ENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
+	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
 
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
@@ -285,18 +283,18 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
 	if (scriptTableRet.IsEmpty())
 	{
-		V8ENV_D("Failed when executing weapon script\n");
+		SCRIPTENV_D("Failed when executing weapon script\n");
 		env->ParseErrors(&try_catch);
 		_server->reportScriptException(_env->getScriptError());
 	}
 
-	V8ENV_D("End Global::ExecuteWeapon()\n\n");
+	SCRIPTENV_D("End Global::ExecuteWeapon()\n\n");
 	return true;
 }
 
 void CScriptEngine::RunScripts(bool timedCall)
 {
-	if (timedCall && !_updateNpcsTimer.empty())
+	if (timedCall)
 	{
 		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
 		{
@@ -309,49 +307,26 @@ void CScriptEngine::RunScripts(bool timedCall)
 			else it++;
 		}
 	}
-
-	// TODO(joey): think of a nice way to combine this stuff together
-
-	if (!_updateNpcs.empty())
+	
+	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{
-		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
+		_env->CallFunctionInScope([&]() -> void {
+			// Iterate over npcs
+			for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); ++it)
+			{
+				TNPC *npc = *it;
+				npc->runScriptEvents();
+			}
+			_updateNpcs.clear();
 
-		// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-		v8::Isolate *isolate = env->Isolate();
-		v8::Isolate::Scope isolate_scope(isolate);
-		v8::HandleScope handle_scope(isolate);
-
-		// Enter context scope
-		v8::Context::Scope context_scope(env->Context());
-
-		// Iterate over npcs
-		for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); ++it)
-		{
-			TNPC *npc = *it;
-			npc->runScriptEvents();
-		}
-		_updateNpcs.clear();
-	}
-
-	if (!_updateWeapons.empty())
-	{
-		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-
-		// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-		v8::Isolate *isolate = env->Isolate();
-		v8::Isolate::Scope isolate_scope(isolate);
-		v8::HandleScope handle_scope(isolate);
-
-		// Enter context scope
-		v8::Context::Scope context_scope(env->Context());
-
-		// Iterate over weapons
-		for (auto it = _updateWeapons.begin(); it != _updateWeapons.end(); ++it)
-		{
-			TWeapon *weapon = *it;
-			weapon->runScriptEvents();
-		}
-		_updateWeapons.clear();
+			// Iterate over weapons
+			for (auto it = _updateWeapons.begin(); it != _updateWeapons.end(); ++it)
+			{
+				TWeapon *weapon = *it;
+				weapon->runScriptEvents();
+			}
+			_updateWeapons.clear();
+		});
 	}
 }
 

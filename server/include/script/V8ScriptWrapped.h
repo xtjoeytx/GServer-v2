@@ -1,8 +1,12 @@
 #pragma once
 
+#ifndef V8SCRIPTWRAPPED_H
+#define V8SCRIPTWRAPPED_H
+
 #include <v8.h>
 #include <unordered_map>
-#include "ScriptWrapped.h"
+#include "ScriptBindings.h"
+#include "V8ScriptUtils.h"
 
 template<class T>
 class V8ScriptWrapped : public IScriptWrapped<T>
@@ -80,3 +84,5 @@ private:
 	v8::Persistent<v8::Object> _handle;
 	std::unordered_map<std::string, v8::Global<v8::Object>> _children;
 };
+
+#endif

@@ -170,11 +170,11 @@ void TNPC::setScriptCode(const CString& pScript)
 	// Compile and execute the script.
 	bool executed = server->getScriptEngine()->ExecuteNpc(this);
 	if (executed) {
-		V8ENV_D("SCRIPT COMPILED\n");
+		SCRIPTENV_D("SCRIPT COMPILED\n");
 		this->queueNpcAction("npc.created");
 	}
 	else
-		V8ENV_D("Could not compile npc script\n");
+		SCRIPTENV_D("Could not compile npc script\n");
 
 	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
 	//	would need "update level" to take changes.
@@ -195,111 +195,125 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 	switch(pId)
 	{
 		case NPCPROP_IMAGE:
-		return CString() >> (char)image.length() << image;
+			return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
 			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.subString(0, 0x3FFF);
 
 		case NPCPROP_X:
-		return CString() >> (char)(x * 2);
+			return CString() >> (char)(x * 2);
 
 		case NPCPROP_Y:
-		return CString() >> (char)(y * 2);
+			return CString() >> (char)(y * 2);
 
 		case NPCPROP_POWER:
-		return CString() >> (char)power;
+			return CString() >> (char)power;
 
 		case NPCPROP_RUPEES:
-		return CString() >> (int)rupees;
+			return CString() >> (int)rupees;
 
 		case NPCPROP_ARROWS:
-		return CString() >> (char)darts;
+			return CString() >> (char)darts;
 
 		case NPCPROP_BOMBS:
-		return CString() >> (char)bombs;
+			return CString() >> (char)bombs;
 
 		case NPCPROP_GLOVEPOWER:
-		return CString() >> (char)glovePower;
+			return CString() >> (char)glovePower;
 
 		case NPCPROP_BOMBPOWER:
-		return CString() >> (char)bombPower;
+			return CString() >> (char)bombPower;
 
 		case NPCPROP_SWORDIMAGE:
-		if (swordPower == 0)
-			return CString() >> (char)0;
-		else
-			return CString() >> (char)(swordPower + 30) >> (char)swordImage.length() << swordImage;
+			if (swordPower == 0)
+				return CString() >> (char)0;
+			else
+				return CString() >> (char)(swordPower + 30) >> (char)swordImage.length() << swordImage;
 
 		case NPCPROP_SHIELDIMAGE:
-		if (shieldPower + 10 > 10)
-			return CString() >> (char)(shieldPower + 10) >> (char)shieldImage.length() << shieldImage;
-		else
-			return CString() >> (char)0;
+			if (shieldPower + 10 > 10)
+				return CString() >> (char)(shieldPower + 10) >> (char)shieldImage.length() << shieldImage;
+			else
+				return CString() >> (char)0;
 
 		case NPCPROP_GANI:
-		if (clientVersion < CLVER_2_1)
-			return bowImage;
-		return CString() >> (char)gani.length() << gani;
+			if (clientVersion < CLVER_2_1)
+				return bowImage;
+			return CString() >> (char)gani.length() << gani;
 
 		case NPCPROP_VISFLAGS:
-		return CString() >> (char)visFlags;
+			return CString() >> (char)visFlags;
 
 		case NPCPROP_BLOCKFLAGS:
-		return CString() >> (char)blockFlags;
+			return CString() >> (char)blockFlags;
 
 		case NPCPROP_MESSAGE:
-		return CString() >> (char)chatMsg.subString(0, 200).length() << chatMsg.subString(0, 200);
+			return CString() >> (char)chatMsg.subString(0, 200).length() << chatMsg.subString(0, 200);
 
 		case NPCPROP_HURTDXDY:
-		return CString() >> (char)((hurtX*32)+32) >> (char)((hurtY*32)+32);
+			return CString() >> (char)((hurtX*32)+32) >> (char)((hurtY*32)+32);
 
 		case NPCPROP_ID:
-		return CString() >> (int)id;
+			return CString() >> (int)id;
 
 		// Sprite is deprecated and has been replaced by def.gani.
 		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
 		case NPCPROP_SPRITE:
 		{
-			if (clientVersion < CLVER_2_1) return CString() >> (char)sprite;
-			else return CString() >> (char)(sprite % 4);
+			if (clientVersion < CLVER_2_1)
+				return CString() >> (char)sprite;
+			else
+				return CString() >> (char)(sprite % 4);
 		}
 
 		case NPCPROP_COLORS:
-		return CString() >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
+			return CString() >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
 
 		case NPCPROP_NICKNAME:
-		return CString() >> (char)nickName.length() << nickName;
+			return CString() >> (char)nickName.length() << nickName;
 
 		case NPCPROP_HORSEIMAGE:
-		return CString() >> (char)horseImage.length() << horseImage;
+			return CString() >> (char)horseImage.length() << horseImage;
 
 		case NPCPROP_HEADIMAGE:
-		return CString() >> (char)(headImage.length() + 100) << headImage;
+			return CString() >> (char)(headImage.length() + 100) << headImage;
+
+		case NPCPROP_SAVE0:
+		case NPCPROP_SAVE1:
+		case NPCPROP_SAVE2:
+		case NPCPROP_SAVE3:
+		case NPCPROP_SAVE4:
+		case NPCPROP_SAVE5:
+		case NPCPROP_SAVE6:
+		case NPCPROP_SAVE7:
+		case NPCPROP_SAVE8:
+		case NPCPROP_SAVE9:
+			return CString() >> (char)saves[pId - NPCPROP_SAVE0];
 
 		case NPCPROP_ALIGNMENT:
-		return CString() >> (char)ap;
+			return CString() >> (char)ap;
 
 		case NPCPROP_IMAGEPART:
-		return CString() << imagePart;
+			return CString() << imagePart;
 
 		case NPCPROP_BODYIMAGE:
-		return CString() >> (char)bodyImage.length() << bodyImage;
+			return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelX(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelX(level->getActualLevelName()) : 0);
 
 		case NPCPROP_GMAPLEVELY:
-		return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
-		return CString() >> (char)npcScripter.length() << npcScripter;
+			return CString() >> (char)npcScripter.length() << npcScripter;
 
 		case NPCPROP_NAME:
-		return CString() >> (char)npcName.length() << npcName;
+			return CString() >> (char)npcName.length() << npcName;
 
 		case NPCPROP_TYPE:
-		return CString() >> (char)npcType.length() << npcType;
+			return CString() >> (char)npcType.length() << npcType;
 
 		case NPCPROP_CURLEVEL:
 		{
@@ -309,7 +323,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 #endif
 
 		case NPCPROP_CLASS:
-		return CString() >> (short)0;
+			return CString() >> (short)0;
 
 		case NPCPROP_X2:
 		{
@@ -326,12 +340,6 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			if (y2 < 0) val |= 0x0001;
 			return CString().writeGShort((short)val);
 		}
-	}
-
-	// Saves.
-	if (inrange(pId, NPCPROP_SAVE0, NPCPROP_SAVE9))
-	{
-		return CString() >> (char)saves[NPCPROP_SAVE0 - pId];
 	}
 
 	// Gani attributes.
@@ -394,11 +402,11 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				image = pProps.readChars(pProps.readGUChar());
 				if (!image.isEmpty() && clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
 					image << ".gif";
-			break;
+				break;
 
 			case NPCPROP_SCRIPT:
 				clientScript = pProps.readChars(pProps.readGUShort());
-			break;
+				break;
 
 			case NPCPROP_X:
 				if (blockPositionUpdates)
@@ -409,7 +417,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				x = (float)(pProps.readGChar()) / 2.0f;
 				x2 = (int)(x * 16);
 				hasMoved = true;
-			break;
+				break;
 
 			case NPCPROP_Y:
 				if (blockPositionUpdates)
@@ -424,27 +432,27 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 			case NPCPROP_POWER:
 				power = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_RUPEES:
 				rupees = pProps.readGUInt();
-			break;
+				break;
 
 			case NPCPROP_ARROWS:
 				darts = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_BOMBS:
 				bombs = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_GLOVEPOWER:
 				glovePower = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_BOMBPOWER:
 				bombPower = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_SWORDIMAGE:
 			{
@@ -465,8 +473,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					//swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
 				swordPower = sp;
+				break;
 			}
-			break;
 
 			case NPCPROP_SHIELDIMAGE:
 			{
@@ -486,10 +494,11 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					else shieldImage = "";
 				}
 				shieldPower = sp;
+				break;
 			}
-			break;
 
 			case NPCPROP_GANI:
+			{
 				if (clientVersion < CLVER_2_1)
 				{
 					// Older clients don't use ganis.  This is the bow power and image instead.
@@ -508,47 +517,48 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					break;
 				}
 				gani = pProps.readChars(pProps.readGUChar());
-			break;
+				break;
+			}
 
 			case NPCPROP_VISFLAGS:
 				visFlags = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_BLOCKFLAGS:
 				blockFlags = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_MESSAGE:
 				chatMsg = pProps.readChars(pProps.readGUChar());
-			break;
+				break;
 
 			case NPCPROP_HURTDXDY:
 				hurtX = ((float)(pProps.readGUChar()-32))/32;
 				hurtY = ((float)(pProps.readGUChar()-32))/32;
-			break;
+				break;
 
 			case NPCPROP_ID:
 				pProps.readGUInt();
-			break;
+				break;
 
 			case NPCPROP_SPRITE:
 				sprite = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_COLORS:
 				for (int i = 0; i < 5; i++)
 					colors[i] = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_NICKNAME:
 				nickName = pProps.readChars(pProps.readGUChar());
-			break;
+				break;
 
 			case NPCPROP_HORSEIMAGE:
 				horseImage = pProps.readChars(pProps.readGUChar());
 				if (!horseImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(horseImage).isEmpty())
 					horseImage << ".gif";
-			break;
+				break;
 
 			case NPCPROP_HEADIMAGE:
 				len = pProps.readGUChar();
@@ -560,28 +570,28 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					if (!headImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(headImage).isEmpty())
 						headImage << ".gif";
 				}
-			break;
+				break;
 
 			case NPCPROP_ALIGNMENT:
 				ap = pProps.readGUChar();
 				ap = clip(ap, 0, 100);
-			break;
+				break;
 
 			case NPCPROP_IMAGEPART:
 				imagePart = pProps.readChars(6);
-			break;
+				break;
 
 			case NPCPROP_BODYIMAGE:
 				bodyImage = pProps.readChars(pProps.readGUChar());
-			break;
+				break;
 
 			case NPCPROP_GMAPLEVELX:
 				gmaplevelx = pProps.readGUChar();
-			break;
+				break;
 
 			case NPCPROP_GMAPLEVELY:
 				gmaplevely = pProps.readGUChar();
-			break;
+				break;
 
 #ifdef V8NPCSERVER
 			case NPCPROP_SCRIPTER:
@@ -604,7 +614,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 			case NPCPROP_CLASS:
 				pProps.readChars(pProps.readGShort());
-			break;
+				break;
 
 			// Location, in pixels, of the npc on the level in 2.3+ clients.
 			// Bit 0x0001 controls if it is negative or not.
@@ -696,8 +706,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				for (int i = 0; i < pProps.length(); ++i)
 					printf("%02x ", (unsigned char)pProps[i]);
 				printf("\n");
+				return ret;
 			}
-			return ret;
 		}
 
 		// If a prop changed, adjust its mod time.
@@ -742,7 +752,6 @@ void TNPC::testTouch()
 	TLevelLink *linkTouched = level->isOnLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
 	if (linkTouched != 0)
 	{
-		printf("Touched a link! Warp npc!\n");
 		TLevel *newLevel = server->getLevel(linkTouched->getNewLevel());
 		if (newLevel != 0)
 		{
@@ -877,7 +886,7 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 
 bool TNPC::runScriptTimer()
 {
-	// TODO(joey): Scheduled events
+	// TODO(joey): Scheduled events, pass in delta, use milliseconds as an integer
 
 	if (timeout > 0)
 	{
@@ -1129,7 +1138,7 @@ CString TNPC::getVariableDump()
 			case NPCPROP_SAVE8:
 			case NPCPROP_SAVE9:
 			{
-				char saveValue = prop.readGUChar();
+				unsigned char saveValue = prop.readGUChar();
 				if (saveValue > 0)
 					npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((int)saveValue) << "\n";
 				break;
@@ -1151,8 +1160,10 @@ CString TNPC::getVariableDump()
 
 	if (timeout > 0)
 		npcDump << npcNameStr << ".timeout: " << CString((float)(timeout * 0.05f)) << "\n";
-	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(_scriptExecutionContext.getExecutionTime()) << "\n";
-	npcDump << npcNameStr << ".scriptcalls: " << CString(_scriptExecutionContext.getExecutionCalls()) << "\n";
+
+	std::pair<unsigned int, double> executionData = _scriptExecutionContext.getExecutionData();
+	npcDump << npcNameStr << ".scripttime (in the last min): " << CString(executionData.second) << "\n";
+	npcDump << npcNameStr << ".scriptcalls: " << CString(executionData.first) << "\n";
 
 	if (!flagList.empty())
 	{
@@ -1236,8 +1247,13 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
 }
 
-void TNPC::saveNPC() const
+void TNPC::saveNPC()
 {
+	// TODO(joey): check if properties have been modified before deciding to save
+
+	// Clean up old samples
+	_scriptExecutionContext.getExecutionData();
+
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
 	CString fileData = CString("GRNPC001") << NL;

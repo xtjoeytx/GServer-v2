@@ -37,17 +37,13 @@ public:
 
 	~ScriptExecutionContext() { resetExecution(); }
 
-	unsigned int getExecutionCalls() const;
-	double getExecutionTime();
+	std::pair<unsigned int, double> getExecutionData();
+	void addExecutionSample(const ScriptTimeSample& sample);
 
 	bool hasActions() const;
 	void addAction(ScriptAction *action);
 	void resetExecution();
 	void runExecution();
-
-	void addSample(ScriptTimeSample sample) {
-		_scriptTimeSamples.push_back(sample);
-	}
 
 private:
 	CScriptEngine *_scriptEngine;
@@ -55,33 +51,37 @@ private:
 	std::vector<ScriptTimeSample> _scriptTimeSamples;
 };
 
-inline unsigned int ScriptExecutionContext::getExecutionCalls() const
-{
-	return (unsigned int)_scriptTimeSamples.size();
-}
-
-inline double ScriptExecutionContext::getExecutionTime()
+inline std::pair<unsigned int, double> ScriptExecutionContext::getExecutionData()
 {
 	double exectime = 0.0;
+	unsigned int calls = 0;
 
 #ifndef NOSCRIPTPROFILING
 	auto time_now = std::chrono::high_resolution_clock::now();
 
 	for (auto it = _scriptTimeSamples.begin(); it != _scriptTimeSamples.end();)
 	{
-		auto sample_diff = std::chrono::duration_cast<std::chrono::seconds>((*it).expiration - time_now);
-		if (sample_diff.count() <= 0)
+		auto sample_diff = std::chrono::duration_cast<std::chrono::minutes>(time_now - (*it).sample_time);
+		if (sample_diff.count() >= 1)
 		{
 			it = _scriptTimeSamples.erase(it);
 			continue;
 		}
 
 		exectime += (*it).sample;
+		calls++;
 		++it;
 	}
 #endif
 
-	return exectime;
+	return { calls, exectime };
+}
+
+inline void ScriptExecutionContext::addExecutionSample(const ScriptTimeSample& sample)
+{
+#ifndef NOSCRIPTPROFILING
+	_scriptTimeSamples.push_back(sample);
+#endif
 }
 
 inline bool ScriptExecutionContext::hasActions() const
@@ -100,7 +100,9 @@ inline void ScriptExecutionContext::resetExecution()
 		delete *it;
 	_actions.clear();
 
+#ifndef NOSCRIPTPROFILING
 	//_scriptTimeSamples.clear();
+#endif
 }
 
 inline void ScriptExecutionContext::runExecution()
@@ -149,7 +151,7 @@ inline void ScriptExecutionContext::runExecution()
 	for (auto it = _actions.begin(); it != _actions.end();)
 	{
 		ScriptAction *action = *it;
-		V8ENV_D("Running action: %s\n", action->getAction().c_str());
+		SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
 		action->Invoke();
 		it = _actions.erase(it);
 		delete action;
@@ -163,7 +165,7 @@ inline void ScriptExecutionContext::runExecution()
 #ifndef NOSCRIPTPROFILING
 	auto endTimer = std::chrono::high_resolution_clock::now();
 	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
-	_scriptTimeSamples.push_back({ endTimer + std::chrono::seconds(60), time_diff.count() });
+	addExecutionSample({ time_diff.count(), endTimer });
 #endif
 }
 

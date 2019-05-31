@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef SCRIPTFUNCTION_H
+#define SCRIPTFUNCTION_H
+
 class IScriptArguments;
 
 class IScriptFunction
@@ -31,3 +34,4 @@ private:
 
 inline IScriptFunction::~IScriptFunction() = default;
 
+#endif

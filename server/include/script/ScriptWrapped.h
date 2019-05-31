@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef SCRIPTWRAPPED_H
+#define SCRIPTWRAPPED_H
+
 #include <assert.h>
 
 template<class T>
@@ -43,3 +46,5 @@ protected:
 	T *_object;
 	int _referenceCount;
 };
+
+#endif

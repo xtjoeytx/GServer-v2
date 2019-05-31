@@ -12,9 +12,6 @@
 #include "TNPC.h"
 #include "TPlayer.h"
 
-// TODO(joey): Currently not cleaning this up
-v8::Persistent<v8::FunctionTemplate> _persist_server_flags_ctor;
-
 void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
@@ -182,7 +179,6 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
     v8::Isolate *isolate = info.GetIsolate();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> self = info.This();
-    TServer *serverObject = UnwrapObject<TServer>(self);
 
     v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8(isolate, "_internalFlags", v8::NewStringType::kInternalized).ToLocalChecked();
     if (self->HasRealNamedProperty(context, internalProperty).ToChecked())
@@ -191,7 +187,18 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
         return;
     }
 
-    v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_server_flags_ctor);
+	V8ENV_SAFE_UNWRAP(info, TServer, serverObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("server.flags");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
     v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
     new_instance->SetAlignedPointerInInternalField(0, serverObject);
 
@@ -322,7 +329,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
 
 	// Properties
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags);
+	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags, nullptr, engine_ref);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Server_GetArray_Npcs);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Server_GetArray_Players);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar"), Server_Get_TimeVar);
@@ -335,10 +342,10 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 			Server_Flags_Getter, Server_Flags_Setter, nullptr, nullptr, Server_Flags_Enumerator, v8::Local<v8::Value>(),
 			v8::PropertyHandlerFlags::kOnlyInterceptStrings));
-	_persist_server_flags_ctor.Reset(isolate, server_flags_ctor);
+	env->SetConstructor("server.flags", server_flags_ctor);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<TServer>::result, server_ctor);
+	env->SetConstructor("server", server_ctor);
 }
 
 #endif

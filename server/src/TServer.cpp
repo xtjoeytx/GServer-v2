@@ -40,6 +40,7 @@ TServer::TServer(CString pName)
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
 #ifdef V8NPCSERVER
 	lastScriptTimer = time_now;
+	accumulator = std::chrono::nanoseconds(0);
 #endif
 
 	// This has the full path to the server directory.
@@ -236,7 +237,7 @@ void TServer::cleanupDeletedPlayers()
 			// If we just added events to the player, we will have to wait for them to run before removing player.
 			if (playerObject->isReferenced())
 			{
-				printf("Reference count: %d\n", playerObject->getReferenceCount());
+				SCRIPTENV_D("Reference count: %d\n", playerObject->getReferenceCount());
 				++i;
 				continue;
 			}
@@ -334,35 +335,38 @@ void TServer::restart()
 	doRestart = true;
 }
 
+constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
+
 bool TServer::doMain()
 {
 	// Update our socket manager.
 	sockManager.update(0, 5000);		// 5ms
 
-	//
+	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
-
-#ifdef V8NPCSERVER
-	// Run scripts every 0.05 seconds (incl. catching up)
-	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastScriptTimer);
-	auto time_ms = time_diff.count();
 	
-	// TODO(joey): maybe run events at any time
-	if (time_ms >= 50)
-	{
-		lastScriptTimer = currentTimer;
+#ifdef V8NPCSERVER
+	// Run scripts every 0.05 seconds
+	auto delta_time = currentTimer - lastScriptTimer;
+	lastScriptTimer = currentTimer;
+	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
 
-		do {
-			mScriptEngine.RunScripts(true);
-			time_ms -= 50;
-		} while (time_ms >= 50);
+	// Accumulator for timeout / scheduled events
+	bool updated = false;
+	while (accumulator >= timestep) {
+		accumulator -= timestep;
+
+		mScriptEngine.RunScripts(true);
+		updated = true;
 	}
-	else mScriptEngine.RunScripts();
+
+	// Run any queued actions anyway
+	if (!updated)
+		mScriptEngine.RunScripts();
 #endif
 
 	// Every second, do some events.
-	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
+	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
 	if (time_diff.count() >= 1000)
 	{
 		lastTimer = currentTimer;
@@ -1017,8 +1021,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	{
 		TNPC *npc = *it;
 		ScriptExecutionContext *context = npc->getExecutionContext();
-		double execTime = context->getExecutionTime();
-		if (execTime > 0.0)
+		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		if (executionData.second > 0.0)
 		{
 			std::string npcName = npc->getName();
 			if (npcName.empty())
@@ -1031,7 +1035,7 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 					append(", ").append(CString((float)npc->getPixelY() / 16.0f).text()).append(")");
 			}
 
-			script_profiles.push_back(std::make_pair(execTime, npcName));
+			script_profiles.push_back(std::make_pair(executionData.second, npcName));
 		}
 	}
 
@@ -1040,12 +1044,13 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	{
 		TWeapon *weapon = (*it).second;
 		ScriptExecutionContext *context = weapon->getExecutionContext();
-		double execTime = context->getExecutionTime();
-		if (execTime > 0.0)
+		std::pair<unsigned int, double> executionData = context->getExecutionData();
+
+		if (executionData.second > 0.0)
 		{
 			std::string weaponName("Weapon ");
 			weaponName.append((*it).first.text());
-			script_profiles.push_back(std::make_pair(execTime, weaponName));
+			script_profiles.push_back(std::make_pair(executionData.second, weaponName));
 		}
 	}
 

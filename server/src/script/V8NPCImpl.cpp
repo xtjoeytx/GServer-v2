@@ -12,11 +12,6 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
-// TODO(joey): Currently not cleaning this up
-v8::Persistent<v8::FunctionTemplate> _persist_npc_attrs_ctor;
-v8::Persistent<v8::FunctionTemplate> _persist_npc_flags_ctor;
-v8::Persistent<v8::FunctionTemplate> _persist_npc_saves_ctor;
-
 // Property: npc.id
 void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -625,8 +620,9 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
-	// Unwrap Object
-	TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+	// Unwrap object
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
 	npcObject->setProps(CString() >> (char)NPCPROP_IMAGE >> (char)3 << "#c#", CLVER_2_17, true);
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
@@ -648,8 +644,8 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	
 	if (code[0] == '#')
 	{
-		// Unwrap Object
-		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+		// Unwrap object
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
 		switch (code[1])
 		{
@@ -703,7 +699,9 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 						colors[i] = npcProp.readGUChar();
 
 					colors[code[2] - '0'] = getColor(*newValue);
-					npcObject->setProps(CString() >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], CLVER_2_17, true);
+					CString propPackage;
+					propPackage >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
+					npcObject->setProps(propPackage, CLVER_2_17, true);
 				}
 				break;
 			}
@@ -744,11 +742,11 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
 
-	V8ENV_D("Begin NPC::registerAction()\n");
+	SCRIPTENV_D("Begin NPC::registerAction()\n");
 
 	if (args[0]->IsString() && args[1]->IsFunction())
 	{
-		V8ENV_D(" - Register npc action %s with: %s\n",
+		SCRIPTENV_D(" - Register npc action %s with: %s\n",
 			*v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked()),
 			*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
@@ -769,7 +767,7 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 		npcObject->registerTriggerAction(eventName, cbFuncWrapper);
 	}
 
-	V8ENV_D("End NPC::registerAction()\n");
+	SCRIPTENV_D("End NPC::registerAction()\n");
 }
 
 void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -835,7 +833,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 //	// TODO(joey): more proof of concept, likely to get axed.
 //	
 //	// Called by V8. and should return an NPC object
-//	V8ENV_D("Npc_Constructor called\n");
+//	SCRIPTENV_D("Npc_Constructor called\n");
 //
 //	v8::Isolate *isolate = args.GetIsolate();
 //	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -871,7 +869,7 @@ void Npc_createFunction(const v8::FunctionCallbackInfo<v8::Value>& args)
 	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, "test str"));
 
 	if (args.Length() > 0)
-		V8ENV_D("Npc::createFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
+		SCRIPTENV_D("Npc::createFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
 }
 
 // NPC Method: npc.test();
@@ -901,13 +899,39 @@ void Npc_testFunction(const v8::FunctionCallbackInfo<v8::Value>& args)
 		};
 		v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, Null(isolate), 2, newArgs);
 		if (!ret.IsEmpty())
-			V8ENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
+			SCRIPTENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
 	}
 
-	V8ENV_D("Npc::testFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
+	SCRIPTENV_D("Npc::testFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
 }
 
 // PROPERTY: NPC Attributes
+// TODO(joey): use lazy property instead? TBD
+//void NPC_GetObject_Attrs2(v8::Local<v8::Name> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+//{
+//	//printf("Called getattr\n");
+//
+//	v8::Isolate *isolate = info.GetIsolate();
+//	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+//	v8::Local<v8::Object> self = info.This();
+//
+//	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+//
+//	v8::Local<v8::String> internalAttr = v8::String::NewFromUtf8(isolate, "_internalAttr", v8::NewStringType::kInternalized).ToLocalChecked();
+//
+//	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_npc_attrs_ctor);
+//	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+//	new_instance->SetAlignedPointerInInternalField(0, npcObject);
+//
+//	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+//	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+//	v8_wrapped->addChild("attr", new_instance);
+//
+//	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+//	self->DefineOwnProperty(context, internalAttr, new_instance, propAttr).FromJust();
+//	info.GetReturnValue().Set(new_instance);
+//}
+
 void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate *isolate = info.GetIsolate();
@@ -923,7 +947,16 @@ void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_npc_attrs_ctor);
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.attr");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
@@ -996,7 +1029,16 @@ void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_npc_flags_ctor);
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.flags");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
@@ -1078,7 +1120,16 @@ void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_npc_saves_ctor);
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.save");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
@@ -1194,9 +1245,10 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
 
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), NPC_GetObject_Flags);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save);
+	//npc_ctor->InstanceTemplate()->SetLazyDataProperty(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs2, v8::Local<v8::Value>(), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), NPC_GetObject_Flags, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save, nullptr, engine_ref);
 
 	// Create the npc-attributes flags template
 	v8::Local<v8::FunctionTemplate> npc_attrs_ctor = v8::FunctionTemplate::New(isolate);
@@ -1205,7 +1257,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_attrs_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 		NPC_Attrs_Getter, NPC_Attrs_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kNone));
-	_persist_npc_attrs_ctor.Reset(isolate, npc_attrs_ctor);
+	env->SetConstructor("npc.attr", npc_attrs_ctor);
 
 	// Create the npc flags template
 	v8::Local<v8::FunctionTemplate> npc_flags_ctor = v8::FunctionTemplate::New(isolate);
@@ -1214,7 +1266,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 		NPC_Flags_Getter, NPC_Flags_Setter, nullptr, nullptr, NPC_Flags_Enumerator, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kOnlyInterceptStrings));
-	_persist_npc_flags_ctor.Reset(isolate, npc_flags_ctor);
+	env->SetConstructor("npc.flags", npc_flags_ctor);
 
 	// Create the npc saves template
 	v8::Local<v8::FunctionTemplate> npc_save_ctor = v8::FunctionTemplate::New(isolate);
@@ -1223,7 +1275,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_save_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 			NPC_Save_Getter, NPC_Save_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
 			v8::PropertyHandlerFlags::kNone));
-	_persist_npc_saves_ctor.Reset(isolate, npc_save_ctor);
+	env->SetConstructor("npc.save", npc_save_ctor);
 
 	// Persist the npc constructor
 	env->SetConstructor(ScriptConstructorId<TNPC>::result, npc_ctor);
