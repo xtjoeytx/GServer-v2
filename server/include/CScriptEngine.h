@@ -75,7 +75,6 @@ private:
 	std::unordered_set<TNPC *> _updateNpcs;
 	std::unordered_set<TNPC *> _updateNpcsTimer;
 	std::unordered_set<TWeapon *> _updateWeapons;
-	std::vector<ScriptAction *> _actions;
 };
 
 // Getters

@@ -108,7 +108,7 @@ void TNPC::setScriptCode(const CString& pScript)
 	// Clear any joined code
 	classMap.clear();
 
-	if (!serverScript.isEmpty())
+	if (_scriptObject)
 		freeScriptResources();
 #endif
 
@@ -766,7 +766,9 @@ void TNPC::freeScriptResources()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(serverScript.text()));
+	// Clear cached script
+	if (!serverScript.isEmpty())
+		scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(serverScript.text()));
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())
@@ -792,7 +794,10 @@ void TNPC::freeScriptResources()
 
 	// Delete script object
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 }
 
 // Set callbacks for triggeractions!
@@ -865,6 +870,8 @@ void TNPC::setTimeout(int newTimeout)
 
 void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
 {
+	assert(_scriptObject);
+
 	ScriptAction *scriptAction = 0;
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 

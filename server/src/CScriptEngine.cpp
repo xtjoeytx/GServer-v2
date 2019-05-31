@@ -84,23 +84,40 @@ void CScriptEngine::Cleanup()
 		return;
 	}
 
+	_updateNpcs.clear();
+	_updateNpcsTimer.clear();
+	_updateWeapons.clear();
+
+	// Remove any registered callbacks
 	for (auto it = _callbacks.begin(); it != _callbacks.end(); ++it) {
 		delete it->second;
 	}
 	_callbacks.clear();
 
+	// Remove cached scripts
+	for (auto it = _cachedScripts.begin(); it != _cachedScripts.end(); ++it) {
+		delete it->second;
+	}
+	_cachedScripts.clear();
+
+	// Remove bootstrap function
 	if (_bootstrapFunction) {
 		delete _bootstrapFunction;
+		_bootstrapFunction = nullptr;
 	}
 
+	// Remove script objects
 	if (_environmentObject) {
 	    delete _environmentObject;
+		_environmentObject = nullptr;
 	}
 
 	if (_serverObject) {
 		delete _serverObject;
+		_serverObject = nullptr;
 	}
 
+	// Cleanup the Script Environment
 	_env->Cleanup();
 	delete _env;
 	_env = 0;

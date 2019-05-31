@@ -281,20 +281,15 @@ void TServer::cleanup()
 	// Save server flags.
 	saveServerFlags();
 
+	// Save npcs
+	saveNpcs();
+
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
 		delete *i;
 		i = playerList.erase(i);
 	}
 	playerList.clear();
-
-	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
-	{
-		delete *i;
-		i = npcList.erase(i);
-	}
-	npcList.clear();
-	npcIds.clear();
 
 	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
 	{
@@ -309,6 +304,15 @@ void TServer::cleanup()
 		i = mapList.erase(i);
 	}
 	mapList.clear();
+
+	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
+	{
+		delete *i;
+		i = npcList.erase(i);
+	}
+	npcIds.clear();
+	npcList.clear();
+	npcNameList.clear();
 
 	saveWeapons();
 	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
@@ -612,6 +616,8 @@ void TServer::loadFolderConfig()
 
 int TServer::loadConfigFiles()
 {
+	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
+	//	Move them out of here?
 	serverlog.out("[%s] :: Loading server configuration...\n", name.text());
 
 	// Load Settings
@@ -1303,14 +1309,10 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
-
-	TLevel *level = npc->getLevel();
-
+	
 	// Remove the NPC from all the lists.
-	if (level != nullptr && eraseFromLevel)
-		level->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
-		
+	
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		if ((*i) == npc)
@@ -1318,19 +1320,28 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 		else ++i;
 	}
 
-	// Tell the client to delete the NPC.
-	bool isOnMap = (level && level->getMap() ? true : false);
-	CString tmpLvlName = (isOnMap ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
+	TLevel *level = npc->getLevel();
 
-	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+	if (level)
 	{
-		TPlayer* p = *i;
-		if (p->isRemoteClient()) continue;
+		// Remove the NPC from the level
+		if (eraseFromLevel)
+			level->removeNPC(npc);
 
-		if (isOnMap || p->getVersion() < CLVER_2_1)
-			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		else
-			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		// Tell the clients to delete the NPC.
+		bool isOnMap = (level->getMap() ? true : false);
+		CString tmpLvlName = (isOnMap ? level->getMap()->getMapName() : level->getLevelName());
+
+		for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+		{
+			TPlayer* p = *i;
+			if (p->isRemoteClient()) continue;
+
+			if (isOnMap || p->getVersion() < CLVER_2_1)
+				p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+			else
+				p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		}
 	}
 
 #ifdef V8NPCSERVER

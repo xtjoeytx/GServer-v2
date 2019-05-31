@@ -31,12 +31,19 @@ SHAPE 32 48
 SAVEARR 0,0,0,0,0,0,0,0,0,0
 NPCSCRIPT
 function onCreated() {
-  // nothing of use yet
   server.sendtorc("Script Server Initialized!");
 }
 
-function onActionPlayerOnline(player)
-{
-  // not done yet
+function onPlayerLogin(player) {
+  server.sendtorc(player.account + " has logged in!")
 }
+
+function onPlayerLogout(player) {
+  server.sendtorc(player.account + " has logged off!")
+}
+
+function onPlayerMessage(player, message) {
+  // not implemented yet
+}
+
 NPCSCRIPTEND

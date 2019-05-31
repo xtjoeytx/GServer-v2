@@ -38,7 +38,10 @@ TLevel::~TLevel()
 	{
 		// Remove every NPC in the level.
 		for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
-			server->deleteNPC(*it, false);
+		{
+			if ((*it)->isLevelNPC())
+				server->deleteNPC(*it, false);
+		}
 		levelNPCs.clear();
 	}
 
@@ -75,7 +78,10 @@ TLevel::~TLevel()
 
 #ifdef V8NPCSERVER
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 #endif
 }
 
