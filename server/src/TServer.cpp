@@ -281,8 +281,10 @@ void TServer::cleanup()
 	// Save server flags.
 	saveServerFlags();
 
+#ifdef V8NPCSERVER
 	// Save npcs
 	saveNpcs();
+#endif
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
