@@ -379,7 +379,10 @@ TPlayer::~TPlayer()
 
 #ifdef V8NPCSERVER
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 #endif
 }
 

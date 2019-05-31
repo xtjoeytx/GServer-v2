@@ -790,12 +790,13 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		if (!classCode.isEmpty())
 		{
+			V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
 			// Split the code
 			std::string serverCode = classCode.readString("//#CLIENTSIDE").text();
 			std::string clientCode = classCode.readString("").text();
 
 			// Add class to npc
-			TNPC *npcObject = UnwrapObject<TNPC>(args.This());
 			npcObject->addClassCode(className, clientCode);
 
 			// Wrap code

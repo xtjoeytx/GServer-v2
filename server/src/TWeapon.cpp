@@ -15,7 +15,7 @@
 TWeapon::TWeapon(TServer *pServer, const signed char pId)
 : server(pServer), mModTime(0), mWeaponDefault(pId)
 #ifdef V8NPCSERVER
-, _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
@@ -25,7 +25,7 @@ TWeapon::TWeapon(TServer *pServer, const signed char pId)
 TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
 : server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
 #ifdef V8NPCSERVER
-, _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	// Update Weapon
@@ -291,7 +291,10 @@ void TWeapon::freeScriptResources()
 
 	// Delete script object
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 }
 
 void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
