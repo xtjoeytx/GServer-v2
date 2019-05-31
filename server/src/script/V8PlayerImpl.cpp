@@ -12,9 +12,6 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
-// TODO(joey): Currently not cleaning this up
-v8::Persistent<v8::FunctionTemplate> _persist_player_flags_ctor;
-
 // PROPERTY: player.id
 void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -547,7 +544,16 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	v8::Local<v8::FunctionTemplate> ctor_tpl = PersistentToLocal(isolate, _persist_player_flags_ctor);
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.flags");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
@@ -904,7 +910,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors"), Player_GetObject_Colors);
-    player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags);
+    player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags, nullptr, engine_ref);
 //	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "weapons"), Player_GetObject_Weapons);
 
 	// Create the player flags template
@@ -914,7 +920,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
             v8::PropertyHandlerFlags::kOnlyInterceptStrings));
-    _persist_player_flags_ctor.Reset(isolate, player_flags_ctor);
+	env->SetConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor
 	env->SetConstructor(ScriptConstructorId<TPlayer>::result, player_ctor);

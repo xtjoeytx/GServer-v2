@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 #include "ScriptBindings.h"
+#include "ScriptAction.h"
+#include "ScriptFactory.h"
 
 class IScriptEnv;
 class IScriptFunction;
@@ -61,20 +63,19 @@ public:
 	template <typename T>
 	static std::string WrapScript(const std::string& code);
 
-protected:
-	std::unordered_map<std::string, IScriptFunction *> _cachedScripts;
-	std::unordered_map<std::string, IScriptFunction *> _callbacks;
-	std::unordered_set<TNPC *> _updateNpcs;
-	std::unordered_set<TNPC *> _updateNpcsTimer;
-	std::unordered_set<TWeapon *> _updateWeapons;
-	std::vector<ScriptAction *> _actions;
-
 private:
 	IScriptEnv *_env;
 	IScriptFunction *_bootstrapFunction;
 	IScriptWrapped<TServer> *_serverObject;
 	IScriptWrapped<TServer> *_environmentObject;
 	TServer *_server;
+
+	std::unordered_map<std::string, IScriptFunction *> _cachedScripts;
+	std::unordered_map<std::string, IScriptFunction *> _callbacks;
+	std::unordered_set<TNPC *> _updateNpcs;
+	std::unordered_set<TNPC *> _updateNpcsTimer;
+	std::unordered_set<TWeapon *> _updateWeapons;
+	std::vector<ScriptAction *> _actions;
 };
 
 // Getters
@@ -146,19 +147,19 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 	constexpr size_t Argc = (sizeof...(Args));
 	assert(Argc > 0);
 
-	V8ENV_D("Server_RegisterAction:\n");
-	V8ENV_D("\tAction: %s\n", action.c_str());
-	V8ENV_D("\tArguments: %zu\n", Argc);
+	SCRIPTENV_D("Server_RegisterAction:\n");
+	SCRIPTENV_D("\tAction: %s\n", action.c_str());
+	SCRIPTENV_D("\tArguments: %zu\n", Argc);
 
 	auto funcIt = _callbacks.find(action);
 	if (funcIt == _callbacks.end())
 	{
-		V8ENV_D("Global::Server_RegisterAction: Callback not registered for %s\n", action.c_str());
+		SCRIPTENV_D("Global::Server_RegisterAction: Callback not registered for %s\n", action.c_str());
 		return 0;
 	}
 
-	// total temp
-	IScriptArguments *args = ScriptArgumentsFactory::Create((V8ScriptEnv *)nullptr, std::forward<Args>(An)...);
+	// Create an arguments object, and pass it to ScriptAction
+	IScriptArguments *args = ScriptFactory::CreateArguments(_env, std::forward<Args>(An)...);
 
 	ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
 	return newScriptAction;
@@ -167,15 +168,13 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 template<class T>
 inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const
 {
-	V8ENV_D("Begin Global::WrapObject()\n");
+	SCRIPTENV_D("Begin Global::WrapObject()\n");
 
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-
-	// Wrap object, and set the object to the class
-	IScriptWrapped<T> *wrappedObject = env->Wrap(ScriptConstructorId<T>::result, obj);
+	// Wrap the object, and set the new script object on the original object
+	IScriptWrapped<T> *wrappedObject = ScriptFactory::WrapObject(_env, ScriptConstructorId<T>::result, obj);
 	obj->setScriptObject(wrappedObject);
 
-	V8ENV_D("End Global::WrapObject()\n\n");
+	SCRIPTENV_D("End Global::WrapObject()\n\n");
 	return wrappedObject;
 }
 
@@ -206,6 +205,7 @@ inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
 	return wrappedCode;
 }
 
+class TPlayer;
 template <>
 inline std::string CScriptEngine::WrapScript<TPlayer>(const std::string& code) {
 	static const char *prefixString = "(function(player) {" \
@@ -217,6 +217,7 @@ inline std::string CScriptEngine::WrapScript<TPlayer>(const std::string& code) {
 	return wrappedCode;
 }
 
+class TWeapon;
 template <>
 inline std::string CScriptEngine::WrapScript<TWeapon>(const std::string& code) {
 	static const char *prefixString = "(function(weapon) {" \

@@ -1,5 +1,5 @@
 #include <libplatform/libplatform.h>
-#include "ScriptUtils.h"
+#include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptArguments.h"
@@ -66,9 +66,11 @@ void V8ScriptEnv::Cleanup()
 		return;
 	}
 
-	for (int i = 0; i < CONSTRUCTOR_COUNT; i++) {
-		_ctors[i].Reset();
+	// Clear persistent handles to function-constructors
+	for (auto it = _constructorMap.begin(); it != _constructorMap.end(); ++it) {
+		(*it).second.Reset();
 	}
+	_constructorMap.clear();
 
 	_global.Reset();
 	_global_tpl.Reset();
@@ -111,6 +113,7 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 			_lastScriptError.startcol = message->GetStartColumn(context).ToChecked();
 			_lastScriptError.endcol = message->GetEndColumn(context).ToChecked();
 		}
+
 		return true;
 	}
 	
@@ -128,7 +131,8 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::HandleScope handle_scope(isolate);
 
 	// Create context with global template
-	if (context.IsEmpty()) {
+	if (context.IsEmpty())
+	{
 		v8::Local<v8::ObjectTemplate> global_tpl = PersistentToLocal(isolate, _global_tpl);
 		context = v8::Context::New(isolate, 0, global_tpl);
 		_context.Reset(isolate, context);
@@ -161,4 +165,19 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 
 	assert(!try_catch.HasCaught());
 	return new V8ScriptFunction(this, result.As<v8::Function>());
+}
+
+void V8ScriptEnv::CallFunctionInScope(std::function<void()> function)
+{
+	// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
+	v8::Isolate::Scope isolate_scope(Isolate());
+	v8::HandleScope handle_scope(Isolate());
+
+	// Call function in context if we have one
+	if (_context.IsEmpty())
+		function();
+	else {
+		v8::Context::Scope context_scope(Context());
+		function();
+	}
 }

@@ -36,6 +36,7 @@ Level Object:
 
     Properties:
         name
+		issparringzone - true/false (read-only)
         npcs - list of level npcs
         players - list of players in the level
 

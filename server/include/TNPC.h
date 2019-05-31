@@ -239,7 +239,7 @@ class TNPC
 		bool getPersist() const			{ return persistNpc; }
 		void setPersist(bool persist)	{ persistNpc = persist; }
 		bool loadNPC(const CString& fileName);
-		void saveNPC() const;
+		void saveNPC();
 
 		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
 		void queueNpcTrigger(const std::string& action, const std::string& data);

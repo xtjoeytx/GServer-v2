@@ -237,7 +237,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 		return true;
 	}
 
-	TNPC *newNpc = server->addServerNpc(strtoint(npcId), strtofloat(npcX), strtofloat(npcY), level, true);
+	TNPC *newNpc = server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
 
 	if (newNpc != nullptr)
 	{

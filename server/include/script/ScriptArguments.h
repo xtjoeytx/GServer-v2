@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef SCRIPTARGUMENTS_H
+#define SCRIPTARGUMENTS_H
+
 #include <string>
 #include <tuple>
 #include "ScriptWrapped.h"
@@ -85,3 +88,5 @@ private:
 		}
 	}
 };
+
+#endif

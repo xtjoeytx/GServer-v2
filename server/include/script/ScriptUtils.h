@@ -1,18 +1,22 @@
 #pragma once
 
+#ifndef SCRIPTUTILS_H
+#define SCRIPTUTILS_H
+
 #include <chrono>
 #include <string>
 
 struct ScriptTimeSample
 {
-	std::chrono::high_resolution_clock::time_point expiration;
 	double sample;
+	std::chrono::high_resolution_clock::time_point sample_time;
 };
 
 class ScriptRunError
 {
 public:
-	ScriptRunError() : lineno(0), startcol(0), endcol(0) {
+	ScriptRunError()
+		: lineno(0), startcol(0), endcol(0) {
 	}
 
 	~ScriptRunError() = default;
@@ -31,3 +35,5 @@ public:
 	int startcol, endcol;
 	int lineno;
 };
+
+#endif

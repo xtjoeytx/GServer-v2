@@ -242,14 +242,14 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	bool executed = scriptEngine->ExecuteWeapon(this);
 	if (executed)
 	{
-		V8ENV_D("WEAPON SCRIPT COMPILED\n");
+		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
 		_scriptExecutionContext.addAction(scriptAction);
 		scriptEngine->RegisterWeaponUpdate(this);
 	}
 	else
-		V8ENV_D("Could not compile weapon script\n");
+		SCRIPTENV_D("Could not compile weapon script\n");
 #else
 	setClientScript(fixedScript);
 #endif

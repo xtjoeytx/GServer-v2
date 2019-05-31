@@ -1,10 +1,13 @@
 #pragma once
 
+#ifndef V8SCRIPTARGUMENTS_H
+#define V8SCRIPTARGUMENTS_H
+
 #include <cassert>
 #include <string>
 #include <unordered_map>
 #include <v8.h>
-#include "ScriptArguments.h"
+#include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
@@ -50,7 +53,7 @@ public:
 
 	virtual void Invoke(IScriptFunction *func) override
 	{
-		V8ENV_D("Invoke Script Argument: %d args\n", this->Argc);
+		SCRIPTENV_D("Invoke Script Argument: %d args\n", this->Argc);
 
 		if (!base::_resolved)
 		{
@@ -71,10 +74,10 @@ public:
 			// call function
 			v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, v8::Null(isolate), base::Argc, _args);
 			if (!ret.IsEmpty())
-				V8ENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
+				SCRIPTENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
 		}
 
-		V8ENV_D("Finish Script Argument\n");
+		SCRIPTENV_D("Finish Script Argument\n");
 	}
 
 private:
@@ -88,3 +91,5 @@ private:
 		}
 	}
 };
+
+#endif
