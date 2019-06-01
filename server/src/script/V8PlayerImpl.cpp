@@ -210,7 +210,8 @@ void Player_SetStr_Guild(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	int pos = playerNick.find("(", 0);
 	if (pos != -1)
 		playerNick = playerNick.readChars(pos).trimRight();
-	playerNick << " (" << *newValue << ")";
+	if (newValue.length() > 0)
+		playerNick << " (" << *newValue << ")";
 
 	int len = playerNick.length();
 	if (len > 223)
