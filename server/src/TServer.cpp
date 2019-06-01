@@ -155,9 +155,17 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	mNpcServer = new TPlayer(this, nullptr, 0);
 	mNpcServer->setType(PLTYPE_NPCSERVER);
 	mNpcServer->loadAccount("(npcserver)");
-	mNpcServer->setHeadImage(getSettings()->getStr("staffhead", "head25.png"));
-	mNpcServer->setNick("NPC-Server (Server)", true);
+	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
 	mNpcServer->setLoaded(true);	// can't guarantee this, so forcing it
+
+	// Set nickname, and append (Server) - required!
+	CString nickName = settings.getStr("nickname");
+	if (nickName.isEmpty())
+		nickName = "NPC-Server";
+	nickName << " (Server)";
+	mNpcServer->setNick(nickName, true);
+
+	// Add npc-server to playerlist
 	addPlayer(mNpcServer);
 #endif
 
