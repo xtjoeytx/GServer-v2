@@ -189,25 +189,6 @@ bool TPlayer::sendLogin()
 		// Get our client props.
 		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
 
-		// Get our NC props.
-		//CString myNCProps;
-		//if (server->hasNPCServer())
-		//	myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
-
-#ifdef V8NPCSERVER
-		if (isRC())
-		{
-			// Triggers the RC client to request the NPC-Server address
-			this->sendPacket(CString()
-				>> (char)PLO_ADDPLAYER >> (short)0
-				>> (char)strlen("(npc-server)") << "(npc-server)"
-				>> (char)PLPROP_CURLEVEL >> (char)1 << " "
-				>> (char)PLPROP_PSTATUSMSG >> (char)0
-				>> (char)PLPROP_NICKNAME >> (char)strlen("NPC-Server (Server)") << "NPC-Server (Server)");
-				//>> (char)PLPROP_COMMUNITYNAME << (char)strlen("(npcserver)") << "(npcserver)");
-		}
-#endif
-
 		CString rcsOnline;
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
 		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
@@ -428,6 +409,8 @@ bool TPlayer::sendLoginNC()
 
 	// Announce to other nc's that we logged in
 	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "New NC: " << accountName, this);
+
+	loaded = true;
 	return true;
 }
 

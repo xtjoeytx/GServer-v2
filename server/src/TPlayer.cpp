@@ -348,16 +348,27 @@ TPlayer::~TPlayer()
 		if (level) leaveLevel();
 
 		// Announce our departure to other clients.
-		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
-		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
-		if (isRC() && !accountName.isEmpty())
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
+		if (!isNC())
+		{
+			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		}
+
+		if (!accountName.isEmpty())
+		{
+			if (isRC())
+				server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
+			else if (isNC())
+				server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "NC Disconnected: " << accountName, this);
+		}
 
 		// Log.
 		if (isClient())
 			serverlog.out("[%s] :: Client disconnected: %s\n", server->getName().text(), accountName.text());
 		else if (isRC())
 			serverlog.out("[%s] :: RC disconnected: %s\n", server->getName().text(), accountName.text());
+		else if (isNC())
+			serverlog.out("[%s] :: NC disconnected: %s\n", server->getName().text(), accountName.text());
 	}
 
 	// Clean up.
@@ -1227,7 +1238,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			TPlayer* player = server->getPlayer(chatParse[1], false);
+			TPlayer* player = server->getPlayer(chatParse[1], PLTYPE_ANYCLIENT);
 			if (player && player->getLevel() != 0)
 				warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 		}
@@ -1267,7 +1278,7 @@ bool TPlayer::processChat(CString pChat)
 			return true;
 		}
 
-		TPlayer* p = server->getPlayer(chatParse[1], false);
+		TPlayer* p = server->getPlayer(chatParse[1], PLTYPE_ANYCLIENT);
 		if (p) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
@@ -1911,7 +1922,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 			guild.removeI(guild.length() - 1);
 	}
 
-	if (force)
+	if (force || (guild == "RC" && isRC()))
 	{
 		nickName = pNickName;
 		this->guild = guild;
@@ -2160,6 +2171,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	accountIp = inet_addr(accountIpStr.text());
 #endif
 
+	// TODO(joey): Hijack type based on what graal sends, rather than use it directly.
+	
 	// Read Client-Type
 	serverlog.out("[%s] :: New login:\t", server->getName().text());
 	type = (1 << pPacket.readGChar());
@@ -2216,6 +2229,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Client-Version
 	version = pPacket.readChars(8);
 	if (isClient()) versionID = getVersionID(version);
+	else if (isNC()) versionID = getNCVersionID(version);
 	else if (isRC()) versionID = getRCVersionID(version);
 	else versionID = CLVER_UNKNOWN;
 
@@ -2536,7 +2550,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 {
 	// Get the player who killed us.
 	unsigned int pId = pPacket.readGUShort();
-	TPlayer* player = server->getPlayer(pId);
+	TPlayer* player = server->getPlayer(pId, PLTYPE_ANYCLIENT);
 	if (player == 0 || player == this) return true;
 
 	// Sparring zone rating code.
@@ -2876,7 +2890,7 @@ bool TPlayer::msgPLI_HURTPLAYER(CString& pPacket)
 	unsigned int npc = pPacket.readGUInt();
 
 	// Get the victim.
-	TPlayer* victim = server->getPlayer(pId);
+	TPlayer* victim = server->getPlayer(pId, PLTYPE_ANYCLIENT);
 	if (victim == 0) return true;
 
 	// If they are paused, they don't get hurt.
@@ -2906,6 +2920,7 @@ bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 
 bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
+	// TODO(joey): Is this needed?
 	const int sendLimit = 4;
 	if (isClient() && (int)difftime(time(0), lastMessage) <= 4)
 	{
@@ -2975,7 +2990,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		}
 		else
 		{
-			TPlayer* pmPlayer = server->getPlayer(*i);
+			TPlayer* pmPlayer = server->getPlayer(*i, PLTYPE_ANYPLAYER);
 			if (pmPlayer == 0 || pmPlayer == this) continue;
 
 			// Don't send to people who don't want mass messages.
@@ -2983,7 +2998,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 				continue;
 
 			// Jailed people cannot send PMs to normal players.
-			if (jailed && !isStaff() && !pmPlayer->isStaff())
+			if (jailed && !isStaff() && !pmPlayer->isStaff() && !pmPlayer->isNPCServer())
 			{
 				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
 				continue;
@@ -3293,7 +3308,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					else
 					{
 						TPlayer* p;
-						p = server->getPlayer(actionParts[1], false);
+						p = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
 						if (p) p->sendPacket(weapon_packet);
 					}
 					grExecParameterList.clear();
@@ -3398,7 +3413,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				if (!guild.isEmpty())
 				{
 					TPlayer* p = this;
-					if (!account.isEmpty()) p = server->getPlayer(account, false);
+					if (!account.isEmpty()) p = server->getPlayer(account, PLTYPE_ANYCLIENT);
 					if (p)
 					{
 						CString nick = p->getNickname();
@@ -3439,7 +3454,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				std::vector<CString> actionParts = action.tokenize(",");
 				if (actionParts.size() == 3)
 				{
-					TPlayer* player = server->getPlayer(actionParts[1], false);
+					TPlayer* player = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
 					player->setGroup(actionParts[2]);
 				}
 			}
@@ -3662,7 +3677,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			weaponObject->queueWeaponAction(this, triggerData.text());
 		}
 	}
-	else
+	else if (level)
 	{
 		int triggerX = 16 * loc[0];
 		int triggerY = 16 * loc[1];
@@ -4046,7 +4061,7 @@ bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmM
 TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
-	if (!includeRC && externalPlayerIds[id]->isRemoteClient()) return 0;
+	if (!includeRC && externalPlayerIds[id]->isControlClient()) return 0;
 	return externalPlayerIds[id];
 }
 
@@ -4058,7 +4073,7 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRemoteClient())
+		if (!includeRC && player->isControlClient())
 			continue;
 
 		// Compare account names.

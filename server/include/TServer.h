@@ -12,8 +12,8 @@
 #include <unordered_set>
 #endif
 
+#include "IEnums.h"
 #include "CString.h"
-
 #include "CLog.h"
 #include "CFileSystem.h"
 #include "CSettings.h"
@@ -143,6 +143,7 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		CScriptEngine * getScriptEngine() { return &mScriptEngine; }
 		int getNCPort() const { return mNCPort; }
+		TPlayer * getNPCServer() const { return mNpcServer; }
 #endif
 
 		CFileSystem* getFileSystemByType(CString& type);
@@ -151,10 +152,8 @@ class TServer : public CSocketStub
 		TMap* getMap(const CString& name) const;
 		TMap* getMap(const TLevel* pLevel) const;
 		TNPC* getNPC(const unsigned int id) const;
-		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
-		TPlayer* getPlayer(const CString& account, bool includeRC = true) const;
-		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
-		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
+		TPlayer* getPlayer(const unsigned short id, int type) const;
+		TPlayer* getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
 		void assignNPCName(TNPC *npc, const std::string& name);
@@ -169,9 +168,7 @@ class TServer : public CSocketStub
 		bool hasClass(const std::string& className) const;
 		std::string getClass(const std::string& className) const;
 		void updateClass(const std::string& className, const std::string& classCode);
-		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
-		void playerLoggedIn(TPlayer *player);
 		void logToFile(const std::string& fileName, const std::string& message);
 
 		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
@@ -187,6 +184,12 @@ class TServer : public CSocketStub
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
+
+		// Player Management
+		unsigned int getFreePlayerId();
+		bool addPlayer(TPlayer *player, unsigned int id = UINT_MAX);
+		bool deletePlayer(TPlayer* player);
+		void playerLoggedIn(TPlayer *player);
 
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);
@@ -241,6 +244,7 @@ class TServer : public CSocketStub
 
 		CScriptEngine mScriptEngine;
 		int mNCPort;
+		TPlayer *mNpcServer;
 #endif
 	
 #ifdef UPNP

@@ -84,12 +84,12 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (args[0]->IsString())
 	{
 		v8::String::Utf8Value accountName(isolate, args[0]->ToString(context).ToLocalChecked());
-		playerObject = serverObject->getPlayer(*accountName, false);
+		playerObject = serverObject->getPlayer(*accountName, PLTYPE_ANYCLIENT);
 	}
 	else if (args[0]->IsInt32())
 	{
 		unsigned int playerId = args[0]->Uint32Value(context).ToChecked();
-		playerObject = serverObject->getPlayer(playerId);
+		playerObject = serverObject->getPlayer(playerId, PLTYPE_ANYPLAYER);
 	}
 
 	// Set the return value as the handle from the wrapped object
@@ -290,10 +290,15 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	// Get npcs list
 	auto playerList = serverObject->getPlayerList();
 
+	// TODO(joey): Since we are skipping npc-server, length may be off?
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerList->size());
-
+	
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
+		TPlayer *pl = *it;
+		if (pl->isHiddenClient())
+			continue;
+
 		V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}

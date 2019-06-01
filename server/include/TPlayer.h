@@ -53,7 +53,6 @@ class TPlayer : public TAccount, public CSocketStub
 		TMap* getMap()			{ return pmap; }
 		CString getGroup()		{ return levelGroup; }
 		int getId() const;
-		int getType() const;
 		time_t getLastData() const		{ return lastData; }
 		CString getGuild() const		{ return guild; }
 		int getVersion() const			{ return versionID; }
@@ -95,17 +94,23 @@ class TPlayer : public TAccount, public CSocketStub
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);
 
+		// Type of player
+		bool isAdminIp();
+		bool isStaff();
+		bool isNC()	const				{ return (type & PLTYPE_ANYNC) ? true : false; }
+		bool isRC() const				{ return (type & PLTYPE_ANYRC) ? true : false; }
+		bool isClient() const			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
+		bool isNPCServer() const		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
+		bool isControlClient() const	{ return (type & PLTYPE_ANYCONTROL) ? true : false; }
+		bool isHiddenClient() const		{ return (type & PLTYPE_NONITERABLE) ? true : false; }
+		bool isLoaded()	const			{ return loaded; }
+		int getType() const				{ return type; }
+		void setType(int val)			{ type = val; }
+
 		// Misc functions.
 		bool doTimedEvents();
 		void disconnect();
 		bool processChat(CString pChat);
-		bool isAdminIp();
-		bool isStaff();
-		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
-		bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
-		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
-		bool isRemoteClient()	{ return (type & PLTYPE_ANYREMOTE) ? true : false; }
-		bool isLoaded()			{ return loaded; }
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
@@ -343,11 +348,6 @@ inline bool TPlayer::isLoggedIn() const
 inline int TPlayer::getId() const
 {
 	return id;
-}
-
-inline int TPlayer::getType() const
-{
-	return type;
 }
 
 inline void TPlayer::setId(int pId)
