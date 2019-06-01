@@ -10,12 +10,15 @@ class ScriptAction
 public:
 	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = std::string())
 		: _function(function), _args(args), _action(action) {
+		_function->increaseReference();
 	}
 	
 	~ScriptAction() {
 		if (_args) {
 			delete _args;
 		}
+
+		_function->decreaseReference();
 	}
 
 	inline void Invoke() const {

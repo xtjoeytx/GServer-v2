@@ -2964,9 +2964,9 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 
 	// Word filter.
+	pmMessage.guntokenizeI();
 	if (isClient())
 	{
-		pmMessage.guntokenizeI();
 		int filter = server->getWordFilter()->apply(this, pmMessage, FILTER_CHECK_PM);
 		if (filter & FILTER_ACTION_WARN)
 		{
@@ -2974,8 +2974,10 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 				"Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
 			return true;
 		}
-		pmMessage.gtokenizeI();
 	}
+
+	// Always retokenize string, I don't believe our behavior is inline with official. It was escaping "\", so this unescapes that.
+	pmMessage.gtokenizeI();
 
 	// Send the message out.
 	for (std::vector<unsigned short>::iterator i = pmPlayers.begin(); i != pmPlayers.end(); ++i)
@@ -2993,28 +2995,27 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			TPlayer* pmPlayer = server->getPlayer(*i, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 			if (pmPlayer == 0 || pmPlayer == this) continue;
 
+#ifdef V8NPCSERVER
+			if (pmPlayer->isNPCServer())
+			{
+				server->handlePM(this, pmMessage.guntokenize());
+				continue;
+			}
+#endif
+
 			// Don't send to people who don't want mass messages.
 			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 				continue;
 
-			bool isNpcServer = pmPlayer->isNPCServer();
-
 			// Jailed people cannot send PMs to normal players.
-			if (jailed && !isStaff() && !pmPlayer->isStaff() && !isNpcServer)
+			if (jailed && !isStaff() && !pmPlayer->isStaff())
 			{
 				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
 				continue;
 			}
 
 			// Send the message.
-			if (isNpcServer)
-			{
-				// TODO(joey): Pass over to onPlayerPM, if the function doesn't exist we will send this default message
-				CString npcServerMsg;
-				npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"\"," << npcServerMsg.gtokenize());
-			}
-			else pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
+			pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
 		}
 	}
 

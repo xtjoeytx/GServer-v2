@@ -827,6 +827,39 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+	// Exclusive for Control-NPC
+	if (npcObject->getName() != "Control-NPC")
+		return;
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::External> data = args.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+
+	if (args[0]->IsFunction())
+	{
+		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+		// Persist the callback function so we can retrieve it later on
+		v8::Local<v8::Function> cbFunc = args[0].As<v8::Function>();
+		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
+
+		// Set pm function
+		scriptEngine->getServer()->setPMFunction(npcObject, cbFuncWrapper);
+	}
+	else
+	{
+		scriptEngine->getServer()->setPMFunction(nullptr);
+	}
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Npc_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -1300,6 +1333,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setpm"), v8::FunctionTemplate::New(isolate, NPC_Function_SetPM, engine_ref));
 
 	// Properties
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);

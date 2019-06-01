@@ -841,6 +841,39 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// Player Function: player.sendpm("message");
+void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	// Validate arguments
+	if (args[0]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+		// TODO(joey): Function this like TServer::sendPM(fromPlayer, toPlayer, message);
+
+		// Get server
+		v8::Local<v8::External> data = args.Data().As<v8::External>();
+		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+		TServer *server = scriptEngine->getServer();
+
+		// Get npc-server
+		TPlayer *npcServer = server->getNPCServer();
+		assert(npcServer);
+
+		// Parse argument
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+
+		// PM message
+		CString pmMessage(*newValue);
+		playerObject->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize());
+	}
+}
+
 // Player Function: player.sendrpgmessage("message");
 void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -983,7 +1016,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
