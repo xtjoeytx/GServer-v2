@@ -60,7 +60,7 @@ void V8ScriptEnv::Initialize()
 	_initialized = true;
 }
 
-void V8ScriptEnv::Cleanup()
+void V8ScriptEnv::Cleanup(bool shutDown)
 {
 	if (!_initialized) {
 		return;
@@ -81,17 +81,18 @@ void V8ScriptEnv::Cleanup()
 	_isolate = 0;
 	delete create_params.array_buffer_allocator;
 	
-	// Cleanup v8
-	if (V8ScriptEnv::s_count == 1)
-	{
-		// TODO(joey): This needs to be called when the application is exiting only
-		//v8::V8::Dispose();
-		//v8::V8::ShutdownPlatform();
-	}
-	
 	// Decrease v8 environment counter
 	V8ScriptEnv::s_count--;
 	_initialized = false;
+
+	// Shutdown v8
+	if (shutDown && V8ScriptEnv::s_count == 0)
+	{
+		// After this is run, you can no not reinitialize v8!
+		v8::V8::Dispose();
+		v8::V8::ShutdownPlatform();
+		_v8_initialized = false;
+	}
 }
 
 bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)

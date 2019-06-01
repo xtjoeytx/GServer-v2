@@ -528,6 +528,92 @@ void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, true, true, playerObject);
 }
 
+// PROPERTY: player.colors
+void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalName = v8::String::NewFromUtf8(isolate, "_internalColors", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalName).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalName).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.colors");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, playerObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	v8_wrapped->addChild("colors", new_instance);
+
+	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalName, new_instance, propAttributes).FromJust();
+	info.GetReturnValue().Set(new_instance);
+}
+
+void Player_Colors_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if (index > 4)
+		return;
+
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	int colorValue = playerObject->getColorId(index);
+	info.GetReturnValue().Set(colorValue);
+}
+
+void Player_Colors_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if (index > 4)
+		return;
+
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	CString playerProp = playerObject->getProp(PLPROP_COLORS);
+	char colors[5];
+	for (unsigned int i = 0; i < 5; i++)
+		colors[i] = playerProp.readGUChar();
+
+	if (value->IsUint32())
+	{
+		// Get new value
+		unsigned int newValue = value->Uint32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
+		if (newValue > 32) // Unsure how many colors exist, capping at 32 for now
+			newValue = 32;
+
+		colors[index] = newValue;
+	}
+	else // if (value->IsString())
+	{
+		v8::String::Utf8Value newValue(info.GetIsolate(), value);
+		colors[index] = getColor(*newValue);
+		if (colors[index] < 0)
+			return;
+	}
+
+	CString propPackage;
+	propPackage >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
+	playerObject->setProps(propPackage, true, true);
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
+}
+
 // PROPERTY: Player Flags
 void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -617,6 +703,30 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	int idx = 0;
 	for (auto it = flagList->begin(); it != flagList->end(); ++it)
 		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str())).Check();
+
+	info.GetReturnValue().Set(result);
+}
+
+void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	
+	// Get npcs list
+	auto weaponList = playerObject->getWeaponList();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList->size());
+
+	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
+	//	in scripts.
+	int idx = 0;
+	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
+		//V8ScriptWrapped<TWeapon> *v8_wrapped = static_cast<V8ScriptWrapped<TWeapon> *>((*it)->getScriptObject());
+		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), (*it).text());
+		result->Set(context, idx++, weaponName).Check();
+	}
 
 	info.GetReturnValue().Set(result);
 }
@@ -909,9 +1019,18 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordpower"), Player_GetInt_SwordPower, Player_SetInt_SwordPower);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
-//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors"), Player_GetObject_Colors);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors"), Player_GetObject_Colors, nullptr, engine_ref);
     player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Player_GetObject_Flags, nullptr, engine_ref);
-//	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "weapons"), Player_GetObject_Weapons);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "weapons"), Player_GetArray_Weapons);
+
+	// Create the player colors template
+	v8::Local<v8::FunctionTemplate> player_colors_ctor = v8::FunctionTemplate::New(isolate);
+	player_colors_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "colors"));
+	player_colors_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	player_colors_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
+		Player_Colors_Getter, Player_Colors_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
+		v8::PropertyHandlerFlags::kNone));
+	env->SetConstructor("player.colors", player_colors_ctor);
 
 	// Create the player flags template
     v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);

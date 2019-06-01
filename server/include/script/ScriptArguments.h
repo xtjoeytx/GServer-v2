@@ -36,7 +36,7 @@ public:
 	IScriptArguments() = default;
 	virtual ~IScriptArguments() = default;
 	
-	virtual void Invoke(IScriptFunction *func) = 0;
+	virtual bool Invoke(IScriptFunction *func, bool catchExceptions = false) = 0;
 };
 
 template <typename... Ts>
@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	virtual void Invoke(IScriptFunction *func) = 0;
+	virtual bool Invoke(IScriptFunction *func, bool catchExceptions = false) = 0;
 
 	inline size_t Count() const {
 		return Argc;

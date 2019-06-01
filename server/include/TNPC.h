@@ -172,6 +172,7 @@ class TNPC
 		void setType(const CString& type)		{ npcType = type; }
 		void setBlockingFlags(int val)			{ blockFlags = val; }
 		void setVisibleFlags(int val)			{ visFlags = val; }
+		void setColorId(unsigned int idx, unsigned char val);
 		void setSave(unsigned int idx, unsigned char val);
 		void setPropModTime(unsigned char pid, time_t time);
 
@@ -205,6 +206,7 @@ class TNPC
 		const CString& getWeaponName() const	{ return weaponName; }
 		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
+		unsigned char getColorId(unsigned int idx) const;
 		unsigned char getSave(unsigned int idx) const;
 
 #ifdef V8NPCSERVER
@@ -316,6 +318,19 @@ void TNPC::setPropModTime(unsigned char pId, time_t time)
 {
 	if (pId < NPCPROP_COUNT)
 		modTime[pId] = time;
+}
+
+inline
+unsigned char TNPC::getColorId(unsigned int idx) const
+{
+	if (idx < 5) return colors[idx];
+	return 0;
+}
+
+inline
+void TNPC::setColorId(unsigned int idx, unsigned char val)
+{
+	if (idx < 5) colors[idx] = val;
 }
 
 inline

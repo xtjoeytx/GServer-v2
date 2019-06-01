@@ -22,7 +22,8 @@ public:
 	}
 	
 	void Initialize() override;
-	void Cleanup() override;
+	void Cleanup(bool shutDown = false) override;
+	
 	IScriptFunction * Compile(const std::string& name, const std::string& source) override;
 	void CallFunctionInScope(std::function<void()> function) override;
 
