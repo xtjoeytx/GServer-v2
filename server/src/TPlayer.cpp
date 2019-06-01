@@ -2990,22 +2990,31 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		}
 		else
 		{
-			TPlayer* pmPlayer = server->getPlayer(*i, PLTYPE_ANYPLAYER);
+			TPlayer* pmPlayer = server->getPlayer(*i, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 			if (pmPlayer == 0 || pmPlayer == this) continue;
 
 			// Don't send to people who don't want mass messages.
 			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 				continue;
 
+			bool isNpcServer = pmPlayer->isNPCServer();
+
 			// Jailed people cannot send PMs to normal players.
-			if (jailed && !isStaff() && !pmPlayer->isStaff() && !pmPlayer->isNPCServer())
+			if (jailed && !isStaff() && !pmPlayer->isStaff() && !isNpcServer)
 			{
 				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\"," << "\"From jail you can only send PMs to admins (RCs).\"");
 				continue;
 			}
 
 			// Send the message.
-			pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
+			if (isNpcServer)
+			{
+				// TODO(joey): Pass over to onPlayerPM, if the function doesn't exist we will send this default message
+				CString npcServerMsg;
+				npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
+				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"\"," << npcServerMsg.gtokenize());
+			}
+			else pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)id << pmMessageType << pmMessage);
 		}
 	}
 
