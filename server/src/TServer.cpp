@@ -158,6 +158,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
 	mNpcServer->setLoaded(true);	// can't guarantee this, so forcing it
 
+	// TODO(joey): Update this when server options is changed?
 	// Set nickname, and append (Server) - required!
 	CString nickName = settings.getStr("nickname");
 	if (nickName.isEmpty())

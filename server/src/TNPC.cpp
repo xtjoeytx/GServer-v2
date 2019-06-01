@@ -1252,6 +1252,9 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
+	
+	// Queue event
+	this->queueNpcAction("npc.warped");
 }
 
 void TNPC::saveNPC()

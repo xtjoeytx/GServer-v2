@@ -15,7 +15,8 @@
 				(npc.onPlayerLeaves && 1 << 4) |
 				(npc.onPlayerTouchsMe && 1 << 5) |
 				(npc.onPlayerLogin && 1 << 6) |
-				(npc.onPlayerLogout && 1 << 7)
+				(npc.onPlayerLogout && 1 << 7) |
+				(npc.onNpcWarped && 1 << 8)
 			);
 
 			if (npc.onCreated)
@@ -106,6 +107,18 @@
 				npc.onTimeout.apply(npc, args);
 		} catch (e) {
 			env.reportException("NPC Timeout Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
+	/**
+	 * Event -> onNpcWarped(npc)
+	 */
+	env.setCallBack("npc.warped", function (npc, ...args) {
+		try {
+			if (npc.onNpcWarped)
+				npc.onNpcWarped.apply(npc, args);
+		} catch (e) {
+			env.reportException("NPC Warped Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
 	});
 
