@@ -190,7 +190,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v).subString(0,6)) == 0)
+			if (server->getPlayer("pc:" + CString(v).subString(0,6), PLTYPE_ANYPLAYER) == 0)
 			{
 				communityName = "pc:" + CString(v).subString(0,6);
 				break;

@@ -198,6 +198,7 @@ class TAccount
 		void setKills(int newKills)					{ kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
+		void setHeadImage(const CString& head)		{ headImg = head; }
 		void setExternal(bool external)				{ isExternal = external; }
 		void setBanned(bool banned)					{ isBanned = banned; }
 		void setBanReason(CString reason)			{ banReason = reason; }

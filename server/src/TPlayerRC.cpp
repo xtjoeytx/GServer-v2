@@ -365,7 +365,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 {
 	// Deprecated?
 
-	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == 0) return true;
 
 	if (isClient() || (p->getAccountName() != accountName && !hasRight(PLPERM_SETATTRIBUTES)) || (p->getAccountName() == accountName && !hasRight(PLPERM_SETSELFATTRIBUTES)))
@@ -386,7 +386,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 {
-	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == 0) return true;
 
 	if (isClient() || !hasRight(PLPERM_DISCONNECT))
@@ -451,7 +451,7 @@ bool TPlayer::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 		return true;
 	}
 
-	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == 0) return true;
 
 	p->sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Admin " << accountName << ":\xa7" << pPacket.readString(""));
@@ -539,15 +539,15 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		if (!found)
 		{
 			if (i->second.isEmpty())
-				server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first);
+				server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first);
 			else
-				server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+				server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
 		}
 	}
 
 	// If any flags were deleted, tell that to the players now.
 	for (auto i = oldFlags.begin(); i != oldFlags.end(); ++i)
-		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_FLAGDEL << i->first);
+		server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << i->first);
 
 	rclog.out("%s has updated the server flags.\n", accountName.text());
 	server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server flags.");
@@ -661,7 +661,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 bool TPlayer::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 {
-	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p == 0) return true;
 
 	if (isClient() || !hasRight(PLPERM_VIEWATTRIBUTES))
@@ -682,7 +682,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
 
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -725,7 +725,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 
 	// Get the player.  Create a new player if they are offline.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -785,7 +785,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
 
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -840,7 +840,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 
 	// Get the player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -893,7 +893,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -919,7 +919,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	p->saveAccount();
 
 	// If the account is currently on RC, reload it.
-	TPlayer* pRC = server->getRC(acc);
+	TPlayer* pRC = server->getPlayer(acc, PLTYPE_ANYRC);
 	if (pRC)
 	{
 		pRC->loadAccount(acc);
@@ -1176,7 +1176,7 @@ bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
 		return true;
 	}
 
-	TPlayer* p = server->getPlayer(pPacket.readGUShort());
+	TPlayer* p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == 0) return true;
 
 	float loc[2] = { (float)(pPacket.readGChar())/2.0f, (float)(pPacket.readGChar())/2.0f };
@@ -1205,7 +1205,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1250,7 +1250,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1286,6 +1286,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 			n_adminRights |= PLPERM_SETRIGHTS;
 	}
 
+	int changed_rights = adminRights ^ n_adminRights;
 	p->setAdminRights(n_adminRights);
 	p->setAdminIp(pPacket.readChars(pPacket.readGUChar()));
 
@@ -1308,10 +1309,23 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	p->saveAccount();
 
 	// If the account is currently on RC, reload it.
-	TPlayer* pRC = server->getRC(acc);
+	TPlayer* pRC = server->getPlayer(acc, PLTYPE_ANYRC);
 	if (pRC)
 	{
 		pRC->loadAccount(acc, true);
+
+#ifdef V8NPCSERVER
+		if (changed_rights & PLPERM_NPCCONTROL)
+		{
+			if (!(n_adminRights & PLPERM_NPCCONTROL))
+			{
+				TPlayer *pNC = server->getPlayer(acc, PLTYPE_ANYNC);
+				if (pNC)
+					pNC->disconnect();
+			}
+			else pRC->sendNCAddr();
+		}
+#endif
 
 		// If they are using the File Browser, reload it.
 		if (pRC->isUsingFileBrowser())
@@ -1339,7 +1353,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1375,7 +1389,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1395,7 +1409,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	p->saveAccount();
 
 	// If the account is currently on RC, reload it.
-	TPlayer* pRC = server->getRC(acc);
+	TPlayer* pRC = server->getPlayer(acc, PLTYPE_ANYRC);
 	if (pRC)
 	{
 		pRC->loadAccount(acc);
@@ -1422,7 +1436,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1458,7 +1472,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 	// Get player.
 	bool offline = false;
-	TPlayer* p = server->getPlayer(acc, false);
+	TPlayer* p = server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == 0)
 	{
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
@@ -1481,7 +1495,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	p->saveAccount();
 
 	// If the account is currently on RC, reload it.
-	TPlayer* pRC = server->getRC(acc);
+	TPlayer* pRC = server->getPlayer(acc, PLTYPE_ANYRC);
 	if (pRC)
 	{
 		pRC->loadAccount(acc);

@@ -400,11 +400,20 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 	TWeapon *weapon = server->getWeapon(weaponName);
 	if (weapon != 0 && !weapon->isDefault())
 	{
-		// TODO(joey): this isnt working on versions < RC 2
-		sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
-			(char)weaponName.length() << weaponName >>
-			(char)weapon->getImage().length() << weapon->getImage() <<
-			weapon->getFullScript().replaceAll("\n", "\xa7"));
+		if (getVersion() < NCVER_2_1)
+		{
+			sendPacket(CString() >> (char)PLO_NPCWEAPONADD
+				>> (char)weaponName.length() << weaponName
+				>> (char)0 >> (char)weapon->getImage().length() << weapon->getImage()
+				>> (char)1 >> (short)weapon->getFullScript().length() << weapon->getFullScript().replaceAll("\n", "\xa7"));
+		}
+		else
+		{
+			sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
+				(char)weaponName.length() << weaponName >>
+				(char)weapon->getImage().length() << weapon->getImage() <<
+				weapon->getFullScript().replaceAll("\n", "\xa7"));
+		}
 	}
 	else server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
 
@@ -498,9 +507,13 @@ void TPlayer::sendNCAddr()
 	if (!isRC() || !hasRight(PLPERM_NPCCONTROL))
 		return;
 
-	// Grab NPCServer & Send
-	CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
-	sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)0 << npcServerIp << "," << CString(server->getNCPort()));
+	TPlayer *npcServer = server->getNPCServer();
+	if (npcServer != nullptr)
+	{
+		// Grab NPCServer & Send
+		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
+	}
 }
 
 #endif

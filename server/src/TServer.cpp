@@ -151,6 +151,14 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 #ifdef V8NPCSERVER
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
+
+	mNpcServer = new TPlayer(this, nullptr, 0);
+	mNpcServer->setType(PLTYPE_NPCSERVER);
+	mNpcServer->loadAccount("(npcserver)");
+	mNpcServer->setHeadImage(getSettings()->getStr("staffhead", "head25.png"));
+	mNpcServer->setNick("NPC-Server (Server)", true);
+	mNpcServer->setLoaded(true);	// can't guarantee this, so forcing it
+	addPlayer(mNpcServer);
 #endif
 
 	// Connect to the serverlist.
@@ -221,7 +229,7 @@ void TServer::cleanupDeletedPlayers()
 					player->leaveLevel();
 
 				// Send event to server that player is logging out
-				if (player->isLoaded())
+				if (player->isLoaded() && (player->getType() & PLTYPE_ANYPLAYER))
 				{
 					for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
 					{
@@ -284,6 +292,9 @@ void TServer::cleanup()
 #ifdef V8NPCSERVER
 	// Save npcs
 	saveNpcs();
+
+	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
+	mNpcServer = nullptr;
 #endif
 
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
@@ -291,6 +302,7 @@ void TServer::cleanup()
 		delete *i;
 		i = playerList.erase(i);
 	}
+	playerIds.clear();
 	playerList.clear();
 
 	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
@@ -393,6 +405,9 @@ bool TServer::doTimedEvents()
 		{
 			TPlayer *player = (TPlayer*)*i;
 			if (player == 0)
+				continue;
+
+			if (player->isNPCServer())
 				continue;
 
 			if (!player->doTimedEvents())
@@ -524,35 +539,18 @@ bool TServer::onRecv()
 	if (newSock == 0)
 		return true;
 
-	// Get a free id to be assigned to the new player.
-	unsigned int newId = 0;
-	for (unsigned int i = 2; i < playerIds.size(); ++i)
-	{
-		if (playerIds[i] == 0)
-		{
-			newId = i;
-			i = playerIds.size();
-		}
-	}
-	if (newId == 0)
-	{
-		newId = playerIds.size();
-		playerIds.push_back(0);
-	}
-
 	// Create the new player.
-	TPlayer* newPlayer = new TPlayer(this, newSock, newId);
-	playerIds[newId] = newPlayer;
+	TPlayer *newPlayer = new TPlayer(this, newSock, 0);
 
-	// Add them to the player list.
-	playerList.push_back(newPlayer);
+	// Add the player to the server
+	if (!addPlayer(newPlayer))
+	{
+		delete newPlayer;
+		return false;
+	}
 
 	// Add them to the socket manager.
 	sockManager.registerSocket((CSocketStub*)newPlayer);
-
-#ifdef V8NPCSERVER
-	mScriptEngine.WrapObject(newPlayer);
-#endif
 
 	return true;
 }
@@ -1083,10 +1081,48 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
+TPlayer* TServer::getPlayer(const unsigned short id, int type) const
+{
+	if (id >= (unsigned short)playerIds.size())
+		return nullptr;
+
+	if (playerIds[id] == nullptr)
+		return nullptr;
+
+	// Check if its the type of player we are looking for
+	if (!(playerIds[id]->getType() & type))
+		return nullptr;
+
+	return playerIds[id];
+}
+
+TPlayer* TServer::getPlayer(const CString& account, int type) const
+{
+	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer *player = (TPlayer*)* i;
+		if (player == 0)
+			continue;
+
+		// Check if its the type of player we are looking for
+		if (!(player->getType() & type))
+			continue;
+
+		// Compare account names.
+		if (player->getAccountName().toLower() == account.toLower())
+			return player;
+	}
+
+	return nullptr;
+}
+
+/*
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includeRC && playerIds[id]->isRemoteClient()) return 0;
+	if (playerIds[id] == nullptr) return 0;
+	if (!includeRC && playerIds[id]->isControlClient()) return 0;
+	if (playerIds[id]->isHiddenClient()) return 0;
 	return playerIds[id];
 }
 
@@ -1095,10 +1131,10 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
+		if (player == 0 || player->isHiddenClient())
 			continue;
 
-		if (!includeRC && player->isRemoteClient())
+		if (!includeRC && player->isRC())
 			continue;
 
 		// Compare account names.
@@ -1108,22 +1144,20 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 	return 0;
 }
 
-TPlayer* TServer::getRC(const unsigned short id, bool includePlayer) const
+TPlayer* TServer::getRC(const unsigned short id) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includePlayer && playerIds[id]->isClient()) return 0;
+	if (playerIds[id] == nullptr) return 0;
+	if (!playerIds[id]->isRC()) return 0;
 	return playerIds[id];
 }
 
-TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
+TPlayer* TServer::getRC(const CString& account) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
-			continue;
-
-		if (!includePlayer && player->isClient())
+		if (player == 0 || !player->isRC())
 			continue;
 
 		// Compare account names.
@@ -1132,6 +1166,7 @@ TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
 	}
 	return 0;
 }
+*/
 
 TLevel* TServer::getLevel(const CString& pLevel)
 {
@@ -1337,7 +1372,7 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 		for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
 		{
 			TPlayer* p = *i;
-			if (p->isRemoteClient()) continue;
+			if (p->isControlClient()) continue;
 
 			if (isOnMap || p->getVersion() < CLVER_2_1)
 				p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
@@ -1391,6 +1426,51 @@ void TServer::updateClass(const std::string& className, const std::string& class
 	
 	CString fileData(classCode);
 	fileData.save(filePath);
+}
+
+unsigned int TServer::getFreePlayerId()
+{
+	unsigned int newId = 0;
+	for (unsigned int i = 2; i < playerIds.size(); ++i)
+	{
+		if (playerIds[i] == 0)
+		{
+			newId = i;
+			i = playerIds.size();
+		}
+	}
+	if (newId == 0)
+	{
+		newId = playerIds.size();
+		playerIds.push_back(nullptr);
+	}
+
+	return newId;
+}
+
+bool TServer::addPlayer(TPlayer *player, unsigned int id)
+{
+	// No id was passed, so we will fetch one
+	if (id == UINT_MAX)
+		id = getFreePlayerId();
+	else if (playerIds.size() <= id)
+		playerIds.resize((size_t)id + 10);
+	else if (playerIds[id] != nullptr)
+		return false;
+
+	// Add them to the player list.
+	player->setId(id);
+	playerIds[id] = player;
+
+	// TODO(joey): external players should probably be placed in a different list..?
+	playerList.push_back(player);
+
+#ifdef V8NPCSERVER
+	// Create script object for player
+	mScriptEngine.WrapObject(player);
+#endif
+
+	return true;
 }
 
 bool TServer::deletePlayer(TPlayer* player)
