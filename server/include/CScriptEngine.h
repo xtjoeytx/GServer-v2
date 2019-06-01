@@ -46,6 +46,7 @@ public:
 
 	// callbacks
 	IScriptFunction * getCallBack(const std::string& callback) const;
+	void removeCallBack(const std::string& callback);
 	void setCallBack(const std::string& callback, IScriptFunction *cbFunc);
 
 	// Script Compile / Cache
@@ -75,6 +76,7 @@ private:
 	std::unordered_set<TNPC *> _updateNpcs;
 	std::unordered_set<TNPC *> _updateNpcsTimer;
 	std::unordered_set<TWeapon *> _updateWeapons;
+	std::unordered_set<IScriptFunction *> _deletedFunctions;
 };
 
 // Getters
@@ -96,7 +98,7 @@ inline IScriptFunction * CScriptEngine::getCallBack(const std::string& callback)
 	if (it != _callbacks.end())
 		return it->second;
 
-	return 0;
+	return nullptr;
 }
 
 inline const ScriptRunError& CScriptEngine::getScriptError() const {
@@ -104,8 +106,17 @@ inline const ScriptRunError& CScriptEngine::getScriptError() const {
 }
 
 // Setters
+inline void CScriptEngine::removeCallBack(const std::string& callback) {
+	auto it = _callbacks.find(callback);
+	if (it != _callbacks.end())
+	{
+		_deletedFunctions.insert(it->second);
+		_callbacks.erase(it);
+	}
+}
 
 inline void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction *cbFunc) {
+	removeCallBack(callback);
 	_callbacks[callback] = cbFunc;
 }
 

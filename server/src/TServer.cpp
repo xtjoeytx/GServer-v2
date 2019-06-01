@@ -30,7 +30,7 @@ extern std::atomic_bool shutdownProgram;
 TServer::TServer(CString pName)
 	: running(false), doRestart(false), name(pName), wordFilter(this)
 #ifdef V8NPCSERVER
-	, mScriptEngine(this)
+	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
 #ifdef UPNP
 	, upnp(this)
@@ -1292,6 +1292,40 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 
 	return newNPC;
 }
+
+void TServer::handlePM(TPlayer * player, const CString & message)
+{
+	if (!mPmHandlerNpc)
+	{
+		CString npcServerMsg;
+		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
+		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)mNpcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
+		return;
+	}
+
+	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now. 
+	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
+
+	printf("Msg: %s\n", std::string(message.text()).c_str());
+
+	ScriptAction *scriptAction = mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text()));
+	mPmHandlerNpc->getExecutionContext()->addAction(scriptAction);
+	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
+}
+
+void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
+{
+	if (npc == nullptr || function == nullptr)
+	{
+		mPmHandlerNpc = nullptr;
+		mScriptEngine.removeCallBack("npcserver.playerpm");
+		return;
+	}
+
+	mScriptEngine.setCallBack("npcserver.playerpm", function);
+	mPmHandlerNpc = npc;
+}
+
 #endif
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
@@ -1383,7 +1417,7 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 
 #ifdef V8NPCSERVER
 	// TODO(joey): Need to deal with illegal characters
-	// If we persist this npc, delete the file
+	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
 	if (npc->getPersist())
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
@@ -1391,9 +1425,16 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 		remove(filePath.text());
 	}
 
-	// Remove npc name assignment
-	if (!npc->isLevelNPC() && !npc->getName().empty())
-		removeNPCName(npc);
+	if (!npc->isLevelNPC())
+	{
+		// Remove npc name assignment
+		if (!npc->getName().empty())
+			removeNPCName(npc);
+
+		// If this is the npc that handles pms, clear it
+		if (mPmHandlerNpc == npc)
+			mPmHandlerNpc = nullptr;
+	}
 #endif
 
 	// Delete the NPC from memory.

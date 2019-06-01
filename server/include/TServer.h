@@ -161,6 +161,9 @@ class TServer : public CSocketStub
 		void removeNPCName(TNPC *npc);
 		TNPC* getNPCByName(const std::string& name) const;
 		TNPC* addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
+
+		void handlePM(TPlayer *player, const CString& message);
+		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
@@ -246,6 +249,7 @@ class TServer : public CSocketStub
 		CScriptEngine mScriptEngine;
 		int mNCPort;
 		TPlayer *mNpcServer;
+		TNPC *mPmHandlerNpc;
 #endif
 	
 #ifdef UPNP
@@ -293,12 +297,18 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 
 inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
 {
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+	int len = pMessage.find("\n");
+	if (len == -1)
+		len = pMessage.length();
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
 }
 
 inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
 {
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+	int len = pMessage.find("\n");
+	if (len == -1)
+		len = pMessage.length();
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
 }
 
 #endif

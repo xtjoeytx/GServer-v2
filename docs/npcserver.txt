@@ -57,7 +57,8 @@ NPC Object:
 		setshape(type, width, height) - sets shape of npc
 		join("className") - joins a class to the npc
 		registerTrigger("action", function) - registers an action for triggeractions
-		
+		setpm(function) - only works for database npcs with the name "Control-NPC", each call will unset the previous binded function
+
 	Properties:
 		id - (read-only)
 		ani
@@ -99,6 +100,7 @@ Player Object:
 		join("className") - joins a class to the player
 		say("message") - sends a sign message to the player
 		sendrpgmessage("message") - sends a message to the players rpg window
+		sendpm("message") - sends a pm from the npc-server
 		setlevel2("levelname", x, y) - warps a player to the level
 		triggeraction(x, y, "action", "args"..)
 

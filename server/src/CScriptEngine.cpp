@@ -283,6 +283,21 @@ void CScriptEngine::RunScripts(bool timedCall)
 			_updateWeapons.clear();
 		});
 	}
+
+	// No actions are queued, so we can assume no functions are cached here. May need to invalidate functions?
+	if (!_deletedFunctions.empty())
+	{
+		for (auto it = _deletedFunctions.begin(); it != _deletedFunctions.end();)
+		{
+			IScriptFunction *func = *it;
+			if (!func->isReferenced())
+			{
+				delete func;
+				it = _deletedFunctions.erase(it);
+			}
+			else ++it;
+		}
+	}
 }
 
 #endif
