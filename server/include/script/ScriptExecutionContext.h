@@ -43,7 +43,7 @@ public:
 	bool hasActions() const;
 	void addAction(ScriptAction *action);
 	void resetExecution();
-	void runExecution();
+	bool runExecution();
 
 private:
 	CScriptEngine *_scriptEngine;
@@ -105,8 +105,12 @@ inline void ScriptExecutionContext::resetExecution()
 #endif
 }
 
-inline void ScriptExecutionContext::runExecution()
+inline bool ScriptExecutionContext::runExecution()
 {
+	if (!hasActions())
+		return false;
+
+	// TODO(joey): get this out of here!
 	static std::atomic<bool> running(false);
 	static std::chrono::high_resolution_clock::time_point start_time;
 	static std::mutex time_mutex;
@@ -135,6 +139,11 @@ inline void ScriptExecutionContext::runExecution()
 		}
 	}, isolate);
 
+	// Take ownership of the queued actions, and clear them incase any scripts add actions.
+	std::vector<ScriptAction *> iterateActions = std::move(_actions);
+	_actions.clear();
+
+	// 
 //#ifndef NOSCRIPTPROFILING
 	// TODO(joey): needed to kill scripts
 	auto currentTimer = std::chrono::high_resolution_clock::now();
@@ -148,16 +157,17 @@ inline void ScriptExecutionContext::runExecution()
 	running.store(true);
 
 	// iterate over queued actions
-	for (auto it = _actions.begin(); it != _actions.end();)
+	for (auto it = iterateActions.begin(); it != iterateActions.end();)
 	{
 		ScriptAction *action = *it;
 		SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
 		action->Invoke();
-		it = _actions.erase(it);
+		it = iterateActions.erase(it);
 		delete action;
 	}
 
 	if (!running.load()) {
+		// TODO(joey): do we report this to the server, or?
 		printf("Oh no we were killed!!\n");
 	}
 	else running.store(false);
@@ -167,6 +177,8 @@ inline void ScriptExecutionContext::runExecution()
 	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
 	addExecutionSample({ time_diff.count(), endTimer });
 #endif
+
+	return hasActions();
 }
 
 #endif

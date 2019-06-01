@@ -906,9 +906,9 @@ bool TNPC::runScriptTimer()
 	return (timeout > 0);
 }
 
-void TNPC::runScriptEvents()
+bool TNPC::runScriptEvents()
 {
-	_scriptExecutionContext.runExecution();
+	bool hasActions = _scriptExecutionContext.runExecution();
 
 	// Send properties modified by scripts
 	if (!propModified.empty())
@@ -935,7 +935,10 @@ void TNPC::runScriptEvents()
 	{
 		server->deleteNPC(this);
 		npcDeleteRequested = false;
+		return false;
 	}
+
+	return hasActions;
 }
 
 CString TNPC::getVariableDump()

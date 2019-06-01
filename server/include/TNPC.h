@@ -234,6 +234,7 @@ class TNPC
 		void reloadNPC();
 		void resetNPC();
 
+		bool isWarpable() const { return canWarp; }
 		void allowNpcWarping(bool canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
 		void warpNPC(TLevel *pLevel, float pX, float pY);
@@ -254,7 +255,7 @@ class TNPC
 		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
 
 		bool runScriptTimer();
-		void runScriptEvents();
+		bool runScriptEvents();
 
 		CString getVariableDump();
 #endif
@@ -360,7 +361,7 @@ inline void TNPC::updatePropModTime(unsigned char propId)
 inline void TNPC::allowNpcWarping(bool canWarp)
 {
 	if (!isLevelNPC())
-		canWarp = canWarp;
+		this->canWarp = canWarp;
 }
 
 /**
