@@ -7,6 +7,7 @@
 #include <set>
 #include <thread>
 #include <chrono>
+#include <climits>
 #ifdef V8NPCSERVER
 #include <string>
 #include <unordered_set>
