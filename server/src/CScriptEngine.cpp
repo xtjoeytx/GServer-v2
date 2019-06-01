@@ -256,10 +256,10 @@ void CScriptEngine::RunScripts(bool timedCall)
 			TNPC *npc = *it;
 			bool hasUpdates = npc->runScriptTimer();
 
-			if (!hasUpdates) {
+			if (!hasUpdates)
 				it = _updateNpcsTimer.erase(it);
-			}
-			else it++;
+			else
+				it++;
 		}
 	}
 	
@@ -267,12 +267,16 @@ void CScriptEngine::RunScripts(bool timedCall)
 	{
 		_env->CallFunctionInScope([&]() -> void {
 			// Iterate over npcs
-			for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); ++it)
+			for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); )
 			{
 				TNPC *npc = *it;
-				npc->runScriptEvents();
+				bool hasActions = npc->runScriptEvents();
+
+				if (!hasActions)
+					it = _updateNpcs.erase(it);
+				else
+					it++;
 			}
-			_updateNpcs.clear();
 
 			// Iterate over weapons
 			for (auto it = _updateWeapons.begin(); it != _updateWeapons.end(); ++it)

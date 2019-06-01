@@ -58,7 +58,8 @@ NPC Object:
 		join("className") - joins a class to the npc
 		registerTrigger("action", function) - registers an action for triggeractions
 		setpm(function) - only works for database npcs with the name "Control-NPC", each call will unset the previous binded function
-
+		warpto(levelname, x, y)
+		
 	Properties:
 		id - (read-only)
 		ani

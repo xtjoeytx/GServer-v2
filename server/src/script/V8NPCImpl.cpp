@@ -860,6 +860,43 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	// warpto levelname,x,y;
+	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		if (npcObject->isWarpable())
+		{
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+			v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate));
+			double newX = args[1]->NumberValue(context).ToChecked();
+			double newY = args[2]->NumberValue(context).ToChecked();
+
+			v8::Local<v8::External> data = args.Data().As<v8::External>();
+			CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+			TServer *server = scriptEngine->getServer();
+
+			TLevel *level = server->getLevel(*levelName);
+			if (level != nullptr)
+			{
+				npcObject->warpNPC(level, (float)newX, (float)newY);
+				args.GetReturnValue().Set(true);
+				return;
+			}
+		}
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
 // Called when javascript creates a new object
 // js example: let jsNpc = new NPC();
 //void Npc_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -1329,7 +1366,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
 
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
