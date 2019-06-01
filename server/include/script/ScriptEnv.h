@@ -17,7 +17,7 @@ class IScriptEnv
 		virtual int GetType() = 0;
 	
 		virtual void Initialize() = 0;
-		virtual void Cleanup() = 0;
+		virtual void Cleanup(bool shutDown = false) = 0;
 		virtual IScriptFunction * Compile(const std::string& name, const std::string& source) = 0;
 		
 		virtual void CallFunctionInScope(std::function<void()> function) = 0;

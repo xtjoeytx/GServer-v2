@@ -1014,6 +1014,88 @@ void NPC_Attrs_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prop
 	info.GetReturnValue().Set(value);
 }
 
+// PROPERTY: npc.colors
+void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalName = v8::String::NewFromUtf8(isolate, "_internalColors", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalName).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalName).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.colors");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, npcObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+	v8_wrapped->addChild("colors", new_instance);
+
+	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalName, new_instance, propAttributes).FromJust();
+	info.GetReturnValue().Set(new_instance);
+}
+
+void NPC_Colors_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if (index > 4)
+		return;
+
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	int colorValue = npcObject->getColorId(index);
+	info.GetReturnValue().Set(colorValue);
+}
+
+void NPC_Colors_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	if (index > 4)
+		return;
+
+	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
+
+	char colorIndex;
+
+	if (value->IsUint32())
+	{
+		// Get new value
+		unsigned int newValue = value->Uint32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
+		if (newValue > 32) // Unsure how many colors exist, capping at 32 for now
+			newValue = 32;
+
+		colorIndex = newValue;
+	}
+	else // if (value->IsString())
+	{
+		v8::String::Utf8Value newValue(info.GetIsolate(), value);
+		colorIndex = getColor(*newValue);
+		if (colorIndex < 0)
+			return;
+	}
+
+	npcObject->setColorId(index, colorIndex);
+	npcObject->updatePropModTime(NPCPROP_COLORS);
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
+}
+
 // PROPERTY: npc.flags
 void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -1248,6 +1330,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	//npc_ctor->InstanceTemplate()->SetLazyDataProperty(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs2, v8::Local<v8::Value>(), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors"), NPC_GetObject_Colors, nullptr, engine_ref);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), NPC_GetObject_Flags, nullptr, engine_ref);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save, nullptr, engine_ref);
 
@@ -1259,6 +1342,15 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 		NPC_Attrs_Getter, NPC_Attrs_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kNone));
 	env->SetConstructor("npc.attr", npc_attrs_ctor);
+
+	// Create the npc colors template
+	v8::Local<v8::FunctionTemplate> npc_colors_ctor = v8::FunctionTemplate::New(isolate);
+	npc_colors_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "colors"));
+	npc_colors_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	npc_colors_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
+		NPC_Colors_Getter, NPC_Colors_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
+		v8::PropertyHandlerFlags::kNone));
+	env->SetConstructor("npc.colors", npc_colors_ctor);
 
 	// Create the npc flags template
 	v8::Local<v8::FunctionTemplate> npc_flags_ctor = v8::FunctionTemplate::New(isolate);

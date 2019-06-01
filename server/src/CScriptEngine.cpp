@@ -1,7 +1,6 @@
 #ifdef V8NPCSERVER
 
 #include "CScriptEngine.h"
-#include "V8ScriptBindings.h"
 #include "TNPC.h"
 #include "TPlayer.h"
 #include "TServer.h"
@@ -78,7 +77,7 @@ bool CScriptEngine::Initialize()
 	return true;
 }
 
-void CScriptEngine::Cleanup()
+void CScriptEngine::Cleanup(bool shutDown)
 {
 	if (!_env) {
 		return;
@@ -118,7 +117,7 @@ void CScriptEngine::Cleanup()
 	}
 
 	// Cleanup the Script Environment
-	_env->Cleanup();
+	_env->Cleanup(shutDown);
 	delete _env;
 	_env = 0;
 }
@@ -137,18 +136,23 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool refe
 	}
 
 	// Compile script, send errors to server
+	SCRIPTENV_D("Compiling script:\n---\n%s\n---\n", code.c_str());
+
 	IScriptFunction *compiledScript = _env->Compile(std::to_string(SCRIPT_ID++), code);
 	if (compiledScript == nullptr)
 	{
-		_server->reportScriptException(_env->getScriptError());
+		auto scriptError = _env->getScriptError();
+		_server->reportScriptException(scriptError);
+		SCRIPTENV_D("Error Compiling: %s\n", scriptError.getErrorString().c_str());
 		return nullptr;
 	}
 
+	SCRIPTENV_D("Successfully Compiled\n");
+
+	// Increase reference count to compiled script, and cache it.
 	if (referenceCount)
 		compiledScript->increaseReference();
 	_cachedScripts[code] = compiledScript;
-
-	SCRIPTENV_D("---COMPILED---\n");
 	return compiledScript;
 }
 
@@ -174,67 +178,33 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
-	// Wrap object
 	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
 
-	// Wrap user code in a function-object, returning some useful symbols to call for events
+	// No script, nothing to execute.
 	CString npcScript = npc->getServerScript();
 	if (npcScript.isEmpty())
-    {
-		SCRIPTENV_D("Empty code, maybe we shouldn't execute\n");
-    }
+		return false;
 
+	// Wrap user code in a function-object, returning some useful symbols to call for events
 	std::string codeStr = WrapScript<TNPC>(npcScript.text());
-
-	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
-
+	
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
+
+	// Script failed to compile
 	if (compiledScript == nullptr)
-	{
-		// script failed to execute
 		return false;
-	}
 
 	//
 	// Execute the compiled script
 	//
-
-	// TODO(joey): Get rid of v8 usage here
-
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-
-	// Fetch the v8 isolate and context
-	v8::Isolate *isolate = env->Isolate();
-	v8::Local<v8::Context> context = env->Context();
-	assert(!context.IsEmpty());
-
-	// Create a stack-allocated scope for v8 calls, and enter context
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope handle_scope(isolate);
-	v8::Context::Scope context_scope(context);
-
-	// Cast object
-	V8ScriptWrapped<TNPC> *v8_wrappedObject = static_cast<V8ScriptWrapped<TNPC> *>(wrappedObject);
-	v8::Local<v8::Object> wrappedObjectHandle = v8_wrappedObject->Handle(isolate);
-
-	// Arguments to call function
-	v8::Local<v8::Value> scriptFunctionArgs[1] = {
-		wrappedObjectHandle
-	};
-
-	// Execute the compiled script with the instance from the newly-wrapped object
-	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(compiledScript);
-
-	v8::TryCatch try_catch(isolate);
-	v8::Local<v8::Function> scriptFunction = v8_function->Function();
-	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
-	if (scriptTableRet.IsEmpty())
-	{
-		SCRIPTENV_D("Failed when executing script\n");
-		env->ParseErrors(&try_catch);
-		_server->reportScriptException(_env->getScriptError());
-	}
+	_env->CallFunctionInScope([&]() -> void {
+		IScriptArguments *args = ScriptFactory::CreateArguments(_env, wrappedObject);
+		bool result = args->Invoke(compiledScript, true);
+		if (!result)
+			_server->reportScriptException(_env->getScriptError());
+		delete args;
+	});
 
 	SCRIPTENV_D("End Global::ExecuteNPC()\n\n");
 	return true;
@@ -251,59 +221,27 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	// Wrap user code in a function-object, returning some useful symbols to call for events
 	CString weaponScript = weapon->getServerScript();
 	if (weaponScript.isEmpty())
-	{
-		SCRIPTENV_D("Empty code, maybe we shouldn't execute\n");
-	}
+		return false;
 
 	std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
 
-	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", codeStr.c_str());
-
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
+
+	// Script failed to compile
 	if (compiledScript == nullptr)
-	{
-		// script failed to execute
 		return false;
-	}
 
 	//
 	// Execute the compiled script
 	//
-
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(_env);
-
-	// Fetch the v8 isolate and context
-	v8::Isolate *isolate = env->Isolate();
-	v8::Local<v8::Context> context = env->Context();
-	assert(!context.IsEmpty());
-
-	// Create a stack-allocated scope for v8 calls, and enter context
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope handle_scope(isolate);
-	v8::Context::Scope context_scope(context);
-
-	// Cast object
-	V8ScriptWrapped<TWeapon> *v8_wrappedObject = static_cast<V8ScriptWrapped<TWeapon> *>(wrappedObject);
-	v8::Local<v8::Object> wrappedObjectHandle = v8_wrappedObject->Handle(isolate);
-
-	// Arguments to call function
-	v8::Local<v8::Value> scriptFunctionArgs[1] = {
-		wrappedObjectHandle
-	};
-
-	// Execute the compiled script with the instance from the newly-wrapped object
-	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(compiledScript);
-
-	v8::TryCatch try_catch(isolate);
-	v8::Local<v8::Function> scriptFunction = v8_function->Function();
-	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, wrappedObjectHandle, 1, scriptFunctionArgs);
-	if (scriptTableRet.IsEmpty())
-	{
-		SCRIPTENV_D("Failed when executing weapon script\n");
-		env->ParseErrors(&try_catch);
-		_server->reportScriptException(_env->getScriptError());
-	}
+	_env->CallFunctionInScope([&]() -> void {
+		IScriptArguments *args = ScriptFactory::CreateArguments(_env, wrappedObject);
+		bool result = args->Invoke(compiledScript, true);
+		if (!result)
+			_server->reportScriptException(_env->getScriptError());
+		delete args;
+	});
 
 	SCRIPTENV_D("End Global::ExecuteWeapon()\n\n");
 	return true;

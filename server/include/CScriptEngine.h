@@ -26,7 +26,7 @@ public:
 	~CScriptEngine();
 
 	bool Initialize();
-	void Cleanup();
+	void Cleanup(bool shutDown = false);
 	void RunScripts(bool timedCall = false);
 
 	TServer * getServer() const;

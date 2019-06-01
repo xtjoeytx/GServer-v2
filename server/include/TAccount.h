@@ -172,6 +172,7 @@ class TAccount
 		int getAdminRights() const		{ return adminRights; }
 		bool getBanned() const			{ return isBanned; }
 		bool getLoadOnly() const		{ return isLoadOnly; }
+		unsigned char getColorId(unsigned int idx) const;
 
 		const CString& getAccountName() const	{ return accountName; }
 		const CString& getNickname() const		{ return nickName; }
@@ -245,6 +246,13 @@ inline CString TAccount::getFlag(const std::string& pFlagName) const
 inline void TAccount::deleteFlag(const std::string& pFlagName)
 {
 	flagList.erase(pFlagName);
+}
+
+
+inline unsigned char TAccount::getColorId(unsigned int idx) const
+{
+	if (idx < 5) return colors[idx];
+	return 0;
 }
 
 #endif // TACCOUNT_H
