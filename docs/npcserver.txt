@@ -66,6 +66,7 @@ NPC Object:
 		bodyimg
 		bombs
 		chat
+		colors[idx] - index range is 0-4
 		darts
 		dir
 		flags['key'] - retrieve/manipulate npc flags
@@ -109,9 +110,11 @@ Player Object:
 		bodyimg
 		bombs
 		chat
+		colors[idx] - index range is 0-4
 		darts
 		hearts
 		headimg
+		flags['key'] - retrieve/manipulate player flags
 		fullhearts
 		glovepower
 		guild
@@ -127,9 +130,9 @@ Player Object:
 		shieldpower
 		swordimg
 		swordpower
+		weapons - array of weapon names
 		x
 		y
-		flags['key'] - retrieve/manipulate player flags
 
 Weapon Object:
     Functions:
