@@ -1530,7 +1530,7 @@ bool TServer::deletePlayer(TPlayer* player)
 	if (deletedPlayers.insert(player).second == true)
 	{
 		// Remove the player from the serverlist.
-		getServerList()->remPlayer(player->getAccountName(), player->getType());
+		getServerList()->deletePlayer(player);
 	}
 
 	return true;

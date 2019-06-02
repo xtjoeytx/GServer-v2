@@ -288,9 +288,9 @@ void TServerList::addPlayer(TPlayer *pPlayer)
 		>> (char)pPlayer->getType());
 }
 
-void TServerList::remPlayer(const CString& pAccountName, int pType)
+void TServerList::deletePlayer(TPlayer *player)
 {
-	sendPacket(CString() >> (char)SVO_PLYRREM >> (char)pType << pAccountName);
+	sendPacket(CString() >> (char)SVO_PLYRREM >> (char)player->getType() << player->getAccountName());
 }
 
 void TServerList::sendPlayers()

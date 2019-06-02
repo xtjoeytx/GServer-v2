@@ -44,9 +44,9 @@ class TServerList : public CSocketStub
 		CSocket* getSocket()					{ return &sock; }
 		void sendPacket(CString& pPacket);
 
-		// Altering Player Information
-		void addPlayer(TPlayer *pPlayer);
-		void remPlayer(const CString& pAccountName, int pType = ((int)(1 << 0) | (int)(1 << 5)));
+		// Send players to the listserver
+		void addPlayer(TPlayer *player);
+		void deletePlayer(TPlayer *player);
 		void sendPlayers();
 
 		// Send New Server-Info
