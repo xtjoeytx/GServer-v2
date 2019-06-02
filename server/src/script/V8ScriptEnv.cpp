@@ -9,7 +9,7 @@ int V8ScriptEnv::s_count = 0;
 std::unique_ptr<v8::Platform> V8ScriptEnv::s_platform;
 
 V8ScriptEnv::V8ScriptEnv()
-	: _initialized(false), _isolate(0)
+	: _initialized(false), _isolate(nullptr)
 {
 }
 
@@ -67,18 +67,18 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	}
 
 	// Clear persistent handles to function-constructors
-	for (auto it = _constructorMap.begin(); it != _constructorMap.end(); ++it) {
-		(*it).second.Reset();
-	}
+	for (auto it = _constructorMap.begin(); it != _constructorMap.end(); ++it)
+		it->second.Reset();
 	_constructorMap.clear();
 
+	// Clear persistent handles to the global object, and context
 	_global.Reset();
 	_global_tpl.Reset();
 	_context.Reset();
 
 	// Dispose of v8 isolate
 	_isolate->Dispose();
-	_isolate = 0;
+	_isolate = nullptr;
 	delete create_params.array_buffer_allocator;
 	
 	// Decrease v8 environment counter
@@ -106,7 +106,6 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 		v8::Handle<v8::Message> message = tryCatch->Message();
 		if (!message.IsEmpty())
 		{
-			// TODO(joey): this was throwing a seg-fault on other platforms, pretty sure this is the correct way to do it though. could of been due to the stack issue
 			_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
 			_lastScriptError.filename = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
 			_lastScriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
@@ -158,7 +157,6 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	// Run the script to get the result.
 	v8::Local<v8::Value> result;
 
-	// not catching errors here?? need to fix. throws an error under Server::addNpc call
 	if (!script->Run(context).ToLocal(&result)) {
 		ParseErrors(&try_catch);
 		return nullptr;
@@ -177,8 +175,15 @@ void V8ScriptEnv::CallFunctionInScope(std::function<void()> function)
 	// Call function in context if we have one
 	if (_context.IsEmpty())
 		function();
-	else {
+	else
+	{
 		v8::Context::Scope context_scope(Context());
 		function();
 	}
+}
+
+void V8ScriptEnv::TerminateExecution()
+{
+	assert(_isolate);
+	_isolate->TerminateExecution();
 }

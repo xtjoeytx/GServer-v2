@@ -908,6 +908,7 @@ bool TNPC::runScriptTimer()
 
 bool TNPC::runScriptEvents()
 {
+	// Returns true if we still have actions to run
 	bool hasActions = _scriptExecutionContext.runExecution();
 
 	// Send properties modified by scripts
@@ -1254,8 +1255,10 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	y2 = 16 * pY;
 
 	// Send the properties to the players in the new level
+
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
-	
+	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
+
 	// Queue event
 	this->queueNpcAction("npc.warped");
 }

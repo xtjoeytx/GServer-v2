@@ -3,8 +3,12 @@
 #ifndef CSCRIPTENGINE_H
 #define CSCRIPTENGINE_H
 
-#include <cassert>
+#include <assert.h>
 #include <string>
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -28,6 +32,10 @@ public:
 	bool Initialize();
 	void Cleanup(bool shutDown = false);
 	void RunScripts(bool timedCall = false);
+
+	void ScriptWatcher();
+	void StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
+	bool StopScriptExecution();
 
 	TServer * getServer() const;
 	IScriptEnv * getScriptEnv() const;
@@ -67,9 +75,16 @@ public:
 private:
 	IScriptEnv *_env;
 	IScriptFunction *_bootstrapFunction;
-	IScriptWrapped<TServer> *_serverObject;
 	IScriptWrapped<TServer> *_environmentObject;
+	IScriptWrapped<TServer> *_serverObject;
 	TServer *_server;
+
+	// Script watcher
+	std::atomic<bool> _scriptIsRunning;
+	std::atomic<bool> _scriptWatcherRunning;
+	std::chrono::high_resolution_clock::time_point _scriptStartTime;
+	std::mutex _scriptWatcherLock;
+	std::thread _scriptWatcherThread;
 
 	std::unordered_map<std::string, IScriptFunction *> _cachedScripts;
 	std::unordered_map<std::string, IScriptFunction *> _callbacks;
@@ -78,6 +93,23 @@ private:
 	std::unordered_set<TWeapon *> _updateWeapons;
 	std::unordered_set<IScriptFunction *> _deletedFunctions;
 };
+
+inline void CScriptEngine::StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
+{
+	{
+		std::lock_guard<std::mutex> guard(_scriptWatcherLock);
+		_scriptStartTime = startTime;
+	}
+	_scriptIsRunning.store(true);
+}
+
+inline bool CScriptEngine::StopScriptExecution()
+{
+	bool res = _scriptIsRunning.load();
+	if (res)
+		_scriptIsRunning.store(false);
+	return res;
+}
 
 // Getters
 

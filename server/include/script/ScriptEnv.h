@@ -13,16 +13,16 @@ class IScriptEnv
 	public:
 		IScriptEnv() {}
 		virtual ~IScriptEnv() {}
-	
-		virtual int GetType() = 0;
+		
+		virtual int GetType() const = 0;
 	
 		virtual void Initialize() = 0;
 		virtual void Cleanup(bool shutDown = false) = 0;
 		virtual IScriptFunction * Compile(const std::string& name, const std::string& source) = 0;
-		
 		virtual void CallFunctionInScope(std::function<void()> function) = 0;
+		virtual void TerminateExecution() = 0;
 
-		inline const ScriptRunError& getScriptError() const {
+		const ScriptRunError& getScriptError() const {
 			return _lastScriptError;
 		}
 	
