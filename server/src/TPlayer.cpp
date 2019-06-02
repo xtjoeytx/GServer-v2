@@ -3094,7 +3094,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 			weapon->updateWeapon(npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
 
 			// Send to Players
-			server->NC_UpdateWeapon(weapon);
+			server->updateWeaponForPlayers(weapon);
 		}
 
 		// Send the weapon to the player now.

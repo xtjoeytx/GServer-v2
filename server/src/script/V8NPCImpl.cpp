@@ -839,7 +839,6 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (npcObject->getName() != "Control-NPC")
 		return;
 
-	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::External> data = args.Data().As<v8::External>();
 	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 
@@ -923,58 +922,6 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 //	args.This()->SetAlignedPointerInInternalField(0, newNpc);
 //	args.GetReturnValue().Set(args.This());
 //}
-
-// NPC Static Method: NPC::create();
-void Npc_createFunction(const v8::FunctionCallbackInfo<v8::Value>& args)
-{
-	v8::Isolate *isolate = args.GetIsolate();
-	
-	// Throw an exception on constructor calls for method functions
-	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-	
-	// Retrieve v8 environment
-	v8::Local<v8::External> data = args.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-
-	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, "test str"));
-
-	if (args.Length() > 0)
-		SCRIPTENV_D("Npc::createFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
-}
-
-// NPC Method: npc.test();
-void Npc_testFunction(const v8::FunctionCallbackInfo<v8::Value>& args)
-{
-	v8::Isolate *isolate = args.GetIsolate();
-
-	// Throw an exception on constructor calls for method functions
-	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-
-	// Retrieve external data for this call
-	v8::Local<v8::External> data = args.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-
-	// Check if the callback exists
-	V8ScriptFunction *callback = static_cast<V8ScriptFunction *>(scriptEngine->getCallBack("onTest"));
-	if (callback != 0)
-	{
-		//		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(server->getScriptEnv());
-		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-		v8::Local<v8::Function> cbFunc = callback->Function();
-
-		// Call callback
-		v8::Local<v8::Value> newArgs[] = {
-			args.This(),
-			args[0]
-		};
-		v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, Null(isolate), 2, newArgs);
-		if (!ret.IsEmpty())
-			SCRIPTENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(isolate, ret.ToLocalChecked())));
-	}
-
-	SCRIPTENV_D("Npc::testFunction: %s\n", *v8::String::Utf8Value(isolate, args[0]->ToString(isolate)));
-}
 
 // PROPERTY: NPC Attributes
 // TODO(joey): use lazy property instead? TBD
@@ -1308,7 +1255,7 @@ void NPC_Save_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& 
 
 void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	if (index < 0 || index > 9)
+	if (index > 9)
 		return;
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);

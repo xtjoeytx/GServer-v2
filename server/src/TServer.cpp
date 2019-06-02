@@ -815,7 +815,7 @@ void TServer::loadWeapons(bool print)
 			{
 				delete w;
 				weaponList[weapon->getName()] = weapon;
-				NC_UpdateWeapon(weapon);
+				updateWeaponForPlayers(weapon);
 				if (print) serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
 			}
 			else
@@ -1511,8 +1511,6 @@ bool TServer::addPlayer(TPlayer *player, unsigned int id)
 	// Add them to the player list.
 	player->setId(id);
 	playerIds[id] = player;
-
-	// TODO(joey): external players should probably be placed in a different list..?
 	playerList.push_back(player);
 
 #ifdef V8NPCSERVER
@@ -1799,7 +1797,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	return true;
 }
 
-void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
+void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 {
 	// Update Weapons
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
