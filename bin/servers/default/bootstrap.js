@@ -15,7 +15,8 @@
 				(npc.onPlayerLeaves && 1 << 4) |
 				(npc.onPlayerTouchsMe && 1 << 5) |
 				(npc.onPlayerLogin && 1 << 6) |
-				(npc.onPlayerLogout && 1 << 7)
+				(npc.onPlayerLogout && 1 << 7) |
+				(npc.onNpcWarped && 1 << 8)
 			);
 
 			if (npc.onCreated)
@@ -109,6 +110,18 @@
 		}
 	});
 
+	/**
+	 * Event -> onNpcWarped(npc)
+	 */
+	env.setCallBack("npc.warped", function (npc, ...args) {
+		try {
+			if (npc.onNpcWarped)
+				npc.onNpcWarped.apply(npc, args);
+		} catch (e) {
+			env.reportException("NPC Warped Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
 	/*
 	 * Event -> Triggeractions
 	 */
@@ -143,4 +156,58 @@
 			env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
 		}
 	});
+
+	/*
+	 * Global Function -> Tokenize
+	 */
+	env.global.tokenize = function(string, sep = ' ') {
+		let separator = sep[0];
+		let insideQuote = false;
+		let stringList = [];
+		let currentString = "";
+
+		let stringLength = string.length;
+		for (let i = 0; i < stringLength; i++) {
+			switch (string[i]) {
+				case separator: {
+					if (!insideQuote) {
+						stringList.push(currentString);
+						currentString = "";
+					}
+					else currentString += string[i];
+
+					break;
+				}
+
+				case '\"': {
+					insideQuote = !insideQuote;
+					break;
+				}
+
+				case '\\': {
+					if (i + 1 < stringLength) {
+						switch (string[i+1]) {
+							case '"':
+							case '\\':
+								i++;
+
+							default:
+								currentString += string[i];
+								break;
+						}
+					}
+					else currentString += string[i];
+					break;
+				}
+
+				default: {
+					currentString += string[i];
+					break;
+				}
+			}
+		}
+		
+		stringList.push(currentString);
+		return stringList;
+	};
 });

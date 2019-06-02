@@ -7,7 +7,8 @@
 
 #ifdef V8NPCSERVER
 #include <string>
-#include "ScriptWrapped.h"
+#include "ScriptBindings.h"
+#include "ScriptExecutionContext.h"
 
 class TPlayer;
 #endif
@@ -17,13 +18,13 @@ class TWeapon
 {
 	public:
 		// -- Constructor | Destructor -- //
-		TWeapon(const signed char pId);
+		TWeapon(TServer *pServer, const signed char pId);
 		TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
 		~TWeapon();
 
 		// -- Functions -- //
-		bool saveWeapon(TServer* server);
-		void updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime = 0, bool pSaveWeapon = true);
+		bool saveWeapon();
+		void updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime = 0, bool pSaveWeapon = true);
 
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
@@ -40,33 +41,55 @@ class TWeapon
 
 		// Functions -> Set Variables
 		void setImage(const CString& pImage)			{ mWeaponImage = pImage; }
-		void setClientScript(const CString& pScript)	{ mScriptClient = pScript; }
-		void setServerScript(const CString& pScript)	{ mScriptServer = pScript; }
 		void setFullScript(const CString& pScript)		{ mWeaponScript = pScript; }
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 
 #ifdef V8NPCSERVER
-		void queueWeaponAction(TServer *server, TPlayer *player, const std::string& args);
-
-		inline IScriptWrapped<TWeapon> * getScriptObject() const {
-			return _scriptObject;
-		}
-
-		inline void setScriptObject(IScriptWrapped<TWeapon> *object) {
-			_scriptObject = object;
-		}
+		ScriptExecutionContext * getExecutionContext();
+		IScriptWrapped<TWeapon> * getScriptObject() const;
+		
+		void freeScriptResources();
+		void queueWeaponAction(TPlayer *player, const std::string& args);
+		void runScriptEvents();
+		void setScriptObject(IScriptWrapped<TWeapon> *object);
 #endif
 	protected:
+		void setClientScript(const CString& pScript);
+		void setServerScript(const CString& pScript) { mScriptServer = pScript; }
+
 		// Varaibles -> Weapon Data
 		signed char mWeaponDefault;
 		CString mWeaponImage, mWeaponName, mWeaponScript;
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;
 		time_t mModTime;
+		TServer *server;
 
+	private:
 #ifdef V8NPCSERVER
 		IScriptWrapped<TWeapon> *_scriptObject;
+		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
+
+#ifdef V8NPCSERVER
+
+inline ScriptExecutionContext * TWeapon::getExecutionContext() {
+	return &_scriptExecutionContext;
+}
+
+inline IScriptWrapped<TWeapon> * TWeapon::getScriptObject() const {
+	return _scriptObject;
+}
+
+inline void TWeapon::runScriptEvents() {
+	_scriptExecutionContext.runExecution();
+}
+
+inline void TWeapon::setScriptObject(IScriptWrapped<TWeapon> *object) {
+	_scriptObject = object;
+}
+
+#endif
 
 #endif

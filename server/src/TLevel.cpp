@@ -38,7 +38,10 @@ TLevel::~TLevel()
 	{
 		// Remove every NPC in the level.
 		for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
-			server->deleteNPC(*it, false);
+		{
+			if ((*it)->isLevelNPC())
+				server->deleteNPC(*it, false);
+		}
 		levelNPCs.clear();
 	}
 
@@ -75,7 +78,10 @@ TLevel::~TLevel()
 
 #ifdef V8NPCSERVER
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 #endif
 }
 
@@ -214,7 +220,12 @@ bool TLevel::reload()
 				server->deleteNPC(npc, false);
 				it = levelNPCs.erase(it);
 			}
-			else it++;
+			else {
+#ifdef V8NPCSERVER
+				npc->reloadNPC();
+#endif
+				it++;
+			}
 		}
 		//levelNPCs.clear();
 	}
@@ -833,9 +844,9 @@ bool TLevel::loadNW(const CString& pLevelName)
 			CString image(curLine[1]);
 			if (curLine.size() > 4)
 			{
-				offset = curLine.size() - 4;
+				offset = (int)curLine.size() - 4;
 				for (unsigned int i = 0; i < offset; ++i)
-					image << " " << curLine[2 + i];
+					image << " " << curLine[i + 2];
 			}
 
 			// Grab the NPC location.

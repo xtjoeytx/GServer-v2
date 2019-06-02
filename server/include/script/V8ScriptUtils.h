@@ -1,15 +1,11 @@
 #pragma once
 
+#ifndef V8SCRIPTUTILS_H
+#define V8SCRIPTUTILS_H
+
 #include <v8.h>
 
-#ifdef NDEBUG
-	#define V8ENV_D(...) do {} while(0)
-#else
-	#define V8ENV_D(...) printf(__VA_ARGS__)
-#endif
-
-// TODO(joey): might be able to get rid of this check does it really matter if a user uses new print("asd");
-// Throw an exception on constructor calls for method functions
+// Throw an exception if the function was called with new Function();
 #define V8ENV_THROW_CONSTRUCTOR(args, isolate)						\
 	if (args.IsConstructCall()) {									\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
@@ -17,7 +13,7 @@
 		return;														\
 	}
 
-// Throw an exception on method functions for constructor calls
+// Throw an exception if a constructor was called with Function();
 #define V8ENV_THROW_METHOD(args, isolate)							\
 	if (!args.IsConstructCall()) {									\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
@@ -26,10 +22,25 @@
 	}
 
 // Throw an exception if we didn't receive the correct amount of arguments
-#define V8ENV_THROW_ARGCOUNT(args, isolate, required_args)				\
+#define V8ENV_THROW_ARGCOUNT(args, isolate, required_args)			\
 	if (args.Length() != required_args) {							\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
 			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str())); 			\
+		return;														\
+	}
+
+// Throw an exception if we receive less than the minimum amount of arguments
+#define V8ENV_THROW_MINARGCOUNT(args, isolate, required_args)		\
+	if (args.Length() < required_args) {							\
+		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
+			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str())); 			\
+		return;														\
+	}
+
+// Unwrap an object, and validate the pointer
+#define V8ENV_SAFE_UNWRAP(ARGS, TYPE, VAR_NAME)						\
+	TYPE * VAR_NAME = UnwrapObject<TYPE>(ARGS.This());				\
+	if (!VAR_NAME) {												\
 		return;														\
 	}
 
@@ -43,7 +54,19 @@ inline v8::Local<TypeName> PersistentToLocal(v8::Isolate *isolate, const v8::Per
 	}
 }
 
+template <class TypeName>
+inline v8::Local<TypeName> GlobalPersistentToLocal(v8::Isolate *isolate, const v8::Global<TypeName>& persistent)
+{
+	if (persistent.IsWeak()) {
+		return v8::Local<TypeName>::New(isolate, persistent);
+	} else {
+		return *reinterpret_cast<v8::Local<TypeName> *>(const_cast<v8::Global<TypeName> *>(&persistent));
+	}
+}
+
 template <class Type>
 inline Type * UnwrapObject(v8::Local<v8::Object> self) {
 	return static_cast<Type *>(self->GetAlignedPointerFromInternalField(0));
 }
+
+#endif

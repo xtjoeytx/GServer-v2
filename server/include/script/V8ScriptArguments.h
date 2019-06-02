@@ -1,17 +1,24 @@
 #pragma once
 
+#ifndef V8SCRIPTARGUMENTS_H
+#define V8SCRIPTARGUMENTS_H
+
 #include <cassert>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <v8.h>
-#include "ScriptArguments.h"
+#include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
 namespace detail
 {
+
+	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, std::nullptr_t val) {
+		return v8::Null(env->Isolate());
+	}
+
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, double val) {
 		return v8::Number::New(env->Isolate(), val);
 	}
@@ -43,20 +50,24 @@ class V8ScriptArguments : public ScriptArguments<Ts...>
 
 public:
 	template <typename... Args>
-	V8ScriptArguments(Args&&... An)
+	explicit V8ScriptArguments(Args&&... An)
 		: ScriptArguments<Ts...>(An...) {
 	}
 
 	~V8ScriptArguments() = default;
 
-	virtual void Invoke(IScriptFunction *func) override
+	virtual bool Invoke(IScriptFunction *func, bool catchExceptions = false) override
 	{
-		V8ENV_D("Invoke Script Argument: %d args\n", this->Argc);
+		assert(base::Argc > 0);
+		SCRIPTENV_D("Invoke Script Argument: %d args\n", base::Argc);
 
 		if (!base::_resolved)
 		{
 			V8ScriptFunction *v8_func = static_cast<V8ScriptFunction *>(func);
 			V8ScriptEnv *v8_env = static_cast<V8ScriptEnv *>(v8_func->Env());
+			
+			v8::Isolate *isolate = v8_env->Isolate();
+			v8::Local<v8::Context> context = v8_env->Context();
 
 			// get a v8 handle for the function to be executed
 			v8::Local<v8::Function> cbFunc = v8_func->Function();
@@ -65,14 +76,30 @@ public:
 			// sort arguments into array
 			resolve_args(v8_env, std::index_sequence_for<Ts...>{});
 			base::_resolved = true;
+			
+			// TODO(joey): This will probably not stay like this. Needed the trycatch for executing
+			//	new objects for the first time only. Will figure something out.
 
 			// call function
-			v8::MaybeLocal<v8::Value> ret = cbFunc->Call(v8_env->Context(), v8::Null(v8_env->Isolate()), base::Argc, _args);
-			if (!ret.IsEmpty())
-				V8ENV_D(" - Returned Value from Callback: %s\n", *(v8::String::Utf8Value(v8_env->Isolate(), ret.ToLocalChecked())));
+			if (catchExceptions)
+			{
+				v8::TryCatch try_catch(isolate);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args);
+				if (try_catch.HasCaught())
+				{
+					v8_env->ParseErrors(&try_catch);
+					return false;
+				}
+			}
+			else
+			{
+				cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				//ret.IsEmpty();
+			}
 		}
 
-		V8ENV_D("Finish Script Argument\n");
+		SCRIPTENV_D("Finish Script Argument\n");
+		return true;
 	}
 
 private:
@@ -86,3 +113,5 @@ private:
 		}
 	}
 };
+
+#endif

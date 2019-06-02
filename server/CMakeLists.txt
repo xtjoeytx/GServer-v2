@@ -86,6 +86,47 @@ if(NOT NOUPNP)
 endif()
 
 if(V8NPCSERVER)
+	# Headers for script library interface
+	list(
+		APPEND
+		HEADERS
+		include/script/ScriptArguments.h
+		include/script/ScriptBindings.h
+		include/script/ScriptEnv.h
+		include/script/ScriptFunction.h
+		include/script/ScriptUtils.h
+		include/script/ScriptWrapped.h
+	)
+
+	# Headers for script library v8 implementation
+	list(
+		APPEND
+		HEADERS
+		include/script/V8ScriptArguments.h
+		include/script/V8ScriptEnv.h
+		include/script/V8ScriptFunction.h
+		include/script/V8ScriptUtils.h
+		include/script/V8ScriptWrapped.h
+	)
+
+	# Source for script library v8 implementation
+	list(
+		APPEND
+		SOURCES
+		src/script/V8ScriptEnv.cpp
+	)
+	
+	# GServer specific headers for implementation
+	list(
+		APPEND
+		HEADERS
+		include/CScriptEngine.h
+		include/script/ScriptAction.h
+		include/script/ScriptExecutionContext.h
+		include/script/ScriptFactory.h
+	)
+
+	# GServer specific source for implementation
 	list(
 		APPEND
 		SOURCES
@@ -98,24 +139,6 @@ if(V8NPCSERVER)
 		src/script/V8ScriptEnv.cpp
 		src/script/V8ServerImpl.cpp
 		src/script/V8WeaponImpl.cpp
-	)
-
-	list(
-		APPEND
-		HEADERS
-		include/CScriptEngine.h
-		include/script/ScriptAction.h
-		include/script/ScriptArguments.h
-		include/script/ScriptEnv.h
-		include/script/ScriptFactory.h
-		include/script/ScriptFunction.h
-		include/script/ScriptRunError.h
-		include/script/ScriptWrapped.h
-		include/script/V8Macros.h
-		include/script/V8ScriptArguments.h
-		include/script/V8ScriptEnv.h
-		include/script/V8ScriptFunction.h
-		include/script/V8ScriptWrapped.h
 	)
 endif()
 

@@ -11,7 +11,7 @@
 #include "CSocket.h"
 
 #ifdef V8NPCSERVER
-#include "ScriptWrapped.h"
+#include "ScriptBindings.h"
 #endif
 
 class TLevel;
@@ -42,7 +42,6 @@ class TPlayer : public TAccount, public CSocketStub
 		// Constructor - Deconstructor
 		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
 		~TPlayer();
-		void operator()();
 
 		// Manage Account
 		inline bool isLoggedIn() const;
@@ -54,13 +53,13 @@ class TPlayer : public TAccount, public CSocketStub
 		TMap* getMap()			{ return pmap; }
 		CString getGroup()		{ return levelGroup; }
 		int getId() const;
-		int getType() const;
 		time_t getLastData() const		{ return lastData; }
 		CString getGuild() const		{ return guild; }
 		int getVersion() const			{ return versionID; }
 		CString getVersionStr() const	{ return version; }
 		bool isUsingFileBrowser() const	{ return isFtp; }
 		CString getServerName()	const	{ return serverName; }
+		const CString& getPlatform() const { return os; }
 
 		// Set Properties
 		void setChat(const CString& pChat);
@@ -95,17 +94,23 @@ class TPlayer : public TAccount, public CSocketStub
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);
 
+		// Type of player
+		bool isAdminIp();
+		bool isStaff();
+		bool isNC()	const				{ return (type & PLTYPE_ANYNC) ? true : false; }
+		bool isRC() const				{ return (type & PLTYPE_ANYRC) ? true : false; }
+		bool isClient() const			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
+		bool isNPCServer() const		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
+		bool isControlClient() const	{ return (type & PLTYPE_ANYCONTROL) ? true : false; }
+		bool isHiddenClient() const		{ return (type & PLTYPE_NONITERABLE) ? true : false; }
+		bool isLoaded()	const			{ return loaded; }
+		int getType() const				{ return type; }
+		void setType(int val)			{ type = val; }
+
 		// Misc functions.
 		bool doTimedEvents();
 		void disconnect();
 		bool processChat(CString pChat);
-		bool isAdminIp();
-		bool isStaff();
-		bool isRC()				{ return (type & PLTYPE_ANYRC) ? true : false; }
-		bool isNC()				{ return (type & PLTYPE_ANYNC) ? true : false; }
-		bool isClient()			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
-		bool isRemoteClient()	{ return (type & PLTYPE_ANYREMOTE) ? true : false; }
-		bool isLoaded()			{ return loaded; }
 		bool addWeapon(int defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
@@ -114,6 +119,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(TWeapon* weapon);
 		void disableWeapons();
 		void enableWeapons();
+		void sendRPGMessage(const CString& message);
+		void sendSignMessage(const CString& message);
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool updatePMPlayers(CString& servername, CString& players);
@@ -341,11 +348,6 @@ inline bool TPlayer::isLoggedIn() const
 inline int TPlayer::getId() const
 {
 	return id;
-}
-
-inline int TPlayer::getType() const
-{
-	return type;
 }
 
 inline void TPlayer::setId(int pId)

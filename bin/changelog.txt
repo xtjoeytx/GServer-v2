@@ -1,5 +1,17 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.0
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Built-in npc-server, with nc-support. For more information on scripting please read npcserver.txt
+* Npcs should no longer duplicate on gmaps, and should be properly deleted.
+* Fixed an issue with sockets not binding or connecting on OSX
+o Changed build system to cmake
+o Removed plugin system since it was never used
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v2.5.1
 
   * bug fix, + new feature, o other

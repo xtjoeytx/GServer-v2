@@ -30,7 +30,7 @@ extern std::atomic_bool shutdownProgram;
 TServer::TServer(CString pName)
 	: running(false), doRestart(false), name(pName), wordFilter(this)
 #ifdef V8NPCSERVER
-	, mScriptEngine(this)
+	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
 #ifdef UPNP
 	, upnp(this)
@@ -40,6 +40,7 @@ TServer::TServer(CString pName)
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
 #ifdef V8NPCSERVER
 	lastScriptTimer = time_now;
+	accumulator = std::chrono::nanoseconds(0);
 #endif
 
 	// This has the full path to the server directory.
@@ -150,6 +151,23 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 #ifdef V8NPCSERVER
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
+
+	mNpcServer = new TPlayer(this, nullptr, 0);
+	mNpcServer->setType(PLTYPE_NPCSERVER);
+	mNpcServer->loadAccount("(npcserver)");
+	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
+	mNpcServer->setLoaded(true);	// can't guarantee this, so forcing it
+
+	// TODO(joey): Update this when server options is changed?
+	// Set nickname, and append (Server) - required!
+	CString nickName = settings.getStr("nickname");
+	if (nickName.isEmpty())
+		nickName = "NPC-Server";
+	nickName << " (Server)";
+	mNpcServer->setNick(nickName, true);
+
+	// Add npc-server to playerlist
+	addPlayer(mNpcServer);
 #endif
 
 	// Connect to the serverlist.
@@ -220,10 +238,13 @@ void TServer::cleanupDeletedPlayers()
 					player->leaveLevel();
 
 				// Send event to server that player is logging out
-				for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+				if (player->isLoaded() && (player->getType() & PLTYPE_ANYPLAYER))
 				{
-					TNPC *npcObject = (*it).second;
-					npcObject->queueNpcAction("npc.playerlogout", player);
+					for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+					{
+						TNPC *npcObject = (*it).second;
+						npcObject->queueNpcAction("npc.playerlogout", player);
+					}
 				}
 
 				// Set processed
@@ -233,7 +254,7 @@ void TServer::cleanupDeletedPlayers()
 			// If we just added events to the player, we will have to wait for them to run before removing player.
 			if (playerObject->isReferenced())
 			{
-				printf("Reference count: %d\n", playerObject->getReferenceCount());
+				SCRIPTENV_D("Reference count: %d\n", playerObject->getReferenceCount());
 				++i;
 				continue;
 			}
@@ -277,20 +298,21 @@ void TServer::cleanup()
 	// Save server flags.
 	saveServerFlags();
 
+#ifdef V8NPCSERVER
+	// Save npcs
+	saveNpcs();
+
+	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
+	mNpcServer = nullptr;
+#endif
+
 	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); )
 	{
 		delete *i;
 		i = playerList.erase(i);
 	}
+	playerIds.clear();
 	playerList.clear();
-
-	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
-	{
-		delete *i;
-		i = npcList.erase(i);
-	}
-	npcList.clear();
-	npcIds.clear();
 
 	for (std::vector<TLevel*>::iterator i = levelList.begin(); i != levelList.end(); )
 	{
@@ -305,6 +327,15 @@ void TServer::cleanup()
 		i = mapList.erase(i);
 	}
 	mapList.clear();
+
+	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
+	{
+		delete *i;
+		i = npcList.erase(i);
+	}
+	npcIds.clear();
+	npcList.clear();
+	npcNameList.clear();
 
 	saveWeapons();
 	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); )
@@ -331,35 +362,38 @@ void TServer::restart()
 	doRestart = true;
 }
 
+constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
+
 bool TServer::doMain()
 {
 	// Update our socket manager.
 	sockManager.update(0, 5000);		// 5ms
 
-	//
+	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
-
-#ifdef V8NPCSERVER
-	// Run scripts every 0.05 seconds (incl. catching up)
-	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastScriptTimer);
-	auto time_ms = time_diff.count();
 	
-	// TODO(joey): maybe run events at any time
-	if (time_ms >= 50)
-	{
-		lastScriptTimer = currentTimer;
+#ifdef V8NPCSERVER
+	// Run scripts every 0.05 seconds
+	auto delta_time = currentTimer - lastScriptTimer;
+	lastScriptTimer = currentTimer;
+	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
 
-		do {
-			mScriptEngine.RunScripts(true);
-			time_ms -= 50;
-		} while (time_ms >= 50);
+	// Accumulator for timeout / scheduled events
+	bool updated = false;
+	while (accumulator >= timestep) {
+		accumulator -= timestep;
+
+		mScriptEngine.RunScripts(true);
+		updated = true;
 	}
-	else mScriptEngine.RunScripts();
+
+	// Run any queued actions anyway
+	if (!updated)
+		mScriptEngine.RunScripts();
 #endif
 
 	// Every second, do some events.
-	time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
+	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
 	if (time_diff.count() >= 1000)
 	{
 		lastTimer = currentTimer;
@@ -380,6 +414,9 @@ bool TServer::doTimedEvents()
 		{
 			TPlayer *player = (TPlayer*)*i;
 			if (player == 0)
+				continue;
+
+			if (player->isNPCServer())
 				continue;
 
 			if (!player->doTimedEvents())
@@ -419,6 +456,8 @@ bool TServer::doTimedEvents()
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 
+		// TODO(joey): no no no no no no no this is not how it is done! a server will announce to the serverlist a new player
+		// and then it will be added! you can't just spam everything!!!
 		TServerList* list = this->getServerList();
 		if (list)
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
@@ -440,6 +479,8 @@ bool TServer::doTimedEvents()
 	{
 		last3mTimer = lastTimer;
 
+		// TODO(joey): probably a better way to do this..
+
 		// Resynchronize the file systems.
 		filesystem_accounts.resync();
 		for (int i = 0; i < FS_COUNT; ++i)
@@ -458,6 +499,7 @@ bool TServer::doTimedEvents()
 		loadIPBans();
 		
 		// Save some stuff.
+		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
 		saveWeapons();
 #ifdef V8NPCSERVER
 		saveNpcs();
@@ -506,35 +548,18 @@ bool TServer::onRecv()
 	if (newSock == 0)
 		return true;
 
-	// Get a free id to be assigned to the new player.
-	unsigned int newId = 0;
-	for (unsigned int i = 2; i < playerIds.size(); ++i)
-	{
-		if (playerIds[i] == 0)
-		{
-			newId = i;
-			i = playerIds.size();
-		}
-	}
-	if (newId == 0)
-	{
-		newId = playerIds.size();
-		playerIds.push_back(0);
-	}
-
 	// Create the new player.
-	TPlayer* newPlayer = new TPlayer(this, newSock, newId);
-	playerIds[newId] = newPlayer;
+	TPlayer *newPlayer = new TPlayer(this, newSock, 0);
 
-	// Add them to the player list.
-	playerList.push_back(newPlayer);
+	// Add the player to the server
+	if (!addPlayer(newPlayer))
+	{
+		delete newPlayer;
+		return false;
+	}
 
 	// Add them to the socket manager.
 	sockManager.registerSocket((CSocketStub*)newPlayer);
-
-#ifdef V8NPCSERVER
-	mScriptEngine.WrapObject(newPlayer);
-#endif
 
 	return true;
 }
@@ -600,6 +625,8 @@ void TServer::loadFolderConfig()
 
 int TServer::loadConfigFiles()
 {
+	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
+	//	Move them out of here?
 	serverlog.out("[%s] :: Loading server configuration...\n", name.text());
 
 	// Load Settings
@@ -788,7 +815,7 @@ void TServer::loadWeapons(bool print)
 			{
 				delete w;
 				weaponList[weapon->getName()] = weapon;
-				NC_UpdateWeapon(weapon);
+				updateWeaponForPlayers(weapon);
 				if (print) serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
 			}
 			else
@@ -802,13 +829,13 @@ void TServer::loadWeapons(bool print)
 	}
 
 	// Add the default weapons.
-	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(TLevelItem::getItemId("bow"));
-	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(TLevelItem::getItemId("bomb"));
-	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(TLevelItem::getItemId("superbomb"));
-	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(TLevelItem::getItemId("fireball"));
-	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(TLevelItem::getItemId("fireblast"));
-	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(TLevelItem::getItemId("nukeshot"));
-	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(TLevelItem::getItemId("joltbomb"));
+	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(this, TLevelItem::getItemId("bow"));
+	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(this, TLevelItem::getItemId("bomb"));
+	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(this, TLevelItem::getItemId("superbomb"));
+	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(this, TLevelItem::getItemId("fireball"));
+	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(this, TLevelItem::getItemId("fireblast"));
+	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(this, TLevelItem::getItemId("nukeshot"));
+	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(this, TLevelItem::getItemId("joltbomb"));
 }
 
 void TServer::loadMaps(bool print)
@@ -970,15 +997,20 @@ void TServer::saveWeapons()
 	weaponFS.addDir("weapons", "weapon*.txt");
 	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
 
-	for (std::map<CString, TWeapon *>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
 	{
-		TWeapon* w = i->second;
-		time_t mod = weaponFS.getModTime(i->first);
-		if (w->getModTime() > mod)
+		TWeapon *weaponObject = it->second;
+		if (weaponObject->isDefault())
+			continue;
+
+		// TODO(joey): add a function to weapon to get the filename?
+		CString weaponFile = CString("weapon") << it->first << ".txt";
+		time_t mod = weaponFS.getModTime(weaponFile);
+		if (weaponObject->getModTime() > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
-			w->saveWeapon(this);
-			weaponFS.setModTime(weaponFS.find(i->first), w->getModTime());
+			weaponObject->saveWeapon();
+			weaponFS.setModTime(weaponFS.find(weaponFile), weaponObject->getModTime());
 		}
 	}
 }
@@ -995,14 +1027,111 @@ void TServer::saveNpcs()
 	}
 }
 
+std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
+{
+	std::vector<std::pair<double, std::string>> script_profiles;
+
+	// Iterate npcs
+	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	{
+		TNPC *npc = *it;
+		ScriptExecutionContext *context = npc->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		if (executionData.second > 0.0)
+		{
+			std::string npcName = npc->getName();
+			if (npcName.empty())
+				npcName = "Level npc " + std::to_string(npc->getId());
+
+			TLevel *npcLevel = npc->getLevel();
+			if (npcLevel != nullptr) {
+				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
+					append(" at pos (").append(CString((float)npc->getPixelX() / 16.0f).text()).
+					append(", ").append(CString((float)npc->getPixelY() / 16.0f).text()).append(")");
+			}
+
+			script_profiles.push_back(std::make_pair(executionData.second, npcName));
+		}
+	}
+
+	// Iterate weapons
+	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
+	{
+		TWeapon *weapon = (*it).second;
+		ScriptExecutionContext *context = weapon->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context->getExecutionData();
+
+		if (executionData.second > 0.0)
+		{
+			std::string weaponName("Weapon ");
+			weaponName.append((*it).first.text());
+			script_profiles.push_back(std::make_pair(executionData.second, weaponName));
+		}
+	}
+
+	std::sort(script_profiles.rbegin(), script_profiles.rend());
+	return script_profiles;
+}
+
+void TServer::reportScriptException(const ScriptRunError& error)
+{
+	std::string error_message = error.getErrorString();
+	sendToNC(error_message);
+	getScriptLog().out(error_message + "\n");
+}
+
+void TServer::reportScriptException(const std::string& error_message)
+{
+	sendToNC(error_message);
+	getScriptLog().out(error_message + "\n");
+}
+
 #endif
 
 /////////////////////////////////////////////////////
 
+TPlayer* TServer::getPlayer(const unsigned short id, int type) const
+{
+	if (id >= (unsigned short)playerIds.size())
+		return nullptr;
+
+	if (playerIds[id] == nullptr)
+		return nullptr;
+
+	// Check if its the type of player we are looking for
+	if (!(playerIds[id]->getType() & type))
+		return nullptr;
+
+	return playerIds[id];
+}
+
+TPlayer* TServer::getPlayer(const CString& account, int type) const
+{
+	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+	{
+		TPlayer *player = (TPlayer*)* i;
+		if (player == 0)
+			continue;
+
+		// Check if its the type of player we are looking for
+		if (!(player->getType() & type))
+			continue;
+
+		// Compare account names.
+		if (player->getAccountName().toLower() == account.toLower())
+			return player;
+	}
+
+	return nullptr;
+}
+
+/*
 TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includeRC && playerIds[id]->isRemoteClient()) return 0;
+	if (playerIds[id] == nullptr) return 0;
+	if (!includeRC && playerIds[id]->isControlClient()) return 0;
+	if (playerIds[id]->isHiddenClient()) return 0;
 	return playerIds[id];
 }
 
@@ -1011,10 +1140,10 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
+		if (player == 0 || player->isHiddenClient())
 			continue;
 
-		if (!includeRC && player->isRemoteClient())
+		if (!includeRC && player->isRC())
 			continue;
 
 		// Compare account names.
@@ -1024,22 +1153,20 @@ TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
 	return 0;
 }
 
-TPlayer* TServer::getRC(const unsigned short id, bool includePlayer) const
+TPlayer* TServer::getRC(const unsigned short id) const
 {
 	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (!includePlayer && playerIds[id]->isClient()) return 0;
+	if (playerIds[id] == nullptr) return 0;
+	if (!playerIds[id]->isRC()) return 0;
 	return playerIds[id];
 }
 
-TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
+TPlayer* TServer::getRC(const CString& account) const
 {
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
 	{
 		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
-			continue;
-
-		if (!includePlayer && player->isClient())
+		if (player == 0 || !player->isRC())
 			continue;
 
 		// Compare account names.
@@ -1048,6 +1175,7 @@ TPlayer* TServer::getRC(const CString& account, bool includePlayer) const
 	}
 	return 0;
 }
+*/
 
 TLevel* TServer::getLevel(const CString& pLevel)
 {
@@ -1173,6 +1301,40 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 
 	return newNPC;
 }
+
+void TServer::handlePM(TPlayer * player, const CString & message)
+{
+	if (!mPmHandlerNpc)
+	{
+		CString npcServerMsg;
+		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
+		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)mNpcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
+		return;
+	}
+
+	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now. 
+	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
+
+	printf("Msg: %s\n", std::string(message.text()).c_str());
+
+	ScriptAction *scriptAction = mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text()));
+	mPmHandlerNpc->getExecutionContext()->addAction(scriptAction);
+	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
+}
+
+void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
+{
+	if (npc == nullptr || function == nullptr)
+	{
+		mPmHandlerNpc = nullptr;
+		mScriptEngine.removeCallBack("npcserver.playerpm");
+		return;
+	}
+
+	mScriptEngine.setCallBack("npcserver.playerpm", function);
+	mPmHandlerNpc = npc;
+}
+
 #endif
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
@@ -1227,14 +1389,10 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
 	if (npc == 0) return false;
 	if (npc->getId() >= npcIds.size()) return false;
-
-	TLevel *level = npc->getLevel();
-
+	
 	// Remove the NPC from all the lists.
-	if (level != nullptr && eraseFromLevel)
-		level->removeNPC(npc);
 	npcIds[npc->getId()] = 0;
-		
+	
 	for (std::vector<TNPC*>::iterator i = npcList.begin(); i != npcList.end(); )
 	{
 		if ((*i) == npc)
@@ -1242,24 +1400,33 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 		else ++i;
 	}
 
-	// Tell the client to delete the NPC.
-	bool isOnMap = (level && level->getMap() ? true : false);
-	CString tmpLvlName = (isOnMap ? npc->getLevel()->getMap()->getMapName() : npc->getLevel()->getLevelName());
+	TLevel *level = npc->getLevel();
 
-	for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+	if (level)
 	{
-		TPlayer* p = *i;
-		if (p->isRemoteClient()) continue;
+		// Remove the NPC from the level
+		if (eraseFromLevel)
+			level->removeNPC(npc);
 
-		if (isOnMap || p->getVersion() < CLVER_2_1)
-			p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-		else
-			p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		// Tell the clients to delete the NPC.
+		bool isOnMap = (level->getMap() ? true : false);
+		CString tmpLvlName = (isOnMap ? level->getMap()->getMapName() : level->getLevelName());
+
+		for (std::vector<TPlayer*>::iterator i = playerList.begin(); i != playerList.end(); ++i)
+		{
+			TPlayer* p = *i;
+			if (p->isControlClient()) continue;
+
+			if (isOnMap || p->getVersion() < CLVER_2_1)
+				p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+			else
+				p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+		}
 	}
 
 #ifdef V8NPCSERVER
 	// TODO(joey): Need to deal with illegal characters
-	// If we persist this npc, delete the file
+	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
 	if (npc->getPersist())
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
@@ -1267,9 +1434,16 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 		remove(filePath.text());
 	}
 
-	// Remove npc name assignment
-	if (!npc->isLevelNPC() && !npc->getName().empty())
-		removeNPCName(npc);
+	if (!npc->isLevelNPC())
+	{
+		// Remove npc name assignment
+		if (!npc->getName().empty())
+			removeNPCName(npc);
+
+		// If this is the npc that handles pms, clear it
+		if (mPmHandlerNpc == npc)
+			mPmHandlerNpc = nullptr;
+	}
 #endif
 
 	// Delete the NPC from memory.
@@ -1304,6 +1478,49 @@ void TServer::updateClass(const std::string& className, const std::string& class
 	fileData.save(filePath);
 }
 
+unsigned int TServer::getFreePlayerId()
+{
+	unsigned int newId = 0;
+	for (unsigned int i = 2; i < playerIds.size(); ++i)
+	{
+		if (playerIds[i] == 0)
+		{
+			newId = i;
+			i = playerIds.size();
+		}
+	}
+	if (newId == 0)
+	{
+		newId = playerIds.size();
+		playerIds.push_back(nullptr);
+	}
+
+	return newId;
+}
+
+bool TServer::addPlayer(TPlayer *player, unsigned int id)
+{
+	// No id was passed, so we will fetch one
+	if (id == UINT_MAX)
+		id = getFreePlayerId();
+	else if (playerIds.size() <= id)
+		playerIds.resize((size_t)id + 10);
+	else if (playerIds[id] != nullptr)
+		return false;
+
+	// Add them to the player list.
+	player->setId(id);
+	playerIds[id] = player;
+	playerList.push_back(player);
+
+#ifdef V8NPCSERVER
+	// Create script object for player
+	mScriptEngine.WrapObject(player);
+#endif
+
+	return true;
+}
+
 bool TServer::deletePlayer(TPlayer* player)
 {
 	if (player == 0)
@@ -1313,10 +1530,25 @@ bool TServer::deletePlayer(TPlayer* player)
 	if (deletedPlayers.insert(player).second == true)
 	{
 		// Remove the player from the serverlist.
-		serverlist.remPlayer(player->getAccountName(), player->getType());
+		getServerList()->remPlayer(player->getAccountName(), player->getType());
 	}
 
 	return true;
+}
+
+void TServer::playerLoggedIn(TPlayer *player)
+{
+	// Tell the serverlist that the player connected.
+	getServerList()->addPlayer(player);
+
+#ifdef V8NPCSERVER
+	// Send event to server that player is logging out
+	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	{
+		TNPC *npcObject = (*it).second;
+		npcObject->queueNpcAction("npc.playerlogin", player);
+	}
+#endif
 }
 
 unsigned int TServer::getNWTime() const
@@ -1334,16 +1566,19 @@ bool TServer::isIpBanned(const CString& ip)
 	return false;
 }
 
-void TServer::playerLoggedIn(TPlayer *player)
+void TServer::logToFile(const std::string & fileName, const std::string & message)
 {
-#ifdef V8NPCSERVER
-	// Send event to server that player is logging out
-	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
-	{
-		TNPC *npcObject = (*it).second;
-		npcObject->queueNpcAction("npc.playerlogin", player);
-	}
-#endif
+	CString fileNamePath = CString() << getServerPath().remove(0, getHomePath().length()) << "logs/";
+	
+	// Remove leading characters that may try to go up a directory
+	int idx = 0;
+	while (fileName[idx] == '.' || fileName[idx] == '/' || fileName[idx] == '\\')
+		idx++;
+	fileNamePath << fileName.substr(idx);
+
+	CLog logFile(fileNamePath, true);
+	logFile.open();
+	logFile.out("\n%s\n", message.c_str());
 }
 
 /*
@@ -1562,7 +1797,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	return true;
 }
 
-void TServer::NC_UpdateWeapon(TWeapon *pWeapon)
+void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 {
 	// Update Weapons
 	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)

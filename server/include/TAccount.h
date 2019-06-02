@@ -141,40 +141,56 @@ class TAccount
 		// Attribute-Managing
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
 		bool hasWeapon(const CString& pWeapon);
-
+		
 		// Flag-Managing
 		CString getFlag(const std::string& pFlagName) const;
 		void setFlag(CString pFlag);
 		void setFlag(const std::string& pFlagName, const CString& pFlagValue);
 		void deleteFlag(const std::string& pFlagName);
 
+		CString translate(const CString& pKey);
+		bool hasRight(int mask)			{ return (adminRights & mask) ? true : false; }
+		
 		// get functions
+		bool getGuest()					{ return isGuest; }
 		float getX() const				{ return x; }
 		float getY() const				{ return y; }
-		CString getAccountName() const	{ return accountName; }
-		CString getNickname() const		{ return nickName; }
-		CString getHeadImage() const	{ return headImg; }
 		float getPower() const			{ return power; }
+		int getAlignment() const		{ return ap; }
+		int getArrowCount() const		{ return arrowc; }
+		int getBombCount() const		{ return bombc; }
+		int getGlovePower() const		{ return glovePower; }
+		int getMagicPower() const		{ return mp; }
+		int getMaxPower() const			{ return maxPower; }
+		int getRupees() const			{ return gralatc; }
 		int getSwordPower() const		{ return swordPower; }
 		int getShieldPower() const		{ return shieldPower; }
 		int getStatus() const			{ return status; }
 		int getOnlineTime() const		{ return onlineTime; }
 		int getKills() const			{ return kills; }
 		int getDeaths() const			{ return deaths; }
-		bool getBanned() const			{ return isBanned; }
-		CString getBanReason() const	{ return banReason; }
-		CString getBanLength() const	{ return banLength; }
-		bool getLoadOnly() const		{ return isLoadOnly; }
-		CString getEmail() const		{ return email; }
 		int getAdminRights() const		{ return adminRights; }
-		CString getAdminIp() const		{ return adminIp; }
-		CString getIpStr() const		{ return accountIpStr; }
-		CString getComments() const		{ return accountComments; }
-		bool getGuest()					{ return isGuest; }
-		std::unordered_map<std::string, CString>* getFlagList()	{ return &flagList; }
-		std::vector<CString>* getFolderList()					{ return &folderList; }
-		std::vector<CString>* getWeaponList()					{ return &weaponList; }
-		CString translate(const CString& pKey);
+		bool getBanned() const			{ return isBanned; }
+		bool getLoadOnly() const		{ return isLoadOnly; }
+		unsigned char getColorId(unsigned int idx) const;
+
+		const CString& getAccountName() const	{ return accountName; }
+		const CString& getNickname() const		{ return nickName; }
+		const CString& getBodyImage() const		{ return bodyImg; }
+		const CString& getHeadImage() const		{ return headImg; }
+		const CString& getShieldImage() const	{ return shieldImg; }
+		const CString& getSwordImage() const	{ return swordImg; }
+		const CString& getAnimation() const		{ return gani; }
+		const CString& getAdminIp() const		{ return adminIp; }
+		const CString& getBanReason() const		{ return banReason; }
+		const CString& getBanLength() const		{ return banLength; }
+		const CString& getChatMsg() const		{ return chatMsg; }
+		const CString& getEmail() const			{ return email; }
+		const CString& getIpStr() const			{ return accountIpStr; }
+		const CString& getComments() const		{ return accountComments; }
+		std::unordered_map<std::string, CString> * getFlagList()	{ return &flagList; }
+		std::vector<CString> * getFolderList()						{ return &folderList; }
+		std::vector<CString> * getWeaponList()						{ return &weaponList; }
 
 		// set functions
 		void setLastSparTime(time_t newTime)		{ lastSparTime = newTime; }
@@ -182,6 +198,7 @@ class TAccount
 		void setKills(int newKills)					{ kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
+		void setHeadImage(const CString& head)		{ headImg = head; }
 		void setExternal(bool external)				{ isExternal = external; }
 		void setBanned(bool banned)					{ isBanned = banned; }
 		void setBanReason(CString reason)			{ banReason = reason; }
@@ -191,13 +208,6 @@ class TAccount
 		void setAdminRights(int rights)				{ adminRights = rights; }
 		void setAdminIp(CString ip)					{ adminIp = ip; }
 		void setComments(CString comments)			{ accountComments = comments; }
-
-		bool hasRight(int mask)		{ return (adminRights & mask) ? true : false; }
-	
-#ifdef V8NPCSERVER
-		int getMaxPower() const			{ return maxPower; }
-		int getRupees() const			{ return gralatc; }
-#endif
 
 	protected:
 		TServer* server;
@@ -237,6 +247,13 @@ inline CString TAccount::getFlag(const std::string& pFlagName) const
 inline void TAccount::deleteFlag(const std::string& pFlagName)
 {
 	flagList.erase(pFlagName);
+}
+
+
+inline unsigned char TAccount::getColorId(unsigned int idx) const
+{
+	if (idx < 5) return colors[idx];
+	return 0;
 }
 
 #endif // TACCOUNT_H

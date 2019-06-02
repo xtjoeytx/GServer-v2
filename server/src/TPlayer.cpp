@@ -348,16 +348,27 @@ TPlayer::~TPlayer()
 		if (level) leaveLevel();
 
 		// Announce our departure to other clients.
-		server->sendPacketTo(PLTYPE_ANYCLIENT | PLTYPE_NPCSERVER, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
-		server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
-		if (isRC() && !accountName.isEmpty())
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
+		if (!isNC())
+		{
+			server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
+		}
+
+		if (!accountName.isEmpty())
+		{
+			if (isRC())
+				server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
+			else if (isNC())
+				server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "NC Disconnected: " << accountName, this);
+		}
 
 		// Log.
 		if (isClient())
 			serverlog.out("[%s] :: Client disconnected: %s\n", server->getName().text(), accountName.text());
 		else if (isRC())
 			serverlog.out("[%s] :: RC disconnected: %s\n", server->getName().text(), accountName.text());
+		else if (isNC())
+			serverlog.out("[%s] :: NC disconnected: %s\n", server->getName().text(), accountName.text());
 	}
 
 	// Clean up.
@@ -379,7 +390,10 @@ TPlayer::~TPlayer()
 
 #ifdef V8NPCSERVER
 	if (_scriptObject)
+	{
 		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
 #endif
 }
 
@@ -934,14 +948,6 @@ void TPlayer::dropItemsOnDeath()
 
 bool TPlayer::processChat(CString pChat)
 {
-#ifdef V8NPCSERVER
-	if (!pChat.isEmpty())
-	{
-		if (level != 0)
-			level->sendChatToLevel(this, pChat.text());
-	}
-#endif
-
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
 	bool processed = false;
@@ -1232,7 +1238,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			TPlayer* player = server->getPlayer(chatParse[1], false);
+			TPlayer* player = server->getPlayer(chatParse[1], PLTYPE_ANYCLIENT);
 			if (player && player->getLevel() != 0)
 				warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
 		}
@@ -1272,7 +1278,7 @@ bool TPlayer::processChat(CString pChat)
 			return true;
 		}
 
-		TPlayer* p = server->getPlayer(chatParse[1], false);
+		TPlayer* p = server->getPlayer(chatParse[1], PLTYPE_ANYCLIENT);
 		if (p) p->warp(levelName, x, y);
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
@@ -1472,7 +1478,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	y =	pY;
 
 	// Try warping to the new level.
-	if (setLevel(pLevelName, modTime) == false)
+	bool warpSuccess = setLevel(pLevelName, modTime);
+	if (!warpSuccess)
 	{
 		// Failed, so try warping back to our old level.
 		bool warped = true;
@@ -1497,7 +1504,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 				return false;
 		}
 	}
-	return true;
+
+	return warpSuccess;
 }
 
 bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
@@ -1914,7 +1922,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 			guild.removeI(guild.length() - 1);
 	}
 
-	if (force)
+	if (force || (guild == "RC" && isRC()))
 	{
 		nickName = pNickName;
 		this->guild = guild;
@@ -2025,7 +2033,7 @@ bool TPlayer::addWeapon(int defaultWeapon)
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
-		weapon = new TWeapon(defaultWeapon);
+		weapon = new TWeapon(server, defaultWeapon);
 		server->NC_AddWeapon(weapon);
 	}
 
@@ -2092,6 +2100,11 @@ bool TPlayer::deleteWeapon(TWeapon* weapon)
 	return true;
 }
 
+void TPlayer::disableWeapons()
+{
+	this->status &= ~PLSTATUS_ALLOWWEAPONS;
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+}
 
 void TPlayer::enableWeapons()
 {
@@ -2099,10 +2112,14 @@ void TPlayer::enableWeapons()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
-void TPlayer::disableWeapons()
+void TPlayer::sendRPGMessage(const CString &message)
 {
-	this->status &= ~PLSTATUS_ALLOWWEAPONS;
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
+}
+
+void TPlayer::sendSignMessage(const CString &message)
+{
+	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
 }
 
 /*
@@ -2154,6 +2171,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	accountIp = inet_addr(accountIpStr.text());
 #endif
 
+	// TODO(joey): Hijack type based on what graal sends, rather than use it directly.
+	
 	// Read Client-Type
 	serverlog.out("[%s] :: New login:\t", server->getName().text());
 	type = (1 << pPacket.readGChar());
@@ -2210,6 +2229,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Client-Version
 	version = pPacket.readChars(8);
 	if (isClient()) versionID = getVersionID(version);
+	else if (isNC()) versionID = getNCVersionID(version);
 	else if (isRC()) versionID = getRCVersionID(version);
 	else versionID = CLVER_UNKNOWN;
 
@@ -2530,7 +2550,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 {
 	// Get the player who killed us.
 	unsigned int pId = pPacket.readGUShort();
-	TPlayer* player = server->getPlayer(pId);
+	TPlayer* player = server->getPlayer(pId, PLTYPE_ANYCLIENT);
 	if (player == 0 || player == this) return true;
 
 	// Sparring zone rating code.
@@ -2870,7 +2890,7 @@ bool TPlayer::msgPLI_HURTPLAYER(CString& pPacket)
 	unsigned int npc = pPacket.readGUInt();
 
 	// Get the victim.
-	TPlayer* victim = server->getPlayer(pId);
+	TPlayer* victim = server->getPlayer(pId, PLTYPE_ANYCLIENT);
 	if (victim == 0) return true;
 
 	// If they are paused, they don't get hurt.
@@ -2900,6 +2920,7 @@ bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 
 bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
+	// TODO(joey): Is this needed?
 	const int sendLimit = 4;
 	if (isClient() && (int)difftime(time(0), lastMessage) <= 4)
 	{
@@ -2943,9 +2964,9 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 
 	// Word filter.
+	pmMessage.guntokenizeI();
 	if (isClient())
 	{
-		pmMessage.guntokenizeI();
 		int filter = server->getWordFilter()->apply(this, pmMessage, FILTER_CHECK_PM);
 		if (filter & FILTER_ACTION_WARN)
 		{
@@ -2953,8 +2974,10 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 				"Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
 			return true;
 		}
-		pmMessage.gtokenizeI();
 	}
+
+	// Always retokenize string, I don't believe our behavior is inline with official. It was escaping "\", so this unescapes that.
+	pmMessage.gtokenizeI();
 
 	// Send the message out.
 	for (std::vector<unsigned short>::iterator i = pmPlayers.begin(); i != pmPlayers.end(); ++i)
@@ -2969,8 +2992,16 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		}
 		else
 		{
-			TPlayer* pmPlayer = server->getPlayer(*i);
+			TPlayer* pmPlayer = server->getPlayer(*i, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 			if (pmPlayer == 0 || pmPlayer == this) continue;
+
+#ifdef V8NPCSERVER
+			if (pmPlayer->isNPCServer())
+			{
+				server->handlePM(this, pmMessage.guntokenize());
+				continue;
+			}
+#endif
 
 			// Don't send to people who don't want mass messages.
 			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
@@ -3060,10 +3091,10 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(server, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
 
 			// Send to Players
-			server->NC_UpdateWeapon(weapon);
+			server->updateWeaponForPlayers(weapon);
 		}
 
 		// Send the weapon to the player now.
@@ -3287,7 +3318,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					else
 					{
 						TPlayer* p;
-						p = server->getPlayer(actionParts[1], false);
+						p = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
 						if (p) p->sendPacket(weapon_packet);
 					}
 					grExecParameterList.clear();
@@ -3373,7 +3404,8 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 						TPlayer* p = *i;
 						if (p->getGuild() == guild)
 						{
-							p->setNick(p->getNickname().readString("(").trimI());
+							CString nick = p->getNickname();
+							p->setNick(nick.readString("(").trimI());
 							p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
 							server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
 						}
@@ -3391,7 +3423,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				if (!guild.isEmpty())
 				{
 					TPlayer* p = this;
-					if (!account.isEmpty()) p = server->getPlayer(account, false);
+					if (!account.isEmpty()) p = server->getPlayer(account, PLTYPE_ANYCLIENT);
 					if (p)
 					{
 						CString nick = p->getNickname();
@@ -3432,7 +3464,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				std::vector<CString> actionParts = action.tokenize(",");
 				if (actionParts.size() == 3)
 				{
-					TPlayer* player = server->getPlayer(actionParts[1], false);
+					TPlayer* player = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
 					player->setGroup(actionParts[2]);
 				}
 			}
@@ -3652,14 +3684,15 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (weaponObject != nullptr)
 		{
 			CString triggerData = action.readString("");
-			weaponObject->queueWeaponAction(server, this, triggerData.text());
+			weaponObject->queueWeaponAction(this, triggerData.text());
 		}
 	}
-	else
+	else if (level)
 	{
 		int triggerX = 16 * loc[0];
 		int triggerY = 16 * loc[1];
 
+		// TODO(joey): i think this should trigger everything it touches.
 		TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
 		if (npcTouched != nullptr)
 		{
@@ -3684,19 +3717,39 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 
 bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
-	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server.
+	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server. (5/25/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
 	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
 	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
 	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
 	CString sgani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char unknown2 = pPacket.readGUChar();
+	unsigned char shootParamsLength = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	CString shootparams = pPacket.readString("");
+
+	//printf("Shoot Params (%d): %s\n", shootparams.length(), shootparams.text());
+
+	// ActionProjectile on server.
+	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
+
+	//this.speed = (this.power > 0 ? 0 : 20 * 0.05);
+	//this.horzspeed = cos(this.zangle) * this.speed;
+	//this.vertspeed = sin(this.zangle) * this.speed;
+	//this.newx = playerx + 1.5; // offset
+	//this.newy = playery + 2; // offset
+	//function CalcPos() {
+	//	this.newx = this.newx + (cos(this.angle) * this.horzspeed);
+	//	this.newy = this.newy - (sin(this.angle) * this.horzspeed);
+	//	setplayerprop #c, Positions #v(this.newx), #v(this.newy);
+	//	if (onwall(this.newx, this.newy)) {
+	//		this.calcpos = 0;
+	//		this.hittime = timevar2;
+	//	}
+	//}
+
 
 	// Send data now.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);
 
-//	printf("shoot: %s\n", pPacket.text());
-//	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)pPacket[i]); printf("\n");
 	return true;
 }
 
@@ -4018,7 +4071,7 @@ bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmM
 TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
 	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
-	if (!includeRC && externalPlayerIds[id]->isRemoteClient()) return 0;
+	if (!includeRC && externalPlayerIds[id]->isControlClient()) return 0;
 	return externalPlayerIds[id];
 }
 
@@ -4030,7 +4083,7 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 		if (player == 0)
 			continue;
 
-		if (!includeRC && player->isRemoteClient())
+		if (!includeRC && player->isControlClient())
 			continue;
 
 		// Compare account names.
@@ -4042,6 +4095,8 @@ TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) cons
 
 bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 {
+	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
+
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
@@ -4072,6 +4127,8 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		addPMServer(option);
 	else if (type == "pmunmapserver")
 		remPMServer(option);
+	else if (type == "irc") {
+	}
 		
 
 	serverlog.out("[ IN] [RequestText] %s,%s\n", accountName.gtokenize().text(),packet.text());
@@ -4101,12 +4158,30 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				CString channel = "#graal";
 				CString channelAccount = CString() << "irc:" << channel;
 				CString channelNick = channel << " (1,0)";
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
+				
+				// RC uses addplayer/delplayer
+				if (isRC())
+				{
+					// Irc players start at 16k
+					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)81 >> (char)3);
+				}
+				else sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
 			}
 			else if (option == "join")
 			{
 				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
+			}
+			else if (option == "part")
+			{
+				CString channel = params[0];
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
+			}
+			else if (option == "topic")
+			{
+				// GraalEngine,irc,topic,#graal,topic
+				//CString channel = params[0];
+				//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
 			}
 			else if (option == "privmsg")
 			{
@@ -4139,6 +4214,21 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			else if (option == "verifybuddies" && !getGuest())
 			{
 				list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
+			}
+			else if (isRC())
+			{
+				// TODO(joey): Implement for RC3
+				//	banhistory - each comma separated item per line, just text
+				//	staffactivity - each comma separated item per line, just text
+				//	localbans - each comma separated item per line, just text (each person banned)
+				//	ban - read below
+
+				if (option == "getban")
+				{
+					// Send param is computer id. Either 0, or the id. It is required though
+					sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << params[0] << "," << "0");
+					//msgPLI_RC_PLAYERBANGET(params[0]);
+				}
 			}
 		}
 		else if (type == "pmservers" || type == "pmguilds")
@@ -4185,3 +4275,4 @@ bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
 	// Stub.
 	return true;
 }
+

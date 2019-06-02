@@ -262,6 +262,12 @@ CString TPlayer::getProp(int pPropId)
 		case PLPROP_GMAPLEVELY:
 		return CString() >> (char)gmaplevely;
 
+		// TODO(joey): figure this out. Something to do with guilds? irc-related
+		//	(char)(some bitflag for something, uses the first 3 bits im not sure)
+		//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
+		case PLPROP_UNKNOWN81:
+			return CString();
+
 		case PLPROP_COMMUNITYNAME:
 		return CString() >> (char)communityName.length() << communityName;
 	}
@@ -286,6 +292,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	bool doSignCheck = false;
+	bool doTouchTest = false;
 	int len = 0;
 	bool sentInvalid = false;
 
@@ -306,7 +313,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick);
+				else setNick(nick, (rc != nullptr));
 				
 				globalBuff >> (char)propId << getProp(propId);
 
@@ -478,7 +485,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				}
 				else if (len > 100)
 				{
-					headImg = pPacket.readChars(len-100);
+					headImg = pPacket.readChars(len - 100);
+					// TODO(joey): We need to check properties for newline, especially if they are sending to other clients
+					//	as it causes havoc on the client...
+					int check = headImg.find("\n", 0);
+					if (check > 0)
+						headImg = headImg.readChars(check);
 					if (!headImg.isEmpty() && versionID < CLVER_2_1 && getExtension(headImg).isEmpty())
 						headImg << ".gif";
 
@@ -498,6 +510,15 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (pForwardToSelf == false && ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN)))
 						selfBuff >> (char)propId << getProp(propId);
 				}
+
+#ifdef V8NPCSERVER
+				// Send chat to npcs if this wasn't changed by the npcserver
+				if (!rc && !chatMsg.isEmpty())
+				{
+					if (level != nullptr)
+						level->sendChatToLevel(this, chatMsg.text());
+				}
+#endif
 			}
 			break;
 
@@ -515,6 +536,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				x2 = (int)(x * 16);
@@ -526,6 +548,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				y2 = (int)(y * 16);
@@ -540,6 +563,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				z2 = (int)(z * 16);
@@ -728,6 +752,37 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				levelBuff >> (char)PLPROP_ATTACHNPC << getProp(PLPROP_ATTACHNPC);
 				break;
 			}
+
+			case PLPROP_GMAPLEVELX:
+			{
+				gmaplevelx = pPacket.readGUChar();
+				if (pmap)
+				{
+					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					leaveLevel();
+					setLevel(levelName, -1);
+				}
+#ifdef DEBUG
+				printf("gmap level x: %d\n", gmaplevelx);
+#endif
+				break;
+			}
+
+			case PLPROP_GMAPLEVELY:
+			{
+				gmaplevely = pPacket.readGUChar();
+				if (pmap)
+				{
+					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					leaveLevel();
+					setLevel(levelName, -1);
+				}
+#ifdef DEBUG
+				printf("gmap level y: %d\n", gmaplevely);
+#endif
+				break;
+			}
+
 /*
 			case PLPROP_UNKNOWN50:
 				break;
@@ -799,6 +854,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				x2 >>= 1;
@@ -814,6 +870,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				y2 >>= 1;
@@ -832,6 +889,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+				doTouchTest = true;
 
 				// If the first bit is 1, our position is negative.
 				z2 >>= 1;
@@ -841,36 +899,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
 				break;
-
-			case PLPROP_GMAPLEVELX:
-			{
-				gmaplevelx = pPacket.readGUChar();
-				if (pmap)
-				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
-					leaveLevel();
-					setLevel(levelName, -1);
-				}
-#ifdef DEBUG
-				printf("gmap level x: %d\n", gmaplevelx);
-#endif
-				break;
-			}
-
-			case PLPROP_GMAPLEVELY:
-			{
-				gmaplevely = pPacket.readGUChar();
-				if (pmap)
-				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
-					leaveLevel();
-					setLevel(levelName, -1);
-				}
-#ifdef DEBUG
-				printf("gmap level y: %d\n", gmaplevely);
-#endif
-				break;
-			}
 
 			case PLPROP_COMMUNITYNAME:
 				pPacket.readChars(pPacket.readGUChar());
@@ -915,9 +943,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
 
 		// Movement check.
-		if (doSignCheck) testSign();
+		if (!rc && doSignCheck) testSign();
 #ifdef V8NPCSERVER
-		if (grMovementUpdated) testTouch();
+		if (!rc)
+		{
+			if (doTouchTest) testTouch();
+		}
 #endif
 	}
 

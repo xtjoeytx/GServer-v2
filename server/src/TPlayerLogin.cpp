@@ -93,17 +93,20 @@ bool TPlayer::sendLogin()
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
 	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
-    //sendPacket(CString() >> (char)44);
-	sendPacket(CString() >> (char)PLO_UNKNOWN103 << " *");
 
     //sendPacket(CString() >> (char)PLO_FULLSTOP);
-	sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
-	// If we have an NPC Server, send this to prevent clients from sending
-	// npc props it modifies.
+
+	if (isClient())
+	{
 #ifdef V8NPCSERVER
-        sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+		// If we have an NPC Server, send this to prevent clients from sending
+		// npc props it modifies.
+		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
+
+		sendPacket(CString() >> (char)PLO_UNKNOWN168);
+	}
 
 	// Check if the account is already in use.
 	if (!getGuest())
@@ -146,6 +149,32 @@ bool TPlayer::sendLogin()
 	// This also lets us send data.
 	loaded = true;
 
+	CSettings* settings = server->getSettings();
+
+	// Send out what guilds should be placed in the Staff section of the playerlist.
+	std::vector<CString> guilds = settings->getStr("staffguilds").tokenize(",");
+	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
+	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
+		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
+	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
+
+	// Send out the server's available status list options.
+	if ((isClient() && versionID >= CLVER_2_1) || isRC())
+	{
+		// graal doesn't quote these
+		std::vector<CString>* plicons = server->getStatusList();
+		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
+		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
+			pliconPacket << ((CString)(*i)).trim() << ",";
+		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
+	}
+
+	// This comes after status icons for RC
+	if (isRC())
+		sendPacket(CString() >> (char)PLO_RC_MAXUPLOADFILESIZE >> (long long)(1048576 * 20));
+
+	// Then during iterating the playerlist to send players to the rc client, it sends addplayer followed by rc chat per person.
+
 	// Exchange props with everybody on the server.
 	{
 		// RC props are sent in a "special" way.  As in retarded.
@@ -159,25 +188,6 @@ bool TPlayer::sendLogin()
 
 		// Get our client props.
 		CString myClientProps = (isClient() ? getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
-
-		// Get our NC props.
-		//CString myNCProps;
-		//if (server->hasNPCServer())
-		//	myNCProps = getProps(__getLoginNC, sizeof(__getLoginNC)/sizeof(bool));
-
-#ifdef V8NPCSERVER
-		if (isRC())
-		{
-			// Triggers the RC client to request the NPC-Server address
-			this->sendPacket(CString()
-				>> (char)PLO_ADDPLAYER >> (short)0
-				>> (char)12 << "(npc-server)"
-				>> (char)PLPROP_CURLEVEL >> (char)1 << " "
-				>> (char)PLPROP_PSTATUSMSG >> (char)0
-				>> (char)PLPROP_NICKNAME >> (char)strlen("NPC-Server (Server)") << "NPC-Server (Server)");
-				//>> (char)PLPROP_COMMUNITYNAME << (char)strlen("(npcserver)") << "(npcserver)");
-		}
-#endif
 
 		CString rcsOnline;
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
@@ -223,9 +233,6 @@ bool TPlayer::sendLogin()
 
 	// Ask for processes.
 	sendPacket(CString() >> (char)PLO_LISTPROCESSES);
-
-	// Tell the serverlist that the player connected.
-	server->getServerList()->addPlayer(this);
 	return true;
 }
 
@@ -267,23 +274,7 @@ bool TPlayer::sendLoginClient()
 		}
 	}
 
-	// Send out what guilds should be placed in the Staff section of the playerlist.
-	std::vector<CString> guilds = settings->getStr("staffguilds").tokenize(",");
-	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
-		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
-	sendPacket(guildPacket);
-
-	// Send out the server's available status list options.
-	if ((isClient() && versionID >= CLVER_2_1) || isRC())
-	{
-		std::vector<CString>* plicons = server->getStatusList();
-		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-			pliconPacket << "\"" << ((CString)(*i)).trim() << "\",";
-		sendPacket(pliconPacket);
-	}
-
+	// Sent to rc and client, but rc ignores it so...
     sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
@@ -339,10 +330,10 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
-	// TODO(joey): If no level exists, maybe they should be sent to unstick me level?
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	if (warp(levelName, x, y) == false)
+	bool warpSuccess = warp(levelName, x, y);
+	if (!warpSuccess && level == 0)
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		serverlog.out(CString() << "[" << server->getName() << "] " << "Cannot find level for " << accountName << "\n");
@@ -418,6 +409,8 @@ bool TPlayer::sendLoginNC()
 
 	// Announce to other nc's that we logged in
 	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "New NC: " << accountName, this);
+
+	loaded = true;
 	return true;
 }
 

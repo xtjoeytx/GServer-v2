@@ -1,13 +1,13 @@
 #pragma once
 
+#ifndef V8SCRIPTENV_H
+#define V8SCRIPTENV_H
+
 #include <vector>
 #include <v8.h>
-#include "ScriptEnv.h"
-#include "ScriptRunError.h"
-#include "V8Macros.h"
+#include "ScriptBindings.h"
+#include "V8ScriptUtils.h"
 #include "V8ScriptWrapped.h"
-
-#define CONSTRUCTOR_COUNT 10
 
 class IScriptFunction;
 
@@ -17,57 +17,37 @@ public:
 	V8ScriptEnv();
 	virtual ~V8ScriptEnv();
 	
-	int GetType() override {
-		return 1;
-	}
+	int GetType() const override { return 1; }
 	
 	void Initialize() override;
-	void Cleanup() override;
+	void Cleanup(bool shutDown = false) override;
+	
 	IScriptFunction * Compile(const std::string& name, const std::string& source) override;
+	void CallFunctionInScope(std::function<void()> function) override;
+	void TerminateExecution() override;
 
-	// --
-	template<class T>
-	inline IScriptWrapped<T> * Wrap(size_t idx, T *obj);
-	
-	template<class T>
-	inline T * Unwrap(v8::Local<v8::Value> value);
-	
-	// --
-	inline v8::Isolate * Isolate() const {
-		return _isolate;
-	}
-	
-	inline v8::Local<v8::Context> Context() const {
-		return PersistentToLocal(Isolate(), _context);
-	}
-	
-	inline v8::Local<v8::Object> Global() const {
-		return PersistentToLocal(Isolate(), _global);
-	}
-	
-	inline void SetGlobal(v8::Local<v8::Object> global) {
-		_global.Reset(Isolate(), global);
-	}
-	
-	inline v8::Local<v8::ObjectTemplate> GlobalTemplate() const {
-		return PersistentToLocal(Isolate(), _global_tpl);
-	}
-
-	inline void SetGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl) {
-		_global_tpl.Reset(Isolate(), global_tpl);
-	}
-	
-	inline v8::Local<v8::FunctionTemplate> GetConstructor(size_t idx) const {
-		return PersistentToLocal(Isolate(), _ctors[idx]);
-	}
-	
-	inline void SetConstructor(size_t idx, v8::Local<v8::FunctionTemplate> func_tpl) {
-		_ctors[idx].Reset(Isolate(), func_tpl);
-	}
-
-private:
+	// Parse errors from a TryCatch into lastScriptError 
 	bool ParseErrors(v8::TryCatch *tryCatch);
 
+	// --
+	v8::Isolate * Isolate() const;
+	v8::Local<v8::Context> Context() const;
+	v8::Local<v8::Object> Global() const;
+	v8::Local<v8::ObjectTemplate> GlobalTemplate() const;
+	v8::Local<v8::FunctionTemplate> GetConstructor(const std::string& key) const;
+
+	void SetGlobal(v8::Local<v8::Object> global);
+	void SetGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl);
+	bool SetConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl);
+
+	// --
+	template<class T>
+	IScriptWrapped<T> * Wrap(const std::string& constructor_name, T *obj);
+
+	template<class T>
+	T * Unwrap(v8::Local<v8::Value> value) const;
+
+private:
 	static int s_count;
 	static std::unique_ptr<v8::Platform> s_platform;
 	
@@ -77,11 +57,59 @@ private:
 	v8::Persistent<v8::Context> _context;
 	v8::Persistent<v8::Object> _global;
 	v8::Persistent<v8::ObjectTemplate> _global_tpl;
-	v8::Persistent<v8::FunctionTemplate> _ctors[CONSTRUCTOR_COUNT];
+	std::unordered_map<std::string, v8::Global<v8::FunctionTemplate>> _constructorMap;
 };
 
+inline v8::Isolate * V8ScriptEnv::Isolate() const
+{
+	return _isolate;
+}
+
+inline v8::Local<v8::Context> V8ScriptEnv::Context() const {
+	return PersistentToLocal(Isolate(), _context);
+}
+
+inline v8::Local<v8::Object> V8ScriptEnv::Global() const
+{
+	return PersistentToLocal(Isolate(), _global);
+}
+
+inline void V8ScriptEnv::SetGlobal(v8::Local<v8::Object> global)
+{
+	_global.Reset(Isolate(), global);
+}
+
+inline v8::Local<v8::ObjectTemplate> V8ScriptEnv::GlobalTemplate() const
+{
+	return PersistentToLocal(Isolate(), _global_tpl);
+}
+
+inline void V8ScriptEnv::SetGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl)
+{
+	_global_tpl.Reset(Isolate(), global_tpl);
+}
+
+inline v8::Local<v8::FunctionTemplate> V8ScriptEnv::GetConstructor(const std::string& key) const
+{
+	auto it = _constructorMap.find(key);
+	if (it == _constructorMap.end())
+		return v8::Local<v8::FunctionTemplate>();
+
+	return GlobalPersistentToLocal(Isolate(), (*it).second);
+}
+
+inline bool V8ScriptEnv::SetConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl)
+{
+	auto it = _constructorMap.find(key);
+	if (it != _constructorMap.end())
+		return false;
+
+	_constructorMap[key] = v8::Global<v8::FunctionTemplate>(Isolate(), func_tpl);
+	return true;
+}
+
 template<class T>
-IScriptWrapped<T> * V8ScriptEnv::Wrap(size_t idx, T *obj)
+inline IScriptWrapped<T> * V8ScriptEnv::Wrap(const std::string& constructor_name, T *obj)
 {
 	// Fetch the v8 isolate and context
 	v8::Isolate *isolate = Isolate();
@@ -94,18 +122,18 @@ IScriptWrapped<T> * V8ScriptEnv::Wrap(size_t idx, T *obj)
 	v8::Context::Scope context_scope(context);
 
 	// Create an instance for the wrapped object
-	v8::Local<v8::FunctionTemplate> ctor_tpl = GetConstructor(idx);
+	v8::Local<v8::FunctionTemplate> ctor_tpl = GetConstructor(constructor_name);
 	v8::Local<v8::ObjectTemplate> obj_tpl = ctor_tpl->InstanceTemplate();
 	v8::Local<v8::Object> new_instance = obj_tpl->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, obj);
-	
+
 	// TODO(joey): Use unique_ptr for this
 	V8ScriptWrapped<T> *wrapped_object = new V8ScriptWrapped<T>(obj, isolate, new_instance);
 	return wrapped_object;
 }
 
 template<class T>
-T * V8ScriptEnv::Unwrap(v8::Local<v8::Value> value)
+inline T * V8ScriptEnv::Unwrap(v8::Local<v8::Value> value) const
 {
 	T *obj = 0;
 	if (value->IsObject())
@@ -114,6 +142,8 @@ T * V8ScriptEnv::Unwrap(v8::Local<v8::Value> value)
 		if (!handle.IsEmpty())
 			obj = static_cast<T *>(handle.ToLocalChecked()->GetAlignedPointerFromInternalField(0));
 	}
-	
+
 	return obj;
 }
+
+#endif

@@ -12,24 +12,30 @@
 #endif
 
 // -- Constructor: Default Weapons -- //
-TWeapon::TWeapon(const signed char pId) : mModTime(0), mWeaponDefault(pId)
+TWeapon::TWeapon(TServer *pServer, const signed char pId)
+: server(pServer), mModTime(0), mWeaponDefault(pId)
+#ifdef V8NPCSERVER
+, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+#endif
 {
 	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
 }
 
 // -- Constructor: Weapon Script -- //
 TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
-: mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
+: server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
+#ifdef V8NPCSERVER
+, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+#endif
 {
 	// Update Weapon
-	this->updateWeapon(pServer, pImage, pScript, pModTime, pSaveWeapon);
+	this->updateWeapon(pImage, pScript, pModTime, pSaveWeapon);
 }
 
 TWeapon::~TWeapon()
 {
 #ifdef V8NPCSERVER
-	if (_scriptObject)
-		delete _scriptObject;
+	freeScriptResources();
 #endif
 }
 
@@ -41,7 +47,9 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 	// Load File
 	CString fileData;
-	fileData.load(fileName);
+	if (!fileData.load(fileName))
+		return nullptr;
+
 	fileData.removeAllI("\r");
 
 	// Grab some information.
@@ -49,30 +57,31 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	bool has_scriptend = (fileData.find("SCRIPTEND") != -1 ? true : false);
 	bool found_scriptend = false;
 
-	// Parse into lines.
-	std::vector<CString> fileLines = fileData.tokenize("\n");
-	if (fileLines.size() == 0 || fileLines[0].trim() != "GRAWP001")
-		return 0;
+	// Parse header
+	CString headerLine = fileData.readString("\n");
+	if (headerLine != "GRAWP001")
+		return nullptr;
 
 	// Definitions
 	CString weaponImage, weaponName, weaponScript;
 	std::vector<std::pair<CString, CString> > byteCode;
 
 	// Parse File
-	std::vector<CString>::iterator i = fileLines.begin();
-	while (i != fileLines.end())
+	while (fileData.bytesLeft())
 	{
+		CString curLine = fileData.readString("\n");
+
 		// Find Command
-		CString curCommand = i->readString();
+		CString curCommand = curLine.readString();
 
 		// Parse Line
 		if (curCommand == "REALNAME")
-			weaponName = i->readString("");
+			weaponName = curLine.readString("");
 		else if (curCommand == "IMAGE")
-			weaponImage = i->readString("");
+			weaponImage = curLine.readString("");
 		else if (curCommand == "BYTECODE")
 		{
-			CString fname = i->readString("");
+			CString fname = curLine.readString("");
 			CString bytecode;
 			bytecode.load(server->getServerPath() << "weapon_bytecode/" << fname);
 
@@ -81,24 +90,22 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		}
 		else if (curCommand == "SCRIPT")
 		{
-			++i;
-			while (i != fileLines.end())
-			{
-				if (*i == "SCRIPTEND")
+			do {
+				curLine = fileData.readString("\n");
+				if (curLine == "SCRIPTEND")
 				{
 					found_scriptend = true;
 					break;
 				}
-				weaponScript << *i << "\xa7";
-				++i;
-			}
+
+				weaponScript << curLine << "\n";
+			} while (fileData.bytesLeft());
 		}
-		if (i != fileLines.end()) ++i;
 	}
 
 	// Valid Weapon Name?
 	if (weaponName.isEmpty())
-		return 0;
+		return nullptr;
 
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
@@ -119,7 +126,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 }
 
 // -- Function: Save Weapon -- //
-bool TWeapon::saveWeapon(TServer* server)
+bool TWeapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
 	if (this->isDefault() || mWeaponName.isEmpty())
@@ -134,22 +141,22 @@ bool TWeapon::saveWeapon(TServer* server)
 	name.replaceAllI("?", "!");
 	CString filename = server->getServerPath() << "weapons/weapon" << name << ".txt";
 
-	// Format the weapon script.
-	CString script(mWeaponScript);
-	if (script[script.length() - 1] != '\xa7')
-		script << "\xa7";
-	script.replaceAllI("\xa7", "\r\n");
-
 	// Write the File.
 	CString output = "GRAWP001\r\n";
 	output << "REALNAME " << mWeaponName << "\r\n";
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	for (unsigned int i = 0; i < mByteCode.size(); ++i)
 		output << "BYTECODE " << mByteCode[i].first << "\r\n";
-	if (!script.isEmpty())
+	
+	if (!mWeaponScript.isEmpty())
 	{
 		output << "SCRIPT\r\n";
-		output << script;
+		output << mWeaponScript.replaceAll("\n", "\r\n");
+
+		// Append a new line to the end of the script if one doesn't exist.
+		if (mWeaponScript[mWeaponScript.length() - 1] != '\n')
+			output << "\r\n";
+
 		output << "SCRIPTEND\r\n";
 	}
 
@@ -205,60 +212,98 @@ CString TWeapon::getWeaponPacket() const
 }
 
 // -- Function: Update Weapon Image/Script -- //
-void TWeapon::updateWeapon(TServer *pServer, const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
+void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
 #ifdef V8NPCSERVER
-	CScriptEngine *scriptEngine = pServer->getScriptEngine();
-
 	// Clear script function
-	if (!mScriptServer.isEmpty())
-		scriptEngine->ClearCache(CScriptEngine::WrapScript<TNPC>(mScriptServer.text()));
+	if (!mScriptServer.isEmpty() || _scriptExecutionContext.hasActions())
+		freeScriptResources();
 #endif
 
+	// Replace '\xa7' line endings with "\n"
+	CString fixedScript;
+	if (pCode.find("\xa7") != -1)
+		fixedScript = pCode.replaceAll("\xa7", "\n");
+	else
+		fixedScript = pCode;
+
 	// Copy Data
-	this->setFullScript(pCode);
+	this->setFullScript(fixedScript);
 	this->setImage(pImage);
 	this->setModTime(pModTime == 0 ? time(0) : pModTime);
 	
-	// Remove Comments
-	CString script = removeComments(pCode, "\xa7");
-
-	// Trim Code
-	std::vector<CString> code = script.tokenize("\xa7");
-	script.clear();
-	for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-		script << (*i).trim() << "\xa7";
-	
-	// Parse Text
 #ifdef V8NPCSERVER
-	setServerScript(script.readString("//#CLIENTSIDE").replaceAll("\xa7", "\n"));
-	setClientScript(script.readString(""));
+	// Separate client and server code
+	setServerScript(fixedScript.readString("//#CLIENTSIDE"));
+	setClientScript(fixedScript.readString(""));
 
 	// Compile and execute the script.
+	CScriptEngine *scriptEngine = server->getScriptEngine();
 	bool executed = scriptEngine->ExecuteWeapon(this);
-	if (executed) {
-		V8ENV_D("SCRIPT COMPILED\n");
+	if (executed)
+	{
+		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-		scriptEngine->QueueAction(scriptAction);
+		_scriptExecutionContext.addAction(scriptAction);
+		scriptEngine->RegisterWeaponUpdate(this);
 	}
 	else
-		V8ENV_D("Could not compile weapon script\n");
+		SCRIPTENV_D("Could not compile weapon script\n");
 #else
-	setClientScript(script);
+	setClientScript(fixedScript);
 #endif
 
 	// Save Weapon
 	if (pSaveWeapon)
-		saveWeapon(pServer);
+		saveWeapon();
+}
+
+void TWeapon::setClientScript(const CString& pScript)
+{
+	// Remove any comments in the code
+	CString formattedScript = removeComments(pScript);
+	mScriptClient.clear(formattedScript.length());
+
+	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
+	std::vector<CString> code = formattedScript.tokenize("\n");
+	for (auto it = code.begin(); it != code.end(); ++it)
+		mScriptClient << (*it).trim() << "\xa7";
 }
 
 #ifdef V8NPCSERVER
-void TWeapon::queueWeaponAction(TServer *server, TPlayer *player, const std::string& args)
+
+void TWeapon::freeScriptResources()
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+
+	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
+
+	// Clear any queued actions
+	if (_scriptExecutionContext.hasActions())
+	{
+		// Unregister npc from any queued event calls
+		scriptEngine->UnregisterWeaponUpdate(this);
+
+		// Reset execution
+		_scriptExecutionContext.resetExecution();
+	}
+
+	// Delete script object
+	if (_scriptObject)
+	{
+		delete _scriptObject;
+		_scriptObject = nullptr;
+	}
+}
+
+void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
-	scriptEngine->QueueAction(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
+	scriptEngine->RegisterWeaponUpdate(this);
 }
+
 #endif

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef SCRIPTARGUMENTS_H
+#define SCRIPTARGUMENTS_H
+
 #include <string>
 #include <tuple>
 #include "ScriptWrapped.h"
@@ -33,7 +36,7 @@ public:
 	IScriptArguments() = default;
 	virtual ~IScriptArguments() = default;
 	
-	virtual void Invoke(IScriptFunction *func) = 0;
+	virtual bool Invoke(IScriptFunction *func, bool catchExceptions = false) = 0;
 };
 
 template <typename... Ts>
@@ -52,7 +55,7 @@ public:
 		}
 	}
 
-	virtual void Invoke(IScriptFunction *func) = 0;
+	virtual bool Invoke(IScriptFunction *func, bool catchExceptions = false) = 0;
 
 	inline size_t Count() const {
 		return Argc;
@@ -72,7 +75,7 @@ private:
 	template <std::size_t...Is>
 	inline void invalidate_args(std::index_sequence<Is...>) {
 		if constexpr (sizeof...(Is) > 0) {
-			int unused[] = { ((detail::ValidateBinding(std::get<Is>(_tuple))), void(), 0)... };
+			int unused[] = { ((detail::InvalidateBinding(std::get<Is>(_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}
@@ -85,3 +88,5 @@ private:
 		}
 	}
 };
+
+#endif

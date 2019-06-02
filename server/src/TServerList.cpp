@@ -82,12 +82,9 @@ bool TServerList::onRecv()
 	unsigned int size = 0;
 	char* data = sock.getData(&size);
 	if (size != 0)
-	{
 		rBuffer.write(data, size);
 
-		if (!main())
-			connectServer();
-	}
+	main();
 
 	return true;
 }
@@ -407,7 +404,7 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 	unsigned short playerID = pPacket.readGUShort();
 	CString nickname = pPacket.readChars(pPacket.readGUChar());
 
-	TPlayer* p = server->getPlayer(playerID);
+	TPlayer* p = server->getPlayer(playerID, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		// Create the prop packet.
@@ -450,15 +447,16 @@ void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
 
 void TServerList::msgSVI_PROFILE(CString& pPacket)
 {
-	TPlayer* p1 = server->getPlayer(pPacket.readGUShort());
-	CString target = pPacket.readChars(pPacket.readGUChar());
-	TPlayer* p2 = server->getPlayer(target, false);
-	if (p1 == 0) return;
+	unsigned short requestPlayer = pPacket.readGUShort();
+	CString targetPlayer = pPacket.readChars(pPacket.readGUChar());
+
+	TPlayer* p1 = server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
+	if (p1 == 0)
+		return;
+
+	TPlayer *p2 = server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p2 == 0)
-	{
-		p2 = server->getRC(target);
-		if (p2 == 0) return;
-	}
+		return;
 
 	// Start the profile string.
 	CString profile;
@@ -502,7 +500,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 		if (canSpin) val = "true"; else val = "false";
 		profile >> (char)val.length() << val;
 	}
-	else
+	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
 		CString profileVars = server->getSettings()->getStr("profilevars");
@@ -602,7 +600,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	CString message = pPacket.readString("");
 
 	// Get the player.
-	TPlayer* player = server->getPlayer(id);
+	TPlayer* player = server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == 0) return;
 
 	// Overwrite the player's account name with the one from the gserver.
@@ -741,7 +739,8 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 		server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", server->getName().text(), fileName.text());
 
 	// Set the player props.
-	TPlayer* p = server->getPlayer(pid);
+	// TODO(joey): Confirm if we can use ANYCLIENT instead
+	TPlayer* p = server->getPlayer(pid, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		switch (type)
@@ -776,12 +775,9 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 	int pid = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
 
-	TPlayer* p = server->getPlayer(pid);
-	if (p && p->isClient())
-	{
-		if (p->getVersion() >= CLVER_2_1)
-			p->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
-	}
+	TPlayer *player = server->getPlayer(pid, PLTYPE_ANYCLIENT);
+	if (player && player->getVersion() >= CLVER_2_1)
+		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 }
 
 void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
@@ -812,6 +808,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
         serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
+		// TODO(joey): This is spamming clients non-stop!!!!!
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
 		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
 		serverIds.clear();
@@ -819,21 +816,19 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverPCount.clear();
 	}
 
-	TPlayer* p = server->getPlayer(pid);
-	if (p && (p->isClient() || p->isRC()))
+	TPlayer *player = server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	if (player)
 	{
 		if (type == "pmserverplayers")
 		{
-
-			p->updatePMPlayers(option, params);
+			player->updatePMPlayers(option, params);
 		}
 		else
 		{
 			server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
-			if ((p->isClient() && p->getVersion() >= CLVER_4_0211) || (p->isRC() && p->getVersion() > RCVER_1_1) )
-				p->sendPacket(CString() >> char(PLO_SERVERTEXT) << message);
-			
+			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
+				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
 		}
 	}
 }
@@ -857,8 +852,8 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 
-	TPlayer* p = server->getPlayer(account2);
-	if (p && (p->isClient() || p->isRC()))
+	TPlayer *p = server->getPlayer(account2, PLTYPE_ANYPLAYER);
+	if (p)
 	{
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);

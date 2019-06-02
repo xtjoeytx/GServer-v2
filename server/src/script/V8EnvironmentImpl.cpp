@@ -11,6 +11,18 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptWrapped.h"
 
+// PROPERTY: env.global
+void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+
+	info.GetReturnValue().Set(env->Global());
+}
+
 void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -18,7 +30,7 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1)
 
-	V8ENV_D("Begin Environment::reportException()\n");
+	SCRIPTENV_D("Begin Environment::reportException()\n");
 
 	if (args[0]->IsString())
 	{
@@ -27,15 +39,12 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 		// Unwrap Object
 		TServer *serverObject = UnwrapObject<TServer>(args.This());
 
-		// Message
-		CString message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
-
-		// Report exception to NC / file
-		serverObject->sendToNC(message);
-		serverObject->getScriptLog().out(message << "\n");
+		// Report exception to server
+		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
+		serverObject->reportScriptException(message);
 	}
 
-	V8ENV_D("End Environment::reportException()\n\n");
+	SCRIPTENV_D("End Environment::reportException()\n\n");
 }
 
 void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -45,11 +54,11 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2)
 
-	V8ENV_D("Begin Environment::setCallBack()\n");
+	SCRIPTENV_D("Begin Environment::setCallBack()\n");
 
 	if (args[0]->IsString() && args[1]->IsFunction())
 	{
-		V8ENV_D(" - Set callback for %s with: %s\n",
+		SCRIPTENV_D(" - Set callback for %s with: %s\n",
 				*v8::String::Utf8Value(isolate, args[0]->ToString(isolate)),
 				*v8::String::Utf8Value(isolate, args[1]->ToString(isolate)));
 
@@ -67,7 +76,7 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 		scriptEngine->setCallBack(eventName, cbFuncWrapper);
 	}
 
-	V8ENV_D("End Environment::setCallBack()\n\n");
+	SCRIPTENV_D("End Environment::setCallBack()\n\n");
 }
 
 void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -77,7 +86,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2)
 
-	V8ENV_D("Begin Environment::setNpcEvents()\n");
+	SCRIPTENV_D("Begin Environment::setNpcEvents()\n");
 
 	if (args[0]->IsObject() && args[1]->IsInt32())
 	{
@@ -92,7 +101,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 		}
 	}
 
-	V8ENV_D("End Environment::setNpcEvents()\n\n");
+	SCRIPTENV_D("End Environment::setNpcEvents()\n\n");
 }
 
 void bindClass_Environment(CScriptEngine *scriptEngine)
@@ -113,13 +122,16 @@ void bindClass_Environment(CScriptEngine *scriptEngine)
 	environment_ctor->SetClassName(envStr);
 	environment_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
+	// Properties
+	environment_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "global"), Environment_GetObject_Global, nullptr, engine_ref);
+
 	// Method functions
 	environment_proto->Set(v8::String::NewFromUtf8(isolate, "reportException"), v8::FunctionTemplate::New(isolate, Environment_ReportException, engine_ref));
 	environment_proto->Set(v8::String::NewFromUtf8(isolate, "setCallBack"), v8::FunctionTemplate::New(isolate, Environment_SetCallBack, engine_ref));
 	environment_proto->Set(v8::String::NewFromUtf8(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Environment_SetNpcEvents, engine_ref));
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<IScriptEnv>::result, environment_ctor);
+	env->SetConstructor("environment", environment_ctor);
 }
 
 #endif

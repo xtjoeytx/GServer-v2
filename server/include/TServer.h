@@ -7,13 +7,14 @@
 #include <set>
 #include <thread>
 #include <chrono>
+#include <climits>
 #ifdef V8NPCSERVER
 #include <string>
 #include <unordered_set>
 #endif
 
+#include "IEnums.h"
 #include "CString.h"
-
 #include "CLog.h"
 #include "CFileSystem.h"
 #include "CSettings.h"
@@ -101,6 +102,10 @@ class TServer : public CSocketStub
 		void saveWeapons();
 #ifdef V8NPCSERVER
 		void saveNpcs();
+
+		std::vector<std::pair<double, std::string>> calculateNpcStats();
+		void reportScriptException(const ScriptRunError& error);
+		void reportScriptException(const std::string& error_message);
 #endif
 
 		// Get functions.
@@ -135,23 +140,30 @@ class TServer : public CSocketStub
 		std::vector<CString>* getStatusList()			{ return &statusList; }
 		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
-		
+
+#ifdef V8NPCSERVER
+		CScriptEngine * getScriptEngine() { return &mScriptEngine; }
+		int getNCPort() const { return mNCPort; }
+		TPlayer * getNPCServer() const { return mNpcServer; }
+#endif
+
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
 		TLevel* getLevel(const CString& pLevel);
 		TMap* getMap(const CString& name) const;
 		TMap* getMap(const TLevel* pLevel) const;
 		TNPC* getNPC(const unsigned int id) const;
-		TPlayer* getPlayer(const unsigned short id, bool includeRC = true) const;
-		TPlayer* getPlayer(const CString& account, bool includeRC = true) const;
-		TPlayer* getRC(const unsigned short id, bool includePlayer = false) const;
-		TPlayer* getRC(const CString& account, bool includePlayer = false) const;
+		TPlayer* getPlayer(const unsigned short id, int type) const;
+		TPlayer* getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
 		void assignNPCName(TNPC *npc, const std::string& name);
 		void removeNPCName(TNPC *npc);
 		TNPC* getNPCByName(const std::string& name) const;
 		TNPC* addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
+
+		void handlePM(TPlayer *player, const CString& message);
+		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
 		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
@@ -159,11 +171,9 @@ class TServer : public CSocketStub
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
 		std::string getClass(const std::string& className) const;
-		//void saveClass(const std::string& className) const;
 		void updateClass(const std::string& className, const std::string& classCode);
-		bool deletePlayer(TPlayer* player);
 		bool isIpBanned(const CString& ip);
-		void playerLoggedIn(TPlayer *player);
+		void logToFile(const std::string& fileName, const std::string& message);
 
 		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
 		bool setFlag(CString pFlag, bool pSendToPlayers = true);
@@ -179,6 +189,12 @@ class TServer : public CSocketStub
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
+		// Player Management
+		unsigned int getFreePlayerId();
+		bool addPlayer(TPlayer *player, unsigned int id = UINT_MAX);
+		bool deletePlayer(TPlayer* player);
+		void playerLoggedIn(TPlayer *player);
+
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);
 		CString TS_Translate(const CString& pLanguage, const CString& pKey);
@@ -189,12 +205,7 @@ class TServer : public CSocketStub
 		TWeapon *getWeapon(const CString& name);
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
-		void NC_UpdateWeapon(TWeapon *pWeapon);
-
-#ifdef V8NPCSERVER
-		CScriptEngine * getScriptEngine()	{ return &mScriptEngine; }
-		int getNCPort() const 				{ return mNCPort; }
-#endif
+		void updateWeaponForPlayers(TWeapon *pWeapon);
 
 	private:
 		bool doTimedEvents();
@@ -233,9 +244,12 @@ class TServer : public CSocketStub
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 #ifdef V8NPCSERVER
 		std::chrono::high_resolution_clock::time_point lastScriptTimer;
+		std::chrono::nanoseconds accumulator;
 
 		CScriptEngine mScriptEngine;
 		int mNCPort;
+		TPlayer *mNpcServer;
+		TNPC *mPmHandlerNpc;
 #endif
 	
 #ifdef UPNP
@@ -283,12 +297,18 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 
 inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
 {
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+	int len = pMessage.find("\n");
+	if (len == -1)
+		len = pMessage.length();
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
 }
 
 inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
 {
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage, pPlayer);
+	int len = pMessage.find("\n");
+	if (len == -1)
+		len = pMessage.length();
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
 }
 
 #endif

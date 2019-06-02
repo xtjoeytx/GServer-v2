@@ -8,10 +8,8 @@
 #ifdef V8NPCSERVER
 #include <unordered_map>
 #include <unordered_set>
-#include "ScriptWrapped.h"
-
-class ScriptAction;
-
+#include "ScriptBindings.h"
+#include "ScriptExecutionContext.h"
 #endif
 
 enum
@@ -140,6 +138,7 @@ enum
 	NPCEVENTFLAG_PLAYERTOUCHSME	= (int)(1 << 5),
 	NPCEVENTFLAG_PLAYERLOGIN	= (int)(1 << 6),
 	NPCEVENTFLAG_PLAYERLOGOUT	= (int)(1 << 7),
+	NPCEVENTFLAG_NPCWARPED		= (int)(1 << 8),
 };
 #endif
 
@@ -170,11 +169,17 @@ class TNPC
 		void setRupees(int val)					{ rupees = val; }
 		void setName(const std::string& name)	{ npcName = name; }
 		void setNickname(const CString& nick)	{ nickName = nick; }
-		void setScripter(const CString& name)	{ scripterName = name; }
+		void setScripter(const CString& name)	{ npcScripter = name; }
+		void setType(const CString& type)		{ npcType = type; }
+		void setBlockingFlags(int val)			{ blockFlags = val; }
+		void setVisibleFlags(int val)			{ visFlags = val; }
+		void setColorId(unsigned int idx, unsigned char val);
+		void setSave(unsigned int idx, unsigned char val);
+		void setPropModTime(unsigned char pid, time_t time);
 
 		// get functions
 		unsigned int getId() const				{ return id; }
-		TLevel* getLevel() const				{ return level; }
+		bool isLevelNPC() const					{ return levelNPC; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
 		int getPixelX() const					{ return x2; }
@@ -185,52 +190,74 @@ class TNPC
 		int getBlockFlags() const 				{ return blockFlags; }
 		int getVisibleFlags() const 			{ return visFlags; }
 		int getTimeout() const 					{ return timeout; }
+
+		const CString& getBodyImage() const		{ return bodyImage; }
+		const CString& getHeadImage() const		{ return headImage; }
+		const CString& getHorseImage() const	{ return horseImage; }
+		const CString& getShieldImage() const	{ return shieldImage; }
+		const CString& getSwordImage() const	{ return swordImage; }
 		const CString& getImage() const			{ return image; }
 		const CString& getNickname() const 		{ return nickName; }
 		const std::string& getName() const		{ return npcName; }
-		const CString& getWeaponName() const	{ return weaponName; }
+		const CString& getType() const			{ return npcType; }
 		const CString& getClientScript() const	{ return clientScript; }
 		const CString& getServerScript() const	{ return serverScript; }
 		const CString& getScriptCode() const	{ return originalScript; }
-		const CString& getScripter() const		{ return scripterName; }
+		const CString& getScripter() const		{ return npcScripter; }
+		const CString& getWeaponName() const	{ return weaponName; }
+		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
-
-		bool isLevelNPC() const					{ return levelNPC; }
+		unsigned char getColorId(unsigned int idx) const;
+		unsigned char getSave(unsigned int idx) const;
 
 #ifdef V8NPCSERVER
+		// TODO(joey): clean this all up, some of this stuff can be taken out of the v8npcserver definition
+		void addClassCode(const std::string& className, const std::string& classCode);
 		void setTimeout(int val);
-		void updatePropModTime(unsigned char propId, time_t modifyTime);
+		void updatePropModTime(unsigned char propId);
 
 		//
 		bool hasScriptEvent(int flag) const;
 		void setScriptEvents(int mask);
 
+		ScriptExecutionContext * getExecutionContext();
 		IScriptWrapped<TNPC> * getScriptObject() const;
 		void setScriptObject(IScriptWrapped<TNPC> *object);
 
-		// -- triggeractions
-		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
-		void queueNpcTrigger(const std::string& action, const std::string& data);
+		// -- flags
+		CString getFlag(const std::string& pFlagName) const;
+		void setFlag(const std::string& pFlagName, const CString& pFlagValue);
+		void deleteFlag(const std::string& pFlagName);
+		std::unordered_map<std::string, CString>* getFlagList() { return &flagList; }
 
-		//
-		void freeScriptResources();
-		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
-		bool runScriptTimer();
-		void runScriptEvents();
+		bool deleteNPC();
+		void reloadNPC();
+		void resetNPC();
 
+		bool isWarpable() const { return canWarp; }
 		void allowNpcWarping(bool canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
-		void resetNPC();
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
 		// file
 		bool getPersist() const			{ return persistNpc; }
 		void setPersist(bool persist)	{ persistNpc = persist; }
 		bool loadNPC(const CString& fileName);
-		void saveNPC() const;
+		void saveNPC();
+
+		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
+		void queueNpcTrigger(const std::string& action, const std::string& data);
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
+
+		void registerNpcUpdates();
+		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
+
+		bool runScriptTimer();
+		bool runScriptEvents();
+
+		CString getVariableDump();
 #endif
 
 	private:
@@ -252,12 +279,16 @@ class TNPC
 		TLevel* level;
 		TServer* server;
 
-		CString npcType, scripterName;
+		CString npcScripter, npcType;
 		std::string npcName;
 		int timeout;
 		int width, height;
 
 #ifdef V8NPCSERVER
+		void testTouch();
+		void freeScriptResources();
+
+		std::map<std::string, std::string> classMap;
 		std::unordered_set<int> propModified;
 
 		// Defaults
@@ -266,14 +297,14 @@ class TNPC
 
 		// npc-server
 		bool canWarp;
+		bool npcDeleteRequested;
 		bool persistNpc;
 		std::unordered_map<std::string, CString> flagList;
 
 		int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
-		std::vector<ScriptAction *> _actions;
+		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
-		void testTouch();
 #endif
 };
 
@@ -284,21 +315,53 @@ time_t TNPC::getPropModTime(unsigned char pId)
 	return 0;
 }
 
+inline
+void TNPC::setPropModTime(unsigned char pId, time_t time)
+{
+	if (pId < NPCPROP_COUNT)
+		modTime[pId] = time;
+}
+
+inline
+unsigned char TNPC::getColorId(unsigned int idx) const
+{
+	if (idx < 5) return colors[idx];
+	return 0;
+}
+
+inline
+void TNPC::setColorId(unsigned int idx, unsigned char val)
+{
+	if (idx < 5) colors[idx] = val;
+}
+
+inline
+unsigned char TNPC::getSave(unsigned int idx) const
+{
+	if (idx < 10) return saves[idx];
+	return 0;
+}
+
+inline
+void TNPC::setSave(unsigned int idx, unsigned char val)
+{
+	if (idx < 10) saves[idx] = val;
+}
+
 #ifdef V8NPCSERVER
 
-inline void TNPC::updatePropModTime(unsigned char propId, time_t modifyTime)
+inline void TNPC::updatePropModTime(unsigned char propId)
 {
-	if (propId < NPCPROP_COUNT)
-	{
-		modTime[propId] = modifyTime;
+	if (propId < NPCPROP_COUNT) {
 		propModified.insert(propId);
+		registerNpcUpdates();
 	}
 }
 
 inline void TNPC::allowNpcWarping(bool canWarp)
 {
 	if (!isLevelNPC())
-		canWarp = canWarp;
+		this->canWarp = canWarp;
 }
 
 /**
@@ -312,12 +375,34 @@ inline void TNPC::setScriptEvents(int mask) {
 	_scriptEventsMask = mask;
 }
 
+inline ScriptExecutionContext * TNPC::getExecutionContext() {
+	return &_scriptExecutionContext;
+}
+
 inline IScriptWrapped<TNPC> * TNPC::getScriptObject() const {
 	return _scriptObject;
 }
 
 inline void TNPC::setScriptObject(IScriptWrapped<TNPC> *object) {
 	_scriptObject = object;
+}
+
+inline CString TNPC::getFlag(const std::string& pFlagName) const
+{
+	auto it = flagList.find(pFlagName);
+	if (it != flagList.end())
+		return it->second;
+	return "";
+}
+
+inline void TNPC::setFlag(const std::string & pFlagName, const CString & pFlagValue)
+{
+	flagList[pFlagName] = pFlagValue;
+}
+
+inline void TNPC::deleteFlag(const std::string& pFlagName)
+{
+	flagList.erase(pFlagName);
 }
 
 // TODO(joey): hm
@@ -329,10 +414,17 @@ inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, 
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	ScriptAction *scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
 
-	_actions.push_back(scriptAction);
+	_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)
 		scriptEngine->RegisterNpcUpdate(this);
 }
+
+inline void TNPC::registerNpcUpdates()
+{
+	CScriptEngine *scriptEngine = server->getScriptEngine();
+	scriptEngine->RegisterNpcUpdate(this);
+}
+
 #endif
 
 #endif
