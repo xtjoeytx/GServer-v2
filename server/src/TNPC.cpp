@@ -701,7 +701,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 			default:
 			{
-				printf("NPC %d (%.2f, %.2f): ", id, x, y);
+				printf("NPC %ud (%.2f, %.2f): ", id, x, y);
 				printf("Unknown prop: %ud, readPos: %d\n", propId, pProps.readPos());
 				for (int i = 0; i < pProps.length(); ++i)
 					printf("%02x ", (unsigned char)pProps[i]);
@@ -1050,7 +1050,7 @@ CString TNPC::getVariableDump()
 			{
 				char value = prop.readGUChar();
 				npcDump << npcNameStr << "." << propNames[propId] << ": ";
-				npcDump << (value & NPCVISFLAG_VISIBLE ? "visible" : "hidden");
+				npcDump << ((value & NPCVISFLAG_VISIBLE) ? "visible" : "hidden");
 				if (value & NPCVISFLAG_DRAWOVERPLAYER)
 					npcDump << ", drawoverplayer";
 				if (value & NPCVISFLAG_DRAWUNDERPLAYER)
@@ -1158,7 +1158,7 @@ CString TNPC::getVariableDump()
 			case NPCPROP_Y2:
 			{
 				short pos = prop.readGUShort();
-				pos = (pos & 0x0001 ? -(pos >> 1) : pos >> 1);
+				pos = ((pos & 0x0001) ? -(pos >> 1) : pos >> 1);
 				npcDump << npcNameStr << "." << propNames[propId] << ": " << CString((double)pos / 16.0) << "\n";
 				break;
 			}
@@ -1199,7 +1199,7 @@ void TNPC::reloadNPC()
 
 void TNPC::resetNPC()
 {
-	// TODO(joey): reset script execution, clear flags.. may be better to just delete the npc and readd?
+	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
 	setScriptCode(originalScript);
 
 	canWarp = false;

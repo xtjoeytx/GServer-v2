@@ -158,7 +158,7 @@ void Server_Function_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
 // PROPERTY: server.timevar
 void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	TServer *serverObject = UnwrapObject<TServer>(info.This());
+	V8ENV_SAFE_UNWRAP(info, TServer, serverObject);
 	
 	unsigned int timevar = serverObject->getNWTime();
 	info.GetReturnValue().Set(timevar);
@@ -167,8 +167,6 @@ void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 // PROPERTY: server.timevar2
 void Server_Get_TimeVar2(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	TServer *serverObject = UnwrapObject<TServer>(info.This());
-
 	unsigned int timevar = (unsigned int)time(0);
 	info.GetReturnValue().Set(timevar);
 }
