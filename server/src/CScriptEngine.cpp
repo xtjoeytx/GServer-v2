@@ -15,7 +15,8 @@ extern void bindClass_Server(CScriptEngine *scriptEngine);
 extern void bindClass_Weapon(CScriptEngine *scriptEngine);
 
 CScriptEngine::CScriptEngine(TServer *server)
-	: _server(server), _env(nullptr), _bootstrapFunction(0), _environmentObject(0), _serverObject(0)
+	: _server(server), _env(nullptr), _bootstrapFunction(nullptr), _environmentObject(nullptr), _serverObject(nullptr)
+	, _scriptIsRunning(false), _scriptWatcherRunning(false), _scriptWatcherThread()
 {
 
 }
@@ -73,8 +74,38 @@ bool CScriptEngine::Initialize()
 		args->Invoke(_bootstrapFunction);
 		delete args;
 	});
+
+	_scriptWatcherRunning.store(true);
+	_scriptWatcherThread = std::thread(&CScriptEngine::ScriptWatcher, this);
 	
 	return true;
+}
+
+void CScriptEngine::ScriptWatcher()
+{
+	const std::chrono::milliseconds sleepTime(50);
+
+	while (_scriptWatcherRunning.load())
+	{
+		if (_scriptIsRunning.load())
+		{
+			auto time_now = std::chrono::high_resolution_clock::now();
+			std::chrono::milliseconds time_diff;
+			{
+				std::lock_guard<std::mutex> guard(_scriptWatcherLock);
+				time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - _scriptStartTime);
+			}
+
+			if (time_diff.count() >= 500) {
+				_env->TerminateExecution();
+				_scriptIsRunning.store(false);
+				//printf("Killed execution for running too long!\n");
+			}
+			else if (time_diff.count() < 450)
+				std::this_thread::sleep_for(sleepTime);
+		}
+		else std::this_thread::sleep_for(sleepTime);
+	}
 }
 
 void CScriptEngine::Cleanup(bool shutDown)
@@ -83,6 +114,11 @@ void CScriptEngine::Cleanup(bool shutDown)
 		return;
 	}
 
+	// Kill script watcher
+	_scriptWatcherRunning.store(false);
+	_scriptWatcherThread.join();
+
+	// Clear any registered scripts
 	_updateNpcs.clear();
 	_updateNpcsTimer.clear();
 	_updateWeapons.clear();

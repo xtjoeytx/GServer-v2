@@ -50,7 +50,7 @@ class V8ScriptArguments : public ScriptArguments<Ts...>
 
 public:
 	template <typename... Args>
-	V8ScriptArguments(Args&&... An)
+	explicit V8ScriptArguments(Args&&... An)
 		: ScriptArguments<Ts...>(An...) {
 	}
 
