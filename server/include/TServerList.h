@@ -2,6 +2,7 @@
 #define TSERVERLIST_H
 
 #include <time.h>
+#include "CFileQueue.h"
 #include "CString.h"
 #include "CSocket.h"
 
@@ -27,12 +28,11 @@ class TServerList : public CSocketStub
 		void onUnregister()			{ return; }
 		SOCKET getSocketHandle()	{ return sock.getHandle(); }
 		bool canRecv();
-		bool canSend();
+		bool canSend()				{ return _fileQueue.canSend(); }
 
 		// Constructor - Deconstructor
-		TServerList();
+		TServerList(TServer *server);
 		~TServerList();
-		void setServer(TServer* pServer) { server = pServer; }
 
 		bool doTimedEvents();
 		
@@ -42,7 +42,7 @@ class TServerList : public CSocketStub
 		bool init(const CString& pserverIp, const CString& pServerPort = "14900");
 		bool connectServer();
 		CSocket* getSocket()					{ return &sock; }
-		void sendPacket(CString& pPacket);
+		void sendPacket(CString& pPacket, bool sendNow = false);
 
 		// Send players to the listserver
 		void addPlayer(TPlayer *player);
@@ -89,16 +89,16 @@ class TServerList : public CSocketStub
 		
 	protected:
 		// Packet Functions
-		void parsePacket(CString& pPacket);
-		void sendCompress();
+		bool parsePacket(CString& pPacket);
 
 		// Socket Variables
 		bool nextIsRaw;
 		int rawPacketSize;
+		CFileQueue _fileQueue;
 		CString rBuffer, sBuffer;
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer, lastPlayerSync;
-		TServer *server;
+		TServer *_server;
 };
 
 #endif // TSERVERLIST_H

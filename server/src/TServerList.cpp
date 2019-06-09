@@ -50,13 +50,14 @@ void TServerList::createFunctions()
 /*
 	Constructor - Deconstructor
 */
-TServerList::TServerList()
-: nextIsRaw(false), rawPacketSize(0)
+TServerList::TServerList(TServer *server)
+: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0)
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
 	sock.setDescription("listserver");
 
+	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 	lastData = lastPing = lastTimer = lastPlayerSync = time(0);
 
 	// Create Functions
@@ -83,6 +84,8 @@ bool TServerList::onRecv()
 	char* data = sock.getData(&size);
 	if (size != 0)
 		rBuffer.write(data, size);
+	else if (sock.getState() == SOCKET_STATE_DISCONNECTED)
+		return false;
 
 	main();
 
@@ -91,7 +94,7 @@ bool TServerList::onRecv()
 
 bool TServerList::onSend()
 {
-	sendCompress();
+	_fileQueue.sendCompress();
 	return true;
 }
 
@@ -101,50 +104,37 @@ bool TServerList::canRecv()
 	return true;
 }
 
-bool TServerList::canSend()
-{
-	if (sBuffer.isEmpty()) return false;
-	return true;
-}
-
 bool TServerList::main()
 {
 	if (!getConnected())
 		return false;
 
 	// definitions
-	CString line;
-	int lineEnd;
+	CString unBuffer;
 
-	// do we have enough data to parse?
+	// parse data
 	rBuffer.setRead(0);
-	while (rBuffer.length() != 0)
+	while (rBuffer.length() > 1)
 	{
-		// Read a packet.
-		if (!nextIsRaw)
-		{
-			if ((lineEnd = rBuffer.find("\n")) == -1) break;
-			line = rBuffer.readString("\n");
-			rBuffer.removeI(0, line.length() + 1);	// +1 for \n
-		}
-		else
-		{
-			if (rBuffer.length() < rawPacketSize) break;
-
-			// Read the packet in and remove the terminating \n.
-			line = rBuffer.readChars(rawPacketSize);
-			rBuffer.removeI(0, line.length());
-			line.removeI(line.length() - 1, 1);
-			nextIsRaw = false;
-		}
-
-		// Parse the packet.
-		parsePacket(line);
-
-		// update last data
+		// New data.
 		lastData = time(0);
+
+		// packet length
+		unsigned short len = (unsigned short)rBuffer.readShort();
+		if ((unsigned int)len > (unsigned int)rBuffer.length() - 2)
+			break;
+
+		// decompress packet
+		unBuffer = rBuffer.readChars(len);
+		rBuffer.removeI(0, len + 2);
+		unBuffer.zuncompressI();
+
+		// well theres your buffer
+		if (!parsePacket(unBuffer))
+			return false;
 	}
-	server->getSocketManager()->updateSingle(this, false, true);
+
+	_server->getSocketManager()->updateSingle(this, false, true);
 
 	return getConnected();
 }
@@ -154,6 +144,9 @@ bool TServerList::doTimedEvents()
 	lastTimer = time(0);
 
 	bool isConnected = getConnected();
+	
+	if (!isConnected)
+		connectServer();
 
 	// Send a ping every 30 seconds.
 	if ((int)difftime(lastTimer, lastPing) >= 30 && isConnected)
@@ -162,7 +155,7 @@ bool TServerList::doTimedEvents()
 
 		sendPacket(CString() >> (char)SVO_PING);
 
-		std::vector<TPlayer *> playerListTmp = *server->getPlayerList();
+		std::vector<TPlayer *> playerListTmp = *_server->getPlayerList();
 		for (std::vector<TPlayer *>::const_iterator i = playerListTmp.begin(); i != playerListTmp.end(); ++i)
 		{
 			std::vector<CString> pmServers = (*i)->getPMServerList();
@@ -184,8 +177,8 @@ bool TServerList::doTimedEvents()
 
 		if (isConnected)
 			sendPlayers();
-		else
-			connectServer();
+		//else
+		//	connectServer();
 	}
 
 	return true;
@@ -202,7 +195,7 @@ bool TServerList::init(const CString& pServerIp, const CString& pServerPort)
 
 bool TServerList::connectServer()
 {
-	CSettings* settings = server->getSettings();
+	CSettings* settings = _server->getSettings();
 
 	if (getConnected())
 		return true;
@@ -211,7 +204,7 @@ bool TServerList::connectServer()
 	if (sock.connect() != 0)
 		return false;
 
-	server->getServerLog().out("[%s] :: %s - Connected.\n", server->getName().text(), sock.getDescription());
+	_server->getServerLog().out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
 
 	// Get Some Stuff
 	CString name(settings->getStr("name"));
@@ -228,13 +221,21 @@ bool TServerList::connectServer()
 		localip = sock.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		server->getServerLog().out(CString() << "[" << server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		_server->getServerLog().out(CString() << "[" << _server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 
+	// TODO(joey): Some packets were being queued up from the server before we were connected, and would spam the serverlist
+	// upon connection. Clearing the outgoing buffer upon connection
+	_fileQueue.clearBuffers();
+
+	// Use a new protocol for communicating with the listserver
+	sendPacket(CString() >> (char)SVI_REGISTERV3 << version, true);
+	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
+
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
-	CSettings* adminsettings = server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
+	CSettings* adminsettings = _server->getAdminSettings();
+	//sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
 
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER
@@ -248,7 +249,7 @@ bool TServerList::connectServer()
 		>> (char)localip.length() << localip);
 
 	// Set the level now.
-	if(server->getSettings()->getBool("onlystaff", false))
+	if(_server->getSettings()->getBool("onlystaff", false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 
@@ -259,7 +260,7 @@ bool TServerList::connectServer()
 	return getConnected();
 }
 
-void TServerList::sendPacket(CString& pPacket)
+void TServerList::sendPacket(CString& pPacket, bool sendNow)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -270,7 +271,11 @@ void TServerList::sendPacket(CString& pPacket)
 		pPacket.writeChar('\n');
 
 	// append buffer
-	sBuffer.write(pPacket);
+	_fileQueue.addPacket(pPacket);
+
+	// send buffer now?
+	if (sendNow)
+		_fileQueue.sendCompress();
 }
 
 /*
@@ -300,7 +305,7 @@ void TServerList::sendPlayers()
 	int playerCount = 0;
 
 	// Iterate Playerlist
-	for (std::vector<TPlayer *>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
+	for (std::vector<TPlayer *>::iterator i = _server->getPlayerList()->begin(); i != _server->getPlayerList()->end(); ++i)
 	{
 		TPlayer *pPlayer = (TPlayer*)*i;
 		if (pPlayer == 0)
@@ -325,9 +330,9 @@ void TServerList::sendPlayers()
 
 void TServerList::sendServerHQ()
 {
-	CSettings* adminsettings = server->getAdminSettings();
+	CSettings* adminsettings = _server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
-	if(server->getSettings()->getBool("onlystaff", false))
+	if(_server->getSettings()->getBool("onlystaff", false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 }
@@ -368,35 +373,37 @@ void TServerList::setVersion(const CString& pServerVersion)
 /*
 	Packet-Functions
 */
-void TServerList::parsePacket(CString& pPacket)
+bool TServerList::parsePacket(CString& pPacket)
 {
-	// read id & packet
-	unsigned char id = pPacket.readGUChar();
+	while (pPacket.bytesLeft() > 0)
+	{
+		CString curPacket;
+		if (nextIsRaw)
+		{
+			nextIsRaw = false;
+			curPacket = pPacket.readChars(rawPacketSize);
+		}
+		else curPacket = pPacket.readString("\n");
 
-	// valid packet, call function
-	(*this.*TSLFunc[id])(pPacket);
-}
+		// read id & packet
+		unsigned char id = curPacket.readGUChar();
+		
+		// valid packet, call function
+		(*this.*TSLFunc[id])(curPacket);
+	}
 
-void TServerList::sendCompress()
-{
-	// empty buffer?
-	if (sBuffer.isEmpty())
-		return;
-
-	// send buffer
-	unsigned int size = sBuffer.length();
-	sBuffer.removeI(0, sock.sendData(sBuffer.text(), &size));
+	return true;
 }
 
 void TServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", server->getName().text(), pPacket.readGUChar(), pPacket.text()+1);
+	_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", _server->getName().text(), pPacket.readGUChar(), pPacket.text()+1);
 }
 
 void TServerList::msgSVI_VERIACC(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_VERIGUILD(CString& pPacket)
@@ -404,7 +411,7 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 	unsigned short playerID = pPacket.readGUShort();
 	CString nickname = pPacket.readChars(pPacket.readGUChar());
 
-	TPlayer* p = server->getPlayer(playerID, PLTYPE_ANYPLAYER);
+	TPlayer* p = _server->getPlayer(playerID, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		// Create the prop packet.
@@ -415,29 +422,29 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
 
 		// Tell everybody else the new nickname.
-		server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, p);
+		_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, p);
 	}
 }
 
 void TServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	server->getServerLog().out("[%s] :: You are running an old version of the Graal Reborn gserver.\n"
-		":: An updated version is available online.\n", server->getName().text());
+	_server->getServerLog().out("[%s] :: You are running an old version of the Graal Reborn gserver.\n"
+		":: An updated version is available online.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -450,11 +457,11 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	unsigned short requestPlayer = pPacket.readGUShort();
 	CString targetPlayer = pPacket.readChars(pPacket.readGUChar());
 
-	TPlayer* p1 = server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
+	TPlayer* p1 = _server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
 	if (p1 == 0)
 		return;
 
-	TPlayer *p2 = server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
+	TPlayer *p2 = _server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p2 == 0)
 		return;
 
@@ -503,7 +510,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
-		CString profileVars = server->getSettings()->getStr("profilevars");
+		CString profileVars = _server->getSettings()->getStr("profilevars");
 		if (profileVars.length() != 0)
 		{
 			std::vector<CString> vars = profileVars.tokenize(",");
@@ -589,7 +596,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 
 void TServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	server->getServerLog().out("[%s] %s\n", server->getName().text(), pPacket.readString("").text());
+	_server->getServerLog().out("[%s] %s\n", _server->getName().text(), pPacket.readString("").text());
 }
 
 void TServerList::msgSVI_VERIACC2(CString& pPacket)
@@ -600,7 +607,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	CString message = pPacket.readString("");
 
 	// Get the player.
-	TPlayer* player = server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
+	TPlayer* player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == 0) return;
 
 	// Overwrite the player's account name with the one from the gserver.
@@ -626,17 +633,17 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void TServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", server->getName().text());
+	_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
 void TServerList::msgSVI_PING(CString& pPacket)
@@ -646,8 +653,8 @@ void TServerList::msgSVI_PING(CString& pPacket)
 
 void TServerList::msgSVI_RAWDATA(CString& pPacket)
 {
-	nextIsRaw = true;
-	rawPacketSize = pPacket.readGInt();
+	//nextIsRaw = true;
+	//rawPacketSize = pPacket.readGInt();
 }
 
 void TServerList::msgSVI_FILESTART3(CString& pPacket)
@@ -671,14 +678,14 @@ void TServerList::msgSVI_FILESTART3(CString& pPacket)
 	}
 	filename << pPacket.readChars(pPacket.readGUChar());
 	CFileSystem::fixPathSeparators(&filename);
-	blank.save(CString() << server->getServerPath() << filename);
-	server->getFileSystem()->addFile(filename);
+	blank.save(CString() << _server->getServerPath() << filename);
+	_server->getFileSystem()->addFile(filename);
 }
 
 void TServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
-	CString filename = server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	CString filename = _server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
 	if (filename.length() == 0) return;
 	CString filedata;
 	filedata.load(filename);
@@ -697,29 +704,29 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// If we have folder config enabled, we need to add the file to the appropriate
 	// file system.
-	bool foldersconfig = !server->getSettings()->getBool("nofoldersconfig", false);
+	bool foldersconfig = !_server->getSettings()->getBool("nofoldersconfig", false);
 	CFileSystem* fileSystem = 0;
 	CString typeString;
 	switch (type)
 	{
 		case SVF_HEAD:
 			typeString = "heads/";
-			if (foldersconfig) fileSystem = server->getFileSystem(FS_HEAD);
+			if (foldersconfig) fileSystem = _server->getFileSystem(FS_HEAD);
 			break;
 		case SVF_BODY:
 			typeString = "bodies/";
-			if (foldersconfig) fileSystem = server->getFileSystem(FS_BODY);
+			if (foldersconfig) fileSystem = _server->getFileSystem(FS_BODY);
 			break;
 		case SVF_SWORD:
 			typeString = "swords/";
-			if (foldersconfig) fileSystem = server->getFileSystem(FS_SWORD);
+			if (foldersconfig) fileSystem = _server->getFileSystem(FS_SWORD);
 			break;
 		case SVF_SHIELD:
 			typeString = "shields/";
-			if (foldersconfig) fileSystem = server->getFileSystem(FS_SHIELD);
+			if (foldersconfig) fileSystem = _server->getFileSystem(FS_SHIELD);
 			break;
 	}
-	CString fileName = server->getFileSystem()->find(shortName);
+	CString fileName = _server->getFileSystem()->find(shortName);
 
 	// Add the file to the filesystem.
 	if (fileSystem)
@@ -735,12 +742,12 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 	}
 
 	// Set the file mod time.
-	if (server->getFileSystem()->setModTime(shortName, modTime) == false)
-		server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", server->getName().text(), fileName.text());
+	if (_server->getFileSystem()->setModTime(shortName, modTime) == false)
+		_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", _server->getName().text(), fileName.text());
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
-	TPlayer* p = server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	TPlayer* p = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		switch (type)
@@ -775,7 +782,7 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 	int pid = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
 
-	TPlayer *player = server->getPlayer(pid, PLTYPE_ANYCLIENT);
+	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 }
@@ -809,14 +816,14 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
         serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
 		// TODO(joey): This is spamming clients non-stop!!!!!
-		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
-		server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
+		_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
+		_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
 		serverIds.clear();
 		serverNames.clear();
 		serverPCount.clear();
 	}
 
-	TPlayer *player = server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
 	if (player)
 	{
 		if (type == "pmserverplayers")
@@ -825,7 +832,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		}
 		else
 		{
-			server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
+			_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
 				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
@@ -852,7 +859,7 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 
-	TPlayer *p = server->getPlayer(account2, PLTYPE_ANYPLAYER);
+	TPlayer *p = _server->getPlayer(account2, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		p->addPMServer(servername);

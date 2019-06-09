@@ -28,7 +28,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
-	: running(false), doRestart(false), name(pName), wordFilter(this)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -66,7 +66,6 @@ TServer::TServer(CString pName)
 #endif
 
 	// Announce ourself to other classes.
-	serverlist.setServer(this);
 	for (int i = 0; i < FS_COUNT; ++i)
 		filesystem[i].setServer(this);
 	filesystem_accounts.setServer(this);
