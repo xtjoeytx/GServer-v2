@@ -180,7 +180,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
-	sockManager.registerSocket((CSocketStub*)&serverlist);
 
 	return 0;
 }
@@ -457,9 +456,9 @@ bool TServer::doTimedEvents()
 
 		// TODO(joey): no no no no no no no this is not how it is done! a server will announce to the serverlist a new player
 		// and then it will be added! you can't just spam everything!!!
-		TServerList* list = this->getServerList();
-		if (list)
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+		//TServerList* list = this->getServerList();
+		//if (list)
+		//	list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 	}
 
 	// Stuff that happens every minute.

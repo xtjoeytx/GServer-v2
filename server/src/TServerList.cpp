@@ -57,7 +57,6 @@ TServerList::TServerList(TServer *server)
 	sock.setType(SOCKET_TYPE_CLIENT);
 	sock.setDescription("listserver");
 
-	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 	lastData = lastPing = lastTimer = lastPlayerSync = time(0);
 
 	// Create Functions
@@ -204,6 +203,8 @@ bool TServerList::connectServer()
 	if (sock.connect() != 0)
 		return false;
 
+	_server->getSocketManager()->registerSocket((CSocketStub*)this);
+
 	_server->getServerLog().out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
 
 	// Get Some Stuff
@@ -229,13 +230,14 @@ bool TServerList::connectServer()
 	// upon connection. Clearing the outgoing buffer upon connection
 	_fileQueue.clearBuffers();
 
-	// Use a new protocol for communicating with the listserver
+	// Use the new protocol for communicating with the listserver
+	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 	sendPacket(CString() >> (char)SVI_REGISTERV3 << version, true);
 	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
 	CSettings* adminsettings = _server->getAdminSettings();
-	//sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
 
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER
@@ -283,49 +285,51 @@ void TServerList::sendPacket(CString& pPacket, bool sendNow)
 */
 void TServerList::addPlayer(TPlayer *pPlayer)
 {
-	sendPacket(CString() >> (char)SVO_PLYRADD
-		<< pPlayer->getProp(PLPROP_ACCOUNTNAME)
-		<< pPlayer->getProp(PLPROP_NICKNAME)
-		<< pPlayer->getProp(PLPROP_CURLEVEL)
-		<< pPlayer->getProp(PLPROP_X)
-		<< pPlayer->getProp(PLPROP_Y)
-		<< pPlayer->getProp(PLPROP_ALIGNMENT)
-		>> (char)pPlayer->getType());
+	CString dataPacket;
+	dataPacket >> (char)SVO_PLYRADD >> (short)pPlayer->getId() >> (char)pPlayer->getType();
+	dataPacket >> (char)PLPROP_ACCOUNTNAME << pPlayer->getProp(PLPROP_ACCOUNTNAME);
+	dataPacket >> (char)PLPROP_NICKNAME << pPlayer->getProp(PLPROP_NICKNAME);
+	dataPacket >> (char)PLPROP_CURLEVEL << pPlayer->getProp(PLPROP_CURLEVEL);
+	dataPacket >> (char)PLPROP_X << pPlayer->getProp(PLPROP_X);
+	dataPacket >> (char)PLPROP_Y << pPlayer->getProp(PLPROP_Y);
+	dataPacket >> (char)PLPROP_ALIGNMENT << pPlayer->getProp(PLPROP_ALIGNMENT);
+	sendPacket(dataPacket);
 }
 
 void TServerList::deletePlayer(TPlayer *player)
 {
-	sendPacket(CString() >> (char)SVO_PLYRREM >> (char)player->getType() << player->getAccountName());
+	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
 }
 
 void TServerList::sendPlayers()
 {
-	// Definition
-	CString playerPacket;
-	int playerCount = 0;
+	// joey: OBSOLETE
+	//// Definition
+	//CString playerPacket;
+	//int playerCount = 0;
 
-	// Iterate Playerlist
-	for (std::vector<TPlayer *>::iterator i = _server->getPlayerList()->begin(); i != _server->getPlayerList()->end(); ++i)
-	{
-		TPlayer *pPlayer = (TPlayer*)*i;
-		if (pPlayer == 0)
-			continue;
+	//// Iterate Playerlist
+	//for (std::vector<TPlayer *>::iterator i = _server->getPlayerList()->begin(); i != _server->getPlayerList()->end(); ++i)
+	//{
+	//	TPlayer *pPlayer = (TPlayer*)*i;
+	//	if (pPlayer == 0)
+	//		continue;
 
-		// Add to Count
-		playerCount++;
+	//	// Add to Count
+	//	playerCount++;
 
-		// Write Player-Packet
-		playerPacket << pPlayer->getProp(PLPROP_ACCOUNTNAME)
-		<< pPlayer->getProp(PLPROP_NICKNAME)
-		<< pPlayer->getProp(PLPROP_CURLEVEL)
-		<< pPlayer->getProp(PLPROP_X)
-		<< pPlayer->getProp(PLPROP_Y)
-		<< pPlayer->getProp(PLPROP_ALIGNMENT)
-		>> (char)pPlayer->getType();
-	}
+	//	// Write Player-Packet
+	//	playerPacket << pPlayer->getProp(PLPROP_ACCOUNTNAME)
+	//	<< pPlayer->getProp(PLPROP_NICKNAME)
+	//	<< pPlayer->getProp(PLPROP_CURLEVEL)
+	//	<< pPlayer->getProp(PLPROP_X)
+	//	<< pPlayer->getProp(PLPROP_Y)
+	//	<< pPlayer->getProp(PLPROP_ALIGNMENT)
+	//	>> (char)pPlayer->getType();
+	//}
 
-	// Write Playercount
-	sendPacket(CString() >> (char)SVO_SETPLYR >> (char)playerCount << playerPacket);
+	//// Write Playercount
+	//sendPacket(CString() >> (char)SVO_SETPLYR >> (char)playerCount << playerPacket);
 }
 
 void TServerList::sendServerHQ()
