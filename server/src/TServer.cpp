@@ -1622,7 +1622,7 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	// set flag
 	if (settings.getBool("cropflags", true))
 	{
-		int fixedLength = 223 - 1 - pFlagName.length();
+		int fixedLength = 223 - 1 - (int)pFlagName.length();
 		mServerFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
 	else mServerFlags[pFlagName] = pFlagValue;

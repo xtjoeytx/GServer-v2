@@ -477,14 +477,6 @@ void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	playerObject->setProps(propPackage, true, true, playerObject);
 }
 
-// PROPERTY: player.type
-void Player_GetInt_Type(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
-{
-	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
-
-	info.GetReturnValue().Set(playerObject->isClient() ? 1 : 0);
-}
-
 // PROPERTY: player.x
 void Player_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
