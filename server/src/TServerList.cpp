@@ -148,6 +148,7 @@ bool TServerList::doTimedEvents()
 		connectServer();
 
 	// Send a ping every 30 seconds.
+	/*
 	if ((int)difftime(lastTimer, lastPing) >= 30 && isConnected)
 	{
 		lastPing = lastTimer;
@@ -168,8 +169,10 @@ bool TServerList::doTimedEvents()
 			}
 		}
 	}
+	*/
 
 	// Synchronize players every minute.
+	/*
 	if ((int)difftime(lastTimer, lastPlayerSync) >= 60)
 	{
 		lastPlayerSync = lastTimer;
@@ -179,6 +182,7 @@ bool TServerList::doTimedEvents()
 		//else
 		//	connectServer();
 	}
+	*/
 
 	return true;
 }
@@ -303,33 +307,13 @@ void TServerList::deletePlayer(TPlayer *player)
 
 void TServerList::sendPlayers()
 {
-	// joey: OBSOLETE
-	//// Definition
-	//CString playerPacket;
-	//int playerCount = 0;
+	// Clears the serverlist players
+	sendPacket(CString() >> (char)SVO_SETPLYR);
 
-	//// Iterate Playerlist
-	//for (std::vector<TPlayer *>::iterator i = _server->getPlayerList()->begin(); i != _server->getPlayerList()->end(); ++i)
-	//{
-	//	TPlayer *pPlayer = (TPlayer*)*i;
-	//	if (pPlayer == 0)
-	//		continue;
-
-	//	// Add to Count
-	//	playerCount++;
-
-	//	// Write Player-Packet
-	//	playerPacket << pPlayer->getProp(PLPROP_ACCOUNTNAME)
-	//	<< pPlayer->getProp(PLPROP_NICKNAME)
-	//	<< pPlayer->getProp(PLPROP_CURLEVEL)
-	//	<< pPlayer->getProp(PLPROP_X)
-	//	<< pPlayer->getProp(PLPROP_Y)
-	//	<< pPlayer->getProp(PLPROP_ALIGNMENT)
-	//	>> (char)pPlayer->getType();
-	//}
-
-	//// Write Playercount
-	//sendPacket(CString() >> (char)SVO_SETPLYR >> (char)playerCount << playerPacket);
+	// Adds the players to the serverlist
+	auto playerList = _server->getPlayerList();
+	for (auto it = playerList->begin(); it != playerList->end(); ++it)
+		addPlayer(*it);
 }
 
 void TServerList::sendServerHQ()
@@ -652,7 +636,8 @@ void TServerList::msgSVI_FILEEND2(CString& pPacket)
 
 void TServerList::msgSVI_PING(CString& pPacket)
 {
-	// Sent every 60 seconds.  Do nothing.
+	// When server pings, we pong
+	sendPacket(CString() >> (char)SVO_PING);
 }
 
 void TServerList::msgSVI_RAWDATA(CString& pPacket)
