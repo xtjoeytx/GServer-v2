@@ -4170,11 +4170,13 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 			{
 				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << channel);
+				channelList.insert(channel.text());
 			}
 			else if (option == "part")
 			{
 				CString channel = params[0];
 				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
+				channelList.erase(channel.text());
 			}
 			else if (option == "topic")
 			{
@@ -4201,8 +4203,10 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				}
 				else
 				{
-					// if channel exists, also check for malicious data
-					sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,privmsg," << accountName << "," << channel.gtokenize() << "," << msg.gtokenize());
+					CString sendMsg = "GraalEngine,irc,privmsg,";
+					sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
+					list->handleText(sendMsg);
+					list->sendText(sendMsg);
 				}
 			}
 		}

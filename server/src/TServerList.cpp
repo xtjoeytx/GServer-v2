@@ -41,6 +41,7 @@ void TServerList::createFunctions()
 	TSLFunc[SVI_FILEEND3] = &TServerList::msgSVI_FILEEND3;
 	TSLFunc[SVI_SERVERINFO] = &TServerList::msgSVI_SERVERINFO;
 	TSLFunc[SVI_REQUESTTEXT] = &TServerList::msgSVI_REQUESTTEXT;
+	TSLFunc[SVI_SENDTEXT] = &TServerList::msgSVI_SENDTEXT;
 	TSLFunc[SVI_PMPLAYER] = &TServerList::msgSVI_PMPLAYER;
 
 	// Finished
@@ -236,7 +237,7 @@ bool TServerList::connectServer()
 
 	// Use the new protocol for communicating with the listserver
 	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
-	sendPacket(CString() >> (char)SVI_REGISTERV3 << version, true);
+	sendPacket(CString() >> (char)SVO_REGISTERV3 << version, true);
 	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
@@ -313,7 +314,57 @@ void TServerList::sendPlayers()
 	// Adds the players to the serverlist
 	auto playerList = _server->getPlayerList();
 	for (auto it = playerList->begin(); it != playerList->end(); ++it)
-		addPlayer(*it);
+	{
+		TPlayer *player = *it;
+		if (!player->isNC())
+			addPlayer(*it);
+	}
+}
+
+void TServerList::handleText(const CString& data)
+{
+	std::vector<CString> params = data.guntokenize().tokenize("\n");
+
+	if (params.size() >= 3)
+	{
+		if (params[0] == "GraalEngine")
+		{
+			if (params[1] == "irc")
+			{
+				if (params.size() == 6 && params[2] == "privmsg")
+				{
+					//CString fromPlayer = params[3];
+					std::string channel = params[4].text();
+					//CString message = params[5];
+
+					auto playerList = _server->getPlayerList();
+					for (auto it = playerList->begin(); it != playerList->end(); ++it)
+					{
+						TPlayer *pl = *it;
+						if (pl->inChatChannel(channel))
+							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << data);
+					}
+				}
+			}
+		}
+	}
+}
+
+void TServerList::sendText(const CString& data)
+{
+	CString dataPacket;
+	dataPacket.writeGChar(SVO_SENDTEXT);
+	dataPacket << data;
+	sendPacket(dataPacket);
+}
+
+void TServerList::sendText(const std::vector<CString>& stringList)
+{
+	CString dataPacket;
+	dataPacket.writeGChar(SVO_SENDTEXT);
+	for (auto it = stringList.begin(); it != stringList.end(); ++it)
+		dataPacket << (*it).gtokenize();
+	sendPacket(dataPacket);
 }
 
 void TServerList::sendServerHQ()
@@ -827,6 +878,12 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
 		}
 	}
+}
+
+void TServerList::msgSVI_SENDTEXT(CString& pPacket)
+{
+	CString data = pPacket.readString("");
+	handleText(data);
 }
 
 void TServerList::msgSVI_PMPLAYER(CString& pPacket)

@@ -48,6 +48,9 @@ class TServerList : public CSocketStub
 		void addPlayer(TPlayer *player);
 		void deletePlayer(TPlayer *player);
 		void sendPlayers();
+		void handleText(const CString& data);
+		void sendText(const CString& data);
+		void sendText(const std::vector<CString>& stringList);
 
 		// Send New Server-Info
 		void sendServerHQ();
@@ -85,6 +88,7 @@ class TServerList : public CSocketStub
 		void msgSVI_FILEEND3(CString& pPacket);
 		void msgSVI_SERVERINFO(CString& pPacket);
 		void msgSVI_REQUESTTEXT(CString& pPacket);
+		void msgSVI_SENDTEXT(CString& pPacket);
 		void msgSVI_PMPLAYER(CString& pPacket);
 		
 	protected:
