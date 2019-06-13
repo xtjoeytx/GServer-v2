@@ -122,9 +122,12 @@ class TPlayer : public TAccount, public CSocketStub
 		void enableWeapons();
 		void sendRPGMessage(const CString& message);
 		void sendSignMessage(const CString& message);
+
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool inChatChannel(const std::string& channel) const;
+		bool addChatChannel(const std::string& channel);
+		bool removeChatChannel(const std::string& channel);
 		bool updatePMPlayers(CString& servername, CString& players);
 		bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 		std::vector<CString> getPMServerList();
@@ -361,6 +364,22 @@ inline void TPlayer::setId(int pId)
 inline bool TPlayer::inChatChannel(const std::string& channel) const
 {
 	return channelList.find(channel) != channelList.end();
+}
+
+inline bool TPlayer::addChatChannel(const std::string & channel)
+{
+	//if (channelList.find(channel) == channelList.end())
+	//{
+		channelList.insert(channel);
+		return true;
+	//}
+	return false;
+}
+
+inline bool TPlayer::removeChatChannel(const std::string & channel)
+{
+	channelList.erase(channel);
+	return false;
 }
 
 #endif // TPLAYER_H

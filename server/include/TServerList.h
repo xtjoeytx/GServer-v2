@@ -1,6 +1,7 @@
 #ifndef TSERVERLIST_H
 #define TSERVERLIST_H
 
+#include <map>
 #include <time.h>
 #include "CFileQueue.h"
 #include "CString.h"
@@ -51,6 +52,7 @@ class TServerList : public CSocketStub
 		void handleText(const CString& data);
 		void sendText(const CString& data);
 		void sendText(const std::vector<CString>& stringList);
+		void sendTextForPlayer(TPlayer *player, const CString& data);
 
 		// Send New Server-Info
 		void sendServerHQ();
@@ -103,6 +105,8 @@ class TServerList : public CSocketStub
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer, lastPlayerSync;
 		TServer *_server;
+
+		std::map<std::string, int> serverListCount;
 };
 
 #endif // TSERVERLIST_H

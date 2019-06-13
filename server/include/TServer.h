@@ -153,6 +153,7 @@ class TServer : public CSocketStub
 		TMap* getMap(const CString& name) const;
 		TMap* getMap(const TLevel* pLevel) const;
 		TNPC* getNPC(const unsigned int id) const;
+		TPlayer* getPlayer(const unsigned short id) const;
 		TPlayer* getPlayer(const unsigned short id, int type) const;
 		TPlayer* getPlayer(const CString& account, int type) const;
 

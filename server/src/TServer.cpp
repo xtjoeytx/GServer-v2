@@ -1088,6 +1088,14 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
+TPlayer * TServer::getPlayer(const unsigned short id) const
+{
+	if (id >= (unsigned short)playerIds.size())
+		return nullptr;
+	
+	return playerIds[id];
+}
+
 TPlayer* TServer::getPlayer(const unsigned short id, int type) const
 {
 	if (id >= (unsigned short)playerIds.size())

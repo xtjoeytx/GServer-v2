@@ -288,21 +288,25 @@ void TServerList::sendPacket(CString& pPacket, bool sendNow)
 /*
 	Altering Player Information
 */
-void TServerList::addPlayer(TPlayer *pPlayer)
+void TServerList::addPlayer(TPlayer *player)
 {
+	assert(player != nullptr);
+	
 	CString dataPacket;
-	dataPacket >> (char)SVO_PLYRADD >> (short)pPlayer->getId() >> (char)pPlayer->getType();
-	dataPacket >> (char)PLPROP_ACCOUNTNAME << pPlayer->getProp(PLPROP_ACCOUNTNAME);
-	dataPacket >> (char)PLPROP_NICKNAME << pPlayer->getProp(PLPROP_NICKNAME);
-	dataPacket >> (char)PLPROP_CURLEVEL << pPlayer->getProp(PLPROP_CURLEVEL);
-	dataPacket >> (char)PLPROP_X << pPlayer->getProp(PLPROP_X);
-	dataPacket >> (char)PLPROP_Y << pPlayer->getProp(PLPROP_Y);
-	dataPacket >> (char)PLPROP_ALIGNMENT << pPlayer->getProp(PLPROP_ALIGNMENT);
+	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
+	dataPacket >> (char)PLPROP_ACCOUNTNAME << player->getProp(PLPROP_ACCOUNTNAME);
+	dataPacket >> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME);
+	dataPacket >> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL);
+	dataPacket >> (char)PLPROP_X << player->getProp(PLPROP_X);
+	dataPacket >> (char)PLPROP_Y << player->getProp(PLPROP_Y);
+	dataPacket >> (char)PLPROP_ALIGNMENT << player->getProp(PLPROP_ALIGNMENT);
 	sendPacket(dataPacket);
 }
 
 void TServerList::deletePlayer(TPlayer *player)
 {
+	assert(player != nullptr);
+
 	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
 }
 
@@ -323,7 +327,12 @@ void TServerList::sendPlayers()
 
 void TServerList::handleText(const CString& data)
 {
-	std::vector<CString> params = data.guntokenize().tokenize("\n");
+	CString dataTokenStr = data.guntokenize();
+	std::vector<CString> params = data.gCommaStrTokens();
+
+	//printf("handleText:%s\n", dataTokenStr.text());
+	//for (int i = 0; i < params.size(); i++)
+	//	printf("Param %d: %s\n", i, params[i].text());
 
 	if (params.size() >= 3)
 	{
@@ -334,7 +343,7 @@ void TServerList::handleText(const CString& data)
 				if (params.size() == 6 && params[2] == "privmsg")
 				{
 					//CString fromPlayer = params[3];
-					std::string channel = params[4].text();
+					std::string channel = params[4].guntokenize().text();
 					//CString message = params[5];
 
 					auto playerList = _server->getPlayerList();
@@ -343,6 +352,38 @@ void TServerList::handleText(const CString& data)
 						TPlayer *pl = *it;
 						if (pl->inChatChannel(channel))
 							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << data);
+					}
+				}
+			}
+		}
+		else if (params.size() >= 4 && params[0] == "Listserver")
+		{
+			if (params[1] == "Modify" && params[2] == "Server")
+			{
+				std::string serverName = params[3].guntokenize().text();
+				
+				for (int i = 4; i < params.size(); i++)
+				{
+					params[i].guntokenizeI();
+					while (params[i].bytesLeft())
+					{
+						CString key = params[i].readString("=");
+						CString val = params[i].readString("");
+
+						if (key == "players")
+						{
+							int pcount = strtoint(val);
+							if (pcount < 0)
+								serverListCount.erase(serverName);
+							else
+							{
+								serverListCount[serverName] = pcount;
+							}
+
+							// update shit
+							printf("Playercount for %s is %d\n", serverName.c_str(), strtoint(val));
+						}
+
 					}
 				}
 			}
@@ -364,6 +405,16 @@ void TServerList::sendText(const std::vector<CString>& stringList)
 	dataPacket.writeGChar(SVO_SENDTEXT);
 	for (auto it = stringList.begin(); it != stringList.end(); ++it)
 		dataPacket << (*it).gtokenize();
+	sendPacket(dataPacket);
+}
+
+void TServerList::sendTextForPlayer(TPlayer *player, const CString& data)
+{
+	assert(player != nullptr);
+
+	CString dataPacket;
+	dataPacket.writeGChar(SVO_REQUESTLIST);
+	dataPacket >> (short)player->getId() << data;
 	sendPacket(dataPacket);
 }
 
@@ -829,22 +880,51 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 
 void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 {
-	unsigned short pid = pPacket.readGUShort();
+	unsigned short playerId = pPacket.readGUShort();
 	CString message = pPacket.readString("");
-	CString data = message.guntokenize();
 
+	CString data = message.guntokenize();
+	std::vector<CString> params = data.tokenize("\n");
+	
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
-	CString params = data.readString("");
+	CString paramsData = data.readString("");
+
+	TPlayer *player = _server->getPlayer(playerId);
+	if (player != nullptr)
+	{
+		if (params.size() >= 3)
+		{
+			if (params[0] == "GraalEngine")
+			{
+				if (params[1] == "irc")
+				{
+					// Listserver can confirm this stuff, and use it for having a count of players in channels
+					if (params[2] == "join")
+					{
+						CString channel = params[3].guntokenize();
+						if (player->addChatChannel(channel.text()))
+							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << params[3].gtokenize());
+					}
+					else if (params[2] == "part")
+					{
+						CString channel = params[3].guntokenize();
+						if (player->inChatChannel(channel.text()))
+							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << params[3].gtokenize());
+					}
+				}
+			}
+		}
+	}
 
 	if (type == "lister" && option == "simpleserverlist")
 	{
 		CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
         int serverCount = 0;
-		while (params.bytesLeft() > 0)
+		while (paramsData.bytesLeft() > 0)
 		{
-			CString serverData = params.readString("\n").guntokenizeI();
+			CString serverData = paramsData.readString("\n").guntokenizeI();
 			serverIds << serverData.readString("\n") << "\n";
 			serverNames << serverData.readString("\n") << "\n";
 			serverPCount << serverData.readString("\n") << "\n";
@@ -863,12 +943,12 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverPCount.clear();
 	}
 
-	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	player = _server->getPlayer(playerId, PLTYPE_ANYPLAYER);
 	if (player)
 	{
 		if (type == "pmserverplayers")
 		{
-			player->updatePMPlayers(option, params);
+			player->updatePMPlayers(option, paramsData);
 		}
 		else
 		{
