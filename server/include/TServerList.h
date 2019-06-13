@@ -6,7 +6,7 @@
 #include "CFileQueue.h"
 #include "CString.h"
 #include "CSocket.h"
-
+#include <assert.h> 
 
 enum
 {
