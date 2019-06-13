@@ -54,6 +54,8 @@ class TServerList : public CSocketStub
 		void sendText(const std::vector<CString>& stringList);
 		void sendTextForPlayer(TPlayer *player, const CString& data);
 
+		const std::map<std::string, int>& getServerList() { return serverListCount; }
+
 		// Send New Server-Info
 		void sendServerHQ();
 		void setDesc(const CString& pServerDesc);

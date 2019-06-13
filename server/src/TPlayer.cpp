@@ -3214,6 +3214,18 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	// (int)(loc[0]) % 64 == 0.0f, for gmap?
 	if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
+		if (action.find("gr.serverlist") == 0)
+		{
+			TServerList *listServer = server->getServerList();
+			auto serverList = listServer->getServerList();
+			CString actionData("clientside,-Serverlist_v4,updateservers,");
+			for (auto it = serverList.begin(); it != serverList.end(); ++it)
+				actionData << CString(it->first).gtokenize() << "," << CString(it->second) << ",";
+
+			sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
+			return true;
+		}
+
 		if (settings->getBool("triggerhack_weapons", false) == true)
 		{
 			if (action.find("gr.addweapon") == 0)
