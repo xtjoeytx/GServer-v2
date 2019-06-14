@@ -4221,7 +4221,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 					CString sendMsg = "GraalEngine,irc,privmsg,";
 					sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
 					list->handleText(sendMsg);
-					list->sendText(sendMsg);
+					list->sendTextForPlayer(this, sendMsg);
 				}
 			}
 		}
