@@ -121,5 +121,5 @@ COPY --from=build-env /gserver/bin /gserver
 RUN apk add --update libstdc++ libatomic
 WORKDIR /gserver
 VOLUME /gserver/servers
-ENTRYPOINT ./gs2emu
-EXPOSE 14802
+ENTRYPOINT ["./gs2emu"]
+CMD []

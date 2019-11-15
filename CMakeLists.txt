@@ -58,7 +58,7 @@ set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
-set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
+set(GSERVER_CREDITS "Joey, Nalin, Codr and Cadavre")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 
@@ -157,7 +157,7 @@ elseif(WIN32)
 		# Enable parallel compilation
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-		
+
 		# Enable static linkage of the Microsoft Visual C/C++ Runtime
 		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
