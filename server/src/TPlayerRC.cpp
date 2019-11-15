@@ -272,7 +272,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	// Send RC Information
 	CString outPacket = CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.";
 	std::vector<TPlayer *> *playerList = server->getPlayerList();
-	for (std::vector<TPlayer *>::const_iterator i = playerList->begin(); i != playerList->end(); ++i)
+	for (auto i = playerList->begin(); i != playerList->end(); ++i)
 	{
 		if ((*i)->getType() & PLTYPE_ANYRC)
 		{
