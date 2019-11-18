@@ -77,7 +77,7 @@ bool CScriptEngine::Initialize()
 
 	_scriptWatcherRunning.store(true);
 	_scriptWatcherThread = std::thread(&CScriptEngine::ScriptWatcher, this);
-	
+
 	return true;
 }
 
@@ -223,7 +223,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 
 	// Wrap user code in a function-object, returning some useful symbols to call for events
 	std::string codeStr = WrapScript<TNPC>(npcScript.text());
-	
+
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
 
@@ -298,7 +298,7 @@ void CScriptEngine::RunScripts(bool timedCall)
 				it++;
 		}
 	}
-	
+
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{
 		_env->CallFunctionInScope([&]() -> void {

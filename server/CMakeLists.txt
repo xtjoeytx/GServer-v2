@@ -115,7 +115,7 @@ if(V8NPCSERVER)
 		SOURCES
 		src/script/V8ScriptEnv.cpp
 	)
-	
+
 	# GServer specific headers for implementation
 	list(
 		APPEND

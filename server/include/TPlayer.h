@@ -48,10 +48,10 @@ class TPlayer : public TAccount, public CSocketStub
 		bool sendLogin();
 
 		// Get Properties
-		CSocket* getSocket()	{ return playerSock; }
-		TLevel* getLevel()		{ return level; }
-		TMap* getMap()			{ return pmap; }
-		CString getGroup()		{ return levelGroup; }
+		CSocket* getSocket()			{ return playerSock; }
+		TLevel* getLevel() const		{ return level; }
+		TMap* getMap()				{ return pmap; }
+		CString getGroup()			{ return levelGroup; }
 		int getId() const;
 		time_t getLastData() const		{ return lastData; }
 		CString getGuild() const		{ return guild; }
@@ -139,7 +139,7 @@ class TPlayer : public TAccount, public CSocketStub
 		inline IScriptWrapped<TPlayer> * getScriptObject() const {
 			return _scriptObject;
 		}
-	
+
 		inline void setScriptObject(IScriptWrapped<TPlayer> *object) {
 			_scriptObject = object;
 		}
@@ -269,7 +269,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_NC_CLASSDELETE(CString& pPacket);
 		bool msgPLI_NC_LEVELLISTGET(CString& pPacket);
 #endif
-	
+
 		bool msgPLI_REQUESTTEXT(CString& pPacket);
 		bool msgPLI_SENDTEXT(CString& pPacket);
 
@@ -333,7 +333,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// File queue.
 		CFileQueue fileQueue;
-	
+
 #ifdef V8NPCSERVER
 		bool _processRemoval;
 		IScriptWrapped<TPlayer> *_scriptObject;

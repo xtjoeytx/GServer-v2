@@ -365,7 +365,7 @@ inline void TNPC::allowNpcWarping(bool canWarp)
 }
 
 /**
- * Script Engine 
+ * Script Engine
  */
 inline bool TNPC::hasScriptEvent(int flag) const {
 	return ((_scriptEventsMask & flag) == flag);

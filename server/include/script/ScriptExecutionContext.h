@@ -22,7 +22,7 @@ public:
 
 	bool hasActions() const;
 	std::pair<unsigned int, double> getExecutionData();
-	
+
 	void addAction(ScriptAction *action);
 	void addExecutionSample(const ScriptTimeSample& sample);
 	void resetExecution();

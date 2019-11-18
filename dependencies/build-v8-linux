@@ -1,0 +1,34 @@
+#!/bin/bash
+export PATH="/home/marlon/tmp/projects/gserver/dependencies/depot_tools:$PATH"
+fetch v8 \
+&& cd v8 \
+&& git checkout 8.0.286 \
+&& gclient sync -D \
+&& ./tools/dev/v8gen.py x64.release -- \
+is_component_build=false \
+is_debug=false \
+use_custom_libcxx=false \
+v8_monolithic=true \
+v8_use_external_startup_data=false \
+binutils_path=\"/usr/bin\" \
+target_os=\"linux\" \
+target_cpu=\"x64\" \
+v8_target_cpu=\"x64\" \
+v8_enable_future=true \
+is_official_build=true \
+is_cfi=false \
+is_clang=false \
+use_custom_libcxx=false \
+use_sysroot=false \
+use_gold=false \
+use_allocator_shim=false \
+treat_warnings_as_errors=false \
+symbol_level=0 \
+strip_debug_info=true \
+v8_use_external_startup_data=false \
+v8_enable_i18n_support=false \
+v8_enable_gdbjit=false \
+v8_static_library=true \
+v8_experimental_extra_library_files=[] \
+v8_extra_library_files=[] \
+&& ninja -C out.gn/x64.release -j $(getconf _NPROCESSORS_ONLN)
