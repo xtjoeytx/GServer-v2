@@ -45,16 +45,16 @@ void bindGlobalFunctions(CScriptEngine *scriptEngine)
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
-	
+
 	// Fetch global template
 	v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
 
 	// Global functions
-	global->Set(v8::String::NewFromUtf8(isolate, "print"), v8::FunctionTemplate::New(isolate, Global_Function_Print));
+	global->Set(v8::String::NewFromUtf8(isolate, "print").ToLocalChecked(), v8::FunctionTemplate::New(isolate, Global_Function_Print));
 	//global->Set(v8::String::NewFromUtf8(isolate, "testFunc"), v8::FunctionTemplate::New(isolate, Ext_TestFunc, engine_ref));
 
 	// Global properties
-	global->SetAccessor(v8::String::NewFromUtf8(isolate, "server"), Global_GetObject_Server, nullptr, engine_ref);
+	global->SetAccessor(v8::String::NewFromUtf8(isolate, "server").ToLocalChecked(), Global_GetObject_Server, nullptr, engine_ref);
 }
 
 #endif

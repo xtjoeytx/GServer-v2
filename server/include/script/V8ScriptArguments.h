@@ -28,7 +28,7 @@ namespace detail
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::string& val) {
-		return v8::String::NewFromUtf8(env->Isolate(), val.c_str());
+		return v8::String::NewFromUtf8(env->Isolate(), val.c_str()).ToLocalChecked();
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, IScriptFunction *function) {
@@ -65,7 +65,7 @@ public:
 		{
 			V8ScriptFunction *v8_func = static_cast<V8ScriptFunction *>(func);
 			V8ScriptEnv *v8_env = static_cast<V8ScriptEnv *>(v8_func->Env());
-			
+
 			v8::Isolate *isolate = v8_env->Isolate();
 			v8::Local<v8::Context> context = v8_env->Context();
 
@@ -76,7 +76,7 @@ public:
 			// sort arguments into array
 			resolve_args(v8_env, std::index_sequence_for<Ts...>{});
 			base::_resolved = true;
-			
+
 			// TODO(joey): This will probably not stay like this. Needed the trycatch for executing
 			//	new objects for the first time only. Will figure something out.
 

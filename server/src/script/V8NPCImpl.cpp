@@ -25,7 +25,7 @@ void NPC_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().c_str());
+	v8::Local<v8::String> npcName = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getName().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(npcName);
 }
 
@@ -92,7 +92,7 @@ void NPC_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallback
 	if (npcLevel != 0)
 		levelName = npcLevel->getLevelName();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -253,7 +253,7 @@ void NPC_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getBodyImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getBodyImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -277,7 +277,7 @@ void NPC_GetStr_HeadImage(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHeadImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHeadImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -301,7 +301,7 @@ void NPC_GetStr_HorseImage(v8::Local<v8::String> prop, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHorseImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHorseImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -325,7 +325,7 @@ void NPC_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -342,7 +342,7 @@ void NPC_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getNickname().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getNickname().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -359,7 +359,7 @@ void NPC_GetStr_ShieldImage(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getShieldImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getShieldImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -383,7 +383,7 @@ void NPC_GetStr_SwordImage(v8::Local<v8::String> prop, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getSwordImage().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getSwordImage().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -410,7 +410,7 @@ void NPC_GetStr_Message(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	CString npcProp = npcObject->getProp(NPCPROP_MESSAGE);
 	CString propValue = npcProp.readChars(npcProp.readGUChar());
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -430,7 +430,7 @@ void NPC_GetStr_Ani(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v
 	CString npcProp = npcObject->getProp(NPCPROP_GANI);
 	CString propValue = npcProp.readChars(npcProp.readGUChar());
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -517,7 +517,7 @@ void NPC_Function_DrawOverPlayer(const v8::FunctionCallbackInfo<v8::Value>& args
 	// Toggle flags
 	int flags = npcObject->getVisibleFlags();
 	flags = (flags | NPCVISFLAG_DRAWOVERPLAYER) & ~(NPCVISFLAG_DRAWUNDERPLAYER);
-	
+
 	npcObject->setVisibleFlags(flags);
 	npcObject->updatePropModTime(NPCPROP_VISFLAGS);
 }
@@ -582,7 +582,7 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 		npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
 	}
 }
@@ -635,13 +635,13 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-	
+
 	// Throw an exception if we don't receive the specified arguments
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
 
-	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
-	v8::String::Utf8Value newValue(isolate, args[1]->ToString(isolate));
-	
+	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+	v8::String::Utf8Value newValue(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+
 	if (code[0] == '#')
 	{
 		// Unwrap object
@@ -875,7 +875,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-			v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate));
+			v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 			double newX = args[1]->NumberValue(context).ToChecked();
 			double newY = args[2]->NumberValue(context).ToChecked();
 
@@ -901,7 +901,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 //void Npc_Constructor(const v8::FunctionCallbackInfo<v8::Value>& args)
 //{
 //	// TODO(joey): more proof of concept, likely to get axed.
-//	
+//
 //	// Called by V8. and should return an NPC object
 //	SCRIPTENV_D("Npc_Constructor called\n");
 //
@@ -910,15 +910,15 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 //
 //	// Throw an exception on method functions for constructor calls
 //	V8ENV_THROW_METHOD(args, isolate);
-//	
+//
 //	// Retrieve external data for this call
 //	v8::Local<v8::External> data = args.Data().As<v8::External>();
 //	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-//	
+//
 //	TNPC *newNpc = new TNPC(scriptEngine->getServer());
 //
 //	assert(args.This()->InternalFieldCount() > 0);
-//	
+//
 //	args.This()->SetAlignedPointerInInternalField(0, newNpc);
 //	args.GetReturnValue().Set(args.This());
 //}
@@ -1005,7 +1005,7 @@ void NPC_Attrs_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 	CString npcAttrValue = npcAttr.readChars(npcAttr.readGUChar());
 
 	// Get server flag with the property
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, npcAttrValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, npcAttrValue.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -1163,7 +1163,7 @@ void NPC_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbackIn
 
 	// Get server flag with the property
 	CString flagValue = npcObject->getFlag(*utf8);
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, flagValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, flagValue.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -1199,7 +1199,7 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 
 	int idx = 0;
 	for (auto it = flagList->begin(); it != flagList->end(); ++it)
-		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str())).Check();
+		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
 }
@@ -1277,84 +1277,84 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	// Retrieve v8 environment
 	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 	v8::Isolate *isolate = env->Isolate();
-	
+
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "npc"
 	v8::Local<v8::String> npcStr = v8::String::NewFromUtf8(isolate, "npc", v8::NewStringType::kInternalized).ToLocalChecked();
-	
+
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> npc_ctor = v8::FunctionTemplate::New(isolate, nullptr, engine_ref);
 	v8::Local<v8::ObjectTemplate> npc_proto = npc_ctor->PrototypeTemplate();
-	
+
 	npc_ctor->SetClassName(npcStr);
 	npc_ctor->InstanceTemplate()->SetInternalFieldCount(1);
-	
+
 	// Static functions on the npc object
 	//npc_ctor->Set(v8::String::NewFromUtf8(isolate, "create"), v8::FunctionTemplate::New(isolate, Npc_createFunction, engine_ref));
-	
+
 	// Method functions
 	// TODO(joey): Implement these functions
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "dontblock"), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawoverplayer"), v8::FunctionTemplate::New(isolate, NPC_Function_DrawOverPlayer, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawunderplayer"), v8::FunctionTemplate::New(isolate, NPC_Function_DrawUnderPlayer, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "hide"), v8::FunctionTemplate::New(isolate, NPC_Function_Hide, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "move"), v8::FunctionTemplate::New(isolate, NPC_Function_Move, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "blockagain").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "canwarp").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "cannotwarp").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "destroy").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "dontblock").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawoverplayer").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_DrawOverPlayer, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "drawunderplayer").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_DrawUnderPlayer, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "hide").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Hide, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "move").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Move, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "warpto").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
 
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setpm"), v8::FunctionTemplate::New(isolate, NPC_Function_SetPM, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "join").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "registerTrigger").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setpm").ToLocalChecked(), v8::FunctionTemplate::New(isolate, NPC_Function_SetPM, engine_ref));
 
 	// Properties
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap"), NPC_GetInt_Alignment, NPC_SetInt_Alignment);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bodyimg"), NPC_GetStr_BodyImage, NPC_SetStr_BodyImage);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), NPC_GetInt_Bombs, NPC_SetInt_Bombs);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), NPC_GetStr_Message, NPC_SetStr_Message);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), NPC_GetInt_Darts, NPC_SetInt_Darts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir"), NPC_GetInt_Dir, NPC_SetInt_Dir);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower"), NPC_GetInt_GlovePower, NPC_SetInt_GlovePower);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "headimg"), NPC_GetStr_HeadImage, NPC_SetStr_HeadImage);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height"), NPC_GetInt_Height);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg"), NPC_GetStr_HorseImage, NPC_SetStr_HorseImage);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id"), NPC_GetInt_Id);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image"), NPC_GetStr_Image, NPC_SetStr_Image);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level"), NPC_GetObject_Level);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname"), NPC_GetStr_LevelName);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), NPC_GetStr_Name);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick"), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees"), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg"), NPC_GetStr_ShieldImage, NPC_SetStr_ShieldImage);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg"), NPC_GetStr_SwordImage, NPC_SetStr_SwordImage);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout"), NPC_GetNum_Timeout, NPC_SetNum_Timeout);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width"), NPC_GetInt_Width);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ani").ToLocalChecked(), NPC_GetStr_Ani, NPC_SetStr_Ani);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "ap").ToLocalChecked(), NPC_GetInt_Alignment, NPC_SetInt_Alignment);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bodyimg").ToLocalChecked(), NPC_GetStr_BodyImage, NPC_SetStr_BodyImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs").ToLocalChecked(), NPC_GetInt_Bombs, NPC_SetInt_Bombs);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat").ToLocalChecked(), NPC_GetStr_Message, NPC_SetStr_Message);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts").ToLocalChecked(), NPC_GetInt_Darts, NPC_SetInt_Darts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir").ToLocalChecked(), NPC_GetInt_Dir, NPC_SetInt_Dir);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "glovepower").ToLocalChecked(), NPC_GetInt_GlovePower, NPC_SetInt_GlovePower);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "headimg").ToLocalChecked(), NPC_GetStr_HeadImage, NPC_SetStr_HeadImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts").ToLocalChecked(), NPC_GetInt_Hearts, NPC_SetInt_Hearts);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "height").ToLocalChecked(), NPC_GetInt_Height);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "horseimg").ToLocalChecked(), NPC_GetStr_HorseImage, NPC_SetStr_HorseImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "id").ToLocalChecked(), NPC_GetInt_Id);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "image").ToLocalChecked(), NPC_GetStr_Image, NPC_SetStr_Image);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "level").ToLocalChecked(), NPC_GetObject_Level);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "levelname").ToLocalChecked(), NPC_GetStr_LevelName);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name").ToLocalChecked(), NPC_GetStr_Name);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "nick").ToLocalChecked(), NPC_GetStr_Nickname, NPC_SetStr_Nickname);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "rupees").ToLocalChecked(), NPC_GetInt_Rupees, NPC_SetInt_Rupees);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "shieldimg").ToLocalChecked(), NPC_GetStr_ShieldImage, NPC_SetStr_ShieldImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "swordimg").ToLocalChecked(), NPC_GetStr_SwordImage, NPC_SetStr_SwordImage);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timeout").ToLocalChecked(), NPC_GetNum_Timeout, NPC_SetNum_Timeout);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "width").ToLocalChecked(), NPC_GetInt_Width);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "x").ToLocalChecked(), NPC_GetNum_X, NPC_SetNum_X);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "y").ToLocalChecked(), NPC_GetNum_Y, NPC_SetNum_Y);
 
 	//npc_ctor->InstanceTemplate()->SetLazyDataProperty(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs2, v8::Local<v8::Value>(), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs, nullptr, engine_ref);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors"), NPC_GetObject_Colors, nullptr, engine_ref);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), NPC_GetObject_Flags, nullptr, engine_ref);
-	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save"), NPC_GetObject_Save, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "attr").ToLocalChecked(), NPC_GetObject_Attrs, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "colors").ToLocalChecked(), NPC_GetObject_Colors, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags").ToLocalChecked(), NPC_GetObject_Flags, nullptr, engine_ref);
+	npc_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "save").ToLocalChecked(), NPC_GetObject_Save, nullptr, engine_ref);
 
 	// Create the npc-attributes flags template
 	v8::Local<v8::FunctionTemplate> npc_attrs_ctor = v8::FunctionTemplate::New(isolate);
-	npc_attrs_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "attr"));
+	npc_attrs_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "attr").ToLocalChecked());
 	npc_attrs_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	npc_attrs_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 		NPC_Attrs_Getter, NPC_Attrs_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
@@ -1363,7 +1363,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	// Create the npc colors template
 	v8::Local<v8::FunctionTemplate> npc_colors_ctor = v8::FunctionTemplate::New(isolate);
-	npc_colors_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "colors"));
+	npc_colors_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "colors").ToLocalChecked());
 	npc_colors_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	npc_colors_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 		NPC_Colors_Getter, NPC_Colors_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
@@ -1372,7 +1372,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	// Create the npc flags template
 	v8::Local<v8::FunctionTemplate> npc_flags_ctor = v8::FunctionTemplate::New(isolate);
-	npc_flags_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "flags"));
+	npc_flags_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "flags").ToLocalChecked());
 	npc_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	npc_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 		NPC_Flags_Getter, NPC_Flags_Setter, nullptr, nullptr, NPC_Flags_Enumerator, v8::Local<v8::Value>(),
@@ -1381,7 +1381,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 
 	// Create the npc saves template
 	v8::Local<v8::FunctionTemplate> npc_save_ctor = v8::FunctionTemplate::New(isolate);
-	npc_save_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "save"));
+	npc_save_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "save").ToLocalChecked());
 	npc_save_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	npc_save_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 			NPC_Save_Getter, NPC_Save_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
