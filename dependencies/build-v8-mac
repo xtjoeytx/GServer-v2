@@ -2,7 +2,7 @@
 export PATH="$PWD/depot_tools:$PATH"
 fetch v8 \
 && cd v8 \
-&& git checkout 7.8.279.23 \
+&& git checkout 7.4.288.26 \
 && gclient sync -D \
 && ./tools/dev/v8gen.py x64.release -- \
 is_component_build=false \
