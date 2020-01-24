@@ -49,11 +49,14 @@ def buildStep(dockerImage, generator, os, defines) {
 
 			def pathInContainer
 			
-			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver") {
+			def dockerImageRef = docker.image("${dockerImage}")
+			dockerImageRef.pull()
+			
+			dockerImageRef.inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver") {
 				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
 			
-			docker.image("${dockerImage}").inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
+			dockerImageRef.inside("-u 0:0 -e BUILDER_UID=1001 -e BUILDER_GID=1001 -e BUILDER_USER=gserver -e BUILDER_GROUP=gserver -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
 
 				sh "sudo apt update"
 				sh "sudo apt install -y gcc-multilib"
@@ -104,26 +107,27 @@ node('master') {
 		//		buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 NPCServer', "-DV8NPCSERVER=TRUE")
 		//	}
 		//},
+		/*
 		'Win64': {
 			node {			
 				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64', "-DV8NPCSERVER=FALSE")
 			}
-		},
+		},*/
 		'Linux x86_64-NPCServer': {
 			node {			
 				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 NPCServer', "-DV8NPCSERVER=TRUE")
 			}
-		},
+		},/*
 		'Linux x86_64': {
 			node {			
 				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64', "-DV8NPCSERVER=FALSE")
 			}
-		},
+		},*/
 		'Linux ARMv7-NPCServer': {
 			node {
 				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi NPCServer', '-DV8NPCSERVER=TRUE')
 			}
-		},
+		}/*,
 		'Linux ARMv7': {
 			node {
 				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi', '-DV8NPCSERVER=FALSE')
@@ -133,6 +137,6 @@ node('master') {
 			node {			
 				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DV8NPCSERVER=FALSE")
 			}
-		}
+		}*/
     )
 }
