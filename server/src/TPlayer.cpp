@@ -4182,49 +4182,52 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				}
 				else sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
 			}
-			else if (option == "join")
+			else if (params.size() > 2)
 			{
-				CString channel = params[3];
-				CString sendMsg = "GraalEngine,irc,join,";
-				sendMsg << channel.gtokenize();
-				list->sendTextForPlayer(this, sendMsg);
-			}
-			else if (option == "part")
-			{
-				CString channel = params[3];
-				CString sendMsg = "GraalEngine,irc,part,";
-				sendMsg << channel.gtokenize();
-				list->sendTextForPlayer(this, sendMsg);
-			}
-			else if (option == "topic")
-			{
-				// GraalEngine,irc,topic,#graal,topic
-				//CString channel = params[0];
-				//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
-			}
-			else if (option == "privmsg")
-			{
-				CString channel = params[3];
-				CString msg = params[4];
-
-				if (channel == "IRCBot")
+				if (option == "join")
 				{
-					std::vector<CString> params3 = msg.guntokenize().tokenize("\n");
-					if (params3[0] == "!getserverinfo")
-					{
-						//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-						list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
-
-						// I believe the following data is what it's looking for:
-						// "era,Era,93,English,""Welcome to Era, a modernised server. Please visit the website for more information."",http://era.graal.net/,""Graal 5.1-5.2"""
-					}
-				}
-				else
-				{
-					CString sendMsg = "GraalEngine,irc,privmsg,";
-					sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
-					list->handleText(sendMsg);
+					CString channel = params[3];
+					CString sendMsg = "GraalEngine,irc,join,";
+					sendMsg << channel.gtokenize();
 					list->sendTextForPlayer(this, sendMsg);
+				}
+				else if (option == "part")
+				{
+					CString channel = params[3];
+					CString sendMsg = "GraalEngine,irc,part,";
+					sendMsg << channel.gtokenize();
+					list->sendTextForPlayer(this, sendMsg);
+				}
+				else if (option == "topic")
+				{
+					// GraalEngine,irc,topic,#graal,topic
+					//CString channel = params[0];
+					//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
+				}
+				else if (option == "privmsg" && params.size() > 3)
+				{
+					CString channel = params[3];
+					CString msg = params[4];
+
+					if (channel == "IRCBot")
+					{
+						std::vector<CString> params3 = msg.guntokenize().tokenize("\n");
+						if (params3[0] == "!getserverinfo")
+						{
+							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
+							list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
+
+							// I believe the following data is what it's looking for:
+							// "era,Era,93,English,""Welcome to Era, a modernised server. Please visit the website for more information."",http://era.graal.net/,""Graal 5.1-5.2"""
+						}
+					}
+					else
+					{
+						CString sendMsg = "GraalEngine,irc,privmsg,";
+						sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
+						list->handleText(sendMsg);
+						list->sendTextForPlayer(this, sendMsg);
+					}
 				}
 			}
 		}
