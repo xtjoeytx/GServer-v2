@@ -2759,7 +2759,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName.text(), flagValue, false, true);
+	this->setFlag(flagName.text(), flagValue, (versionID > CLVER_2_31), true);
 	return true;
 }
 
@@ -2985,10 +2985,12 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		if (*i >= 16000)
 		{
 			TPlayer* pmPlayer = getExternalPlayer(*i);
-			serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname().text());
-			pmMessage.guntokenizeI();
-			pmExternalPlayer(pmPlayer->getServerName(),pmPlayer->getAccountName(),pmMessage);
-			pmMessage.gtokenizeI();
+			if (pmPlayer != nullptr) {
+				serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname().text());
+				pmMessage.guntokenizeI();
+				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->getAccountName(), pmMessage);
+				pmMessage.gtokenizeI();
+			}
 		}
 		else
 		{
@@ -3916,7 +3918,7 @@ bool TPlayer::addPMServer(CString& option)
 	if (!PMSrvExist)
 	{
 		PMServerList.push_back(option);
-		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << accountName << "\n" << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
 		return true;
 	}
 	else
@@ -4119,7 +4121,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << accountName << "\n" << weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
+			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 		else if (option == "rebornlist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
 		else if (option == "subscriptions")
@@ -4132,8 +4134,9 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
 
 	}
-	else if (type == "pmservers" || type == "pmguilds")
-		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << accountName.gtokenize() << "," << packet);
+	else if (type == "pmservers" || type == "pmguilds") {
+		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+	}
 	else if (type == "pmserverplayers")
 		addPMServer(option);
 	else if (type == "pmunmapserver")
@@ -4142,7 +4145,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	}
 		
 
-	serverlog.out("[ IN] [RequestText] %s,%s\n", accountName.gtokenize().text(),packet.text());
+	serverlog.out("[ IN] [RequestText] from %s -> %s\n", accountName.gtokenize().text(),packet.text());
 	return true;
 }
 
@@ -4249,8 +4252,10 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				}
 			}
 		}
-		else if (type == "pmservers" || type == "pmguilds")
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << accountName.gtokenize() << "," << packet);
+		else if (type == "pmservers" || type == "pmguilds") {
+			serverlog.out("[ISSUE] [SENDTEXT] - pmservers/pmguilds received under sendtext??");
+			//list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+		}
 		else if (type == "pmserverplayers")
 			addPMServer(option);
 		else if (type == "pmunmapserver")
