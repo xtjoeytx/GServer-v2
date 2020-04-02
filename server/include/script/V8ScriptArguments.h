@@ -14,7 +14,6 @@
 
 namespace detail
 {
-
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, std::nullptr_t val) {
 		return v8::Null(env->Isolate());
 	}
@@ -85,6 +84,8 @@ public:
 			{
 				v8::TryCatch try_catch(isolate);
 				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args);
+				static_cast<void>(ret);
+
 				if (try_catch.HasCaught())
 				{
 					v8_env->ParseErrors(&try_catch);
@@ -93,7 +94,8 @@ public:
 			}
 			else
 			{
-				cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				static_cast<void>(ret);
 				//ret.IsEmpty();
 			}
 		}

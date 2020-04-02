@@ -477,14 +477,6 @@ void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	playerObject->setProps(propPackage, true, true, playerObject);
 }
 
-// PROPERTY: player.type
-void Player_GetInt_Type(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
-{
-	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
-
-	info.GetReturnValue().Set(playerObject->isClient() ? 1 : 0);
-}
-
 // PROPERTY: player.x
 void Player_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -919,6 +911,48 @@ void Player_Function_SetLevel2(const v8::FunctionCallbackInfo<v8::Value>& args)
 	args.GetReturnValue().Set(false);
 }
 
+// Player Function: player.setlevel2("levelname", x, y);
+void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	// Validate arguments
+	if (args[0]->IsInt32())
+	{
+		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+		v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate));
+		int npcId = args[0]->Int32Value(context).ToChecked();
+
+		CString propPacket;
+		propPacket >> (char)PLPROP_ATTACHNPC >> (char)0 >> (int)npcId;
+		playerObject->setProps(propPacket, true, true);
+		args.GetReturnValue().Set(true);
+		return;
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+	
+	// Validate arguments
+	CString propPacket;
+	propPacket >> (char)PLPROP_ATTACHNPC >> (char)0 >> (int)0;
+	playerObject->setProps(propPacket, true, true);
+}
+
 // Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1022,6 +1056,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "attachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_AttachNpc, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "detachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
 
