@@ -66,7 +66,6 @@ TServer::TServer(CString pName)
 #endif
 
 	// Announce ourself to other classes.
-	serverlist.setServer(this);
 	for (auto & fs : filesystem)
 		fs.setServer(this);
 	filesystem_accounts.setServer(this);
