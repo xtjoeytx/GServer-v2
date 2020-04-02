@@ -252,7 +252,7 @@ class TServer : public CSocketStub
 		TPlayer *mNpcServer;
 		TNPC *mPmHandlerNpc;
 #endif
-	
+
 #ifdef UPNP
 		CUPNP upnp;
 		std::thread upnp_thread;

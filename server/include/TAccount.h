@@ -141,7 +141,7 @@ class TAccount
 		// Attribute-Managing
 		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
 		bool hasWeapon(const CString& pWeapon);
-		
+
 		// Flag-Managing
 		CString getFlag(const std::string& pFlagName) const;
 		void setFlag(CString pFlag);
@@ -150,7 +150,7 @@ class TAccount
 
 		CString translate(const CString& pKey);
 		bool hasRight(int mask)			{ return (adminRights & mask) ? true : false; }
-		
+
 		// get functions
 		bool getGuest()					{ return isGuest; }
 		float getX() const				{ return x; }
@@ -176,8 +176,10 @@ class TAccount
 
 		const CString& getAccountName() const	{ return accountName; }
 		const CString& getNickname() const		{ return nickName; }
+		const CString& getLevelName() const		{ return levelName; }
 		const CString& getBodyImage() const		{ return bodyImg; }
 		const CString& getHeadImage() const		{ return headImg; }
+		//TLevel * getLevel()						{ return nullptr; }
 		const CString& getShieldImage() const	{ return shieldImg; }
 		const CString& getSwordImage() const	{ return swordImg; }
 		const CString& getAnimation() const		{ return gani; }

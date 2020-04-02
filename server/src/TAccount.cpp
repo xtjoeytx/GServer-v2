@@ -71,11 +71,11 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 
 	// Load file.
 	fileData = CString::loadToken(accpath, "\n");
-	if (fileData.size() == 0 || fileData[0].trim() != "GRACC001")
+	if (fileData.empty() || fileData[0].trim() != "GRACC001")
 		return false;
 
 	// Clear Lists
-	for (int i = 0; i < 30; ++i) attrList[i].clear();
+	for (auto & i : attrList) i.clear();
 	chestList.clear();
 	flagList.clear();
 	folderList.clear();
@@ -83,20 +83,20 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	PMServerList.clear();
 
 	// Parse File
-	for (unsigned int i = 0; i < fileData.size(); i++)
+	for (auto & i : fileData)
 	{
 		// Trim Line
-		fileData[i].trimI();
+		i.trimI();
 
 		// Declare Variables;
 		CString section, val;
 		int sep;
 
 		// Seperate Section & Value
-		sep = fileData[i].find(' ');
-		section = fileData[i].subString(0, sep);
+		sep = i.find(' ');
+		section = i.subString(0, sep);
 		if (sep != -1)
-			val = fileData[i].subString(sep + 1);
+			val = i.subString(sep + 1);
 
 		if (section == "NAME") continue;
 		else if (section == "NICK") { if (!ignoreNickname) nickName = val; }

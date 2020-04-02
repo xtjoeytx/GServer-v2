@@ -66,9 +66,14 @@ TServer::TServer(CString pName)
 #endif
 
 	// Announce ourself to other classes.
+<<<<<<< HEAD
 	serverlist.setServer(this);
 	for (auto & fs : filesystem)
 		fs.setServer(this);
+=======
+	for (int i = 0; i < FS_COUNT; ++i)
+		filesystem[i].setServer(this);
+>>>>>>> feature/irc-support
 	filesystem_accounts.setServer(this);
 }
 

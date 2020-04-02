@@ -203,8 +203,8 @@ CString TPlayer::getPropsRC()
 
 	// Add the player's weapons.
 	ret >> (char)weaponList.size();
-	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
-		ret >> (char)(*i).length() << (*i);
+	for (auto & i : weaponList)
+		ret >> (char)i.length() << i;
 
 	return ret;
 }
@@ -217,11 +217,9 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 		return true;
 	}
 
-	CString serverOptions;
-	serverOptions.load(CString() << server->getServerPath() << "config/serveroptions.txt");
-	serverOptions.removeAllI("\r");
+	CSettings* settings = server->getSettings();
 
-	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << serverOptions.gtokenize());
+	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << settings->getSettings().gtokenize());
 	return true;
 }
 
@@ -242,31 +240,29 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	// If they don't have the modify staff account right, prevent them from changing admin-only options.
 	if (!hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		std::vector<CString> oldOptions = CString::loadToken(CString() << server->getServerPath() << "config/serveroptions.txt", "\n", true);
 		std::vector<CString> newOptions = options.tokenize("\n");
 		options.clear();
-		for (std::vector<CString>::iterator i = newOptions.begin(); i != newOptions.end(); ++i)
+		for (auto & newOption : newOptions)
 		{
-			CString name = (*i).subString(0, (*i).find("="));
+			CString name = newOption.subString(0, newOption.find("="));
 			name.trimI();
 
 			// See if this command is an admin command.
 			bool isAdmin = false;
-			for (unsigned int j = 0; j < sizeof(__admin) / sizeof(char*); ++j)
-				if (name == CString(__admin[j])) isAdmin = true;
+			for (auto & j : __admin)
+				if (name == CString(j)) isAdmin = true;
 
 			// If it is an admin command, replace it with the current value.
 			if (isAdmin)
-				(*i) = CString() << name << " = " << settings->getStr(name);
+				newOption = CString() << name << " = " << settings->getStr(name);
 
 			// Add this line back into options.
-			options << *i << "\n";
+			options << newOption << "\n";
 		}
 	}
 
 	// Save settings.
-	options.replaceAllI("\n", "\r\n");
-	options.save(CString() << server->getServerPath() << "config/serveroptions.txt");
+	settings->loadSettings(options, true, true);
 
 	// Reload settings.
 	server->loadSettings();
@@ -276,7 +272,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	// Send RC Information
 	CString outPacket = CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.";
 	std::vector<TPlayer *> *playerList = server->getPlayerList();
-	for (std::vector<TPlayer *>::const_iterator i = playerList->begin(); i != playerList->end(); ++i)
+	for (auto i = playerList->begin(); i != playerList->end(); ++i)
 	{
 		if ((*i)->getType() & PLTYPE_ANYRC)
 		{
@@ -1775,7 +1771,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to upload " << checkFile);
 		return true;
 	}
-	
+
 	// See if we are uploading a large file or not.
 	if (rcLargeFiles.find(file) == rcLargeFiles.end())
 	{
@@ -2106,7 +2102,7 @@ bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
 	// Read Packet Data
 	unsigned short pid = pPacket.readGUShort();
 	CString message = pPacket.readString("");
-	
+
 	// Enact upon the message.
 	if (message == "location")
 		sendNCAddr();

@@ -13,6 +13,7 @@
 #include "CLog.h"
 #include "CSocket.h"
 #include "TServer.h"
+#include <TAccount.h>
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
@@ -30,6 +31,12 @@ std::map<CString, std::thread*> serverThreads;
 
 CLog serverlog("startuplog.txt");
 CString overrideServer;
+CString overridePort;
+CString overrideServerIp = nullptr;
+CString overrideLocalIp = nullptr;
+CString overrideServerInterface = nullptr;
+CString overrideName = nullptr;
+CString overrideStaff = nullptr;
 
 // Home path of the gserver.
 CString homepath;
@@ -120,13 +127,40 @@ int main(int argc, char* argv[])
 		else
 		{
 			TServer* server = new TServer(overrideServer);
+
+			auto *settings = server->getSettings();
+
 			serverlog.out(":: Starting server: %s.\n", overrideServer.text());
-			if (server->init() != 0)
+			if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
 			{
 				serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
 				delete server;
 				return 1;
 			}
+
+			if (!overrideName.isEmpty())
+			{
+				settings->addKey("name", overrideName);
+				auto * sl = server->getServerList();
+				if (sl)
+					sl->setName(settings->getStr("name"));
+			}
+
+			if (!overrideStaff.isEmpty()) {
+				settings->addKey("staff", overrideStaff);
+				auto * accfs = new TAccount(server);
+				accfs->loadAccount(overrideStaff, false);
+				if (accfs->getNickname() == "default") {
+					accfs->loadAccount("YOURACCOUNT", false);
+
+					accfs->setAccountName(overrideStaff);
+					accfs->saveAccount();
+				}
+				accfs = NULL;
+			}
+
+			settings->saveFile();
+
 			serverList[overrideServer] = server;
 
 			// Put the server in its own thread.
@@ -141,10 +175,10 @@ int main(int argc, char* argv[])
 
 		// Wait on each thread to end.
 		// Once all threads have ended, the program has terminated.
-		for (std::map<CString, std::thread*>::iterator i = serverThreads.begin(); i != serverThreads.end();)
+		for (auto i = serverThreads.begin(); i != serverThreads.end();)
 		{
 			std::thread* t = i->second;
-			if (t == 0) serverThreads.erase(i++);
+			if (t == nullptr) serverThreads.erase(i++);
 			else
 			{
 				t->join();
@@ -153,7 +187,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Delete all the servers.
-		for (std::map<CString, TServer*>::iterator i = serverList.begin(); i != serverList.end(); )
+		for (auto i = serverList.begin(); i != serverList.end(); )
 		{
 			delete i->second;
 			serverList.erase(i++);
@@ -176,7 +210,7 @@ bool parseArgs(int argc, char* argv[])
 	for (int i = 0; i < argc; ++i)
 		args.push_back(CString(argv[i]));
 
-	for (std::vector<CString>::iterator i = args.begin(); i != args.end(); ++i)
+	for (auto i = args.begin(); i != args.end(); ++i)
 	{
 		if ((*i).find("--") == 0)
 		{
@@ -195,6 +229,66 @@ bool parseArgs(int argc, char* argv[])
 					return true;
 				}
 				overrideServer = *i;
+			}
+			else if (key == "port" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overridePort = *i;
+			}
+			else if (key == "localip" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideLocalIp = *i;
+			}
+			else if (key == "serverip" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideServerIp = *i;
+			}
+			else if (key == "interface" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideServerInterface = *i;
+			}
+			else if (key == "staff" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideStaff = *i;
+			}
+			else if (key == "name" && !overrideServer.isEmpty())
+			{
+				++i;
+				if (i == args.end())
+				{
+					printHelp(args[0].text());
+					return true;
+				}
+				overrideName = *i;
 			}
 		}
 		else if ((*i)[0] == '-')
@@ -216,6 +310,16 @@ bool parseArgs(int argc, char* argv[])
 					}
 					overrideServer = *i;
 				}
+				if ((*i)[j] == 'p' && !overrideServer.isEmpty())
+				{
+					++i;
+					if (i == args.end())
+					{
+						printHelp(args[0].text());
+						return true;
+					}
+					overridePort = *i;
+				}
 			}
 		}
 	}
@@ -229,7 +333,12 @@ void printHelp(const char* pname)
 	serverlog.out("USAGE: %s [options]\n\n", pname);
 	serverlog.out("Commands:\n\n");
 	serverlog.out(" -h, --help\t\tPrints out this help text.\n");
-	serverlog.out(" -s, --server DIRECTORY\tDirectory that contains the server.\n");
+	serverlog.out(" -s, --server DIR\tOverride the servers.txt by specifying which server directory to use.\n");
+	serverlog.out(" -p, --port PORT\tSpecify which port to use when using servers.txt override.\n");
+	serverlog.out(" --localip IP\tSpecify which IP to retrieve when on the same network as the server.\n");
+	serverlog.out(" --serverip IP\tSpecify which IP that the listserver should deliver to clients.\n");
+	serverlog.out(" --interface IP\tSpecify which IP to bind the server to.\n");
+
 	serverlog.out("\n");
 }
 

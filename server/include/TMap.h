@@ -49,6 +49,8 @@ class TMap
 		int getLevelY(const CString& level) const;
 		CString getMapName() const			{ return mapName; }
 		int getType() const					{ return type; }
+		int getWidth() const				{ return width; }
+		int getHeight() const				{ return height; }
 		bool isGroupMap() const				{ return groupMap; }
 		CString getLevels();
 
