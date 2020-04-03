@@ -57,10 +57,6 @@ def buildStep(dockerImage, generator, os, defines, arch) {
 			}
 
 			dockerImageRef.inside("-e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
-
-				sh "sudo apt update"
-				sh "sudo apt install -y gcc-multilib"
-
 				checkout scm
 
 				if (env.CHANGE_ID) {
@@ -114,9 +110,10 @@ node('master') {
 		/*
 		'Win64': {
 			node {
-				buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64', "-DV8NPCSERVER=FALSE")
+				buildStep('desertbit/crossbuild:windows-x86_64', 'Unix Makefiles', 'Windows x86_64', "-DV8NPCSERVER=FALSE", 'x86_64')
 			}
-		},*/
+		},
+		*/
 		'Linux x86_64-NPCServer': {
 			node {
 				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 NPCServer', '-DV8NPCSERVER=TRUE', 'x86_64')
