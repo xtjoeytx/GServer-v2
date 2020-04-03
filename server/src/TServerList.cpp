@@ -144,7 +144,7 @@ bool TServerList::doTimedEvents()
 	lastTimer = time(0);
 
 	bool isConnected = getConnected();
-	
+
 	if (!isConnected)
 		connectServer();
 
@@ -191,10 +191,7 @@ bool TServerList::doTimedEvents()
 bool TServerList::init(const CString& pServerIp, const CString& pServerPort)
 {
 	// Initialize the socket.
-	if (sock.init(pServerIp.text(), pServerPort.text()) != 0)
-		return false;
-
-	return true;
+	return sock.init(pServerIp.text(), pServerPort.text()) == 0;
 }
 
 bool TServerList::connectServer()
@@ -291,7 +288,7 @@ void TServerList::sendPacket(CString& pPacket, bool sendNow)
 void TServerList::addPlayer(TPlayer *player)
 {
 	assert(player != nullptr);
-	
+
 	CString dataPacket;
 	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
 	dataPacket >> (char)PLPROP_ACCOUNTNAME << player->getProp(PLPROP_ACCOUNTNAME);
@@ -317,11 +314,11 @@ void TServerList::sendPlayers()
 
 	// Adds the players to the serverlist
 	auto playerList = _server->getPlayerList();
-	for (auto it = playerList->begin(); it != playerList->end(); ++it)
+	for (auto & it : *playerList)
 	{
-		TPlayer *player = *it;
+		TPlayer *player = it;
 		if (!player->isNC())
-			addPlayer(*it);
+			addPlayer(it);
 	}
 }
 
@@ -347,10 +344,9 @@ void TServerList::handleText(const CString& data)
 					//CString message = params[5];
 
 					auto playerList = _server->getPlayerList();
-					for (auto it = playerList->begin(); it != playerList->end(); ++it)
+					for (auto pl : *playerList)
 					{
-						TPlayer *pl = *it;
-						if (pl->inChatChannel(channel))
+							if (pl->inChatChannel(channel))
 							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << data);
 					}
 				}
@@ -361,7 +357,7 @@ void TServerList::handleText(const CString& data)
 			if (params[1] == "Modify" && params[2] == "Server")
 			{
 				std::string serverName = params[3].guntokenize().text();
-				
+
 				for (int i = 4; i < params.size(); i++)
 				{
 					params[i].guntokenizeI();
@@ -403,8 +399,8 @@ void TServerList::sendText(const std::vector<CString>& stringList)
 {
 	CString dataPacket;
 	dataPacket.writeGChar(SVO_SENDTEXT);
-	for (auto it = stringList.begin(); it != stringList.end(); ++it)
-		dataPacket << (*it).gtokenize();
+	for (const auto & string : stringList)
+		dataPacket << string.gtokenize();
 	sendPacket(dataPacket);
 }
 
@@ -477,7 +473,7 @@ bool TServerList::parsePacket(CString& pPacket)
 
 		// read id & packet
 		unsigned char id = curPacket.readGUChar();
-		
+
 		// valid packet, call function
 		(*this.*TSLFunc[id])(curPacket);
 	}
@@ -872,10 +868,12 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 {
 	int pid = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
-
+/*
+ * This is an old hack, disabling for now
 	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
+*/
 }
 
 void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
@@ -885,7 +883,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 	CString data = message.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
-	
+
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
@@ -977,10 +975,10 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString account2 = data.readString("\n");
-	
+
 	CString message2 = data.readString("");
 	CString message3 = message2.gtokenizeI();
-	
+
 	CString player = CString(CString() << account << "\n" << nick << "\n").gtokenizeI() << "\n";
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
