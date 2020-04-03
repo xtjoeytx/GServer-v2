@@ -4182,7 +4182,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				}
 				else sendPacket(CString() >> (char)PLO_OTHERPLPROPS << "�" >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick << "q#");
 			}
-			else if (params.size() > 2)
+			else if (params.size() > 3)
 			{
 				if (option == "join")
 				{

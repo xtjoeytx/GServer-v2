@@ -339,15 +339,17 @@ void TServerList::handleText(const CString& data)
 			{
 				if (params.size() == 6 && params[2] == "privmsg")
 				{
-					//CString fromPlayer = params[3];
 					std::string channel = params[4].guntokenize().text();
-					//CString message = params[5];
+					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
 
 					auto playerList = _server->getPlayerList();
 					for (auto pl : *playerList)
 					{
-							if (pl->inChatChannel(channel))
-							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << data);
+						if (pl->inChatChannel(channel))
+						{
+							CString weapon = pl->isClient() ? "-Serverlist_Chat" : "GraalEngine";
+							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << tmpData);
+						}
 					}
 				}
 			}
@@ -892,34 +894,37 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	TPlayer *player = _server->getPlayer(playerId);
 	if (player != nullptr)
 	{
-		if (params.size() >= 3)
+		if (params.size() > 3)
 		{
 			if (params[0] == "GraalEngine")
 			{
 				if (params[1] == "irc")
 				{
 					// Listserver can confirm this stuff, and use it for having a count of players in channels
+					weapon = player->isClient() ? "-Serverlist_Chat" : "GraalEngine";
+
 					if (params[2] == "join")
 					{
 						CString channel = params[3].guntokenize();
 						if (player->addChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,join," << params[3].gtokenize());
+							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
 					}
 					else if (params[2] == "part")
 					{
 						CString channel = params[3].guntokenize();
 						if (player->inChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << params[3].gtokenize());
+							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
 					}
 				}
 			}
 		}
 	}
 
+	/*
 	if (type == "lister" && option == "simpleserverlist")
 	{
 		CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
-        int serverCount = 0;
+		int serverCount = 0;
 		while (paramsData.bytesLeft() > 0)
 		{
 			CString serverData = paramsData.readString("\n").guntokenizeI();
@@ -931,7 +936,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		}
 
 		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
-        serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
+		serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
 		// TODO(joey): This is spamming clients non-stop!!!!!
 		_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
@@ -940,6 +945,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverNames.clear();
 		serverPCount.clear();
 	}
+	*/
 
 	player = _server->getPlayer(playerId, PLTYPE_ANYPLAYER);
 	if (player)
