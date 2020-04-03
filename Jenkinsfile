@@ -56,7 +56,7 @@ def buildStep(dockerImage, generator, os, defines, arch) {
 				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
 
-			dockerImageRef.inside("-e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}") {
+			dockerImageRef.inside("-e HOME='/tmp' -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer} --privileged") {
 				checkout scm
 
 				if (env.CHANGE_ID) {
