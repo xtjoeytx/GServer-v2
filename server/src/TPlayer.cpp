@@ -4204,7 +4204,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 					//CString channel = params[0];
 					//sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,irc,part," << channel);
 				}
-				else if (option == "privmsg" && params.size() > 3)
+				else if (option == "privmsg" && params.size() > 4)
 				{
 					CString channel = params[3];
 					CString msg = params[4];
