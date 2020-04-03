@@ -46,6 +46,14 @@ SET(V8_LIBRARY_SEARCH_PATHS
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release.sample/lib.target/third_party/icu/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release.sample/obj/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release.sample/obj/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release/lib.target/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release/lib.target/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release/obj/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release/obj/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/lib.target/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/lib.target/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/obj/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/obj/third_party/icu/
 	~/Library/Frameworks
 	/Library/Frameworks
 	/usr/local/lib

@@ -207,122 +207,118 @@ int main(int argc, char* argv[])
 bool parseArgs(int argc, char* argv[])
 {
 	std::vector<CString> args;
-	for (int i = 0; i < argc; ++i)
-		args.push_back(CString(argv[i]));
+	bool use_env = getenv("USE_ENV");
 
-	for (auto i = args.begin(); i != args.end(); ++i)
-	{
-		if ((*i).find("--") == 0)
-		{
-			CString key((*i).subString(2));
-			if (key == "help")
-			{
-				printHelp(args[0].text());
-				return true;
-			}
-			else if (key == "server")
-			{
-				++i;
-				if (i == args.end())
-				{
+	if (!use_env) {
+		for ( int i = 0; i < argc; ++i )
+			args.push_back(CString(argv[i]));
+
+		for ( auto i = args.begin(); i != args.end(); ++i ) {
+			if ((*i).find("--") == 0 ) {
+				CString key((*i).subString(2));
+				if ( key == "help" ) {
 					printHelp(args[0].text());
 					return true;
-				}
-				overrideServer = *i;
-			}
-			else if (key == "port" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overridePort = *i;
-			}
-			else if (key == "localip" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overrideLocalIp = *i;
-			}
-			else if (key == "serverip" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overrideServerIp = *i;
-			}
-			else if (key == "interface" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overrideServerInterface = *i;
-			}
-			else if (key == "staff" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overrideStaff = *i;
-			}
-			else if (key == "name" && !overrideServer.isEmpty())
-			{
-				++i;
-				if (i == args.end())
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				overrideName = *i;
-			}
-		}
-		else if ((*i)[0] == '-')
-		{
-			for (int j = 1; j < (*i).length(); ++j)
-			{
-				if ((*i)[j] == 'h')
-				{
-					printHelp(args[0].text());
-					return true;
-				}
-				if ((*i)[j] == 's')
-				{
+				} else if ( key == "server" ) {
 					++i;
-					if (i == args.end())
-					{
+					if ( i == args.end()) {
 						printHelp(args[0].text());
 						return true;
 					}
 					overrideServer = *i;
-				}
-				if ((*i)[j] == 'p' && !overrideServer.isEmpty())
-				{
+				} else if ( key == "port" && !overrideServer.isEmpty()) {
 					++i;
-					if (i == args.end())
-					{
+					if ( i == args.end()) {
 						printHelp(args[0].text());
 						return true;
 					}
 					overridePort = *i;
+				} else if ( key == "localip" && !overrideServer.isEmpty()) {
+					++i;
+					if ( i == args.end()) {
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideLocalIp = *i;
+				} else if ( key == "serverip" && !overrideServer.isEmpty()) {
+					++i;
+					if ( i == args.end()) {
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideServerIp = *i;
+				} else if ( key == "interface" && !overrideServer.isEmpty()) {
+					++i;
+					if ( i == args.end()) {
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideServerInterface = *i;
+				} else if ( key == "staff" && !overrideServer.isEmpty()) {
+					++i;
+					if ( i == args.end()) {
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideStaff = *i;
+				} else if ( key == "name" && !overrideServer.isEmpty()) {
+					++i;
+					if ( i == args.end()) {
+						printHelp(args[0].text());
+						return true;
+					}
+					overrideName = *i;
+				}
+			} else if ((*i)[0] == '-' ) {
+				for ( int j = 1; j < (*i).length(); ++j ) {
+					if ((*i)[j] == 'h' ) {
+						printHelp(args[0].text());
+						return true;
+					}
+					if ((*i)[j] == 's' ) {
+						++i;
+						if ( i == args.end()) {
+							printHelp(args[0].text());
+							return true;
+						}
+						overrideServer = *i;
+					}
+					if ((*i)[j] == 'p' && !overrideServer.isEmpty()) {
+						++i;
+						if ( i == args.end()) {
+							printHelp(args[0].text());
+							return true;
+						}
+						overridePort = *i;
+					}
 				}
 			}
 		}
 	}
+	else
+	{
+		if ( getenv("SERVER") )
+			overrideServer = getenv("SERVER");
+
+		if ( getenv("PORT") && !overrideServer.isEmpty())
+			overridePort = getenv("PORT");
+
+		if ( getenv("LOCALIP") && !overrideServer.isEmpty())
+			overrideLocalIp = getenv("LOCALIP");
+
+		if ( getenv("SERVERIP") && !overrideServer.isEmpty())
+			overrideServerIp = getenv("SERVERIP");
+
+		if ( getenv("INTERFACE") && !overrideServer.isEmpty())
+			overrideServerInterface = getenv("INTERFACE");
+
+		if ( getenv("STAFFACCOUNT") && !overrideServer.isEmpty())
+			overrideStaff = getenv("STAFFACCOUNT");
+
+		if ( getenv("SERVERNAME") && !overrideServer.isEmpty())
+			overrideName = getenv("SERVERNAME");
+	}
+
 	return false;
 }
 
