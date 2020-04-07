@@ -451,12 +451,6 @@ bool TServer::doTimedEvents()
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-
-		// TODO(joey): no no no no no no no this is not how it is done! a server will announce to the serverlist a new player
-		// and then it will be added! you can't just spam everything!!!
-		//TServerList* list = this->getServerList();
-		//if (list)
-		//	list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 	}
 
 	// Stuff that happens every minute.
@@ -1093,7 +1087,7 @@ TPlayer * TServer::getPlayer(const unsigned short id) const
 {
 	if (id >= (unsigned short)playerIds.size())
 		return nullptr;
-	
+
 	return playerIds[id];
 }
 
