@@ -80,6 +80,10 @@ class TLevel
 		//! \return The level signs.
 		std::vector<TLevelSign *>* getLevelSigns()		{ return &levelSigns; }
 
+		//! Gets a vector full of the level links.
+		//! \return The level links.
+		std::vector<TLevelLink *>* getLevelLinks()		{ return &levelLinks; }
+
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
 		std::vector<TPlayer *>* getPlayerList()			{ return &levelPlayerList; }
@@ -192,12 +196,12 @@ class TLevel
 		//! \return Currently, it always returns true.
 		bool doTimedEvents();
 
+		bool isOnWall(double pX, double pY);
+		bool isOnWater(double pX, double pY);
 #ifdef V8NPCSERVER
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
 		TLevelLink *isOnLink(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
-		bool isOnWall(double pX, double pY);
-		bool isOnWater(double pX, double pY);
 		void sendChatToLevel(const TPlayer *player, const CString& message);
 
 		inline IScriptWrapped<TLevel> * getScriptObject() const {

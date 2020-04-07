@@ -412,10 +412,8 @@ bool TPlayer::onRecv()
 		return false;
 
 	// Do the main function.
-	if (doMain() == false)
-		return false;
+	return doMain();
 
-	return true;
 }
 
 bool TPlayer::onSend()
@@ -552,7 +550,7 @@ bool TPlayer::doTimedEvents()
 	// Increase player AP.
 	if (settings->getBool("apsystem") && level != 0)
 	{
-		if (!(status & PLSTATUS_PAUSED) && level->isSparringZone() == false)
+		if ( !(status & PLSTATUS_PAUSED) && !level->isSparringZone())
 			apCounter--;
 
 		if (apCounter <= 0)
@@ -611,7 +609,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 	if (type == PLTYPE_AWAIT)
 	{
 		packetCount++;
-		if (msgPLI_LOGIN(CString() << pPacket.readString("\n")) == false)
+		if ( !msgPLI_LOGIN(CString() << pPacket.readString("\n")))
 			return false;
 	}
 
@@ -825,7 +823,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 bool TPlayer::testSign()
 {
 	CSettings* settings = server->getSettings();
-	if (settings->getBool("serverside", false) == false) return true;	// TODO: NPC server check instead
+	if ( !settings->getBool("serverside", false)) return true;	// TODO: NPC server check instead
 
 	// Check for sign collisions.
 	if ((sprite % 4) == 0)
@@ -859,7 +857,7 @@ void TPlayer::testTouch()
 
 void TPlayer::dropItemsOnDeath()
 {
-	if (server->getSettings()->getBool("dropitemsdead", true) == false)
+	if ( !server->getSettings()->getBool("dropitemsdead", true))
 		return;
 
 	int mindeathgralats = server->getSettings()->getInt("mindeathgralats", 1);
@@ -986,12 +984,12 @@ bool TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setheadallowed", true) == false) return false;
+		if ( !server->getSettings()->getBool("setheadallowed", true)) return false;
 		processed = true;
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
-		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		if ( !server->getSettings()->getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_HEAD);
 
 		// Try to find the file.
@@ -1038,7 +1036,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
-		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		if ( !server->getSettings()->getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_BODY);
 
 		// Try to find the file.
@@ -1067,7 +1065,7 @@ bool TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setswordallowed", true) == false) return false;
+		if ( !server->getSettings()->getBool("setswordallowed", true)) return false;
 		processed = true;
 
 		// Check to see if it is a default sword.
@@ -1085,7 +1083,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
-		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		if ( !server->getSettings()->getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_SWORD);
 
 		// Try to find the file.
@@ -1114,7 +1112,7 @@ bool TPlayer::processChat(CString pChat)
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
-		if (server->getSettings()->getBool("setshieldallowed", true) == false) return false;
+		if ( !server->getSettings()->getBool("setshieldallowed", true)) return false;
 		processed = true;
 
 		// Check to see if it is a default shield.
@@ -1132,7 +1130,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Get the appropriate filesystem.
 		CFileSystem* filesystem = server->getFileSystem();
-		if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+		if ( !server->getSettings()->getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_SHIELD);
 
 		// Try to find the file.
@@ -1454,10 +1452,9 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	TLevel* newLevel = TLevel::findLevel(pLevelName, server);
 
 	// If we are warping to the same level, just update the player's location.
-	if (currentLevel != 0 && newLevel == currentLevel)
+	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		CString packet = CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2);
-		setProps(packet, true, true);
+		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), true, true);
 		return true;
 	}
 
@@ -1483,7 +1480,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	{
 		// Failed, so try warping back to our old level.
 		bool warped = true;
-		if (currentLevel == 0) warped = false;
+		if (currentLevel == nullptr) warped = false;
 		else
 		{
 			x = oldX;
@@ -1491,7 +1488,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 			pmap = server->getMap(currentLevel);
 			warped = setLevel(currentLevel->getLevelName());
 		}
-		if (warped == false)
+		if ( !warped )
 		{
 			// Failed, so try warping to the unstick level.  If that fails, we disconnect.
 			if (unstickLevel == 0) return false;
@@ -1500,7 +1497,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 			x = unstickX;
 			y =	unstickY;
 			pmap = server->getMap(unstickLevel);
-			if (setLevel(unstickLevel->getLevelName()) == false)
+			if ( !setLevel(unstickLevel->getLevelName()))
 				return false;
 		}
 	}
@@ -1643,7 +1640,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	}
 
 	// Send board changes, chests, horses, and baddies.
-	if (fromAdjacent == false)
+	if ( !fromAdjacent )
 	{
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
 		sendPacket(CString() << pLevel->getChestPacket(this));
@@ -1659,7 +1656,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
-	if (fromAdjacent == false || pmap != 0)
+	if ( !fromAdjacent || pmap != 0)
 	{
 		// If we are the leader, send it now.
 		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
@@ -1668,7 +1665,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
-	if (fromAdjacent == false || pmap != 0)
+	if ( !fromAdjacent || pmap != 0)
 	{
 		// Send NPCs.
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
@@ -1693,7 +1690,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (level->isSingleplayer() == false)
+	if ( !level->isSingleplayer())
 	{
 		if (pmap)
 		{
@@ -1761,7 +1758,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			firstLevel = false;
 
 			// Send links, signs, and mod time.
-			if (settings->getBool("serverside", false) == false)	// TODO: NPC server check instead.
+			if ( !settings->getBool("serverside", false))	// TODO: NPC server check instead.
 			{
 				sendPacket(CString() << pLevel->getLinksPacket());
 				sendPacket(CString() << pLevel->getSignsPacket(this));
@@ -1771,7 +1768,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		else
 			sendPacket(CString() >> (char)PLO_LEVELBOARD);
 
-		if (fromAdjacent == false)
+		if ( !fromAdjacent )
 		{
 			sendPacket(CString() << pLevel->getBoardChangesPacket2(l_time));
 			sendPacket(CString() << pLevel->getChestPacket(this));
@@ -1779,7 +1776,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	}
 
 	// Send board changes, chests, horses, and baddies.
-	if (fromAdjacent == false)
+	if ( !fromAdjacent )
 	{
 		sendPacket(CString() << pLevel->getHorsePacket());
 		sendPacket(CString() << pLevel->getBaddyPacket(versionID));
@@ -1800,12 +1797,12 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(server->getNWTime()));
 
 	// Send NPCs.
-	if (fromAdjacent == false)
+	if ( !fromAdjacent )
 		sendPacket(CString() << pLevel->getNpcsPacket(l_time, versionID));
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (level->isSingleplayer() == false && fromAdjacent == false)
+	if ( !level->isSingleplayer() && !fromAdjacent )
 	{
 		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
 		std::vector<TPlayer*>* playerList = level->getPlayerList();
@@ -1837,7 +1834,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 			i = cachedLevels.end();
 		} else ++i;
 	}
-	if (found == false) cachedLevels.push_back(new SCachedLevel(level, time(0)));
+	if ( !found ) cachedLevels.push_back(new SCachedLevel(level, time(0)));
 
 	// Remove self from list of players in level.
 	level->removePlayer(this);
@@ -1984,7 +1981,7 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 
 		// See if we can ask if it is a global guild.
 		bool askGlobal = server->getSettings()->getBool("globalguilds", true);
-		if (askGlobal == false)
+		if ( !askGlobal )
 		{
 			// Check for whitelisted global guilds.
 			std::vector<CString> allowed = server->getSettings()->getStr("allowedglobalguilds").tokenize(",");
@@ -2027,7 +2024,7 @@ bool TPlayer::addWeapon(int defaultWeapon)
 {
 	// Allow Default Weapons..?
 	CSettings *settings = server->getSettings();
-	if (settings->getBool("defaultweapons", true) == false)
+	if ( !settings->getBool("defaultweapons", true))
 		return false;
 
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
@@ -2055,7 +2052,7 @@ bool TPlayer::addWeapon(const CString& name)
 
 bool TPlayer::addWeapon(TWeapon* weapon)
 {
-	if (weapon == 0) return false;
+	if (weapon == nullptr) return false;
 
 	// See if the player already has the weapon.
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
@@ -2293,7 +2290,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Verify login details with the serverlist.
 	// TODO: localhost mode.
-	if (server->getServerList()->getConnected() == false)
+	if ( !server->getServerList()->getConnected())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
 		return false;
@@ -2502,7 +2499,7 @@ bool TPlayer::msgPLI_FIRESPY(CString& pPacket)
 bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 {
 	// TODO: Remove when an npcserver is created.
-	if (server->getSettings()->getBool("duplicatecanbecarried", false) == false)
+	if ( !server->getSettings()->getBool("duplicatecanbecarried", false))
 	{
 		TNPC* npc = 0;
 		if (carryNpcId != 0) npc = server->getNPC(carryNpcId);
@@ -2606,7 +2603,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		CSettings* settings = server->getSettings();
 
 		// Give a kill to the player who killed me.
-		if (settings->getBool("dontchangekills", false) == false)
+		if ( !settings->getBool("dontchangekills", false))
 			player->setKills(player->getProp(PLPROP_KILLSCOUNT).readGInt() + 1);
 
 		// Now, adjust their AP if allowed.
@@ -2661,7 +2658,7 @@ bool TPlayer::msgPLI_BADDYHURT(CString& pPacket)
 bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 {
 	// Don't add a baddy if we aren't in a level!
-	if (level == 0)
+	if (level == nullptr)
 		return true;
 
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
@@ -2712,7 +2709,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 		if (flagName == "gr.fileerror" || flagName == "gr.filedata")
 			return true;
 
-		if (settings->getBool("flaghack_movement", true) == true)
+		if ( settings->getBool("flaghack_movement", true))
 		{
 			// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
 			// movement amongst pre-2.3 clients.
@@ -2828,7 +2825,7 @@ bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 
 	// See if putnpc is allowed.
-	if (settings->getBool("putnpcenabled") == false)
+	if ( !settings->getBool("putnpcenabled"))
 		return true;
 
 	// Load the code.
@@ -2905,7 +2902,7 @@ bool TPlayer::msgPLI_HURTPLAYER(CString& pPacket)
 bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 {
 	CSettings* settings = server->getSettings();
-	if (settings->getBool("noexplosions", false) == true) return true;
+	if ( settings->getBool("noexplosions", false)) return true;
 
 	unsigned char eradius = pPacket.readGUChar();
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
@@ -3125,7 +3122,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	bool isDefault = false;
 	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
 	{
-		if (file.match(CString(__defaultfiles[i])) == true)
+		if (file.match(CString(__defaultfiles[i])))
 		{
 			isDefault = true;
 			break;
@@ -3134,7 +3131,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if (isDefault == false && fModTime > modTime)
+	if ( !isDefault && fModTime > modTime)
 		return msgPLI_WANTFILE(file);
 
 	if (versionID < CLVER_2_1)
@@ -3228,7 +3225,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			return true;
 		}
 
-		if (settings->getBool("triggerhack_weapons", false) == true)
+		if ( settings->getBool("triggerhack_weapons", false))
 		{
 			if (action.find("gr.addweapon") == 0)
 			{
@@ -3254,7 +3251,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_execscript", false) == true)
+		if ( settings->getBool("triggerhack_execscript", false))
 		{
 			if (action.find("gr.es_clear") == 0)
 			{
@@ -3341,7 +3338,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_guilds", false) == true)
+		if ( settings->getBool("triggerhack_guilds", false))
 		{
 			if (action.find("gr.addguildmember") == 0)
 			{
@@ -3450,7 +3447,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_groups", true) == true)
+		if ( settings->getBool("triggerhack_groups", true))
 		{
 			if (action.find("gr.setgroup") == 0)
 			{
@@ -3484,7 +3481,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_files", false) == true)
+		if ( settings->getBool("triggerhack_files", false))
 		{
 			if  (action.find("gr.appendfile") == 0)
 			{
@@ -3568,7 +3565,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_rc", false) == true)
+		if ( settings->getBool("triggerhack_rc", false))
 		{
 			if (action.find("gr.rcchat") == 0)
 			{
@@ -3582,7 +3579,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_props", false) == true)
+		if ( settings->getBool("triggerhack_props", false))
 		{
 			if (action.find("gr.attr") == 0)
 			{
@@ -3610,7 +3607,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings->getBool("triggerhack_levels", false) == true)
+		if ( settings->getBool("triggerhack_levels", false))
 		{
 			if (action.find("gr.updatelevel") == 0)
 			{
@@ -3928,10 +3925,10 @@ bool TPlayer::addPMServer(CString& option)
 
 bool TPlayer::remPMServer(CString& option)
 {
-	if (PMServerList.size() == 0)
+	if (PMServerList.empty())
 		return true;
 
-	if (externalPlayerList.size() != 0)
+	if (!externalPlayerList.empty())
 	{
 		// Check if a player has disconnected
 		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
@@ -3971,7 +3968,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 	std::vector<CString> players2 = players.tokenize("\n");
 	int i22 = 0;
 
-	if (externalPlayerList.size() != 0)
+	if (!externalPlayerList.empty())
 	{
 		// Check if a player has disconnected
 		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
@@ -4015,7 +4012,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		CString nick = tmpPlyr.readString("\n");
 
 		bool exist = false;
-		if (externalPlayerList.size() != 0)
+		if (!externalPlayerList.empty())
 		{
 			for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
 			{
@@ -4045,7 +4042,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 			if (newId == 0)
 			{
 				newId = externalPlayerIds.size();
-				externalPlayerIds.push_back(0);
+				externalPlayerIds.push_back(nullptr);
 			}
 
 			TPlayer* tmpPlyr2 = new TPlayer(server, 0, newId);
@@ -4062,7 +4059,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		}
 	}
 
-	if (externalPlayerList.size() != 0)
+	if (!externalPlayerList.empty())
 	{
 		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
 		{

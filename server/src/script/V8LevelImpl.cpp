@@ -208,6 +208,31 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// Level Method: level.onwall(x, y);
+void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		double npcX = (float)args[0]->NumberValue(context).ToChecked();
+		double npcY = (float)args[1]->NumberValue(context).ToChecked();
+
+		args.GetReturnValue().Set(levelObject->isOnWall(npcX, npcY));
+	}
+}
+
 void bindClass_Level(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment

@@ -1,12 +1,12 @@
 #include "IDebug.h"
 #include <sys/stat.h>
-#if !defined(_WIN32) && !defined(_WIN64)
-	#include <dirent.h>
-	#include <utime.h>
-#else
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 	#include <sys/utime.h>
 	#define _utime utime
 	#define _utimbuf utimbuf;
+#else
+	#include <dirent.h>
+	#include <utime.h>
 #endif
 #include <map>
 #include "IDebug.h"
@@ -27,7 +27,7 @@
 #endif
 
 CFileSystem::CFileSystem()
-: server(0)
+: server(nullptr)
 {
 	m_preventChange = new std::recursive_mutex();
 }
@@ -54,7 +54,7 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	if (server == 0) return;
+	if (server == nullptr) return;
 
 	// Format the directory.
 	CString newDir(dir);
@@ -150,7 +150,7 @@ CString CFileSystem::fileExistsAs(const CString& file) const
 	return CString();
 }
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
 	CString dir = CString() << directory.remove(directory.findl(fSep)) << fSep;
@@ -191,7 +191,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	struct dirent *ent;
 
 	// Try to open the directory.
-	if ((dir = opendir(path.text())) == 0)
+	if ((dir = opendir(path.text())) == nullptr)
 		return;
 
 	// Read everything in it now.
@@ -267,8 +267,7 @@ bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 	ut.modtime = modTime;
 
 	// Change the file.
-	if (utime(fileName.text(), &ut) == 0) return true;
-	return false;
+	return utime(fileName.text(), &ut) == 0;
 }
 
 int CFileSystem::getFileSize(const CString& file) const
