@@ -36,7 +36,7 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
-	
+
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
@@ -58,7 +58,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
-	
+
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
@@ -196,7 +196,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		TServer *server = levelObject->getServer();
 		TNPC *npc = server->addNPC("", script, npcX, npcY, levelObject, false, true);
-		
+
 		if (npc != nullptr)
 		{
 			npc->setType("LOCALN");
@@ -257,7 +257,8 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
-		
+	level_proto->Set(v8::String::NewFromUtf8(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
+
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
