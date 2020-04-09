@@ -79,8 +79,8 @@ inline void ScriptExecutionContext::addAction(ScriptAction *action)
 
 inline void ScriptExecutionContext::resetExecution()
 {
-	for (auto it = _actions.begin(); it != _actions.end(); ++it)
-		delete *it;
+	for (auto & _action : _actions)
+		delete _action;
 	_actions.clear();
 
 #ifndef NOSCRIPTPROFILING
@@ -99,10 +99,10 @@ inline bool ScriptExecutionContext::runExecution()
 	_scriptEngine->StartScriptExecution(currentTimer);
 
 	// iterate over queued actions
-	for (auto it = iterateActions.begin(); it != iterateActions.end(); it++)
+	SCRIPTENV_D("Running %d actions:\n", iterateActions.size());
+	for (auto & action : iterateActions)
 	{
-		ScriptAction *action = *it;
-		SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
+	    SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
 		action->Invoke();
 		delete action;
 	}

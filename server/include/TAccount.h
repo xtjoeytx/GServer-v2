@@ -165,6 +165,7 @@ class TAccount
 		int getRupees() const			{ return gralatc; }
 		int getSwordPower() const		{ return swordPower; }
 		int getShieldPower() const		{ return shieldPower; }
+		int getSprite() const			{ return sprite; }
 		int getStatus() const			{ return status; }
 		int getOnlineTime() const		{ return onlineTime; }
 		int getKills() const			{ return kills; }

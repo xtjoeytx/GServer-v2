@@ -124,14 +124,14 @@ void CScriptEngine::Cleanup(bool shutDown)
 	_updateWeapons.clear();
 
 	// Remove any registered callbacks
-	for (auto it = _callbacks.begin(); it != _callbacks.end(); ++it) {
-		delete it->second;
+	for (auto & _callback : _callbacks) {
+		delete _callback.second;
 	}
 	_callbacks.clear();
 
 	// Remove cached scripts
-	for (auto it = _cachedScripts.begin(); it != _cachedScripts.end(); ++it) {
-		delete it->second;
+	for (auto & _cachedScript : _cachedScripts) {
+		delete _cachedScript.second;
 	}
 	_cachedScripts.clear();
 
@@ -154,8 +154,10 @@ void CScriptEngine::Cleanup(bool shutDown)
 
 	// Cleanup the Script Environment
 	_env->Cleanup(shutDown);
+
+	// Destroy the environment
 	delete _env;
-	_env = 0;
+	_env = nullptr;
 }
 
 IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool referenceCount)

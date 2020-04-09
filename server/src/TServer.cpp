@@ -286,7 +286,8 @@ void TServer::cleanup()
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
 #ifdef UPNP
-	upnp_thread.join();
+	if (upnp_thread.joinable())
+		upnp_thread.join();
 	upnp.remove_all_forwarded_ports();
 #endif
 
@@ -304,42 +305,32 @@ void TServer::cleanup()
 	mNpcServer = nullptr;
 #endif
 
-	for ( auto player = playerList.begin(); player != playerList.end(); )
-	{
-		delete *player;
-		player = playerList.erase(player);
+	for (auto& player : playerList) {
+		delete player;
 	}
 	playerIds.clear();
 	playerList.clear();
 
-	for ( auto level = levelList.begin(); level != levelList.end(); )
-	{
-		delete *level;
-		level = levelList.erase(level);
+	for (auto& level : levelList) {
+		delete level;
 	}
 	levelList.clear();
 
-	for ( auto map = mapList.begin(); map != mapList.end(); )
-	{
-		delete *map;
-		map = mapList.erase(map);
+	for (auto& map : mapList) {
+		delete map;
 	}
 	mapList.clear();
 
-	for ( auto npc = npcList.begin(); npc != npcList.end(); )
-	{
-		delete *npc;
-		npc = npcList.erase(npc);
+	for (auto& npc : npcList) {
+		delete npc;
 	}
+    npcList.clear();
 	npcIds.clear();
-	npcList.clear();
 	npcNameList.clear();
 
 	saveWeapons();
-	for ( auto weapon = weaponList.begin(); weapon != weaponList.end(); )
-	{
-		delete weapon->second;
-		weaponList.erase(weapon++);
+	for (auto& weapon : weaponList) {
+		delete weapon.second;
 	}
 	weaponList.clear();
 
@@ -410,14 +401,12 @@ bool TServer::doTimedEvents()
 	{
 		for (auto & player : playerList)
 		{
-			if (player == nullptr)
-				continue;
-
-			if (player->isNPCServer())
-				continue;
-
-			if (!player->doTimedEvents())
-				this->deletePlayer(player);
+			assert(player);
+            if (!player->isNPCServer())
+            {
+                if (!player->doTimedEvents())
+                    this->deletePlayer(player);
+            }
 		}
 	}
 
@@ -425,9 +414,7 @@ bool TServer::doTimedEvents()
 	{
 		for (auto level : levelList)
 		{
-				if (level == nullptr)
-				continue;
-
+            assert(level);
 			level->doTimedEvents();
 		}
 
@@ -437,8 +424,7 @@ bool TServer::doTimedEvents()
 			for (auto & j : groupLevel.second)
 			{
 				TLevel* level = j.second;
-				if (level == nullptr)
-					continue;
+				assert(level);
 
 				level->doTimedEvents();
 			}
@@ -1498,6 +1484,8 @@ unsigned int TServer::getFreePlayerId()
 
 bool TServer::addPlayer(TPlayer *player, unsigned int id)
 {
+    assert(player);
+
 	// No id was passed, so we will fetch one
 	if (id == UINT_MAX)
 		id = getFreePlayerId();

@@ -3,7 +3,7 @@
 #ifndef SCRIPTWRAPPED_H
 #define SCRIPTWRAPPED_H
 
-#include <assert.h>
+#include <cassert>
 
 template<class T>
 class IScriptWrapped

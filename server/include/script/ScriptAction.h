@@ -8,7 +8,7 @@ class IScriptFunction;
 class ScriptAction
 {
 public:
-	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = std::string())
+	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = "")
 		: _function(function), _args(args), _action(action) {
 		_function->increaseReference();
 	}

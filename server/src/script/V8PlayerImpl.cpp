@@ -157,6 +157,23 @@ void Player_SetInt_Darts(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 	playerObject->setProps(CString() >> (char)PLPROP_ARROWSCOUNT >> (char)newValue, true, true);
 }
 
+// PROPERTY: player.dir
+void Player_GetInt_Dir(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	info.GetReturnValue().Set(playerObject->getSprite() % 4);
+}
+
+void Player_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
+
+	char newValue = (char)(value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked() % 4);
+	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue, true, true);
+}
+
+
 // PROPERTY: player.fullhearts
 void Player_GetInt_Fullhearts(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -1070,6 +1087,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "bombs"), Player_GetInt_Bombs, Player_SetInt_Bombs);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "chat"), Player_GetStr_Chat, Player_SetStr_Chat);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "darts"), Player_GetInt_Darts, Player_SetInt_Darts);
+	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "dir"), Player_GetInt_Dir, Player_SetInt_Dir);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "headimg"), Player_GetStr_HeadImage, Player_SetStr_HeadImage);
 	player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "fullhearts"), Player_GetInt_Fullhearts, Player_SetInt_Fullhearts);

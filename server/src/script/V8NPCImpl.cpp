@@ -612,6 +612,62 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	npcObject->moveNPC(delta_x, delta_y, time_fps, options);
 }
 
+// NPC Method: npc.setimg(image);
+void NPC_Function_SetImg(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	// Unwrap object
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+		v8::String::Utf8Value image(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		npcObject->setImage(*image);
+		npcObject->updatePropModTime(NPCPROP_IMAGE);
+		npcObject->updatePropModTime(NPCPROP_IMAGEPART);
+	}
+}
+
+// NPC Method: npc.setimgpart(filename,offsetx,offsety,width,height)
+void NPC_Function_SetImgPart(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 5);
+
+	// Unwrap object
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::String::Utf8Value image(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		// TODO(joey): may need to check the types individually
+		int offsetx = args[1]->Int32Value(context).ToChecked();
+		int offsety = args[2]->Int32Value(context).ToChecked();
+		int width = args[3]->Int32Value(context).ToChecked();
+		int height = args[4]->Int32Value(context).ToChecked();
+
+		npcObject->setImage(*image, offsetx, offsety, width, height);
+		npcObject->updatePropModTime(NPCPROP_IMAGE);
+		npcObject->updatePropModTime(NPCPROP_IMAGEPART);
+	}
+}
+
 // NPC Method: npc.showcharacter();
 void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1307,8 +1363,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "move"), v8::FunctionTemplate::New(isolate, NPC_Function_Move, engine_ref));
 //	npc_proto->Set(v8::String::NewFromUtf8(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
-//	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)

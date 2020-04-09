@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <v8.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unordered_map>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"

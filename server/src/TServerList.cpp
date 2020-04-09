@@ -377,11 +377,7 @@ void TServerList::handleText(const CString& data)
 							{
 								serverListCount[serverName] = pcount;
 							}
-
-							// update shit
-							printf("Playercount for %s is %d\n", serverName.c_str(), strtoint(val));
 						}
-
 					}
 				}
 			}

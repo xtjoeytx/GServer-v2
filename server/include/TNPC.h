@@ -176,6 +176,7 @@ class TNPC
 		void setColorId(unsigned int idx, unsigned char val);
 		void setSave(unsigned int idx, unsigned char val);
 		void setPropModTime(unsigned char pid, time_t time);
+		void setImage(const CString& image, int offsetx = 0, int offsety = 0, int width = 0, int height = 0);
 
 		// get functions
 		unsigned int getId() const				{ return id; }
@@ -346,6 +347,21 @@ inline
 void TNPC::setSave(unsigned int idx, unsigned char val)
 {
 	if (idx < 10) saves[idx] = val;
+}
+
+inline
+void TNPC::setImage(const CString& pImage, int offsetx, int offsety, int pwidth, int pheight)
+{
+	if (pImage.length() > 223) {
+		image = pImage.subString(0, 223);
+	}
+	else image = pImage;
+
+	imagePart.clear();
+	imagePart.writeGShort(offsetx);
+	imagePart.writeGShort(offsety);
+	imagePart.writeGChar(pwidth);
+	imagePart.writeGChar(pheight);
 }
 
 #ifdef V8NPCSERVER

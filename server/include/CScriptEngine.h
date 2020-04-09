@@ -3,7 +3,7 @@
 #ifndef CSCRIPTENGINE_H
 #define CSCRIPTENGINE_H
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 #include <atomic>
 #include <chrono>

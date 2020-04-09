@@ -2849,7 +2849,7 @@ bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
-	server->deleteNPC(nid, level);
+	server->deleteNPC(nid, level != nullptr);
 	return true;
 }
 
