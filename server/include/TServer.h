@@ -244,9 +244,6 @@ class TServer : public CSocketStub
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 #ifdef V8NPCSERVER
-		std::chrono::high_resolution_clock::time_point lastScriptTimer;
-		std::chrono::nanoseconds accumulator;
-
 		CScriptEngine mScriptEngine;
 		int mNCPort;
 		TPlayer *mNpcServer;

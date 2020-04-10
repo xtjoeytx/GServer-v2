@@ -187,7 +187,7 @@ void Player_SetInt_Fullhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)clip(newValue, 0, 20), true, true);
 }
 
 // PROPERTY: player.glovepower
@@ -252,9 +252,8 @@ void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	int newValueInt = (int)(newValue * 2);
-	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)newValueInt, true, true);
+	int newValue = (int)(value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked() * 2);
+	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)clip(newValue, 0, 40), true, true);
 }
 
 // PROPERTY: player.headimg

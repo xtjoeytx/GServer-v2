@@ -38,10 +38,6 @@ TServer::TServer(CString pName)
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
-#ifdef V8NPCSERVER
-	lastScriptTimer = time_now;
-	accumulator = std::chrono::nanoseconds(0);
-#endif
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
@@ -351,8 +347,6 @@ void TServer::restart()
 	doRestart = true;
 }
 
-constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
-
 bool TServer::doMain()
 {
 	// Update our socket manager.
@@ -362,23 +356,7 @@ bool TServer::doMain()
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
 #ifdef V8NPCSERVER
-	// Run scripts every 0.05 seconds
-	auto delta_time = currentTimer - lastScriptTimer;
-	lastScriptTimer = currentTimer;
-	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
-
-	// Accumulator for timeout / scheduled events
-	bool updated = false;
-	while (accumulator >= timestep) {
-		accumulator -= timestep;
-
-		mScriptEngine.RunScripts(true);
-		updated = true;
-	}
-
-	// Run any queued actions anyway
-	if (!updated)
-		mScriptEngine.RunScripts();
+    mScriptEngine.RunScripts(currentTimer);
 #endif
 
 	// Every second, do some events.

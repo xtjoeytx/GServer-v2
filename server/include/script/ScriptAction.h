@@ -19,6 +19,9 @@ public:
 		}
 
 		_function->decreaseReference();
+		if (!_function->isReferenced()) {
+			delete _function;
+		}
 	}
 
 	inline void Invoke() const {

@@ -52,9 +52,12 @@ NPC Object:
 		hide() - hide the npc
 		message("message") - sets npc chat
 		move(x, y, time, options) - moves the npc by x/y over a specified time
+		scheduleevent(time, function, arg) - schedule an event to run at the specified time in seconds, arg can be an object of data (ex: { "foo": "bar", "player": player })
 		show() - show the npc
 		showcharacter() - displays a character instead of an image
 		setcharprop("code", "value") - sets character prop
+		setimg("filename") - sets npc image
+		setimgpart("filename", offsetx, offsety, width, height)
 		setshape(type, width, height) - sets shape of npc
 		join("className") - joins a class to the npc
 		registerTrigger("action", function) - registers an action for triggeractions
@@ -118,6 +121,7 @@ Player Object:
 		chat
 		colors[idx] - index range is 0-4
 		darts
+		dir
 		hearts
 		headimg
 		flags['key'] - retrieve/manipulate player flags

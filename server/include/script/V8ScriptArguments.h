@@ -30,6 +30,10 @@ namespace detail
 		return v8::String::NewFromUtf8(env->Isolate(), val.c_str());
 	}
 
+	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::shared_ptr<V8ScriptData>& object) {
+		return object.get()->Object();
+	}
+
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, IScriptFunction *function) {
 		return static_cast<V8ScriptFunction *>(function)->Function();
 	}
@@ -50,7 +54,7 @@ class V8ScriptArguments : public ScriptArguments<Ts...>
 public:
 	template <typename... Args>
 	explicit V8ScriptArguments(Args&&... An)
-		: ScriptArguments<Ts...>(An...) {
+		: ScriptArguments<Ts...>(std::forward<Args>(An)...) {
 	}
 
 	~V8ScriptArguments() = default;

@@ -866,12 +866,11 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 {
 	int pid = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
-/*
- * This is an old hack, disabling for now
+
+	// A hack to allow v5 clients to serverwarp to servers
 	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
-*/
 }
 
 void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
