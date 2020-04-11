@@ -949,7 +949,7 @@ bool TNPC::runScriptEvents()
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
 		for (unsigned char propId : propModified)
 		{
-            modTime[propId] = newModTime;
+			modTime[propId] = newModTime;
 			propPacket >> (char)(propId) << getProp(propId);
 		}
 		propModified.clear();
@@ -1019,7 +1019,7 @@ CString TNPC::getVariableDump()
 	npcDump << "\nAttributes:\n";
 	for (int propId : propList)
 	{
-        CString prop = getProp(propId);
+		CString prop = getProp(propId);
 
 		switch (propId)
 		{
@@ -1035,7 +1035,7 @@ CString TNPC::getVariableDump()
 				int len = prop.readGUShort();
 				if (len > 0)
 					npcDump << npcNameStr << "." << propNames[propId] << ": size: " << CString(len) << "\n";
-                break;
+					break;
 			}
 
 			case NPCPROP_SWORDIMAGE:
