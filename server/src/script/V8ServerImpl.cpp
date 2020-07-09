@@ -288,8 +288,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	// Get npcs list
 	auto playerList = serverObject->getPlayerList();
 
-	// TODO(joey): Since we are skipping npc-server, length may be off?
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate);
 	
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {

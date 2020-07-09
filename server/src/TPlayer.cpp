@@ -1428,14 +1428,7 @@ bool TPlayer::isAdminIp()
 
 bool TPlayer::isStaff()
 {
-	std::vector<CString> staffList = server->getSettings()->getStr("staff").tokenize(",");
-	for (std::vector<CString>::iterator i = staffList.begin(); i != staffList.end(); ++i)
-	{
-		if (accountName.toLower() == (*i).trim().toLower())
-			return true;
-	}
-
-	return false;
+	return server->isStaff(accountName);
 }
 
 /*
@@ -2117,6 +2110,16 @@ void TPlayer::sendRPGMessage(const CString &message)
 void TPlayer::sendSignMessage(const CString &message)
 {
 	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
+}
+
+void TPlayer::setAni(CString gani)
+{
+	if (gani.length() > 223)
+		gani.remove(223);
+
+	CString propPackage;
+	propPackage >> (char)PLPROP_GANI >> (char)gani.length() << gani;
+	setProps(propPackage, true, true);
 }
 
 /*

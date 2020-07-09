@@ -55,6 +55,8 @@ NPC Object:
 		scheduleevent(time, function, arg) - schedule an event to run at the specified time in seconds, arg can be an object of data (ex: { "foo": "bar", "player": player })
 		show() - show the npc
 		showcharacter() - displays a character instead of an image
+		setani("ani", "param0", "param1"..)
+		setcharani("ani", "param0", "param1"..) - same as above
 		setcharprop("code", "value") - sets character prop
 		setimg("filename") - sets npc image
 		setimgpart("filename", offsetx, offsety, width, height)
@@ -102,12 +104,14 @@ Player Object:
 		removeweapon("weapon") - removes a weapon from a player
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
+		attached(npcid|npcobject) - returns true if the player is attached to the npc
 		attachnpc(npcid) - attachs a player to an npc
 		detachnpc() - detaches a player from an npc
 		join("className") - joins a class to the player
 		say("message") - sends a sign message to the player
 		sendrpgmessage("message") - sends a message to the players rpg window
 		sendpm("message") - sends a pm from the npc-server
+		setani("ani", "param0", "param1"..)
 		setlevel2("levelname", x, y) - warps a player to the level
 		triggeraction(x, y, "action", "args"..)
 
@@ -116,6 +120,7 @@ Player Object:
 		account - (read-only)
 		ani
 		ap
+		attr[idx] - index range 1-30
 		bodyimg
 		bombs
 		chat
@@ -130,6 +135,7 @@ Player Object:
 		guild
 		isadmin
 		isclient
+		isstaff - true if account is in the staff= serveroptions
 		level - the level object
 		levelname
 		mp

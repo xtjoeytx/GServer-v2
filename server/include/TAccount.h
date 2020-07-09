@@ -174,6 +174,7 @@ class TAccount
 		bool getBanned() const			{ return isBanned; }
 		bool getLoadOnly() const		{ return isLoadOnly; }
 		unsigned char getColorId(unsigned int idx) const;
+		unsigned int getAttachedNPC() const		{ return attachNPC; }
 
 		const CString& getAccountName() const	{ return accountName; }
 		const CString& getNickname() const		{ return nickName; }

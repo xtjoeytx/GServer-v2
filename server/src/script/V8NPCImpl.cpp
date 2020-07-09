@@ -683,6 +683,37 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	npcObject->setHeight(48);
 }
 
+// NPC Method: npc.setani("walk", "ani", "params");
+void NPC_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
+
+		CString animation(*newValue);
+		for (int i = 1; i < args.Length(); i++)
+		{
+			if (args[i]->IsString())
+			{
+				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate));
+				animation << "," << *aniParam;
+			}
+		}
+
+		if (animation.length() > 223)
+			animation.remove(223);
+
+		npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)animation.length() << animation, CLVER_2_17, true);
+	}
+}
+
 // NPC Method: npc.setcharprop(code, value);
 void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1418,6 +1449,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 	npc_proto->Set(v8::String::NewFromUtf8(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));

@@ -99,7 +99,7 @@ inline bool ScriptExecutionContext::runExecution()
 	_scriptEngine->StartScriptExecution(currentTimer);
 
 	// iterate over queued actions
-	SCRIPTENV_D("Running %d actions:\n", iterateActions.size());
+	SCRIPTENV_D("Running %zd actions:\n", iterateActions.size());
 	for (auto & action : iterateActions)
 	{
 	    SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());

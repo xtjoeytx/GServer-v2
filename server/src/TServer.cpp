@@ -658,6 +658,9 @@ void TServer::loadSettings()
 	// Load status list.
 	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
 
+	// Load staff list
+	staffList = settings.getStr("staff").tokenize(",");
+
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	getServerList()->sendServerHQ();
 }
@@ -1527,6 +1530,17 @@ bool TServer::isIpBanned(const CString& ip)
 	{
 		if (ip.match(ipBan)) return true;
 	}
+	return false;
+}
+
+bool TServer::isStaff(const CString& accountName)
+{
+	for (auto account : staffList)
+	{
+		if (accountName.toLower() == account.trim().toLower())
+			return true;
+	}
+
 	return false;
 }
 

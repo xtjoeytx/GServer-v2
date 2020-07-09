@@ -122,6 +122,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void enableWeapons();
 		void sendRPGMessage(const CString& message);
 		void sendSignMessage(const CString& message);
+		void setAni(CString gani);
 
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);

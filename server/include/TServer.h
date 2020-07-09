@@ -174,6 +174,7 @@ class TServer : public CSocketStub
 		std::string getClass(const std::string& className) const;
 		void updateClass(const std::string& className, const std::string& classCode);
 		bool isIpBanned(const CString& ip);
+		bool isStaff(const CString& accountName);
 		void logToFile(const std::string& fileName, const std::string& message);
 
 		bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
@@ -233,7 +234,7 @@ class TServer : public CSocketStub
 		std::map<CString, std::map<CString, TLevel*> > groupLevels;
 		std::unordered_map<std::string, std::string> classList;
 		std::unordered_map<std::string, TNPC *> npcNameList;
-		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList;
+		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
 		std::vector<TLevel *> levelList;
 		std::vector<TMap *> mapList;
 		std::vector<TNPC *> npcIds, npcList;
