@@ -822,7 +822,12 @@ void TServer::loadMaps(bool print)
 
 		// Load the gmap.
 		TMap* gmap = new TMap(MAPTYPE_GMAP);
-		if ( !gmap->load(CString() << gmapName << ".gmap", this))
+
+		if (gmapName.right(5) != ".gmap") {
+			gmapName << ".gmap";
+		}
+
+		if ( !gmap->load(CString() << gmapName, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << gmapName << ".gmap" << "\n");
 			delete gmap;
