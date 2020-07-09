@@ -34,8 +34,7 @@ statusMsg(0)
 }
 
 TAccount::~TAccount()
-{
-}
+= default;
 
 /*
 	TAccount: Load/Save Account

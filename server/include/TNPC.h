@@ -6,8 +6,10 @@
 #include "IUtil.h"
 
 #ifdef V8NPCSERVER
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
+#include "ScriptAction.h"
 #include "ScriptBindings.h"
 #include "ScriptExecutionContext.h"
 #endif
@@ -140,6 +142,13 @@ enum
 	NPCEVENTFLAG_PLAYERLOGOUT	= (int)(1 << 7),
 	NPCEVENTFLAG_NPCWARPED		= (int)(1 << 8),
 };
+
+struct ScriptEventTimer
+{
+	ScriptAction *action;
+	unsigned int timer;
+};
+
 #endif
 
 class TServer;
@@ -176,6 +185,7 @@ class TNPC
 		void setColorId(unsigned int idx, unsigned char val);
 		void setSave(unsigned int idx, unsigned char val);
 		void setPropModTime(unsigned char pid, time_t time);
+		void setImage(const CString& image, int offsetx = 0, int offsety = 0, int width = 0, int height = 0);
 
 		// get functions
 		unsigned int getId() const				{ return id; }
@@ -253,6 +263,7 @@ class TNPC
 
 		void registerNpcUpdates();
 		void registerTriggerAction(const std::string& action, IScriptFunction *cbFunc);
+		void scheduleEvent(unsigned int timeout, ScriptAction *action);
 
 		bool runScriptTimer();
 		bool runScriptEvents();
@@ -285,11 +296,12 @@ class TNPC
 		int width, height;
 
 #ifdef V8NPCSERVER
-		void testTouch();
-		void freeScriptResources();
+        bool hasTimerUpdates() const;
+        void freeScriptResources();
+        void testTouch();
 
 		std::map<std::string, std::string> classMap;
-		std::unordered_set<int> propModified;
+		std::unordered_set<unsigned char> propModified;
 
 		// Defaults
 		CString origImage, origLevel;
@@ -301,10 +313,11 @@ class TNPC
 		bool persistNpc;
 		std::unordered_map<std::string, CString> flagList;
 
-		int _scriptEventsMask;
+		unsigned int _scriptEventsMask;
 		IScriptWrapped<TNPC> *_scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
+		std::vector<ScriptEventTimer> _scriptTimers;
 #endif
 };
 
@@ -348,6 +361,21 @@ void TNPC::setSave(unsigned int idx, unsigned char val)
 	if (idx < 10) saves[idx] = val;
 }
 
+inline
+void TNPC::setImage(const CString& pImage, int offsetx, int offsety, int pwidth, int pheight)
+{
+	if (pImage.length() > 223) {
+		image = pImage.subString(0, 223);
+	}
+	else image = pImage;
+
+	imagePart.clear();
+	imagePart.writeGShort(offsetx);
+	imagePart.writeGShort(offsety);
+	imagePart.writeGChar(pwidth);
+	imagePart.writeGChar(pheight);
+}
+
 #ifdef V8NPCSERVER
 
 inline void TNPC::updatePropModTime(unsigned char propId)
@@ -367,6 +395,10 @@ inline void TNPC::allowNpcWarping(bool canWarp)
 /**
  * Script Engine
  */
+inline bool TNPC::hasTimerUpdates() const {
+	return (timeout > 0 || !_scriptTimers.empty());
+}
+
 inline bool TNPC::hasScriptEvent(int flag) const {
 	return ((_scriptEventsMask & flag) == flag);
 }
@@ -423,6 +455,10 @@ inline void TNPC::registerNpcUpdates()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	scriptEngine->RegisterNpcUpdate(this);
+}
+
+inline void TNPC::scheduleEvent(unsigned int timeout, ScriptAction *action) {
+    _scriptTimers.push_back({action, timeout});
 }
 
 #endif

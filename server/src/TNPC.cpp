@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <math.h>
 #include <vector>
 #include <time.h>
 #include "TServer.h"
@@ -9,7 +10,6 @@
 #include "IEnums.h"
 
 #ifdef V8NPCSERVER
-#include <chrono>
 #include "CScriptEngine.h"
 #include "TPlayer.h"
 #endif
@@ -787,9 +787,14 @@ void TNPC::freeScriptResources()
 		timeout = 0;
 	}
 
+	// Clear scheduled events
+	for (auto & _scriptTimer : _scriptTimers)
+		delete _scriptTimer.action;
+	_scriptTimers.clear();
+
 	// Clear triggeraction functions
-	for (auto it = _triggerActions.begin(); it != _triggerActions.end(); ++it)
-		delete it->second;
+	for (auto & _triggerAction : _triggerActions)
+		delete _triggerAction.second;
 	_triggerActions.clear();
 
 	// Delete script object
@@ -838,8 +843,8 @@ void TNPC::addClassCode(const std::string & className, const std::string & class
 	clientScript = script.readString("");
 
 	// Iterate current classes, and add to end of code
-	for (auto it = classMap.begin(); it != classMap.end(); ++it)
-		clientScript << "\n" << (*it).second;
+	for (auto it : classMap)
+		clientScript << "\n" << it.second;
 
 	// Remove comments and trim the code if specified.
 	if (!clientScript.isEmpty())
@@ -847,8 +852,8 @@ void TNPC::addClassCode(const std::string & className, const std::string & class
 		clientScriptFormatted = removeComments(clientScript, "\n");
 		std::vector<CString> code = clientScriptFormatted.tokenize("\n");
 		clientScriptFormatted.clear();
-		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-			clientScriptFormatted << (*i).trim() << "\xa7";
+		for (auto line : code)
+			clientScriptFormatted << line.trim() << "\xa7";
 	}
 
 	// Just a little warning for people who don't know.
@@ -861,11 +866,12 @@ void TNPC::addClassCode(const std::string & className, const std::string & class
 
 void TNPC::setTimeout(int newTimeout)
 {
-	if (newTimeout > 0)
-		server->getScriptEngine()->RegisterNpcTimer(this);
-	else if (timeout <= 0)
-		server->getScriptEngine()->UnregisterNpcTimer(this);
 	timeout = newTimeout;
+
+	if (hasTimerUpdates())
+		server->getScriptEngine()->RegisterNpcTimer(this);
+	else
+		server->getScriptEngine()->UnregisterNpcTimer(this);
 }
 
 void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
@@ -876,10 +882,10 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	IScriptWrapped<TPlayer> *playerObject = 0;
-	if (player != 0)
+	if (player != nullptr)
 	{
-		auto playerObject = player->getScriptObject();
-		if (playerObject != 0)
+	    playerObject = player->getScriptObject();
+		if (playerObject != nullptr)
 			scriptAction = scriptEngine->CreateAction(action, _scriptObject, playerObject);
 	}
 
@@ -902,8 +908,29 @@ bool TNPC::runScriptTimer()
 			queueNpcAction("npc.timeout", 0, true);
 	}
 
-	// return value dictates if this gets unregistered from updates
-	return (timeout > 0);
+	// scheduled events
+	bool queued = false;
+	for (auto it = _scriptTimers.begin(); it != _scriptTimers.end();)
+	{
+		ScriptEventTimer *timer = &(*it);
+		timer->timer--;
+		if (timer->timer == 0)
+		{
+			_scriptExecutionContext.addAction(timer->action);
+			it = _scriptTimers.erase(it);
+			queued = true;
+			continue;
+		}
+
+		++it;
+	}
+
+	// Register for npc updates
+	if (queued)
+		server->getScriptEngine()->RegisterNpcUpdate(this);
+
+	// return value dictates if this gets unregistered from timer updates
+	return hasTimerUpdates();
 }
 
 bool TNPC::runScriptEvents()
@@ -920,9 +947,8 @@ bool TNPC::runScriptEvents()
 		time_t newModTime = time(0);
 
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
-		for (auto it = propModified.begin(); it != propModified.end(); ++it)
+		for (unsigned char propId : propModified)
 		{
-			char propId = *it;
 			modTime[propId] = newModTime;
 			propPacket >> (char)(propId) << getProp(propId);
 		}
@@ -990,11 +1016,11 @@ CString TNPC::getVariableDump()
 	if (!npcScripter.isEmpty()) npcDump << npcNameStr << ".scripter: " << npcScripter << "\n";
 	if (level) npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
 
-	npcDump << "\nAttributes:\n";	
-	for (int i = 0; i < propsCount; i++)
+	npcDump << "\nAttributes:\n";
+	for (int propId : propList)
 	{
-		int propId = propList[i];
 		CString prop = getProp(propId);
+
 		switch (propId)
 		{
 			case NPCPROP_ID:
@@ -1255,7 +1281,6 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	y2 = 16 * pY;
 
 	// Send the properties to the players in the new level
-
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
 	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
@@ -1525,10 +1550,9 @@ CString doJoins(const CString& code, CFileSystem* fs)
 	}
 
 	// Add the files now.
-	for (std::vector<CString>::iterator i = joinList.begin(); i != joinList.end(); ++i)
+	for (auto fileName : joinList)
 	{
-		//printf("file: %s\n", (*i).text());
-		c = fs->load(*i);
+		c = fs->load(fileName);
 		c.removeAllI("\r");
 		c.replaceAllI("\n", "\xa7");
 		ret << c;

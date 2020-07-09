@@ -18,7 +18,8 @@ CScriptEngine::CScriptEngine(TServer *server)
 	: _server(server), _env(nullptr), _bootstrapFunction(nullptr), _environmentObject(nullptr), _serverObject(nullptr)
 	, _scriptIsRunning(false), _scriptWatcherRunning(false), _scriptWatcherThread()
 {
-
+    accumulator = std::chrono::nanoseconds(0);
+    lastScriptTimer = std::chrono::high_resolution_clock::now();
 }
 
 CScriptEngine::~CScriptEngine()
@@ -116,7 +117,8 @@ void CScriptEngine::Cleanup(bool shutDown)
 
 	// Kill script watcher
 	_scriptWatcherRunning.store(false);
-	_scriptWatcherThread.join();
+	if (_scriptWatcherThread.joinable())
+		_scriptWatcherThread.join();
 
 	// Clear any registered scripts
 	_updateNpcs.clear();
@@ -124,14 +126,14 @@ void CScriptEngine::Cleanup(bool shutDown)
 	_updateWeapons.clear();
 
 	// Remove any registered callbacks
-	for (auto it = _callbacks.begin(); it != _callbacks.end(); ++it) {
-		delete it->second;
+	for (auto & _callback : _callbacks) {
+		delete _callback.second;
 	}
 	_callbacks.clear();
 
 	// Remove cached scripts
-	for (auto it = _cachedScripts.begin(); it != _cachedScripts.end(); ++it) {
-		delete it->second;
+	for (auto & _cachedScript : _cachedScripts) {
+		delete _cachedScript.second;
 	}
 	_cachedScripts.clear();
 
@@ -154,8 +156,10 @@ void CScriptEngine::Cleanup(bool shutDown)
 
 	// Cleanup the Script Environment
 	_env->Cleanup(shutDown);
+
+	// Destroy the environment
 	delete _env;
-	_env = 0;
+	_env = nullptr;
 }
 
 IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool referenceCount)
@@ -283,21 +287,33 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	return true;
 }
 
-void CScriptEngine::RunScripts(bool timedCall)
+void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_point& time)
 {
-	if (timedCall)
-	{
-		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
-		{
-			TNPC *npc = *it;
-			bool hasUpdates = npc->runScriptTimer();
+    auto delta_time = time - lastScriptTimer;
+    lastScriptTimer = time;
 
-			if (!hasUpdates)
-				it = _updateNpcsTimer.erase(it);
-			else
-				it++;
-		}
-	}
+    // Run scripts every 0.05 seconds
+    constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
+    accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
+    while (accumulator >= timestep) {
+        accumulator -= timestep;
+
+        for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
+        {
+            TNPC *npc = *it;
+            bool hasUpdates = npc->runScriptTimer();
+
+            if (!hasUpdates)
+                it = _updateNpcsTimer.erase(it);
+            else
+                it++;
+        }
+    }
+}
+
+void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
+{
+    RunTimers(time);
 
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{
@@ -315,29 +331,45 @@ void CScriptEngine::RunScripts(bool timedCall)
 			}
 
 			// Iterate over weapons
-			for (auto it = _updateWeapons.begin(); it != _updateWeapons.end(); ++it)
-			{
-				TWeapon *weapon = *it;
+			for (auto weapon : _updateWeapons)
 				weapon->runScriptEvents();
-			}
 			_updateWeapons.clear();
 		});
 	}
 
-	// No actions are queued, so we can assume no functions are cached here. May need to invalidate functions?
-	if (!_deletedFunctions.empty())
+	// No actions are queued, so we can assume no functions are cached here.
+	if (!_deletedCallbacks.empty())
 	{
-		for (auto it = _deletedFunctions.begin(); it != _deletedFunctions.end();)
+		for (auto it = _deletedCallbacks.begin(); it != _deletedCallbacks.end();)
 		{
 			IScriptFunction *func = *it;
 			if (!func->isReferenced())
 			{
 				delete func;
-				it = _deletedFunctions.erase(it);
+				it = _deletedCallbacks.erase(it);
 			}
 			else ++it;
 		}
 	}
+}
+
+void CScriptEngine::removeCallBack(const std::string& callback)
+{
+	auto it = _callbacks.find(callback);
+	if (it != _callbacks.end())
+	{
+		it->second->decreaseReference();
+		_deletedCallbacks.insert(it->second);
+		_callbacks.erase(it);
+	}
+}
+
+void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction *cbFunc)
+{
+	removeCallBack(callback);
+
+	_callbacks[callback] = cbFunc;
+	cbFunc->increaseReference();
 }
 
 #endif

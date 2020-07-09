@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <v8.h>
-#include <stdio.h>
 #include <math.h>
 #include <algorithm>
 #include <unordered_map>
@@ -36,7 +35,7 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
-	
+
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
@@ -58,7 +57,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
-	
+
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
@@ -196,7 +195,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		TServer *server = levelObject->getServer();
 		TNPC *npc = server->addNPC("", script, npcX, npcY, levelObject, false, true);
-		
+
 		if (npc != nullptr)
 		{
 			npc->setType("LOCALN");
@@ -205,6 +204,31 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 			V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npc->getScriptObject());
 			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 		}
+	}
+}
+
+// Level Method: level.onwall(x, y);
+void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		double npcX = (float)args[0]->NumberValue(context).ToChecked();
+		double npcY = (float)args[1]->NumberValue(context).ToChecked();
+
+		args.GetReturnValue().Set(levelObject->isOnWall(npcX, npcY));
 	}
 }
 
@@ -232,7 +256,8 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
-		
+	level_proto->Set(v8::String::NewFromUtf8(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
+
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
 	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "issparringzone"), Level_GetBool_IsSparringZone);

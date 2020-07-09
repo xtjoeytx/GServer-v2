@@ -1,10 +1,12 @@
 #ifndef TSERVERLIST_H
 #define TSERVERLIST_H
 
+#include <map>
 #include <time.h>
+#include "CFileQueue.h"
 #include "CString.h"
 #include "CSocket.h"
-
+#include <assert.h> 
 
 enum
 {
@@ -27,12 +29,11 @@ class TServerList : public CSocketStub
 		void onUnregister()			{ return; }
 		SOCKET getSocketHandle()	{ return sock.getHandle(); }
 		bool canRecv();
-		bool canSend();
+		bool canSend()				{ return _fileQueue.canSend(); }
 
 		// Constructor - Deconstructor
-		TServerList();
+		TServerList(TServer *server);
 		~TServerList();
-		void setServer(TServer* pServer) { server = pServer; }
 
 		bool doTimedEvents();
 		
@@ -42,12 +43,18 @@ class TServerList : public CSocketStub
 		bool init(const CString& pserverIp, const CString& pServerPort = "14900");
 		bool connectServer();
 		CSocket* getSocket()					{ return &sock; }
-		void sendPacket(CString& pPacket);
+		void sendPacket(CString& pPacket, bool sendNow = false);
 
-		// Altering Player Information
-		void addPlayer(TPlayer *pPlayer);
-		void remPlayer(const CString& pAccountName, int pType = ((int)(1 << 0) | (int)(1 << 5)));
+		// Send players to the listserver
+		void addPlayer(TPlayer *player);
+		void deletePlayer(TPlayer *player);
 		void sendPlayers();
+		void handleText(const CString& data);
+		void sendText(const CString& data);
+		void sendText(const std::vector<CString>& stringList);
+		void sendTextForPlayer(TPlayer *player, const CString& data);
+
+		const std::map<std::string, int>& getServerList() { return serverListCount; }
 
 		// Send New Server-Info
 		void sendServerHQ();
@@ -85,20 +92,23 @@ class TServerList : public CSocketStub
 		void msgSVI_FILEEND3(CString& pPacket);
 		void msgSVI_SERVERINFO(CString& pPacket);
 		void msgSVI_REQUESTTEXT(CString& pPacket);
+		void msgSVI_SENDTEXT(CString& pPacket);
 		void msgSVI_PMPLAYER(CString& pPacket);
 		
 	protected:
 		// Packet Functions
-		void parsePacket(CString& pPacket);
-		void sendCompress();
+		bool parsePacket(CString& pPacket);
 
 		// Socket Variables
 		bool nextIsRaw;
 		int rawPacketSize;
+		CFileQueue _fileQueue;
 		CString rBuffer, sBuffer;
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer, lastPlayerSync;
-		TServer *server;
+		TServer *_server;
+
+		std::map<std::string, int> serverListCount;
 };
 
 #endif // TSERVERLIST_H

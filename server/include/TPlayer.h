@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <map>
+#include <set>
 #include <vector>
 #include "IEnums.h"
 #include "CFileQueue.h"
@@ -121,8 +122,12 @@ class TPlayer : public TAccount, public CSocketStub
 		void enableWeapons();
 		void sendRPGMessage(const CString& message);
 		void sendSignMessage(const CString& message);
+
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
+		bool inChatChannel(const std::string& channel) const;
+		bool addChatChannel(const std::string& channel);
+		bool removeChatChannel(const std::string& channel);
 		bool updatePMPlayers(CString& servername, CString& players);
 		bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 		std::vector<CString> getPMServerList();
@@ -311,6 +316,7 @@ class TPlayer : public TAccount, public CSocketStub
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;
+		std::set<std::string> channelList;
 		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
 		bool allowBomb, allowBow;
 		TMap* pmap;
@@ -353,6 +359,27 @@ inline int TPlayer::getId() const
 inline void TPlayer::setId(int pId)
 {
 	id = pId;
+}
+
+inline bool TPlayer::inChatChannel(const std::string& channel) const
+{
+	return channelList.find(channel) != channelList.end();
+}
+
+inline bool TPlayer::addChatChannel(const std::string & channel)
+{
+	//if (channelList.find(channel) == channelList.end())
+	//{
+		channelList.insert(channel);
+		return true;
+	//}
+	return false;
+}
+
+inline bool TPlayer::removeChatChannel(const std::string & channel)
+{
+	channelList.erase(channel);
+	return false;
 }
 
 #endif // TPLAYER_H

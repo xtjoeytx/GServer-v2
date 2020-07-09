@@ -28,7 +28,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(CString pName)
-	: running(false), doRestart(false), name(pName), wordFilter(this)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -38,10 +38,6 @@ TServer::TServer(CString pName)
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
-#ifdef V8NPCSERVER
-	lastScriptTimer = time_now;
-	accumulator = std::chrono::nanoseconds(0);
-#endif
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
@@ -66,7 +62,6 @@ TServer::TServer(CString pName)
 #endif
 
 	// Announce ourself to other classes.
-	serverlist.setServer(this);
 	for (auto & fs : filesystem)
 		fs.setServer(this);
 	filesystem_accounts.setServer(this);
@@ -181,7 +176,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
-	sockManager.registerSocket((CSocketStub*)&serverlist);
 
 	return 0;
 }
@@ -288,7 +282,8 @@ void TServer::cleanup()
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
 #ifdef UPNP
-	upnp_thread.join();
+	if (upnp_thread.joinable())
+		upnp_thread.join();
 	upnp.remove_all_forwarded_ports();
 #endif
 
@@ -306,42 +301,32 @@ void TServer::cleanup()
 	mNpcServer = nullptr;
 #endif
 
-	for ( auto player = playerList.begin(); player != playerList.end(); )
-	{
-		delete *player;
-		player = playerList.erase(player);
+	for (auto& player : playerList) {
+		delete player;
 	}
 	playerIds.clear();
 	playerList.clear();
 
-	for ( auto level = levelList.begin(); level != levelList.end(); )
-	{
-		delete *level;
-		level = levelList.erase(level);
+	for (auto& level : levelList) {
+		delete level;
 	}
 	levelList.clear();
 
-	for ( auto map = mapList.begin(); map != mapList.end(); )
-	{
-		delete *map;
-		map = mapList.erase(map);
+	for (auto& map : mapList) {
+		delete map;
 	}
 	mapList.clear();
 
-	for ( auto npc = npcList.begin(); npc != npcList.end(); )
-	{
-		delete *npc;
-		npc = npcList.erase(npc);
+	for (auto& npc : npcList) {
+		delete npc;
 	}
+    npcList.clear();
 	npcIds.clear();
-	npcList.clear();
 	npcNameList.clear();
 
 	saveWeapons();
-	for ( auto weapon = weaponList.begin(); weapon != weaponList.end(); )
-	{
-		delete weapon->second;
-		weaponList.erase(weapon++);
+	for (auto& weapon : weaponList) {
+		delete weapon.second;
 	}
 	weaponList.clear();
 
@@ -362,8 +347,6 @@ void TServer::restart()
 	doRestart = true;
 }
 
-constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
-
 bool TServer::doMain()
 {
 	// Update our socket manager.
@@ -373,23 +356,7 @@ bool TServer::doMain()
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
 #ifdef V8NPCSERVER
-	// Run scripts every 0.05 seconds
-	auto delta_time = currentTimer - lastScriptTimer;
-	lastScriptTimer = currentTimer;
-	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
-
-	// Accumulator for timeout / scheduled events
-	bool updated = false;
-	while (accumulator >= timestep) {
-		accumulator -= timestep;
-
-		mScriptEngine.RunScripts(true);
-		updated = true;
-	}
-
-	// Run any queued actions anyway
-	if (!updated)
-		mScriptEngine.RunScripts();
+    mScriptEngine.RunScripts(currentTimer);
 #endif
 
 	// Every second, do some events.
@@ -412,14 +379,12 @@ bool TServer::doTimedEvents()
 	{
 		for (auto & player : playerList)
 		{
-			if (player == nullptr)
-				continue;
-
-			if (player->isNPCServer())
-				continue;
-
-			if (!player->doTimedEvents())
-				this->deletePlayer(player);
+			assert(player);
+            if (!player->isNPCServer())
+            {
+                if (!player->doTimedEvents())
+                    this->deletePlayer(player);
+            }
 		}
 	}
 
@@ -427,9 +392,7 @@ bool TServer::doTimedEvents()
 	{
 		for (auto level : levelList)
 		{
-				if (level == nullptr)
-				continue;
-
+            assert(level);
 			level->doTimedEvents();
 		}
 
@@ -439,8 +402,7 @@ bool TServer::doTimedEvents()
 			for (auto & j : groupLevel.second)
 			{
 				TLevel* level = j.second;
-				if (level == nullptr)
-					continue;
+				assert(level);
 
 				level->doTimedEvents();
 			}
@@ -453,12 +415,6 @@ bool TServer::doTimedEvents()
 	{
 		lastNWTimer = lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-
-		// TODO(joey): no no no no no no no this is not how it is done! a server will announce to the serverlist a new player
-		// and then it will be added! you can't just spam everything!!!
-		TServerList* list = this->getServerList();
-		if (list)
-			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)0 << CString(CString() << "_" << "\n" << "GraalEngine" << "\n" << "lister" << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 	}
 
 	// Stuff that happens every minute.
@@ -1091,6 +1047,14 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
+TPlayer * TServer::getPlayer(const unsigned short id) const
+{
+	if (id >= (unsigned short)playerIds.size())
+		return nullptr;
+
+	return playerIds[id];
+}
+
 TPlayer* TServer::getPlayer(const unsigned short id, int type) const
 {
 	if (id >= (unsigned short)playerIds.size())
@@ -1498,6 +1462,8 @@ unsigned int TServer::getFreePlayerId()
 
 bool TServer::addPlayer(TPlayer *player, unsigned int id)
 {
+    assert(player);
+
 	// No id was passed, so we will fetch one
 	if (id == UINT_MAX)
 		id = getFreePlayerId();
@@ -1528,7 +1494,7 @@ bool TServer::deletePlayer(TPlayer* player)
 	if ( deletedPlayers.insert(player).second )
 	{
 		// Remove the player from the serverlist.
-		getServerList()->remPlayer(player->getAccountName(), player->getType());
+		getServerList()->deletePlayer(player);
 	}
 
 	return true;
@@ -1622,7 +1588,7 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	// set flag
 	if (settings.getBool("cropflags", true))
 	{
-		int fixedLength = 223 - 1 - pFlagName.length();
+		int fixedLength = 223 - 1 - (int)pFlagName.length();
 		mServerFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
 	else mServerFlags[pFlagName] = pFlagValue;

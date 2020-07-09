@@ -3,7 +3,7 @@
 #ifndef CSCRIPTENGINE_H
 #define CSCRIPTENGINE_H
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 #include <atomic>
 #include <chrono>
@@ -31,7 +31,8 @@ public:
 
 	bool Initialize();
 	void Cleanup(bool shutDown = false);
-	void RunScripts(bool timedCall = false);
+	void RunTimers(const std::chrono::high_resolution_clock::time_point& time);
+	void RunScripts(const std::chrono::high_resolution_clock::time_point& time);
 
 	void ScriptWatcher();
 	void StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
@@ -79,7 +80,10 @@ private:
 	IScriptWrapped<TServer> *_serverObject;
 	TServer *_server;
 
-	// Script watcher
+    std::chrono::high_resolution_clock::time_point lastScriptTimer;
+    std::chrono::nanoseconds accumulator;
+
+    // Script watcher
 	std::atomic<bool> _scriptIsRunning;
 	std::atomic<bool> _scriptWatcherRunning;
 	std::chrono::high_resolution_clock::time_point _scriptStartTime;
@@ -91,7 +95,7 @@ private:
 	std::unordered_set<TNPC *> _updateNpcs;
 	std::unordered_set<TNPC *> _updateNpcsTimer;
 	std::unordered_set<TWeapon *> _updateWeapons;
-	std::unordered_set<IScriptFunction *> _deletedFunctions;
+	std::unordered_set<IScriptFunction *> _deletedCallbacks;
 };
 
 inline void CScriptEngine::StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
@@ -135,21 +139,6 @@ inline IScriptFunction * CScriptEngine::getCallBack(const std::string& callback)
 
 inline const ScriptRunError& CScriptEngine::getScriptError() const {
 	return _env->getScriptError();
-}
-
-// Setters
-inline void CScriptEngine::removeCallBack(const std::string& callback) {
-	auto it = _callbacks.find(callback);
-	if (it != _callbacks.end())
-	{
-		_deletedFunctions.insert(it->second);
-		_callbacks.erase(it);
-	}
-}
-
-inline void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction *cbFunc) {
-	removeCallBack(callback);
-	_callbacks[callback] = cbFunc;
 }
 
 // Register scripts for processing

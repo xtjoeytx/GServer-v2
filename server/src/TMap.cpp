@@ -62,7 +62,7 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
-	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)
+	if ( !pServer->getSettings()->getBool("nofoldersconfig", false))
 		fileSystem = pServer->getFileSystem(FS_FILE);
 
 	CString fileName = fileSystem->find(pFileName);
@@ -117,7 +117,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
-	if (pServer->getSettings()->getBool("nofoldersconfig", false) == false)
+	if ( !pServer->getSettings()->getBool("nofoldersconfig", false))
 		fileSystem = pServer->getFileSystem(FS_LEVEL);
 
 	CString fileName = fileSystem->find(pFileName);

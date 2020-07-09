@@ -37,7 +37,7 @@ void bindClass_Weapon(CScriptEngine *scriptEngine)
 	v8::Isolate *isolate = env->Isolate();
 
 	// External pointer
-	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
+	// v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "weapon"
 	v8::Local<v8::String> weaponStr = v8::String::NewFromUtf8(isolate, "weapon", v8::NewStringType::kInternalized).ToLocalChecked();

@@ -14,8 +14,6 @@
 // PROPERTY: env.global
 void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
-
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
 	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
@@ -34,8 +32,6 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 
 	if (args[0]->IsString())
 	{
-		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-
 		// Unwrap Object
 		TServer *serverObject = UnwrapObject<TServer>(args.This());
 

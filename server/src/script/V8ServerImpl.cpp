@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <v8.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unordered_map>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
@@ -304,6 +304,28 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	info.GetReturnValue().Set(result);
 }
 
+// PROPERTY: server.serverlist
+void Server_GetArray_Serverlist(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+	TServer *serverObject = UnwrapObject<TServer>(self);
+
+	// Get npcs list
+	auto listserver = serverObject->getServerList();
+	auto serverList = listserver->getServerList();
+
+	v8::Local<v8::Object> result = v8::Object::New(isolate);
+
+	for (auto it = serverList.begin(); it != serverList.end(); ++it) {
+		v8::Local<v8::String> key_servername = v8::String::NewFromUtf8(isolate, it->first.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+		result->Set(context, key_servername, v8::Number::New(isolate, it->second)).Check();
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
 void bindClass_Server(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
@@ -335,6 +357,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags, nullptr, engine_ref);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Server_GetArray_Npcs);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Server_GetArray_Players);
+	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "serverlist"), Server_GetArray_Serverlist);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar"), Server_Get_TimeVar);
 	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar2"), Server_Get_TimeVar2);
 

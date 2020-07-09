@@ -14,7 +14,6 @@
 
 namespace detail
 {
-
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, std::nullptr_t val) {
 		return v8::Null(env->Isolate());
 	}
@@ -29,6 +28,10 @@ namespace detail
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::string& val) {
 		return v8::String::NewFromUtf8(env->Isolate(), val.c_str());
+	}
+
+	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::shared_ptr<V8ScriptData>& object) {
+		return object.get()->Object();
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, IScriptFunction *function) {
@@ -51,7 +54,7 @@ class V8ScriptArguments : public ScriptArguments<Ts...>
 public:
 	template <typename... Args>
 	explicit V8ScriptArguments(Args&&... An)
-		: ScriptArguments<Ts...>(An...) {
+		: ScriptArguments<Ts...>(std::forward<Args>(An)...) {
 	}
 
 	~V8ScriptArguments() = default;
@@ -85,6 +88,8 @@ public:
 			{
 				v8::TryCatch try_catch(isolate);
 				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args);
+				static_cast<void>(ret);
+
 				if (try_catch.HasCaught())
 				{
 					v8_env->ParseErrors(&try_catch);
@@ -93,7 +98,8 @@ public:
 			}
 			else
 			{
-				cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				static_cast<void>(ret);
 				//ret.IsEmpty();
 			}
 		}
