@@ -1,4 +1,5 @@
 # GServer-v2
+![Docker Image CI](https://github.com/xtjoeytx/GServer-v2/workflows/Docker%20Image%20CI/badge.svg?branch=master)
 
 Created by: Joey, Nalin, dufresnep, Codr, Marlon.
 Based off the original work by 39ster.
