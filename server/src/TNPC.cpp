@@ -749,8 +749,8 @@ void TNPC::testTouch()
 	static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
 	int dir = sprite % 4;
 
-	TLevelLink *linkTouched = level->isOnLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
-	if (linkTouched != 0)
+	auto linkTouched = level->getLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
+	if (linkTouched)
 	{
 		TLevel *newLevel = server->getLevel(linkTouched->getNewLevel());
 		if (newLevel != 0)
@@ -878,10 +878,10 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 {
 	assert(_scriptObject);
 
-	ScriptAction *scriptAction = 0;
+	ScriptAction *scriptAction = nullptr;
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	IScriptWrapped<TPlayer> *playerObject = 0;
+	IScriptWrapped<TPlayer> *playerObject = nullptr;
 	if (player != nullptr)
 	{
 	    playerObject = player->getScriptObject();

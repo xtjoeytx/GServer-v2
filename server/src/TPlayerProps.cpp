@@ -928,7 +928,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
-            server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
+			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <optional>
 #include "IUtil.h"
 #include "CString.h"
 #include "TLevelBaddy.h"
@@ -70,7 +71,7 @@ class TLevel
 
 		//! Gets a vector full of all the level chests.
 		//! \return The level chests.
-		std::vector<TLevelChest *>* getLevelChests()	{ return &levelChests; }
+		std::vector<TLevelChest>& getLevelChests()		{ return levelChests; }
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
@@ -78,11 +79,11 @@ class TLevel
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
-		std::vector<TLevelSign *>* getLevelSigns()		{ return &levelSigns; }
+		std::vector<TLevelSign>& getLevelSigns()		{ return levelSigns; }
 
 		//! Gets a vector full of the level links.
 		//! \return The level links.
-		std::vector<TLevelLink *>* getLevelLinks()		{ return &levelLinks; }
+		std::vector<TLevelLink>& getLevelLinks()		{ return levelLinks; }
 
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
@@ -196,21 +197,19 @@ class TLevel
 		//! \return Currently, it always returns true.
 		bool doTimedEvents();
 
-		bool isOnWall(double pX, double pY);
-		bool isOnWater(double pX, double pY);
+		bool isOnWall(double pX, double pY) const;
+		bool isOnWater(double pX, double pY) const;
+		std::optional<TLevelChest> getChest(int x, int y) const;
+		std::optional<TLevelLink> getLink(int pX, int pY) const;
+		CString getChestStr(const TLevelChest& chest) const;
+
 #ifdef V8NPCSERVER
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
-		TLevelLink *isOnLink(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
 		void sendChatToLevel(const TPlayer *player, const CString& message);
 
-		inline IScriptWrapped<TLevel> * getScriptObject() const {
-			return _scriptObject;
-		}
-
-		inline void setScriptObject(IScriptWrapped<TLevel> *object) {
-			_scriptObject = object;
-		}
+		IScriptWrapped<TLevel>* getScriptObject() const;
+		void setScriptObject(IScriptWrapped<TLevel>* object);
 #endif
 
 	private:
@@ -232,11 +231,11 @@ class TLevel
 		std::vector<TLevelBaddy *> levelBaddies;
 		std::vector<TLevelBaddy *> levelBaddyIds;
 		std::vector<TLevelBoardChange *> levelBoardChanges;
-		std::vector<TLevelChest *> levelChests;
+		std::vector<TLevelChest> levelChests;
 		std::vector<TLevelHorse *> levelHorses;
-		std::vector<TLevelItem *> levelItems;
-		std::vector<TLevelLink *> levelLinks;
-		std::vector<TLevelSign *> levelSigns;
+		std::vector<TLevelItem> levelItems;
+		std::vector<TLevelLink> levelLinks;
+		std::vector<TLevelSign> levelSigns;
 		std::vector<TNPC *> levelNPCs;
 		std::vector<TPlayer *> levelPlayerList;
 
@@ -244,5 +243,17 @@ class TLevel
 		IScriptWrapped<TLevel> *_scriptObject;
 #endif
 };
+
+#ifdef V8NPCSERVER
+
+inline IScriptWrapped<TLevel>* TLevel::getScriptObject() const {
+	return _scriptObject;
+}
+
+inline void TLevel::setScriptObject(IScriptWrapped<TLevel>* object) {
+	_scriptObject = object;
+}
+#endif
+
 
 #endif // TLEVEL_H

@@ -319,7 +319,6 @@ class TPlayer : public TAccount, public CSocketStub
 		std::map<CString, TLevel*> spLevels;
 		std::set<std::string> channelList;
 		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
-		bool allowBomb, allowBow;
 		TMap* pmap;
 		unsigned int carryNpcId;
 		bool carryNpcThrown;

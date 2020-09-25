@@ -18,8 +18,8 @@ CScriptEngine::CScriptEngine(TServer *server)
 	: _server(server), _env(nullptr), _bootstrapFunction(nullptr), _environmentObject(nullptr), _serverObject(nullptr)
 	, _scriptIsRunning(false), _scriptWatcherRunning(false), _scriptWatcherThread()
 {
-    accumulator = std::chrono::nanoseconds(0);
-    lastScriptTimer = std::chrono::high_resolution_clock::now();
+	accumulator = std::chrono::nanoseconds(0);
+	lastScriptTimer = std::chrono::high_resolution_clock::now();
 }
 
 CScriptEngine::~CScriptEngine()
@@ -145,7 +145,7 @@ void CScriptEngine::Cleanup(bool shutDown)
 
 	// Remove script objects
 	if (_environmentObject) {
-	    delete _environmentObject;
+		delete _environmentObject;
 		_environmentObject = nullptr;
 	}
 
@@ -289,26 +289,26 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 
 void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_point& time)
 {
-    auto delta_time = time - lastScriptTimer;
-    lastScriptTimer = time;
+	auto delta_time = time - lastScriptTimer;
+	lastScriptTimer = time;
 
-    // Run scripts every 0.05 seconds
-    constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
-    accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
-    while (accumulator >= timestep) {
-        accumulator -= timestep;
+	// Run scripts every 0.05 seconds
+	constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
+	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
+	while (accumulator >= timestep) {
+		accumulator -= timestep;
 
-        for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
-        {
-            TNPC *npc = *it;
-            bool hasUpdates = npc->runScriptTimer();
+		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
+		{
+			TNPC *npc = *it;
+			bool hasUpdates = npc->runScriptTimer();
 
-            if (!hasUpdates)
-                it = _updateNpcsTimer.erase(it);
-            else
-                it++;
-        }
-    }
+			if (!hasUpdates)
+				it = _updateNpcsTimer.erase(it);
+			else
+				it++;
+		}
+	}
 }
 
 void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)

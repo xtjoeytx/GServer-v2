@@ -296,9 +296,9 @@ class TNPC
 		int width, height;
 
 #ifdef V8NPCSERVER
-        bool hasTimerUpdates() const;
-        void freeScriptResources();
-        void testTouch();
+		bool hasTimerUpdates() const;
+		void freeScriptResources();
+		void testTouch();
 
 		std::map<std::string, std::string> classMap;
 		std::unordered_set<unsigned char> propModified;
@@ -458,7 +458,7 @@ inline void TNPC::registerNpcUpdates()
 }
 
 inline void TNPC::scheduleEvent(unsigned int timeout, ScriptAction *action) {
-    _scriptTimers.push_back({action, timeout});
+	_scriptTimers.push_back({action, timeout});
 }
 
 #endif

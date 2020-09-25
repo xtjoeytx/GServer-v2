@@ -544,31 +544,16 @@ condAbort:
 /*
 	TAccount: Attribute-Managing
 */
-bool TAccount::hasChest(const TLevelChest *pChest, const CString& pLevel)
+bool TAccount::hasChest(const CString& pChest)
 {
-	// Definitions
-	CString chestStr = pChest->getChestStr((pLevel.length() > 1 ? pLevel : levelName));
-
-	// Iterate Chest List
-	for (std::vector<CString>::iterator i = chestList.begin(); i != chestList.end(); ++i)
-	{
-		if (*i == chestStr)
-			return true;
-	}
-
-	return false;
+	auto it = std::find(chestList.begin(), chestList.end(), pChest);
+	return (it != chestList.end());
 }
 
 bool TAccount::hasWeapon(const CString& pWeapon)
 {
-	// Iterate Weapon List
-	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
-	{
-		if (*i == pWeapon)
-			return true;
-	}
-
-	return false;
+	auto it = std::find(weaponList.begin(), weaponList.end(), pWeapon);
+	return (it != chestList.end());
 }
 
 /*

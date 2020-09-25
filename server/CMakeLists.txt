@@ -31,7 +31,6 @@ set(
 	src/TLevel.cpp
 	src/TLevelBaddy.cpp
 	src/TLevelBoardChange.cpp
-	src/TLevelChest.cpp
 	src/TLevelHorse.cpp
 	src/TLevelItem.cpp
 	src/TLevelLink.cpp

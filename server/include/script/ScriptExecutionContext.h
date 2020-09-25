@@ -102,7 +102,7 @@ inline bool ScriptExecutionContext::runExecution()
 	SCRIPTENV_D("Running %zd actions:\n", iterateActions.size());
 	for (auto & action : iterateActions)
 	{
-	    SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
+		SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
 		action->Invoke();
 		delete action;
 	}

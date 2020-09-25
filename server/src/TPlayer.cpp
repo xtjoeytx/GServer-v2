@@ -307,7 +307,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false), allowBow(false),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -828,14 +828,13 @@ bool TPlayer::testSign()
 	// Check for sign collisions.
 	if ((sprite % 4) == 0)
 	{
-		std::vector<TLevelSign*>* signs = level->getLevelSigns();
-		for (std::vector<TLevelSign*>::iterator i = signs->begin(); i != signs->end(); ++i)
+		std::vector<TLevelSign>& signs = level->getLevelSigns();
+		for (const auto& sign : signs)
 		{
-			TLevelSign* sign = *i;
-			float signLoc[] = {(float)sign->getX(), (float)sign->getY()};
+			float signLoc[] = {(float)sign.getX(), (float)sign.getY()};
 			if (y == signLoc[1] && inrange(x, signLoc[0]-1.5f, signLoc[0]+0.5f))
 			{
-				sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
+				sendPacket(CString() >> (char)PLO_SAY2 << sign.getUText().replaceAll("\n", "#b"));
 			}
 		}
 	}
@@ -2795,22 +2794,24 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
-	std::vector<TLevelChest *>* levelChests = level->getLevelChests();
+	
+	// note(joey): we were iterating all chests to find a chest at a specific x/y. If there were multiple
+	// chests at the same location it would keep checking them.. but all chests would of been satisfied
+	// since its based on x, y, and levelname.
+	if (level) {
+		auto chest = level->getChest(cX, cY);
+		if (chest) {
+			auto chestStr = level->getChestStr(*chest);
 
-	for (std::vector<TLevelChest*>::iterator i = levelChests->begin(); i != levelChests->end(); ++i)
-	{
-		TLevelChest* chest = *i;
-		if (chest->getX() == cX && chest->getY() == cY)
-		{
-			if (!hasChest(chest))
-			{
+			if (!hasChest(chestStr)) {
 				int chestItem = chest->getItemIndex();
-				this->setProps(CString() << TLevelItem::getItemPlayerProp((char)chestItem, this), true, true);
+				setProps(CString() << TLevelItem::getItemPlayerProp((char)chestItem, this), true, true);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
-				chestList.push_back(chest->getChestStr(levelName));
+				chestList.push_back(chestStr);
 			}
 		}
 	}
+
 	return true;
 }
 

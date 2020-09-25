@@ -139,7 +139,7 @@ class TAccount
 		bool saveAccount();
 
 		// Attribute-Managing
-		bool hasChest(const TLevelChest *pChest, const CString& pLevel = "");
+		bool hasChest(const CString& pChest);
 		bool hasWeapon(const CString& pWeapon);
 
 		// Flag-Managing

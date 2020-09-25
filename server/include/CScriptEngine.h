@@ -80,10 +80,10 @@ private:
 	IScriptWrapped<TServer> *_serverObject;
 	TServer *_server;
 
-    std::chrono::high_resolution_clock::time_point lastScriptTimer;
-    std::chrono::nanoseconds accumulator;
+	std::chrono::high_resolution_clock::time_point lastScriptTimer;
+	std::chrono::nanoseconds accumulator;
 
-    // Script watcher
+	// Script watcher
 	std::atomic<bool> _scriptIsRunning;
 	std::atomic<bool> _scriptWatcherRunning;
 	std::chrono::high_resolution_clock::time_point _scriptStartTime;

@@ -103,10 +103,6 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	}
 	if (id != -1) sendPacket(outPacket);
 
-	// If we never had the bomb or bow, don't let it come back.
-	if (hadBomb == false) allowBomb = false;
-	if (hadBow == false) allowBow = false;
-
 	// Clear the flags and re-populate the flag list.
 	flagList.clear();
 	auto flagCount = pPacket.readGUShort();
@@ -142,26 +138,21 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 
 		// Allow the bomb through if we are actually adding it.
 		if (wpn == "bomb" || wpn == "Bomb")
-		{
 			hadBomb = true;
-			allowBomb = true;
-		}
 
 		// Allow the bow through if we are actually adding it.
 		if (wpn == "bow" || wpn == "Bow")
-		{
 			hadBow = true;
-			allowBow = true;
-		}
 
 		// Send the weapon to the player.
 		this->addWeapon(wpn);
+		--weaponCount;
 	}
 
 	// KILL THE BOMB DEAD
 	if (id != -1)
 	{
-		if (hadBomb == false)
+		if (!hadBomb)
 			sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
 	}
 

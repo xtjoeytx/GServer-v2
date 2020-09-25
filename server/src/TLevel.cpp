@@ -39,43 +39,39 @@ TLevel::~TLevel()
 	// Delete NPCs.
 	{
 		// Remove every NPC in the level.
-		for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+		for (auto& levelNPC : levelNPCs)
 		{
-			if ((*it)->isLevelNPC())
-				server->deleteNPC(*it, false);
+			if (levelNPC->isLevelNPC())
+				server->deleteNPC(levelNPC, false);
 		}
 		levelNPCs.clear();
 	}
 
 	// Delete baddies.
-	for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i) delete *i;
+	for (auto& levelBaddie : levelBaddies) delete levelBaddie;
 	levelBaddies.clear();
 	levelBaddyIds.clear();
 
 	// Delete chests.
-	for (std::vector<TLevelChest*>::iterator i = levelChests.begin(); i != levelChests.end(); ++i) delete *i;
 	levelChests.clear();
 
 	// Delete links.
-	for (std::vector<TLevelLink*>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i) delete *i;
 	levelLinks.clear();
 
 	// Delete signs.
-	for (std::vector<TLevelSign*>::iterator i = levelSigns.begin(); i != levelSigns.end(); ++i) delete *i;
 	levelSigns.clear();
 
 	// Delete items.
-	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
+	for (auto& item : levelItems)
 	{
-		TLevelItem* item = *i;
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item->getX() * 2) >> (char)(item->getY() * 2);
-		for (std::vector<TPlayer*>::iterator j = levelPlayerList.begin(); j != levelPlayerList.end(); ++j) (*j)->sendPacket(packet);
-		delete item;
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		for (auto& player : levelPlayerList)
+			player->sendPacket(packet);
 	}
 	levelItems.clear();
 
 	// Delete board changes.
-	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
+	for (auto& levelBoardChange : levelBoardChanges) delete levelBoardChange;
 	levelBoardChanges.clear();
 
 #ifdef V8NPCSERVER
@@ -140,19 +136,18 @@ CString TLevel::getBoardChangesPacket2(time_t time)
 
 CString TLevel::getChestPacket(TPlayer *pPlayer)
 {
-	if (pPlayer == 0)
-		return CString();
-
 	CString retVal;
 
-	for (std::vector<TLevelChest *>::iterator i = levelChests.begin(); i != levelChests.end(); ++i)
+	if (pPlayer)
 	{
-		TLevelChest *chest = *i;
-		bool hasChest = pPlayer->hasChest(chest);
+		for (auto& chest : levelChests)
+		{
+			bool hasChest = pPlayer->hasChest(getChestStr(chest));
 
-		retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
-		if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
-		retVal << "\n";
+			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
+			if (!hasChest) retVal >> (char)chest.getItemIndex() >> (char)chest.getSignIndex();
+			retVal << "\n";
+		}
 	}
 
 	return retVal;
@@ -173,10 +168,9 @@ CString TLevel::getHorsePacket()
 CString TLevel::getLinksPacket()
 {
 	CString retVal;
-	for (std::vector<TLevelLink *>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i)
+	for (const auto& link : levelLinks)
 	{
-		TLevelLink *link = *i;
-		retVal >> (char)PLO_LEVELLINK << link->getLinkStr() << "\n";
+		retVal >> (char)PLO_LEVELLINK << link.getLinkStr() << "\n";
 	}
 
 	return retVal;
@@ -196,10 +190,10 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 {
 	CString retVal;
-	for (std::vector<TLevelSign*>::const_iterator i = levelSigns.begin(); i != levelSigns.end(); ++i)
+	for (std::vector<TLevelSign>::const_iterator i = levelSigns.begin(); i != levelSigns.end(); ++i)
 	{
-		TLevelSign* sign = *i;
-		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr(pPlayer) << "\n";
+		const TLevelSign& sign = *i;
+		retVal >> (char)PLO_LEVELSIGN << sign.getSignStr(pPlayer) << "\n";
 	}
 	return retVal;
 }
@@ -233,34 +227,30 @@ bool TLevel::reload()
 	}
 
 	// Delete baddies.
-	for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); ++i) delete *i;
+	for (auto& levelBaddie : levelBaddies) delete levelBaddie;
 	levelBaddies.clear();
 	levelBaddyIds.clear();
 
 	// Delete chests.
-	for (std::vector<TLevelChest*>::iterator i = levelChests.begin(); i != levelChests.end(); ++i) delete *i;
 	levelChests.clear();
 
 	// Delete links.
-	for (std::vector<TLevelLink*>::iterator i = levelLinks.begin(); i != levelLinks.end(); ++i) delete *i;
 	levelLinks.clear();
 
 	// Delete signs.
-	for (std::vector<TLevelSign*>::iterator i = levelSigns.begin(); i != levelSigns.end(); ++i) delete *i;
 	levelSigns.clear();
 
 	// Delete items.
-	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
+	for (auto& item : levelItems)
 	{
-		TLevelItem* item = *i;
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item->getX() * 2) >> (char)(item->getY() * 2);
-		for (std::vector<TPlayer*>::iterator j = levelPlayerList.begin(); j != levelPlayerList.end(); ++j) (*j)->sendPacket(packet);
-		delete item;
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		for (auto& player : levelPlayerList)
+			player->sendPacket(packet);
 	}
 	levelItems.clear();
 
 	// Delete board changes.
-	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i) delete *i;
+	for (auto& levelBoardChange : levelBoardChanges) delete levelBoardChange;
 	levelBoardChanges.clear();
 
 	// Clean up the rest.
@@ -304,7 +294,7 @@ TLevel* TLevel::clone()
 	if (!level->loadLevel(levelName))
 	{
 		delete level;
-		return 0;
+		return nullptr;
 	}
 	return level;
 }
@@ -483,7 +473,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(new TLevelLink(vline));
+			levelLinks.push_back(TLevelLink(vline));
 		}
 	}
 
@@ -531,7 +521,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(new TLevelSign(x, y, text, true));
+			levelSigns.push_back(TLevelSign(x, y, text, true));
 		}
 	}
 
@@ -665,7 +655,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(new TLevelLink(vline));
+			levelLinks.push_back(TLevelLink(vline));
 		}
 	}
 
@@ -723,12 +713,12 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			signed char x = line.readGChar();
-			signed char y = line.readGChar();
-			signed char item = line.readGChar();
-			signed char signindex = line.readGChar();
+			char x = line.readGChar();
+			char y = line.readGChar();
+			char item = line.readGChar();
+			char signindex = line.readGChar();
 
-			levelChests.push_back(new TLevelChest(x, y, item, signindex));
+			levelChests.push_back(TLevelChest(x, y, item, signindex));
 		}
 	}
 
@@ -743,7 +733,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(new TLevelSign(x, y, text, true));
+			levelSigns.push_back(TLevelSign(x, y, text, true));
 		}
 	}
 
@@ -754,7 +744,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
-	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
+	if (!server->getSettings()->getBool("nofoldersconfig", false))
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
@@ -809,10 +799,14 @@ bool TLevel::loadNW(const CString& pLevelName)
 		{
 			if (curLine.size() != 5)
 				continue;
-			if ((curLine[3] = CString(TLevelItem::getItemId(curLine[3]))) == "-1")
-				continue;
 
-			levelChests.push_back(new TLevelChest(curLine));
+			char itemidx = TLevelItem::getItemId(curLine[3]);
+			if (itemidx >= 0) {
+				char chestx = strtoint(curLine[1]);
+				char chesty = strtoint(curLine[2]);
+				char signidx = strtoint(curLine[4]);
+				levelChests.push_back(TLevelChest(chestx, chesty, itemidx, signidx));
+			}
 		}
 		else if (curLine[0] == "LINK")
 		{
@@ -827,14 +821,14 @@ bool TLevel::loadNW(const CString& pLevelName)
 			CString level(link[0]);
 			if (link.size() > 7)
 			{
-				for (unsigned int i = 0; i < link.size() - 7; ++i)
-					level << " " << link[1 + i];
+				for (auto i = 0; i < link.size() - 7; ++i)
+					level << " " << link[i + 1];
 			}
 
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(new TLevelLink(link));
+			levelLinks.push_back(TLevelLink(link));
 		}
 		else if (curLine[0] == "NPC")
 		{
@@ -888,7 +882,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			}
 
 			// Add the new sign.
-			levelSigns.push_back(new TLevelSign(x, y, text));
+			levelSigns.push_back(TLevelSign(x, y, text));
 		}
 		else if (curLine[0] == "BADDY")
 		{
@@ -1061,19 +1055,18 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 bool TLevel::addItem(float pX, float pY, char pItem)
 {
-	levelItems.push_back(new TLevelItem(pX, pY, pItem));
+	levelItems.push_back(TLevelItem(pX, pY, pItem));
 	return true;
 }
 
 signed char TLevel::removeItem(float pX, float pY)
 {
-	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); ++i)
+	for (auto i = levelItems.begin(); i != levelItems.end(); ++i)
 	{
-		TLevelItem* item = *i;
-		if (item->getX() == pX && item->getY() == pY)
+		TLevelItem& item = *i;
+		if (item.getX() == pX && item.getY() == pY)
 		{
-			signed char itemType = item->getItem();
-			delete item;
+			signed char itemType = item.getItem();
 			levelItems.erase(i);
 			return itemType;
 		}
@@ -1157,7 +1150,7 @@ void TLevel::removeBaddy(char pId)
 
 TLevelBaddy* TLevel::getBaddy(char id)
 {
-	if ((unsigned char)id >= levelBaddyIds.size()) return 0;
+	if ((unsigned char)id >= levelBaddyIds.size()) return nullptr;
 	return levelBaddyIds[id];
 }
 
@@ -1166,9 +1159,8 @@ int TLevel::addPlayer(TPlayer* player)
 	levelPlayerList.push_back(player);
 
 #ifdef V8NPCSERVER
-	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	for (auto& npc : levelNPCs)
 	{
-		TNPC *npc = *it;
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
 			npc->queueNpcAction("npc.playerenters", player);
 	}
@@ -1179,17 +1171,16 @@ int TLevel::addPlayer(TPlayer* player)
 
 void TLevel::removePlayer(TPlayer* player)
 {
-	for (std::vector<TPlayer *>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); )
+	for (auto it = levelPlayerList.begin(); it != levelPlayerList.end(); )
 	{
-		TPlayer* search = *i;
+		TPlayer* search = *it;
 		if (player == search)
-			i = levelPlayerList.erase(i);
-		else ++i;
+			it = levelPlayerList.erase(it);
+		else ++it;
 	}
 
 #ifdef V8NPCSERVER
-	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it) {
-		TNPC *npc = *it;
+	for (auto& npc : levelNPCs) {
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
 			npc->queueNpcAction("npc.playerleaves", player);
 	}
@@ -1198,7 +1189,7 @@ void TLevel::removePlayer(TPlayer* player)
 
 TPlayer* TLevel::getPlayer(unsigned int id)
 {
-	if (id >= levelPlayerList.size()) return 0;
+	if (id >= levelPlayerList.size()) return nullptr;
 	return levelPlayerList[id];
 }
 
@@ -1209,18 +1200,17 @@ TMap* TLevel::getMap() const
 
 bool TLevel::addNPC(TNPC* npc)
 {
-	for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
-	{
-		TNPC* search = *i;
-		if (npc == search) return false;
+	if (std::find(levelNPCs.begin(), levelNPCs.end(), npc) != levelNPCs.end()) {
+		return false;
 	}
+
 	levelNPCs.push_back(npc);
 	return true;
 }
 
 void TLevel::removeNPC(TNPC* npc)
 {
-	for (std::vector<TNPC*>::iterator i = levelNPCs.begin(); i != levelNPCs.end(); )
+	for (auto i = levelNPCs.begin(); i != levelNPCs.end(); )
 	{
 		TNPC* search = *i;
 		if (npc == search)
@@ -1250,9 +1240,9 @@ bool TLevel::doTimedEvents()
 	// Check if any items have timed out.
 	// This allows us to delete items that have disappeared if nobody is in the level to send
 	// the PLI_ITEMDEL packet.
-	for (std::vector<TLevelItem*>::iterator i = levelItems.begin(); i != levelItems.end(); )
+	for (std::vector<TLevelItem>::iterator i = levelItems.begin(); i != levelItems.end(); )
 	{
-		TLevelItem* item = *i;
+		TLevelItem* item = &*i;
 		int deleteTimer = item->timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
@@ -1336,16 +1326,50 @@ bool TLevel::doTimedEvents()
 	return true;
 }
 
-bool TLevel::isOnWall(double pX, double pY)
+bool TLevel::isOnWall(double pX, double pY) const
 {
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63) return true;
 
 	return tiletypes[levelTiles[int(round(pY)) * 64 + int(round(pX))]] >= 20;
 }
 
-bool TLevel::isOnWater(double pX, double pY)
+bool TLevel::isOnWater(double pX, double pY) const
 {
 	return (tiletypes[levelTiles[(int)pY * 64 + (int)pX]] == 11);
+}
+
+std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
+{
+	for (auto& link : levelLinks)
+	{
+		if ((pX >= link.getX() && pY <= link.getX() + link.getWidth()) &&
+			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
+		{
+			return std::optional<TLevelLink>(link);
+		}
+	}
+
+	return std::nullopt;
+}
+
+std::optional<TLevelChest> TLevel::getChest(int x, int y) const
+{
+	for (auto& chest : levelChests)
+	{
+		if (chest.getX() == x && chest.getY() == y)
+		{
+			return std::optional<TLevelChest>(chest);
+		}
+	}
+
+	return std::nullopt;
+}
+
+CString TLevel::getChestStr(const TLevelChest& chest) const
+{
+	static char retVal[500];
+	sprintf(retVal, "%i:%i:%s", chest.getX(), chest.getY(), levelName.text());
+	return retVal;
 }
 
 #ifdef V8NPCSERVER
@@ -1369,29 +1393,10 @@ std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight
 	return npcList;
 }
 
-TLevelLink * TLevel::isOnLink(int pX, int pY)
-{
-	if (!levelLinks.empty())
-	{
-		for (auto it = levelLinks.begin(); it != levelLinks.end(); ++it)
-		{
-			TLevelLink *levelLink = *it;
-			if ((pX >= levelLink->getX() && pX <= levelLink->getX() + levelLink->getWidth()) &&
-				(pY >= levelLink->getY() && pY <= levelLink->getY() + levelLink->getHeight()))
-			{
-				return levelLink;
-			}
-		}
-	}
-
-	return nullptr;
-}
-
 TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 {
-	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	for (const auto& npc : levelNPCs)
 	{
-		TNPC *npc = *it;
 		if (checkEventFlag && !npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME))
 			continue;
 

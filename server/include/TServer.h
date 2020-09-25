@@ -186,7 +186,7 @@ class TServer : public CSocketStub
 		inline void sendToNC(const CString& pMessage, TPlayer *pPlayer = 0) const;
 
 		// Packet sending.
-        void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
+		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
