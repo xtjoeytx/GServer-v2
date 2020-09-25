@@ -68,7 +68,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
-		void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false, bool sendToNPCServer = false);
+		void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false);
 		void setMap(TMap* map)			{ pmap = map; }
 		void setServerName(CString& tmpServerName)	{ serverName = tmpServerName; }
 

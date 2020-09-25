@@ -279,7 +279,7 @@ bool TPlayer::sendLoginClient()
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
-		this->setFlag("gr.ip", this->accountIpStr, true, true);
+		this->setFlag("gr.ip", this->accountIpStr, true);
 
 	// Send the player's flags.
 	for (auto i = flagList.begin(); i != flagList.end(); ++i)

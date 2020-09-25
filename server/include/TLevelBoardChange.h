@@ -16,7 +16,7 @@ class TLevelBoardChange
 			tiles(pTiles), oldTiles(pOldTiles), modTime(time(0)) { timeout.setTimeout(respawn); }
 
 		// functions
-		CString getBoardStr(const CString ignore = "") const;
+		CString getBoardStr() const;
 		void swapTiles();
 
 		// get private variables

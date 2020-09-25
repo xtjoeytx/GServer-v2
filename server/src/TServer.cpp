@@ -414,7 +414,7 @@ bool TServer::doTimedEvents()
 	if (time_diff.count() >= 5)
 	{
 		lastNWTimer = lastTimer;
-		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+        sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()), nullptr);
 	}
 
 	// Stuff that happens every minute.
@@ -1577,7 +1577,7 @@ bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	{
 		mServerFlags.erase(mServerFlag);
 		if (pSendToPlayers)
-			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
+            sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName, nullptr);
 		return true;
 	}
 
@@ -1613,14 +1613,14 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	else mServerFlags[pFlagName] = pFlagValue;
 
 	if (pSendToPlayers)
-		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+        sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue, nullptr);
 	return true;
 }
 
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer, bool pNpcServer) const
+void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 {
 	for (auto player : playerList)
 	{

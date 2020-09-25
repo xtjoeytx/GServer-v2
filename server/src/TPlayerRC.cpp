@@ -109,27 +109,32 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 
 	// Clear the flags and re-populate the flag list.
 	flagList.clear();
-	for (int i = pPacket.readGUShort(); i > 0; --i)
+	auto flagCount = pPacket.readGUShort();
+	while (flagCount > 0)
 	{
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		std::string name = flag.readString("=").text();
 		CString val = flag.readString("");
-		if (id == -1) setFlag(name, val);
-		else setFlag(name, val, true, true);
+		
+		setFlag(name, val, (id != -1));
+		--flagCount;
 	}
 
 	// Clear the chests and re-populate the chest list.
 	chestList.clear();
-	for (int i = pPacket.readGUShort(); i > 0; --i)
+	auto chestCount = pPacket.readGUShort();
+	while (chestCount > 0)
 	{
 		unsigned char len = pPacket.readGUChar();
 		char loc[2] = {pPacket.readGChar(), pPacket.readGChar()};
 		chestList.push_back(CString() << CString((int)loc[0]) << ":" << CString((int)loc[1]) << ":" << pPacket.readChars(len - 2));
+		--chestCount;
 	}
 
 	// Clear the weapons and re-populate the weapons list.
 	weaponList.clear();
-	for (int i = pPacket.readGUChar(); i > 0; --i)
+	auto weaponCount = pPacket.readGUChar();
+	while (weaponCount > 0)
 	{
 		unsigned char len = pPacket.readGUChar();
 		if (len == 0) continue;

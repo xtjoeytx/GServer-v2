@@ -681,7 +681,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 						// We own this NPC now so remove it from the level and have everybody else delete it.
 						TNPC* npc = server->getNPC(carryNpcId);
 						level->removeNPC(npc);
-						server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
+                        server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId, nullptr);
 					}
 				}
 			}
@@ -928,7 +928,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
-			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this, true);
+            server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending

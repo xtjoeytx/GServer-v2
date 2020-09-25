@@ -2125,7 +2125,7 @@ void TPlayer::setAni(CString gani)
 /*
 	TPlayer: Flag Functions
 */
-void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer, bool sendToNPCServer)
+void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
 {
 	// Call Default Set Flag
 	TAccount::setFlag(pFlagName, pFlagValue);
@@ -2759,7 +2759,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName.text(), flagValue, (versionID > CLVER_2_31), true);
+	this->setFlag(flagName.text(), flagValue, (versionID > CLVER_2_31));
 	return true;
 }
 
