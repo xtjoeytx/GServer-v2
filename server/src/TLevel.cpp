@@ -1242,13 +1242,13 @@ bool TLevel::doTimedEvents()
 	// the PLI_ITEMDEL packet.
 	for (std::vector<TLevelItem>::iterator i = levelItems.begin(); i != levelItems.end(); )
 	{
-		TLevelItem* item = &*i;
-		int deleteTimer = item->timeout.doTimeout();
+		TLevelItem& item = *i;
+		int deleteTimer = item.timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			delete item;
 			i = levelItems.erase(i);
-		} else ++i;
+		}
+		else ++i;
 	}
 
 	// Check if any horses need to be deleted.
