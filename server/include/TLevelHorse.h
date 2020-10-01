@@ -33,7 +33,7 @@ class TLevelHorse
 		int horselifetime;
 };
 
-CString TLevelHorse::getHorseStr()
+inline CString TLevelHorse::getHorseStr()
 {
 	if (horsePacket.isEmpty()) {
 		char dir_bush = (bushes << 2) | (dir & 0x03);
