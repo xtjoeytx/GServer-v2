@@ -50,11 +50,11 @@ void bindGlobalFunctions(CScriptEngine *scriptEngine)
 	v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
 
 	// Global functions
-	global->Set(v8::String::NewFromUtf8(isolate, "print"), v8::FunctionTemplate::New(isolate, Global_Function_Print));
+	global->Set(v8::String::NewFromUtf8Literal(isolate, "print"), v8::FunctionTemplate::New(isolate, Global_Function_Print));
 	//global->Set(v8::String::NewFromUtf8(isolate, "testFunc"), v8::FunctionTemplate::New(isolate, Ext_TestFunc, engine_ref));
 
 	// Global properties
-	global->SetAccessor(v8::String::NewFromUtf8(isolate, "server"), Global_GetObject_Server, nullptr, engine_ref);
+	global->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "server"), Global_GetObject_Server, nullptr, engine_ref);
 }
 
 #endif

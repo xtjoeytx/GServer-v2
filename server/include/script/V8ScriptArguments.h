@@ -27,7 +27,7 @@ namespace detail
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::string& val) {
-		return v8::String::NewFromUtf8(env->Isolate(), val.c_str());
+		return v8::String::NewFromUtf8(env->Isolate(), val.c_str()).ToLocalChecked();
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::shared_ptr<V8ScriptData>& object) {
