@@ -1,0 +1,11 @@
+{
+	"builds": [
+		{
+			"DockerRoot": "xtjoeytx",
+			"DockerImage": "gserver-v2",
+			"DockerTag": "production",
+			"Dockerfile": "Dockerfile",
+			"BuildIfSuccessful": ""
+		}
+	]
+}
