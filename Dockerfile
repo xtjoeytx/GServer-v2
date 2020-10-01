@@ -1,4 +1,4 @@
-FROM xtjoeytx/v8:7.4.288.26 as v8
+FROM xtjoeytx/v8:8.4.371.15 as v8
 
 # GServer Build Environment
 FROM alpine:3.10 AS build-env
