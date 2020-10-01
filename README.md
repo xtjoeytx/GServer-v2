@@ -1,5 +1,5 @@
 # GServer-v2
-![Docker Image CI](https://github.com/xtjoeytx/GServer-v2/workflows/Docker%20Image%20CI/badge.svg?branch=master)
+[![Build Status](https://jenkins.amigadev.com/job/GServer-v2/job/master/badge/icon)](https://jenkins.amigadev.com/job/GServer-v2/job/master/)
 
 Created by: Joey, Nalin, dufresnep, Codr, Marlon.
 Based off the original work by 39ster.
