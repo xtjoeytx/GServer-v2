@@ -232,7 +232,7 @@ class TLevel
 		std::vector<TLevelBaddy *> levelBaddyIds;
 		std::vector<TLevelBoardChange *> levelBoardChanges;
 		std::vector<TLevelChest> levelChests;
-		std::vector<TLevelHorse *> levelHorses;
+		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
 		std::vector<TLevelLink> levelLinks;
 		std::vector<TLevelSign> levelSigns;

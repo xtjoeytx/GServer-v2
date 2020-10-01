@@ -156,10 +156,10 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 CString TLevel::getHorsePacket()
 {
 	CString retVal;
-	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
+	for (std::vector<TLevelHorse>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
 	{
-		TLevelHorse *horse = *i;
-		retVal >> (char)PLO_HORSEADD << horse->getHorseStr() << "\n";
+		TLevelHorse& horse = *i;
+		retVal >> (char)PLO_HORSEADD << horse.getHorseStr() << "\n";
 	}
 
 	return retVal;
@@ -1076,19 +1076,19 @@ signed char TLevel::removeItem(float pX, float pY)
 
 bool TLevel::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
 {
-	levelHorses.push_back(new TLevelHorse(server, pImage, pX, pY, pDir, pBushes));
+	auto horseLife = server->getSettings()->getInt("horselifetime", 30);
+	levelHorses.push_back(TLevelHorse(horseLife, pImage, pX, pY, pDir, pBushes));
 	return true;
 }
 
 void TLevel::removeHorse(float pX, float pY)
 {
-	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); ++i)
+	for (auto it = levelHorses.begin(); it != levelHorses.end(); ++it)
 	{
-		TLevelHorse* horse = *i;
-		if (horse->getX() == pX && horse->getY() == pY)
+		TLevelHorse& horse = *it;
+		if (horse.getX() == pX && horse.getY() == pY)
 		{
-			delete horse;
-			levelHorses.erase(i);
+			levelHorses.erase(it);
 			return;
 		}
 	}
@@ -1252,14 +1252,13 @@ bool TLevel::doTimedEvents()
 	}
 
 	// Check if any horses need to be deleted.
-	for (std::vector<TLevelHorse *>::iterator i = levelHorses.begin(); i != levelHorses.end(); )
+	for (std::vector<TLevelHorse>::iterator i = levelHorses.begin(); i != levelHorses.end(); )
 	{
-		TLevelHorse* horse = *i;
-		int deleteTimer = horse->timeout.doTimeout();
+		TLevelHorse& horse = *i;
+		int deleteTimer = horse.timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse->getX() * 2) >> (char)(horse->getY() * 2), 0, this);
-			delete horse;
+			server->sendPacketToLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2), 0, this);
 			i = levelHorses.erase(i);
 		}
 		else ++i;

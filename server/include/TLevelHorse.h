@@ -8,10 +8,13 @@ class TServer;
 class TLevelHorse
 {
 	public:
-		// constructor - destructor
-		TLevelHorse(TServer* server, const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0);
+		TLevelHorse(int horselife, const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0)
+			: horselifetime(horselife), image(pImage), x(pX), y(pY), dir(pDir), bushes(pBushes)
+		{
+			timeout.setTimeout(horselifetime);
+		}
 
-		CString getHorseStr() const;
+		CString getHorseStr();
 
 		// get private variables
 		CString getImage() const	{ return image; }
@@ -24,9 +27,20 @@ class TLevelHorse
 
 	private:
 		CString image;
+		CString horsePacket;
 		float x, y;
 		char dir, bushes;
+		int horselifetime;
 };
 
+CString TLevelHorse::getHorseStr()
+{
+	if (horsePacket.isEmpty()) {
+		char dir_bush = (bushes << 2) | (dir & 0x03);
+		horsePacket = CString() << (char)(x * 2) >> (char)(y * 2) >> (char)dir_bush << image;
+	}
+
+	return horsePacket;
+}
 
 #endif // TLEVELHORSE_H
