@@ -33,111 +33,73 @@ def killall_jobs() {
 	}
 
 	if (killnums != "") {
-		slackSend color: "danger", channel: "#jenkins", message: "Killing task(s) ${fixed_job_name} ${killnums} in favor of #${buildnum}, ignore following failed builds for ${killnums}"
+		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK
 	}
 	echo "Done killing"
 }
 
-def buildStep(dockerImage, generator, os, defines, arch) {
-	def split_job_name = env.JOB_NAME.split(/\/{1}/)
-	def fixed_job_name = split_job_name[1].replace('%2F',' ')
-    def fixed_os = os.replace(' ','-')
-	try{
-		stage("Building on \"${dockerImage}\" with \"${generator}\" for \"${os}\"...") {
-			properties([pipelineTriggers([githubPush()])])
-			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
+def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
+	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
+	try {
+		checkout scm;
 
-			def pathInContainer
+		def buildenv = "${DOCKERTAG}";
+		def tag = '';
+		if (env.BRANCH_NAME.equals('master')) {
+			tag = "latest";
+		} else {
+			tag = "${env.BRANCH_NAME.replace('/','-')}";
+		}
 
-			def dockerImageRef = docker.image("${dockerImage}")
-			dockerImageRef.pull()
-
-			dockerImageRef.inside("") {
-				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
+		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
+			def customImage
+			stage("Building ${DOCKERIMAGE}:${tag}...") {
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
-			dockerImageRef.inside("-e HOME='/tmp' -e PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer} --privileged") {
-				checkout scm
-
-				if (env.CHANGE_ID) {
-					echo 'Trying to build pull request'
-				}
-
-				if (!env.CHANGE_ID) {
-					sh "rm -rfv publishing/deploy/*"
-					sh "mkdir -p publishing/deploy/gs2emu"
-				}
-
-				dir("dependencies") {
-					sh "BUILDARCH=${arch} ./build-v8-linux"
-				}
-
-				sh "mkdir -p build/"
-				sh "mkdir -p lib/"
-				sh "sudo rm -rfv build/*"
-
-				slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
-				dir("build") {
-					sh "export PATH=${env.WORKSPACE}/dependencies/depot_tools/:${pathInContainer}"
-					sh "cmake -G\"${generator}\" ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
-					sh "cmake --build . --config Release --target package -- -j 8"
-					//sh "cmake --build . --config Release --target package_source -- -j 8"
-
-					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
-				}
-
-				slackSend color: "good", channel: "#jenkins", message: "Build ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!"
+			stage("Pushing to docker hub registry...") {
+				customImage.push();
+				discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
 			}
 		}
+
+		if (!BUILD_NEXT.equals('')) {
+			build "${BUILD_NEXT}/${env.BRANCH_NAME}";
+		}
 	} catch(err) {
-		slackSend color: "danger", channel: "#jenkins", message: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} (<${env.BUILD_URL}|Open>)"
 		currentBuild.result = 'FAILURE'
-		notify('Build failed')
+
+		discordSend description: "", footer: "", link: env.BUILD_URL, result: currentBuild.result, title: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+
+		notify("Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}")
 		throw err
 	}
 }
 
 node('master') {
-	killall_jobs()
-	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
-	slackSend color: "good", channel: "#jenkins", message: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-	parallel (
-		//'Win64-NPCServer': {
-		//	node {
-		//		buildStep('dockcross/windows-static-x64:latest', 'Unix Makefiles', 'Windows x86_64 NPCServer', "-DV8NPCSERVER=TRUE")
-		//	}
-		//},
-		/*
-		'Win64': {
+	killall_jobs();
+	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
+
+	checkout scm;
+	env.COMMIT_MSG = sh (
+		script: 'git log -1 --pretty=%B ${GIT_COMMIT}',
+		returnStdout: true
+	).trim()
+
+	discordSend description: "${env.COMMIT_MSG}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+
+	def branches = [:]
+	def project = readJSON file: "JenkinsEnv.json";
+
+	project.builds.each { v ->
+		branches["Build ${v.DockerRoot}/${v.DockerImage}:${v.DockerTag}"] = {
 			node {
-				buildStep('desertbit/crossbuild:windows-x86_64', 'Unix Makefiles', 'Windows x86_64', "-DV8NPCSERVER=FALSE", 'x86_64')
+				buildStep(v.DockerRoot, v.DockerImage, v.DockerTag, v.Dockerfile, v.BuildIfSuccessful)
 			}
-		},
-		*/
-		'Linux x86_64-NPCServer': {
-			node {
-				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64 NPCServer', '-DV8NPCSERVER=TRUE', 'x86_64')
-			}
-		},/*
-		'Linux x86_64': {
-			node {
-				buildStep('desertbit/crossbuild:linux-x86_64', 'Unix Makefiles', 'Linux x86_64', "-DV8NPCSERVER=FALSE")
-			}
-		},*/
-		'Linux ARMv7-NPCServer': {
-			node {
-				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi NPCServer', '-DV8NPCSERVER=TRUE', 'arm')
-			}
-		}/*,
-		'Linux ARMv7': {
-			node {
-				buildStep('desertbit/crossbuild:linux-armv7', 'Unix Makefiles', 'Linux RasPi', '-DV8NPCSERVER=FALSE')
-			}
-		},
-		'WebASM': {
-			node {
-				buildStep('dockcross/web-wasm:latest', 'Unix Makefiles', 'Web assembly', "-DV8NPCSERVER=FALSE")
-			}
-		}*/
-    )
+		}
+	}
+
+	sh "rm -rf ./*"
+
+	parallel branches;
 }

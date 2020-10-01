@@ -1,4 +1,5 @@
 # GServer-v2
+[![Build Status](https://jenkins.amigadev.com/job/GServer-v2/job/master/badge/icon)](https://jenkins.amigadev.com/job/GServer-v2/job/master/)
 
 Created by: Joey, Nalin, dufresnep, Codr, Marlon.
 Based off the original work by 39ster.
