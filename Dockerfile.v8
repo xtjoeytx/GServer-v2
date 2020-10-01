@@ -25,7 +25,7 @@ RUN apk add --update --virtual .gn-build-dependencies \
 # Google V8 Clone Environment
 # gclient does NOT work with Alpine
 FROM debian:buster-slim as source
-ARG V8_VERSION=7.4.288.26
+ARG V8_VERSION=8.4.371.15
 RUN set -x && \
 	apt-get update && \
 	apt-get install -y \
