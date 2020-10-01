@@ -79,14 +79,14 @@ def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
 node('master') {
 	killall_jobs();
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
+
+	checkout scm;
 	env.COMMIT_MSG = sh (
 		script: 'git log -1 --pretty=%B ${GIT_COMMIT}',
 		returnStdout: true
 	).trim()
 
 	discordSend description: "${env.COMMIT_MSG}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-
-	checkout scm;
 
 	def branches = [:]
 	def project = readJSON file: "JenkinsEnv.json";
