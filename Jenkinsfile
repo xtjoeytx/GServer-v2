@@ -48,7 +48,7 @@ def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest";
 		} else {
-			tag = "${env.BRANCH_NAME}";
+			tag = "${env.BRANCH_NAME.replace('/','-')}";
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
