@@ -1,14 +1,14 @@
-FROM alpine:3.10 as gn-builder
-ARG GN_COMMIT=d7111cb6877187d1f378bd231e14ffdd5fdd87ae
+FROM alpine:3.12 as gn-builder
+ARG GN_COMMIT=82d673acb802cee21534c796a59f8cdf26500f53
 RUN apk add --update --virtual .gn-build-dependencies \
 		alpine-sdk \
 		binutils-gold \
 		clang \
 		curl \
 		git \
-		llvm \
+		llvm9 \
 		ninja \
-		python \
+		python3 \
 		tar \
 		xz \
 	&& PATH=$PATH:/usr/lib/llvm4/bin \
@@ -16,7 +16,7 @@ RUN apk add --update --virtual .gn-build-dependencies \
 	&& git clone https://gn.googlesource.com/gn /tmp/gn \
 	&& git -C /tmp/gn checkout ${GN_COMMIT} \
 	&& cd /tmp/gn \
-	&& python build/gen.py --no-sysroot \
+	&& python3 build/gen.py \
 	&& ninja -C out \
 	&& cp -f /tmp/gn/out/gn /usr/local/bin/gn \
 	&& apk del .gn-build-dependencies \
@@ -47,7 +47,7 @@ RUN set -x && \
 	rm -rf /var/lib/apt/lists/*
 
 # Google V8 Build Environment
-FROM alpine:3.10 as v8
+FROM alpine:3.12 as v8
 COPY --from=source /tmp/v8 /tmp/v8
 COPY --from=gn-builder /usr/local/bin/gn /tmp/v8/buildtools/linux64/gn
 RUN \
@@ -61,11 +61,11 @@ RUN \
 		linux-headers \
 		make \
 		ninja \
-		python \
+		python2 \
 		tar \
 		xz \
 	&& cd /tmp/v8 && \
-	./tools/dev/v8gen.py x64.release -- \
+	python2 ./tools/dev/v8gen.py x64.release -- \
 		is_component_build=false \
 		is_debug=false \
 		use_custom_libcxx=false \
