@@ -205,6 +205,8 @@ endif()
 
 if(V8NPCSERVER)
 	if(NOT MSVC)
+		add_definitions(-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH)
+
 		find_package(V8)
 		if(NOT V8_FOUND)
 			message("v8 not found in system")
