@@ -205,6 +205,7 @@ class TLevel
 
 #ifdef V8NPCSERVER
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
+		std::vector<TNPC*> testTouch(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
 		void sendChatToLevel(const TPlayer *player, const CString& message);
 

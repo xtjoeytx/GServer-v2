@@ -570,13 +570,11 @@ bool TPlayer::doTimedEvents()
 
 	// Do singleplayer level events.
 	{
-		for (std::map<CString, TLevel *>::iterator i = spLevels.begin(); i != spLevels.end(); ++i)
+		for (auto& spLevel : spLevels)
 		{
-			TLevel* level = i->second;
-			if (level == 0)
-				continue;
-
-			level->doTimedEvents();
+			TLevel* level = spLevel.second;
+			if (level)
+				level->doTimedEvents();
 		}
 	}
 
@@ -848,9 +846,9 @@ void TPlayer::testTouch()
 	static int touchtestd[] = { 24,16, 8,32, 24,48, 40,32 };
 	int dir = sprite % 4;
 
-	TNPC *npcTouched = level->isOnNPC(x2 + touchtestd[dir*2], y2 + touchtestd[dir*2+1], true);
-	if (npcTouched != 0)
-		npcTouched->queueNpcAction("npc.playertouchsme", this);
+	auto npcList = level->testTouch(x2 + touchtestd[dir * 2], y2 + touchtestd[dir * 2 + 1]);
+	for (const auto& npc : npcList)
+		npc->queueNpcAction("npc.playertouchsme", this);
 #endif
 }
 
@@ -970,16 +968,6 @@ bool TPlayer::processChat(CString pChat)
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
-	}
-	else if (chatParse[0] == "addpmserver")
-	{
-		CString newName = pChat.subString(12).trim();
-		addPMServer(newName);
-	}
-	else if (chatParse[0] == "rempmserver")
-	{
-		CString newName = pChat.subString(12).trim();
-		remPMServer(newName);
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -3689,10 +3677,13 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		}
 	}
 
+	bool handled = false;
+
 #ifdef V8NPCSERVER
 	CString triggerAction = action.readString(",");
 	if (triggerAction == "serverside")
 	{
+		handled = true;
 		CString weaponName = action.readString(",");
 
 		TWeapon *weaponObject = server->getWeapon(weaponName);
@@ -3702,8 +3693,25 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			weaponObject->queueWeaponAction(this, triggerData.text());
 		}
 	}
+	else if (triggerAction == "servernpc")
+	{
+		handled = true;
+		CString npcName = action.readString(",");
+
+		auto npcObject = server->getNPCByName(npcName.text());
+		if (npcObject != nullptr)
+		{
+			CString npcTriggerAction = action.readString(",");
+			if (!npcTriggerAction.isEmpty())
+			{
+				CString triggerData = action.readString("");
+				npcObject->queueNpcTrigger(npcTriggerAction.text(), triggerData.text());
+			}
+		}
+	}
 	else if (level)
 	{
+		//handled = false; // client and server scripts should both be able to respond to triggers
 		int triggerX = 16 * loc[0];
 		int triggerY = 16 * loc[1];
 
@@ -3718,7 +3726,9 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 #endif
 
 	// Send to the level.
-	server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+	if (!handled) {
+		server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+	}
 
 	return true;
 }

@@ -1392,6 +1392,24 @@ std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight
 	return npcList;
 }
 
+std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
+{
+	std::vector<TNPC*> npcList;
+	for (const auto& npc : levelNPCs)
+	{
+		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
+		{
+			if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
+				(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
+			{
+				npcList.push_back(npc);
+			}
+		}
+	}
+
+	return npcList;
+}
+
 TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 {
 	for (const auto& npc : levelNPCs)
