@@ -63,7 +63,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		return nullptr;
 
 	// Definitions
-	CString weaponImage, weaponName, weaponScript;
+	CString weaponImage, weaponName, weaponScript, byteCodeFile;
 	std::vector<std::pair<CString, CString> > byteCode;
 
 	// Parse File
@@ -85,8 +85,10 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 			CString bytecode;
 			bytecode.load(server->getServerPath() << "weapon_bytecode/" << fname);
 
-			if (!bytecode.isEmpty())
-				byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+			if (!bytecode.isEmpty()) {
+				byteCode.emplace_back(fname, bytecode);
+				byteCodeFile = fname;
+			}
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -119,8 +121,11 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.text());
 
 	TWeapon* ret = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (byteCode.size() != 0)
+	if (!byteCode.empty())
 		ret->mByteCode = byteCode;
+
+	if (!byteCodeFile.isEmpty())
+		ret->mByteCodeFile = byteCodeFile;
 
 	return ret;
 }
@@ -147,7 +152,7 @@ bool TWeapon::saveWeapon()
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	for (unsigned int i = 0; i < mByteCode.size(); ++i)
 		output << "BYTECODE " << mByteCode[i].first << "\r\n";
-	
+
 	if (!mWeaponScript.isEmpty())
 	{
 		output << "SCRIPT\r\n";
@@ -231,7 +236,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	this->setFullScript(fixedScript);
 	this->setImage(pImage);
 	this->setModTime(pModTime == 0 ? time(0) : pModTime);
-	
+
 #ifdef V8NPCSERVER
 	// Separate client and server code
 	setServerScript(fixedScript.readString("//#CLIENTSIDE"));

@@ -111,7 +111,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		std::string name = flag.readString("=").text();
 		CString val = flag.readString("");
-		
+
 		setFlag(name, val, (id != -1));
 		--flagCount;
 	}
@@ -1089,7 +1089,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		{
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the weapons.");
 			rclog.out("%s reloaded the weapons.\n", accountName.text());
-			server->loadWeapons();
+			server->loadWeapons(true);
 		}
 #ifdef V8NPCSERVER
 		else if (words[0] == "/savenpcs" && words.size() == 1)

@@ -31,7 +31,9 @@ class TWeapon
 		// Functions -> Inline Get-Functions
 		CString getWeaponPacket() const;
 		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
+		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
 		inline signed char getWeaponId()				{ return mWeaponDefault; }
+		inline const CString& getByteCodeFile() const	{ return mByteCodeFile; }
 		inline const CString& getImage() const			{ return mWeaponImage; }
 		inline const CString& getName() const			{ return mWeaponName; }
 		inline const CString& getClientScript() const	{ return mScriptClient; }
@@ -47,7 +49,7 @@ class TWeapon
 #ifdef V8NPCSERVER
 		ScriptExecutionContext * getExecutionContext();
 		IScriptWrapped<TWeapon> * getScriptObject() const;
-		
+
 		void freeScriptResources();
 		void queueWeaponAction(TPlayer *player, const std::string& args);
 		void runScriptEvents();
@@ -59,7 +61,7 @@ class TWeapon
 
 		// Varaibles -> Weapon Data
 		signed char mWeaponDefault;
-		CString mWeaponImage, mWeaponName, mWeaponScript;
+		CString mWeaponImage, mWeaponName, mWeaponScript, mByteCodeFile;
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;
 		time_t mModTime;
