@@ -111,7 +111,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		std::string name = flag.readString("=").text();
 		CString val = flag.readString("");
-		
+
 		setFlag(name, val, (id != -1));
 		--flagCount;
 	}
@@ -1089,7 +1089,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		{
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the weapons.");
 			rclog.out("%s reloaded the weapons.\n", accountName.text());
-			server->loadWeapons();
+			server->loadWeapons(true);
 		}
 #ifdef V8NPCSERVER
 		else if (words[0] == "/savenpcs" && words.size() == 1)
@@ -2126,7 +2126,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	}
 
 	// If folder config is off, add it to the file list.
-	if (settings->getBool("nofoldersconfig", false) == true)
+	if ( settings->getBool("nofoldersconfig", false))
 	{
 		CFileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
@@ -2136,11 +2136,11 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	else
 	{
 		std::vector<CString> foldersConfig = CString::loadToken(CString() << server->getServerPath() << "config/foldersconfig.txt", "\n", true);
-		for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
+		for (auto & folderConfig : foldersConfig)
 		{
-			CString type = i->readString(" ").trim();
+			CString type = folderConfig.readString(" ").trim();
 			CString folder("world/");
-			folder << i->readString("").trim();
+			folder << folderConfig.readString("").trim();
 
 			if (fullPath.match(folder))
 			{
@@ -2168,6 +2168,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		TLevel* l = TLevel::findLevel(file, server);
 		if (l) l->reload();
 	}
+	else if (ext == ".dump" || dir.findi(CString("weapons")) > -1)
+		server->loadWeapons(true);
 	else if (file == "serveroptions.txt")
 	{
 		server->loadSettings();

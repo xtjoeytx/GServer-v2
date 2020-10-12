@@ -754,12 +754,17 @@ void TServer::loadWeapons(bool print)
 {
 	CFileSystem weaponFS(this);
 	weaponFS.addDir("weapons", "weapon*.txt");
+	CFileSystem bcweaponFS(this);
+	bcweaponFS.addDir("weapon_bytecode", "*");
 	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
 	for (auto & weaponFile : *weaponFileList)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
-		weapon->setModTime(weaponFS.getModTime(weaponFile.first));
+		if (!weapon->hasBytecode())
+			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
+		else
+			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
 
 		// Check if the weapon exists.
 		if (weaponList.find(weapon->getName()) == weaponList.end())
@@ -776,7 +781,11 @@ void TServer::loadWeapons(bool print)
 				delete w;
 				weaponList[weapon->getName()] = weapon;
 				updateWeaponForPlayers(weapon);
-				if (print) serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
+				if (print) {
+					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
+
+					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName().text() << " ");
+				}
 			}
 			else
 			{
