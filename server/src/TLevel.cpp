@@ -1,6 +1,7 @@
 #include <set>
 #include <tiletypes.h>
 #include <cmath>
+#include <execution>
 #include "IDebug.h"
 #include "IEnums.h"
 #include "TServer.h"

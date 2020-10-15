@@ -245,6 +245,8 @@ if(NOT NOSTATIC)
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
