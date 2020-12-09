@@ -29,7 +29,7 @@ class TWeapon
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		CString getWeaponPacket() const;
+		CString getWeaponPacket(bool forceGS1 = false) const;
 		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
 		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
 		inline signed char getWeaponId()				{ return mWeaponDefault; }

@@ -173,12 +173,12 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket() const
+CString TWeapon::getWeaponPacket(bool forceGS1) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	if (mByteCode.empty())
+	if (mByteCode.empty() || forceGS1)
 	{
 		return CString() >> (char)PLO_NPCWEAPONADD
 			>> (char)mWeaponName.length() << mWeaponName
@@ -218,7 +218,6 @@ CString TWeapon::getWeaponPacket() const
 		return out;
 	}
 }
-
 
 // Prototypes for commands/functions are necessary for correct parsing
 gs1::PrototypeMap cmds = {{"setarray", {false, false}},
@@ -304,6 +303,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		//auto context = device.CreateContext(primaryVarStore);
 
 		// Compile source file to bytecode
+		mByteCode.clear();
 		mByteCode.emplace_back(mWeaponName,device.CompileSourceFromString(fixedScript.readString(""), mWeaponName, cmds, funcs));
 
 	} else setClientScript(fixedScript.readString(""));

@@ -2018,7 +2018,7 @@ bool TPlayer::addWeapon(int defaultWeapon)
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
 		weaponList.push_back(weapon->getName());
-		sendPacket(CString() << weapon->getWeaponPacket());
+		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
 	}
 
 	return true;
@@ -2247,9 +2247,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		std::vector<CString>* allowedVersions = server->getAllowedVersions();
 		bool allowed = false;
-		for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
+		for (auto ver : *allowedVersions)
 		{
-			CString ver = *i;
 			if (ver.find(":") != -1)
 			{
 				CString ver1 = ver.readString(":").trim();
@@ -2782,7 +2781,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
-	
+
 	// note(joey): we were iterating all chests to find a chest at a specific x/y. If there were multiple
 	// chests at the same location it would keep checking them.. but all chests would of been satisfied
 	// since its based on x, y, and levelname.
@@ -4165,7 +4164,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
-	
+
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
