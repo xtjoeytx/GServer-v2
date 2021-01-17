@@ -232,7 +232,9 @@ bool TPlayer::sendLogin()
 	}
 
 	// Ask for processes.
-	sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	if (isClient()) {
+		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	}
 	return true;
 }
 

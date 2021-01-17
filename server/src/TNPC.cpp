@@ -143,7 +143,7 @@ void TNPC::setScriptCode(const CString& pScript)
 
 	// See if the NPC should block position updates from the level leader.
 #ifdef V8NPCSERVER
-		blockPositionUpdates = true;
+	blockPositionUpdates = true;
 #else
 	if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
 		blockPositionUpdates = true;

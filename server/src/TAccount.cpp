@@ -553,7 +553,7 @@ bool TAccount::hasChest(const CString& pChest)
 bool TAccount::hasWeapon(const CString& pWeapon)
 {
 	auto it = std::find(weaponList.begin(), weaponList.end(), pWeapon);
-	return (it != chestList.end());
+	return (it != weaponList.end());
 }
 
 /*

@@ -698,7 +698,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			signed char x = line.readGChar();
 			signed char y = line.readGChar();
 			CString image = line.readString("#");
-			CString code = line.readString("");
+			CString code = line.readString("").replaceAll("\xa7", "\n");
 
 			TNPC* npc = server->addNPC(image, code, x, y, this, true, false);
 			levelNPCs.push_back(npc);
