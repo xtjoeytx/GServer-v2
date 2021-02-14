@@ -1874,9 +1874,13 @@ void TPlayer::setChat(const CString& pChat)
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
 }
 
-void TPlayer::setNick(const CString& pNickName, bool force)
+void TPlayer::setNick(CString pNickName, bool force)
 {
 	CString newNick, nick, guild;
+
+	// Limit the nickname to 223 characters
+	if (pNickName.length() > 223)
+		pNickName = pNickName.subString(0, 223);
 
 	int guild_start = pNickName.find('(');
 	int guild_end = pNickName.find(')', guild_start);
@@ -2867,6 +2871,8 @@ bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 	// TODO(joey): If I recall, showimg worked on server if id was less than 200? Will need to confirm this.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 #endif
+
+	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 	return true;
 }
 

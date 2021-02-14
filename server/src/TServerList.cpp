@@ -52,13 +52,14 @@ void TServerList::createFunctions()
 	Constructor - Deconstructor
 */
 TServerList::TServerList(TServer *server)
-: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0)
+: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0), _serverRemoteIp("127.0.0.1")
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
 	sock.setDescription("listserver");
 
 	lastData = lastPing = lastTimer = lastPlayerSync = time(0);
+	_lastConnectionAttempt = 0;
 
 	// Create Functions
 	if (!TServerList::created)
@@ -104,6 +105,11 @@ bool TServerList::canRecv()
 	return true;
 }
 
+void TServerList::onUnregister()
+{
+	_server->getServerLog().out("[%s] :: %s - Disconnected.\n", _server->getName().text(), sock.getDescription());
+}
+
 bool TServerList::main()
 {
 	if (!getConnected())
@@ -146,7 +152,12 @@ bool TServerList::doTimedEvents()
 	bool isConnected = getConnected();
 
 	if (!isConnected)
-		connectServer();
+	{
+		// Only re-establish a connection 5 minutes after the previous attempt
+		if (difftime(lastTimer, _lastConnectionAttempt) >= 300) {
+			connectServer();
+		}
+	}
 
 	// Send a ping every 30 seconds.
 	/*
@@ -188,12 +199,6 @@ bool TServerList::doTimedEvents()
 	return true;
 }
 
-bool TServerList::init(const CString& pServerIp, const CString& pServerPort)
-{
-	// Initialize the socket.
-	return sock.init(pServerIp.text(), pServerPort.text()) == 0;
-}
-
 bool TServerList::connectServer()
 {
 	CSettings* settings = _server->getSettings();
@@ -201,13 +206,28 @@ bool TServerList::connectServer()
 	if (getConnected())
 		return true;
 
+	_lastConnectionAttempt = time(nullptr);
+
+	auto& serverLog = _server->getServerLog();
+
+	serverLog.out("[%s] :: Initializing %s socket.\n", _server->getName().text(), sock.getDescription());
+
+	// Initialize the socket
+	if (sock.init(settings->getStr("listip").text(), settings->getStr("listport").text()) != 0)
+	{
+		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", _server->getName().text(), sock.getDescription());
+		return false;
+	}
+
 	// Connect to Server
 	if (sock.connect() != 0)
+	{
+		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", _server->getName().text(), sock.getDescription());
 		return false;
+	}
 
 	_server->getSocketManager()->registerSocket((CSocketStub*)this);
-
-	_server->getServerLog().out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
+	serverLog.out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
 
 	// Get Some Stuff
 	CString name(settings->getStr("name"));
@@ -224,7 +244,7 @@ bool TServerList::connectServer()
 		localip = sock.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		_server->getServerLog().out(CString() << "[" << _server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		serverLog.out(CString() << "[" << _server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 
@@ -297,6 +317,7 @@ void TServerList::addPlayer(TPlayer *player)
 	dataPacket >> (char)PLPROP_X << player->getProp(PLPROP_X);
 	dataPacket >> (char)PLPROP_Y << player->getProp(PLPROP_Y);
 	dataPacket >> (char)PLPROP_ALIGNMENT << player->getProp(PLPROP_ALIGNMENT);
+	dataPacket >> (char)PLPROP_IPADDR << player->getProp(PLPROP_IPADDR);
 	sendPacket(dataPacket);
 }
 
@@ -327,10 +348,6 @@ void TServerList::handleText(const CString& data)
 	CString dataTokenStr = data.guntokenize();
 	std::vector<CString> params = data.gCommaStrTokens();
 
-	//printf("handleText:%s\n", dataTokenStr.text());
-	//for (int i = 0; i < params.size(); i++)
-	//	printf("Param %d: %s\n", i, params[i].text());
-
 	if (params.size() >= 3)
 	{
 		if (params[0] == "GraalEngine")
@@ -354,28 +371,35 @@ void TServerList::handleText(const CString& data)
 				}
 			}
 		}
-		else if (params.size() >= 4 && params[0] == "Listserver")
+		else if (params[0] == "Listserver")
 		{
-			if (params[1] == "Modify" && params[2] == "Server")
+			if (params.size() == 3 && params[1] == "SetRemoteIp")
 			{
-				std::string serverName = params[3].guntokenize().text();
-
-				for (int i = 4; i < params.size(); i++)
+				_serverRemoteIp = params[2].text();
+			}
+			else if (params.size() >= 4)
+			{
+				if (params[1] == "Modify" && params[2] == "Server")
 				{
-					params[i].guntokenizeI();
-					while (params[i].bytesLeft())
-					{
-						CString key = params[i].readString("=");
-						CString val = params[i].readString("");
+					std::string serverName = params[3].guntokenize().text();
 
-						if (key == "players")
+					for (int i = 4; i < params.size(); i++)
+					{
+						params[i].guntokenizeI();
+						while (params[i].bytesLeft())
 						{
-							int pcount = strtoint(val);
-							if (pcount < 0)
-								serverListCount.erase(serverName);
-							else
+							CString key = params[i].readString("=");
+							CString val = params[i].readString("");
+
+							if (key == "players")
 							{
-								serverListCount[serverName] = pcount;
+								int pcount = strtoint(val);
+								if (pcount < 0)
+									serverListCount.erase(serverName);
+								else
+								{
+									serverListCount[serverName] = pcount;
+								}
 							}
 						}
 					}
@@ -419,39 +443,6 @@ void TServerList::sendServerHQ()
 	if(_server->getSettings()->getBool("onlystaff", false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
-}
-
-/*
-	Altering Server-Information
-*/
-void TServerList::setDesc(const CString& pServerDesc)
-{
-	sendPacket(CString() >> (char)SVO_SETDESC << pServerDesc);
-}
-
-void TServerList::setIp(const CString& pServerIp)
-{
-	sendPacket(CString() >> (char)SVO_SETIP << pServerIp);
-}
-
-void TServerList::setName(const CString& pServerName)
-{
-	sendPacket(CString() >> (char)SVO_SETNAME << pServerName);
-}
-
-void TServerList::setPort(const CString& pServerPort)
-{
-	sendPacket(CString() >> (char)SVO_SETPORT << pServerPort);
-}
-
-void TServerList::setUrl(const CString& pServerUrl)
-{
-	sendPacket(CString() >> (char)SVO_SETURL << pServerUrl);
-}
-
-void TServerList::setVersion(const CString& pServerVersion)
-{
-	sendPacket(CString() >> (char)SVO_SETVERS << pServerVersion);
 }
 
 /*
@@ -680,7 +671,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 
 void TServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] %s\n", _server->getName().text(), pPacket.readString("").text());
+	_server->getServerLog().out("[%s] :: %s - [Error] %s\n", _server->getName().text(), sock.getDescription(), pPacket.readString("").text());
 }
 
 void TServerList::msgSVI_VERIACC2(CString& pPacket)

@@ -139,12 +139,7 @@ int main(int argc, char* argv[])
 			}
 
 			if (!overrideName.isEmpty())
-			{
 				settings->addKey("name", overrideName);
-				auto * sl = server->getServerList();
-				if (sl)
-					sl->setName(settings->getStr("name"));
-			}
 
 			if (!overrideStaff.isEmpty()) {
 				settings->addKey("staff", overrideStaff);

@@ -67,7 +67,7 @@ class TServer : public CSocketStub
 		bool canRecv()				{ return true; }
 		bool canSend()				{ return false; }
 
-		TServer(CString pName);
+		TServer(const CString& pName);
 		~TServer();
 		void operator()();
 		void cleanup();

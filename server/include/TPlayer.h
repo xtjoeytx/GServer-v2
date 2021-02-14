@@ -64,7 +64,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Set Properties
 		void setChat(const CString& pChat);
-		void setNick(const CString& pNickName, bool force = false);
+		void setNick(CString pNickName, bool force = false);
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
@@ -82,7 +82,9 @@ class TPlayer : public TAccount, public CSocketStub
 		void resetLevelCache(const TLevel* level);
 
 		// Prop-Manipulation
-		CString getProp(int pPropId);
+		inline CString getProp(int pPropId) const;
+		void getProp(CString& buffer, int pPropId) const;
+
 		CString getProps(const bool *pProps, int pCount);
 		CString getPropsRC();
 		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer *rc = 0);
@@ -283,6 +285,29 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
+		/////////////
+		inline void getPropPacket(CString& packet, int val) {
+			packet >> (char)val;
+			getProp(packet, val);
+		}
+
+		template<typename... Args>
+		inline CString sendPropPacket(Args&&... args) {
+			static_assert((std::is_same<Args, int>::value && ...));
+
+			CString packet;
+			(getPropPacket(packet, std::forward<Args>(args)), ...);
+			return packet;
+		}
+
+		inline CString sendPropPacket2(std::initializer_list<int> args) {
+			CString packet;
+			for (const auto& v : args) {
+				getPropPacket(packet, v);
+			}
+			return packet;
+		}
+
 	private:
 		// Login functions.
 		bool sendLoginClient();
@@ -380,6 +405,14 @@ inline bool TPlayer::removeChatChannel(const std::string & channel)
 {
 	channelList.erase(channel);
 	return false;
+}
+
+
+inline CString TPlayer::getProp(int pPropId) const
+{
+	CString packet;
+	getProp(packet, pPropId);
+	return packet;
 }
 
 #endif // TPLAYER_H

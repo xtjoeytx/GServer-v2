@@ -1523,7 +1523,7 @@ void TServer::playerLoggedIn(TPlayer *player)
 	getServerList()->addPlayer(player);
 
 #ifdef V8NPCSERVER
-	// Send event to server that player is logging out
+	// Send event to server that player is logging in
 	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
 	{
 		TNPC *npcObject = (*it).second;
@@ -1793,7 +1793,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 	// Update Weapons
 	for (auto player : playerList)
 	{
-			if (!player->isClient())
+		if (!player->isClient())
 			continue;
 
 		if (player->hasWeapon(pWeapon->getName()))

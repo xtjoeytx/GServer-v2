@@ -525,6 +525,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 			actionTaken = "added";
 	}
 
+	// TODO(joey): Log message should come before the script is executed
 	if (!actionTaken.isEmpty())
 	{
 		CString logMsg;
@@ -591,8 +592,14 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != nullptr)
 	{
+		// TODO(joey): should be same as gserver ip
+
 		// Grab NPCServer & Send
-		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
+		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "auto").toLower();
+		if (npcServerIp == "auto") {
+			npcServerIp = server->getServerList()->getServerIP();
+		}
+
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
 	}
 }
