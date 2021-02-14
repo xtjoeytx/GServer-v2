@@ -27,7 +27,7 @@ static const char* const filesystemTypes[] =
 
 extern std::atomic_bool shutdownProgram;
 
-TServer::TServer(CString pName)
+TServer::TServer(const CString& pName)
 	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
@@ -164,15 +164,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Add npc-server to playerlist
 	addPlayer(mNpcServer);
 #endif
-
-	// Connect to the serverlist.
-	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
-	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
-	{
-		serverlog.out("[%s] ** [Error] Could not initialize serverlist socket.\n", name.text());
-		return ERR_LISTEN;
-	}
-	serverlist.connectServer();
 
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
