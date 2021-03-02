@@ -1624,7 +1624,7 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer) continue;
+		if ( player == pPlayer || player->isNPCServer()) continue;
 
 		player->sendPacket(pPacket);
 	}

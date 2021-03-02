@@ -256,7 +256,7 @@ class TNPC
 		void saveNPC();
 
 		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
-		void queueNpcTrigger(const std::string& action, const std::string& data);
+		void queueNpcTrigger(const std::string& action, TPlayer *player, const std::string& data);
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);

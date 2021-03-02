@@ -577,7 +577,13 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
 	// Validate arguments
-	if (args[0]->IsString())
+	if (args.Length() == 0)
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)0, CLVER_2_17, true);
+	}
+	else if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 

@@ -783,7 +783,11 @@ void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 
 	// Get new value
 	v8::String::Utf8Value newValue(isolate, value);
-	playerObject->setFlag(*utf8, *newValue, true);
+	if (newValue.length() == 0) {
+		playerObject->deleteFlag(*utf8, true);
+	} else {
+		playerObject->setFlag(*utf8, *newValue, true);
+	}
 
 	// Needed to indicate we handled the request
 	info.GetReturnValue().Set(value);
@@ -923,7 +927,7 @@ void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& ar
 	playerObject->enableWeapons();
 }
 
-// Player Function: player.say("message");
+// Player Function: player.say("message"); or player.say(index) for signs in a level
 void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -938,6 +942,20 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate));
 		playerObject->sendSignMessage(*newValue);
+	}
+	else if (args[0]->IsInt32())
+	{
+		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+		int signIndex = args[0]->Int32Value(isolate->GetCurrentContext()).ToChecked();
+
+		auto level = playerObject->getLevel();
+		if (level != nullptr) {
+			auto& signs = level->getLevelSigns();
+			if (signIndex < signs.size())
+				playerObject->sendSignMessage(signs[signIndex].getUText().replaceAll("\n", "#b"));
+
+		}
 	}
 }
 
