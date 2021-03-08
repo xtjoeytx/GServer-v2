@@ -8,6 +8,7 @@ For their additional work on the old gserver, special thanks go to:
 	
 ## Building
 
+### On *nix machines
 ```
 fetch v8
 cd v8
@@ -18,6 +19,40 @@ tools/dev/v8gen.py x64.release.sample
 ninja -j 8 -C out.gn/x64.release.sample v8_monolith
 ```
 
+### On Windows, using GCC
+Currently, v8 is too much of a pain to build for this method to be viable. We suggest you use MSVC/MSBuild and nuget instead.
+
+### On Windows, using MSVC/MSBuild
+#### First, setup the environment:
+Install Microsoft C++ compiler and latest Windows SDK through the [VS installer](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019)
+Install and add [CMake](https://cmake.org/download/) to path
+Download and add [nuget](https://www.nuget.org/downloads) to path
+Add `D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\` to `VCTargetsPath` in your paths. Note that your actual installation path (folder in which `Microsoft Visual Studio` is) may be different in your environment. The trailing \ can be required.
+
+#### Then, running these commands should work.
+A folder called GServer-v2 will be created. Remember to update the Visual Studio installation path to your Visual Studio installation path.
+```
+git clone https://github.com/xtjoeytx/GServer-v2
+cd GServer-v2
+git checkout feature/npc-server
+git submodule update --init --recursive
+
+mkdir packages
+cd packages
+
+nuget install v8-v142-x64 -version 7.4.288.26
+
+cd..
+
+mkdir build
+cd build
+
+"D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+
+cmake .. -G "Visual Studio 16 2019" -A x64 -DV8NPCSERVER=TRUE
+
+cmake --build .
+```
 
 ## Quick Start Instructions
 
