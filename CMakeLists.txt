@@ -22,6 +22,8 @@
 cmake_minimum_required(VERSION 2.8.5)
 project(GS2Emu C CXX)
 
+message("Expanding ${PROJECT_NAME} cmake")
+
 set(CMAKE_DEBUG_POSTFIX _d)
 
 set(BIN_DIR "bin" CACHE STRING "Binary output directory")
@@ -217,17 +219,11 @@ if(NOT NOSTATIC)
 endif()
 
 if(V8NPCSERVER)
-	# Removing MSVC check because using VSCode with MSVC sets both MSVC and MSVC_IDE as true
-	# Hopefully we will find another way to diffenrentiate between using VSCode and Visual Studio Community
-	# if(NOT MSVC)
-		if(NOT V8_FOUND)
-			find_package(V8)
-			if(NOT V8_FOUND)
-				message("v8 not found in system")
-				#add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
-			endif()
-		endif()
-	#endif()
+	find_package(V8)
+	if(NOT V8_FOUND)
+		message("v8 not found in system")
+		#add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
+	endif()
 endif()
 
 if(NOT NOUPNP)
@@ -254,7 +250,9 @@ if(NOT NOUPNP)
 	endif()
 endif()
 
-find_package(Threads REQUIRED)
+if(NOT MSVC)
+	find_package(Threads REQUIRED)
+endif()
 
 # Restore library suffixes
 if(NOT NOSTATIC)
@@ -265,3 +263,5 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+message("${PROJECT_NAME} cmake done expanding")
