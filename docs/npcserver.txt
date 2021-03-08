@@ -32,8 +32,10 @@ Level Object:
     Functions:
         findareanpcs(x, y, width, height) - get an array of npcs in this area
 		findnearestplayers(x, y) - gets an array of pairs of the distance and player object from the x/y
+		putexplosion(radius, x, y) - places an explosion in the level
 		putnpc(x, y, "script", options) - puts an npc in the level, options is currently unused as of now and can be left outputs
-
+		onwall(x, y) - returns if tile[x, y] is a wall tile
+		
     Properties:
         name
 		issparringzone - true/false (read-only)

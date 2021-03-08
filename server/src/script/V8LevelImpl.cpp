@@ -164,6 +164,38 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		args.GetReturnValue().Set(result);
 	}
 }
+// Level Method: level.putexplosion(radius, x, y);
+void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		TServer* server = levelObject->getServer();
+
+		unsigned char eradius = args[0]->Int32Value(context).ToChecked();
+		float loc[2] = {
+			(float)(args[1]->NumberValue(context).ToChecked()),
+			(float)(args[2]->NumberValue(context).ToChecked())
+		};
+
+		unsigned char epower = 1;
+
+		// Send the packet out.
+		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+		server->sendPacketToLevel(packet, nullptr, levelObject);
+	}
+}
 
 // Level Method: level.putnpc(x, y, script, options);
 void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -255,6 +287,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
 
