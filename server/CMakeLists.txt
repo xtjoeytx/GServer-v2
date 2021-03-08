@@ -19,8 +19,6 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-message("Expanding ${PROJECT_NAME} cmake")
-
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 
@@ -252,4 +250,3 @@ set(INSTALL_DEST .)
 
 install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
 
-message("${PROJECT_NAME} cmake done expanding")

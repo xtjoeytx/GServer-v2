@@ -21,5 +21,5 @@ dependencies/.cipd/
 bin/servers/*
 *.swp
 .svn/
-packages/*
+packages/
 *.bat

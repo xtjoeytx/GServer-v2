@@ -8,10 +8,6 @@
 
 message("Looking for monolithic v8...")
 
-if(NOSTATIC)
-	message("Ignoring NOSTATIC for v8 lookup")
-endif()
-
 IF (NOT $ENV{V8_DIR} STREQUAL "")
 	SET(V8_DIR $ENV{V8_DIR})
 ENDIF()

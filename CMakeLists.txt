@@ -22,8 +22,6 @@
 cmake_minimum_required(VERSION 2.8.5)
 project(GS2Emu C CXX)
 
-message("Expanding ${PROJECT_NAME} cmake")
-
 set(CMAKE_DEBUG_POSTFIX _d)
 
 set(BIN_DIR "bin" CACHE STRING "Binary output directory")
@@ -250,7 +248,7 @@ if(NOT NOUPNP)
 	endif()
 endif()
 
-if(NOT MSVC)
+if(NOT WIN32)
 	find_package(Threads REQUIRED)
 endif()
 
@@ -264,4 +262,3 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
-message("${PROJECT_NAME} cmake done expanding")
