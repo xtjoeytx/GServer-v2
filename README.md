@@ -25,8 +25,11 @@ Currently, v8 is too much of a pain to build for this method to be viable. We su
 ### On Windows, using MSVC/MSBuild
 #### First, setup the environment:
 Install Microsoft C++ compiler and latest Windows SDK through the [VS installer](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019)
+
 Install and add [CMake](https://cmake.org/download/) to path
+
 Download and add [nuget](https://www.nuget.org/downloads) to path
+
 Add `D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\` to `VCTargetsPath` in your paths. Note that your actual installation path (folder in which `Microsoft Visual Studio` is) may be different in your environment. The trailing \ can be required.
 
 #### Then, running these commands should work.
