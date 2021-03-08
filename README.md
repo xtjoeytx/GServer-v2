@@ -55,6 +55,10 @@ cd build
 cmake .. -G "Visual Studio 16 2019" -A x64 -DV8NPCSERVER=TRUE
 
 cmake --build .
+
+//The next lines copy the required v8 files to the build path.
+robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.dll
+robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.bin
 ```
 
 ## Quick Start Instructions
