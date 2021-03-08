@@ -1531,16 +1531,18 @@ unsigned int TServer::getNWTime() const
 
 bool TServer::isIpBanned(const CString& ip)
 {
-	for (auto & ipBan : ipBans)
+	for (const auto& ipBan : ipBans)
 	{
-		if (ip.match(ipBan)) return true;
+		if (ip.match(ipBan))
+			return true;
 	}
+
 	return false;
 }
 
 bool TServer::isStaff(const CString& accountName)
 {
-	for (auto account : staffList)
+	for (const auto& account : staffList)
 	{
 		if (accountName.toLower() == account.trim().toLower())
 			return true;

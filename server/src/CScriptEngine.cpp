@@ -295,7 +295,8 @@ void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_poi
 	// Run scripts every 0.05 seconds
 	constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
 	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
-	while (accumulator >= timestep) {
+	while (accumulator >= timestep)
+	{
 		accumulator -= timestep;
 
 		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
