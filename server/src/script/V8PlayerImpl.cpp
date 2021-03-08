@@ -927,6 +927,28 @@ void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& ar
 	playerObject->enableWeapons();
 }
 
+// Player Function: player.freezeplayer();
+void Player_Function_FreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+	playerObject->freezePlayer();
+}
+
+// Player Function: player.unfreezeplayer();
+void Player_Function_UnfreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+	playerObject->unfreezePlayer();
+}
+
 // Player Function: player.say("message"); or player.say(index) for signs in a level
 void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1259,6 +1281,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "freezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_FreezePlayer, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8(isolate, "unfreezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_UnfreezePlayer, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
 	player_proto->Set(v8::String::NewFromUtf8(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));

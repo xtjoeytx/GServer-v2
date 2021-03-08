@@ -123,6 +123,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool deleteWeapon(TWeapon* weapon);
 		void disableWeapons();
 		void enableWeapons();
+		void freezePlayer();
+		void unfreezePlayer();
 		void sendRPGMessage(const CString& message);
 		void sendSignMessage(const CString& message);
 		void setAni(CString gani);

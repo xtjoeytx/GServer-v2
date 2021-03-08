@@ -104,6 +104,8 @@ Player Object:
 		removeweapon("weapon") - removes a weapon from a player
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
+		freezeplayer() - freezes the player, preventing them from movement
+		unfreezeplayer() - unfreeze player
 		attached(npcid|npcobject) - returns true if the player is attached to the npc
 		attachnpc(npcid) - attachs a player to an npc
 		detachnpc() - detaches a player from an npc

@@ -2087,6 +2087,16 @@ void TPlayer::enableWeapons()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
+void TPlayer::freezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_FREEZEPLAYER2);
+}
+
+void TPlayer::unfreezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
+}
+
 void TPlayer::sendRPGMessage(const CString &message)
 {
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
