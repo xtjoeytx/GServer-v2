@@ -6,6 +6,12 @@
 # V8_FOUND, if false, do not try to link to V8
 # V8_INCLUDE_DIR, where to find the headers
 
+message("Looking for monolithic v8...")
+
+if(NOSTATIC)
+	message("Ignoring NOSTATIC for v8 lookup")
+endif()
+
 IF (NOT $ENV{V8_DIR} STREQUAL "")
 	SET(V8_DIR $ENV{V8_DIR})
 ENDIF()
@@ -63,6 +69,7 @@ SET(V8_LIBRARY_SEARCH_PATHS
 	/opt/csw/lib
 	/opt/lib
 	/usr/freeware/lib64
+
 )
 
 FIND_PATH(V8_INCLUDE_DIR v8.h
@@ -87,13 +94,59 @@ FIND_LIBRARY(V8_LIBRARY
 	PATHS ${V8_LIBRARY_SEARCH_PATHS}
 )
 
-SET(V8_FOUND "NO")
+if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
+	if(NOT V8_LIBRARY)
+		message("Couldn't find v8 library.")
+	endif()
+	if(NOT V8_INCLUDE_DIR)
+		message("Couldn't find v8 include dir.")
+	endif()
+	message("Monolith search failed, looking for nuget package")
 
-IF (NOT UNIX)
-	IF (V8_LIBRARY AND V8_INCLUDE_DIR)
-		SET(V8_FOUND "YES")
-	ENDIF()
-ELSEIF(V8_LIBRARY AND V8_INCLUDE_DIR)
-	SET(V8_FOUND "YES")
-ENDIF(NOT UNIX)
+	find_path(V8_INCLUDE_DIR v8.h
+		PATHS
+		${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/include
+		${V8_DIR}/include)
+
+	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+		message("Searching for Release library as chosen")
+		set(V8_LIBRARY_SEARCH_PATHS
+			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Release
+			${V8_DIR}/Release
+			${V8_DIR}/lib/Release
+		)
+	else()
+		if(NOT CMAKE_BUILD_TYPE)
+			message("Searching for Debug library by default")
+		elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+			message("Searching for Debug library as chosen")
+		else()
+			message("Build type not recognized, searching for Debug library")
+		endif()
+		set(V8_LIBRARY_SEARCH_PATHS
+			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Debug
+			${V8_DIR}/Debug
+			${V8_DIR}/lib/Debug
+		)
+	endif()
+
+	find_library(V8_LIBRARY v8.dll.lib
+		PATHS ${V8_LIBRARY_SEARCH_PATHS}
+	)
+
+	if(NOT V8_LIBRARY)
+		message("Couldn't find v8 library as nuget package")
+	endif()
+	if(NOT V8_INCLUDE_DIR)
+		message("Couldn't find v8 include dir as nuget package")
+	endif()
+
+endif()
+	
+IF (V8_LIBRARY AND V8_INCLUDE_DIR)
+	message("V8 found!")
+	set(V8_FOUND TRUE)
+ELSE()
+	message("V8 lookup failed.")
+ENDIF()
 
