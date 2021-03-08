@@ -1050,7 +1050,7 @@ void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 		CString animation(*newValue);
 		for (int i = 1; i < args.Length(); i++)
 		{
-			if (args[i]->IsString())
+			if (args[i]->IsString() || args[i]->IsNumber())
 			{
 				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate));
 				animation << "," << *aniParam;

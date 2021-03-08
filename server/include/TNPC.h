@@ -186,6 +186,7 @@ class TNPC
 		void setSave(unsigned int idx, unsigned char val);
 		void setPropModTime(unsigned char pid, time_t time);
 		void setImage(const CString& image, int offsetx = 0, int offsety = 0, int width = 0, int height = 0);
+		void setSprite(int val)					{ sprite = val; }
 
 		// get functions
 		unsigned int getId() const				{ return id; }
@@ -197,6 +198,7 @@ class TNPC
 		int getHeight() const 					{ return height; }
 		int getWidth() const 					{ return width; }
 		int getRupees() const 					{ return rupees; }
+		unsigned char getSprite() const			{ return sprite; }
 		int getBlockFlags() const 				{ return blockFlags; }
 		int getVisibleFlags() const 			{ return visFlags; }
 		int getTimeout() const 					{ return timeout; }
