@@ -109,7 +109,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		${V8_DIR}/include)
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message("Searching for Release library as chosen")
+		message("Searching for Release libraries as chosen")
 		set(V8_LIBRARY_SEARCH_PATHS
 			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Release
 			${V8_DIR}/Release
@@ -117,11 +117,11 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		)
 	else()
 		if(NOT CMAKE_BUILD_TYPE)
-			message("Searching for Debug library by default")
+			message("Searching for Debug libraries by default")
 		elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 			message("Searching for Debug library as chosen")
 		else()
-			message("Build type not recognized, searching for Debug library")
+			message("Build type not recognized, searching for Debug libraries")
 		endif()
 		set(V8_LIBRARY_SEARCH_PATHS
 			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Debug
@@ -130,12 +130,18 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		)
 	endif()
 
-	find_library(V8_LIBRARY v8.dll.lib
+	find_library(V8_MAIN_LIBRARY v8.dll.lib
+		PATHS ${V8_LIBRARY_SEARCH_PATHS}
+	)
+	find_library(V8_BASE_LIBRARY v8_libbase.dll.lib
+		PATHS ${V8_LIBRARY_SEARCH_PATHS}
+	)
+	find_library(V8_PLATFORM_LIBRARY v8_libplatform.dll.lib
 		PATHS ${V8_LIBRARY_SEARCH_PATHS}
 	)
 
-	if(NOT V8_LIBRARY)
-		message("Couldn't find v8 library as nuget package")
+	if(NOT V8_MAIN_LIBRARY OR NOT V8_BASE_LIBRARY OR NOT V8_PLATFORM_LIBRARY)
+		message("Couldn't find v8 libraries as nuget package")
 	endif()
 	if(NOT V8_INCLUDE_DIR)
 		message("Couldn't find v8 include dir as nuget package")
@@ -143,7 +149,9 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 
 endif()
 	
-IF (V8_LIBRARY AND V8_INCLUDE_DIR)
+
+
+IF (V8_INCLUDE_DIR AND ((V8_LIBRARY) OR (V8_MAIN_LIBRARY AND V8_BASE_LIBRARY AND V8_PLATFORM_LIBRARY)))
 	message("V8 found!")
 	set(V8_FOUND TRUE)
 ELSE()
