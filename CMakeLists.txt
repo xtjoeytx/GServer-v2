@@ -217,13 +217,17 @@ if(NOT NOSTATIC)
 endif()
 
 if(V8NPCSERVER)
-	if(NOT MSVC)
-		find_package(V8)
+	# Removing MSVC check because using VSCode with MSVC sets both MSVC and MSVC_IDE as true
+	# Hopefully we will find another way to diffenrentiate between using VSCode and Visual Studio Community
+	# if(NOT MSVC)
 		if(NOT V8_FOUND)
-			message("v8 not found in system")
-			#add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
+			find_package(V8)
+			if(NOT V8_FOUND)
+				message("v8 not found in system")
+				#add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
+			endif()
 		endif()
-	endif()
+	#endif()
 endif()
 
 if(NOT NOUPNP)
