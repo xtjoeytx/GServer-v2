@@ -1112,7 +1112,6 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (idx == 50)
 					break;
 			}
-			server->saveNpcs();
 		}
 #endif
 		else if(words[0] == "/find" && words.size() > 1)
