@@ -50,7 +50,7 @@ cd ..
 mkdir build
 cd build
 
-"D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+"%programfiles(x86)%\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 
 cmake .. -G "Visual Studio 16 2019" -A x64 -DV8NPCSERVER=TRUE
 
