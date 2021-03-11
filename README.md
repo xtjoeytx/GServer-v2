@@ -45,7 +45,7 @@ cd packages
 
 nuget install v8-v142-x64 -version 7.4.288.26
 
-cd..
+cd ..
 
 mkdir build
 cd build
