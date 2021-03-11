@@ -23,7 +23,7 @@ ninja -j 8 -C out.gn/x64.release.sample v8_monolith
 Currently, v8 is too much of a pain to build for this method to be viable. We suggest you use MSVC/MSBuild and nuget instead.
 
 ### On Windows, using MSVC/MSBuild
-#### First, setup the environment:
+#### Setup the environment:
 Install Microsoft C++ compiler and latest Windows SDK through the [VS installer](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019)
 
 Install and add [CMake](https://cmake.org/download/) to path
