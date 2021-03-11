@@ -143,7 +143,7 @@ void TNPC::setScriptCode(const CString& pScript)
 
 	// See if the NPC should block position updates from the level leader.
 #ifdef V8NPCSERVER
-		blockPositionUpdates = true;
+	blockPositionUpdates = true;
 #else
 	if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
 		blockPositionUpdates = true;
@@ -817,7 +817,7 @@ void TNPC::registerTriggerAction(const std::string& action, IScriptFunction *cbF
 	_triggerActions[action] = cbFunc;
 }
 
-void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
+void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std::string& data)
 {
 	// Check if we respond to this trigger
 	auto triggerIter = _triggerActions.find(action);
@@ -826,7 +826,18 @@ void TNPC::queueNpcTrigger(const std::string& action, const std::string& data)
 
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction *scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, data);
+	ScriptAction* scriptAction = nullptr;
+	IScriptWrapped<TPlayer>* playerObject = nullptr;
+	if (player != nullptr)
+	{
+		playerObject = player->getScriptObject();
+		if (playerObject != nullptr)
+			scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data);
+	}
+
+	if (!scriptAction)
+		scriptAction = scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data);
+
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterNpcUpdate(this);
 }

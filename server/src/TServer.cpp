@@ -27,7 +27,7 @@ static const char* const filesystemTypes[] =
 
 extern std::atomic_bool shutdownProgram;
 
-TServer::TServer(CString pName)
+TServer::TServer(const CString& pName)
 	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
@@ -164,15 +164,6 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Add npc-server to playerlist
 	addPlayer(mNpcServer);
 #endif
-
-	// Connect to the serverlist.
-	serverlog.out("[%s]      Initializing serverlist socket.\n", name.text());
-	if (!serverlist.init(settings.getStr("listip"), settings.getStr("listport")))
-	{
-		serverlog.out("[%s] ** [Error] Could not initialize serverlist socket.\n", name.text());
-		return ERR_LISTEN;
-	}
-	serverlist.connectServer();
 
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
@@ -1523,7 +1514,7 @@ void TServer::playerLoggedIn(TPlayer *player)
 	getServerList()->addPlayer(player);
 
 #ifdef V8NPCSERVER
-	// Send event to server that player is logging out
+	// Send event to server that player is logging in
 	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
 	{
 		TNPC *npcObject = (*it).second;
@@ -1540,16 +1531,18 @@ unsigned int TServer::getNWTime() const
 
 bool TServer::isIpBanned(const CString& ip)
 {
-	for (auto & ipBan : ipBans)
+	for (const auto& ipBan : ipBans)
 	{
-		if (ip.match(ipBan)) return true;
+		if (ip.match(ipBan))
+			return true;
 	}
+
 	return false;
 }
 
 bool TServer::isStaff(const CString& accountName)
 {
-	for (auto account : staffList)
+	for (const auto& account : staffList)
 	{
 		if (accountName.toLower() == account.trim().toLower())
 			return true;
@@ -1633,7 +1626,7 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer) continue;
+		if ( player == pPlayer || player->isNPCServer()) continue;
 
 		player->sendPacket(pPacket);
 	}
@@ -1793,7 +1786,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 	// Update Weapons
 	for (auto player : playerList)
 	{
-			if (!player->isClient())
+		if (!player->isClient())
 			continue;
 
 		if (player->hasWeapon(pWeapon->getName()))

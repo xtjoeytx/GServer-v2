@@ -233,7 +233,9 @@ bool TPlayer::sendLogin()
 	}
 
 	// Ask for processes.
-	sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	if (isClient()) {
+		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	}
 	return true;
 }
 
@@ -421,16 +423,16 @@ bool TPlayer::sendLoginRC()
 
     // If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
-		nickName = accountName;
+		nickName = CString("*") << accountName;
 	levelName = " ";
 
 	// Set the head to the server's set staff head.
-	headImg = server->getSettings()->getStr("staffhead", "head25.png");
+	setHeadImage(server->getSettings()->getStr("staffhead", "head25.png"));
 
 	// Send the RC join message to the RC.
 	std::vector<CString> rcmessage = CString::loadToken(CString() << server->getServerPath() << "config/rcmessage.txt", "\n", true);
-	for (std::vector<CString>::iterator i = rcmessage.begin(); i != rcmessage.end(); ++i)
-		sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
+	for (const auto & i : rcmessage)
+		sendPacket(CString() >> (char)PLO_RC_CHAT << i);
 
     sendPacket(CString() >> (char)PLO_UNKNOWN190);
 

@@ -1112,7 +1112,6 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (idx == 50)
 					break;
 			}
-			server->saveNpcs();
 		}
 #endif
 		else if(words[0] == "/find" && words.size() > 1)
@@ -1709,7 +1708,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 		{
 			if (checkFile == CString(__protectedFiles[j]))
 			{
-				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to download/view " << checkFile);
+				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficient rights to download/view " << checkFile);
 				return true;
 			}
 		}

@@ -32,8 +32,10 @@ Level Object:
     Functions:
         findareanpcs(x, y, width, height) - get an array of npcs in this area
 		findnearestplayers(x, y) - gets an array of pairs of the distance and player object from the x/y
+		putexplosion(radius, x, y) - places an explosion in the level
 		putnpc(x, y, "script", options) - puts an npc in the level, options is currently unused as of now and can be left outputs
-
+		onwall(x, y) - returns if tile[x, y] is a wall tile
+		
     Properties:
         name
 		issparringzone - true/false (read-only)
@@ -104,6 +106,8 @@ Player Object:
 		removeweapon("weapon") - removes a weapon from a player
 		disableweapons() - disables players weapons
 		enableweapons() - enables player weapons
+		freezeplayer() - freezes the player, preventing them from movement
+		unfreezeplayer() - unfreeze player
 		attached(npcid|npcobject) - returns true if the player is attached to the npc
 		attachnpc(npcid) - attachs a player to an npc
 		detachnpc() - detaches a player from an npc

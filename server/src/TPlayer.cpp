@@ -1874,9 +1874,13 @@ void TPlayer::setChat(const CString& pChat)
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
 }
 
-void TPlayer::setNick(const CString& pNickName, bool force)
+void TPlayer::setNick(CString pNickName, bool force)
 {
 	CString newNick, nick, guild;
+
+	// Limit the nickname to 223 characters
+	if (pNickName.length() > 223)
+		pNickName = pNickName.subString(0, 223);
 
 	int guild_start = pNickName.find('(');
 	int guild_end = pNickName.find(')', guild_start);
@@ -1961,18 +1965,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 
 		// See if we can ask if it is a global guild.
 		bool askGlobal = server->getSettings()->getBool("globalguilds", true);
-		if ( !askGlobal )
+		if (!askGlobal)
 		{
 			// Check for whitelisted global guilds.
 			std::vector<CString> allowed = server->getSettings()->getStr("allowedglobalguilds").tokenize(",");
-			for (std::vector<CString>::iterator i = allowed.begin(); i != allowed.end(); ++i)
-			{
-				if (*i == guild)
-				{
-					askGlobal = true;
-					break;
-				}
-			}
+			if (std::find(allowed.begin(), allowed.end(), guild) != allowed.end())
+				askGlobal = true;
 		}
 
 		// See if it is a global guild.
@@ -2089,6 +2087,16 @@ void TPlayer::enableWeapons()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
+void TPlayer::freezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_FREEZEPLAYER2);
+}
+
+void TPlayer::unfreezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
+}
+
 void TPlayer::sendRPGMessage(const CString &message)
 {
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
@@ -2112,6 +2120,16 @@ void TPlayer::setAni(CString gani)
 /*
 	TPlayer: Flag Functions
 */
+
+void TPlayer::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
+{
+	TAccount::deleteFlag(pFlagName);
+
+	if (sendToPlayer) {
+		sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+	}
+}
+
 void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
 {
 	// Call Default Set Flag
@@ -2866,6 +2884,8 @@ bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 	// TODO(joey): If I recall, showimg worked on server if id was less than 200? Will need to confirm this.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 #endif
+
+	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 	return true;
 }
 
@@ -3704,7 +3724,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			if (!npcTriggerAction.isEmpty())
 			{
 				CString triggerData = action.readString("");
-				npcObject->queueNpcTrigger(npcTriggerAction.text(), triggerData.text());
+				npcObject->queueNpcTrigger(npcTriggerAction.text(), this, triggerData.text());
 			}
 		}
 	}
@@ -3719,7 +3739,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (npcTouched != nullptr)
 		{
 			CString triggerData = action.readString("");
-			npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
+			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
 		}
 	}
 #endif

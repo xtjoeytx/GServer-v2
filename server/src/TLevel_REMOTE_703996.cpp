@@ -758,11 +758,11 @@ bool TLevel::loadNW(const CString& pLevelName)
 	fileVersion = fileData[0];
 
 	// Parse Level
-	for (auto i = fileData.begin(); i != fileData.end(); ++i)
+	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
 	{
 		// Tokenize
 		std::vector<CString> curLine = i->tokenize();
-		if (curLine.empty())
+		if (curLine.size() < 1)
 			continue;
 
 		// Parse Each Type
@@ -1104,7 +1104,7 @@ TLevelBaddy* TLevel::addBaddy(float pX, float pY, char pType)
 	// Don't assign id 0.
 	for (unsigned int i = 1; i < levelBaddyIds.size(); ++i)
 	{
-		if (levelBaddyIds[i] == nullptr)
+		if (levelBaddyIds[i] == 0)
 		{
 			levelBaddyIds[i] = newBaddy;
 			newBaddy->setId((char)i);
@@ -1130,7 +1130,7 @@ void TLevel::removeBaddy(char pId)
 	// Erase the baddy.
 	if (!levelBaddies.empty())
 	{
-		for (auto i = levelBaddies.begin(); i != levelBaddies.end();)
+		for (std::vector<TLevelBaddy*>::iterator i = levelBaddies.begin(); i != levelBaddies.end();)
 		{
 			TLevelBaddy* b = *i;
 			if (b == baddy)
@@ -1139,7 +1139,7 @@ void TLevel::removeBaddy(char pId)
 		}
 	}
 	//vecRemove(levelBaddies, baddy);
-	levelBaddyIds[pId] = nullptr;
+	levelBaddyIds[pId] = 0;
 
 	// Clean up.
 	delete baddy;
@@ -1219,7 +1219,7 @@ void TLevel::removeNPC(TNPC* npc)
 bool TLevel::doTimedEvents()
 {
 	// Check if we should revert any board changes.
-	for (auto i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
+	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
 	{
 		TLevelBoardChange* change = *i;
 		int respawnTimer = change->timeout.doTimeout();
@@ -1237,7 +1237,7 @@ bool TLevel::doTimedEvents()
 	// Check if any items have timed out.
 	// This allows us to delete items that have disappeared if nobody is in the level to send
 	// the PLI_ITEMDEL packet.
-	for (auto i = levelItems.begin(); i != levelItems.end(); )
+	for (std::vector<TLevelItem>::iterator i = levelItems.begin(); i != levelItems.end(); )
 	{
 		TLevelItem& item = *i;
 		int deleteTimer = item.timeout.doTimeout();
@@ -1249,7 +1249,7 @@ bool TLevel::doTimedEvents()
 	}
 
 	// Check if any horses need to be deleted.
-	for (auto i = levelHorses.begin(); i != levelHorses.end(); )
+	for (std::vector<TLevelHorse>::iterator i = levelHorses.begin(); i != levelHorses.end(); )
 	{
 		TLevelHorse& horse = *i;
 		int deleteTimer = horse.timeout.doTimeout();
@@ -1263,10 +1263,10 @@ bool TLevel::doTimedEvents()
 
 	// Check if any baddies need to be marked as dead or respawned.
 	std::set<TLevelBaddy*> set_dead;
-	for (auto i = levelBaddies.begin(); i != levelBaddies.end(); )
+	for (std::vector<TLevelBaddy *>::iterator i = levelBaddies.begin(); i != levelBaddies.end(); )
 	{
 		TLevelBaddy* baddy = *i;
-		if (baddy == nullptr)
+		if (baddy == 0)
 		{
 			i = levelBaddies.erase(i);
 			continue;
@@ -1302,7 +1302,7 @@ bool TLevel::doTimedEvents()
 			else
 			{
 				baddy->reset();
-				for (auto i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+				for (std::vector<TPlayer*>::iterator i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
 				{
 					TPlayer* p = *i;
 					p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
@@ -1312,7 +1312,7 @@ bool TLevel::doTimedEvents()
 	}
 	{	// Mark all the baddies as dead now.
 		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
-		for (auto i = set_dead.begin(); i != set_dead.end(); ++i)
+		for (std::set<TLevelBaddy*>::iterator i = set_dead.begin(); i != set_dead.end(); ++i)
 		{
 			TLevelBaddy* baddy = *i;
 			baddy->setProps(props);

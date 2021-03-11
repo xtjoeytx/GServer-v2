@@ -60,7 +60,7 @@ class TWeapon
 		void setServerScript(const CString& pScript) { mScriptServer = pScript; }
 
 		// Varaibles -> Weapon Data
-		signed char mWeaponDefault;
+		char mWeaponDefault;
 		CString mWeaponImage, mWeaponName, mWeaponScript, mByteCodeFile;
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;

@@ -262,6 +262,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		freeScriptResources();
 #endif
 
+	// TODO(joey): find out where \xa7 would be used, believe its in an earlier RC-version
 	// Replace '\xa7' line endings with "\n"
 	CString fixedScript;
 	if (pCode.find("\xa7") != -1)
@@ -285,9 +286,11 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	{
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
-		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-		_scriptExecutionContext.addAction(scriptAction);
-		scriptEngine->RegisterWeaponUpdate(this);
+		if (!mScriptServer.isEmpty()) {
+			ScriptAction* scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
+			_scriptExecutionContext.addAction(scriptAction);
+			scriptEngine->RegisterWeaponUpdate(this);
+		}
 	}
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");

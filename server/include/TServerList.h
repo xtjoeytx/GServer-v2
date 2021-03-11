@@ -26,7 +26,7 @@ class TServerList : public CSocketStub
 		bool onRecv();
 		bool onSend();
 		bool onRegister()			{ return true; }
-		void onUnregister()			{ return; }
+		void onUnregister();
 		SOCKET getSocketHandle()	{ return sock.getHandle(); }
 		bool canRecv();
 		bool canSend()				{ return _fileQueue.canSend(); }
@@ -40,7 +40,6 @@ class TServerList : public CSocketStub
 		// Socket-Control Functions
 		bool getConnected() const;
 		bool main();
-		bool init(const CString& pserverIp, const CString& pServerPort = "14900");
 		bool connectServer();
 		CSocket* getSocket()					{ return &sock; }
 		void sendPacket(CString& pPacket, bool sendNow = false);
@@ -55,15 +54,11 @@ class TServerList : public CSocketStub
 		void sendTextForPlayer(TPlayer *player, const CString& data);
 
 		const std::map<std::string, int>& getServerList() { return serverListCount; }
+		const std::string& getLocalIP() const { return _serverLocalIp; }
+		const std::string& getServerIP() const { return _serverRemoteIp; }
 
 		// Send New Server-Info
 		void sendServerHQ();
-		void setDesc(const CString& pServerDesc);
-		void setIp(const CString& pServerIp);
-		void setName(const CString& pServerName);
-		void setPort(const CString& pServerPort);
-		void setUrl(const CString& pServerUrl);
-		void setVersion(const CString& pServerVersion);
 
 		// Incoming message parsing functions
 		static bool created;
@@ -106,9 +101,12 @@ class TServerList : public CSocketStub
 		CString rBuffer, sBuffer;
 		CSocket sock;
 		time_t lastData, lastPing, lastTimer, lastPlayerSync;
+		time_t _lastConnectionAttempt;
 		TServer *_server;
 
 		std::map<std::string, int> serverListCount;
+		std::string _serverLocalIp;
+		std::string _serverRemoteIp;
 };
 
 #endif // TSERVERLIST_H

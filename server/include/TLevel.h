@@ -207,7 +207,7 @@ class TLevel
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
 		std::vector<TNPC*> testTouch(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
-		void sendChatToLevel(const TPlayer *player, const CString& message);
+		void sendChatToLevel(const TPlayer *player, const std::string& message);
 
 		IScriptWrapped<TLevel>* getScriptObject() const;
 		void setScriptObject(IScriptWrapped<TLevel>* object);

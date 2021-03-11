@@ -196,7 +196,7 @@ void NPC_GetInt_Width(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 	info.GetReturnValue().Set(npcObject->getWidth());
 }
 
-// PROPERTY: Glove Power
+// PROPERTY: npc.glovepower
 void NPC_GetInt_GlovePower(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
@@ -213,13 +213,12 @@ void NPC_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> valu
 	npcObject->setProps(CString() >> (char)NPCPROP_GLOVEPOWER >> (char)clip(newValue, 0, 3), CLVER_2_17, true);
 }
 
-// PROPERTY: Dir
+// PROPERTY: npc.dir
 void NPC_GetInt_Dir(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	CString npcProp = npcObject->getProp(NPCPROP_SPRITE);
-	info.GetReturnValue().Set(npcProp.readGUChar());
+	info.GetReturnValue().Set(npcObject->getSprite());
 }
 
 void NPC_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -227,10 +226,11 @@ void NPC_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, cons
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	npcObject->setProps(CString() >> (char)NPCPROP_SPRITE >> (char)(newValue % 4), CLVER_2_17, true);
+	npcObject->setSprite(newValue % 4);
+	npcObject->updatePropModTime(NPCPROP_SPRITE);
 }
 
-// PROPERTY: Ap
+// PROPERTY: npc.ap
 void NPC_GetInt_Alignment(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
@@ -286,11 +286,11 @@ void NPC_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> valu
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 	int len = newValue.length();
-	if (len > 223)
-		len = 223;
+	if (len > 123)
+		len = 123;
 
 	CString propPackage;
-	propPackage >> (char)NPCPROP_HEADIMAGE >> (char)len;
+	propPackage >> (char)NPCPROP_HEADIMAGE >> (char)(len + 100);
 	propPackage.write(*newValue, len);
 	npcObject->setProps(propPackage, CLVER_2_17, true);
 }
@@ -350,7 +350,14 @@ void NPC_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setNickname(*newValue);
+	int len = newValue.length();
+	if (len > 223)
+		len = 223;
+
+	CString propPackage;
+	propPackage >> (char)NPCPROP_NICKNAME >> (char)len;
+	propPackage.write(*newValue, len);
+	npcObject->setProps(propPackage, CLVER_2_17, true);
 }
 
 // PROPERTY: npc.shieldimg
@@ -577,7 +584,13 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
 	// Validate arguments
-	if (args[0]->IsString())
+	if (args.Length() == 0)
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)0, CLVER_2_17, true);
+	}
+	else if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
@@ -700,7 +713,7 @@ void NPC_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 		CString animation(*newValue);
 		for (int i = 1; i < args.Length(); i++)
 		{
-			if (args[i]->IsString())
+			if (args[i]->IsString() || args[i]->IsNumber())
 			{
 				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate));
 				animation << "," << *aniParam;
@@ -728,10 +741,16 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
 	v8::String::Utf8Value newValue(isolate, args[1]->ToString(isolate));
 	
+	auto len = newValue.length();
+	if (len > 223)
+		len = 223;
+
 	if (code[0] == '#')
 	{
 		// Unwrap object
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		CString propPackage;
 
 		switch (code[1])
 		{
@@ -741,7 +760,9 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 				unsigned char swordPower = npcProp.readGUChar();
 				if (swordPower < 31)
 					swordPower = 31;
-				npcObject->setProps(CString() >> (char)NPCPROP_SWORDIMAGE >> (char)swordPower >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+				propPackage >> (char)NPCPROP_SWORDIMAGE >> (char)swordPower >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 			}
 
@@ -751,28 +772,40 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 				unsigned char shieldPower = npcProp.readGUChar();
 				if (shieldPower < 11)
 					shieldPower = 11;
-				npcObject->setProps(CString() >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+				propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 			}
 
 			case '3': // head image
-				npcObject->setProps(CString() >> (char)NPCPROP_HEADIMAGE >> (char)(newValue.length() + 100) << *newValue, CLVER_2_17, true);
+			{
+				if (len > 123)
+					len = 123;
+
+				propPackage >> (char)NPCPROP_HEADIMAGE >> (char)(len + 100);
+				propPackage.write(*newValue, len);
 				break;
+			}
 
 			case '5': // horse image (needs to be tested)
-				npcObject->setProps(CString() >> (char)NPCPROP_HORSEIMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case '8': // body image
-				npcObject->setProps(CString() >> (char)NPCPROP_BODYIMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'c': // chat
-				npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_MESSAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'n': // nickname
-				npcObject->setProps(CString() >> (char)NPCPROP_NICKNAME >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_NICKNAME >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'C': // colors
@@ -780,17 +813,26 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 				if (code[2] >= '0' && code[2] < '5')
 				{
 					CString npcProp = npcObject->getProp(NPCPROP_COLORS);
-					char colors[5];
-					for (unsigned int i = 0; i < 5; i++)
-						colors[i] = npcProp.readGUChar();
+					unsigned char colors[5] = {
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar()
+					};
+					//for (unsigned int i = 0; i < 5; i++)
+					//	colors[i] = npcProp.readGUChar();
 
 					colors[code[2] - '0'] = getColor(*newValue);
-					CString propPackage;
 					propPackage >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
-					npcObject->setProps(propPackage, CLVER_2_17, true);
 				}
 				break;
 			}
+		}
+
+		if (propPackage.length())
+		{
+			npcObject->setProps(propPackage, CLVER_2_17, true);
 		}
 	}
 }

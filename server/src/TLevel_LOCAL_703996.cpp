@@ -25,7 +25,7 @@ TLevel::TLevel(TServer* pServer)
 :
 server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
 #ifdef V8NPCSERVER
-, _scriptObject(nullptr)
+, _scriptObject(0)
 #endif
 {
 	memset(levelTiles, 0, sizeof(levelTiles));
@@ -71,8 +71,7 @@ TLevel::~TLevel()
 	levelItems.clear();
 
 	// Delete board changes.
-	for (auto& levelBoardChange : levelBoardChanges)
-		delete levelBoardChange;
+	for (auto& levelBoardChange : levelBoardChanges) delete levelBoardChange;
 	levelBoardChanges.clear();
 
 #ifdef V8NPCSERVER
@@ -90,12 +89,10 @@ TLevel::~TLevel()
 CString TLevel::getBaddyPacket(int clientVersion)
 {
 	CString retVal;
-	for (const auto& baddy : levelBaddies)
+	for (auto i = levelBaddies.begin(); i != levelBaddies.end(); ++i)
 	{
-		assert(baddy != nullptr);
-		if (baddy == nullptr)
-			continue;
-
+		TLevelBaddy* baddy = *i;
+		if (baddy == nullptr) continue;
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
 		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(clientVersion) << "\n";
 	}
@@ -115,8 +112,9 @@ CString TLevel::getBoardChangesPacket(time_t time)
 {
 	CString retVal;
 	retVal >> (char)PLO_LEVELBOARD;
-	for (auto change : levelBoardChanges)
+	for (auto i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
 	{
+		TLevelBoardChange* change = *i;
 		if (change->getModTime() >= time)
 			retVal << change->getBoardStr();
 	}
@@ -127,8 +125,9 @@ CString TLevel::getBoardChangesPacket2(time_t time)
 {
 	CString retVal;
 	retVal >> (char)PLO_BOARDMODIFY;
-	for (auto change : levelBoardChanges)
+	for (auto i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
 	{
+		TLevelBoardChange* change = *i;
 		if (change->getModTime() >= time)
 			retVal << change->getBoardStr();
 	}
@@ -157,8 +156,9 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 CString TLevel::getHorsePacket()
 {
 	CString retVal;
-	for (auto& horse : levelHorses)
+	for (auto i = levelHorses.begin(); i != levelHorses.end(); ++i)
 	{
+		TLevelHorse& horse = *i;
 		retVal >> (char)PLO_HORSEADD << horse.getHorseStr() << "\n";
 	}
 
@@ -179,8 +179,9 @@ CString TLevel::getLinksPacket()
 CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 {
 	CString retVal;
-	for (auto& npc : levelNPCs)
+	for (auto i = levelNPCs.begin(); i != levelNPCs.end(); ++i)
 	{
+		TNPC* npc = *i;
 		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
 	}
 	return retVal;
@@ -189,8 +190,9 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 {
 	CString retVal;
-	for (const auto & sign : levelSigns)
+	for (auto i = levelSigns.begin(); i != levelSigns.end(); ++i)
 	{
+		const TLevelSign& sign = *i;
 		retVal >> (char)PLO_LEVELSIGN << sign.getSignStr(pPlayer) << "\n";
 	}
 	return retVal;
@@ -257,16 +259,17 @@ bool TLevel::reload()
 
 	// Remove all the players from the level.
 	std::vector<TPlayer*> oldplayers = levelPlayerList;
-	for (auto p : oldplayers)
+	for (auto i = oldplayers.begin(); i != oldplayers.end(); ++i)
 	{
+		TPlayer* p = *i;
 		p->leaveLevel(true);
 	}
 
 	// Reset the level cache for all the players on the server.
-	auto playerList = server->getPlayerList();
-	for (auto & i : *playerList)
+	std::vector<TPlayer*>* playerList = server->getPlayerList();
+	for (auto i = playerList->begin(); i != playerList->end(); ++i)
 	{
-		i->resetLevelCache(this);
+		(*i)->resetLevelCache(this);
 	}
 
 	// Re-load the level now.
@@ -276,8 +279,9 @@ bool TLevel::reload()
 	CString uLevel = server->getSettings()->getStr("unstickmelevel", "onlinestartlocal.nw");
 	float uX = server->getSettings()->getFloat("unstickmex", 30.0f);
 	float uY = server->getSettings()->getFloat("unstickmey", 35.0f);
-	for (auto p : oldplayers)
+	for (auto i = oldplayers.begin(); i != oldplayers.end(); ++i)
 	{
+		TPlayer* p = *i;
 		p->warp((ret ? levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
 	}
 
@@ -286,7 +290,7 @@ bool TLevel::reload()
 
 TLevel* TLevel::clone()
 {
-	TLevel *level = new TLevel(server);
+	auto *level = new TLevel(server);
 	if (!level->loadLevel(levelName))
 	{
 		delete level;
@@ -312,13 +316,12 @@ bool TLevel::detectLevelType(const CString& pLevelName)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings()->getBool("nofoldersconfig", false))
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Load file
 	CString fileData;
-	if (!fileData.load(fileSystem->find(pLevelName)))
-		return false;
+	if (fileData.load(fileSystem->find(pLevelName)) == false) return false;
 
 	// Grab file version.
 	fileVersion = fileData.readChars(8);
@@ -343,7 +346,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings()->getBool("nofoldersconfig", false))
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
@@ -353,7 +356,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 
 	// Load file
 	CString fileData;
-	if (!fileData.load(fileName)) return false;
+	if (fileData.load(fileName) == false) return false;
 
 	// Grab file version.
 	fileVersion = fileData.readChars(8);
@@ -518,7 +521,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(TLevelSign(x, y, text, true));
+			levelSigns.emplace_back(x, y, text, true);
 		}
 	}
 
@@ -529,7 +532,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings()->getBool("nofoldersconfig", false))
+	if (server->getSettings()->getBool("nofoldersconfig", false) == false)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
@@ -539,7 +542,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 
 	// Load file
 	CString fileData;
-	if (!fileData.load(fileName)) return false;
+	if ( !fileData.load(fileName)) return false;
 
 	// Grab file version.
 	fileVersion = fileData.readChars(8);
@@ -652,7 +655,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(vline));
+			levelLinks.emplace_back(vline);
 		}
 	}
 
@@ -673,7 +676,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 
 			// Add the baddy.
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
-			if (baddy == nullptr)
+			if (baddy == 0)
 				continue;
 
 			// Load the verses.
@@ -695,7 +698,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			signed char x = line.readGChar();
 			signed char y = line.readGChar();
 			CString image = line.readString("#");
-			CString code = line.readString("").replaceAll("\xa7", "\n");
+			CString code = line.readString("");
 
 			TNPC* npc = server->addNPC(image, code, x, y, this, true, false);
 			levelNPCs.push_back(npc);
@@ -802,7 +805,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 				char chestx = strtoint(curLine[1]);
 				char chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
-				levelChests.push_back(TLevelChest(chestx, chesty, itemidx, signidx));
+				levelChests.emplace_back(chestx, chesty, itemidx, signidx);
 			}
 		}
 		else if (curLine[0] == "LINK")
@@ -825,7 +828,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(link));
+			levelLinks.emplace_back(link);
 		}
 		else if (curLine[0] == "NPC")
 		{
@@ -843,8 +846,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 			}
 
 			// Grab the NPC location.
-			float x = (float)strtofloat(curLine[2 + offset]);
-			float y = (float)strtofloat(curLine[3 + offset]);
+			auto x = (float)strtofloat(curLine[2 + offset]);
+			auto y = (float)strtofloat(curLine[3 + offset]);
 
 			// Grab the NPC code.
 			CString code;
@@ -879,7 +882,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			}
 
 			// Add the new sign.
-			levelSigns.push_back(TLevelSign(x, y, text));
+			levelSigns.emplace_back(x, y, text);
 		}
 		else if (curLine[0] == "BADDY")
 		{
@@ -935,7 +938,7 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	}
 
 	// Load New Level
-	TLevel *level = new TLevel(server);
+	auto *level = new TLevel(server);
 	if (!level->loadLevel(pLevelName))
 	{
 		delete level;
@@ -1012,7 +1015,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 	}
 
 	// Delete any existing changes within the same region.
-	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); )
+	for (auto i = levelBoardChanges.begin(); i != levelBoardChanges.end(); )
 	{
 		TLevelBoardChange* change = *i;
 		if ((change->getX() >= pX && change->getX() + change->getWidth() <= pX + pWidth) &&
@@ -1052,7 +1055,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 bool TLevel::addItem(float pX, float pY, char pItem)
 {
-	levelItems.push_back(TLevelItem(pX, pY, pItem));
+	levelItems.emplace_back(pX, pY, pItem);
 	return true;
 }
 
@@ -1074,7 +1077,7 @@ signed char TLevel::removeItem(float pX, float pY)
 bool TLevel::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
 {
 	auto horseLife = server->getSettings()->getInt("horselifetime", 30);
-	levelHorses.push_back(TLevelHorse(horseLife, pImage, pX, pY, pDir, pBushes));
+	levelHorses.emplace_back(horseLife, pImage, pX, pY, pDir, pBushes);
 	return true;
 }
 
@@ -1094,10 +1097,10 @@ void TLevel::removeHorse(float pX, float pY)
 TLevelBaddy* TLevel::addBaddy(float pX, float pY, char pType)
 {
 	// Limit of 50 baddies per level.
-	if (levelBaddies.size() > 50) return nullptr;
+	if (levelBaddies.size() > 50) return 0;
 
 	// New Baddy
-	TLevelBaddy* newBaddy = new TLevelBaddy(pX, pY, pType, this, server);
+	auto* newBaddy = new TLevelBaddy(pX, pY, pType, this, server);
 	levelBaddies.push_back(newBaddy);
 
 	// Assign Baddy Id
@@ -1431,12 +1434,13 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 	return nullptr;
 }
 
-void TLevel::sendChatToLevel(const TPlayer *player, const std::string& message)
+void TLevel::sendChatToLevel(const TPlayer *player, const CString& message)
 {
-	for (const auto& npc : levelNPCs)
+	for (std::vector<TNPC *>::iterator it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
 	{
+		TNPC *npc = *it;
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
-			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), message);
+			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), std::string(message.text()));
 	}
 }
 
