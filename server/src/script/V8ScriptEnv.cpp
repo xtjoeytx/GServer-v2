@@ -23,6 +23,10 @@ void V8ScriptEnv::Initialize()
 	if (_initialized)
 		return;
 
+	// Force v8 to use strict mode
+	const char* flags = "--use_strict";
+	v8::V8::SetFlagsFromString(flags, strlen(flags));
+
 	// Initialize V8.
 	//v8::V8::InitializeICUDefaultLocation(argv[0]);
 	v8::V8::InitializeExternalStartupData(".");
