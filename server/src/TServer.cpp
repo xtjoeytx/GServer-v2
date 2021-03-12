@@ -62,7 +62,9 @@ TServer::TServer(const CString& pName)
 #endif
 
 	// Announce ourself to other classes.
+	for (auto & fs : filesystem) {
 		fs.setServer(this);
+	}
 	filesystem_accounts.setServer(this);
 }
 
