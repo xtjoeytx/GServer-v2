@@ -43,7 +43,7 @@ TWeapon::~TWeapon()
 TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 {
 	// File Path
-	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
+	CString fileName = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -144,7 +144,7 @@ bool TWeapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = server->getServerPath() << "weapons/weapon" << name << ".txt";
+	CString filename = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";

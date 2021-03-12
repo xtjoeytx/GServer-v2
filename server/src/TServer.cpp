@@ -41,28 +41,27 @@ TServer::TServer(const CString& pName)
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
-	CFileSystem::fixPathSeparators(&serverpath);
+	CFileSystem::fixPathSeparators(serverpath);
 
 	// Set up the log files.
 	CString logpath = serverpath.remove(0, getHomePath().length());
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
-	CFileSystem::fixPathSeparators(&npcPath);
-	CFileSystem::fixPathSeparators(&rcPath);
-	CFileSystem::fixPathSeparators(&serverPath);
+	CFileSystem::fixPathSeparators(npcPath);
+	CFileSystem::fixPathSeparators(rcPath);
+	CFileSystem::fixPathSeparators(serverPath);
 	npclog.setFilename(npcPath);
 	rclog.setFilename(rcPath);
 	serverlog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
-	CFileSystem::fixPathSeparators(&scriptPath);
+	CFileSystem::fixPathSeparators(scriptPath);
 	scriptlog.setFilename(scriptPath);
 #endif
 
 	// Announce ourself to other classes.
-	for (auto & fs : filesystem)
 		fs.setServer(this);
 	filesystem_accounts.setServer(this);
 }
@@ -545,7 +544,7 @@ void TServer::loadFolderConfig()
 		CString config = configLine.readString("");
 		type.trimI();
 		config.trimI();
-		CFileSystem::fixPathSeparators(&config);
+		CFileSystem::fixPathSeparators(config);
 
 		// Get the directory.
 		CString dirNoWild;
@@ -730,8 +729,8 @@ void TServer::loadClasses(bool print)
 {
 	CFileSystem scriptFS(this);
 	scriptFS.addDir("scripts", "*.txt");
-	std::map<CString, CString> *scriptFileList = scriptFS.getFileList();
-	for (auto & scriptFile : *scriptFileList)
+	const std::map<CString, CString> &scriptFileList = scriptFS.getFileList();
+	for (auto & scriptFile : scriptFileList)
 	{
 		std::string className = scriptFile.first.subString(0, scriptFile.first.length() - 4).text();
 
@@ -747,8 +746,8 @@ void TServer::loadWeapons(bool print)
 	weaponFS.addDir("weapons", "weapon*.txt");
 	CFileSystem bcweaponFS(this);
 	bcweaponFS.addDir("weapon_bytecode", "*");
-	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
-	for (auto & weaponFile : *weaponFileList)
+	const std::map<CString, CString> &weaponFileList = weaponFS.getFileList();
+	for (auto & weaponFile : weaponFileList)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
@@ -895,8 +894,8 @@ void TServer::loadNpcs(bool print)
 {
 	CFileSystem npcFS(this);
 	npcFS.addDir("npcs", "npc*.txt");
-	std::map<CString, CString> *npcFileList = npcFS.getFileList();
-	for (auto it = npcFileList->begin(); it != npcFileList->end(); ++it)
+	const std::map<CString, CString> &npcFileList = npcFS.getFileList();
+	for (auto it = npcFileList.begin(); it != npcFileList.end(); ++it)
 	{
 		bool loaded = false;
 
@@ -960,7 +959,7 @@ void TServer::saveWeapons()
 {
 	CFileSystem weaponFS(this);
 	weaponFS.addDir("weapons", "weapon*.txt");
-	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
+	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
 	for (auto & weapon : weaponList)
 	{
@@ -1400,7 +1399,7 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 	if (npc->getPersist())
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
-		CFileSystem::fixPathSeparators(&filePath);
+		CFileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
 
@@ -1430,7 +1429,7 @@ bool TServer::deleteClass(const std::string& className)
 
 	classList.erase(classIter);
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	return true;
@@ -1438,11 +1437,10 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	// TODO(joey): filenames...
-	classList[className] = classCode;
+	classList[className] = std::make_unique<TScriptClass>(this, className, classCode);
 
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 
 	CString fileData(classCode);
 	fileData.save(filePath);
@@ -1769,7 +1767,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
 	CString filePath = getServerPath() << "weapons/weapon" << name << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	// Delete from Memory
@@ -1871,8 +1869,8 @@ void TServer::TS_Reload()
 	translationFS.addDir("translations", "*.po");
 
 	// Load Each File
-	std::map<CString, CString> *temp = translationFS.getFileList();
-	for (auto & i : *temp)
+	const std::map<CString, CString> &temp = translationFS.getFileList();
+	for (auto & i : temp)
 		this->TS_Load(removeExtension(i.first), i.second);
 }
 
