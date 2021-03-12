@@ -1439,7 +1439,7 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = std::make_unique<TScriptClass>(this, className, classCode);
+	classList[className] = classCode;
 
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	CFileSystem::fixPathSeparators(filePath);

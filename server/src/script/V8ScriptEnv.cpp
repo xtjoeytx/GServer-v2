@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libplatform/libplatform.h>
 #include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
