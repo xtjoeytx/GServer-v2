@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <algorithm>
 #include <memory.h>
 #include <time.h>
 #include "TAccount.h"
