@@ -634,7 +634,7 @@ inline void TNPC::registerNpcUpdates()
 }
 
 inline void TNPC::scheduleEvent(unsigned int timeout, ScriptAction& action) {
-	_scriptTimers.emplace_back(timeout, std::move(action));
+	_scriptTimers.push_back({ timeout, std::move(action) });
 }
 
 #endif
