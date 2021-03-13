@@ -6,8 +6,8 @@
 #include <vector>
 #include <v8.h>
 #include "ScriptBindings.h"
+#include "V8ScriptObject.h"
 #include "V8ScriptUtils.h"
-#include "V8ScriptWrapped.h"
 
 class IScriptFunction;
 
@@ -42,7 +42,7 @@ public:
 
 	// --
 	template<class T>
-	IScriptWrapped<T> * Wrap(const std::string& constructor_name, T *obj);
+	IScriptObject<T> * Wrap(const std::string& constructor_name, T *obj);
 
 	template<class T>
 	T * Unwrap(v8::Local<v8::Value> value) const;
@@ -109,7 +109,7 @@ inline bool V8ScriptEnv::SetConstructor(const std::string& key, v8::Local<v8::Fu
 }
 
 template<class T>
-inline IScriptWrapped<T> * V8ScriptEnv::Wrap(const std::string& constructor_name, T *obj)
+inline IScriptObject<T> * V8ScriptEnv::Wrap(const std::string& constructor_name, T *obj)
 {
 	// Fetch the v8 isolate and context
 	v8::Isolate *isolate = Isolate();
@@ -128,7 +128,7 @@ inline IScriptWrapped<T> * V8ScriptEnv::Wrap(const std::string& constructor_name
 	new_instance->SetAlignedPointerInInternalField(0, obj);
 
 	// TODO(joey): Use unique_ptr for this
-	V8ScriptWrapped<T> *wrapped_object = new V8ScriptWrapped<T>(obj, isolate, new_instance);
+	V8ScriptObject<T> *wrapped_object = new V8ScriptObject<T>(obj, isolate, new_instance);
 	return wrapped_object;
 }
 

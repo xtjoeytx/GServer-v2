@@ -29,7 +29,7 @@ void V8ScriptEnv::Initialize()
 	v8::V8::SetFlagsFromString(flags, strlen(flags));
 
 	// Initialize V8.
-	//v8::V8::InitializeICUDefaultLocation(argv[0]);
+	v8::V8::InitializeICUDefaultLocation(".");
 	v8::V8::InitializeExternalStartupData(".");
 
 	// Initialize v8 if this is the first vm

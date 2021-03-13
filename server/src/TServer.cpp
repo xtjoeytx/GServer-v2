@@ -38,6 +38,7 @@ TServer::TServer(const CString& pName)
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
+	calculateServerTime();
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
@@ -213,7 +214,7 @@ void TServer::cleanupDeletedPlayers()
 		}
 
 #ifdef V8NPCSERVER
-		IScriptWrapped<TPlayer> *playerObject = player->getScriptObject();
+		IScriptObject<TPlayer> *playerObject = player->getScriptObject();
 		if (playerObject != 0)
 		{
 			// Process last script events for this player
@@ -405,6 +406,8 @@ bool TServer::doTimedEvents()
 	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - lastNWTimer);
 	if (time_diff.count() >= 5)
 	{
+		calculateServerTime();
+
 		lastNWTimer = lastTimer;
         sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()), nullptr);
 	}
@@ -738,7 +741,7 @@ void TServer::loadClasses(bool print)
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		classList[className] = scriptData.text();
+		classList[className] = std::make_unique<TScriptClass>(this, className, scriptData.text());
 	}
 }
 
@@ -1001,8 +1004,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
-		ScriptExecutionContext *context = npc->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		ScriptExecutionContext& context = npc->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context.getExecutionData();
 		if (executionData.second > 0.0)
 		{
 			std::string npcName = npc->getName();
@@ -1024,8 +1027,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
 	{
 		TWeapon *weapon = (*it).second;
-		ScriptExecutionContext *context = weapon->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		ScriptExecutionContext& context = weapon->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context.getExecutionData();
 
 		if (executionData.second > 0.0)
 		{
@@ -1289,8 +1292,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 
 	printf("Msg: %s\n", std::string(message.text()).c_str());
 
-	ScriptAction *scriptAction = mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text()));
-	mPmHandlerNpc->getExecutionContext()->addAction(scriptAction);
+	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text())));
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
 }
 
@@ -1439,8 +1441,8 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = classCode;
-
+	classList[className] = std::make_unique<TScriptClass>(this, className, classCode); 
+	
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	CFileSystem::fixPathSeparators(filePath);
 
@@ -1523,10 +1525,10 @@ void TServer::playerLoggedIn(TPlayer *player)
 #endif
 }
 
-unsigned int TServer::getNWTime() const
+void TServer::calculateServerTime()
 {
 	// timevar apparently subtracts 11078 days from time(0) then divides by 5.
-	return ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
+	serverTime = ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
 }
 
 bool TServer::isIpBanned(const CString& ip)

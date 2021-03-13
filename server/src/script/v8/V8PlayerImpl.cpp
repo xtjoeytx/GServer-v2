@@ -11,7 +11,7 @@
 #include "TServer.h"
 
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 // PROPERTY: player.id
 void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -316,7 +316,7 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	if (levelObject != 0)
 	{
-		V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(levelObject->getScriptObject());
+		V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
 		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
 		return;
 	}
@@ -576,7 +576,7 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -659,7 +659,7 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
 	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -745,7 +745,7 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -828,7 +828,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	//	in scripts.
 	int idx = 0;
 	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
-		//V8ScriptWrapped<TWeapon> *v8_wrapped = static_cast<V8ScriptWrapped<TWeapon> *>((*it)->getScriptObject());
+		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
 		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), (*it).text());
 		result->Set(context, idx++, weaponName).Check();
 	}
@@ -1187,6 +1187,9 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	playerObject->setProps(propPacket, true, true);
 }
 
+#include "TScriptClass.h"
+#include "V8ScriptWrappers.h"
+
 // Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1204,27 +1207,32 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		TServer *server = scriptEngine->getServer();
-		std::string classCode = server->getClass(className);
+		auto classObj = server->getClass(className);
 
-		if (!classCode.empty())
+		if (classObj && !classObj->source().empty())
 		{
+			auto &classCode = classObj->source();
+
 			// Wrap code
-			std::string classCodeWrap = CScriptEngine::WrapScript<TPlayer>(classCode);
+			std::string classCodeWrap = WrapScript<TPlayer>(classCode);
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.
 			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
-			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
-			v8::Local<v8::Value> newArgs[] = { args.This() };
+			if (function != nullptr) {
+				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(function);
 
-			// Execute
-			v8::TryCatch try_catch(isolate);
-			v8::Local<v8::Function> scriptFunction = v8_function->Function();
-			v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
-			if (!scriptTableRet.IsEmpty())
-			{
-				args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
-				return;
+				v8::Local<v8::Value> newArgs[] = { args.This() };
+
+				// Execute
+				v8::TryCatch try_catch(isolate);
+				v8::Local<v8::Function> scriptFunction = v8_function->Function();
+				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+				if (!scriptTableRet.IsEmpty())
+				{
+					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+					return;
+				}
 			}
 
 			// TODO(joey): error handling
@@ -1358,7 +1366,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
     player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
-            v8::PropertyHandlerFlags::kOnlyInterceptStrings));
+            v8::PropertyHandlerFlags::kHasNoSideEffect));
 	env->SetConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor

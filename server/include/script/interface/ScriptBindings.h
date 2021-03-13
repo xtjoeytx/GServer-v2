@@ -12,7 +12,7 @@
 #include "ScriptArguments.h"
 #include "ScriptEnv.h"
 #include "ScriptFunction.h"
+#include "ScriptObject.h"
 #include "ScriptUtils.h"
-#include "ScriptWrapped.h"
 
 #endif

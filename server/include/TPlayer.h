@@ -147,11 +147,11 @@ class TPlayer : public TAccount, public CSocketStub
 		// NPC-Server Functionality
 		void sendNCAddr();
 
-		inline IScriptWrapped<TPlayer> * getScriptObject() const {
+		inline IScriptObject<TPlayer> * getScriptObject() const {
 			return _scriptObject;
 		}
 
-		inline void setScriptObject(IScriptWrapped<TPlayer> *object) {
+		inline void setScriptObject(IScriptObject<TPlayer> *object) {
 			_scriptObject = object;
 		}
 #endif
@@ -370,7 +370,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 #ifdef V8NPCSERVER
 		bool _processRemoval;
-		IScriptWrapped<TPlayer> *_scriptObject;
+		IScriptObject<TPlayer> *_scriptObject;
 #endif
 };
 

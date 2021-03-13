@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 #include "TLevel.h"
 #include "TNPC.h"
@@ -45,7 +45,7 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	int idx = 0;
 	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
-		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>((*it)->getScriptObject());
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -67,7 +67,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
-		V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it)->getScriptObject());
+		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -104,7 +104,7 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	int idx = 0;
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
-		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>((*it)->getScriptObject());
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -153,7 +153,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		int idx = 0;
 		for (auto it = playerListSorted.begin(); it != playerListSorted.end(); ++it)
 		{
-			V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it).second->getScriptObject());
+			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it).second->getScriptObject());
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
 			object->Set(key_distance, v8::Number::New(isolate, (*it).first));
@@ -233,7 +233,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 			npc->setType("LOCALN");
 			levelObject->addNPC(npc);
 
-			V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npc->getScriptObject());
+			V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
 			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 		}
 	}

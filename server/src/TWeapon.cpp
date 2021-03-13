@@ -251,8 +251,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		if (!mScriptServer.isEmpty()) {
-			ScriptAction* scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-			_scriptExecutionContext.addAction(scriptAction);
+			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
 			scriptEngine->RegisterWeaponUpdate(this);
 		}
 	}
@@ -285,7 +284,7 @@ void TWeapon::freeScriptResources()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
+	scriptEngine->ClearCache<TWeapon>(mScriptServer.text());
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())
@@ -309,7 +308,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }

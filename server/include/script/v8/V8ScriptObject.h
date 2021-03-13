@@ -9,16 +9,16 @@
 #include "V8ScriptUtils.h"
 
 template<class T>
-class V8ScriptWrapped : public IScriptWrapped<T>
+class V8ScriptObject : public IScriptObject<T>
 {
 public:
-	V8ScriptWrapped(T *object, v8::Isolate *isolate, v8::Local<v8::Object> handle)
-		: IScriptWrapped<T>(object), _isolate(isolate)
+	V8ScriptObject(T *object, v8::Isolate *isolate, v8::Local<v8::Object> handle)
+		: IScriptObject<T>(object), _isolate(isolate)
 	{
 		_handle.Reset(isolate, handle);
 	}
 	
-	~V8ScriptWrapped()
+	~V8ScriptObject()
 	{
 		// clear handle for children
 		for (auto it = _children.begin(); it != _children.end(); ++it)

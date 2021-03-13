@@ -41,6 +41,7 @@ set(
 	src/TPlayerNC.cpp
 	src/TPlayerProps.cpp
 	src/TPlayerRC.cpp
+	src/TScriptClass.cpp
 	src/TServer.cpp
 	src/TServerList.cpp
 	src/TWeapon.cpp
@@ -64,6 +65,7 @@ set(
 	include/TMap.h
 	include/TNPC.h
 	include/TPlayer.h
+	include/TScriptClass.h
 	include/TServer.h
 	include/TServerList.h
 	include/TWeapon.h
@@ -88,30 +90,31 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		HEADERS
-		include/script/ScriptArguments.h
-		include/script/ScriptBindings.h
-		include/script/ScriptEnv.h
-		include/script/ScriptFunction.h
-		include/script/ScriptUtils.h
-		include/script/ScriptWrapped.h
+		include/script/interface/ScriptArguments.h
+		include/script/interface/ScriptBindings.h
+		include/script/interface/ScriptEnv.h
+		include/script/interface/ScriptFunction.h
+		include/script/interface/ScriptObject.h
+		include/script/interface/ScriptUtils.h
 	)
 
 	# Headers for script library v8 implementation
 	list(
 		APPEND
 		HEADERS
-		include/script/V8ScriptArguments.h
-		include/script/V8ScriptEnv.h
-		include/script/V8ScriptFunction.h
-		include/script/V8ScriptUtils.h
-		include/script/V8ScriptWrapped.h
+		include/script/v8/V8ScriptArguments.h
+		include/script/v8/V8ScriptBindings.h
+		include/script/v8/V8ScriptEnv.h
+		include/script/v8/V8ScriptFunction.h
+		include/script/v8/V8ScriptObject.h
+		include/script/v8/V8ScriptUtils.h
 	)
 
 	# Source for script library v8 implementation
 	list(
 		APPEND
 		SOURCES
-		src/script/V8ScriptEnv.cpp
+		src/script/v8/V8ScriptEnv.cpp
 	)
 
 	# GServer specific headers for implementation
@@ -122,6 +125,7 @@ if(V8NPCSERVER)
 		include/script/ScriptAction.h
 		include/script/ScriptExecutionContext.h
 		include/script/ScriptFactory.h
+		include/script/v8/V8ScriptWrappers.h
 	)
 
 	# GServer specific source for implementation
@@ -129,14 +133,14 @@ if(V8NPCSERVER)
 		APPEND
 		SOURCES
 		src/CScriptEngine.cpp
-		src/script/V8EnvironmentImpl.cpp
-		src/script/V8FunctionsImpl.cpp
-		src/script/V8LevelImpl.cpp
-		src/script/V8NPCImpl.cpp
-		src/script/V8PlayerImpl.cpp
-		src/script/V8ScriptEnv.cpp
-		src/script/V8ServerImpl.cpp
-		src/script/V8WeaponImpl.cpp
+		src/script/v8/V8EnvironmentImpl.cpp
+		src/script/v8/V8FunctionsImpl.cpp
+		src/script/v8/V8LevelImpl.cpp
+		src/script/v8/V8NPCImpl.cpp
+		src/script/v8/V8PlayerImpl.cpp
+		src/script/v8/V8ScriptEnv.cpp
+		src/script/v8/V8ServerImpl.cpp
+		src/script/v8/V8WeaponImpl.cpp
 	)
 endif()
 
@@ -145,6 +149,8 @@ include_directories(
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include/script
+	${PROJECT_SOURCE_DIR}/server/include/script/interface
+	${PROJECT_SOURCE_DIR}/server/include/script/v8
 )
 
 # Set target names for the executables
@@ -177,6 +183,14 @@ if(APPLE)
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
 elseif(WIN32)
+	# hax to get clion to work on windows for me
+	if(V8NPCSERVER)
+		if(CLIONHAX)
+			include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/include)
+			link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/lib/Debug)
+		endif()
+	endif()
+
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
