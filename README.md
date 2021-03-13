@@ -30,7 +30,7 @@ Install and add [CMake](https://cmake.org/download/) to path
 
 Download and add [nuget](https://www.nuget.org/downloads) to path
 
-Add `D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\` to `VCTargetsPath` in your paths. Note that your actual installation path (folder in which `Microsoft Visual Studio` is) may be different in your environment. The trailing \ can be required.
+Add `%programfiles(x86)%\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\` to `VCTargetsPath` in your system paths. The trailing \ may be required.
 
 #### Building the server with NPC-server support enabled
 A folder called GServer-v2 will be created. Remember to update the Visual Studio installation path to your Visual Studio installation path.
