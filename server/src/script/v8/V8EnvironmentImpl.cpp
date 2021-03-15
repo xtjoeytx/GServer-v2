@@ -56,7 +56,7 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		SCRIPTENV_D(" - Set callback for %s with: %s\n",
 				*v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked())),
-				*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked())));
+				*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
 		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
