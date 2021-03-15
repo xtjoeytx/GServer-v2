@@ -149,7 +149,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	
 	// Create a string containing the JavaScript source code.
 	v8::Local<v8::String> sourceStr = v8::String::NewFromUtf8(isolate, source.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
-	
+
 	// Compile the source code.
 	v8::TryCatch try_catch(isolate);
 	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());

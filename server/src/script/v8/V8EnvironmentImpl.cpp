@@ -36,7 +36,7 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 		TServer *serverObject = UnwrapObject<TServer>(args.This());
 
 		// Report exception to server
-		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
+		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 		serverObject->reportScriptException(message);
 	}
 
@@ -63,7 +63,7 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 
 		// Callback name
-		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate));
+		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
@@ -110,7 +110,7 @@ void bindClass_Environment(CScriptEngine *scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "Environment"
-	v8::Local<v8::String> envStr = v8::String::NewFromUtf8(isolate, "Environment", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> envStr = v8::String::NewFromUtf8Literal(isolate, "Environment", v8::NewStringType::kInternalized);
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> environment_ctor = v8::FunctionTemplate::New(isolate);
@@ -119,12 +119,12 @@ void bindClass_Environment(CScriptEngine *scriptEngine)
 	environment_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Properties
-	environment_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "global"), Environment_GetObject_Global, nullptr, engine_ref);
+	environment_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "global"), Environment_GetObject_Global, nullptr, engine_ref);
 
 	// Method functions
-	environment_proto->Set(v8::String::NewFromUtf8(isolate, "reportException"), v8::FunctionTemplate::New(isolate, Environment_ReportException, engine_ref));
-	environment_proto->Set(v8::String::NewFromUtf8(isolate, "setCallBack"), v8::FunctionTemplate::New(isolate, Environment_SetCallBack, engine_ref));
-	environment_proto->Set(v8::String::NewFromUtf8(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Environment_SetNpcEvents, engine_ref));
+	environment_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reportException"), v8::FunctionTemplate::New(isolate, Environment_ReportException, engine_ref));
+	environment_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setCallBack"), v8::FunctionTemplate::New(isolate, Environment_SetCallBack, engine_ref));
+	environment_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Environment_SetNpcEvents, engine_ref));
 
 	// Persist the constructor
 	env->SetConstructor("environment", environment_ctor);

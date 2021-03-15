@@ -117,6 +117,7 @@ inline IScriptObject<T> * V8ScriptEnv::Wrap(const std::string& constructor_name,
 	assert(!context.IsEmpty());
 
 	// Create a stack-allocated scope for v8 calls, and enter context
+	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope handle_scope(isolate);
 	v8::Context::Scope context_scope(context);

@@ -178,7 +178,7 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> self = info.This();
 
-    v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8(isolate, "_internalFlags", v8::NewStringType::kInternalized).ToLocalChecked();
+    v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8Literal(isolate, "_internalFlags", v8::NewStringType::kInternalized);
     if (self->HasRealNamedProperty(context, internalProperty).ToChecked())
     {
         info.GetReturnValue().Set(self->Get(context, internalProperty).ToLocalChecked());
@@ -217,7 +217,7 @@ void Server_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 
 	// Get server flag with the property
 	CString flagValue = serverObject->getFlag(*utf8);
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, flagValue.text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(isolate, flagValue.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -250,7 +250,7 @@ void Server_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 
 	int idx = 0;
 	for (auto it = flagList->begin(); it != flagList->end(); ++it)
-		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str())).Check();
+		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
 }
@@ -335,7 +335,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "server"
-	v8::Local<v8::String> serverStr = v8::String::NewFromUtf8(isolate, "server", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> serverStr = v8::String::NewFromUtf8Literal(isolate, "server", v8::NewStringType::kInternalized);
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> server_ctor = v8::FunctionTemplate::New(isolate);
@@ -345,24 +345,24 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
 
 	// Properties
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "flags"), Server_GetObject_Flags, nullptr, engine_ref);
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Server_GetArray_Npcs);
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Server_GetArray_Players);
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "serverlist"), Server_GetArray_Serverlist);
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar"), Server_Get_TimeVar);
-	server_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "timevar2"), Server_Get_TimeVar2);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Server_GetObject_Flags, nullptr, engine_ref);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Server_GetArray_Npcs);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Server_GetArray_Players);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "serverlist"), Server_GetArray_Serverlist);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "timevar"), Server_Get_TimeVar);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "timevar2"), Server_Get_TimeVar2);
 
     // Create the server flags template
 	v8::Local<v8::FunctionTemplate> server_flags_ctor = v8::FunctionTemplate::New(isolate);
-	server_flags_ctor->SetClassName(v8::String::NewFromUtf8(isolate, "flags"));
+	server_flags_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "flags"));
 	server_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	server_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 			Server_Flags_Getter, Server_Flags_Setter, nullptr, nullptr, Server_Flags_Enumerator, v8::Local<v8::Value>(),

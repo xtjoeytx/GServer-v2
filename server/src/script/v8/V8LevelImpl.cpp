@@ -26,7 +26,7 @@ void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 {
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelObject->getLevelName().text());
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelObject->getLevelName().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -156,8 +156,8 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it).second->getScriptObject());
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
-			object->Set(key_distance, v8::Number::New(isolate, (*it).first));
-			object->Set(key_player, v8_wrapped->Handle(isolate));
+			object->Set(context, key_distance, v8::Number::New(isolate, (*it).first));
+			object->Set(context, key_player, v8_wrapped->Handle(isolate));
 			result->Set(context, idx++, object).Check();
 		}
 
@@ -274,7 +274,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "level"
-	v8::Local<v8::String> levelStr = v8::String::NewFromUtf8(isolate, "level", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> levelStr = v8::String::NewFromUtf8Literal(isolate, "level", v8::NewStringType::kInternalized);
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> level_ctor = v8::FunctionTemplate::New(isolate);
@@ -283,21 +283,21 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-//	level_proto->Set(v8::String::NewFromUtf8(isolate, "clone"), v8::FunctionTemplate::New(isolate, Level_Function_Clone, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
-//	level_proto->Set(v8::String::NewFromUtf8(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
+//	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "clone"), v8::FunctionTemplate::New(isolate, Level_Function_Clone, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
+//	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
 
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
-	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
-	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "name"), Level_GetStr_Name);
-	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "npcs"), Level_GetArray_Npcs);
-	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "players"), Level_GetArray_Players);
-//	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "tiles"), Level_GetObject_Tiles);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "name"), Level_GetStr_Name);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
+//	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles);
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);
