@@ -12,7 +12,7 @@ For their additional work on the old gserver, special thanks go to:
 ```
 fetch v8
 cd v8
-git checkout refs/tags/7.4.288.26 -b sample -t
+git checkout refs/tags/8.4.371.15 -b sample -t
 gclient sync -D
 gclient sync
 tools/dev/v8gen.py x64.release.sample
@@ -42,7 +42,7 @@ git submodule update --init --recursive
 mkdir packages
 cd packages
 
-nuget install v8-v142-x64 -version 7.4.288.26
+nuget install v8-v142-x64 -version 8.4.371.15
 
 cd ..
 
@@ -56,8 +56,8 @@ cmake .. -G "Visual Studio 16 2019" -A x64 -DV8NPCSERVER=TRUE
 cmake --build .
 
 //The next lines copy the required v8 files to the build path.
-robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.dll
-robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.bin
+robocopy ..\packages\v8.redist-v142-x64.8.4.371.15\lib\Debug ..\bin\ *.dll
+robocopy ..\packages\v8.redist-v142-x64.8.4.371.15\lib\Debug ..\bin\ *.bin
 ```
 
 ## Quick Start Instructions
