@@ -132,6 +132,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::Local<v8::Context> context = this->Context();
 
 	// Create a stack-allocated scope for v8 calls
+	v8::Locker lock(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope handle_scope(isolate);
 
@@ -174,6 +175,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 void V8ScriptEnv::CallFunctionInScope(std::function<void()> function)
 {
 	// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
+	v8::Locker lock(Isolate());
 	v8::Isolate::Scope isolate_scope(Isolate());
 	v8::HandleScope handle_scope(Isolate());
 
