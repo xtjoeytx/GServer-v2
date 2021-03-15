@@ -11,7 +11,7 @@
 #include "TServer.h"
 
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 // PROPERTY: player.id
 void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -316,7 +316,7 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	if (levelObject != 0)
 	{
-		V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(levelObject->getScriptObject());
+		V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
 		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
 		return;
 	}
@@ -576,7 +576,7 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -659,7 +659,7 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
 	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -745,7 +745,7 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -783,7 +783,11 @@ void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 
 	// Get new value
 	v8::String::Utf8Value newValue(isolate, value);
-	playerObject->setFlag(*utf8, *newValue, true);
+	if (newValue.length() == 0) {
+		playerObject->deleteFlag(*utf8, true);
+	} else {
+		playerObject->setFlag(*utf8, *newValue, true);
+	}
 
 	// Needed to indicate we handled the request
 	info.GetReturnValue().Set(value);
@@ -824,7 +828,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	//	in scripts.
 	int idx = 0;
 	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
-		//V8ScriptWrapped<TWeapon> *v8_wrapped = static_cast<V8ScriptWrapped<TWeapon> *>((*it)->getScriptObject());
+		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
 		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), (*it).text()).ToLocalChecked();
 		result->Set(context, idx++, weaponName).Check();
 	}
@@ -845,7 +849,7 @@ void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 		
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).FromMaybe(v8::Undefined(isolate)));
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		bool result = playerObject->addWeapon(*newValue);
 		args.GetReturnValue().Set(result);
@@ -866,10 +870,9 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Validate arguments
 	if (args[0]->IsString())
 	{
-		auto context = isolate->GetCurrentContext();
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		bool result = playerObject->hasWeapon(*newValue);
 		args.GetReturnValue().Set(result);
@@ -891,9 +894,8 @@ void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& arg
 	if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
-		auto context = isolate->GetCurrentContext();
-
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+		
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		bool result = playerObject->deleteWeapon(*newValue);
 		args.GetReturnValue().Set(result);
@@ -925,7 +927,29 @@ void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& ar
 	playerObject->enableWeapons();
 }
 
-// Player Function: player.say("message");
+// Player Function: player.freezeplayer();
+void Player_Function_FreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+	playerObject->freezePlayer();
+}
+
+// Player Function: player.unfreezeplayer();
+void Player_Function_UnfreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+	playerObject->unfreezePlayer();
+}
+
+// Player Function: player.say("message"); or player.say(index) for signs in a level
 void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -937,9 +961,23 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
-		auto context = isolate->GetCurrentContext();
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 		playerObject->sendSignMessage(*newValue);
+	}
+	else if (args[0]->IsInt32())
+	{
+		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+		int signIndex = args[0]->Int32Value(isolate->GetCurrentContext()).ToChecked();
+
+		auto level = playerObject->getLevel();
+		if (level != nullptr) {
+			auto& signs = level->getLevelSigns();
+			if (signIndex < signs.size())
+				playerObject->sendSignMessage(signs[signIndex].getUText().replaceAll("\n", "#b"));
+
+		}
 	}
 }
 
@@ -968,8 +1006,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		assert(npcServer);
 
 		// Parse argument
-		auto context = isolate->GetCurrentContext();
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		// PM message
 		CString pmMessage(*newValue);
@@ -989,8 +1026,8 @@ void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& a
 	if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
-		auto context = isolate->GetCurrentContext();
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 		playerObject->sendRPGMessage(*newValue);
 	}
 }
@@ -1007,16 +1044,15 @@ void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
-		auto context = isolate->GetCurrentContext();
 
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		CString animation(*newValue);
 		for (int i = 1; i < args.Length(); i++)
 		{
-			if (args[i]->IsString())
+			if (args[i]->IsString() || args[i]->IsNumber())
 			{
-				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(context).ToLocalChecked());
+				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 				animation << "," << *aniParam;
 			}
 		}
@@ -1040,7 +1076,7 @@ void Player_Function_SetLevel2(const v8::FunctionCallbackInfo<v8::Value>& args)
 		
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		
-		v8::String::Utf8Value levelName(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value levelName(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 		double newX = args[1]->NumberValue(context).ToChecked();
 		double newY = args[2]->NumberValue(context).ToChecked();
 
@@ -1151,6 +1187,9 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	playerObject->setProps(propPacket, true, true);
 }
 
+#include "TScriptClass.h"
+#include "V8ScriptWrappers.h"
+
 // Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1168,27 +1207,32 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		TServer *server = scriptEngine->getServer();
-		std::string classCode = server->getClass(className);
+		auto classObj = server->getClass(className);
 
-		if (!classCode.empty())
+		if (classObj && !classObj->source().empty())
 		{
+			auto &classCode = classObj->source();
+
 			// Wrap code
-			std::string classCodeWrap = CScriptEngine::WrapScript<TPlayer>(classCode);
+			std::string classCodeWrap = WrapScript<TPlayer>(classCode);
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.
 			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
-			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
-			v8::Local<v8::Value> newArgs[] = { args.This() };
+			if (function != nullptr) {
+				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(function);
 
-			// Execute
-			v8::TryCatch try_catch(isolate);
-			v8::Local<v8::Function> scriptFunction = v8_function->Function();
-			v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
-			if (!scriptTableRet.IsEmpty())
-			{
-				args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
-				return;
+				v8::Local<v8::Value> newArgs[] = { args.This() };
+
+				// Execute
+				v8::TryCatch try_catch(isolate);
+				v8::Local<v8::Function> scriptFunction = v8_function->Function();
+				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+				if (!scriptTableRet.IsEmpty())
+				{
+					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+					return;
+				}
 			}
 
 			// TODO(joey): error handling
@@ -1231,7 +1275,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "player"
-	v8::Local<v8::String> className = v8::String::NewFromUtf8(isolate, "player", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> className = v8::String::NewFromUtf8Literal(isolate, "player", v8::NewStringType::kInternalized);
 	
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> player_ctor = v8::FunctionTemplate::New(isolate, nullptr, engine_ref); // , Player_Constructor);
@@ -1245,15 +1289,17 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "freezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_FreezePlayer, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "unfreezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_UnfreezePlayer, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
-	//player_proto->Set(v8::String::NewFromUtf8(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
+	//player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attached"), v8::FunctionTemplate::New(isolate, Player_Function_Attached, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_AttachNpc, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "detachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
@@ -1270,7 +1316,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "chat"), Player_GetStr_Chat, Player_SetStr_Chat);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "darts"), Player_GetInt_Darts, Player_SetInt_Darts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "dir"), Player_GetInt_Dir, Player_SetInt_Dir);
-	//player_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "hatimg"), Player_GetStr_HatImage, Player_SetStr_HatImage);
+	//player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "hatimg"), Player_GetStr_HatImage, Player_SetStr_HatImage);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "headimg"), Player_GetStr_HeadImage, Player_SetStr_HeadImage);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "fullhearts"), Player_GetInt_Fullhearts, Player_SetInt_Fullhearts);
@@ -1320,7 +1366,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
     player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
             Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
-            v8::PropertyHandlerFlags::kOnlyInterceptStrings));
+            v8::PropertyHandlerFlags::kHasNoSideEffect));
 	env->SetConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor

@@ -111,7 +111,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 		CString flag = pPacket.readChars(pPacket.readGUChar());
 		std::string name = flag.readString("=").text();
 		CString val = flag.readString("");
-		
+
 		setFlag(name, val, (id != -1));
 		--flagCount;
 	}
@@ -634,7 +634,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 	// Search through all the accounts.
 	CFileSystem* fs = server->getAccountsFileSystem();
-	for (std::map<CString, CString>::iterator i = fs->getFileList()->begin(); i != fs->getFileList()->end(); ++i)
+	for (std::map<CString, CString>::iterator i = fs->getFileList().begin(); i != fs->getFileList().end(); ++i)
 	{
 		CString acc = removeExtension(i->first);
 		if (acc.isEmpty()) continue;
@@ -1089,7 +1089,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		{
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the weapons.");
 			rclog.out("%s reloaded the weapons.\n", accountName.text());
-			server->loadWeapons();
+			server->loadWeapons(true);
 		}
 #ifdef V8NPCSERVER
 		else if (words[0] == "/savenpcs" && words.size() == 1)
@@ -1112,7 +1112,6 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (idx == 50)
 					break;
 			}
-			server->saveNpcs();
 		}
 #endif
 		else if(words[0] == "/find" && words.size() > 1)
@@ -1127,7 +1126,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			// Search for the files.
 			for (unsigned int i = 0; i < FS_COUNT; ++i)
 			{
-				std::map<CString, CString>* fileList = server->getFileSystem(i)->getFileList();
+				auto& fileList = server->getFileSystem(i)->getFileList();
 				CString fs("none");
 				if (i == 0) fs = "all";
 				if (i == 1) fs = "file";
@@ -1137,7 +1136,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (i == 5) fs = "sword";
 				if (i == 6) fs = "shield";
 
-				for (std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++i)
+				for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 				{
 					if (i->first.match(search))
 						found[i->second.removeAll(server->getServerPath())] = fs;
@@ -1567,7 +1566,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
 		{
 			// See if the file matches the wildcard.
 			if (!j->first.match(wildcard))
@@ -1657,7 +1656,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
 		{
 			// See if the file matches the wildcard.
 			if (!j->first.match(wildcard))
@@ -1709,7 +1708,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 		{
 			if (checkFile == CString(__protectedFiles[j]))
 			{
-				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to download/view " << checkFile);
+				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficient rights to download/view " << checkFile);
 				return true;
 			}
 		}
@@ -1828,8 +1827,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	// Add working directory.
 	source = CString(server->getServerPath()) << source;
 	destination = CString(server->getServerPath()) << destination;
-	CFileSystem::fixPathSeparators(&source);
-	CFileSystem::fixPathSeparators(&destination);
+	CFileSystem::fixPathSeparators(source);
+	CFileSystem::fixPathSeparators(destination);
 
 	// Save the new file now.
 	CString temp;
@@ -1878,7 +1877,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	CString file = pPacket.readString("");
 	CString filePath = CString() << server->getServerPath() << lastFolder << file;
 	CString checkFile = CString() << lastFolder << file;
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 
 	// Don't let us delete important files.
 	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
@@ -1936,8 +1935,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f2path = CString() << server->getServerPath() << lastFolder << f2;
 	CString checkFile1 = CString() << lastFolder << f1;
 	CString checkFile2 = CString() << lastFolder << f2;
-	CFileSystem::fixPathSeparators(&f1path);
-	CFileSystem::fixPathSeparators(&f2path);
+	CFileSystem::fixPathSeparators(f1path);
+	CFileSystem::fixPathSeparators(f2path);
 
 
 	// Don't let us rename/overwrite important files.
@@ -2068,7 +2067,7 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
 	CString folder = pPacket.readString("");
 	CString folderpath = CString() << server->getServerPath() << folder;
-	CFileSystem::fixPathSeparators(&folderpath);
+	CFileSystem::fixPathSeparators(folderpath);
 	folderpath.removeI(folderpath.length() -1);
 	if (isClient())
 	{
@@ -2126,7 +2125,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	}
 
 	// If folder config is off, add it to the file list.
-	if (settings->getBool("nofoldersconfig", false) == true)
+	if ( settings->getBool("nofoldersconfig", false))
 	{
 		CFileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
@@ -2136,11 +2135,11 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	else
 	{
 		std::vector<CString> foldersConfig = CString::loadToken(CString() << server->getServerPath() << "config/foldersconfig.txt", "\n", true);
-		for (std::vector<CString>::iterator i = foldersConfig.begin(); i != foldersConfig.end(); ++i)
+		for (auto & folderConfig : foldersConfig)
 		{
-			CString type = i->readString(" ").trim();
+			CString type = folderConfig.readString(" ").trim();
 			CString folder("world/");
-			folder << i->readString("").trim();
+			folder << folderConfig.readString("").trim();
 
 			if (fullPath.match(folder))
 			{
@@ -2168,6 +2167,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		TLevel* l = TLevel::findLevel(file, server);
 		if (l) l->reload();
 	}
+	else if (ext == ".dump" || dir.findi(CString("weapons")) > -1)
+		server->loadWeapons(true);
 	else if (file == "serveroptions.txt")
 	{
 		server->loadSettings();

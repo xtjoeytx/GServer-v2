@@ -25,7 +25,10 @@
 #define V8ENV_THROW_ARGCOUNT(args, isolate, required_args)			\
 	if (args.Length() != required_args) {							\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
-			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str()).ToLocalChecked()); 			\
+			std::string("Cannot call function with ")				\
+				.append(std::to_string(args.Length()))				\
+				.append(" arguments, required ## required_args ")	\
+				.c_str()).ToLocalChecked()); 						\
 		return;														\
 	}
 
@@ -33,7 +36,10 @@
 #define V8ENV_THROW_MINARGCOUNT(args, isolate, required_args)		\
 	if (args.Length() < required_args) {							\
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
-			std::string("Cannot call function with ").append(std::to_string(args.Length())).append(" arguments, required ## required_args ").c_str()).ToLocalChecked()); 			\
+			std::string("Cannot call function with ")				\
+			.append(std::to_string(args.Length()))					\
+			.append(" arguments, required ## required_args ")		\
+			.c_str()).ToLocalChecked()); 											\
 		return;														\
 	}
 

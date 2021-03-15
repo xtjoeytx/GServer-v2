@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libplatform/libplatform.h>
 #include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
@@ -23,11 +24,13 @@ void V8ScriptEnv::Initialize()
 	if (_initialized)
 		return;
 
-#ifdef _WIN32
-	// Initialize V8 External Data - for windows only
-	//v8::V8::InitializeICUDefaultLocation(argv[0]);
+	// Force v8 to use strict mode
+	const char* flags = "--use_strict";
+	v8::V8::SetFlagsFromString(flags, strlen(flags));
+
+	// Initialize V8.
+	v8::V8::InitializeICUDefaultLocation(".");
 	v8::V8::InitializeExternalStartupData(".");
-#endif
 
 	// Initialize v8 if this is the first vm
 	if (!_v8_initialized)
@@ -49,7 +52,6 @@ void V8ScriptEnv::Initialize()
 	// Create v8 isolate
 	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 	_isolate = v8::Isolate::New(create_params);
-	v8::Locker locker(_isolate);
 	
 	// Create global object and persist it
 	v8::HandleScope handle_scope(_isolate);
@@ -130,7 +132,6 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::Local<v8::Context> context = this->Context();
 
 	// Create a stack-allocated scope for v8 calls
-	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope handle_scope(isolate);
 
@@ -173,7 +174,6 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 void V8ScriptEnv::CallFunctionInScope(std::function<void()> function)
 {
 	// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-	v8::Locker locker(Isolate());
 	v8::Isolate::Scope isolate_scope(Isolate());
 	v8::HandleScope handle_scope(Isolate());
 

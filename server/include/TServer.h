@@ -31,9 +31,12 @@
 #include "CScriptEngine.h"
 #endif
 
+#include "TScriptClass.h"
+
 class TPlayer;
 class TLevel;
 class TNPC;
+class TScriptClass;
 class TMap;
 class TWeapon;
 
@@ -67,7 +70,7 @@ class TServer : public CSocketStub
 		bool canRecv()				{ return true; }
 		bool canSend()				{ return false; }
 
-		TServer(CString pName);
+		TServer(const CString& pName);
 		~TServer();
 		void operator()();
 		void cleanup();
@@ -127,9 +130,10 @@ class TServer : public CSocketStub
 		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
 		CWordFilter* getWordFilter()					{ return &wordFilter; }
 		TServerList* getServerList()					{ return &serverlist; }
-		unsigned int getNWTime() const;
+		unsigned int getNWTime() const					{ return serverTime; }
+		void calculateServerTime();
 
-		std::unordered_map<std::string, std::string>* getClassList()	{ return &classList; }
+		std::unordered_map<std::string, std::unique_ptr<TScriptClass>>& getClassList()	{ return classList; }
 		std::unordered_map<std::string, TNPC *>* getNPCNameList()		{ return &npcNameList; }
 		std::unordered_map<std::string, CString>* getServerFlags()		{ return &mServerFlags; }
 		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
@@ -171,7 +175,7 @@ class TServer : public CSocketStub
 		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
-		std::string getClass(const std::string& className) const;
+		TScriptClass * getClass(const std::string& className) const;
 		void updateClass(const std::string& className, const std::string& classCode);
 		bool isIpBanned(const CString& ip);
 		bool isStaff(const CString& accountName);
@@ -232,7 +236,7 @@ class TServer : public CSocketStub
 		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
 		std::map<CString, std::map<CString, TLevel*> > groupLevels;
-		std::unordered_map<std::string, std::string> classList;
+		std::unordered_map<std::string, std::unique_ptr<TScriptClass>> classList;
 		std::unordered_map<std::string, TNPC *> npcNameList;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
 		std::vector<TLevel *> levelList;
@@ -244,6 +248,7 @@ class TServer : public CSocketStub
 
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+		unsigned int serverTime;
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
 		int mNCPort;
@@ -270,13 +275,13 @@ inline bool TServer::hasClass(const std::string& className) const
 	return classList.find(className) != classList.end();
 }
 
-inline std::string TServer::getClass(const std::string& className) const
+inline TScriptClass * TServer::getClass(const std::string& className) const
 {
 	auto classIter = classList.find(className);
 	if (classIter != classList.end())
-		return classIter->second;
+		return classIter->second.get();
 
-	return std::string();
+	return nullptr;
 }
 
 #ifdef V8NPCSERVER

@@ -8,6 +8,14 @@
 class TServer;
 class CFileSystem
 {
+#if defined(_WIN32) || defined(_WIN64)
+	static const char fSep = '\\';
+	static const char fSep_O = '/';
+#else
+	static const char fSep = '/';
+	static const char fSep_O = '\\';
+#endif
+
 	public:
 		CFileSystem();
 		CFileSystem(TServer* pServer);
@@ -29,13 +37,13 @@ class CFileSystem
 		time_t getModTime(const CString& file) const;
 		bool setModTime(const CString& file, time_t modTime) const;
 		int getFileSize(const CString& file) const;
-		std::map<CString, CString>* getFileList()	{ return &fileList; }
+		std::map<CString, CString>& getFileList()	{ return fileList; }
 		std::vector<CString>* getDirList()			{ return &dirList; }
 
 		mutable std::recursive_mutex* m_preventChange;
 
-		static void fixPathSeparators(CString* pPath);
-		static char getPathSeparator();
+		static constexpr char getPathSeparator();
+		static void fixPathSeparators(CString& pPath);
 
 	private:
 		void loadAllDirectories(const CString& directory, bool recursive = false);
@@ -45,5 +53,15 @@ class CFileSystem
 		std::map<CString, CString> fileList;
 		std::vector<CString> dirList;
 };
+
+inline void CFileSystem::fixPathSeparators(CString& pPath)
+{
+	pPath.replaceAllI(fSep_O, fSep);
+}
+
+constexpr char CFileSystem::getPathSeparator()
+{
+	return fSep;
+}
 
 #endif

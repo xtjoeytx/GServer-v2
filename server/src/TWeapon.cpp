@@ -43,7 +43,7 @@ TWeapon::~TWeapon()
 TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 {
 	// File Path
-	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
+	CString fileName = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -63,7 +63,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		return nullptr;
 
 	// Definitions
-	CString weaponImage, weaponName, weaponScript;
+	CString weaponImage, weaponName, weaponScript, byteCodeFile;
 	std::vector<std::pair<CString, CString> > byteCode;
 
 	// Parse File
@@ -85,8 +85,10 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 			CString bytecode;
 			bytecode.load(server->getServerPath() << "weapon_bytecode/" << fname);
 
-			if (!bytecode.isEmpty())
-				byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+			if (!bytecode.isEmpty()) {
+				byteCode.emplace_back(fname, bytecode);
+				byteCodeFile = fname;
+			}
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -119,8 +121,11 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.text());
 
 	TWeapon* ret = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (byteCode.size() != 0)
+	if (!byteCode.empty())
 		ret->mByteCode = byteCode;
+
+	if (!byteCodeFile.isEmpty())
+		ret->mByteCodeFile = byteCodeFile;
 
 	return ret;
 }
@@ -139,7 +144,7 @@ bool TWeapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = server->getServerPath() << "weapons/weapon" << name << ".txt";
+	CString filename = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
@@ -147,7 +152,7 @@ bool TWeapon::saveWeapon()
 	output << "IMAGE " << mWeaponImage << "\r\n";
 	for (unsigned int i = 0; i < mByteCode.size(); ++i)
 		output << "BYTECODE " << mByteCode[i].first << "\r\n";
-	
+
 	if (!mWeaponScript.isEmpty())
 	{
 		output << "SCRIPT\r\n";
@@ -220,6 +225,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		freeScriptResources();
 #endif
 
+	// TODO(joey): find out where \xa7 would be used, believe its in an earlier RC-version
 	// Replace '\xa7' line endings with "\n"
 	CString fixedScript;
 	if (pCode.find("\xa7") != -1)
@@ -231,7 +237,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	this->setFullScript(fixedScript);
 	this->setImage(pImage);
 	this->setModTime(pModTime == 0 ? time(0) : pModTime);
-	
+
 #ifdef V8NPCSERVER
 	// Separate client and server code
 	setServerScript(fixedScript.readString("//#CLIENTSIDE"));
@@ -244,9 +250,10 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	{
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
-		ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-		_scriptExecutionContext.addAction(scriptAction);
-		scriptEngine->RegisterWeaponUpdate(this);
+		if (!mScriptServer.isEmpty()) {
+			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
+			scriptEngine->RegisterWeaponUpdate(this);
+		}
 	}
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");
@@ -277,7 +284,7 @@ void TWeapon::freeScriptResources()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
+	scriptEngine->ClearCache<TWeapon>(mScriptServer.text());
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())
@@ -301,7 +308,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }

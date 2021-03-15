@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 #include "TLevel.h"
 #include "TNPC.h"
@@ -30,7 +30,7 @@ void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		if (levelObject != nullptr)
 		{
-			V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(levelObject->getScriptObject());
+			V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
 			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 		}
 	}
@@ -62,7 +62,7 @@ void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Set the return value as the handle from the wrapped object
 	if (npcObject != nullptr)
 	{
-		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC>*>(npcObject->getScriptObject());
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC>*>(npcObject->getScriptObject());
 		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 	}
 }
@@ -95,7 +95,7 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Set the return value as the handle from the wrapped object
 	if (playerObject != nullptr)
 	{
-		V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer>*>(playerObject->getScriptObject());
+		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer>*>(playerObject->getScriptObject());
 		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 	}
 }
@@ -178,7 +178,7 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> self = info.This();
 
-    v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8(isolate, "_internalFlags", v8::NewStringType::kInternalized).ToLocalChecked();
+    v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8Literal(isolate, "_internalFlags", v8::NewStringType::kInternalized);
     if (self->HasRealNamedProperty(context, internalProperty).ToChecked())
     {
         info.GetReturnValue().Set(self->Get(context, internalProperty).ToLocalChecked());
@@ -270,7 +270,7 @@ void Server_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 	int idx = 0;
 	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
-		V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>((*it)->getScriptObject());
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -296,7 +296,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 		if (pl->isHiddenClient())
 			continue;
 
-		V8ScriptWrapped<TPlayer> *v8_wrapped = static_cast<V8ScriptWrapped<TPlayer> *>((*it)->getScriptObject());
+		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it)->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 

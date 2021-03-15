@@ -5,6 +5,7 @@
 #include "TPlayer.h"
 #include "TServer.h"
 #include "TWeapon.h"
+#include "V8ScriptWrappers.h"
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
@@ -218,7 +219,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
-	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
+	IScriptObject<TNPC> *wrappedObject = WrapObject(npc);
 
 	// No script, nothing to execute.
 	CString npcScript = npc->getServerScript();
@@ -256,38 +257,38 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 
 	// We always want to create an object for the weapon
 	// Wrap object
-	IScriptWrapped<TWeapon> *wrappedObject = WrapObject(weapon);
+	IScriptObject<TWeapon> *wrappedObject = WrapObject(weapon);
+	
+	auto& weaponScript = weapon->getServerScript();
+	if (!weaponScript.isEmpty())
+	{
+		// Wrap user code in a function-object, returning some useful symbols to call for events
+		std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
 
-	// Wrap user code in a function-object, returning some useful symbols to call for events
-	CString weaponScript = weapon->getServerScript();
-	if (weaponScript.isEmpty())
-		return false;
+		// Search the cache, or compile the script
+		IScriptFunction* compiledScript = CompileCache(codeStr);
 
-	std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
+		// Script failed to compile
+		if (compiledScript == nullptr)
+			return false;
 
-	// Search the cache, or compile the script
-	IScriptFunction *compiledScript = CompileCache(codeStr);
-
-	// Script failed to compile
-	if (compiledScript == nullptr)
-		return false;
-
-	//
-	// Execute the compiled script
-	//
-	_env->CallFunctionInScope([&]() -> void {
-		IScriptArguments *args = ScriptFactory::CreateArguments(_env, wrappedObject);
-		bool result = args->Invoke(compiledScript, true);
-		if (!result)
-			_server->reportScriptException(_env->getScriptError());
-		delete args;
-	});
+		//
+		// Execute the compiled script
+		//
+		_env->CallFunctionInScope([&]() -> void {
+			IScriptArguments* args = ScriptFactory::CreateArguments(_env, wrappedObject);
+			bool result = args->Invoke(compiledScript, true);
+			if (!result)
+				_server->reportScriptException(_env->getScriptError());
+			delete args;
+		});
+	}
 
 	SCRIPTENV_D("End Global::ExecuteWeapon()\n\n");
 	return true;
 }
 
-void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_point& time)
+void CScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_point& time)
 {
 	auto delta_time = time - lastScriptTimer;
 	lastScriptTimer = time;
@@ -295,7 +296,8 @@ void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_poi
 	// Run scripts every 0.05 seconds
 	constexpr std::chrono::nanoseconds timestep(std::chrono::milliseconds(50));
 	accumulator += std::chrono::duration_cast<std::chrono::nanoseconds>(delta_time);
-	while (accumulator >= timestep) {
+	while (accumulator >= timestep)
+	{
 		accumulator -= timestep;
 
 		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end(); )
@@ -313,7 +315,7 @@ void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_poi
 
 void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
 {
-    RunTimers(time);
+    runTimers(time);
 
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{

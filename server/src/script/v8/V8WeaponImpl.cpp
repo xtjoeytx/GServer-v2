@@ -8,7 +8,7 @@
 #include "TWeapon.h"
 
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 // PROPERTY: Name
 void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

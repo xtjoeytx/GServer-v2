@@ -63,12 +63,12 @@ struct ScriptFactory
 	*/
 
 	template <typename T, typename Cls>
-	static inline IScriptWrapped<Cls> * WrapObject(T *env, const std::string& ctor_name, Cls *obj) {
+	static inline IScriptObject<Cls> * WrapObject(T *env, const std::string& ctor_name, Cls *obj) {
 		return nullptr;
 	}
 
 	template <typename Cls>
-	static inline IScriptWrapped<Cls> * WrapObject(IScriptEnv *env, const std::string& ctor_name, Cls *obj) {
+	static inline IScriptObject<Cls> * WrapObject(IScriptEnv *env, const std::string& ctor_name, Cls *obj) {
 		switch (env->GetType()) {
 #ifdef SCRIPTSYS_HASV8
 			case 1: // v8
@@ -82,7 +82,7 @@ struct ScriptFactory
 
 #ifdef SCRIPTSYS_HASV8
 	template <typename Cls>
-	static inline IScriptWrapped<Cls> * WrapObject(V8ScriptEnv *env, const std::string& ctor_name, Cls *obj) {
+	static inline IScriptObject<Cls> * WrapObject(V8ScriptEnv *env, const std::string& ctor_name, Cls *obj) {
 		return env->Wrap(ctor_name, obj);
 	}
 #endif

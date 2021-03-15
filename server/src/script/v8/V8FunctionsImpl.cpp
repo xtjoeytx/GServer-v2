@@ -33,7 +33,7 @@ void Global_GetObject_Server(v8::Local<v8::String> prop, const v8::PropertyCallb
     v8::Local<v8::External> data = info.Data().As<v8::External>();
     CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 
-    V8ScriptWrapped<TServer> *v8_serverObject = static_cast<V8ScriptWrapped<TServer> *>(scriptEngine->getServerObject());
+    V8ScriptObject<TServer> *v8_serverObject = static_cast<V8ScriptObject<TServer> *>(scriptEngine->getServerObject());
     info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
 }
 
@@ -54,6 +54,7 @@ void bindGlobalFunctions(CScriptEngine *scriptEngine)
 	//global->Set(v8::String::NewFromUtf8(isolate, "testFunc"), v8::FunctionTemplate::New(isolate, Ext_TestFunc, engine_ref));
 
 	// Global properties
+	global->Set(v8::String::NewFromUtf8Literal(isolate, "global"), v8::ObjectTemplate::New(isolate), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
 	global->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "server"), Global_GetObject_Server, nullptr, engine_ref);
 }
 

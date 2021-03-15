@@ -52,8 +52,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 # Version number in format X.YY.ZZ
 set(VER_X 3)
-set(VER_Y 1)
-set(VER_Z 1)
+set(VER_Y 0)
+set(VER_Z 3)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
@@ -171,6 +171,19 @@ elseif(WIN32)
 		)
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
 		cmake_policy(SET CMP0043 NEW)
+
+		# hack to fix clion + msvc together
+		set(CompilerFlags
+				CMAKE_CXX_FLAGS
+				CMAKE_CXX_FLAGS_DEBUG
+				CMAKE_CXX_FLAGS_RELEASE
+				CMAKE_C_FLAGS
+				CMAKE_C_FLAGS_DEBUG
+				CMAKE_C_FLAGS_RELEASE
+				)
+		foreach(CompilerFlag ${CompilerFlags})
+			string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+		endforeach()
 	endif()
 
 	if( MINGW )
@@ -205,8 +218,6 @@ endif()
 
 if(V8NPCSERVER)
 	if(NOT MSVC)
-		#add_definitions(-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH)
-
 		find_package(V8)
 		if(NOT V8_FOUND)
 			message("v8 not found in system")

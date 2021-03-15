@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <algorithm>
 #include <memory.h>
 #include <time.h>
 #include "TAccount.h"
@@ -10,7 +11,7 @@
 */
 TAccount::TAccount(TServer* pServer)
 : server(pServer),
-isBanned(false), isLoadOnly(false), isGuest(false),
+isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
@@ -64,7 +65,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	if (accpath.length() == 0)
 	{
 		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
-		CFileSystem::fixPathSeparators(&accpath);
+		CFileSystem::fixPathSeparators(accpath);
 		loadedFromDefault = true;
 	}
 
@@ -98,27 +99,27 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 			val = i.subString(sep + 1);
 
 		if (section == "NAME") continue;
-		else if (section == "NICK") { if (!ignoreNickname) nickName = val; }
+		else if (section == "NICK") { if (!ignoreNickname) nickName = val.subString(0, 223); }
 		else if (section == "COMMUNITYNAME") communityName = val;
 		else if (section == "LEVEL") levelName = val;
 		else if (section == "X") { x = (float)strtofloat(val); x2 = (int)(x * 16); }
 		else if (section == "Y") { y = (float)strtofloat(val); y2 = (int)(y * 16); }
 		else if (section == "Z") { z = (float)strtofloat(val); z2 = (int)(z * 16); }
-		else if (section == "MAXHP") maxPower = (int)strtoint(val);
-		else if (section == "HP") power = (float)strtofloat(val);
+		else if (section == "MAXHP") setMaxPower(strtoint(val));
+		else if (section == "HP") setPower((float)strtofloat(val));
 		else if (section == "RUPEES") gralatc = strtoint(val);
-		else if (section == "ANI") gani = val;
+		else if (section == "ANI") setGani(val);
 		else if (section == "ARROWS") arrowc = strtoint(val);
 		else if (section == "BOMBS") bombc = strtoint(val);
 		else if (section == "GLOVEP") glovePower = strtoint(val);
-		else if (section == "SHIELDP") shieldPower = strtoint(val);
-		else if (section == "SWORDP") swordPower = strtoint(val);
+		else if (section == "SHIELDP") setShieldPower(strtoint(val));
+		else if (section == "SWORDP") setSwordPower(strtoint(val));
 		else if (section == "BOWP") bowPower = strtoint(val);
 		else if (section == "BOW") bowImage = val;
-		else if (section == "HEAD") headImg = val;
-		else if (section == "BODY") bodyImg = val;
-		else if (section == "SWORD") swordImg = val;
-		else if (section == "SHIELD") shieldImg = val;
+		else if (section == "HEAD") setHeadImage(val);
+		else if (section == "BODY") setBodyImage(val);
+		else if (section == "SWORD") setSwordImage(val);
+		else if (section == "SHIELD") setShieldImage(val);
 		else if (section == "COLORS") { std::vector<CString> t = val.tokenize(","); for (int i = 0; i < (int)t.size() && i < 5; i++) colors[i] = (unsigned char)strtoint(t[i]); }
 		else if (section == "SPRITE") sprite = strtoint(val);
 		else if (section == "STATUS") status = strtoint(val);
@@ -327,7 +328,7 @@ bool TAccount::saveAccount()
 
 	// Save the account now.
 	CString accpath = CString() << server->getServerPath() << "accounts/" << accountFileName;
-	CFileSystem::fixPathSeparators(&accpath);
+	CFileSystem::fixPathSeparators(accpath);
 	if (!newFile.save(accpath))
 		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
 
@@ -553,7 +554,7 @@ bool TAccount::hasChest(const CString& pChest)
 bool TAccount::hasWeapon(const CString& pWeapon)
 {
 	auto it = std::find(weaponList.begin(), weaponList.end(), pWeapon);
-	return (it != chestList.end());
+	return (it != weaponList.end());
 }
 
 /*
@@ -570,7 +571,6 @@ void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
 	if (server->getSettings()->getBool("cropflags", true))
 	{
-		int totalLength = pFlagName.length() + 1 + pFlagValue.length();
 		int fixedLength = 223 - 1 - pFlagName.length();
 		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
@@ -583,4 +583,26 @@ void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 CString TAccount::translate(const CString& pKey)
 {
 	return server->TS_Translate(language, pKey);
+}
+
+void TAccount::setMaxPower(int newMaxPower)
+{
+	auto settings = server->getSettings();
+	
+	auto heartLimit = std::min(settings->getInt("heartlimit", 3), 20);
+	maxPower = clip(newMaxPower, 0, heartLimit);
+}
+
+void TAccount::setShieldPower(int newPower)
+{
+	auto settings = server->getSettings();
+
+	shieldPower = clip(newPower, 0, settings->getInt("shieldlimit", 3));
+}
+
+void TAccount::setSwordPower(int newPower)
+{
+	auto settings = server->getSettings();
+
+	swordPower = clip(newPower, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 }

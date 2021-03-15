@@ -202,7 +202,6 @@ class TAccount
 		void setKills(int newKills)					{ kills = newKills; }
 		void setRating(int newRate, int newDeviate)	{ rating = (float)newRate; deviation = (float)newDeviate; }
 		void setAccountName(CString account)		{ accountName = account; }
-		void setHeadImage(const CString& head)		{ headImg = head; }
 		void setExternal(bool external)				{ isExternal = external; }
 		void setBanned(bool banned)					{ isBanned = banned; }
 		void setBanReason(CString reason)			{ banReason = reason; }
@@ -212,6 +211,16 @@ class TAccount
 		void setAdminRights(int rights)				{ adminRights = rights; }
 		void setAdminIp(CString ip)					{ adminIp = ip; }
 		void setComments(CString comments)			{ accountComments = comments; }
+
+		void setBodyImage(const CString& newImage);
+		void setHeadImage(const CString& newImage);
+		void setMaxPower(int newMaxPower);
+		void setPower(float newPower);
+		void setShieldImage(const CString& newImage);
+		void setShieldPower(int newPower);
+		void setSwordImage(const CString& newImage);
+		void setSwordPower(int newPower);
+		void setGani(const CString& newGani);
 
 	protected:
 		TServer* server;
@@ -253,11 +262,40 @@ inline void TAccount::deleteFlag(const std::string& pFlagName)
 	flagList.erase(pFlagName);
 }
 
-
 inline unsigned char TAccount::getColorId(unsigned int idx) const
 {
 	if (idx < 5) return colors[idx];
 	return 0;
+}
+
+inline void TAccount::setPower(float newPower)
+{
+	power = clip(newPower, 0, (float)maxPower);
+}
+
+inline void TAccount::setShieldImage(const CString& newImage)
+{
+	shieldImg = newImage.subString(0, 223);
+}
+
+inline void TAccount::setSwordImage(const CString& newImage)
+{
+	swordImg = newImage.subString(0, 223);
+}
+
+inline void TAccount::setGani(const CString& newGani)
+{
+	gani = newGani.subString(0, 223);
+}
+
+inline void TAccount::setBodyImage(const CString& newImage)
+{
+	bodyImg = newImage.subString(0, 223);
+}
+
+inline void TAccount::setHeadImage(const CString& newImage)
+{
+	headImg = newImage.subString(0, 123);
 }
 
 #endif // TACCOUNT_H

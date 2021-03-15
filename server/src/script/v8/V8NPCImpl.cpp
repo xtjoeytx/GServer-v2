@@ -9,7 +9,7 @@
 #include "TNPC.h"
 
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 // Property: npc.id
 void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -73,7 +73,7 @@ void NPC_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	TLevel *npcLevel = npcObject->getLevel();
 	if (npcLevel != 0)
 	{
-		V8ScriptWrapped<TLevel> *v8_wrapped = static_cast<V8ScriptWrapped<TLevel> *>(npcLevel->getScriptObject());
+		V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(npcLevel->getScriptObject());
 		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
 		return;
 	}
@@ -196,7 +196,7 @@ void NPC_GetInt_Width(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 	info.GetReturnValue().Set(npcObject->getWidth());
 }
 
-// PROPERTY: Glove Power
+// PROPERTY: npc.glovepower
 void NPC_GetInt_GlovePower(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
@@ -213,13 +213,12 @@ void NPC_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> valu
 	npcObject->setProps(CString() >> (char)NPCPROP_GLOVEPOWER >> (char)clip(newValue, 0, 3), CLVER_2_17, true);
 }
 
-// PROPERTY: Dir
+// PROPERTY: npc.dir
 void NPC_GetInt_Dir(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	CString npcProp = npcObject->getProp(NPCPROP_SPRITE);
-	info.GetReturnValue().Set(npcProp.readGUChar());
+	info.GetReturnValue().Set(npcObject->getSprite());
 }
 
 void NPC_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -227,10 +226,11 @@ void NPC_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, cons
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	npcObject->setProps(CString() >> (char)NPCPROP_SPRITE >> (char)(newValue % 4), CLVER_2_17, true);
+	npcObject->setSprite(newValue % 4);
+	npcObject->updatePropModTime(NPCPROP_SPRITE);
 }
 
-// PROPERTY: Ap
+// PROPERTY: npc.ap
 void NPC_GetInt_Alignment(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
@@ -252,7 +252,9 @@ void NPC_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getBodyImage().text()).ToLocalChecked();
+	auto& message = npcObject->getBodyImage();
+
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -261,14 +263,9 @@ void NPC_SetStr_BodyImage(v8::Local<v8::String> props, v8::Local<v8::Value> valu
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
 
-	CString propPackage;
-	propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	npcObject->setBodyImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
 }
 
 // PROPERTY: npc.headimg
@@ -285,14 +282,9 @@ void NPC_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> valu
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
-
-	CString propPackage;
-	propPackage >> (char)NPCPROP_HEADIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	
+	npcObject->setHeadImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 }
 
 // PROPERTY: npc.horseimg
@@ -309,14 +301,9 @@ void NPC_SetStr_HorseImage(v8::Local<v8::String> props, v8::Local<v8::Value> val
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
 
-	CString propPackage;
-	propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	npcObject->setHorseImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_HORSEIMAGE);
 }
 
 // PROPERTY: npc.image
@@ -324,7 +311,7 @@ void NPC_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -333,7 +320,9 @@ void NPC_SetStr_Image(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setProps(CString() >> (char)NPCPROP_IMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+	npcObject->setImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_IMAGE);
 }
 
 // PROPERTY: npc.nick
@@ -341,7 +330,7 @@ void NPC_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getNickname().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getNickname().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -350,7 +339,9 @@ void NPC_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setNickname(*newValue);
+	
+	npcObject->setNickname(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_NICKNAME);
 }
 
 // PROPERTY: npc.shieldimg
@@ -367,14 +358,9 @@ void NPC_SetStr_ShieldImage(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
-
-	CString propPackage;
-	propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	
+	npcObject->setShieldImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
 }
 
 // PROPERTY: npc.swordimg
@@ -391,14 +377,9 @@ void NPC_SetStr_SwordImage(v8::Local<v8::String> props, v8::Local<v8::Value> val
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
 
-	CString propPackage;
-	propPackage >> (char)NPCPROP_SWORDIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 }
 
 // PROPERTY: Message
@@ -406,10 +387,9 @@ void NPC_GetStr_Message(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	CString npcProp = npcObject->getProp(NPCPROP_MESSAGE);
-	CString propValue = npcProp.readChars(npcProp.readGUChar());
+	auto& message = npcObject->getChat();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -418,7 +398,9 @@ void NPC_SetStr_Message(v8::Local<v8::String> props, v8::Local<v8::Value> value,
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+	npcObject->setChat(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_MESSAGE);
 }
 
 // PROPERTY: Animation
@@ -426,10 +408,9 @@ void NPC_GetStr_Ani(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	CString npcProp = npcObject->getProp(NPCPROP_GANI);
-	CString propValue = npcProp.readChars(npcProp.readGUChar());
+	auto& propValue = npcObject->getGani();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -438,7 +419,9 @@ void NPC_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, con
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+	npcObject->setGani(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_GANI);
 }
 
 // NPC Method: npc.canwarp();
@@ -577,12 +560,21 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
 	// Validate arguments
-	if (args[0]->IsString())
+	if (args.Length() == 0)
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+		
+		npcObject->setChat("");
+		npcObject->updatePropModTime(NPCPROP_MESSAGE);
+	}
+	else if (args[0]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-		npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+		npcObject->setChat(std::string(*newValue, newValue.length()));
+		npcObject->updatePropModTime(NPCPROP_MESSAGE);
 	}
 }
 
@@ -661,7 +653,7 @@ void NPC_Function_SetImgPart(const v8::FunctionCallbackInfo<v8::Value>& args)
 		int width = args[3]->Int32Value(context).ToChecked();
 		int height = args[4]->Int32Value(context).ToChecked();
 
-		npcObject->setImage(*image, offsetx, offsety, width, height);
+		npcObject->setImage(std::string(*image, image.length()), offsetx, offsety, width, height);
 		npcObject->updatePropModTime(NPCPROP_IMAGE);
 		npcObject->updatePropModTime(NPCPROP_IMAGEPART);
 	}
@@ -678,9 +670,11 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Unwrap object
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-	npcObject->setProps(CString() >> (char)NPCPROP_IMAGE >> (char)3 << "#c#", CLVER_2_17, true);
+	npcObject->setImage("#c#");
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
+	npcObject->updatePropModTime(NPCPROP_IMAGE);
+	npcObject->updatePropModTime(NPCPROP_IMAGEPART);
 }
 
 // NPC Method: npc.setani("walk", "ani", "params");
@@ -693,26 +687,22 @@ void NPC_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	if (args[0]->IsString())
 	{
-		auto context = isolate->GetCurrentContext();
-
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		v8::String::Utf8Value newValue(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		CString animation(*newValue);
 		for (int i = 1; i < args.Length(); i++)
 		{
-			if (args[i]->IsString())
+			if (args[i]->IsString() || args[i]->IsNumber())
 			{
-				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(context).ToLocalChecked());
+				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 				animation << "," << *aniParam;
 			}
 		}
 
-		if (animation.length() > 223)
-			animation.remove(223);
-
-		npcObject->setProps(CString() >> (char)NPCPROP_GANI >> (char)animation.length() << animation, CLVER_2_17, true);
+		npcObject->setGani(std::string(animation.text(), animation.length()));
+		npcObject->updatePropModTime(NPCPROP_GANI);
 	}
 }
 
@@ -727,25 +717,26 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Throw an exception if we don't receive the specified arguments
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
 
-	auto context = isolate->GetCurrentContext();
-
-	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
-	v8::String::Utf8Value newValue(isolate, args[1]->ToString(context).ToLocalChecked());
+	CString code = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+	v8::String::Utf8Value newValue(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 	
+	auto len = newValue.length();
+	if (len > 223)
+		len = 223;
+
 	if (code[0] == '#')
 	{
 		// Unwrap object
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
+		CString propPackage;
+
 		switch (code[1])
 		{
 			case '1': // sword image
 			{
-				CString npcProp = npcObject->getProp(NPCPROP_SWORDIMAGE);
-				unsigned char swordPower = npcProp.readGUChar();
-				if (swordPower < 31)
-					swordPower = 31;
-				npcObject->setProps(CString() >> (char)NPCPROP_SWORDIMAGE >> (char)swordPower >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 				break;
 			}
 
@@ -755,28 +746,40 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 				unsigned char shieldPower = npcProp.readGUChar();
 				if (shieldPower < 11)
 					shieldPower = 11;
-				npcObject->setProps(CString() >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+
+				propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 			}
 
 			case '3': // head image
-				npcObject->setProps(CString() >> (char)NPCPROP_HEADIMAGE >> (char)(newValue.length() + 100) << *newValue, CLVER_2_17, true);
+			{
+				if (len > 123)
+					len = 123;
+
+				propPackage >> (char)NPCPROP_HEADIMAGE >> (char)(len + 100);
+				propPackage.write(*newValue, len);
 				break;
+			}
 
 			case '5': // horse image (needs to be tested)
-				npcObject->setProps(CString() >> (char)NPCPROP_HORSEIMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case '8': // body image
-				npcObject->setProps(CString() >> (char)NPCPROP_BODYIMAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'c': // chat
-				npcObject->setProps(CString() >> (char)NPCPROP_MESSAGE >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_MESSAGE >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'n': // nickname
-				npcObject->setProps(CString() >> (char)NPCPROP_NICKNAME >> (char)newValue.length() << *newValue, CLVER_2_17, true);
+				propPackage >> (char)NPCPROP_NICKNAME >> (char)len;
+				propPackage.write(*newValue, len);
 				break;
 
 			case 'C': // colors
@@ -784,17 +787,26 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 				if (code[2] >= '0' && code[2] < '5')
 				{
 					CString npcProp = npcObject->getProp(NPCPROP_COLORS);
-					char colors[5];
-					for (unsigned int i = 0; i < 5; i++)
-						colors[i] = npcProp.readGUChar();
+					unsigned char colors[5] = {
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar(),
+						npcProp.readGUChar()
+					};
+					//for (unsigned int i = 0; i < 5; i++)
+					//	colors[i] = npcProp.readGUChar();
 
 					colors[code[2] - '0'] = getColor(*newValue);
-					CString propPackage;
 					propPackage >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
-					npcObject->setProps(propPackage, CLVER_2_17, true);
 				}
 				break;
 			}
+		}
+
+		if (propPackage.length())
+		{
+			npcObject->setProps(propPackage, CLVER_2_17, true);
 		}
 	}
 }
@@ -904,8 +916,7 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 		else
 			v8args = ScriptFactory::CreateArguments(env, npcObject->getScriptObject());
 
-		ScriptAction *action = new ScriptAction(cbFuncWrapper, v8args, "_scheduleevent");
-
+		ScriptAction action(cbFuncWrapper, v8args, "_scheduleevent");
 		npcObject->scheduleEvent(timer_frames, action);
 		scriptEngine->RegisterNpcTimer(npcObject);
 	}
@@ -913,6 +924,10 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 	SCRIPTENV_D("End NPC::registerAction()\n");
 }
 
+#include "TScriptClass.h"
+#include "V8ScriptWrappers.h"
+
+// NPC Function: NPC.join("class");
 void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
@@ -928,45 +943,73 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
-		TServer *server = scriptEngine->getServer();
-		CString classCode = server->getClass(className);
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		if (!classCode.isEmpty())
+		TScriptClass *classObject = npcObject->joinClass(className);
+		if (classObject != nullptr)
 		{
-			V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+			auto classCodeWrap = WrapScript<TNPC>(classObject->serverCode());
+			auto scriptFuncction = scriptEngine->CompileCache(classCodeWrap, false);
 
-			// Split the code
-			std::string serverCode = classCode.readString("//#CLIENTSIDE").text();
-			std::string clientCode = classCode.readString("").text();
-
-			// Add class to npc
-			npcObject->addClassCode(className, clientCode);
-
-			// Wrap code
-			std::string classCodeWrap = CScriptEngine::WrapScript<TNPC>(serverCode);
-
-			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
-			// multiple wrappers.
-			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
-			if (function == nullptr)
-				return;
-
-			V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
-			v8::Local<v8::Value> newArgs[] = { args.This() };
-
-			// Execute
-			v8::TryCatch try_catch(isolate);
-			v8::Local<v8::Function> scriptFunction = v8_function->Function();
-			v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
-			if (!scriptTableRet.IsEmpty())
+			if (scriptFuncction != nullptr)
 			{
-				args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
-				return;
+				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(scriptFuncction);
+				v8::Local<v8::Value> newArgs[] = { args.This() };
+
+				// Execute
+				v8::TryCatch try_catch(isolate);
+				v8::Local<v8::Function> scriptFunction = v8_function->Function();
+				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+				if (!scriptTableRet.IsEmpty())
+				{
+					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+					return;
+				}
 			}
-
-			// TODO(joey): error handling
-
 		}
+
+		//TServer *server = scriptEngine->getServer();
+		//auto classObj = server->getClass(className);
+
+		//if (classObj && !classObj->source().empty())
+		//{
+		//	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		//	// Split the code
+		//	std::string serverCode = classObj->serverCode();
+		//	std::string clientCode = classObj->clientCode();
+
+		//	//auto currentClass = server->getClassObject(className);
+		//	//if (currentClass == nullptr)
+		//	//	currentClass = server->addClass(className, clientCode);
+		//	//npcObject->addClassCode(className, clientCode);
+		//	// Add class to npc
+		//	//npcObject->addClassCode(className, clientCode);
+		//	
+		//	// Wrap code
+		//	std::string classCodeWrap = CScriptEngine::WrapScript<TNPC>(serverCode);
+
+		//	// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
+		//	// multiple wrappers.
+		//	IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
+		//	if (function == nullptr)
+		//		return;
+
+		//	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
+		//	v8::Local<v8::Value> newArgs[] = { args.This() };
+
+		//	// Execute
+		//	v8::TryCatch try_catch(isolate);
+		//	v8::Local<v8::Function> scriptFunction = v8_function->Function();
+		//	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+		//	if (!scriptTableRet.IsEmpty())
+		//	{
+		//		args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+		//		return;
+		//	}
+
+		//	// TODO(joey): error handling
+		//}
 	}
 }
 
@@ -1085,7 +1128,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 //	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 //
 //	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-//	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+//	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
 //	v8_wrapped->addChild("attr", new_instance);
 //
 //	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1122,7 +1165,7 @@ void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1204,7 +1247,7 @@ void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallback
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
 	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1286,7 +1329,7 @@ void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1377,7 +1420,7 @@ void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptWrapped<TNPC> *v8_wrapped = static_cast<V8ScriptWrapped<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
 	v8_wrapped->addChild("save", new_instance);
 
 	v8::PropertyAttribute propSave = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1425,7 +1468,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "npc"
-	v8::Local<v8::String> npcStr = v8::String::NewFromUtf8(isolate, "npc", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> npcStr = v8::String::NewFromUtf8Literal(isolate, "npc", v8::NewStringType::kInternalized);
 	
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> npc_ctor = v8::FunctionTemplate::New(isolate, nullptr, engine_ref);
@@ -1492,7 +1535,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), NPC_GetNum_X, NPC_SetNum_X);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), NPC_GetNum_Y, NPC_SetNum_Y);
 
-	//npc_ctor->InstanceTemplate()->SetLazyDataProperty(v8::String::NewFromUtf8Literal(isolate, "attr"), NPC_GetObject_Attrs2, v8::Local<v8::Value>(), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
+	//npc_ctor->InstanceTemplate()->SetLazyDataProperty(v8::String::NewFromUtf8(isolate, "attr"), NPC_GetObject_Attrs2, v8::Local<v8::Value>(), static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete));
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "attr"), NPC_GetObject_Attrs, nullptr, engine_ref);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "colors"), NPC_GetObject_Colors, nullptr, engine_ref);
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), NPC_GetObject_Flags, nullptr, engine_ref);

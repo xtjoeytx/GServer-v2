@@ -205,11 +205,12 @@ class TLevel
 
 #ifdef V8NPCSERVER
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
+		std::vector<TNPC*> testTouch(int pX, int pY);
 		TNPC *isOnNPC(int pX, int pY, bool checkEventFlag = false);
-		void sendChatToLevel(const TPlayer *player, const CString& message);
+		void sendChatToLevel(const TPlayer *player, const std::string& message);
 
-		IScriptWrapped<TLevel>* getScriptObject() const;
-		void setScriptObject(IScriptWrapped<TLevel>* object);
+		IScriptObject<TLevel>* getScriptObject() const;
+		void setScriptObject(IScriptObject<TLevel>* object);
 #endif
 
 	private:
@@ -232,7 +233,7 @@ class TLevel
 		std::vector<TLevelBaddy *> levelBaddyIds;
 		std::vector<TLevelBoardChange *> levelBoardChanges;
 		std::vector<TLevelChest> levelChests;
-		std::vector<TLevelHorse *> levelHorses;
+		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
 		std::vector<TLevelLink> levelLinks;
 		std::vector<TLevelSign> levelSigns;
@@ -240,17 +241,17 @@ class TLevel
 		std::vector<TPlayer *> levelPlayerList;
 
 #ifdef V8NPCSERVER
-		IScriptWrapped<TLevel> *_scriptObject;
+		IScriptObject<TLevel> *_scriptObject;
 #endif
 };
 
 #ifdef V8NPCSERVER
 
-inline IScriptWrapped<TLevel>* TLevel::getScriptObject() const {
+inline IScriptObject<TLevel>* TLevel::getScriptObject() const {
 	return _scriptObject;
 }
 
-inline void TLevel::setScriptObject(IScriptWrapped<TLevel>* object) {
+inline void TLevel::setScriptObject(IScriptObject<TLevel>* object) {
 	_scriptObject = object;
 }
 #endif

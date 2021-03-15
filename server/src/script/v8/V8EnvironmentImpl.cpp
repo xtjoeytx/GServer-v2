@@ -9,7 +9,7 @@
 #include "TServer.h"
 
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 // PROPERTY: env.global
 void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -54,18 +54,16 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	if (args[0]->IsString() && args[1]->IsFunction())
 	{
-		auto context = isolate->GetCurrentContext();
-
 		SCRIPTENV_D(" - Set callback for %s with: %s\n",
-				*v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked()),
-				*v8::String::Utf8Value(isolate, args[1]->ToString(context).ToLocalChecked()));
+				*v8::String::Utf8Value(isolate, args[0]->ToString(isolate)),
+				*v8::String::Utf8Value(isolate, args[1]->ToString(isolate)));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
 		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 
 		// Callback name
-		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
