@@ -37,7 +37,6 @@ A folder called GServer-v2 will be created. Remember to update the Visual Studio
 ```
 git clone https://github.com/xtjoeytx/GServer-v2
 cd GServer-v2
-git checkout feature/npc-server
 git submodule update --init --recursive
 
 mkdir packages
