@@ -10,7 +10,7 @@
 #include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptObject.h"
 
 namespace detail
 {
@@ -27,7 +27,7 @@ namespace detail
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::string& val) {
-		return v8::String::NewFromUtf8(env->Isolate(), val.c_str());
+		return v8::String::NewFromUtf8(env->Isolate(), val.c_str()).ToLocalChecked();
 	}
 
 	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, const std::shared_ptr<V8ScriptData>& object) {
@@ -39,8 +39,8 @@ namespace detail
 	}
 
 	template<typename T>
-	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, IScriptWrapped<T> *val) {
-		V8ScriptWrapped<T> *wrappedVal = static_cast<V8ScriptWrapped<T> *>(val);
+	inline v8::Handle<v8::Value> ToBinding(V8ScriptEnv *env, IScriptObject<T> *val) {
+		V8ScriptObject<T> *wrappedVal = static_cast<V8ScriptObject<T> *>(val);
 		wrappedVal->decreaseReference();
 		return wrappedVal->Handle(env->Isolate());
 	}

@@ -1,7 +1,6 @@
 #ifndef TLEVELSIGN_H
 #define TLEVELSIGN_H
 
-#include <vector>
 #include "CString.h"
 
 class TPlayer;
@@ -9,18 +8,16 @@ class TPlayer;
 class TLevelSign
 {
 	public:
-		// constructor - destructor
-		TLevelSign() : x(0), y(0) { }
 		TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 		// functions
 		CString getSignStr(TPlayer *pPlayer = 0) const;
 
 		// get private variables
-		int getX()					{ return x; }
-		int getY()					{ return y; }
-		CString getText()			{ return text; }
-		CString getUText()			{ return unformattedText; }
+		int getX() const			{ return x; }
+		int getY() const			{ return y; }
+		CString getText() const		{ return text; }
+		CString getUText() const	{ return unformattedText; }
 
 	private:
 		int x, y;

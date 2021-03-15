@@ -129,7 +129,7 @@ CString TLevelSign::getSignStr(TPlayer *pPlayer) const
 	outText.writeGChar(y);
 
 	// Write the text to the packet.
-	outText << (pPlayer == 0 ? text : encodeSign(pPlayer->translate(unformattedText)));
+	outText.write(pPlayer ? encodeSign(pPlayer->translate(unformattedText)) : text);
 
 	return outText;
 }

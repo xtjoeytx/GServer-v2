@@ -15,15 +15,10 @@
 #include "CFileSystem.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-	const char fSep = '\\';
-	const char fSep_O = '/';
 	#ifndef __GNUC__ // rain
 	#include <mutex>
     #include <condition_variable>
 	#endif
-#else
-	const char fSep = '/';
-	const char fSep_O = '\\';
 #endif
 
 CFileSystem::CFileSystem()
@@ -59,11 +54,11 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 	// Format the directory.
 	CString newDir(dir);
 	if (newDir[newDir.length() - 1] == '/' || newDir[newDir.length() - 1] == '\\')
-		CFileSystem::fixPathSeparators(&newDir);
+		CFileSystem::fixPathSeparators(newDir);
 	else
 	{
 		newDir << fSep;
-		CFileSystem::fixPathSeparators(&newDir);
+		CFileSystem::fixPathSeparators(newDir);
 	}
 
 	// Add the directory to the directory list.
@@ -84,7 +79,7 @@ void CFileSystem::addFile(CString file)
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Grab the file name and directory.
-	CFileSystem::fixPathSeparators(&file);
+	CFileSystem::fixPathSeparators(file);
 	CString filename(file.subString(file.findl(fSep) + 1));
 	CString directory(file.subString(0, file.find(filename)));
 
@@ -105,7 +100,7 @@ void CFileSystem::removeFile(const CString& file)
 	CString directory(file.subString(0, file.find(filename)));
 
 	// Fix directory path separators.
-	CFileSystem::fixPathSeparators(&directory);
+	CFileSystem::fixPathSeparators(directory);
 
 	// Remove it from the map.
 	fileList.erase(filename);
@@ -284,12 +279,3 @@ int CFileSystem::getFileSize(const CString& file) const
 	return 0;
 }
 
-void CFileSystem::fixPathSeparators(CString* pPath)
-{
-	pPath->replaceAllI(fSep_O, fSep);
-}
-
-char CFileSystem::getPathSeparator()
-{
-	return fSep;
-}

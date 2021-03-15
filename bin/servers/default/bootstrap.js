@@ -125,9 +125,9 @@
 	/*
 	 * Event -> Triggeractions
 	 */
-	env.setCallBack("npc.trigger", function (npc, func, data) {
+	env.setCallBack("npc.trigger", function (npc, func, ...args) {
 		try {
-			func.call(npc, data);
+			func.apply(npc, args);
 		} catch (e) {
 			env.reportException("NPC Trigger Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}

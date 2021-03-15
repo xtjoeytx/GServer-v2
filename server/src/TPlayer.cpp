@@ -307,7 +307,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17), allowBomb(false), allowBow(false),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -570,13 +570,11 @@ bool TPlayer::doTimedEvents()
 
 	// Do singleplayer level events.
 	{
-		for (std::map<CString, TLevel *>::iterator i = spLevels.begin(); i != spLevels.end(); ++i)
+		for (auto& spLevel : spLevels)
 		{
-			TLevel* level = i->second;
-			if (level == 0)
-				continue;
-
-			level->doTimedEvents();
+			TLevel* level = spLevel.second;
+			if (level)
+				level->doTimedEvents();
 		}
 	}
 
@@ -828,14 +826,13 @@ bool TPlayer::testSign()
 	// Check for sign collisions.
 	if ((sprite % 4) == 0)
 	{
-		std::vector<TLevelSign*>* signs = level->getLevelSigns();
-		for (std::vector<TLevelSign*>::iterator i = signs->begin(); i != signs->end(); ++i)
+		std::vector<TLevelSign>& signs = level->getLevelSigns();
+		for (const auto& sign : signs)
 		{
-			TLevelSign* sign = *i;
-			float signLoc[] = {(float)sign->getX(), (float)sign->getY()};
+			float signLoc[] = {(float)sign.getX(), (float)sign.getY()};
 			if (y == signLoc[1] && inrange(x, signLoc[0]-1.5f, signLoc[0]+0.5f))
 			{
-				sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
+				sendPacket(CString() >> (char)PLO_SAY2 << sign.getUText().replaceAll("\n", "#b"));
 			}
 		}
 	}
@@ -846,12 +843,14 @@ void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
 	// 2, 3
-	static int touchtestd[] = { 24,16, 8,32, 24,48, 40,32 };
+	// touchtestd      dq 1.05,0.5, 0.0,2.45, 1.95,3.5, 3.0,1.55, 1.95,0.5
+	//static const int touchtestd[] = { 17,8, 0,39, 31,56, 24,16 };
+	static int touchtestd[] = { 24,8, 0,32, 24,56, 24,16 };
 	int dir = sprite % 4;
 
-	TNPC *npcTouched = level->isOnNPC(x2 + touchtestd[dir*2], y2 + touchtestd[dir*2+1], true);
-	if (npcTouched != 0)
-		npcTouched->queueNpcAction("npc.playertouchsme", this);
+	auto npcList = level->testTouch(x2 + touchtestd[dir * 2], y2 + touchtestd[dir * 2 + 1]);
+	for (const auto& npc : npcList)
+		npc->queueNpcAction("npc.playertouchsme", this);
 #endif
 }
 
@@ -971,16 +970,6 @@ bool TPlayer::processChat(CString pChat)
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
-	}
-	else if (chatParse[0] == "addpmserver")
-	{
-		CString newName = pChat.subString(12).trim();
-		addPMServer(newName);
-	}
-	else if (chatParse[0] == "rempmserver")
-	{
-		CString newName = pChat.subString(12).trim();
-		remPMServer(newName);
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -1428,14 +1417,7 @@ bool TPlayer::isAdminIp()
 
 bool TPlayer::isStaff()
 {
-	std::vector<CString> staffList = server->getSettings()->getStr("staff").tokenize(",");
-	for (std::vector<CString>::iterator i = staffList.begin(); i != staffList.end(); ++i)
-	{
-		if (accountName.toLower() == (*i).trim().toLower())
-			return true;
-	}
-
-	return false;
+	return server->isStaff(accountName);
 }
 
 /*
@@ -1632,11 +1614,8 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 		// Send links, signs, and mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		//if (!server->hasNPCServer())
-		{
-			sendPacket(CString() << pLevel->getLinksPacket());
-			sendPacket(CString() << pLevel->getSignsPacket(this));
-		}
+		sendPacket(CString() << pLevel->getLinksPacket());
+		sendPacket(CString() << pLevel->getSignsPacket(this));
 	}
 
 	// Send board changes, chests, horses, and baddies.
@@ -1671,6 +1650,12 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		if (pmap && pmap->getType() == MAPTYPE_GMAP)
 		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
+
+			auto val = pLevel->getNpcsPacket(l_time, versionID);
+			sendPacket(val);
+
+
+			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 			CString pmapLevels = pmap->getLevels();
 			TLevel* tmpLvl;
 			while (pmapLevels.bytesLeft() > 0)
@@ -1679,7 +1664,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				tmpLvl = TLevel::findLevel(tmpLvlName.guntokenizeI(), server);
 				if (tmpLvl != NULL)
 					sendPacket(CString() << tmpLvl->getNpcsPacket(l_time, versionID));
-			}
+			}*/
 		}
 		else
 		{
@@ -1690,7 +1675,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if ( !level->isSingleplayer())
+	if (!level->isSingleplayer())
 	{
 		if (pmap)
 		{
@@ -1894,9 +1879,13 @@ void TPlayer::setChat(const CString& pChat)
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
 }
 
-void TPlayer::setNick(const CString& pNickName, bool force)
+void TPlayer::setNick(CString pNickName, bool force)
 {
 	CString newNick, nick, guild;
+
+	// Limit the nickname to 223 characters
+	if (pNickName.length() > 223)
+		pNickName = pNickName.subString(0, 223);
 
 	int guild_start = pNickName.find('(');
 	int guild_end = pNickName.find(')', guild_start);
@@ -1981,18 +1970,12 @@ void TPlayer::setNick(const CString& pNickName, bool force)
 
 		// See if we can ask if it is a global guild.
 		bool askGlobal = server->getSettings()->getBool("globalguilds", true);
-		if ( !askGlobal )
+		if (!askGlobal)
 		{
 			// Check for whitelisted global guilds.
 			std::vector<CString> allowed = server->getSettings()->getStr("allowedglobalguilds").tokenize(",");
-			for (std::vector<CString>::iterator i = allowed.begin(); i != allowed.end(); ++i)
-			{
-				if (*i == guild)
-				{
-					askGlobal = true;
-					break;
-				}
-			}
+			if (std::find(allowed.begin(), allowed.end(), guild) != allowed.end())
+				askGlobal = true;
 		}
 
 		// See if it is a global guild.
@@ -2109,6 +2092,16 @@ void TPlayer::enableWeapons()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
+void TPlayer::freezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_FREEZEPLAYER2);
+}
+
+void TPlayer::unfreezePlayer()
+{
+	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
+}
+
 void TPlayer::sendRPGMessage(const CString &message)
 {
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
@@ -2119,10 +2112,30 @@ void TPlayer::sendSignMessage(const CString &message)
 	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
 }
 
+void TPlayer::setAni(CString gani)
+{
+	if (gani.length() > 223)
+		gani.remove(223);
+
+	CString propPackage;
+	propPackage >> (char)PLPROP_GANI >> (char)gani.length() << gani;
+	setProps(propPackage, true, true);
+}
+
 /*
 	TPlayer: Flag Functions
 */
-void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer, bool sendToNPCServer)
+
+void TPlayer::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
+{
+	TAccount::deleteFlag(pFlagName);
+
+	if (sendToPlayer) {
+		sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+	}
+}
+
+void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
 {
 	// Call Default Set Flag
 	TAccount::setFlag(pFlagName, pFlagValue);
@@ -2411,13 +2424,24 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 
 bool TPlayer::msgPLI_BOMBADD(CString& pPacket)
 {
-	float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
+	// TODO(joey): gmap support
+	unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
+	//float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
 	unsigned char player_power = pPacket.readGUChar();
 	unsigned char player = player_power >> 2;
 	unsigned char power = player_power & 0x03;
 	unsigned char timeToExplode = pPacket.readGUChar();		// How many 0.05 sec increments until it explodes.  Defaults to 55 (2.75 seconds.)
 
+	/*
+	printf("Place bomb\n");
+	printf("Position: (%d, %d)\n", loc[0], loc[1]);
+	//printf("Position: (%0.2f, %0.2f)\n", loc[0], loc[1]);
+	printf("Player (?): %d\n", player);
+	printf("Bomb Power: %d\n", power);
+	printf("Bomb Explode Timer: %d\n", timeToExplode);
 	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
+	*/
+
 	server->sendPacketToLevel(CString() >> (char)PLO_BOMBADD >> (short)id << (pPacket.text() + 1), 0, level, this);
 	return true;
 }
@@ -2756,7 +2780,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName.text(), flagValue, (versionID > CLVER_2_31), true);
+	this->setFlag(flagName.text(), flagValue, (versionID > CLVER_2_31));
 	return true;
 }
 
@@ -2792,22 +2816,24 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
-	std::vector<TLevelChest *>* levelChests = level->getLevelChests();
+	
+	// note(joey): we were iterating all chests to find a chest at a specific x/y. If there were multiple
+	// chests at the same location it would keep checking them.. but all chests would of been satisfied
+	// since its based on x, y, and levelname.
+	if (level) {
+		auto chest = level->getChest(cX, cY);
+		if (chest) {
+			auto chestStr = level->getChestStr(*chest);
 
-	for (std::vector<TLevelChest*>::iterator i = levelChests->begin(); i != levelChests->end(); ++i)
-	{
-		TLevelChest* chest = *i;
-		if (chest->getX() == cX && chest->getY() == cY)
-		{
-			if (!hasChest(chest))
-			{
+			if (!hasChest(chestStr)) {
 				int chestItem = chest->getItemIndex();
-				this->setProps(CString() << TLevelItem::getItemPlayerProp((char)chestItem, this), true, true);
+				setProps(CString() << TLevelItem::getItemPlayerProp((char)chestItem, this), true, true);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
-				chestList.push_back(chest->getChestStr(levelName));
+				chestList.push_back(chestStr);
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -2875,6 +2901,8 @@ bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
 	// TODO(joey): If I recall, showimg worked on server if id was less than 200? Will need to confirm this.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 #endif
+
+	server->sendPacketToLevel(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), pmap, level, this);
 	return true;
 }
 
@@ -3149,6 +3177,9 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 
 	if (adjacentLevel == 0)
 		return true;
+
+	if (!level)
+		return false;
 
 	bool alreadyVisited = false;
 	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
@@ -3685,10 +3716,13 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		}
 	}
 
+	bool handled = false;
+
 #ifdef V8NPCSERVER
 	CString triggerAction = action.readString(",");
 	if (triggerAction == "serverside")
 	{
+		handled = true;
 		CString weaponName = action.readString(",");
 
 		TWeapon *weaponObject = server->getWeapon(weaponName);
@@ -3698,23 +3732,49 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			weaponObject->queueWeaponAction(this, triggerData.text());
 		}
 	}
+	else if (triggerAction == "servernpc")
+	{
+		handled = true;
+		CString npcName = action.readString(",");
+
+		auto npcObject = server->getNPCByName(npcName.text());
+		if (npcObject != nullptr)
+		{
+			CString npcTriggerAction = action.readString(",");
+			if (!npcTriggerAction.isEmpty())
+			{
+				CString triggerData = action.readString("");
+				npcObject->queueNpcTrigger(npcTriggerAction.text(), this, triggerData.text());
+			}
+		}
+	}
 	else if (level)
 	{
+		//handled = false; // client and server scripts should both be able to respond to triggers
 		int triggerX = 16 * loc[0];
 		int triggerY = 16 * loc[1];
 
-		// TODO(joey): i think this should trigger everything it touches.
-		TNPC *npcTouched = level->isOnNPC(triggerX, triggerY, false);
+		CString triggerData = action.readString("");
+
+		auto npcList = level->findAreaNpcs(triggerX, triggerY, 16, 16);
+		for (auto npcTouched : npcList) {
+			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
+		}
+
+		/*
+		TNPC* npcTouched = level->isOnNPC(triggerX, triggerY, false);
 		if (npcTouched != nullptr)
 		{
 			CString triggerData = action.readString("");
-			npcTouched->queueNpcTrigger(triggerAction.text(), triggerData.text());
-		}
+			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
+		}*/
 	}
 #endif
 
 	// Send to the level.
-	server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+	if (!handled) {
+		server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+	}
 
 	return true;
 }
@@ -3757,6 +3817,22 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	//	}
 	//}
 
+	/*
+	CString shootPacket;
+	shootPacket.writeGShort(id); // shooters player-id
+	shootPacket.writeGChar((unsigned char)(loc[0] * 2)); // start-x
+	shootPacket.writeGChar((unsigned char)(loc[1] * 2)); // start-y
+	shootPacket.writeGChar((unsigned char)(loc[2] * 2)); // start-z
+	shootPacket.writeGChar(sangle); // shoot angle
+	shootPacket.writeGChar(sanglez); // shoot z angle
+	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
+	
+	shootPacket.writeGChar(sgani.length()); // animation
+	shootPacket.write(sgani);
+
+	shootPacket.writeGChar(shootParamsLength); // params
+	shootPacket.write(shootparams);
+	*/
 
 	// Send data now.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);

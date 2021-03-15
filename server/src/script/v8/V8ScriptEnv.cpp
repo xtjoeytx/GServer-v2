@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libplatform/libplatform.h>
 #include "ScriptBindings.h"
 #include "V8ScriptEnv.h"
@@ -23,8 +24,12 @@ void V8ScriptEnv::Initialize()
 	if (_initialized)
 		return;
 
+	// Force v8 to use strict mode
+	const char* flags = "--use_strict";
+	v8::V8::SetFlagsFromString(flags, strlen(flags));
+
 	// Initialize V8.
-	//v8::V8::InitializeICUDefaultLocation(argv[0]);
+	v8::V8::InitializeICUDefaultLocation(".");
 	v8::V8::InitializeExternalStartupData(".");
 
 	// Initialize v8 if this is the first vm
@@ -144,7 +149,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	
 	// Create a string containing the JavaScript source code.
 	v8::Local<v8::String> sourceStr = v8::String::NewFromUtf8(isolate, source.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
-	
+
 	// Compile the source code.
 	v8::TryCatch try_catch(isolate);
 	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());

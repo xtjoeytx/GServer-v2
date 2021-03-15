@@ -1,51 +1,32 @@
 #ifndef TLEVELCHEST_H
 #define TLEVELCHEST_H
 
-#include <vector>
-#include "CString.h"
-
 class TLevelChest
 {
 	public:
-		// constructor - destructor
-		TLevelChest(char nx, char ny, char nitemIndex, char nsignIndex) : itemIndex(nitemIndex), signIndex(nsignIndex), x(nx), y(ny) {}
-		TLevelChest(const std::vector<CString>& pChest);
+		TLevelChest(char nx, char ny, char itemIdx, char signIdx)
+			: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny) {
+		}
 
-		// functions
-		CString getChestStr(const CString pLevelName) const;
-		void parseChestStr(const std::vector<CString>& pChest);
+		inline int getItemIndex() const {
+			return itemIndex;
+		}
 
-		// get private variables
-		inline int getItemIndex();
-		inline int getSignIndex();
-		inline int getX();
-		inline int getY();
+		inline int getSignIndex() const {
+			return signIndex;
+		}
+
+		inline int getX() const {
+			return x;
+		}
+
+		inline int getY() const {
+			return y;
+		}
 
 	private:
 		int itemIndex, signIndex, x, y;
 };
 
-/*
-	TLevelChest: Get Private Variables
-*/
-inline int TLevelChest::getItemIndex()
-{
-	return itemIndex;
-}
-
-inline int TLevelChest::getSignIndex()
-{
-	return signIndex;
-}
-
-inline int TLevelChest::getX()
-{
-	return x;
-}
-
-inline int TLevelChest::getY()
-{
-	return y;
-}
 
 #endif // TLEVELCHEST_H

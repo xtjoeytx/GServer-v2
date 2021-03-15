@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef SCRIPTACTION_H
+#define SCRIPTACTION_H
+
+#include <cassert>
 #include <string>
 #include "ScriptArguments.h"
 
@@ -8,35 +12,78 @@ class IScriptFunction;
 class ScriptAction
 {
 public:
+	ScriptAction() :
+		_function(nullptr), _args(nullptr)
+	{
+
+	}
+
 	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = "")
-		: _function(function), _args(args), _action(action) {
+		: _function(function), _args(args), _action(action)
+	{
 		_function->increaseReference();
 	}
-	
-	~ScriptAction() {
-		if (_args) {
+
+	ScriptAction(const ScriptAction& o) = delete;
+	ScriptAction& operator=(const ScriptAction& o) = delete;
+
+	ScriptAction(ScriptAction&& o) noexcept
+	{
+		_action = std::move(o._action);
+		_args = o._args;
+		_function = o._function;
+
+		o._args = nullptr;
+		o._function = nullptr;
+	}
+
+	ScriptAction& operator=(ScriptAction&& o) noexcept
+	{
+		_action = std::move(o._action);
+		_args = o._args;
+		_function = o._function;
+
+		o._args = nullptr;
+		o._function = nullptr;
+		return *this;
+	}
+
+	~ScriptAction()
+	{
+		if (_args)
+		{
 			delete _args;
 		}
 
-		_function->decreaseReference();
-		if (!_function->isReferenced()) {
-			delete _function;
+		if (_function)
+		{
+			_function->decreaseReference();
+			if (!_function->isReferenced())
+			{
+				delete _function;
+			}
 		}
 	}
 
-	inline void Invoke() const {
+	void Invoke() const
+	{
+		assert(_args);
+
 		_args->Invoke(_function);
 	}
 
-	inline const std::string& getAction() const {
+	const std::string& getAction() const
+	{
 		return _action;
 	}
 
-	inline IScriptArguments * getArguments() const {
+	IScriptArguments * getArguments() const
+	{
 		return _args;
 	}
 
-	inline IScriptFunction * getFunction() const {
+	IScriptFunction * getFunction() const
+	{
 		return _function;
 	}
 
@@ -45,3 +92,5 @@ protected:
 	IScriptArguments *_args;
 	IScriptFunction *_function;
 };
+
+#endif

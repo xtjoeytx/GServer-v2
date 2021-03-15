@@ -12,7 +12,7 @@ class TLevelLink
 		TLevelLink(const std::vector<CString>& pLink);
 
 		// functions
-		CString getLinkStr();
+		CString getLinkStr() const;
 		void parseLinkStr(const std::vector<CString>& pLink);
 
 		// get private variables

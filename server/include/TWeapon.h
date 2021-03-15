@@ -31,7 +31,9 @@ class TWeapon
 		// Functions -> Inline Get-Functions
 		CString getWeaponPacket() const;
 		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
+		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
 		inline signed char getWeaponId()				{ return mWeaponDefault; }
+		inline const CString& getByteCodeFile() const	{ return mByteCodeFile; }
 		inline const CString& getImage() const			{ return mWeaponImage; }
 		inline const CString& getName() const			{ return mWeaponName; }
 		inline const CString& getClientScript() const	{ return mScriptClient; }
@@ -45,21 +47,21 @@ class TWeapon
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 
 #ifdef V8NPCSERVER
-		ScriptExecutionContext * getExecutionContext();
-		IScriptWrapped<TWeapon> * getScriptObject() const;
-		
+		ScriptExecutionContext& getExecutionContext();
+		IScriptObject<TWeapon> * getScriptObject() const;
+
 		void freeScriptResources();
 		void queueWeaponAction(TPlayer *player, const std::string& args);
 		void runScriptEvents();
-		void setScriptObject(IScriptWrapped<TWeapon> *object);
+		void setScriptObject(IScriptObject<TWeapon> *object);
 #endif
 	protected:
 		void setClientScript(const CString& pScript);
 		void setServerScript(const CString& pScript) { mScriptServer = pScript; }
 
 		// Varaibles -> Weapon Data
-		signed char mWeaponDefault;
-		CString mWeaponImage, mWeaponName, mWeaponScript;
+		char mWeaponDefault;
+		CString mWeaponImage, mWeaponName, mWeaponScript, mByteCodeFile;
 		CString mScriptClient, mScriptServer;
 		std::vector<std::pair<CString, CString> > mByteCode;
 		time_t mModTime;
@@ -67,18 +69,18 @@ class TWeapon
 
 	private:
 #ifdef V8NPCSERVER
-		IScriptWrapped<TWeapon> *_scriptObject;
+		IScriptObject<TWeapon> *_scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
 
 #ifdef V8NPCSERVER
 
-inline ScriptExecutionContext * TWeapon::getExecutionContext() {
-	return &_scriptExecutionContext;
+inline ScriptExecutionContext& TWeapon::getExecutionContext() {
+	return _scriptExecutionContext;
 }
 
-inline IScriptWrapped<TWeapon> * TWeapon::getScriptObject() const {
+inline IScriptObject<TWeapon> * TWeapon::getScriptObject() const {
 	return _scriptObject;
 }
 
@@ -86,7 +88,7 @@ inline void TWeapon::runScriptEvents() {
 	_scriptExecutionContext.runExecution();
 }
 
-inline void TWeapon::setScriptObject(IScriptWrapped<TWeapon> *object) {
+inline void TWeapon::setScriptObject(IScriptObject<TWeapon> *object) {
 	_scriptObject = object;
 }
 

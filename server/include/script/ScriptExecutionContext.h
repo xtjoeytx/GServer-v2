@@ -23,14 +23,15 @@ public:
 	bool hasActions() const;
 	std::pair<unsigned int, double> getExecutionData();
 
-	void addAction(ScriptAction *action);
+	void addAction(ScriptAction& action);
+	void addAction(ScriptAction&& action);
 	void addExecutionSample(const ScriptTimeSample& sample);
 	void resetExecution();
 	bool runExecution();
 
 private:
 	CScriptEngine *_scriptEngine;
-	std::vector<ScriptAction *> _actions;
+	std::vector<ScriptAction> _actions;
 	std::vector<ScriptTimeSample> _scriptTimeSamples;
 };
 
@@ -72,15 +73,18 @@ inline std::pair<unsigned int, double> ScriptExecutionContext::getExecutionData(
 	return { calls, exectime };
 }
 
-inline void ScriptExecutionContext::addAction(ScriptAction *action)
+inline void ScriptExecutionContext::addAction(ScriptAction& action)
 {
-	_actions.push_back(action);
+	_actions.push_back(std::move(action));
+}
+
+inline void ScriptExecutionContext::addAction(ScriptAction&& action)
+{
+	_actions.push_back(std::move(action));
 }
 
 inline void ScriptExecutionContext::resetExecution()
 {
-	for (auto & _action : _actions)
-		delete _action;
 	_actions.clear();
 
 #ifndef NOSCRIPTPROFILING
@@ -91,7 +95,7 @@ inline void ScriptExecutionContext::resetExecution()
 inline bool ScriptExecutionContext::runExecution()
 {
 	// Take ownership of the queued actions, and clear them incase any scripts add actions.
-	std::vector<ScriptAction *> iterateActions = std::move(_actions);
+	std::vector<ScriptAction> iterateActions = std::move(_actions);
 	_actions.clear();
 
 	// Send start timer to engine
@@ -99,12 +103,11 @@ inline bool ScriptExecutionContext::runExecution()
 	_scriptEngine->StartScriptExecution(currentTimer);
 
 	// iterate over queued actions
-	SCRIPTENV_D("Running %d actions:\n", iterateActions.size());
+	SCRIPTENV_D("Running %zd actions:\n", iterateActions.size());
 	for (auto & action : iterateActions)
 	{
-	    SCRIPTENV_D("Running action: %s\n", action->getAction().c_str());
-		action->Invoke();
-		delete action;
+		SCRIPTENV_D("Running action: %s\n", action.getAction().c_str());
+		action.Invoke();
 	}
 
 	if (!_scriptEngine->StopScriptExecution())

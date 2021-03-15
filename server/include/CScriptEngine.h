@@ -16,6 +16,10 @@
 #include "ScriptAction.h"
 #include "ScriptFactory.h"
 
+#ifdef V8NPCSERVER
+#include "V8ScriptWrappers.h"
+#endif
+
 class IScriptEnv;
 class IScriptFunction;
 
@@ -31,7 +35,6 @@ public:
 
 	bool Initialize();
 	void Cleanup(bool shutDown = false);
-	void RunTimers(const std::chrono::high_resolution_clock::time_point& time);
 	void RunScripts(const std::chrono::high_resolution_clock::time_point& time);
 
 	void ScriptWatcher();
@@ -40,7 +43,7 @@ public:
 
 	TServer * getServer() const;
 	IScriptEnv * getScriptEnv() const;
-	IScriptWrapped<TServer> * getServerObject() const;
+	IScriptObject<TServer> * getServerObject() const;
 
 	bool ExecuteNpc(TNPC *npc);
 	bool ExecuteWeapon(TWeapon *weapon);
@@ -58,32 +61,37 @@ public:
 	void removeCallBack(const std::string& callback);
 	void setCallBack(const std::string& callback, IScriptFunction *cbFunc);
 
-	// Script Compile / Cache
+	// Compile script into a ScriptFunction
 	IScriptFunction * CompileCache(const std::string& code, bool referenceCount = true);
+
+	// Clear cache for code
 	bool ClearCache(const std::string& code);
+
+	// Clear cache for code, with a WrapperScript of Type T
+	template<typename T>
+	bool ClearCache(const std::string& code);
+
+	template<class... Args>
+	ScriptAction CreateAction(const std::string& action, Args... An);
+
+	template<class T>
+	IScriptObject<T> * WrapObject(T *obj) const;
 
 	const ScriptRunError& getScriptError() const;
 
-	template<class... Args>
-	ScriptAction * CreateAction(const std::string& action, Args... An);
-
-	template<class T>
-	IScriptWrapped<T> * WrapObject(T *obj) const;
-
-	template <typename T>
-	static std::string WrapScript(const std::string& code);
-
 private:
+	void runTimers(const std::chrono::high_resolution_clock::time_point& time);
+
 	IScriptEnv *_env;
 	IScriptFunction *_bootstrapFunction;
-	IScriptWrapped<TServer> *_environmentObject;
-	IScriptWrapped<TServer> *_serverObject;
+	IScriptObject<TServer> *_environmentObject;
+	IScriptObject<TServer> *_serverObject;
 	TServer *_server;
 
-    std::chrono::high_resolution_clock::time_point lastScriptTimer;
-    std::chrono::nanoseconds accumulator;
+	std::chrono::high_resolution_clock::time_point lastScriptTimer;
+	std::chrono::nanoseconds accumulator;
 
-    // Script watcher
+	// Script watcher
 	std::atomic<bool> _scriptIsRunning;
 	std::atomic<bool> _scriptWatcherRunning;
 	std::chrono::high_resolution_clock::time_point _scriptStartTime;
@@ -125,7 +133,7 @@ inline IScriptEnv * CScriptEngine::getScriptEnv() const {
 	return _env;
 }
 
-inline IScriptWrapped<TServer> * CScriptEngine::getServerObject() const {
+inline IScriptObject<TServer> * CScriptEngine::getServerObject() const {
 	return _serverObject;
 }
 
@@ -172,7 +180,7 @@ inline void CScriptEngine::UnregisterNpcTimer(TNPC *npc) {
 //
 
 template<class... Args>
-ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An)
+ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
 {
 	// TODO(joey): This just creates an action, and leaves it up to the user to do something with this. Most-likely will be renamed, or changed.
 	constexpr size_t Argc = (sizeof...(Args));
@@ -186,83 +194,36 @@ ScriptAction * CScriptEngine::CreateAction(const std::string& action, Args... An
 	if (funcIt == _callbacks.end())
 	{
 		SCRIPTENV_D("Global::Server_RegisterAction: Callback not registered for %s\n", action.c_str());
-		return 0;
+		return ScriptAction{};
 	}
 
 	// Create an arguments object, and pass it to ScriptAction
 	IScriptArguments *args = ScriptFactory::CreateArguments(_env, std::forward<Args>(An)...);
+	assert(args);
 
-	ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
-	return newScriptAction;
+	return ScriptAction(funcIt->second, args, action);
+	//ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
+	//return newScriptAction;
 }
 
 template<class T>
-inline IScriptWrapped<T> * CScriptEngine::WrapObject(T *obj) const
+inline IScriptObject<T> * CScriptEngine::WrapObject(T *obj) const
 {
 	SCRIPTENV_D("Begin Global::WrapObject()\n");
 
 	// Wrap the object, and set the new script object on the original object
-	IScriptWrapped<T> *wrappedObject = ScriptFactory::WrapObject(_env, ScriptConstructorId<T>::result, obj);
+	IScriptObject<T> *wrappedObject = ScriptFactory::WrapObject(_env, ScriptConstructorId<T>::result, obj);
 	obj->setScriptObject(wrappedObject);
 
 	SCRIPTENV_D("End Global::WrapObject()\n\n");
 	return wrappedObject;
 }
 
-template <typename T>
-inline std::string CScriptEngine::WrapScript(const std::string& code) {
-	return code;
+template<typename T>
+inline bool CScriptEngine::ClearCache(const std::string& code)
+{
+	return ClearCache(WrapScript<T>(code));
 }
 
-template <>
-inline std::string CScriptEngine::WrapScript<TNPC>(const std::string& code) {
-	// self.onCreated || onCreated, for first declared to take precedence
-	// if (onCreated) for latest function to override
-	static const char *prefixString = "(function(npc) {" \
-		"var onCreated, onTimeout, onNpcWarped, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onPlayerLogin, onPlayerLogout;" \
-		"const self = npc;" \
-		"if (onCreated) self.onCreated = onCreated;" \
-		"if (onTimeout) self.onTimeout = onTimeout;" \
-		"if (onNpcWarped) self.onNpcWarped = onNpcWarped;" \
-		"if (onPlayerChats) self.onPlayerChats = onPlayerChats;" \
-		"if (onPlayerEnters) self.onPlayerEnters = onPlayerEnters;" \
-		"if (onPlayerLeaves) self.onPlayerLeaves = onPlayerLeaves;" \
-		"if (onPlayerTouchsMe) self.onPlayerTouchsMe = onPlayerTouchsMe;" \
-		"if (onPlayerLogin) self.onPlayerLogin = onPlayerLogin;" \
-		"if (onPlayerLogout) self.onPlayerLogout = onPlayerLogout;" \
-		"\n";
-
-	std::string wrappedCode = std::string(prefixString);
-	wrappedCode.append(code);
-	wrappedCode.append("\n});");
-	return wrappedCode;
-}
-
-class TPlayer;
-template <>
-inline std::string CScriptEngine::WrapScript<TPlayer>(const std::string& code) {
-	static const char *prefixString = "(function(player) {" \
-		"const self = player;\n";
-
-	std::string wrappedCode = std::string(prefixString);
-	wrappedCode.append(code);
-	wrappedCode.append("\n});");
-	return wrappedCode;
-}
-
-class TWeapon;
-template <>
-inline std::string CScriptEngine::WrapScript<TWeapon>(const std::string& code) {
-	static const char *prefixString = "(function(weapon) {" \
-		"var onCreated, onActionServerSide;" \
-		"const self = weapon;" \
-		"self.onCreated = onCreated;" \
-		"self.onActionServerSide = onActionServerSide;\n";
-
-	std::string wrappedCode = std::string(prefixString);
-	wrappedCode.append(code);
-	wrappedCode.append("\n});");
-	return wrappedCode;
-}
 
 #endif

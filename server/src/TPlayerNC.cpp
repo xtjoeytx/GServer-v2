@@ -315,6 +315,8 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	return true;
 }
 
+#include "TScriptClass.h"
+
 bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
@@ -325,12 +327,16 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 
 	// {112}{class}
 	CString className = pPacket.readString("");
-	
-	CString classCode = server->getClass(className.text());
+	auto classObj = server->getClass(className.text());
 
-	CString ret;
-	ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();
-	sendPacket(ret);
+	if (classObj != nullptr)
+	{
+		CString classCode(classObj->source());
+
+		CString ret;
+		ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();
+		sendPacket(ret);
+	}
 
 	return true;
 }
@@ -350,19 +356,16 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	bool hasClass = server->hasClass(className);
 	server->updateClass(className, classCode.text());
 
-	CString actionTaken;
 	if (!hasClass)
 	{
 		CString ret;
 		ret >> (char)PLO_NC_CLASSADD << className;
 		server->sendPacketTo(PLTYPE_ANYNC, ret);
-		actionTaken = "added";
 	}
-	else actionTaken = "updated";
 
 	// Logging
 	CString logMsg;
-	logMsg << "Script " << className << " " << actionTaken << " by " << accountName << "\n";
+	logMsg << "Script " << className << " " << (hasClass ? "added" : "updated") << " by " << accountName << "\n";
 	npclog.out(logMsg);
 	server->sendToNC(logMsg);
 	return true;
@@ -525,6 +528,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 			actionTaken = "added";
 	}
 
+	// TODO(joey): Log message should come before the script is executed
 	if (!actionTaken.isEmpty())
 	{
 		CString logMsg;
@@ -591,8 +595,14 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != nullptr)
 	{
+		// TODO(joey): should be same as gserver ip
+
 		// Grab NPCServer & Send
-		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "127.0.0.1");
+		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "auto").toLower();
+		if (npcServerIp == "auto") {
+			npcServerIp = server->getServerList()->getServerIP();
+		}
+
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
 	}
 }

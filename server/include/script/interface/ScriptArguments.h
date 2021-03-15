@@ -6,29 +6,29 @@
 #include <memory>
 #include <string>
 #include <tuple>
-#include "ScriptWrapped.h"
+#include "ScriptObject.h"
 
 class IScriptFunction;
 
 namespace detail
 {
-	inline void InvalidateBinding(double val) { }
-	inline void InvalidateBinding(int val) { }
-	inline void InvalidateBinding(const std::string& val) { }
-	template<typename T> inline void InvalidateBinding(const std::shared_ptr<T>& val) { }
-	inline void InvalidateBinding(IScriptFunction *function) { }
-	template<typename T> inline void InvalidateBinding(IScriptWrapped<T> *val) {
-		// Increase reference for wrapped objects
+	template<typename T>
+	inline void InvalidateBinding(T val) {
+	}
+
+	template<typename T>
+	inline void InvalidateBinding(IScriptObject<T>* val) {
+		// Decrease reference for wrapped objects
 		val->decreaseReference();
 	}
 
-	inline void ValidateBinding(double val) { }
-	inline void ValidateBinding(int val) { }
-	inline void ValidateBinding(const std::string& val) { }
-	template<typename T> inline void ValidateBinding(const std::shared_ptr<T>& val) { }
-	inline void ValidateBinding(IScriptFunction *function) { }
-	template<typename T> inline void ValidateBinding(IScriptWrapped<T> *val) {
-		// Decrease reference for wrapped objects
+	template<typename T>
+	inline void ValidateBinding(T val) {
+	}
+
+	template<typename T>
+	inline void ValidateBinding(IScriptObject<T>* val) {
+		// Increase reference for wrapped objects
 		val->increaseReference();
 	}
 };
