@@ -29,7 +29,7 @@ fi
 
 fetch v8 \
 && cd v8 \
-&& git checkout 7.4.288.26 \
+&& git checkout 8.4.371.15 \
 && gclient sync -D \
 && ./tools/dev/v8gen.py ${BUILDARCH}.release -- \
 is_component_build=false \
@@ -37,7 +37,6 @@ is_debug=false \
 use_custom_libcxx=false \
 v8_monolithic=true \
 v8_use_external_startup_data=false \
-binutils_path=\"/usr/bin\" \
 target_os=\"linux\" \
 target_cpu=\"${BUILDARCH}\" \
 v8_target_cpu=\"${BUILDARCH}\" \

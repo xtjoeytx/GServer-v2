@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
-#include "ScriptWrapped.h"
+#include "ScriptObject.h"
 
 class IScriptFunction;
 
@@ -17,7 +17,7 @@ namespace detail
 	}
 
 	template<typename T>
-	inline void InvalidateBinding(IScriptWrapped<T>* val) {
+	inline void InvalidateBinding(IScriptObject<T>* val) {
 		// Decrease reference for wrapped objects
 		val->decreaseReference();
 	}
@@ -27,7 +27,7 @@ namespace detail
 	}
 
 	template<typename T>
-	inline void ValidateBinding(IScriptWrapped<T>* val) {
+	inline void ValidateBinding(IScriptObject<T>* val) {
 		// Increase reference for wrapped objects
 		val->increaseReference();
 	}

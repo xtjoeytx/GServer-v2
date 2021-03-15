@@ -1,7 +1,7 @@
-FROM xtjoeytx/v8:7.4.288.26 as v8
+FROM xtjoeytx/v8:8.4.371.15 as v8
 
 # GServer Build Environment
-FROM alpine:3.10 AS build-env
+FROM alpine:3.12 AS build-env
 COPY ./ /gserver
 COPY --from=v8 /tmp/v8 /gserver/dependencies/v8
 RUN apk add --update --virtual .gserver-build-dependencies \
@@ -21,7 +21,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& apk del --purge .gserver-build-dependencies
 
 # GServer Run Environment
-FROM alpine:3.10
+FROM alpine:3.12
 ARG CACHE_DATE=2016-01-01
 COPY --from=build-env /gserver/bin /gserver
 RUN apk add --update libstdc++ libatomic

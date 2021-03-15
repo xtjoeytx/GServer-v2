@@ -218,12 +218,9 @@ if(NOT NOSTATIC)
 endif()
 
 if(V8NPCSERVER)
-	if(NOT MSVC)
-		find_package(V8)
-		if(NOT V8_FOUND)
-			message("v8 not found in system")
-			#add_subdirectory(${PROJECT_SOURCE_DIR}/cmake/v8)
-		endif()
+	find_package(V8)
+	if(NOT V8_FOUND)
+		message("v8 not found in system")
 	endif()
 endif()
 
@@ -251,7 +248,9 @@ if(NOT NOUPNP)
 	endif()
 endif()
 
-find_package(Threads REQUIRED)
+if(NOT WIN32)
+	find_package(Threads REQUIRED)
+endif()
 
 # Restore library suffixes
 if(NOT NOSTATIC)

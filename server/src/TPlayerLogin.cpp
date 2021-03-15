@@ -396,8 +396,8 @@ bool TPlayer::sendLoginNC()
 
 	// Send classes
 	CString classPacket;
-	std::unordered_map<std::string, std::string> *classList = server->getClassList();
-	for (auto it = classList->begin(); it != classList->end(); ++it)
+	auto& classList = server->getClassList();
+	for (auto it = classList.begin(); it != classList.end(); ++it)
 		classPacket >> (char)PLO_NC_CLASSADD << it->first << "\n";
 	sendPacket(classPacket);
 

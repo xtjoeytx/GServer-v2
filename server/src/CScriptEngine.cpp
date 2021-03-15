@@ -5,6 +5,7 @@
 #include "TPlayer.h"
 #include "TServer.h"
 #include "TWeapon.h"
+#include "V8ScriptWrappers.h"
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
@@ -218,7 +219,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
-	IScriptWrapped<TNPC> *wrappedObject = WrapObject(npc);
+	IScriptObject<TNPC> *wrappedObject = WrapObject(npc);
 
 	// No script, nothing to execute.
 	CString npcScript = npc->getServerScript();
@@ -256,7 +257,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 
 	// We always want to create an object for the weapon
 	// Wrap object
-	IScriptWrapped<TWeapon> *wrappedObject = WrapObject(weapon);
+	IScriptObject<TWeapon> *wrappedObject = WrapObject(weapon);
 	
 	auto& weaponScript = weapon->getServerScript();
 	if (!weaponScript.isEmpty())
@@ -287,7 +288,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	return true;
 }
 
-void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_point& time)
+void CScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_point& time)
 {
 	auto delta_time = time - lastScriptTimer;
 	lastScriptTimer = time;
@@ -314,7 +315,7 @@ void CScriptEngine::RunTimers(const std::chrono::high_resolution_clock::time_poi
 
 void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
 {
-    RunTimers(time);
+    runTimers(time);
 
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{

@@ -47,13 +47,13 @@ class TWeapon
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 
 #ifdef V8NPCSERVER
-		ScriptExecutionContext * getExecutionContext();
-		IScriptWrapped<TWeapon> * getScriptObject() const;
+		ScriptExecutionContext& getExecutionContext();
+		IScriptObject<TWeapon> * getScriptObject() const;
 
 		void freeScriptResources();
 		void queueWeaponAction(TPlayer *player, const std::string& args);
 		void runScriptEvents();
-		void setScriptObject(IScriptWrapped<TWeapon> *object);
+		void setScriptObject(IScriptObject<TWeapon> *object);
 #endif
 	protected:
 		void setClientScript(const CString& pScript);
@@ -69,18 +69,18 @@ class TWeapon
 
 	private:
 #ifdef V8NPCSERVER
-		IScriptWrapped<TWeapon> *_scriptObject;
+		IScriptObject<TWeapon> *_scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
 
 #ifdef V8NPCSERVER
 
-inline ScriptExecutionContext * TWeapon::getExecutionContext() {
-	return &_scriptExecutionContext;
+inline ScriptExecutionContext& TWeapon::getExecutionContext() {
+	return _scriptExecutionContext;
 }
 
-inline IScriptWrapped<TWeapon> * TWeapon::getScriptObject() const {
+inline IScriptObject<TWeapon> * TWeapon::getScriptObject() const {
 	return _scriptObject;
 }
 
@@ -88,7 +88,7 @@ inline void TWeapon::runScriptEvents() {
 	_scriptExecutionContext.runExecution();
 }
 
-inline void TWeapon::setScriptObject(IScriptWrapped<TWeapon> *object) {
+inline void TWeapon::setScriptObject(IScriptObject<TWeapon> *object) {
 	_scriptObject = object;
 }
 

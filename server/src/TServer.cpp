@@ -38,32 +38,34 @@ TServer::TServer(const CString& pName)
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
+	calculateServerTime();
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getHomePath() << "servers/" << name << "/";
-	CFileSystem::fixPathSeparators(&serverpath);
+	CFileSystem::fixPathSeparators(serverpath);
 
 	// Set up the log files.
 	CString logpath = serverpath.remove(0, getHomePath().length());
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
-	CFileSystem::fixPathSeparators(&npcPath);
-	CFileSystem::fixPathSeparators(&rcPath);
-	CFileSystem::fixPathSeparators(&serverPath);
+	CFileSystem::fixPathSeparators(npcPath);
+	CFileSystem::fixPathSeparators(rcPath);
+	CFileSystem::fixPathSeparators(serverPath);
 	npclog.setFilename(npcPath);
 	rclog.setFilename(rcPath);
 	serverlog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
-	CFileSystem::fixPathSeparators(&scriptPath);
+	CFileSystem::fixPathSeparators(scriptPath);
 	scriptlog.setFilename(scriptPath);
 #endif
 
 	// Announce ourself to other classes.
-	for (auto & fs : filesystem)
+	for (auto & fs : filesystem) {
 		fs.setServer(this);
+	}
 	filesystem_accounts.setServer(this);
 }
 
@@ -212,7 +214,7 @@ void TServer::cleanupDeletedPlayers()
 		}
 
 #ifdef V8NPCSERVER
-		IScriptWrapped<TPlayer> *playerObject = player->getScriptObject();
+		IScriptObject<TPlayer> *playerObject = player->getScriptObject();
 		if (playerObject != 0)
 		{
 			// Process last script events for this player
@@ -404,6 +406,8 @@ bool TServer::doTimedEvents()
 	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - lastNWTimer);
 	if (time_diff.count() >= 5)
 	{
+		calculateServerTime();
+
 		lastNWTimer = lastTimer;
         sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()), nullptr);
 	}
@@ -545,7 +549,7 @@ void TServer::loadFolderConfig()
 		CString config = configLine.readString("");
 		type.trimI();
 		config.trimI();
-		CFileSystem::fixPathSeparators(&config);
+		CFileSystem::fixPathSeparators(config);
 
 		// Get the directory.
 		CString dirNoWild;
@@ -730,14 +734,14 @@ void TServer::loadClasses(bool print)
 {
 	CFileSystem scriptFS(this);
 	scriptFS.addDir("scripts", "*.txt");
-	std::map<CString, CString> *scriptFileList = scriptFS.getFileList();
-	for (auto & scriptFile : *scriptFileList)
+	const std::map<CString, CString> &scriptFileList = scriptFS.getFileList();
+	for (auto & scriptFile : scriptFileList)
 	{
 		std::string className = scriptFile.first.subString(0, scriptFile.first.length() - 4).text();
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		classList[className] = scriptData.text();
+		classList[className] = std::make_unique<TScriptClass>(this, className, scriptData.text());
 	}
 }
 
@@ -747,8 +751,8 @@ void TServer::loadWeapons(bool print)
 	weaponFS.addDir("weapons", "weapon*.txt");
 	CFileSystem bcweaponFS(this);
 	bcweaponFS.addDir("weapon_bytecode", "*");
-	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
-	for (auto & weaponFile : *weaponFileList)
+	const std::map<CString, CString> &weaponFileList = weaponFS.getFileList();
+	for (auto & weaponFile : weaponFileList)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
@@ -895,8 +899,8 @@ void TServer::loadNpcs(bool print)
 {
 	CFileSystem npcFS(this);
 	npcFS.addDir("npcs", "npc*.txt");
-	std::map<CString, CString> *npcFileList = npcFS.getFileList();
-	for (auto it = npcFileList->begin(); it != npcFileList->end(); ++it)
+	const std::map<CString, CString> &npcFileList = npcFS.getFileList();
+	for (auto it = npcFileList.begin(); it != npcFileList.end(); ++it)
 	{
 		bool loaded = false;
 
@@ -960,7 +964,7 @@ void TServer::saveWeapons()
 {
 	CFileSystem weaponFS(this);
 	weaponFS.addDir("weapons", "weapon*.txt");
-	std::map<CString, CString> *weaponFileList = weaponFS.getFileList();
+	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
 	for (auto & weapon : weaponList)
 	{
@@ -1000,8 +1004,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
-		ScriptExecutionContext *context = npc->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		ScriptExecutionContext& context = npc->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context.getExecutionData();
 		if (executionData.second > 0.0)
 		{
 			std::string npcName = npc->getName();
@@ -1023,8 +1027,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
 	{
 		TWeapon *weapon = (*it).second;
-		ScriptExecutionContext *context = weapon->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context->getExecutionData();
+		ScriptExecutionContext& context = weapon->getExecutionContext();
+		std::pair<unsigned int, double> executionData = context.getExecutionData();
 
 		if (executionData.second > 0.0)
 		{
@@ -1288,8 +1292,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 
 	printf("Msg: %s\n", std::string(message.text()).c_str());
 
-	ScriptAction *scriptAction = mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text()));
-	mPmHandlerNpc->getExecutionContext()->addAction(scriptAction);
+	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text())));
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
 }
 
@@ -1400,7 +1403,7 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 	if (npc->getPersist())
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
-		CFileSystem::fixPathSeparators(&filePath);
+		CFileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
 
@@ -1430,7 +1433,7 @@ bool TServer::deleteClass(const std::string& className)
 
 	classList.erase(classIter);
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	return true;
@@ -1438,11 +1441,10 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	// TODO(joey): filenames...
-	classList[className] = classCode;
-
+	classList[className] = std::make_unique<TScriptClass>(this, className, classCode); 
+	
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 
 	CString fileData(classCode);
 	fileData.save(filePath);
@@ -1523,10 +1525,10 @@ void TServer::playerLoggedIn(TPlayer *player)
 #endif
 }
 
-unsigned int TServer::getNWTime() const
+void TServer::calculateServerTime()
 {
 	// timevar apparently subtracts 11078 days from time(0) then divides by 5.
-	return ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
+	serverTime = ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
 }
 
 bool TServer::isIpBanned(const CString& ip)
@@ -1769,7 +1771,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
 	CString filePath = getServerPath() << "weapons/weapon" << name << ".txt";
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	// Delete from Memory
@@ -1871,8 +1873,8 @@ void TServer::TS_Reload()
 	translationFS.addDir("translations", "*.po");
 
 	// Load Each File
-	std::map<CString, CString> *temp = translationFS.getFileList();
-	for (auto & i : *temp)
+	const std::map<CString, CString> &temp = translationFS.getFileList();
+	for (auto & i : temp)
 		this->TS_Load(removeExtension(i.first), i.second);
 }
 

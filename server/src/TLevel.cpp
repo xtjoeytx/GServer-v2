@@ -1375,12 +1375,10 @@ std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight
 	int testEndY = pY + pHeight;
 
 	std::vector<TNPC *> npcList;
-	for (auto it = levelNPCs.begin(); it != levelNPCs.end(); ++it)
+	for (const auto& npc : levelNPCs)
 	{
-		TNPC *npc = *it;
-
-		if ((npc->getPixelX() >= pX && npc->getPixelX() <= testEndX) &&
-			(npc->getPixelY() >= pY && npc->getPixelY() <= testEndY))
+		if (pX < npc->getPixelX() + npc->getWidth() && testEndX > npc->getPixelX() &&
+			pY < npc->getPixelY() + npc->getHeight() && testEndY > npc->getPixelY())
 		{
 			npcList.push_back(npc);
 		}

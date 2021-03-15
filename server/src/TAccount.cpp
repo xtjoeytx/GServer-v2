@@ -1,4 +1,5 @@
 #include "IDebug.h"
+#include <algorithm>
 #include <memory.h>
 #include <time.h>
 #include "TAccount.h"
@@ -10,7 +11,7 @@
 */
 TAccount::TAccount(TServer* pServer)
 : server(pServer),
-isBanned(false), isLoadOnly(false), isGuest(false),
+isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
@@ -64,7 +65,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	if (accpath.length() == 0)
 	{
 		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
-		CFileSystem::fixPathSeparators(&accpath);
+		CFileSystem::fixPathSeparators(accpath);
 		loadedFromDefault = true;
 	}
 
@@ -327,7 +328,7 @@ bool TAccount::saveAccount()
 
 	// Save the account now.
 	CString accpath = CString() << server->getServerPath() << "accounts/" << accountFileName;
-	CFileSystem::fixPathSeparators(&accpath);
+	CFileSystem::fixPathSeparators(accpath);
 	if (!newFile.save(accpath))
 		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
 

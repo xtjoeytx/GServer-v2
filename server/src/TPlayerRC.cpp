@@ -634,7 +634,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 	// Search through all the accounts.
 	CFileSystem* fs = server->getAccountsFileSystem();
-	for (std::map<CString, CString>::iterator i = fs->getFileList()->begin(); i != fs->getFileList()->end(); ++i)
+	for (std::map<CString, CString>::iterator i = fs->getFileList().begin(); i != fs->getFileList().end(); ++i)
 	{
 		CString acc = removeExtension(i->first);
 		if (acc.isEmpty()) continue;
@@ -1126,7 +1126,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			// Search for the files.
 			for (unsigned int i = 0; i < FS_COUNT; ++i)
 			{
-				std::map<CString, CString>* fileList = server->getFileSystem(i)->getFileList();
+				auto& fileList = server->getFileSystem(i)->getFileList();
 				CString fs("none");
 				if (i == 0) fs = "all";
 				if (i == 1) fs = "file";
@@ -1136,7 +1136,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 				if (i == 5) fs = "sword";
 				if (i == 6) fs = "shield";
 
-				for (std::map<CString, CString>::const_iterator i = fileList->begin(); i != fileList->end(); ++i)
+				for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 				{
 					if (i->first.match(search))
 						found[i->second.removeAll(server->getServerPath())] = fs;
@@ -1566,7 +1566,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
 		{
 			// See if the file matches the wildcard.
 			if (!j->first.match(wildcard))
@@ -1656,7 +1656,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList()->begin(); j != fs.getFileList()->end(); ++j)
+		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
 		{
 			// See if the file matches the wildcard.
 			if (!j->first.match(wildcard))
@@ -1827,8 +1827,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	// Add working directory.
 	source = CString(server->getServerPath()) << source;
 	destination = CString(server->getServerPath()) << destination;
-	CFileSystem::fixPathSeparators(&source);
-	CFileSystem::fixPathSeparators(&destination);
+	CFileSystem::fixPathSeparators(source);
+	CFileSystem::fixPathSeparators(destination);
 
 	// Save the new file now.
 	CString temp;
@@ -1877,7 +1877,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	CString file = pPacket.readString("");
 	CString filePath = CString() << server->getServerPath() << lastFolder << file;
 	CString checkFile = CString() << lastFolder << file;
-	CFileSystem::fixPathSeparators(&filePath);
+	CFileSystem::fixPathSeparators(filePath);
 
 	// Don't let us delete important files.
 	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
@@ -1935,8 +1935,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f2path = CString() << server->getServerPath() << lastFolder << f2;
 	CString checkFile1 = CString() << lastFolder << f1;
 	CString checkFile2 = CString() << lastFolder << f2;
-	CFileSystem::fixPathSeparators(&f1path);
-	CFileSystem::fixPathSeparators(&f2path);
+	CFileSystem::fixPathSeparators(f1path);
+	CFileSystem::fixPathSeparators(f2path);
 
 
 	// Don't let us rename/overwrite important files.
@@ -2067,7 +2067,7 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
 	CString folder = pPacket.readString("");
 	CString folderpath = CString() << server->getServerPath() << folder;
-	CFileSystem::fixPathSeparators(&folderpath);
+	CFileSystem::fixPathSeparators(folderpath);
 	folderpath.removeI(folderpath.length() -1);
 	if (isClient())
 	{

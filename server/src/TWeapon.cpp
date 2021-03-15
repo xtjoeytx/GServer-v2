@@ -46,7 +46,7 @@ TWeapon::~TWeapon()
 TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 {
 	// File Path
-	CString fileName = server->getServerPath() << "weapons/" << pWeapon;
+	CString fileName = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -147,7 +147,7 @@ bool TWeapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = server->getServerPath() << "weapons/weapon" << name << ".txt";
+	CString filename = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
@@ -287,8 +287,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		if (!mScriptServer.isEmpty()) {
-			ScriptAction* scriptAction = scriptEngine->CreateAction("weapon.created", _scriptObject);
-			_scriptExecutionContext.addAction(scriptAction);
+			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
 			scriptEngine->RegisterWeaponUpdate(this);
 		}
 	}
@@ -334,7 +333,7 @@ void TWeapon::freeScriptResources()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache(CScriptEngine::WrapScript<TWeapon>(mScriptServer.text()));
+	scriptEngine->ClearCache<TWeapon>(mScriptServer.text());
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())
@@ -358,7 +357,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction *scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }

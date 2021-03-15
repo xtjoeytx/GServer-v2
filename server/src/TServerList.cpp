@@ -753,7 +753,7 @@ void TServerList::msgSVI_FILESTART3(CString& pPacket)
 			break;
 	}
 	filename << pPacket.readChars(pPacket.readGUChar());
-	CFileSystem::fixPathSeparators(&filename);
+	CFileSystem::fixPathSeparators(filename);
 	blank.save(CString() << _server->getServerPath() << filename);
 	_server->getFileSystem()->addFile(filename);
 }
