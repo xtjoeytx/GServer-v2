@@ -11,7 +11,7 @@
 */
 TAccount::TAccount(TServer* pServer)
 : server(pServer),
-isBanned(false), isLoadOnly(false), isGuest(false),
+isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
 adminIp("0.0.0.0"),
 accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),

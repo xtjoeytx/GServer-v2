@@ -490,7 +490,7 @@ const CString& TNPC::getBodyImage() const
 inline
 void TNPC::setBodyImage(const std::string& pBodyImage)
 {
-	bodyImage = pBodyImage;
+	bodyImage = pBodyImage.substr(0, 200);
 }
 
 //////////
@@ -504,7 +504,7 @@ const CString& TNPC::getHeadImage() const
 inline
 void TNPC::setHeadImage(const std::string& pHeadImage)
 {
-	headImage = pHeadImage;
+	headImage = pHeadImage.substr(0, 123);
 }
 
 //////////
@@ -532,11 +532,10 @@ const CString& TNPC::getShieldImage() const
 inline
 void TNPC::setShieldImage(const std::string& pShieldImage)
 {
-	shieldImage = pShieldImage;
+	shieldImage = pShieldImage.substr(0, 200);
 }
 
 //////////
-
 
 inline
 const CString& TNPC::getSwordImage() const
@@ -547,7 +546,7 @@ const CString& TNPC::getSwordImage() const
 inline
 void TNPC::SetSwordImage(const std::string& pSwordImage)
 {
-	swordImage = pSwordImage;
+	swordImage = pSwordImage.substr(0, 120);
 }
 
 #ifdef V8NPCSERVER

@@ -358,14 +358,9 @@ void NPC_SetStr_ShieldImage(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
-
-	CString propPackage;
-	propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	
+	npcObject->setShieldImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
 }
 
 // PROPERTY: npc.swordimg
@@ -382,14 +377,9 @@ void NPC_SetStr_SwordImage(v8::Local<v8::String> props, v8::Local<v8::Value> val
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
-	int len = newValue.length();
-	if (len > 223)
-		len = 223;
 
-	CString propPackage;
-	propPackage >> (char)NPCPROP_SWORDIMAGE >> (char)len;
-	propPackage.write(*newValue, len);
-	npcObject->setProps(propPackage, CLVER_2_17, true);
+	npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 }
 
 // PROPERTY: Message
@@ -745,13 +735,8 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 			case '1': // sword image
 			{
-				CString npcProp = npcObject->getProp(NPCPROP_SWORDIMAGE);
-				unsigned char swordPower = npcProp.readGUChar();
-				if (swordPower < 31)
-					swordPower = 31;
-
-				propPackage >> (char)NPCPROP_SWORDIMAGE >> (char)swordPower >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 				break;
 			}
 
