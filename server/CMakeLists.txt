@@ -202,7 +202,12 @@ elseif(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 		if(V8NPCSERVER)
-			target_link_libraries(${TARGET_NAME} v8.dll.lib v8_libbase.dll.lib v8_libplatform.dll.lib)
+			# Using MSVC now looks for V8 as a nuget package first
+			# Looking in lib folders if not found
+			if(NOT V8_FOUND)
+				message("Findv8 failed, looking for v8 in supplied folders")
+				target_link_libraries(${TARGET_NAME} v8.dll.lib v8_libbase.dll.lib v8_libplatform.dll.lib)
+			endif()
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
@@ -239,7 +244,11 @@ if(V8NPCSERVER)
 		add_dependencies(${TARGET_NAME} v8)
 		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 	else()
-		target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
+		if(V8_LIBRARY)
+			target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
+		else()
+			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
+		endif()
 	endif()
 endif()
 
@@ -254,3 +263,4 @@ install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
 set(INSTALL_DEST .)
 
 install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
+
