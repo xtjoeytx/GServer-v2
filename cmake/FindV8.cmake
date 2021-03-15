@@ -101,13 +101,13 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 
 	find_path(V8_INCLUDE_DIR v8.h
 		PATHS
-		${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/include
+		${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.8.4.371.15/include
 		${V8_DIR}/include)
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message("Searching for Release libraries as chosen")
 		set(V8_LIBRARY_SEARCH_PATHS
-			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Release
+			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.8.4.371.15/lib/Release
 			${V8_DIR}/Release
 			${V8_DIR}/lib/Release
 		)
@@ -120,7 +120,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 			message("Build type not recognized, searching for Debug libraries")
 		endif()
 		set(V8_LIBRARY_SEARCH_PATHS
-			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Debug
+			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.8.4.371.15/lib/Debug
 			${V8_DIR}/Debug
 			${V8_DIR}/lib/Debug
 		)
