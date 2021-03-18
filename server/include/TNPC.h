@@ -518,7 +518,7 @@ const CString& TNPC::getHorseImage() const
 inline
 void TNPC::setHorseImage(const std::string& pHorseImage)
 {
-	horseImage = pHorseImage;
+	horseImage = pHorseImage.substr(0, 200);
 }
 
 //////////

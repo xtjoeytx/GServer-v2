@@ -744,84 +744,58 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 		// Unwrap object
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		CString propPackage;
-
 		switch (code[1])
 		{
 			case '1': // sword image
 			{
 				npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
-				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
+				npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 				break;
 			}
 
 			case '2': // shield image
 			{
-				CString npcProp = npcObject->getProp(NPCPROP_SHIELDIMAGE);
-				unsigned char shieldPower = npcProp.readGUChar();
-				if (shieldPower < 11)
-					shieldPower = 11;
-
-				propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setShieldImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
 				break;
 			}
 
 			case '3': // head image
 			{
-				if (len > 123)
-					len = 123;
-
-				propPackage >> (char)NPCPROP_HEADIMAGE >> (char)(len + 100);
-				propPackage.write(*newValue, len);
+				npcObject->setHeadImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 				break;
 			}
 
 			case '5': // horse image (needs to be tested)
-				propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setHorseImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HORSEIMAGE);
 				break;
 
 			case '8': // body image
-				propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setBodyImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
 				break;
 
 			case 'c': // chat
-				propPackage >> (char)NPCPROP_MESSAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setChat(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_MESSAGE);
 				break;
 
 			case 'n': // nickname
-				propPackage >> (char)NPCPROP_NICKNAME >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setNickname(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_NICKNAME);
 				break;
 
 			case 'C': // colors
 			{
 				if (code[2] >= '0' && code[2] < '5')
 				{
-					CString npcProp = npcObject->getProp(NPCPROP_COLORS);
-					unsigned char colors[5] = {
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar()
-					};
-					//for (unsigned int i = 0; i < 5; i++)
-					//	colors[i] = npcProp.readGUChar();
-
-					colors[code[2] - '0'] = getColor(*newValue);
-					propPackage >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
+					npcObject->setColorId(code[2] - '0', getColor(*newValue));
+					npcObject->updatePropModTime(NPCPROP_COLORS);
 				}
 				break;
 			}
-		}
-
-		if (propPackage.length())
-		{
-			npcObject->setProps(propPackage, CLVER_2_17, true);
 		}
 	}
 }
