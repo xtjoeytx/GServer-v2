@@ -365,7 +365,7 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 
 	// Logging
 	CString logMsg;
-	logMsg << "Script " << className << " " << (hasClass ? "added" : "updated") << " by " << accountName << "\n";
+	logMsg << "Script " << className << " " << (!hasClass ? "added" : "updated") << " by " << accountName << "\n";
 	npclog.out(logMsg);
 	server->sendToNC(logMsg);
 	return true;
