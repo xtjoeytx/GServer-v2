@@ -671,8 +671,23 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
 	npcObject->setImage("#c#");
+	npcObject->setHeadImage("head0.png");
+	npcObject->setBodyImage("body.png");
+	npcObject->setShieldImage("shield1.png");
+	npcObject->SetSwordImage("sword1.png");
+	npcObject->setColorId(0, 2);   // orange
+	npcObject->setColorId(1, 5);   // dark red
+	npcObject->setColorId(2, 21);  // black
+	npcObject->setColorId(3, 5);   // dark red
+	npcObject->setColorId(4, 21);  // black
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
+
+	npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
+	npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
+	npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
+	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
+	npcObject->updatePropModTime(NPCPROP_COLORS);
 	npcObject->updatePropModTime(NPCPROP_IMAGE);
 	npcObject->updatePropModTime(NPCPROP_IMAGEPART);
 }
