@@ -1394,8 +1394,8 @@ std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
-				(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
+			if (npc->getPixelX() <= pX && npc->getPixelX() + npc->getWidth() >= pX &&
+				npc->getPixelY() <= pY && npc->getPixelY() + npc->getHeight() >= pY)
 			{
 				npcList.push_back(npc);
 			}
