@@ -842,7 +842,7 @@ bool TPlayer::testSign()
 void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
-	static const int touchtestd[] = { 24,16, 8,32, 24,48, 40,32 };
+	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
 	int dir = sprite % 4;
 
 	auto npcList = level->testTouch(x2 + touchtestd[dir * 2], y2 + touchtestd[dir * 2 + 1]);
