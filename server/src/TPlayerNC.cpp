@@ -572,7 +572,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	}
 
 	// Start our packet.
-	CString ret = CString() >> (char)PLO_NC_LEVELLIST;
+	CString ret;
 
 	auto levelList = server->getLevelList();
 	if (!levelList->empty())
@@ -581,7 +581,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 			ret << (*it)->getActualLevelName() << "\n";
 	}
 
-	sendPacket(ret);
+	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());
 	return true;
 }
 
