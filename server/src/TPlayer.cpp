@@ -2000,7 +2000,7 @@ void TPlayer::setNick(CString pNickName, bool force)
 
 }
 
-bool TPlayer::addWeapon(int defaultWeapon)
+bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 {
 	// Allow Default Weapons..?
 	CSettings *settings = server->getSettings();
@@ -2047,7 +2047,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 	return true;
 }
 
-bool TPlayer::deleteWeapon(int defaultWeapon)
+bool TPlayer::deleteWeapon(LevelItemType defaultWeapon)
 {
 	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	this->deleteWeapon(weapon);
@@ -2539,11 +2539,17 @@ bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 
 bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 {
+	// TODO(joey): serverside item checking
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char item = pPacket.readGUChar();
 
-	level->addItem(loc[0], loc[1], item);
-	server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+	LevelItemType itemType = TLevelItem::getItemId(item);
+	if (itemType != LevelItemType::INVALID)
+	{
+		level->addItem(loc[0], loc[1], itemType);
+		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+	}
+
 	return true;
 }
 
@@ -2554,8 +2560,8 @@ bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 
 	// Remove the item from the level, getting the type of the item in the process.
-	signed char item = level->removeItem(loc[0], loc[1]);
-	if (item == -1) return true;
+	LevelItemType item = level->removeItem(loc[0], loc[1]);
+	if (item == LevelItemType::INVALID) return true;
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
@@ -2814,17 +2820,14 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
 	
-	// note(joey): we were iterating all chests to find a chest at a specific x/y. If there were multiple
-	// chests at the same location it would keep checking them.. but all chests would of been satisfied
-	// since its based on x, y, and levelname.
 	if (level) {
 		auto chest = level->getChest(cX, cY);
 		if (chest) {
 			auto chestStr = level->getChestStr(*chest);
 
 			if (!hasChest(chestStr)) {
-				int chestItem = chest->getItemIndex();
-				setProps(CString() << TLevelItem::getItemPlayerProp((char)chestItem, this), true, true);
+				LevelItemType chestItem = chest->getItemIndex();
+				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), true, true);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);
 			}

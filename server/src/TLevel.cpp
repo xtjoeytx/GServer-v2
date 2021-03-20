@@ -715,7 +715,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			char item = line.readGChar();
 			char signindex = line.readGChar();
 
-			levelChests.push_back(TLevelChest(x, y, item, signindex));
+			levelChests.push_back(TLevelChest(x, y, LevelItemType(item), signindex));
 		}
 	}
 
@@ -797,12 +797,12 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (curLine.size() != 5)
 				continue;
 
-			char itemidx = TLevelItem::getItemId(curLine[3]);
-			if (itemidx >= 0) {
+			LevelItemType itemType = TLevelItem::getItemId(curLine[3]);
+			if (itemType != LevelItemType::INVALID) {
 				char chestx = strtoint(curLine[1]);
 				char chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
-				levelChests.push_back(TLevelChest(chestx, chesty, itemidx, signidx));
+				levelChests.push_back(TLevelChest(chestx, chesty, itemType, signidx));
 			}
 		}
 		else if (curLine[0] == "LINK")
@@ -1050,25 +1050,26 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 	return true;
 }
 
-bool TLevel::addItem(float pX, float pY, char pItem)
+bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 {
 	levelItems.push_back(TLevelItem(pX, pY, pItem));
 	return true;
 }
 
-signed char TLevel::removeItem(float pX, float pY)
+LevelItemType TLevel::removeItem(float pX, float pY)
 {
 	for (auto i = levelItems.begin(); i != levelItems.end(); ++i)
 	{
 		TLevelItem& item = *i;
 		if (item.getX() == pX && item.getY() == pY)
 		{
-			signed char itemType = item.getItem();
+			LevelItemType itemType = item.getItem();
 			levelItems.erase(i);
 			return itemType;
 		}
 	}
-	return -1;
+
+	return LevelItemType::INVALID;
 }
 
 bool TLevel::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)

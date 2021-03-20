@@ -69,7 +69,7 @@ void TLevelBaddy::dropItem()
 
 	if (valid)
 	{
-		level->addItem(this->x, this->y, itemId);
+		level->addItem(this->x, this->y, LevelItemType(itemId));
 		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x*2) >> (char)(this->y*2) >> (char)itemId, 0, level);
 	}
 }

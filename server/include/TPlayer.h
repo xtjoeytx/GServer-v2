@@ -19,6 +19,8 @@ class TLevel;
 class TServer;
 class TMap;
 class TWeapon;
+
+enum class LevelItemType;
 //class CFileQueue;
 
 struct SCachedLevel
@@ -115,10 +117,10 @@ class TPlayer : public TAccount, public CSocketStub
 		bool doTimedEvents();
 		void disconnect();
 		bool processChat(CString pChat);
-		bool addWeapon(int defaultWeapon);
+		bool addWeapon(LevelItemType defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
-		bool deleteWeapon(int defaultWeapon);
+		bool deleteWeapon(LevelItemType defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
 		void disableWeapons();
@@ -288,29 +290,6 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
-		/////////////
-		inline void getPropPacket(CString& packet, int val) {
-			packet >> (char)val;
-			getProp(packet, val);
-		}
-
-		template<typename... Args>
-		inline CString sendPropPacket(Args&&... args) {
-			static_assert((std::is_same<Args, int>::value && ...));
-
-			CString packet;
-			(getPropPacket(packet, std::forward<Args>(args)), ...);
-			return packet;
-		}
-
-		inline CString sendPropPacket2(std::initializer_list<int> args) {
-			CString packet;
-			for (const auto& v : args) {
-				getPropPacket(packet, v);
-			}
-			return packet;
-		}
-
 	private:
 		// Login functions.
 		bool sendLoginClient();
@@ -396,12 +375,8 @@ inline bool TPlayer::inChatChannel(const std::string& channel) const
 
 inline bool TPlayer::addChatChannel(const std::string & channel)
 {
-	//if (channelList.find(channel) == channelList.end())
-	//{
-		channelList.insert(channel);
-		return true;
-	//}
-	return false;
+	auto res = channelList.insert(channel);
+	return res.second;
 }
 
 inline bool TPlayer::removeChatChannel(const std::string & channel)
@@ -409,7 +384,6 @@ inline bool TPlayer::removeChatChannel(const std::string & channel)
 	channelList.erase(channel);
 	return false;
 }
-
 
 inline CString TPlayer::getProp(int pPropId) const
 {

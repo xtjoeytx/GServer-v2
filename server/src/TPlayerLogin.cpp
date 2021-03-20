@@ -307,10 +307,10 @@ bool TPlayer::sendLoginClient()
 		if (weapon == 0)
 		{
 			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			int wId = TLevelItem::getItemId(*i);
-			if (wId != -1)
+			LevelItemType itemType = TLevelItem::getItemId(*i);
+			if (itemType != LevelItemType::INVALID)
 			{
-				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)wId;
+				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
 				defWeapPacket.readGChar();
 				msgPLI_WEAPONADD(defWeapPacket);
 				continue;
