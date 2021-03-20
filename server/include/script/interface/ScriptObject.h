@@ -22,23 +22,23 @@ public:
 		assert(_referenceCount == 0);
 	}
 
-	inline T * Object() const {
+	T * Object() const {
 		return _object;
 	}
 
-	inline bool isReferenced() const {
+	bool isReferenced() const {
 		return _referenceCount > 0;
 	}
 
-	inline int getReferenceCount() const {
+	int getReferenceCount() const {
 		return _referenceCount;
 	}
 
-	inline void increaseReference() {
+	void increaseReference() {
 		_referenceCount++;
 	}
 
-	inline void decreaseReference() {
+	void decreaseReference() {
 		_referenceCount--;
 	}
 
