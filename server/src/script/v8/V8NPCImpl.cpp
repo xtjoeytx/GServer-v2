@@ -683,13 +683,13 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
 
+	npcObject->updatePropModTime(NPCPROP_IMAGE);
+	npcObject->updatePropModTime(NPCPROP_IMAGEPART);
 	npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 	npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
 	npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
 	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 	npcObject->updatePropModTime(NPCPROP_COLORS);
-	npcObject->updatePropModTime(NPCPROP_IMAGE);
-	npcObject->updatePropModTime(NPCPROP_IMAGEPART);
 }
 
 // NPC Method: npc.setani("walk", "ani", "params");
