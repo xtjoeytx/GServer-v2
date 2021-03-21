@@ -1238,7 +1238,10 @@ CString TNPC::getVariableDump()
 bool TNPC::deleteNPC()
 {
 	if (!isLevelNPC() && npcType == "LOCALN")
+	{
 		npcDeleteRequested = true;
+		registerNpcUpdates();
+	}
 	return npcDeleteRequested;
 }
 
