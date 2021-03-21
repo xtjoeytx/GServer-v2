@@ -704,7 +704,7 @@ void TServer::loadFileSystem()
 	for (auto & i : filesystem)
 		i.clear();
 	filesystem_accounts.clear();
-	filesystem_accounts.addDir("accounts");
+	filesystem_accounts.addDir("accounts", "*.txt");
 	if ( settings.getBool("nofoldersconfig", false))
 		loadAllFolders();
 	else
