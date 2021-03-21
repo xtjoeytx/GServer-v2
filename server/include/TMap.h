@@ -52,7 +52,8 @@ class TMap
 		int getWidth() const				{ return width; }
 		int getHeight() const				{ return height; }
 		bool isGroupMap() const				{ return groupMap; }
-		CString getLevels();
+		CString getLevels() const;
+		void loadMapLevels(TServer* server) const;
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
@@ -66,8 +67,10 @@ class TMap
 		bool groupMap;
 		CString mapImage;
 		CString miniMapImage;
-		//bool loadFullMap;
 		std::map<CString, SMapLevel> levels;
+
+		bool loadFullMap;
+		std::vector<CString> preloadLevelList;
 };
 
 #endif

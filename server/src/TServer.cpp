@@ -629,6 +629,10 @@ int TServer::loadConfigFiles()
 	loadNpcs(true);
 #endif
 
+	// Load map levels - doing this after db npcs are loaded incase
+	// some level scripts may require access to the databases.
+	loadMapLevels();
+
 	// Load translations.
 	serverlog.out("[%s]      Loading translations...\n", name.text());
 	loadTranslations();
@@ -800,6 +804,17 @@ void TServer::loadWeapons(bool print)
 	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(this, TLevelItem::getItemId("fireblast"));
 	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(this, TLevelItem::getItemId("nukeshot"));
 	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(this, TLevelItem::getItemId("joltbomb"));
+}
+
+void TServer::loadMapLevels()
+{
+	// Load gmap levels based on options provided by the gmap file
+	for (auto i = mapList.begin(); i != mapList.end(); i++)
+	{
+		TMap* map = *i;
+		if (map->getType() == MAPTYPE_GMAP)
+			map->loadMapLevels(this);
+	}
 }
 
 void TServer::loadMaps(bool print)

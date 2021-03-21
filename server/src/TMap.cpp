@@ -7,12 +7,12 @@
 #include "TServer.h"
 
 TMap::TMap(int pType, bool pGroupMap)
-: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap)
+: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
 {
 }
 
 TMap::TMap(int pType, const CString& pFileName, TServer* pServer, bool pGroupMap)
-: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap)
+: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
 {
 	load(pFileName, pServer);
 }
@@ -215,16 +215,24 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 		}
 		else if (curLine[0] == "LOADFULLMAP")
 		{
-			// Not supported currently.
+			loadFullMap = true;
 		}
 		else if (curLine[0] == "LOADATSTART")
 		{
-			// Not supported currently.
+			loadFullMap = false;
+
+			// TODO(joey):Untested, but should work
 			++i;
 			while (i != fileData.end())
 			{
 				CString line = i->removeAll("\r");
 				if (line == "LOADATSTARTEND") break;
+
+				line.guntokenizeI();
+				std::vector<CString> names = line.tokenize("\n");
+				for (auto& levelName : names) {
+					preloadLevelList.push_back(levelName);
+				}
 			}
 		}
 		// TODO: 3D settings maybe?
@@ -233,7 +241,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-CString TMap::getLevels()
+CString TMap::getLevels() const
 {
 	CString retVal;
 	
@@ -243,4 +251,24 @@ CString TMap::getLevels()
 	}
 	
 	return retVal;
+}
+
+void TMap::loadMapLevels(TServer *server) const
+{
+	if (loadFullMap)
+	{
+		for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
+		{
+			auto lvl = server->getLevel(i->first);
+			assert(lvl);
+		}
+	}
+	else if (!preloadLevelList.empty())
+	{
+		for (auto& level : preloadLevelList)
+		{
+			auto lvl = server->getLevel(level);
+			assert(lvl);
+		}
+	}
 }

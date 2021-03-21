@@ -92,6 +92,7 @@ class TServer : public CSocketStub
 		void loadClasses(bool print = false);
 		void loadWeapons(bool print = false);
 		void loadMaps(bool print = false);
+		void loadMapLevels();
 #ifdef V8NPCSERVER
 		void loadNpcs(bool print = false);
 #endif
