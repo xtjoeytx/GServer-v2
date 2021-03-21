@@ -230,7 +230,7 @@ class TAccount
 		bool isExternal;
 		CString adminIp, accountComments, accountName, communityName, banReason, banLength, lastFolder, email;
 		CString accountIpStr;
-		long accountIp;
+		unsigned long accountIp;
 		int adminRights;
 
 		// Player-Attributes
