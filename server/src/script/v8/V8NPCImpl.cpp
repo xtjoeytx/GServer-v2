@@ -597,7 +597,7 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// Argument parsing
 	int delta_x = (int)(16 * args[0]->NumberValue(context).ToChecked());
 	int delta_y = (int)(16 * args[1]->NumberValue(context).ToChecked());
-	double time_fps = (int)(args[2]->NumberValue(context).ToChecked());
+	double time_fps = args[2]->NumberValue(context).ToChecked();
 	int options = args[3]->Int32Value(context).ToChecked();
 
 	npcObject->moveNPC(delta_x, delta_y, time_fps, options);

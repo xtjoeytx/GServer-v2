@@ -1339,7 +1339,7 @@ std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
 {
 	for (auto& link : levelLinks)
 	{
-		if ((pX >= link.getX() && pY <= link.getX() + link.getWidth()) &&
+		if ((pX >= link.getX() && pX <= link.getX() + link.getWidth()) &&
 			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
 		{
 			return std::optional<TLevelLink>(link);
