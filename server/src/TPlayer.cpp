@@ -2347,10 +2347,10 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 	// Lay items when you destroy objects.
 	short oldTile = (getLevel()->getTiles())[loc[0] + (loc[1] * 64)];
-	int dropItem = -1;
 	bool bushitems = settings->getBool("bushitems", true);
 	bool vasesdrop = settings->getBool("vasesdrop", true);
 	int tiledroprate = settings->getInt("tiledroprate", 50);
+	LevelItemType dropItem = LevelItemType::INVALID;
 
 	// Bushes, grass, swamp.
 	if ((oldTile == 2 || oldTile == 0x1a4 || oldTile == 0x1ff ||
@@ -2360,20 +2360,19 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		{
 			if ( (rand() % 100) < tiledroprate )
 			{
-				int index = rand() % 6;
-				dropItem = index;
+				dropItem = TLevelItem::getItemId(rand() % 6);
 			}
 		}
 	}
 	// Vase.
 	else if (oldTile == 0x2ac && vasesdrop)
-		dropItem = 5;
+		dropItem = LevelItemType::HEART;
 
 	// Send the item now.
 	// TODO: Make this a more generic function.
-	if (dropItem >= 0)
+	if (dropItem != LevelItemType::INVALID)
 	{
-		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)dropItem;
+		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)TLevelItem::getItemTypeId(dropItem);
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar();		// So msgPLI_ITEMADD works.
 
@@ -2537,6 +2536,117 @@ bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::removeItem(LevelItemType itemType)
+{
+	switch (itemType)
+	{
+		case LevelItemType::GREENRUPEE:		// greenrupee
+		case LevelItemType::BLUERUPEE:		// bluerupee
+		case LevelItemType::REDRUPEE:		// redrupee
+		case LevelItemType::GOLDRUPEE:		// goldrupee
+		{
+			int gralatsRequired;
+			if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
+			else if (itemType == LevelItemType::REDRUPEE) gralatsRequired = 30;
+			else if (itemType == LevelItemType::BLUERUPEE) gralatsRequired = 5;
+			else gralatsRequired = 1;
+
+			if (gralatc >= gralatsRequired)
+			{
+				gralatc -= gralatsRequired;
+				return true;
+			}
+
+			return false;
+		}
+
+		case LevelItemType::BOMBS:
+		{
+			if (bombc >= 5)
+			{
+				bombc -= 5;
+				return true;
+			}
+			return false;
+		}
+
+		case LevelItemType::DARTS:
+		{
+			if (arrowc >= 5)
+			{
+				arrowc -= 5;
+				return true;
+			}
+			return false;
+		}
+
+		case LevelItemType::HEART:
+		{
+			if (power > 1.0f)
+			{
+				power -= 1.0f;
+				return true;
+			}
+			return false;
+		}
+
+#ifndef V8NPCSERVER
+		// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
+		// same is true for sword/shield. assuming its true for the weapon-items, but
+		// its currently not tested.
+		case LevelItemType::GLOVE1:
+		case LevelItemType::GLOVE2:
+		{
+			if (glovePower > 1)
+			{
+				glovePower--;
+				return true;
+			}
+			return false;
+		}
+#endif
+
+		/*
+		case LevelItemType::BOW:		// bow
+		case LevelItemType::BOMB:		// bomb
+			return false;
+
+		case LevelItemType::SUPERBOMB:	// superbomb
+		case LevelItemType::FIREBALL:	// fireball
+		case LevelItemType::FIREBLAST:	// fireblast
+		case LevelItemType::NUKESHOT:	// nukeshot
+		case LevelItemType::JOLTBOMB:	// joltbomb
+			return false;
+
+		case LevelItemType::SHIELD:			// shield
+		case LevelItemType::MIRRORSHIELD:	// mirrorshield
+		case LevelItemType::LIZARDSHIELD:	// lizardshield
+			return false;
+
+		case LevelItemType::SWORD:			// sword
+		case LevelItemType::BATTLEAXE:		// battleaxe
+		case LevelItemType::LIZARDSWORD:	// lizardsword
+		case LevelItemType::GOLDENSWORD:	// goldensword
+			return false;
+
+		case LevelItemType::FULLHEART:	// fullheart
+			return false;
+		*/
+
+		case LevelItemType::SPINATTACK:
+		{
+			if (status & PLSTATUS_HASSPIN)
+			{
+				status &= ~PLSTATUS_HASSPIN;
+				return true;
+			}
+			return false;
+		}
+	}
+
+	return false;
+}
+
 bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 {
 	// TODO(joey): serverside item checking
@@ -2546,8 +2656,15 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 	LevelItemType itemType = TLevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
-		level->addItem(loc[0], loc[1], itemType);
-		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+#ifdef V8NPCSERVER
+		if (removeItem(itemType))
+		{
+#endif
+			level->addItem(loc[0], loc[1], itemType);
+			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+#ifdef V8NPCSERVER
+		}
+#endif
 	}
 
 	return true;
