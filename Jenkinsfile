@@ -33,13 +33,15 @@ def killall_jobs() {
 	}
 
 	if (killnums != "") {
-		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK
+		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK
 	}
 	echo "Done killing"
 }
 
 def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
-	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
+	def fixed_job_name = split_job_name[1].replace('%2F',' ');
+
 	try {
 		checkout scm;
 
@@ -69,7 +71,7 @@ def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
 	} catch(err) {
 		currentBuild.result = 'FAILURE'
 
-		discordSend description: "", footer: "", link: env.BUILD_URL, result: currentBuild.result, title: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+		discordSend description: "", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
 
 		notify("Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}")
 		throw err
@@ -78,15 +80,16 @@ def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT) {
 
 node('master') {
 	killall_jobs();
-	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
+	def fixed_job_name = split_job_name[1].replace('%2F',' ');
+	checkout(scm);
 
-	checkout scm;
 	env.COMMIT_MSG = sh (
 		script: 'git log -1 --pretty=%B ${GIT_COMMIT}',
 		returnStdout: true
-	).trim()
+	).trim();
 
-	discordSend description: "${env.COMMIT_MSG}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "Build Started: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+	discordSend description: "${env.COMMIT_MSG}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Started: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
 
 	def branches = [:]
 	def project = readJSON file: "JenkinsEnv.json";
