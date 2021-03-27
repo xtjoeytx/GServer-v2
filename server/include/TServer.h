@@ -187,8 +187,8 @@ class TServer : public CSocketStub
 		bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 
 		// Admin chat functions
-		inline void sendToRC(const CString& pMessage, TPlayer *pPlayer = 0) const;
-		inline void sendToNC(const CString& pMessage, TPlayer *pPlayer = 0) const;
+		void sendToRC(const CString& pMessage, TPlayer *pSender = nullptr) const;
+		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
 
 		// Packet sending.
 		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
@@ -300,20 +300,22 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 
 #include "IEnums.h"
 
-inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
+inline void TServer::sendToRC(const CString& pMessage, TPlayer *pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
+
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
-inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
+inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
+
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
 #endif

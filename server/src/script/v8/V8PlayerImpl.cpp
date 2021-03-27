@@ -55,7 +55,7 @@ void Player_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, 
 	CString propPackage;
 	propPackage >> (char)PLPROP_GANI >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.ap
@@ -71,7 +71,7 @@ void Player_SetInt_Alignment(v8::Local<v8::String> prop, v8::Local<v8::Value> va
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.bodyimg
@@ -97,7 +97,7 @@ void Player_SetStr_BodyImage(v8::Local<v8::String> props, v8::Local<v8::Value> v
 	CString propPackage;
 	propPackage >> (char)PLPROP_BODYIMG >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.bombs
@@ -113,7 +113,7 @@ void Player_SetInt_Bombs(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_BOMBSCOUNT >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_BOMBSCOUNT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.chat
@@ -139,7 +139,7 @@ void Player_SetStr_Chat(v8::Local<v8::String> props, v8::Local<v8::Value> value,
 	CString propPackage;
 	propPackage >> (char)PLPROP_CURCHAT >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.darts
@@ -155,7 +155,7 @@ void Player_SetInt_Darts(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_ARROWSCOUNT >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_ARROWSCOUNT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.dir
@@ -171,7 +171,7 @@ void Player_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	char newValue = (char)(value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked() % 4);
-	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 
@@ -188,7 +188,7 @@ void Player_SetInt_Fullhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)clip(newValue, 0, 20), true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)clip(newValue, 0, 20), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.glovepower
@@ -204,7 +204,7 @@ void Player_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_GLOVEPOWER >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_GLOVEPOWER >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.guild
@@ -238,7 +238,7 @@ void Player_SetStr_Guild(v8::Local<v8::String> props, v8::Local<v8::Value> value
 	CString propPackage;
 	propPackage >> (char)PLPROP_NICKNAME >> (char)len;
 	propPackage.write(playerNick.text(), len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.hearts
@@ -254,7 +254,7 @@ void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	int newValue = (int)(value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked() * 2);
-	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)clip(newValue, 0, 40), true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)clip(newValue, 0, 40), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.headimg
@@ -280,7 +280,7 @@ void Player_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> v
 	CString propPackage;
 	propPackage >> (char)PLPROP_HEADGIF >> (char)(len + 100);
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.isadmin
@@ -352,7 +352,7 @@ void Player_SetInt_MagicPower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	unsigned char newValue = (unsigned char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_MAGICPOINTS >> (char)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_MAGICPOINTS >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.nickname
@@ -378,7 +378,7 @@ void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> va
 	CString propPackage;
 	propPackage >> (char)PLPROP_NICKNAME >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.platform
@@ -405,7 +405,7 @@ void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue, true, true);
+	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.shieldimg
@@ -431,7 +431,7 @@ void Player_SetStr_ShieldImage(v8::Local<v8::String> prop, v8::Local<v8::Value> 
 	CString propPackage;
 	propPackage >> (char)PLPROP_SHIELDPOWER >> (char)(playerObject->getShieldPower() + 10) >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.shieldpower
@@ -452,7 +452,7 @@ void Player_SetInt_ShieldPower(v8::Local<v8::String> prop, v8::Local<v8::Value> 
 	CString propPackage;
 	propPackage >> (char)PLPROP_SHIELDPOWER >> (char)(newValue + 10);
 	propPackage >> (char)shieldImg.length() << shieldImg;
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.swordimg
@@ -478,7 +478,7 @@ void Player_SetStr_SwordImage(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	CString propPackage;
 	propPackage >> (char)PLPROP_SWORDPOWER >> (char)(playerObject->getSwordPower() + 30) >> (char)len;
 	propPackage.write(*newValue, len);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.swordpower
@@ -499,7 +499,7 @@ void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	CString propPackage;
 	propPackage >> (char)PLPROP_SWORDPOWER >> (char)(newValue + 30);
 	propPackage >> (char)swordImg.length() << swordImg;
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.x
@@ -521,7 +521,7 @@ void Player_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	}
 	else newValueInt <<= 1;
 
-	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt, true, true, playerObject);
+	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.y
@@ -543,7 +543,7 @@ void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	}
 	else newValueInt <<= 1;
 
-	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, true, true, playerObject);
+	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.attr
@@ -623,7 +623,7 @@ void Player_Attr_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pr
 	propPackage.writeGChar(__pAttrPackets[index]);
 	propPackage.writeGChar(strLength);
 	propPackage.write(*newValue, strLength);
-	playerObject->setProps(propPackage, true, true, playerObject);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	// Needed to indicate we handled the request
 	info.GetReturnValue().Set(value);
@@ -709,7 +709,7 @@ void Player_Colors_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::
 
 	CString propPackage;
 	propPackage >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
-	playerObject->setProps(propPackage, true, true);
+	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	// Needed to indicate we handled the request
 	info.GetReturnValue().Set(value);
@@ -1166,7 +1166,7 @@ void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		CString propPacket;
 		propPacket >> (char)PLPROP_ATTACHNPC >> (char)0 >> (int)npcId;
-		playerObject->setProps(propPacket, true, true);
+		playerObject->setProps(propPacket, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		args.GetReturnValue().Set(true);
 		return;
 	}
@@ -1184,7 +1184,7 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	
 	CString propPacket;
 	propPacket >> (char)PLPROP_ATTACHNPC >> (char)0 >> (int)0;
-	playerObject->setProps(propPacket, true, true);
+	playerObject->setProps(propPacket, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 #include "TScriptClass.h"

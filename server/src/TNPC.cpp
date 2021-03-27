@@ -973,7 +973,7 @@ bool TNPC::runScriptEvents()
 		for (unsigned char propId : propModified)
 		{
 			modTime[propId] = newModTime;
-			propPacket >> (char)(propId) << getProp(propId);
+			propPacket >> (char)propId << getProp(propId);
 		}
 		propModified.clear();
 

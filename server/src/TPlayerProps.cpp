@@ -309,9 +309,8 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 	}
 }
 
-void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer *rc)
+void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 {
-	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	bool doSignCheck = false;
 	bool doTouchTest = false;
@@ -337,28 +336,37 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				}
 				else setNick(nick, (rc != nullptr));
 				
-				globalBuff >> (char)propId << getProp(propId);
+				if (options & PLSETPROPS_FORWARD)
+					globalBuff >> (char)propId << getProp(propId);
 
 				// Send this if the player is located on another server
 				// globalBuff >> (char)81;
 
-				if (!pForwardToSelf)
+				if (!(options & PLSETPROPS_SETBYPLAYER))
 					selfBuff >> (char)propId << getProp(propId);
 			}
 			break;
 
 			case PLPROP_MAXPOWER:
 			{
-				auto newMaxPower = pPacket.readGUChar();
-				setMaxPower(newMaxPower);
-				setPower((float)maxPower);
+				uint8_t newMaxPower = pPacket.readGUChar();
 
 #ifdef V8NPCSERVER
-				levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
-				selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
 #endif
-				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
-				selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+					setMaxPower(newMaxPower);
+					setPower((float)maxPower);
+
+#ifdef V8NPCSERVER
+					levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+					selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+#endif
+					levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+					selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+#ifdef V8NPCSERVER
+				}
+#endif
+
 				break;
 			}
 
@@ -373,23 +381,26 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			}
 
 			case PLPROP_RUPEESCOUNT:
-				if (rc != 0)
-				{
-					if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+			{
+				unsigned int newGralatCount = std::min(pPacket.readGUInt(), 9999999u);
+
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					if (rc != nullptr)
 					{
-						gralatc = pPacket.readGUInt();
-						gralatc = clip(gralatc, 0, 9999999);
+						if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+							gralatc = newGralatCount;
 					}
 					else
-						pPacket.readGUInt();
-
+					{
+						gralatc = newGralatCount;
+					}
+#ifdef V8NPCSERVER
 				}
-				else
-				{
-					gralatc = pPacket.readGUInt();
-					gralatc = clip(gralatc, 0, 9999999);
-				}
-			break;
+#endif
+				break;
+			}
 
 			case PLPROP_ARROWSCOUNT:
 				arrowc = pPacket.readGUChar();
@@ -402,9 +413,18 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_GLOVEPOWER:
-				glovePower = pPacket.readGUChar();
-				glovePower = clip(glovePower, 0, 3);
-			break;
+			{
+				uint8_t newGlovePower = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					glovePower = std::min<uint8_t>(newGlovePower, 3);
+#ifdef V8NPCSERVER
+				}
+#endif
+
+				break;
+			}
 
 			case PLPROP_BOMBPOWER:
 				bombPower = pPacket.readGUChar();
@@ -418,6 +438,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 				if (sp <= 4)
 				{
+					CSettings* settings = server->getSettings(); 
 					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
 					img = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -434,7 +455,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					else img = "";
 				}
 
-				setSwordPower(sp);
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					setSwordPower(sp);
+#ifdef V8NPCSERVER
+				}
+#endif
 				setSwordImage(img);
 			}
 			break;
@@ -446,6 +473,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 				if (sp <= 3)
 				{
+					CSettings* settings = server->getSettings(); 
 					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
 					img = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -466,7 +494,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					else img = "";
 				}
 
-				setShieldPower(sp);
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					setShieldPower(sp);
+#ifdef V8NPCSERVER
+				}
+#endif
 				setShieldImage(img);
 			}
 			break;
@@ -549,8 +583,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				if (!processChat(chatMsg))
 				{
 					int found = server->getWordFilter()->apply(this, chatMsg, FILTER_CHECK_CHAT);
-					if (pForwardToSelf == false && ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN)))
-						selfBuff >> (char)propId << getProp(propId);
+					if (!(options & PLSETPROPS_FORWARDSELF))
+					{
+						if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
+							selfBuff >> (char)propId << getProp(propId);
+					}
 				}
 
 #ifdef V8NPCSERVER
@@ -565,8 +602,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_COLORS:
-				for (unsigned int i = 0; i < sizeof(colors) / sizeof(unsigned char); ++i)
-					colors[i] = pPacket.readGUChar();
+				for (unsigned char & color : colors)
+					color = pPacket.readGUChar();
 			break;
 
 			case PLPROP_ID:
@@ -673,7 +710,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_CURLEVEL:
 				len = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				pPacket.readChars(len);
+#else
 				levelName = pPacket.readChars(len);
+#endif
 			break;
 
 			case PLPROP_HORSEGIF:
@@ -736,9 +777,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_MAGICPOINTS:
-				mp = pPacket.readGUChar();
-				mp = clip(mp, 0, 100);
-			break;
+			{
+				uint8_t newMP = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					mp = std::min<uint8_t>(newMP, 100);
+#ifdef V8NPCSERVER
+				}
+#endif
+				break;
+			}
 
 			case PLPROP_KILLSCOUNT:
 				pPacket.readGInt();
@@ -764,9 +813,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_ALIGNMENT:
-				ap = pPacket.readGUChar();
-				ap = clip(ap, 0, 100);
-			break;
+			{
+				uint8_t newAlignment = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					ap = std::min<uint8_t>(newAlignment, 100);
+#ifdef V8NPCSERVER
+				}
+#endif
+				break;
+			}
 
 			case PLPROP_ADDITFLAGS:
 				additionalFlags = pPacket.readGUChar();
@@ -961,10 +1018,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			return;
 		}
 
-		if (pForward && __sendLocal[propId] == true)
+		if ((options & PLSETPROPS_FORWARD) && __sendLocal[propId])
 			levelBuff >> (char)propId << getProp(propId);
 
-		if (pForwardToSelf)
+		if ((options & PLSETPROPS_FORWARDSELF))
 			selfBuff >> (char)propId << getProp(propId);
 	}
 
@@ -987,6 +1044,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
 
 		// Movement check.
+		//if (options & PLSETPROPS_SETBYPLAYER)
 		if (!rc)
 		{
 			if (doSignCheck)

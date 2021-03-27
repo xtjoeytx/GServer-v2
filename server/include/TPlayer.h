@@ -21,7 +21,13 @@ class TMap;
 class TWeapon;
 
 enum class LevelItemType;
-//class CFileQueue;
+
+enum
+{
+	PLSETPROPS_SETBYPLAYER	= 0x01,	// if set, do serverside checks to prevent attributes from being changed
+	PLSETPROPS_FORWARD		= 0x02,	// forward data to other players
+	PLSETPROPS_FORWARDSELF  = 0x04, // forward data back to the player
+};
 
 struct SCachedLevel
 {
@@ -47,7 +53,7 @@ class TPlayer : public TAccount, public CSocketStub
 		~TPlayer();
 
 		// Manage Account
-		inline bool isLoggedIn() const;
+		bool isLoggedIn() const;
 		bool sendLogin();
 
 		// Get Properties
@@ -90,7 +96,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		CString getProps(const bool *pProps, int pCount);
 		CString getPropsRC();
-		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer *rc = 0);
+		void setProps(CString& pPacket, uint8_t options, TPlayer* rc = 0);
 		void sendProps(const bool *pProps, int pCount);
 		void setPropsRC(CString& pPacket, TPlayer* rc);
 

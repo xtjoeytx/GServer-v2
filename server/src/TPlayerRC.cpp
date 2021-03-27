@@ -67,7 +67,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	CString props = pPacket.readChars(pPacket.readGUChar());
 
 	// Send props out.
-	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
+	setProps(props, (id != -1 ? PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF : 0), rc);
 
 	// Clear flags
 	for (auto i = flagList.begin(); i != flagList.end(); ++i)

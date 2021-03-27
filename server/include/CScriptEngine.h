@@ -182,7 +182,6 @@ inline void CScriptEngine::UnregisterNpcTimer(TNPC *npc) {
 template<class... Args>
 ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
 {
-	// TODO(joey): This just creates an action, and leaves it up to the user to do something with this. Most-likely will be renamed, or changed.
 	constexpr size_t Argc = (sizeof...(Args));
 	assert(Argc > 0);
 
@@ -202,8 +201,6 @@ ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
 	assert(args);
 
 	return ScriptAction(funcIt->second, args, action);
-	//ScriptAction *newScriptAction = new ScriptAction(funcIt->second, args, action);
-	//return newScriptAction;
 }
 
 template<class T>

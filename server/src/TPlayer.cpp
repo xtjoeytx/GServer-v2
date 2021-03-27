@@ -500,7 +500,7 @@ bool TPlayer::doMain()
 		{
 			std::vector<CString> pack = grMovementPackets.tokenize("\n");
 			for (auto & i : pack)
-				setProps(i, true, false);
+				setProps(i, PLSETPROPS_FORWARD);
 		}
 		grMovementPackets.clear(42);
 	}
@@ -558,7 +558,7 @@ bool TPlayer::doTimedEvents()
 			if (ap < 100)
 			{
 				ap++;
-				setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+				setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			}
 			if (ap < 20) apCounter = settings->getInt("aptime0", 30);
 			else if (ap < 40) apCounter = settings->getInt("aptime1", 90);
@@ -963,7 +963,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
+			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
@@ -998,7 +998,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1016,7 +1016,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1045,7 +1045,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1063,7 +1063,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1092,7 +1092,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1110,7 +1110,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1139,7 +1139,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1153,7 +1153,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[0] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
@@ -1166,7 +1166,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[1] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
@@ -1179,7 +1179,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[2] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
@@ -1192,7 +1192,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[3] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
@@ -1205,7 +1205,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[4] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "warpto")
@@ -1236,7 +1236,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), true, true);
+			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
@@ -1433,7 +1433,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), true, true);
+		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		return true;
 	}
 
@@ -1572,7 +1572,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		ap = 99;
 		apCounter = 1;
-		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
@@ -1873,7 +1873,7 @@ void TPlayer::resetLevelCache(const TLevel* level)
 
 void TPlayer::setChat(const CString& pChat)
 {
-	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
+	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 void TPlayer::setNick(CString pNickName, bool force)
@@ -2116,7 +2116,7 @@ void TPlayer::setAni(CString gani)
 
 	CString propPackage;
 	propPackage >> (char)PLPROP_GANI >> (char)gani.length() << gani;
-	setProps(propPackage, true, true);
+	setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 /*
@@ -2385,7 +2385,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 bool TPlayer::msgPLI_PLAYERPROPS(CString& pPacket)
 {
-	setProps(pPacket, true);
+	setProps(pPacket, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD);
 	return true;
 }
 
@@ -2405,7 +2405,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	//printf( "\n" );
 
 	TNPC* npc = server->getNPC(npcId);
-	if (npc == 0)
+	if (!npc)
 		return true;
 
 	if (npc->getLevel() != level)
@@ -2682,7 +2682,7 @@ bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setProps(CString() << TLevelItem::getItemPlayerProp(item, this), true, true);
+		this->setProps(CString() << TLevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	return true;
 }
@@ -2732,12 +2732,12 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			setRating((int)tLoseRating, (int)tLoseDeviation);
-			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
+			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			player->setRating((int)tWinRating, (int)tWinDeviation);
-			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
+			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		this->setLastSparTime(time(0));
 		player->setLastSparTime(time(0));
@@ -2764,7 +2764,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (ap / 20));
 				if (oAp < 0) oAp = 0;
 				player->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
-				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, true, true);
+				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			}
 		}
 	}
@@ -2944,7 +2944,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 			if (!hasChest(chestStr)) {
 				LevelItemType chestItem = chest->getItemIndex();
-				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), true, true);
+				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);
 			}
@@ -3265,9 +3265,9 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// Make sure it isn't one of the default files.
 	bool isDefault = false;
-	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+	for (auto & defaultFile : __defaultfiles)
 	{
-		if (file.match(CString(__defaultfiles[i])))
+		if (file.match(defaultFile))
 		{
 			isDefault = true;
 			break;
@@ -3276,7 +3276,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if ( !isDefault && fModTime > modTime)
+	if (!isDefault && fModTime > modTime)
 		return msgPLI_WANTFILE(file);
 
 	if (versionID < CLVER_2_1)
@@ -3292,16 +3292,15 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	CString packet;
 	TLevel* adjacentLevel = TLevel::findLevel(levelName, server);
 
-	if (adjacentLevel == 0)
+	if (!adjacentLevel)
 		return true;
 
 	if (!level)
 		return false;
 
 	bool alreadyVisited = false;
-	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (auto cl : cachedLevels)
 	{
-		SCachedLevel* cl = *i;
 		if (cl->level == adjacentLevel)
 		{
 			alreadyVisited = true;
@@ -3365,9 +3364,10 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			TServerList *listServer = server->getServerList();
 			auto serverList = listServer->getServerList();
+
 			CString actionData("clientside,-Serverlist_v4,updateservers,");
-			for (auto it = serverList.begin(); it != serverList.end(); ++it)
-				actionData << CString(it->first).gtokenize() << "," << CString(it->second) << ",";
+			for (auto & serverData : serverList)
+				actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
 
 			sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
 			return true;
@@ -3739,7 +3739,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, true, true);
+						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 					}
 				}
 			}
@@ -3750,7 +3750,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, true, true);
+					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				}
 			}
 		}
