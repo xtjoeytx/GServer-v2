@@ -71,7 +71,7 @@ set(
 	include/TWeapon.h
 )
 
-if(NOT NOUPNP)
+if(UPNP)
 	list(
 		APPEND
 		SOURCES
@@ -169,7 +169,7 @@ if(V8NPCSERVER)
 	include_directories(${V8_INCLUDE_DIR})
 endif()
 
-if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
+if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
 
@@ -225,9 +225,9 @@ endif()
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} gs2lib)
 
-if(NOT NOUPNP)
+if(UPNP)
 	if(NOT MINIUPNPC_FOUND)
-		if(NOSTATIC)
+		if(NOT STATIC)
 			add_dependencies(${TARGET_NAME} libminiupnpc-shared)
 			target_link_libraries(${TARGET_NAME} libminiupnpc-shared)
 		else()
