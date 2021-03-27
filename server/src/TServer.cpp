@@ -305,9 +305,6 @@ void TServer::cleanup()
 	}
 	levelList.clear();
 
-	for (auto& map : mapList) {
-		delete map;
-	}
 	mapList.clear();
 
 	for (auto& npc : npcList) {
@@ -809,28 +806,24 @@ void TServer::loadWeapons(bool print)
 void TServer::loadMapLevels()
 {
 	// Load gmap levels based on options provided by the gmap file
-	for (auto i = mapList.begin(); i != mapList.end(); i++)
+	for (const auto& map : mapList)
 	{
-		TMap* map = *i;
-		if (map->getType() == MAPTYPE_GMAP)
+        if (map->getType() == MapType::GMAP)
 			map->loadMapLevels(this);
 	}
 }
 
 void TServer::loadMaps(bool print)
 {
-	// Remove existing maps.
-	for (auto i = mapList.begin(); i != mapList.end(); )
+	// Remove players off all maps
+	for (auto& player : playerList)
 	{
-		TMap* map = *i;
-		for (auto & player : playerList)
-		{
-			if (player->getMap() == map)
-				player->setMap(0);
-		}
-		delete map;
-		i = mapList.erase(i);
+		if (player->getMap() != nullptr)
+			player->setMap(nullptr);
 	}
+
+	// Remove existing maps.
+	mapList.clear();
 
 	// Load gmaps.
 	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
@@ -839,22 +832,21 @@ void TServer::loadMaps(bool print)
 		// Check for blank lines.
 		if ( gmapName == "\r") continue;
 
-		// Load the gmap.
-		TMap* gmap = new TMap(MAPTYPE_GMAP);
-
+		// Gmaps in server options don't need the .gmap suffix, so we will add the suffix
 		if (gmapName.right(5) != ".gmap") {
 			gmapName << ".gmap";
 		}
 
+		// Load the gmap.
+		auto gmap = std::make_unique<TMap>(MapType::GMAP);
 		if ( !gmap->load(CString() << gmapName, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << gmapName << ".gmap" << "\n");
-			delete gmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [gmap] %s\n", name.text(), gmapName.text());
-		mapList.push_back(gmap);
+		mapList.push_back(std::move(gmap));
 	}
 
 	// Load bigmaps.
@@ -865,16 +857,15 @@ void TServer::loadMaps(bool print)
 		if (i == "\r") continue;
 
 		// Load the bigmap.
-		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
+		auto bigmap = std::make_unique<TMap>(MapType::BIGMAP);
 		if ( !bigmap->load(i.trim(), this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << i << "\n");
-			delete bigmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [bigmap] %s\n", name.text(), i.text());
-		mapList.push_back(bigmap);
+		mapList.push_back(std::move(bigmap));
 	}
 
 	// Load group maps.
@@ -889,23 +880,42 @@ void TServer::loadMaps(bool print)
 		ext.toLowerI();
 
 		// Create the new map based on the file extension.
-		TMap* gmap = nullptr;
+		std::unique_ptr<TMap> gmap;
 		if (ext == ".txt")
-			gmap = new TMap(MAPTYPE_BIGMAP, true);
+			gmap = std::make_unique<TMap>(MapType::BIGMAP, true);
 		else if (ext == ".gmap")
-			gmap = new TMap(MAPTYPE_GMAP, true);
+			gmap = std::make_unique<TMap>(MapType::GMAP, true);
 		else continue;
 
 		// Load the map.
 		if ( !gmap->load(CString() << groupmap, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << groupmap << "\n");
-			delete gmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [group map] %s\n", name.text(), groupmap.text());
-		mapList.push_back(gmap);
+		mapList.push_back(std::move(gmap));
+	}
+
+	// Update all map <--> level relationships
+	for (const auto& level : levelList)
+	{
+		bool found = false;
+		for (const auto& map : mapList)
+		{
+			int mx, my;
+			if (map->isLevelOnMap(level->getLevelName().toLower().text(), mx, my))
+			{
+				level->setMap(map.get(), mx, my);
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			level->setMap(nullptr);
+		}
 	}
 }
 
@@ -1074,7 +1084,7 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
-TPlayer * TServer::getPlayer(const unsigned short id) const
+TPlayer * TServer::getPlayer(unsigned short id) const
 {
 	if (id >= (unsigned short)playerIds.size())
 		return nullptr;
@@ -1082,7 +1092,7 @@ TPlayer * TServer::getPlayer(const unsigned short id) const
 	return playerIds[id];
 }
 
-TPlayer* TServer::getPlayer(const unsigned short id, int type) const
+TPlayer* TServer::getPlayer(unsigned short id, int type) const
 {
 	if (id >= (unsigned short)playerIds.size())
 		return nullptr;
@@ -1099,14 +1109,10 @@ TPlayer* TServer::getPlayer(const unsigned short id, int type) const
 
 TPlayer* TServer::getPlayer(const CString& account, int type) const
 {
-	for (auto i : playerList)
+	for (auto player : playerList)
 	{
-		TPlayer *player = (TPlayer*)i;
-		if (player == 0)
-			continue;
-
 		// Check if its the type of player we are looking for
-		if (!(player->getType() & type))
+		if (!player || !(player->getType() & type))
 			continue;
 
 		// Compare account names.
@@ -1116,84 +1122,10 @@ TPlayer* TServer::getPlayer(const CString& account, int type) const
 
 	return nullptr;
 }
-
-/*
-TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
-{
-	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (playerIds[id] == nullptr) return 0;
-	if (!includeRC && playerIds[id]->isControlClient()) return 0;
-	if (playerIds[id]->isHiddenClient()) return 0;
-	return playerIds[id];
-}
-
-TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0 || player->isHiddenClient())
-			continue;
-
-		if (!includeRC && player->isRC())
-			continue;
-
-		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
-	}
-	return 0;
-}
-
-TPlayer* TServer::getRC(const unsigned short id) const
-{
-	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (playerIds[id] == nullptr) return 0;
-	if (!playerIds[id]->isRC()) return 0;
-	return playerIds[id];
-}
-
-TPlayer* TServer::getRC(const CString& account) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0 || !player->isRC())
-			continue;
-
-		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
-	}
-	return 0;
-}
-*/
 
 TLevel* TServer::getLevel(const CString& pLevel)
 {
 	return TLevel::findLevel(pLevel, this);
-}
-
-TMap* TServer::getMap(const CString& name) const
-{
-	for (auto map : mapList)
-	{
-			if (map->getMapName() == name)
-			return map;
-	}
-	return nullptr;
-}
-
-TMap* TServer::getMap(const TLevel* pLevel) const
-{
-	if (pLevel == 0) return 0;
-
-	for (auto pMap : mapList)
-	{
-			if (pMap->isLevelOnMap(pLevel->getLevelName()))
-			return pMap;
-	}
-	return nullptr;
 }
 
 TWeapon* TServer::getWeapon(const CString& name)
@@ -1277,16 +1209,18 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 
 	// Add the npc to the level
 	if (pLevel)
+	{
 		pLevel->addNPC(newNPC);
 
-	// Send the NPC's props to everybody in range.
-	if (sendToPlayers)
-	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
+		// Send the NPC's props to everybody in range.
+		if (sendToPlayers)
+		{
+			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
 
-		// Send to level.
-		TMap* map = getMap(pLevel);
-		sendPacketToLevel(packet, map, pLevel, 0, true);
+			// Send to level.
+			TMap* map = pLevel->getMap();
+			sendPacketToLevel(packet, map, pLevel, 0, true);
+		}
 	}
 
 	return newNPC;
@@ -1358,7 +1292,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
 
 		// Send to level.
-		TMap* map = getMap(pLevel);
+		TMap* map = pLevel->getMap();
 		sendPacketToLevel(packet, map, pLevel, 0, true);
 	}
 
@@ -1534,6 +1468,7 @@ void TServer::playerLoggedIn(TPlayer *player)
 	// Send event to server that player is logging in
 	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
 	{
+		// TODO(joey): check if they have the event before queueing for them
 		TNPC *npcObject = (*it).second;
 		npcObject->queueNpcAction("npc.playerlogin", player);
 	}
@@ -1612,7 +1547,7 @@ bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
 
 bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
-	if ( settings.getBool("dontaddserverflags", false))
+	if (settings.getBool("dontaddserverflags", false))
 		return false;
 
 	// delete flag
@@ -1639,11 +1574,12 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
+void TServer::sendPacketToAll(CString pPacket, TPlayer *sender) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer || player->isNPCServer()) continue;
+		if (player == sender || player->isNPCServer())
+			continue;
 
 		player->sendPacket(pPacket);
 	}
@@ -1651,7 +1587,7 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))// || pLevel->isGroupLevel())
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP))// || pLevel->isGroupLevel())
 	{
 		for (auto p : playerList)
 		{
@@ -1663,7 +1599,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	}
 
 	if (pLevel == 0) return;
-	bool _groupMap = (pPlayer == 0 ? false : pPlayer->getMap()->isGroupMap());
+	bool _groupMap = pPlayer && pPlayer->getMap()->isGroupMap();
 	for (auto other : playerList)
 	{
 			if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
@@ -1671,19 +1607,19 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 
 		if (other->getMap() == pMap)
 		{
-			int sgmap[2] = {pMap->getLevelX(pLevel->getActualLevelName()), pMap->getLevelY(pLevel->getActualLevelName())};
+			int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
 			int ogmap[2];
 			switch (pMap->getType())
 			{
-				case MAPTYPE_GMAP:
+				case MapType::GMAP:
 					ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
 					ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
 					break;
 
 				default:
-				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX(other->getLevel()->getActualLevelName());
-					ogmap[1] = pMap->getLevelY(other->getLevel()->getActualLevelName());
+				case MapType::BIGMAP:
+					ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
+					ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
 					break;
 			}
 
@@ -1695,9 +1631,10 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
-	if (pPlayer->getLevel() == nullptr) return;
+	if (!pPlayer->getLevel())
+		return;
 
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
 	{
 		TLevel* level = pPlayer->getLevel();
 		if (level == nullptr) return;
@@ -1727,7 +1664,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			int ogmap[2], sgmap[2];
 			switch (pMap->getType())
 			{
-				case MAPTYPE_GMAP:
+				case MapType::GMAP:
 					ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
 					ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
 					sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
@@ -1735,11 +1672,11 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 					break;
 
 				default:
-				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX(player->getLevel()->getActualLevelName());
-					ogmap[1] = pMap->getLevelY(player->getLevel()->getActualLevelName());
-					sgmap[0] = pMap->getLevelX(pPlayer->getLevel()->getActualLevelName());
-					sgmap[1] = pMap->getLevelY(pPlayer->getLevel()->getActualLevelName());
+				case MapType::BIGMAP:
+					ogmap[0] = player->getLevel()->getMapX(); // pMap->getLevelX(player->getLevel()->getActualLevelName().text());
+					ogmap[1] = player->getLevel()->getMapY(); // pMap->getLevelY(player->getLevel()->getActualLevelName().text());
+					sgmap[0] = pPlayer->getLevel()->getMapX(); // pMap->getLevelX(pPlayer->getLevel()->getActualLevelName().text());
+					sgmap[1] = pPlayer->getLevel()->getMapY(); // pMap->getLevelY(pPlayer->getLevel()->getActualLevelName().text());
 					break;
 			}
 
@@ -1753,9 +1690,11 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer) continue;
-		if ( player->getType() & who)
-			player->sendPacket(pPacket);
+		if (player != pPlayer)
+		{
+			if (player->getType() & who)
+				player->sendPacket(pPacket);
+		}
 	}
 }
 
@@ -1775,7 +1714,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 {
 	// Definitions
 	TWeapon *weaponObj = getWeapon(pWeaponName);
-	if (weaponObj == 0 || weaponObj->isDefault())
+	if (!weaponObj || weaponObj->isDefault())
 		return false;
 
 	// Delete from File Browser

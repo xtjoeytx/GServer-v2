@@ -310,7 +310,6 @@ class TNPC
 		time_t modTime[NPCPROP_COUNT];
 		float x, y, hurtX, hurtY;
 		int x2, y2;
-		unsigned char gmaplevelx, gmaplevely;
 		unsigned int id;
 		int rupees;
 		unsigned char darts, bombs, glovePower, bombPower, swordPower, shieldPower;

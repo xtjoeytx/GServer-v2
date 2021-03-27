@@ -6,56 +6,47 @@
 #include "TMap.h"
 #include "TServer.h"
 
-TMap::TMap(int pType, bool pGroupMap)
+TMap::TMap(MapType pType, bool pGroupMap)
 : type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
 {
 }
 
-TMap::TMap(int pType, const CString& pFileName, TServer* pServer, bool pGroupMap)
-: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
-{
-	load(pFileName, pServer);
-}
+//TMap::TMap(MapType pType, const CString& pFileName, TServer* pServer, bool pGroupMap)
+//: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
+//{
+//	load(pFileName, pServer);
+//}
 
 bool TMap::load(const CString& pFileName, TServer* pServer)
 {
-	if (type == MAPTYPE_BIGMAP)
+	if (type == MapType::BIGMAP)
 		return loadBigMap(pFileName, pServer);
-	else if (type == MAPTYPE_GMAP)
+	else if (type == MapType::GMAP)
 		return loadGMap(pFileName, pServer);
 	return true;
 }
 
-bool TMap::isLevelOnMap(const CString& level) const
+bool TMap::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
 {
-	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
+	auto it = levels.find(level);
+	if (it != levels.end())
 	{
-		if (i->first == level)
-			return true;
+		mapx = it->second.mapx;
+		mapy = it->second.mapy;
+		return true;
 	}
+
 	return false;
 }
 
-CString TMap::getLevelAt(int x, int y) const
+const std::string& TMap::getLevelAt(int mx, int my) const
 {
-	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
-	{
-		if (i->second.mapx == x && i->second.mapy == y)
-			return i->first;
-	}
-	return CString();
-}
+	static const std::string emptyStr;
 
-int TMap::getLevelX(const CString& level) const
-{
-	if (levels.empty()) return 0;
-	return levels.find(level)->second.mapx;
-}
+	if (mx < width && my < height)
+		return _levelList[mx + my * width];
 
-int TMap::getLevelY(const CString& level) const
-{
-	if (levels.empty()) return 0;
-	return levels.find(level)->second.mapy;
+	return emptyStr;
 }
 
 bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
@@ -67,7 +58,7 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 
 	CString fileName = fileSystem->find(pFileName);
 	modTime = fileSystem->getModTime(pFileName);
-	mapName = pFileName;
+	mapName = pFileName.text();
 
 	// Make sure the file exists.
 	if (fileName.length() == 0) return false;
@@ -76,39 +67,55 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
 	// Parse it.
-	std::vector<CString>::iterator i = fileData.begin();
 	levels.clear();
+	width = 0;
+	height = 0;
 
-	int bmapx = 0;
-	int bmapy = 0;
-	while (i != fileData.end())
+	std::vector<std::vector<CString>> mapData;
+
+	for (auto& line : fileData)
 	{
-		CString line = i->removeAll("\r").trim();
-		if (line.length() == 0) { ++i; continue; }
+	    line = line.removeAll("\r").trim();
+	    if (line.isEmpty())
+            continue;
 
-		// Untokenize the level names and put them into a vector for easy loading.
-		line.guntokenizeI();
-		std::vector<CString> names = line.tokenize("\n");
-		for (std::vector<CString>::iterator j = names.begin(); j != names.end(); ++j)
-		{
-			// Check for blank levels.
-			if (*j == "\r")
-			{
-				++bmapx;
-				continue;
-			}
+	    auto levelList = line.guntokenize().tokenize("\n", true);
+        int empty = 0;
+	    for (const auto& lvl : levelList) {
+	        // dont calculate the width based on any extra padding
+	        empty = (lvl.isEmpty() ? ++empty : 0);
+	    }
 
-			// Save the level into the map.
-			SMapLevel lvl(bmapx++, bmapy);
-			levels[*j] = lvl;
-		}
+	    // calculate width/height
+	    auto currentWidth = levelList.size() - empty;
+        height++;
+	    if (width < currentWidth)
+	        width = currentWidth;
 
-		if (bmapx > width) width = bmapx;
-		bmapx = 0;
-		++bmapy;
-		++i;
-	}
-	height = bmapy;
+        mapData.push_back(levelList);
+    }
+
+    {
+        std::vector<std::string> levelMap(width * height);
+
+        for (size_t my = 0; my < mapData.size(); my++)
+        {
+            for (size_t mx = 0; mx < mapData[my].size(); mx++)
+            {
+				if (mx < width)
+				{
+					std::string lcLevelName(mapData[my][mx].toLower().text());
+					if (!lcLevelName.empty())
+					{
+						levelMap[mx + my * width] = lcLevelName;
+						levels[lcLevelName] = SMapLevel(mx, my);
+					}
+				}
+            }
+        }
+
+        _levelList = std::move(levelMap);
+    }
 
 	return true;
 }
@@ -122,20 +129,24 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 
 	CString fileName = fileSystem->find(pFileName);
 	modTime = fileSystem->getModTime(pFileName);
-	mapName = pFileName;
+	mapName = pFileName.text();
 
 	// Make sure the file exists.
 	if (fileName.length() == 0) return false;
+
+	levels.clear();
+	width = 0;
+	height = 0;
 
 	// Load the gmap.
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
 	// Parse it.
-	for (std::vector<CString>::iterator i = fileData.begin(); i != fileData.end(); ++i)
+	for (auto it = fileData.begin(); it != fileData.end(); ++it)
 	{
 		// Tokenize
-		std::vector<CString> curLine = i->removeAll("\r").tokenize();
-		if (curLine.size() < 1)
+		std::vector<CString> curLine = it->removeAll("\r").tokenize();
+		if (curLine.empty())
 			continue;
 
 		// Parse Each Type
@@ -162,52 +173,61 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 		}
 		else if (curLine[0] == "LEVELNAMES")
 		{
-			levels.clear();
-
-			++i;
-			int gmapx = 0;
+			++it;
 			int gmapy = 0;
-			while (i != fileData.end())
+
+            std::vector<std::string> levelMap(width * height);
+
+            while (it != fileData.end())
 			{
-				CString line = i->removeAll("\r").trim();
-				if (line.length() == 0) { ++i; continue; }
+				CString line = it->removeAll("\r").trim();
+				if (line.length() == 0) { ++it; continue; }
 				if (line == "LEVELNAMESEND") break;
 
-				// Untokenize the level names and put them into a vector for easy loading.
-				line.guntokenizeI();
-				std::vector<CString> names = line.tokenize("\n");
-				for (std::vector<CString>::iterator j = names.begin(); j != names.end(); ++j)
+				if (gmapy < height)
 				{
-					// Check for blank levels.
-					if (*j == "\r")
-					{
-						++gmapx;
-						continue;
-					}
+				    int gmapx = 0;
 
-					// Save the level into the map.
-					SMapLevel lvl(gmapx++, gmapy);
-					levels[*j] = lvl;
-				}
+                    // Untokenize the level names and put them into a vector for easy loading.
+                    line.guntokenizeI();
+                    std::vector<CString> names = line.tokenize("\n");
+                    for (auto &levelName : names)
+                    {
+                        if (gmapx < width)
+                        {
+                            // Check for blank levels.
+							if (levelName != "\r")
+							{
+								std::string lcLevelName(levelName.toLower().text());
+								levelMap[gmapx + gmapy * width] = lcLevelName;
+								levels[lcLevelName] = SMapLevel(gmapx, gmapy);
+							}
 
-				gmapx = 0;
-				++gmapy;
-				++i;
+                            ++gmapx;
+                        }
+                    }
+
+                    ++gmapy;
+                }
+
+				++it;
 			}
+
+            _levelList = std::move(levelMap);
 		}
 		else if (curLine[0] == "MAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 			
-			mapImage = curLine[1];
+			mapImage = curLine[1].text();
 		}
 		else if (curLine[0] == "MINIMAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			miniMapImage = curLine[1];
+			miniMapImage = curLine[1].text();
 		}
 		else if (curLine[0] == "NOAUTOMAPPING")
 		{
@@ -220,18 +240,17 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 		else if (curLine[0] == "LOADATSTART")
 		{
 			loadFullMap = false;
-
-			// TODO(joey):Untested, but should work
-			++i;
-			while (i != fileData.end())
+			
+			++it;
+			while (it != fileData.end())
 			{
-				CString line = i->removeAll("\r");
+				CString line = it->removeAll("\r");
 				if (line == "LOADATSTARTEND") break;
 
 				line.guntokenizeI();
 				std::vector<CString> names = line.tokenize("\n");
 				for (auto& levelName : names) {
-					preloadLevelList.push_back(levelName);
+					preloadLevelList.push_back(levelName.toLower().text());
 				}
 			}
 		}
@@ -241,26 +260,17 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-CString TMap::getLevels() const
-{
-	CString retVal;
-	
-	for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
-	{
-		retVal << i->first << "\n";
-	}
-	
-	return retVal;
-}
-
 void TMap::loadMapLevels(TServer *server) const
 {
 	if (loadFullMap)
 	{
-		for (std::map<CString, SMapLevel>::const_iterator i = levels.begin(); i != levels.end(); ++i)
+		for (const auto& levelName : _levelList)
 		{
-			auto lvl = server->getLevel(i->first);
-			assert(lvl);
+			if (!levelName.empty())
+			{
+				auto lvl = server->getLevel(levelName);
+				assert(lvl);
+			}
 		}
 	}
 	else if (!preloadLevelList.empty())

@@ -1446,7 +1446,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	leaveLevel();
 
 	// See if the new level is on a gmap.
-	pmap = server->getMap(newLevel);
+	pmap = (newLevel ? newLevel->getMap() : nullptr);
 
 	// Set x/y location.
 	float oldX = x, oldY = y;
@@ -1464,7 +1464,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 		{
 			x = oldX;
 			y = oldY;
-			pmap = server->getMap(currentLevel);
+			pmap = currentLevel->getMap();
 			warped = setLevel(currentLevel->getLevelName());
 		}
 		if ( !warped )
@@ -1475,7 +1475,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 			// Try to warp to the unstick me level.
 			x = unstickX;
 			y =	unstickY;
-			pmap = server->getMap(unstickLevel);
+			pmap = unstickLevel->getMap();
 			if ( !setLevel(unstickLevel->getLevelName()))
 				return false;
 		}
@@ -1541,13 +1541,11 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Tell the client their new level.
 	if (modTime == 0 || versionID < CLVER_2_1)
 	{
-		if (pmap && pmap->getType() == MAPTYPE_GMAP && versionID >= CLVER_2_1)
+		if (pmap && pmap->getType() == MapType::GMAP && versionID >= CLVER_2_1)
 		{
-			gmaplevelx = pmap->getLevelX(levelName);
-			gmaplevely = pmap->getLevelY(levelName);
 			sendPacket(CString() >> (char)PLO_PLAYERWARP2
 				>> (char)(x * 2) >> (char)(y * 2) >> (char)(z + 50)
-				>> (char)gmaplevelx >> (char)gmaplevely
+				>> (char)level->getMapX() >> (char)level->getMapY()
 				<< pmap->getMapName());
 		}
 		else
@@ -1625,7 +1623,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
+	if (pmap && pmap->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
 
 	// Tell the client if there are any ghost players in the level.
@@ -1644,7 +1642,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if ( !fromAdjacent || pmap != 0)
 	{
 		// Send NPCs.
-		if (pmap && pmap->getType() == MAPTYPE_GMAP)
+		if (pmap && pmap->getType() == MapType::GMAP)
 		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 
@@ -1685,17 +1683,18 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				if (player == this || player->getMap() != pmap) continue;
 				if (pmap->isGroupMap() && levelGroup != player->getGroup()) continue;
 
-				if (pmap->getType() == MAPTYPE_GMAP)
+				if (pmap->getType() == MapType::GMAP)
 				{
 					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
-					if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
+					if (abs(ogmap[0] - level->getMapX()) < 2 && abs(ogmap[1] - level->getMapY()) < 2)
 						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 				}
-				else if (pmap->getType() == MAPTYPE_BIGMAP)
+				else if (pmap->getType() == MapType::BIGMAP)
 				{
 					if (player->getLevel() == 0) continue;
-					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getActualLevelName()), pmap->getLevelY(player->getLevel()->getActualLevelName())};
-					int sgmap[2] = {pmap->getLevelX(pLevel->getActualLevelName()), pmap->getLevelY(pLevel->getActualLevelName())};
+					int ogmap[2] = { player->getLevel()->getMapX(), player->getLevel()->getMapY() };
+					int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
+
 					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 				}
@@ -3315,7 +3314,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 
 	// Set our old level back to normal.
 	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
+	if (pmap && pmap->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
 	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)

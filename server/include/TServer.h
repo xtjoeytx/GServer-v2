@@ -141,7 +141,7 @@ class TServer : public CSocketStub
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
-		std::vector<TMap *>* getMapList()				{ return &mapList; }
+		const std::vector<std::unique_ptr<TMap>>& getMapList() const { return mapList; }
 		std::vector<CString>* getStatusList()			{ return &statusList; }
 		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
@@ -155,11 +155,9 @@ class TServer : public CSocketStub
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
 		TLevel* getLevel(const CString& pLevel);
-		TMap* getMap(const CString& name) const;
-		TMap* getMap(const TLevel* pLevel) const;
-		TNPC* getNPC(const unsigned int id) const;
-		TPlayer* getPlayer(const unsigned short id) const;
-		TPlayer* getPlayer(const unsigned short id, int type) const;
+		TNPC* getNPC(unsigned int id) const;
+		TPlayer* getPlayer(unsigned short id) const;
+		TPlayer* getPlayer(unsigned short id, int type) const; // = PLTYPE_ANYCLIENT) const;
 		TPlayer* getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
@@ -191,7 +189,7 @@ class TServer : public CSocketStub
 		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
 
 		// Packet sending.
-		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
+		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
@@ -241,7 +239,7 @@ class TServer : public CSocketStub
 		std::unordered_map<std::string, TNPC *> npcNameList;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
 		std::vector<TLevel *> levelList;
-		std::vector<TMap *> mapList;
+		std::vector<std::unique_ptr<TMap>> mapList;
 		std::vector<TNPC *> npcIds, npcList;
 		std::vector<TPlayer *> playerIds, playerList;
 

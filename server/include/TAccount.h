@@ -237,7 +237,7 @@ class TAccount
 		CString attrList[30], bodyImg, chatMsg, headImg, horseImg, gani, bowImage, language;
 		CString levelName, nickName, shieldImg, swordImg;
 		float deviation, power, rating, x, y, z;
-		int x2, y2, z2, gmaplevelx, gmaplevely;
+		int x2, y2, z2;
 		int additionalFlags, ap, apCounter, arrowc, bombc, bombPower, carrySprite;
 		unsigned char colors[5];
 		int deaths, glovePower, bowPower, gralatc, horsec, kills, mp, maxPower;

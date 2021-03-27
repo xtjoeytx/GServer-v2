@@ -119,7 +119,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 		{
 			if (isClient())// || type == PLTYPE_AWAIT)
 			{
-				if (pmap && pmap->getType() == MAPTYPE_GMAP)
+				if (pmap && pmap->getType() == MapType::GMAP)
 					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
 				{
@@ -273,11 +273,11 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 		}
 
 		case PLPROP_GMAPLEVELX:
-			buffer >> (char)gmaplevelx;
+			buffer >> (char)(level ? level->getMapX() : 0);
 			return;
 
 		case PLPROP_GMAPLEVELY:
-			buffer >> (char)gmaplevely;
+			buffer >> (char)(level ? level->getMapY() : 0);
 			return;
 
 		// TODO(joey): figure this out. Something to do with guilds? irc-related
@@ -856,30 +856,34 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 			case PLPROP_GMAPLEVELX:
 			{
-				gmaplevelx = pPacket.readGUChar();
-				if (pmap)
+				int mx = pPacket.readGUChar();
+
+				if (level && level->getMap())
 				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					auto cmap = level->getMap();
+					auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
 					leaveLevel();
-					setLevel(levelName, -1);
+					setLevel(newLevelName, -1);
 				}
 #ifdef DEBUG
-				printf("gmap level x: %d\n", gmaplevelx);
+				printf("gmap level x: %d\n", level->getMapX());
 #endif
 				break;
 			}
 
 			case PLPROP_GMAPLEVELY:
 			{
-				gmaplevely = pPacket.readGUChar();
-				if (pmap)
+				int my = pPacket.readGUChar();
+
+				if (level && level->getMap())
 				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					auto cmap = level->getMap();
+					auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
 					leaveLevel();
-					setLevel(levelName, -1);
+					setLevel(newLevelName, -1);
 				}
 #ifdef DEBUG
-				printf("gmap level y: %d\n", gmaplevely);
+				printf("gmap level y: %d\n", level->getMapY());
 #endif
 				break;
 			}

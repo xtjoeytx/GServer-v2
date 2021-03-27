@@ -268,10 +268,9 @@ bool TPlayer::sendLoginClient()
 	// So, just send them all the maps loaded into the server.
 	if (versionID == CLVER_2_31 || versionID == CLVER_1_411)
 	{
-		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
+		for (const auto & map : server->getMapList())
 		{
-			TMap* map = *i;
-			if (map->getType() == MAPTYPE_BIGMAP)
+			if (map->getType() == MapType::BIGMAP)
 				msgPLI_WANTFILE(CString() << map->getMapName());
 		}
 	}

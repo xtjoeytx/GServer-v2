@@ -34,20 +34,13 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 	origY = y;
 #endif
 
-	// Set the gmap levels.
+	// Keep a copy of the original level for resets
+#ifdef V8NPCSERVER
 	if (level)
 	{
-		TMap *gmap = level->getMap();
-		if (gmap && gmap->getType() == MAPTYPE_GMAP)
-		{
-			gmaplevelx = (unsigned char) gmap->getLevelX(level->getLevelName());
-			gmaplevely = (unsigned char) gmap->getLevelY(level->getLevelName());
-		}
-
-#ifdef V8NPCSERVER
 		origLevel = level->getLevelName();
-#endif
 	}
+#endif
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
 
@@ -59,7 +52,6 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	: server(pServer), levelNPC(pLevelNPC), blockPositionUpdates(false),
 	x(30), y(30.5), x2((int)(x * 16)), y2((int)(y * 16)),
-	gmaplevelx(0), gmaplevely(0),
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
 	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
@@ -309,10 +301,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelX(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level ? level->getMapX() : 0);
 
 		case NPCPROP_GMAPLEVELY:
-			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level ? level->getMapY() : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
@@ -595,11 +587,11 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_GMAPLEVELX:
-				gmaplevelx = pProps.readGUChar();
+				pProps.readGUChar();
 				break;
 
 			case NPCPROP_GMAPLEVELY:
-				gmaplevely = pProps.readGUChar();
+				pProps.readGUChar();
 				break;
 
 			case NPCPROP_SCRIPTER:
@@ -1454,12 +1446,12 @@ bool TNPC::loadNPC(const CString& fileName)
 			setY(strtofloat(curLine.readString("")));
 		else if (curCommand == "MAPX")
 		{
-			gmaplevelx = strtoint(curLine.readString(""));
+			//gmaplevelx = strtoint(curLine.readString(""));
 			modTime[NPCPROP_GMAPLEVELX] = updateTime;
 		}
 		else if (curCommand == "MAPY")
 		{
-			gmaplevely = strtoint(curLine.readString(""));
+			//gmaplevely = strtoint(curLine.readString(""));
 			modTime[NPCPROP_GMAPLEVELY] = updateTime;
 		}
 		else if (curCommand == "NICK")

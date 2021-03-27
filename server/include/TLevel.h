@@ -85,6 +85,18 @@ class TLevel
 		//! \return The level links.
 		std::vector<TLevelLink>& getLevelLinks()		{ return levelLinks; }
 
+		//! Gets the gmap this level belongs to.
+		//! \return The gmap this level belongs to.
+		TMap* getMap() const							{ return levelMap; }
+
+		//! Gets the map x of this level.
+		//! \return The map x of this level on the map
+		int getMapX() const								{ return mapx; }
+
+		//! Gets the map y of this level.
+		//! \return The map y of this level on the map
+		int getMapY() const								{ return mapy; }
+
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
 		std::vector<TPlayer *>* getPlayerList()			{ return &levelPlayerList; }
@@ -180,10 +192,6 @@ class TLevel
 		//! \return The player at the id location.
 		TPlayer* getPlayer(unsigned int id);
 
-		//! Gets the gmap this level belongs to.
-		//! \return The gmap this level belongs to.
-		TMap* getMap() const;
-
 		//! Adds an NPC to the level.
 		//! \param npc NPC to add to the level.
 		//! \return True if the NPC was successfully added or false if it already exists in the level.
@@ -192,6 +200,12 @@ class TLevel
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
 		void removeNPC(TNPC* npc);
+
+		//! Sets the map for the current level.
+		//! \param pMap Map the level is on.
+		//! \param pMapX X location on the map.
+		//! \param pMapY Y location on the map.
+		void setMap(TMap* pMap, int pMapX = 0, int pMapY = 0);
 
 		//! Does special events that should happen every second.
 		//! \return Currently, it always returns true.
@@ -228,6 +242,8 @@ class TLevel
 		bool levelSpar;
 		bool levelSingleplayer;
 		short levelTiles[4096];
+		int mapx, mapy;
+		TMap* levelMap;
 		CString fileName, fileVersion, actualLevelName, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;
 		std::vector<TLevelBaddy *> levelBaddyIds;
@@ -254,7 +270,7 @@ inline IScriptObject<TLevel>* TLevel::getScriptObject() const {
 inline void TLevel::setScriptObject(IScriptObject<TLevel>* object) {
 	_scriptObject = object;
 }
-#endif
 
+#endif
 
 #endif // TLEVEL_H
