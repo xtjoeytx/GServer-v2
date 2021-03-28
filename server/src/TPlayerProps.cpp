@@ -250,24 +250,27 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 		case PLPROP_X2:
 		{
-			unsigned short val = abs(x2) << 1;
-			if (x2 < 0) val |= 0x0001;
+			uint16_t val = ((uint16_t)std::abs(x * 16.0f)) << 1;
+			if (x < 0)
+				val |= 0x0001;
 			buffer.writeGShort(val);
 			return;
 		}
 
 		case PLPROP_Y2:
 		{
-			unsigned short val = abs(y2) << 1;
-			if (y2 < 0) val |= 0x0001;
-			buffer.writeGShort((short)val);
+			uint16_t val = ((uint16_t)std::abs(y * 16.0f)) << 1;
+			if (y < 0)
+				val |= 0x0001;
+			buffer.writeGShort(val);
 			return;
 		}
 
 		case PLPROP_Z2:
 		{
-			unsigned short val = abs(z2) << 1;
-			if (z2 < 0) val |= 0x0001;
+			uint16_t val = ((uint16_t)std::abs(z * 16.0f)) << 1;
+			if (z < 0)
+				val |= 0x0001;
 			buffer.writeGShort(val);
 			return;
 		}
@@ -312,10 +315,9 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 {
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
-	bool doSignCheck = false;
 	bool doTouchTest = false;
-	int len = 0;
 	bool sentInvalid = false;
+	int len = 0;
 
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -422,7 +424,6 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 #ifdef V8NPCSERVER
 				}
 #endif
-
 				break;
 			}
 
@@ -615,10 +616,11 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				x2 = (int)(x * 16);
 				levelBuff2 >> (char)PLPROP_X2 << getProp(PLPROP_X2);
 			break;
 
@@ -627,14 +629,12 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				y2 = (int)(y * 16);
 				levelBuff2 >> (char)PLPROP_Y2 << getProp(PLPROP_Y2);
-
-				// Do collision testing.
-				doSignCheck = true;
 			break;
 
 			case PLPROP_Z:
@@ -645,7 +645,6 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				z2 = (int)(z * 16);
 				levelBuff2 >> (char)PLPROP_Z2 << getProp(PLPROP_Z2);
 			break;
 
@@ -653,7 +652,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				sprite = pPacket.readGUChar();
 
 				// Do collision testing.
-				doSignCheck = true;
+				doTouchTest = true;
 			break;
 
 			case PLPROP_STATUS:
@@ -955,54 +954,61 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			// Bit 0x0001 controls if it is negative or not.
 			// Bits 0xFFFE are the actual value.
 			case PLPROP_X2:
-				x2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				x = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					x = -x;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_X << getProp(PLPROP_X);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
 				doTouchTest = true;
-
-				// If the first bit is 1, our position is negative.
-				x2 >>= 1;
-				if ((short)len & 0x0001) x2 = -x2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				x = (float)x2 / 16.0f;
-				levelBuff2 >> (char)PLPROP_X << getProp(PLPROP_X);
 				break;
 
 			case PLPROP_Y2:
-				y2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				y = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					y = -y;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
-				doTouchTest = true;
-
-				// If the first bit is 1, our position is negative.
-				y2 >>= 1;
-				if ((short)len & 0x0001) y2 = -y2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				y = (float)y2 / 16.0f;
-				levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
 
 				// Do collision testing.
-				doSignCheck = true;
+				doTouchTest = true;
 				break;
 
 			case PLPROP_Z2:
-				z2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				z = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					z = -z;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
-				// If the first bit is 1, our position is negative.
-				z2 >>= 1;
-				if ((short)len & 0x0001) z2 = -z2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
-				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
+				//// Let pre-2.30+ clients see 2.30+ movement.
+				//z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				break;
 
 			case PLPROP_COMMUNITYNAME:
@@ -1047,18 +1053,20 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
 
+#ifdef V8NPCSERVER
 		// Movement check.
 		//if (options & PLSETPROPS_SETBYPLAYER)
 		if (!rc)
 		{
-			if (doSignCheck)
-				testSign();
-
-#ifdef V8NPCSERVER
 			if (doTouchTest)
+			{
+				if (sprite % 4 == 0)
+					testSign();
 				testTouch();
-#endif
+			}
+
 		}
+#endif
 	}
 
 	if (sentInvalid)

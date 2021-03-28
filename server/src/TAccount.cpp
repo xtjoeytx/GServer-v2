@@ -17,7 +17,7 @@ accountIp(0), adminRights(0),
 bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
 nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
 deviation(350.0f), power(3.0), rating(1500.0f),
-x(0), y(0), z(0), x2(0), y2(0), z2(0),
+x(0), y(0), z(0),
 additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
 deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
 onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
@@ -102,9 +102,9 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "NICK") { if (!ignoreNickname) nickName = val.subString(0, 223); }
 		else if (section == "COMMUNITYNAME") communityName = val;
 		else if (section == "LEVEL") levelName = val;
-		else if (section == "X") { x = (float)strtofloat(val); x2 = (int)(x * 16); }
-		else if (section == "Y") { y = (float)strtofloat(val); y2 = (int)(y * 16); }
-		else if (section == "Z") { z = (float)strtofloat(val); z2 = (int)(z * 16); }
+		else if (section == "X") { x = (float)strtofloat(val); }
+		else if (section == "Y") { y = (float)strtofloat(val); }
+		else if (section == "Z") { z = (float)strtofloat(val); }
 		else if (section == "MAXHP") setMaxPower(strtoint(val));
 		else if (section == "HP") setPower((float)strtofloat(val));
 		else if (section == "RUPEES") gralatc = strtoint(val);
@@ -220,12 +220,10 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		if (settings->exists("startx"))
 		{
 			x = settings->getFloat("startx", 30.0f);
-			x2 = (int)(x * 16);
 		}
 		if (settings->exists("starty"))
 		{
 			y = settings->getFloat("starty", 30.5f);
-			y2 = (int)(y * 16);
 		}
 
 		// Save our account now and add it to the file system.

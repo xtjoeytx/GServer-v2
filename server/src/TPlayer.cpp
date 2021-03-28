@@ -845,7 +845,7 @@ void TPlayer::testTouch()
 	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
 	int dir = sprite % 4;
 
-	auto npcList = level->testTouch(x2 + touchtestd[dir * 2], y2 + touchtestd[dir * 2 + 1]);
+	auto npcList = level->testTouch((int)(x * 16.0f) + touchtestd[dir * 2], (int)(y * 16.0f) + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
 		npc->queueNpcAction("npc.playertouchsme", this);
 #endif

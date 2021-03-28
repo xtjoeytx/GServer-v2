@@ -1673,10 +1673,10 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 
 				default:
 				case MapType::BIGMAP:
-					ogmap[0] = player->getLevel()->getMapX(); // pMap->getLevelX(player->getLevel()->getActualLevelName().text());
-					ogmap[1] = player->getLevel()->getMapY(); // pMap->getLevelY(player->getLevel()->getActualLevelName().text());
-					sgmap[0] = pPlayer->getLevel()->getMapX(); // pMap->getLevelX(pPlayer->getLevel()->getActualLevelName().text());
-					sgmap[1] = pPlayer->getLevel()->getMapY(); // pMap->getLevelY(pPlayer->getLevel()->getActualLevelName().text());
+					ogmap[0] = player->getLevel()->getMapX();
+					ogmap[1] = player->getLevel()->getMapY();
+					sgmap[0] = pPlayer->getLevel()->getMapX();
+					sgmap[1] = pPlayer->getLevel()->getMapY();
 					break;
 			}
 
