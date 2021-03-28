@@ -842,10 +842,11 @@ bool TPlayer::testSign()
 void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
-	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
+	//static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
+	static const float touchtestd[] = { 1.5f,1, 0,2.0f, 1.5f,3.5f, 3.0f,2.0f };
 	int dir = sprite % 4;
 
-	auto npcList = level->testTouch((int)(x * 16.0f) + touchtestd[dir * 2], (int)(y * 16.0f) + touchtestd[dir * 2 + 1]);
+	auto npcList = level->testTouch(x + touchtestd[dir * 2], y + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
 		npc->queueNpcAction("npc.playertouchsme", this);
 #endif
@@ -3867,12 +3868,9 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	else if (level)
 	{
 		//handled = false; // client and server scripts should both be able to respond to triggers
-		int triggerX = 16 * loc[0];
-		int triggerY = 16 * loc[1];
-
 		CString triggerData = action.readString("");
 
-		auto npcList = level->findAreaNpcs(triggerX, triggerY, 16, 16);
+		auto npcList = level->findAreaNpcs(loc[0], loc[1], 8, 8);
 		for (auto npcTouched : npcList) {
 			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
 		}

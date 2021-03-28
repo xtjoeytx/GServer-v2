@@ -1040,8 +1040,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 			TLevel *npcLevel = npc->getLevel();
 			if (npcLevel != nullptr) {
 				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
-					append(" at pos (").append(CString((float)npc->getPixelX() / 16.0f).text()).
-					append(", ").append(CString((float)npc->getPixelY() / 16.0f).text()).append(")");
+					append(" at pos (").append(CString(npc->getY()).text()).
+					append(", ").append(CString(npc->getX()).text()).append(")");
 			}
 
 			script_profiles.push_back(std::make_pair(executionData.second, npcName));

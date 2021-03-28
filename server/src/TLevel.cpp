@@ -1383,16 +1383,16 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 }
 
 #ifdef V8NPCSERVER
-std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
+std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHeight)
 {
-	int testEndX = pX + pWidth;
-	int testEndY = pY + pHeight;
+	float testEndX = pX + (float)(pWidth / 16.0f);
+	float testEndY = pY + (float)(pHeight / 16.0f);
 
 	std::vector<TNPC *> npcList;
 	for (const auto& npc : levelNPCs)
 	{
-		if (pX < npc->getPixelX() + npc->getWidth() && testEndX > npc->getPixelX() &&
-			pY < npc->getPixelY() + npc->getHeight() && testEndY > npc->getPixelY())
+		if (pX < npc->getX() + (float)(npc->getWidth() / 16.0f) && testEndX > npc->getX() &&
+			pY < npc->getY() + (float)(npc->getHeight() / 16.0f) && testEndY > npc->getY())
 		{
 			npcList.push_back(npc);
 		}
@@ -1401,15 +1401,15 @@ std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight
 	return npcList;
 }
 
-std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
+std::vector<TNPC*> TLevel::testTouch(float pX, float pY)
 {
 	std::vector<TNPC*> npcList;
 	for (const auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if (npc->getPixelX() <= pX && npc->getPixelX() + npc->getWidth() >= pX &&
-				npc->getPixelY() <= pY && npc->getPixelY() + npc->getHeight() >= pY)
+			if (npc->getX() <= pX && npc->getX() + (float)(npc->getWidth() / 16.0f) >= pX &&
+				npc->getY() <= pY && npc->getY() + (float)(npc->getHeight() / 16.0f) >= pY)
 			{
 				npcList.push_back(npc);
 			}
@@ -1419,7 +1419,7 @@ std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 	return npcList;
 }
 
-TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
+TNPC * TLevel::isOnNPC(float pX, float pY, bool checkEventFlag)
 {
 	for (const auto& npc : levelNPCs)
 	{
@@ -1430,8 +1430,8 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 		{
 			if ((npc->getVisibleFlags() & 1) != 0)
 			{
-				if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
-					(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
+				if ((pX >= npc->getX() && pX <= npc->getX() + (float)(npc->getWidth() / 16.0f)) &&
+					(pY >= npc->getY() && pY <= npc->getY() + (float)(npc->getHeight() / 16.0f)))
 				{
 					// what if it touches multiple npcs? hm. not sure how graal did it.
 					return npc;
