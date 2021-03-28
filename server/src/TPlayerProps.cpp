@@ -336,7 +336,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick, (rc != nullptr));
+				else setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
 				
 				if (options & PLSETPROPS_FORWARD)
 					globalBuff >> (char)propId << getProp(propId);
@@ -344,7 +344,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				// Send this if the player is located on another server
 				// globalBuff >> (char)81;
 
-				if (!(options & PLSETPROPS_SETBYPLAYER))
+				if (!(options & PLSETPROPS_FORWARDSELF))
 					selfBuff >> (char)propId << getProp(propId);
 			}
 			break;
