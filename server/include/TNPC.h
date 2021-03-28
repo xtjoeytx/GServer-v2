@@ -250,7 +250,7 @@ class TNPC
 		unsigned char getColorId(unsigned int idx) const;
 
 #ifdef V8NPCSERVER
-		inline bool joinedClass(const std::string& name) {
+		bool joinedClass(const std::string& name) {
 			auto it = std::find(joinedClasses.begin(), joinedClasses.end(), name);
 			return (it != joinedClasses.end());
 		}
