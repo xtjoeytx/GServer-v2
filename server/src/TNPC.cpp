@@ -737,19 +737,59 @@ void TNPC::testTouch()
 	if (level == 0)
 		return;
 
-	// 2, 3
-	static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
-	int dir = sprite % 4;
+	bool tryLocalLinks = canWarp;
 
-	auto linkTouched = level->getLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
-	if (linkTouched)
-	{
-		TLevel *newLevel = server->getLevel(linkTouched->getNewLevel());
-		if (newLevel != 0)
+	// 2, 3
+	if (!canWarp) {
+		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		int dir = sprite % 4;
+
+		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
+		if (linkTouched)
 		{
-			float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
-			float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
-			this->warpNPC(newLevel, newX, newY);
+			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
+			if (newLevel != 0)
+			{
+				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
+				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+				this->warpNPC(newLevel, newX, newY);
+			}
+		}
+	}
+	else if (level->getMap())
+	{
+		auto map = level->getMap();
+		float gmapX = x + 64.0f * level->getMapX();
+		float gmapY = y + 64.0f * level->getMapY();
+		int mapx = gmapX / 64;
+		int mapy = gmapY / 64;
+
+		if (level->getMapX() != mapx || level->getMapY() != mapy) {
+			TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
+			if (newLevel != nullptr) {
+				//float newX = x + 64.0f * newLevel->getMapX();
+				//float newY = y + 64.0f * newLevel->getMapY();
+				this->warpNPC(newLevel, fmodf(gmapX, 64.0f), fmodf(gmapY, 64.0f));
+				tryLocalLinks = false;
+			}
+		}
+	}
+
+	if (tryLocalLinks)
+	{
+		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		int dir = sprite % 4;
+
+		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
+		if (linkTouched)
+		{
+			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
+			if (newLevel && !(level->getMap() && level->getMap() == newLevel->getMap()))
+			{
+				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
+				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+				this->warpNPC(newLevel, newX, newY);
+			}
 		}
 	}
 }
@@ -1302,9 +1342,17 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 	x = pX;
 	y = pY;
 
+	updatePropModTime(NPCPROP_CURLEVEL);
+	updatePropModTime(NPCPROP_GMAPLEVELX);
+	updatePropModTime(NPCPROP_GMAPLEVELY);
+	updatePropModTime(NPCPROP_X2);
+	updatePropModTime(NPCPROP_Y2);
+
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
-	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
+	
+	if (!npcName.empty())
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
 	// Queue event
 	this->queueNpcAction("npc.warped");

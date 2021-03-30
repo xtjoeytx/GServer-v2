@@ -1608,20 +1608,20 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 		if (other->getMap() == pMap)
 		{
 			int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
-			int ogmap[2];
-			switch (pMap->getType())
-			{
-				case MapType::GMAP:
-					ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
-					ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
-					break;
+			int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
+			//switch (pMap->getType())
+			//{
+			//	case MapType::GMAP:
+			//		ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
+			//		ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
+			//		break;
 
-				default:
-				case MapType::BIGMAP:
-					ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
-					ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
-					break;
-			}
+			//	default:
+			//	case MapType::BIGMAP:
+			//		ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
+			//		ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
+			//		break;
+			//}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 				other->sendPacket(pPacket);
