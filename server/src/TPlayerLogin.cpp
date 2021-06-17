@@ -87,12 +87,12 @@ bool TPlayer::sendLogin()
 			return false;
 		}
 	}
-	
+
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-	//sendPacket(CString() >> (char)45 << "basepackage.gupd");
+	sendPacket(CString() >> (char)45 << "basepackage.gupd");
 
     //sendPacket(CString() >> (char)PLO_FULLSTOP);
 	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
