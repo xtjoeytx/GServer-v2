@@ -33,7 +33,7 @@ void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set((double)npcObject->getPixelX() / 16.0f);
+	info.GetReturnValue().Set(npcObject->getX());
 }
 
 void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -51,7 +51,7 @@ void NPC_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set((double)npcObject->getPixelY() / 16.0f);
+	info.GetReturnValue().Set(npcObject->getY());
 }
 
 void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -595,12 +595,12 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	int delta_x = (int)(16 * args[0]->NumberValue(context).ToChecked());
-	int delta_y = (int)(16 * args[1]->NumberValue(context).ToChecked());
+	float dx = (float)args[0]->NumberValue(context).ToChecked();
+	float dy = (float)args[1]->NumberValue(context).ToChecked();
 	double time_fps = args[2]->NumberValue(context).ToChecked();
 	int options = args[3]->Int32Value(context).ToChecked();
 
-	npcObject->moveNPC(delta_x, delta_y, time_fps, options);
+	npcObject->moveNPC(dx, dy, time_fps, options);
 }
 
 // NPC Method: npc.setimg(image);

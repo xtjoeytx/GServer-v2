@@ -500,7 +500,7 @@ bool TPlayer::doMain()
 		{
 			std::vector<CString> pack = grMovementPackets.tokenize("\n");
 			for (auto & i : pack)
-				setProps(i, true, false);
+				setProps(i, PLSETPROPS_FORWARD);
 		}
 		grMovementPackets.clear(42);
 	}
@@ -558,7 +558,7 @@ bool TPlayer::doTimedEvents()
 			if (ap < 100)
 			{
 				ap++;
-				setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+				setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			}
 			if (ap < 20) apCounter = settings->getInt("aptime0", 30);
 			else if (ap < 40) apCounter = settings->getInt("aptime1", 90);
@@ -842,10 +842,11 @@ bool TPlayer::testSign()
 void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
-	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
+	//static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
+	static const float touchtestd[] = { 1.5f,1, 0,2.0f, 1.5f,3.5f, 3.0f,2.0f };
 	int dir = sprite % 4;
 
-	auto npcList = level->testTouch(x2 + touchtestd[dir * 2], y2 + touchtestd[dir * 2 + 1]);
+	auto npcList = level->testTouch(x + touchtestd[dir * 2], y + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
 		npc->queueNpcAction("npc.playertouchsme", this);
 #endif
@@ -963,7 +964,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, true, true);
+			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
@@ -998,7 +999,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1016,7 +1017,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1045,7 +1046,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1063,7 +1064,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1092,7 +1093,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1110,7 +1111,7 @@ bool TPlayer::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1139,7 +1140,7 @@ bool TPlayer::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], true, true);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1153,7 +1154,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[0] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
@@ -1166,7 +1167,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[1] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
@@ -1179,7 +1180,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[2] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
@@ -1192,7 +1193,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[3] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
@@ -1205,7 +1206,7 @@ bool TPlayer::processChat(CString pChat)
 		if (color != -1)
 		{
 			colors[4] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], true, true);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "warpto")
@@ -1236,7 +1237,7 @@ bool TPlayer::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), true, true);
+			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
@@ -1433,7 +1434,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), true, true);
+		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		return true;
 	}
 
@@ -1446,7 +1447,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	leaveLevel();
 
 	// See if the new level is on a gmap.
-	pmap = server->getMap(newLevel);
+	pmap = (newLevel ? newLevel->getMap() : nullptr);
 
 	// Set x/y location.
 	float oldX = x, oldY = y;
@@ -1464,7 +1465,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 		{
 			x = oldX;
 			y = oldY;
-			pmap = server->getMap(currentLevel);
+			pmap = currentLevel->getMap();
 			warped = setLevel(currentLevel->getLevelName());
 		}
 		if ( !warped )
@@ -1475,7 +1476,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 			// Try to warp to the unstick me level.
 			x = unstickX;
 			y =	unstickY;
-			pmap = server->getMap(unstickLevel);
+			pmap = unstickLevel->getMap();
 			if ( !setLevel(unstickLevel->getLevelName()))
 				return false;
 		}
@@ -1541,13 +1542,11 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	// Tell the client their new level.
 	if (modTime == 0 || versionID < CLVER_2_1)
 	{
-		if (pmap && pmap->getType() == MAPTYPE_GMAP && versionID >= CLVER_2_1)
+		if (pmap && pmap->getType() == MapType::GMAP && versionID >= CLVER_2_1)
 		{
-			gmaplevelx = pmap->getLevelX(levelName);
-			gmaplevely = pmap->getLevelY(levelName);
 			sendPacket(CString() >> (char)PLO_PLAYERWARP2
 				>> (char)(x * 2) >> (char)(y * 2) >> (char)(z + 50)
-				>> (char)gmaplevelx >> (char)gmaplevely
+				>> (char)level->getMapX() >> (char)level->getMapY()
 				<< pmap->getMapName());
 		}
 		else
@@ -1572,7 +1571,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		ap = 99;
 		apCounter = 1;
-		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, true, true);
+		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
@@ -1625,7 +1624,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
+	if (pmap && pmap->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
 
 	// Tell the client if there are any ghost players in the level.
@@ -1644,7 +1643,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if ( !fromAdjacent || pmap != 0)
 	{
 		// Send NPCs.
-		if (pmap && pmap->getType() == MAPTYPE_GMAP)
+		if (pmap && pmap->getType() == MapType::GMAP)
 		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 
@@ -1685,17 +1684,18 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 				if (player == this || player->getMap() != pmap) continue;
 				if (pmap->isGroupMap() && levelGroup != player->getGroup()) continue;
 
-				if (pmap->getType() == MAPTYPE_GMAP)
+				if (pmap->getType() == MapType::GMAP)
 				{
 					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
-					if (abs(ogmap[0] - gmaplevelx) < 2 && abs(ogmap[1] - gmaplevely) < 2)
+					if (abs(ogmap[0] - level->getMapX()) < 2 && abs(ogmap[1] - level->getMapY()) < 2)
 						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 				}
-				else if (pmap->getType() == MAPTYPE_BIGMAP)
+				else if (pmap->getType() == MapType::BIGMAP)
 				{
 					if (player->getLevel() == 0) continue;
-					int ogmap[2] = {pmap->getLevelX(player->getLevel()->getActualLevelName()), pmap->getLevelY(player->getLevel()->getActualLevelName())};
-					int sgmap[2] = {pmap->getLevelX(pLevel->getActualLevelName()), pmap->getLevelY(pLevel->getActualLevelName())};
+					int ogmap[2] = { player->getLevel()->getMapX(), player->getLevel()->getMapY() };
+					int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
+
 					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 				}
@@ -1873,7 +1873,7 @@ void TPlayer::resetLevelCache(const TLevel* level)
 
 void TPlayer::setChat(const CString& pChat)
 {
-	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, true, true);
+	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 void TPlayer::setNick(CString pNickName, bool force)
@@ -2116,7 +2116,7 @@ void TPlayer::setAni(CString gani)
 
 	CString propPackage;
 	propPackage >> (char)PLPROP_GANI >> (char)gani.length() << gani;
-	setProps(propPackage, true, true);
+	setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 /*
@@ -2347,10 +2347,10 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 	// Lay items when you destroy objects.
 	short oldTile = (getLevel()->getTiles())[loc[0] + (loc[1] * 64)];
-	int dropItem = -1;
 	bool bushitems = settings->getBool("bushitems", true);
 	bool vasesdrop = settings->getBool("vasesdrop", true);
 	int tiledroprate = settings->getInt("tiledroprate", 50);
+	LevelItemType dropItem = LevelItemType::INVALID;
 
 	// Bushes, grass, swamp.
 	if ((oldTile == 2 || oldTile == 0x1a4 || oldTile == 0x1ff ||
@@ -2360,20 +2360,19 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		{
 			if ( (rand() % 100) < tiledroprate )
 			{
-				int index = rand() % 6;
-				dropItem = index;
+				dropItem = TLevelItem::getItemId(rand() % 6);
 			}
 		}
 	}
 	// Vase.
 	else if (oldTile == 0x2ac && vasesdrop)
-		dropItem = 5;
+		dropItem = LevelItemType::HEART;
 
 	// Send the item now.
 	// TODO: Make this a more generic function.
-	if (dropItem >= 0)
+	if (dropItem != LevelItemType::INVALID)
 	{
-		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)dropItem;
+		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)TLevelItem::getItemTypeId(dropItem);
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar();		// So msgPLI_ITEMADD works.
 
@@ -2386,7 +2385,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 
 bool TPlayer::msgPLI_PLAYERPROPS(CString& pPacket)
 {
-	setProps(pPacket, true);
+	setProps(pPacket, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD);
 	return true;
 }
 
@@ -2406,7 +2405,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	//printf( "\n" );
 
 	TNPC* npc = server->getNPC(npcId);
-	if (npc == 0)
+	if (!npc)
 		return true;
 
 	if (npc->getLevel() != level)
@@ -2537,6 +2536,117 @@ bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::removeItem(LevelItemType itemType)
+{
+	switch (itemType)
+	{
+		case LevelItemType::GREENRUPEE:		// greenrupee
+		case LevelItemType::BLUERUPEE:		// bluerupee
+		case LevelItemType::REDRUPEE:		// redrupee
+		case LevelItemType::GOLDRUPEE:		// goldrupee
+		{
+			int gralatsRequired;
+			if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
+			else if (itemType == LevelItemType::REDRUPEE) gralatsRequired = 30;
+			else if (itemType == LevelItemType::BLUERUPEE) gralatsRequired = 5;
+			else gralatsRequired = 1;
+
+			if (gralatc >= gralatsRequired)
+			{
+				gralatc -= gralatsRequired;
+				return true;
+			}
+
+			return false;
+		}
+
+		case LevelItemType::BOMBS:
+		{
+			if (bombc >= 5)
+			{
+				bombc -= 5;
+				return true;
+			}
+			return false;
+		}
+
+		case LevelItemType::DARTS:
+		{
+			if (arrowc >= 5)
+			{
+				arrowc -= 5;
+				return true;
+			}
+			return false;
+		}
+
+		case LevelItemType::HEART:
+		{
+			if (power > 1.0f)
+			{
+				power -= 1.0f;
+				return true;
+			}
+			return false;
+		}
+
+#ifndef V8NPCSERVER
+		// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
+		// same is true for sword/shield. assuming its true for the weapon-items, but
+		// its currently not tested.
+		case LevelItemType::GLOVE1:
+		case LevelItemType::GLOVE2:
+		{
+			if (glovePower > 1)
+			{
+				glovePower--;
+				return true;
+			}
+			return false;
+		}
+#endif
+
+		/*
+		case LevelItemType::BOW:		// bow
+		case LevelItemType::BOMB:		// bomb
+			return false;
+
+		case LevelItemType::SUPERBOMB:	// superbomb
+		case LevelItemType::FIREBALL:	// fireball
+		case LevelItemType::FIREBLAST:	// fireblast
+		case LevelItemType::NUKESHOT:	// nukeshot
+		case LevelItemType::JOLTBOMB:	// joltbomb
+			return false;
+
+		case LevelItemType::SHIELD:			// shield
+		case LevelItemType::MIRRORSHIELD:	// mirrorshield
+		case LevelItemType::LIZARDSHIELD:	// lizardshield
+			return false;
+
+		case LevelItemType::SWORD:			// sword
+		case LevelItemType::BATTLEAXE:		// battleaxe
+		case LevelItemType::LIZARDSWORD:	// lizardsword
+		case LevelItemType::GOLDENSWORD:	// goldensword
+			return false;
+
+		case LevelItemType::FULLHEART:	// fullheart
+			return false;
+		*/
+
+		case LevelItemType::SPINATTACK:
+		{
+			if (status & PLSTATUS_HASSPIN)
+			{
+				status &= ~PLSTATUS_HASSPIN;
+				return true;
+			}
+			return false;
+		}
+	}
+
+	return false;
+}
+
 bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 {
 	// TODO(joey): serverside item checking
@@ -2546,8 +2656,15 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 	LevelItemType itemType = TLevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
-		level->addItem(loc[0], loc[1], itemType);
-		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+#ifdef V8NPCSERVER
+		if (removeItem(itemType))
+		{
+#endif
+			level->addItem(loc[0], loc[1], itemType);
+			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+#ifdef V8NPCSERVER
+		}
+#endif
 	}
 
 	return true;
@@ -2565,7 +2682,7 @@ bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setProps(CString() << TLevelItem::getItemPlayerProp(item, this), true, true);
+		this->setProps(CString() << TLevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	return true;
 }
@@ -2615,12 +2732,12 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			setRating((int)tLoseRating, (int)tLoseDeviation);
-			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
+			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			player->setRating((int)tWinRating, (int)tWinDeviation);
-			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, true, true);
+			player->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		this->setLastSparTime(time(0));
 		player->setLastSparTime(time(0));
@@ -2647,7 +2764,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (ap / 20));
 				if (oAp < 0) oAp = 0;
 				player->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
-				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, true, true);
+				player->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			}
 		}
 	}
@@ -2827,7 +2944,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 			if (!hasChest(chestStr)) {
 				LevelItemType chestItem = chest->getItemIndex();
-				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), true, true);
+				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);
 			}
@@ -3148,9 +3265,9 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// Make sure it isn't one of the default files.
 	bool isDefault = false;
-	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
+	for (auto & defaultFile : __defaultfiles)
 	{
-		if (file.match(CString(__defaultfiles[i])))
+		if (file.match(defaultFile))
 		{
 			isDefault = true;
 			break;
@@ -3159,7 +3276,7 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if ( !isDefault && fModTime > modTime)
+	if (!isDefault && fModTime > modTime)
 		return msgPLI_WANTFILE(file);
 
 	if (versionID < CLVER_2_1)
@@ -3175,16 +3292,15 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	CString packet;
 	TLevel* adjacentLevel = TLevel::findLevel(levelName, server);
 
-	if (adjacentLevel == 0)
+	if (!adjacentLevel)
 		return true;
 
 	if (!level)
 		return false;
 
 	bool alreadyVisited = false;
-	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (auto cl : cachedLevels)
 	{
-		SCachedLevel* cl = *i;
 		if (cl->level == adjacentLevel)
 		{
 			alreadyVisited = true;
@@ -3199,7 +3315,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 
 	// Set our old level back to normal.
 	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
-	if (pmap && pmap->getType() == MAPTYPE_GMAP)
+	if (pmap && pmap->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
 	else sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	if (level->getPlayer(0) == this)
@@ -3248,9 +3364,10 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			TServerList *listServer = server->getServerList();
 			auto serverList = listServer->getServerList();
+
 			CString actionData("clientside,-Serverlist_v4,updateservers,");
-			for (auto it = serverList.begin(); it != serverList.end(); ++it)
-				actionData << CString(it->first).gtokenize() << "," << CString(it->second) << ",";
+			for (auto & serverData : serverList)
+				actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
 
 			sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
 			return true;
@@ -3622,7 +3739,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, true, true);
+						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 					}
 				}
 			}
@@ -3633,7 +3750,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, true, true);
+					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				}
 			}
 		}
@@ -3751,12 +3868,9 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	else if (level)
 	{
 		//handled = false; // client and server scripts should both be able to respond to triggers
-		int triggerX = 16 * loc[0];
-		int triggerY = 16 * loc[1];
-
 		CString triggerData = action.readString("");
 
-		auto npcList = level->findAreaNpcs(triggerX, triggerY, 16, 16);
+		auto npcList = level->findAreaNpcs(loc[0], loc[1], 8, 8);
 		for (auto npcTouched : npcList) {
 			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
 		}
@@ -4197,8 +4311,10 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI());
 		else if (option == "rebornlist")
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
-		else if (option == "subscriptions")
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions2" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+		else if (option == "subscriptions") {
+			// some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+		}
 		else if (option == "bantypes")
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
 		else if (option == "getglobalitems")

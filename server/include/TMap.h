@@ -1,14 +1,17 @@
 #ifndef TGMAP_H
 #define TGMAP_H
 
+#include <ctime>
 #include <map>
-#include <time.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include "CString.h"
 
-enum
+enum class MapType
 {
-	MAPTYPE_BIGMAP	= 0,
-	MAPTYPE_GMAP	= 1,
+	BIGMAP	= 0,
+	GMAP	= 1,
 };
 
 struct SMapLevel
@@ -37,40 +40,39 @@ class TServer;
 class TMap
 {
 	public:
-		TMap(int pType, bool pGroupMap = false);
-		TMap(int pType, const CString& pFileName, TServer* pServer, bool pGroupMap = false);
+		TMap(MapType pType, bool pGroupMap = false);
 
-		bool load(const CString& filename, TServer* pServer);
-
-		bool isLevelOnMap(const CString& level) const;
-
-		CString getLevelAt(int x, int y) const;
-		int getLevelX(const CString& level) const;
-		int getLevelY(const CString& level) const;
-		CString getMapName() const			{ return mapName; }
-		int getType() const					{ return type; }
-		int getWidth() const				{ return width; }
-		int getHeight() const				{ return height; }
-		bool isGroupMap() const				{ return groupMap; }
-		CString getLevels() const;
+        bool load(const CString& filename, TServer* pServer);
 		void loadMapLevels(TServer* server) const;
+
+        bool isLevelOnMap(const std::string& level, int& mx, int& my) const;
+		const std::string& getLevelAt(int mx, int my) const;
+		//int getLevelX(const std::string& level) const;
+        //int getLevelY(const std::string& level) const;
+
+		const std::string& getMapName() const	{ return mapName; }
+		MapType getType() const					{ return type; }
+		size_t getWidth() const					{ return width; }
+        size_t getHeight() const				{ return height; }
+		bool isGroupMap() const					{ return groupMap; }
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
 		bool loadGMap(const CString& pFileName, TServer* pServer);
 
-		int type;
-		CString mapName;
+		MapType type;
 		time_t modTime;
-		int width;
-		int height;
+		size_t width;
+        size_t height;
 		bool groupMap;
-		CString mapImage;
-		CString miniMapImage;
-		std::map<CString, SMapLevel> levels;
-
 		bool loadFullMap;
-		std::vector<CString> preloadLevelList;
+		std::string mapName;
+		std::string mapImage;
+		std::string miniMapImage;
+
+		std::unordered_map<std::string, SMapLevel> levels;
+        std::vector<std::string> _levelList;
+		std::vector<std::string> preloadLevelList;
 };
 
 #endif

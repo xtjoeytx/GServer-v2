@@ -5,6 +5,7 @@
 #include "IEnums.h"
 #include "TServer.h"
 #include "TLevel.h"
+#include "TMap.h"
 #include "TPlayer.h"
 #include "TNPC.h"
 
@@ -23,7 +24,7 @@ short respawningTiles[] = {
 */
 TLevel::TLevel(TServer* pServer)
 :
-server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false)
+server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMap(nullptr), mapx(0), mapy(0)
 #ifdef V8NPCSERVER
 , _scriptObject(nullptr)
 #endif
@@ -926,12 +927,11 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	// 	this is still going to break on the first occurence.
 
 	// Find Appropriate Level by Name
-	for (auto it = levelList->begin(); it != levelList->end(); )
+	CString levelName = pLevelName.toLower();
+	for (auto & it : *levelList)
 	{
-		if ((*it)->getLevelName().toLower() == pLevelName.toLower())
-			return (*it);
-
-		++it;
+		if (it->getLevelName().toLower() == levelName)
+			return it;
 	}
 
 	// Load New Level
@@ -940,6 +940,17 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	{
 		delete level;
 		return nullptr;
+	}
+	
+	auto& mapList = server->getMapList();
+	for (const auto& map : mapList)
+	{
+		int mx, my;
+		if (map->isLevelOnMap(levelName.text(), mx, my))
+		{
+			level->setMap(map.get(), mx, my);
+			break;
+		}
 	}
 
 	// Return Level
@@ -1178,7 +1189,8 @@ void TLevel::removePlayer(TPlayer* player)
 	}
 
 #ifdef V8NPCSERVER
-	for (auto& npc : levelNPCs) {
+	for (auto& npc : levelNPCs)
+	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
 			npc->queueNpcAction("npc.playerleaves", player);
 	}
@@ -1189,11 +1201,6 @@ TPlayer* TLevel::getPlayer(unsigned int id)
 {
 	if (id >= levelPlayerList.size()) return nullptr;
 	return levelPlayerList[id];
-}
-
-TMap* TLevel::getMap() const
-{
-	return server->getMap(this);
 }
 
 bool TLevel::addNPC(TNPC* npc)
@@ -1217,12 +1224,18 @@ void TLevel::removeNPC(TNPC* npc)
 	}
 }
 
+void TLevel::setMap(TMap* pMap, int pMapX, int pMapY)
+{
+	levelMap = pMap;
+	mapx = pMapX;
+	mapy = pMapY;
+}
+
 bool TLevel::doTimedEvents()
 {
 	// Check if we should revert any board changes.
-	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); ++i)
+	for (auto change : levelBoardChanges)
 	{
-		TLevelBoardChange* change = *i;
 		int respawnTimer = change->timeout.doTimeout();
 		if (respawnTimer == 0)
 		{
@@ -1370,16 +1383,16 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 }
 
 #ifdef V8NPCSERVER
-std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
+std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHeight)
 {
-	int testEndX = pX + pWidth;
-	int testEndY = pY + pHeight;
+	float testEndX = pX + (float)(pWidth / 16.0f);
+	float testEndY = pY + (float)(pHeight / 16.0f);
 
 	std::vector<TNPC *> npcList;
 	for (const auto& npc : levelNPCs)
 	{
-		if (pX < npc->getPixelX() + npc->getWidth() && testEndX > npc->getPixelX() &&
-			pY < npc->getPixelY() + npc->getHeight() && testEndY > npc->getPixelY())
+		if (pX < npc->getX() + (float)(npc->getWidth() / 16.0f) && testEndX > npc->getX() &&
+			pY < npc->getY() + (float)(npc->getHeight() / 16.0f) && testEndY > npc->getY())
 		{
 			npcList.push_back(npc);
 		}
@@ -1388,15 +1401,15 @@ std::vector<TNPC *> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight
 	return npcList;
 }
 
-std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
+std::vector<TNPC*> TLevel::testTouch(float pX, float pY)
 {
 	std::vector<TNPC*> npcList;
 	for (const auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if (npc->getPixelX() <= pX && npc->getPixelX() + npc->getWidth() >= pX &&
-				npc->getPixelY() <= pY && npc->getPixelY() + npc->getHeight() >= pY)
+			if (npc->getX() <= pX && npc->getX() + (float)(npc->getWidth() / 16.0f) >= pX &&
+				npc->getY() <= pY && npc->getY() + (float)(npc->getHeight() / 16.0f) >= pY)
 			{
 				npcList.push_back(npc);
 			}
@@ -1406,7 +1419,7 @@ std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 	return npcList;
 }
 
-TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
+TNPC * TLevel::isOnNPC(float pX, float pY, bool checkEventFlag)
 {
 	for (const auto& npc : levelNPCs)
 	{
@@ -1417,8 +1430,8 @@ TNPC * TLevel::isOnNPC(int pX, int pY, bool checkEventFlag)
 		{
 			if ((npc->getVisibleFlags() & 1) != 0)
 			{
-				if ((pX >= npc->getPixelX() && pX <= npc->getPixelX() + npc->getWidth()) &&
-					(pY >= npc->getPixelY() && pY <= npc->getPixelY() + npc->getHeight()))
+				if ((pX >= npc->getX() && pX <= npc->getX() + (float)(npc->getWidth() / 16.0f)) &&
+					(pY >= npc->getY() && pY <= npc->getY() + (float)(npc->getHeight() / 16.0f)))
 				{
 					// what if it touches multiple npcs? hm. not sure how graal did it.
 					return npc;
