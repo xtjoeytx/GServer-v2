@@ -406,8 +406,12 @@ bool TPlayer::onRecv()
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
 	char* data = playerSock->getData(&size);
-	if (size != 0)
+	if (size != 0) {
 		rBuffer.write(data, size);
+
+		if (this->playerSock->webSocket)
+			webSocketFixIncomingPacket(rBuffer);
+	}
 	else if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
@@ -447,6 +451,7 @@ bool TPlayer::canSend()
 /*
 	Socket-Control Functions
 */
+
 bool TPlayer::doMain()
 {
 	// definitions
@@ -456,6 +461,50 @@ bool TPlayer::doMain()
 	rBuffer.setRead(0);
 	while (rBuffer.length() > 1)
 	{
+		if (!this->playerSock->webSocket && rBuffer.findi("GET / HTTP/1.1\r\n") > -1)
+		{
+
+			CString webSocketKeyHeader = "Sec-WebSocket-Key:";
+			if (rBuffer.findi(webSocketKeyHeader) < 0) {
+				CString webResponse = "HTTP/1.1 403 Forbidden\r\n";
+				unsigned int dsize = webResponse.length();
+				this->playerSock->sendData(webResponse.text(), &dsize);
+				return false;
+			}
+			this->playerSock->webSocket = true;
+			// Get the WebSocket handshake key
+			rBuffer.setRead(rBuffer.findi(webSocketKeyHeader));
+			CString webSocketKey = rBuffer.readString("\r").subString(webSocketKeyHeader.length()+1).trimI();
+
+			// Append GUID
+			webSocketKey << "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+			// Calculate sha1 has of key + GUID and base64 encode it for sending back
+			webSocketKey.sha1I().base64encodeI();
+			webSocketKeyHeader.clear();
+
+			CString webSockHandshake = CString() <<"HTTP/1.1 101 Switching Protocols\r\n"
+											 << "Upgrade: websocket\r\n"
+											 <<"Connection: Upgrade\r\n"
+											 << "Sec-WebSocket-Accept: "
+											 << webSocketKey
+											 << "\r\n\r\n";
+
+			unsigned int dsize = webSockHandshake.length();
+
+			this->playerSock->sendData(webSockHandshake.text(), &dsize);
+
+			CString testText = "Welcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocket";
+
+			webSocketFixOutgoingPacket(testText);
+
+			dsize = testText.length();
+			this->playerSock->sendData(testText.text(), &dsize);
+			rBuffer.removeI(0, rBuffer.length());
+			in_codec.setGen(ENCRYPT_GEN_1);
+			return true;
+		}
+
 		// New data.
 		lastData = time(0);
 
@@ -517,6 +566,7 @@ bool TPlayer::doTimedEvents()
 	// If we are disconnected, delete ourself!
 	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 	{
+		printf("Disconnected!\n");
 		server->deletePlayer(this);
 		return false;
 	}
@@ -2216,6 +2266,12 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			in_codec.setGen(ENCRYPT_GEN_5);
 			getKey = true;
 			break;
+		case PLTYPE_WEB:
+			serverlog.append("Web\n");
+			in_codec.setGen(ENCRYPT_GEN_1);
+			fileQueue.setCodec(ENCRYPT_GEN_1, key);
+			getKey = false;
+			break;
 		default:
 			serverlog.append("Unknown (%d)\n", type);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the Graal Reborn staff.  Type: " << CString((int)type) << ".");
@@ -2225,7 +2281,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	// Get Iterator-Key
 	// 2.19+ RC and any client should get the key.
-	if (isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
+	if ((isClient() && type != PLTYPE_WEB) || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
 	{
 		key = (unsigned char)pPacket.readGChar();
 		in_codec.reset(key);
@@ -2247,6 +2303,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
+	serverlog.out("[%s]    Password:\t%s\n", server->getName().text(), password.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2819,7 +2876,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
-	
+
 	if (level) {
 		auto chest = level->getChest(cX, cY);
 		if (chest) {
@@ -3826,7 +3883,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	shootPacket.writeGChar(sangle); // shoot angle
 	shootPacket.writeGChar(sanglez); // shoot z angle
 	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
-	
+
 	shootPacket.writeGChar(sgani.length()); // animation
 	shootPacket.write(sgani);
 
@@ -4227,7 +4284,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
-	
+
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
