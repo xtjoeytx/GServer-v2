@@ -31,7 +31,7 @@ class TWeapon
 
 		// Functions -> Inline Get-Functions
 		CString getWeaponPacket(bool forceGS1 = false) const;
-		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID)); }
+		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID); }
 		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
 		inline LevelItemType getWeaponId()				{ return mWeaponDefault; }
 		inline const CString& getByteCodeFile() const	{ return mByteCodeFile; }
