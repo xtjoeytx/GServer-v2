@@ -30,8 +30,8 @@ class TWeapon
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		CString getWeaponPacket() const;
-		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID); }
+		CString getWeaponPacket(bool forceGS1 = false) const;
+		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID)); }
 		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
 		inline LevelItemType getWeaponId()				{ return mWeaponDefault; }
 		inline const CString& getByteCodeFile() const	{ return mByteCodeFile; }

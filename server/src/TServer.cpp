@@ -757,7 +757,7 @@ void TServer::loadWeapons(bool print)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
-		if (!weapon->hasBytecode())
+		if (weapon->getByteCodeFile().isEmpty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));

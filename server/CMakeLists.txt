@@ -173,6 +173,7 @@ if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
 
+
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
@@ -222,6 +223,12 @@ if(WIN32)
 	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
 
+target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
+
+target_include_directories(${TARGET_NAME} PUBLIC ${gs1parse_INCLUDE_DIRECTORY})
+
+add_dependencies(${TARGET_NAME} gs1common gs1parse gs1compiler gs1vm)
+target_link_libraries(${TARGET_NAME} gs1common gs1compiler gs1transpiler gs1parse gs1vm)
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} gs2lib)
 

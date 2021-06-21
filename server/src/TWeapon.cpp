@@ -7,6 +7,9 @@
 #include "IEnums.h"
 #include "IUtil.h"
 
+#include <gs1/vm/Device.hpp>
+
+
 #ifdef V8NPCSERVER
 #include "TPlayer.h"
 #endif
@@ -121,7 +124,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.text());
 
 	TWeapon* ret = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (!byteCode.empty())
+	if (!byteCode.empty() && ret->mByteCode.empty())
 		ret->mByteCode = byteCode;
 
 	if (!byteCodeFile.isEmpty())
@@ -170,12 +173,12 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket() const
+CString TWeapon::getWeaponPacket(bool forceGS1) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	if (mByteCode.empty())
+	if (mByteCode.empty() || forceGS1)
 	{
 		return CString() >> (char)PLO_NPCWEAPONADD
 			>> (char)mWeaponName.length() << mWeaponName
@@ -216,6 +219,40 @@ CString TWeapon::getWeaponPacket() const
 	}
 }
 
+// Prototypes for commands/functions are necessary for correct parsing
+gs1::PrototypeMap cmds = {{"setarray", {false, false}},
+					 {"freezeplayer", {false}},
+					 {"hideplayer", {false}},
+					 {"addstring", {false, true}},
+					 {"showimg", {false, true, false, false}},
+					 {"changeimgcolors", {false, false, false, false, false}},
+					 {"addstring", {false, true}},
+					 {"hideimg", {false}},
+					 {"showtext", {false, false, false, true, true, true}},
+					 {"play", {true}},
+					 {"stopmidi", {}},
+					 {"changeimgvis", {false, false}},
+					 {"debug", {false}},
+					 {"debugstr", {true}},
+					 {"setplayerprop", {true, true}},
+
+					 {"set", {true}},
+					 {"unset", {true}},
+
+					 {"setstring", {true, true}},
+					 {"addstring", {true, true}},
+
+					 {"message", {true}},
+		//{ "echo",         	{ true }},
+					 {"say2", {true}},
+					 {"print", {true}},
+		//{ "echo",           { true }},
+					 {"ASdasd.asd", {true}}};
+
+gs1::PrototypeMap funcs = {
+		{"strtofloat", {true}},
+};
+
 // -- Function: Update Weapon Image/Script -- //
 void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
@@ -241,7 +278,6 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 #ifdef V8NPCSERVER
 	// Separate client and server code
 	setServerScript(fixedScript.readString("//#CLIENTSIDE"));
-	setClientScript(fixedScript.readString(""));
 
 	// Compile and execute the script.
 	CScriptEngine *scriptEngine = server->getScriptEngine();
@@ -257,9 +293,22 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	}
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");
-#else
-	setClientScript(fixedScript);
 #endif
+	if (fixedScript.findi("//#GS2") > -1) {
+		setClientScript(fixedScript.readString("//#GS2"));
+		gs1::Device device;
+
+		// Create variable store
+		auto primaryVarStore = device.CreateVarStore();
+
+		// Create context
+		//auto context = device.CreateContext(primaryVarStore);
+
+		// Compile source file to bytecode
+		mByteCode.clear();
+		mByteCode.emplace_back(mWeaponName,device.CompileSourceFromString(fixedScript.readString(""), mWeaponName, cmds, funcs));
+
+	} else setClientScript(fixedScript.readString(""));
 
 	// Save Weapon
 	if (pSaveWeapon)
@@ -274,8 +323,8 @@ void TWeapon::setClientScript(const CString& pScript)
 
 	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
 	std::vector<CString> code = formattedScript.tokenize("\n");
-	for (auto it = code.begin(); it != code.end(); ++it)
-		mScriptClient << (*it).trim() << "\xa7";
+	for (auto & it : code)
+		mScriptClient << it.trim() << "\xa7";
 }
 
 #ifdef V8NPCSERVER

@@ -2019,7 +2019,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
 		weaponList.push_back(weapon->getName());
-		sendPacket(CString() << weapon->getWeaponPacket());
+		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
 	}
 
 	return true;
@@ -2268,9 +2268,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		std::vector<CString>* allowedVersions = server->getAllowedVersions();
 		bool allowed = false;
-		for (std::vector<CString>::iterator i = allowedVersions->begin(); i != allowedVersions->end(); ++i)
+		for (auto ver : *allowedVersions)
 		{
-			CString ver = *i;
 			if (ver.find(":") != -1)
 			{
 				CString ver1 = ver.readString(":").trim();
