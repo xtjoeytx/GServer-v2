@@ -213,7 +213,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
-		bool msgPLI_UNKNOWN47(CString& pPacket);
+		bool msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket);
 		bool msgPLI_UPDATECLASS(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
@@ -294,6 +294,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
+		bool msgPLI_UNKNOWN159UPDATEPACKAGE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
 	private:

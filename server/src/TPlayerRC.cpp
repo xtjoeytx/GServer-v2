@@ -1776,6 +1776,9 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
 
+		if (file.find(".gupd") != -1)
+			server->sendPacketToAll(CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << file, this);
+
 		// Update file.
 		updateFile(this, server, lastFolder, file);
 	}

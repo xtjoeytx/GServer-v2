@@ -213,7 +213,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
-	TPLFunc[PLI_UNKNOWN47] = &TPlayer::msgPLI_UNKNOWN47;
+	TPLFunc[PLI_REQUESTUPDATEPACKAGE] = &TPlayer::msgPLI_REQUESTUPDATEPACKAGE;
 	TPLFunc[PLI_UPDATECLASS] = &TPlayer::msgPLI_UPDATECLASS;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
@@ -271,6 +271,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
+	TPLFunc[PLI_UNKNOWN159UPDATEPACKAGE] = &TPlayer::msgPLI_UNKNOWN159UPDATEPACKAGE;
 	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
 
 	// NPC-Server Functions
@@ -2936,7 +2937,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
-	
+
 	if (level) {
 		auto chest = level->getChest(cX, cY);
 		if (chest) {
@@ -3940,7 +3941,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	shootPacket.writeGChar(sangle); // shoot angle
 	shootPacket.writeGChar(sanglez); // shoot z angle
 	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
-	
+
 	shootPacket.writeGChar(sgani.length()); // animation
 	shootPacket.write(sgani);
 
@@ -3957,6 +3958,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
+	server->getServerLog().out("%s is requesting serverwarp to %s", accountName.text(), servername.text());
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << servername);
 	return true;
 }
@@ -3977,42 +3979,30 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UNKNOWN47(CString& pPacket)
+bool TPlayer::msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket)
 {
-	/*
+
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGUInt5();
+	time_t modTime = pPacket.readGInt5();
 	CString file = pPacket.readString("");
+
 	time_t fModTime = fileSystem->getModTime(file);
-
-	// If we are the 1.41 client, make sure a file extension was sent.
-	if (versionID < CLVER_2_1 && getExtension(file).isEmpty())
-		file << ".gif";
-
-	printf("UPDATEFILE: %s\n", file.text());
-
-	// Make sure it isn't one of the default files.
-	bool isDefault = false;
-	for (unsigned int i = 0; i < sizeof(__defaultfiles) / sizeof(char*); ++i)
-	{
-		if (file.match(CString(__defaultfiles[i])) == true)
-		{
-			isDefault = true;
-			break;
-		}
-	}
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if (isDefault == false && fModTime > modTime)
+
+	// TODO: Fix the modtime stuff
+	//if (fModTime > modTime) {
+
 		return msgPLI_WANTFILE(file);
 
-	if (versionID < CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
-	else sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
-	*/
+		return true;
+	//}
+
+	sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+
 	return true;
 }
 
@@ -4319,8 +4309,9 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
 		else if (option == "getglobalitems")
 			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI());
-		else if (option == "serverinfo")
+		else if (option == "serverinfo") {
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+		}
 
 	}
 	else if (type == "pmservers" || type == "pmguilds") {
@@ -4331,6 +4322,18 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	else if (type == "pmunmapserver")
 		remPMServer(option);
 	else if (type == "irc") {
+	} else if (type == "packageinfo") {
+		std::vector<CString> updatePackage = server->getFileSystem()->load(option).tokenize("\n");
+		int files = 0;
+		int totalFileSize = 0;
+		for (const auto& line : updatePackage) {
+			if (line.findi("FILE") > -1) {
+				CString file = line.subString(line.findi("FILE") + 5);
+				totalFileSize += server->getFileSystem()->getFileSize(file.trimI());
+				files++;
+			}
+		}
+		sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << option << "\n" << /* File count */ CString(files) << "\n" << /* Total size in bytes */ CString(totalFileSize) << "\n").gtokenizeI());
 	}
 
 
@@ -4343,7 +4346,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
-	
+
 	CString weapon = data.readString("\n");
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
@@ -4404,7 +4407,8 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-							list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
+							//serverlog.out("[ IN] [SVO_SERVERINFO] %s,%s\n", accountName.gtokenize().text(), packet.text());
+							//list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
 
 							// I believe the following data is what it's looking for:
 							// "era,Era,93,English,""Welcome to Era, a modernised server. Please visit the website for more information."",http://era.graal.net/,""Graal 5.1-5.2"""
@@ -4484,6 +4488,22 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 	// Stub.
 	return true;
 }
+
+bool TPlayer::msgPLI_UNKNOWN159UPDATEPACKAGE(CString& pPacket)
+{
+	char num = pPacket.readChar();
+	CString file = pPacket.readString("!");
+	CString text = pPacket.readString("");
+	CString packet1 = CString() >> (char)PLO_UNKNOWN105UPDATEPACKAGE << num << file << text;
+	CString packet2 = CString() >> (char)PLO_UNKNOWN106UPDATEPACKAGE << file;
+
+	sendPacket(packet1);
+	sendPacket(packet2);
+
+	// Stub.
+	return true;
+}
+
 
 bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
 {
