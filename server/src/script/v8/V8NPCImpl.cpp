@@ -33,7 +33,7 @@ void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set((double)npcObject->getPixelX() / 16.0f);
+	info.GetReturnValue().Set(npcObject->getX());
 }
 
 void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -51,7 +51,7 @@ void NPC_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set((double)npcObject->getPixelY() / 16.0f);
+	info.GetReturnValue().Set(npcObject->getY());
 }
 
 void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -595,12 +595,12 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	int delta_x = (int)(16 * args[0]->NumberValue(context).ToChecked());
-	int delta_y = (int)(16 * args[1]->NumberValue(context).ToChecked());
-	double time_fps = (int)(args[2]->NumberValue(context).ToChecked());
+	float dx = (float)args[0]->NumberValue(context).ToChecked();
+	float dy = (float)args[1]->NumberValue(context).ToChecked();
+	double time_fps = args[2]->NumberValue(context).ToChecked();
 	int options = args[3]->Int32Value(context).ToChecked();
 
-	npcObject->moveNPC(delta_x, delta_y, time_fps, options);
+	npcObject->moveNPC(dx, dy, time_fps, options);
 }
 
 // NPC Method: npc.setimg(image);
@@ -671,10 +671,25 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
 	npcObject->setImage("#c#");
+	npcObject->setHeadImage("head0.png");
+	npcObject->setBodyImage("body.png");
+	npcObject->setShieldImage("shield1.png");
+	npcObject->SetSwordImage("sword1.png");
+	npcObject->setColorId(0, 2);   // orange
+	npcObject->setColorId(1, 5);   // dark red
+	npcObject->setColorId(2, 21);  // black
+	npcObject->setColorId(3, 5);   // dark red
+	npcObject->setColorId(4, 21);  // black
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
+
 	npcObject->updatePropModTime(NPCPROP_IMAGE);
 	npcObject->updatePropModTime(NPCPROP_IMAGEPART);
+	npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
+	npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
+	npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
+	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
+	npcObject->updatePropModTime(NPCPROP_COLORS);
 }
 
 // NPC Method: npc.setani("walk", "ani", "params");
@@ -729,84 +744,58 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 		// Unwrap object
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		CString propPackage;
-
 		switch (code[1])
 		{
 			case '1': // sword image
 			{
 				npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
-				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
+				npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 				break;
 			}
 
 			case '2': // shield image
 			{
-				CString npcProp = npcObject->getProp(NPCPROP_SHIELDIMAGE);
-				unsigned char shieldPower = npcProp.readGUChar();
-				if (shieldPower < 11)
-					shieldPower = 11;
-
-				propPackage >> (char)NPCPROP_SHIELDIMAGE >> (char)shieldPower >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setShieldImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_SHIELDIMAGE);
 				break;
 			}
 
 			case '3': // head image
 			{
-				if (len > 123)
-					len = 123;
-
-				propPackage >> (char)NPCPROP_HEADIMAGE >> (char)(len + 100);
-				propPackage.write(*newValue, len);
+				npcObject->setHeadImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HEADIMAGE);
 				break;
 			}
 
 			case '5': // horse image (needs to be tested)
-				propPackage >> (char)NPCPROP_HORSEIMAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setHorseImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_HORSEIMAGE);
 				break;
 
 			case '8': // body image
-				propPackage >> (char)NPCPROP_BODYIMAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setBodyImage(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_BODYIMAGE);
 				break;
 
 			case 'c': // chat
-				propPackage >> (char)NPCPROP_MESSAGE >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setChat(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_MESSAGE);
 				break;
 
 			case 'n': // nickname
-				propPackage >> (char)NPCPROP_NICKNAME >> (char)len;
-				propPackage.write(*newValue, len);
+				npcObject->setNickname(std::string(*newValue, newValue.length()));
+				npcObject->updatePropModTime(NPCPROP_NICKNAME);
 				break;
 
 			case 'C': // colors
 			{
 				if (code[2] >= '0' && code[2] < '5')
 				{
-					CString npcProp = npcObject->getProp(NPCPROP_COLORS);
-					unsigned char colors[5] = {
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar(),
-						npcProp.readGUChar()
-					};
-					//for (unsigned int i = 0; i < 5; i++)
-					//	colors[i] = npcProp.readGUChar();
-
-					colors[code[2] - '0'] = getColor(*newValue);
-					propPackage >> (char)NPCPROP_COLORS >> (char)colors[0] >> (char)colors[1] >> (char)colors[2] >> (char)colors[3] >> (char)colors[4];
+					npcObject->setColorId(code[2] - '0', getColor(*newValue));
+					npcObject->updatePropModTime(NPCPROP_COLORS);
 				}
 				break;
 			}
-		}
-
-		if (propPackage.length())
-		{
-			npcObject->setProps(propPackage, CLVER_2_17, true);
 		}
 	}
 }

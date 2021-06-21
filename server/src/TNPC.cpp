@@ -34,20 +34,13 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 	origY = y;
 #endif
 
-	// Set the gmap levels.
+	// Keep a copy of the original level for resets
+#ifdef V8NPCSERVER
 	if (level)
 	{
-		TMap *gmap = level->getMap();
-		if (gmap && gmap->getType() == MAPTYPE_GMAP)
-		{
-			gmaplevelx = (unsigned char) gmap->getLevelX(level->getLevelName());
-			gmaplevely = (unsigned char) gmap->getLevelY(level->getLevelName());
-		}
-
-#ifdef V8NPCSERVER
 		origLevel = level->getLevelName();
-#endif
 	}
+#endif
 
 	// TODO: Create plugin hook so NPCServer can acquire/format code.
 
@@ -58,8 +51,7 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 
 TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	: server(pServer), levelNPC(pLevelNPC), blockPositionUpdates(false),
-	x(30), y(30.5), x2((int)(x * 16)), y2((int)(y * 16)),
-	gmaplevelx(0), gmaplevely(0),
+	x(30), y(30.5),
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
 	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
@@ -309,10 +301,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelX(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level ? level->getMapX() : 0);
 
 		case NPCPROP_GMAPLEVELY:
-			return CString() >> (char)(level && level->getMap() ? level->getMap()->getLevelY(level->getActualLevelName()) : 0);
+			return CString() >> (char)(level ? level->getMapY() : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
@@ -336,18 +328,18 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 		case NPCPROP_X2:
 		{
-			unsigned short val = (x2 < 0 ? -x2 : x2);
-			val <<= 1;
-			if (x2 < 0) val |= 0x0001;
+			uint16_t val = ((uint16_t)std::abs(x * 16.0f)) << 1;
+			if (x < 0)
+				val |= 0x0001;
 			return CString().writeGShort(val);
 		}
 
 		case NPCPROP_Y2:
 		{
-			unsigned short val = (y2 < 0 ? -y2 : y2);
-			val <<= 1;
-			if (y2 < 0) val |= 0x0001;
-			return CString().writeGShort((short)val);
+			uint16_t val = ((uint16_t)std::abs(y * 16.0f)) << 1;
+			if (y < 0)
+				val |= 0x0001;
+			return CString().writeGShort(val);
 		}
 	}
 
@@ -424,7 +416,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					continue;
 				}
 				x = (float)(pProps.readGChar()) / 2.0f;
-				x2 = (int)(x * 16);
 				hasMoved = true;
 				break;
 
@@ -435,7 +426,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					continue;
 				}
 				y = (float)(pProps.readGChar()) / 2.0f;
-				y2 = (int)(y * 16);
 				hasMoved = true;
 				break;
 
@@ -595,11 +585,11 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_GMAPLEVELX:
-				gmaplevelx = pProps.readGUChar();
+				pProps.readGUChar();
 				break;
 
 			case NPCPROP_GMAPLEVELY:
-				gmaplevely = pProps.readGUChar();
+				pProps.readGUChar();
 				break;
 
 			case NPCPROP_SCRIPTER:
@@ -632,14 +622,12 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					continue;
 				}
 
-				x2 = len = pProps.readGUShort();
+				len = pProps.readGUShort();
+				x = (len >> 1) / 16.0f;
 
 				// If the first bit is 1, our position is negative.
-				x2 >>= 1;
-				if ((short)len & 0x0001) x2 = -x2;
-
-				// Let pre-2.3+ clients see 2.3+ movement.
-				x = (float)x2 / 16.0f;
+				if ((uint16_t)len & 0x0001)
+					x = -x;
 
 				hasMoved = true;
 				break;
@@ -651,14 +639,12 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					continue;
 				}
 
-				y2 = len = pProps.readGUShort();
+				len = pProps.readGUShort();
+				y = (len >> 1) / 16.0f;
 
 				// If the first bit is 1, our position is negative.
-				y2 >>= 1;
-				if ((short)len & 0x0001) y2 = -y2;
-
-				// Let pre-2.3+ clients see 2.3+ movement.
-				y = (float)y2 / 16.0f;
+				if ((uint16_t)len & 0x0001)
+					y = -y;
 
 				hasMoved = true;
 				break;
@@ -751,19 +737,59 @@ void TNPC::testTouch()
 	if (level == 0)
 		return;
 
-	// 2, 3
-	static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
-	int dir = sprite % 4;
+	bool tryLocalLinks = canWarp;
 
-	auto linkTouched = level->getLink((int)x + touchtestd[dir*2], (int)y + touchtestd[dir*2+1]);
-	if (linkTouched)
-	{
-		TLevel *newLevel = server->getLevel(linkTouched->getNewLevel());
-		if (newLevel != 0)
+	// 2, 3
+	if (!canWarp) {
+		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		int dir = sprite % 4;
+
+		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
+		if (linkTouched)
 		{
-			float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
-			float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
-			this->warpNPC(newLevel, newX, newY);
+			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
+			if (newLevel != 0)
+			{
+				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
+				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+				this->warpNPC(newLevel, newX, newY);
+			}
+		}
+	}
+	else if (level->getMap())
+	{
+		auto map = level->getMap();
+		float gmapX = x + 64.0f * level->getMapX();
+		float gmapY = y + 64.0f * level->getMapY();
+		int mapx = gmapX / 64;
+		int mapy = gmapY / 64;
+
+		if (level->getMapX() != mapx || level->getMapY() != mapy) {
+			TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
+			if (newLevel != nullptr) {
+				//float newX = x + 64.0f * newLevel->getMapX();
+				//float newY = y + 64.0f * newLevel->getMapY();
+				this->warpNPC(newLevel, fmodf(gmapX, 64.0f), fmodf(gmapY, 64.0f));
+				tryLocalLinks = false;
+			}
+		}
+	}
+
+	if (tryLocalLinks)
+	{
+		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		int dir = sprite % 4;
+
+		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
+		if (linkTouched)
+		{
+			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
+			if (newLevel && !(level->getMap() && level->getMap() == newLevel->getMap()))
+			{
+				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
+				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+				this->warpNPC(newLevel, newX, newY);
+			}
 		}
 	}
 }
@@ -973,7 +999,7 @@ bool TNPC::runScriptEvents()
 		for (unsigned char propId : propModified)
 		{
 			modTime[propId] = newModTime;
-			propPacket >> (char)(propId) << getProp(propId);
+			propPacket >> (char)propId << getProp(propId);
 		}
 		propModified.clear();
 
@@ -1238,7 +1264,10 @@ CString TNPC::getVariableDump()
 bool TNPC::deleteNPC()
 {
 	if (!isLevelNPC() && npcType == "LOCALN")
+	{
 		npcDeleteRequested = true;
+		registerNpcUpdates();
+	}
 	return npcDeleteRequested;
 }
 
@@ -1268,22 +1297,25 @@ void TNPC::resetNPC()
 	}
 }
 
-void TNPC::moveNPC(int dx, int dy, double time, int options)
+void TNPC::moveNPC(float dx, float dy, double time, int options)
 {
 	// TODO(joey): Implement options? Or does the client handle them? TBD
 	//	- If we want function callbacks we will need to handle time, can schedule an event once that is implemented
 
-	int start_x = (abs(x2) << 1) | (x2 < 0 ? 0x0001 : 0x0000);
-	int start_y = (abs(y2) << 1) | (y2 < 0 ? 0x0001 : 0x0000);
-	int delta_x = (abs(dx) << 1) | (dx < 0 ? 0x0001 : 0x0000);
-	int delta_y = (abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
+	int start_x = ((uint16_t)std::abs(x * 16.0f) << 1) | (x < 0 ? 0x0001 : 0x0000);
+	int start_y = ((uint16_t)std::abs(y * 16.0f) << 1) | (y < 0 ? 0x0001 : 0x0000);
+	int delta_x = ((uint16_t)std::abs(dx * 16.0f) << 1) | (dx < 0 ? 0x0001 : 0x0000);
+	int delta_y = ((uint16_t)std::abs(dy * 16.0f) << 1) | (dy < 0 ? 0x0001 : 0x0000);
 	short itime = (short)(time / 0.05);
 
-	setX(x + ((float)dx / 16));
-	setY(y + ((float)dy / 16));
+	setX(x + dx);
+	setY(y + dy);
 
 	if (level != nullptr)
 		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
+
+	if (isWarpable())
+		testTouch();
 }
 
 void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
@@ -1308,14 +1340,19 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 	// Adjust the position of the npc
 	x = pX;
-	x2 = 16 * pX;
-
 	y = pY;
-	y2 = 16 * pY;
+
+	updatePropModTime(NPCPROP_CURLEVEL);
+	updatePropModTime(NPCPROP_GMAPLEVELX);
+	updatePropModTime(NPCPROP_GMAPLEVELY);
+	updatePropModTime(NPCPROP_X2);
+	updatePropModTime(NPCPROP_Y2);
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
-	server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
+	
+	if (!npcName.empty())
+		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
 	// Queue event
 	this->queueNpcAction("npc.warped");
@@ -1451,12 +1488,12 @@ bool TNPC::loadNPC(const CString& fileName)
 			setY(strtofloat(curLine.readString("")));
 		else if (curCommand == "MAPX")
 		{
-			gmaplevelx = strtoint(curLine.readString(""));
+			//gmaplevelx = strtoint(curLine.readString(""));
 			modTime[NPCPROP_GMAPLEVELX] = updateTime;
 		}
 		else if (curCommand == "MAPY")
 		{
-			gmaplevely = strtoint(curLine.readString(""));
+			//gmaplevely = strtoint(curLine.readString(""));
 			modTime[NPCPROP_GMAPLEVELY] = updateTime;
 		}
 		else if (curCommand == "NICK")

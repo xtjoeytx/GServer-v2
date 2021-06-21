@@ -91,11 +91,13 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	int startX = (int)(16 * args[0]->NumberValue(context).ToChecked());
-	int startY = (int)(16 * args[1]->NumberValue(context).ToChecked());
+	//int startX = (int)(16 * args[0]->NumberValue(context).ToChecked());
+	//int startY = (int)(16 * args[1]->NumberValue(context).ToChecked());
+	float startX = (float)args[0]->NumberValue(context).ToChecked();
+	float startY = (float)args[1]->NumberValue(context).ToChecked();
 	int endX = 16 * args[2]->Int32Value(context).ToChecked();
 	int endY = 16 * args[3]->Int32Value(context).ToChecked();
-
+	
 	std::vector<TNPC *> npcList = levelObject->findAreaNpcs(startX, startY, endX, endY);
 
 	// Create array of objects

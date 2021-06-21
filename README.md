@@ -9,20 +9,16 @@ For their additional work on the old gserver, special thanks go to:
 ## Building
 
 ### On *nix machines
+just run the build-v8-(mac/linux) script:
 ```
-fetch v8
-cd v8
-git checkout refs/tags/7.4.288.26 -b sample -t
-gclient sync -D
-gclient sync
-tools/dev/v8gen.py x64.release.sample
-ninja -j 8 -C out.gn/x64.release.sample v8_monolith
+cd dependencies/
+./build-v8-linux
 ```
 
 ### On Windows, using GCC
 Currently, v8 is too much of a pain to build for this method to be viable. We suggest you use MSVC/MSBuild and nuget instead.
 
-### On Windows, using MSVC/MSBuild
+### On Windows, using MSVC/MSBuild with VSCode
 #### Setup the environment:
 Install Microsoft C++ compiler and latest Windows SDK through the [VS installer](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019)
 

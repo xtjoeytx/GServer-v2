@@ -92,11 +92,11 @@ bool TPlayer::sendLogin()
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-	sendPacket(CString() >> (char)PLO_FULLSTOP);
-	sendPacket(CString() >> (char)45 << "basepackage.gupd");
 
-
-	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
+	//if(loginserver) {
+	//	sendPacket(CString() >> (char)PLO_FULLSTOP);
+	//	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
+	//}
 
 	if (isClient())
 	{
@@ -269,10 +269,9 @@ bool TPlayer::sendLoginClient()
 	// So, just send them all the maps loaded into the server.
 	if (versionID == CLVER_2_31 || versionID == CLVER_1_411)
 	{
-		for (std::vector<TMap*>::iterator i = server->getMapList()->begin(); i != server->getMapList()->end(); ++i)
+		for (const auto & map : server->getMapList())
 		{
-			TMap* map = *i;
-			if (map->getType() == MAPTYPE_BIGMAP)
+			if (map->getType() == MapType::BIGMAP)
 				msgPLI_WANTFILE(CString() << map->getMapName());
 		}
 	}
@@ -306,10 +305,10 @@ bool TPlayer::sendLoginClient()
 		if (weapon == 0)
 		{
 			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			int wId = TLevelItem::getItemId(*i);
-			if (wId != -1)
+			LevelItemType itemType = TLevelItem::getItemId(*i);
+			if (itemType != LevelItemType::INVALID)
 			{
-				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)wId;
+				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
 				defWeapPacket.readGChar();
 				msgPLI_WEAPONADD(defWeapPacket);
 				continue;

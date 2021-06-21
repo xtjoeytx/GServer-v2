@@ -212,8 +212,8 @@ class TNPC
 		// set functions
 		void setId(unsigned int pId)			{ id = pId; }
 		void setLevel(TLevel* pLevel)			{ level = pLevel; }
-		void setX(float val)					{ x = val; x2 = (int)(16 * val); }
-		void setY(float val)					{ y = val; y2 = (int)(16 * val); }
+		void setX(float val)					{ x = val; }
+		void setY(float val)					{ y = val; }
 		void setHeight(int val)					{ height = val; }
 		void setWidth(int val)					{ width = val; }
 		void setName(const std::string& name)	{ npcName = name; }
@@ -229,8 +229,6 @@ class TNPC
 		bool isLevelNPC() const					{ return levelNPC; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
-		int getPixelX() const					{ return x2; }
-		int getPixelY() const					{ return y2; }
 		int getHeight() const 					{ return height; }
 		int getWidth() const 					{ return width; }
 		unsigned char getSprite() const			{ return sprite; }
@@ -250,7 +248,7 @@ class TNPC
 		unsigned char getColorId(unsigned int idx) const;
 
 #ifdef V8NPCSERVER
-		inline bool joinedClass(const std::string& name) {
+		bool joinedClass(const std::string& name) {
 			auto it = std::find(joinedClasses.begin(), joinedClasses.end(), name);
 			return (it != joinedClasses.end());
 		}
@@ -279,7 +277,7 @@ class TNPC
 
 		bool isWarpable() const { return canWarp; }
 		void allowNpcWarping(bool canWarp);
-		void moveNPC(int dx, int dy, double time, int options);
+		void moveNPC(float dx, float dy, double time, int options);
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
 		// file
@@ -309,8 +307,6 @@ class TNPC
 		bool levelNPC;
 		time_t modTime[NPCPROP_COUNT];
 		float x, y, hurtX, hurtY;
-		int x2, y2;
-		unsigned char gmaplevelx, gmaplevely;
 		unsigned int id;
 		int rupees;
 		unsigned char darts, bombs, glovePower, bombPower, swordPower, shieldPower;
@@ -518,7 +514,7 @@ const CString& TNPC::getHorseImage() const
 inline
 void TNPC::setHorseImage(const std::string& pHorseImage)
 {
-	horseImage = pHorseImage;
+	horseImage = pHorseImage.substr(0, 200);
 }
 
 //////////

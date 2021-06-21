@@ -15,7 +15,7 @@
 #endif
 
 // -- Constructor: Default Weapons -- //
-TWeapon::TWeapon(TServer *pServer, const signed char pId)
+TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 : server(pServer), mModTime(0), mWeaponDefault(pId)
 #ifdef V8NPCSERVER
 , _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
@@ -26,7 +26,7 @@ TWeapon::TWeapon(TServer *pServer, const signed char pId)
 
 // -- Constructor: Weapon Script -- //
 TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
-: server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(-1)
+: server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 , _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif

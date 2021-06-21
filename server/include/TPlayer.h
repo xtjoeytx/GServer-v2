@@ -19,7 +19,15 @@ class TLevel;
 class TServer;
 class TMap;
 class TWeapon;
-//class CFileQueue;
+
+enum class LevelItemType;
+
+enum
+{
+	PLSETPROPS_SETBYPLAYER	= 0x01,	// if set, do serverside checks to prevent attributes from being changed
+	PLSETPROPS_FORWARD		= 0x02,	// forward data to other players
+	PLSETPROPS_FORWARDSELF  = 0x04, // forward data back to the player
+};
 
 struct SCachedLevel
 {
@@ -45,7 +53,7 @@ class TPlayer : public TAccount, public CSocketStub
 		~TPlayer();
 
 		// Manage Account
-		inline bool isLoggedIn() const;
+		bool isLoggedIn() const;
 		bool sendLogin();
 
 		// Get Properties
@@ -88,7 +96,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		CString getProps(const bool *pProps, int pCount);
 		CString getPropsRC();
-		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer *rc = 0);
+		void setProps(CString& pPacket, uint8_t options, TPlayer* rc = 0);
 		void sendProps(const bool *pProps, int pCount);
 		void setPropsRC(CString& pPacket, TPlayer* rc);
 
@@ -115,10 +123,10 @@ class TPlayer : public TAccount, public CSocketStub
 		bool doTimedEvents();
 		void disconnect();
 		bool processChat(CString pChat);
-		bool addWeapon(int defaultWeapon);
+		bool addWeapon(LevelItemType defaultWeapon);
 		bool addWeapon(const CString& name);
 		bool addWeapon(TWeapon* weapon);
-		bool deleteWeapon(int defaultWeapon);
+		bool deleteWeapon(LevelItemType defaultWeapon);
 		bool deleteWeapon(const CString& name);
 		bool deleteWeapon(TWeapon* weapon);
 		void disableWeapons();
@@ -205,7 +213,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
-		bool msgPLI_UNKNOWN47(CString& pPacket);
+		bool msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket);
 		bool msgPLI_UPDATECLASS(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
@@ -286,30 +294,8 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
+		bool msgPLI_UNKNOWN159UPDATEPACKAGE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
-
-		/////////////
-		inline void getPropPacket(CString& packet, int val) {
-			packet >> (char)val;
-			getProp(packet, val);
-		}
-
-		template<typename... Args>
-		inline CString sendPropPacket(Args&&... args) {
-			static_assert((std::is_same<Args, int>::value && ...));
-
-			CString packet;
-			(getPropPacket(packet, std::forward<Args>(args)), ...);
-			return packet;
-		}
-
-		inline CString sendPropPacket2(std::initializer_list<int> args) {
-			CString packet;
-			for (const auto& v : args) {
-				getPropPacket(packet, v);
-			}
-			return packet;
-		}
 
 	private:
 		// Login functions.
@@ -327,6 +313,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Misc.
 		void dropItemsOnDeath();
+		bool removeItem(LevelItemType itemType);
 
 		// Socket Variables
 		CSocket *playerSock;
@@ -396,12 +383,8 @@ inline bool TPlayer::inChatChannel(const std::string& channel) const
 
 inline bool TPlayer::addChatChannel(const std::string & channel)
 {
-	//if (channelList.find(channel) == channelList.end())
-	//{
-		channelList.insert(channel);
-		return true;
-	//}
-	return false;
+	auto res = channelList.insert(channel);
+	return res.second;
 }
 
 inline bool TPlayer::removeChatChannel(const std::string & channel)
@@ -409,7 +392,6 @@ inline bool TPlayer::removeChatChannel(const std::string & channel)
 	channelList.erase(channel);
 	return false;
 }
-
 
 inline CString TPlayer::getProp(int pPropId) const
 {

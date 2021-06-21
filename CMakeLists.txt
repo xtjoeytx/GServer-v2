@@ -69,8 +69,8 @@ configure_file(
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
-option(NOSTATIC "Don't compile as a static runtime." OFF)
-if(NOSTATIC)
+option(STATIC "Compile as a static runtime." ON)
+if(STATIC)
 	message("Don't compile as a static runtime")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 else()
@@ -87,8 +87,8 @@ else()
 	message("Disabling built-in V8 NPC-Server")
 endif()
 
-option(NOUPNP "Don't compile with UPNP support" OFF)
-if(NOT NOUPNP)
+option(UPNP "Compile with UPNP support" OFF)
+if(UPNP)
 	message("Enabling UPNP support")
 	add_definitions(-DUPNP)
 else()
@@ -201,7 +201,7 @@ elseif(WIN32)
 elseif(AROS)
 elseif(AMIGA)
 else()
-	if(NOT NOSTATIC)
+	if(STATIC)
 	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
@@ -212,7 +212,7 @@ else()
 endif()
 
 # Prefer static linkage
-if(NOT NOSTATIC)
+if(STATIC)
 	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
@@ -224,13 +224,13 @@ if(V8NPCSERVER)
 	endif()
 endif()
 
-if(NOT NOUPNP)
+if(UPNP)
 	find_package(Miniupnpc)
 
 	if(NOT MINIUPNPC_FOUND)
 		message("MiniUPNPC not found in system. Compiling it ourselves.")
 
-		if(NOT NOSTATIC)
+		if(STATIC)
 			add_definitions(-DMINIUPNP_STATICLIB)
 			set(UPNPC_BUILD_STATIC TRUE CACHE BOOL "-" FORCE)
 			set(UPNPC_BUILD_SHARED FALSE CACHE BOOL "-" FORCE)
@@ -253,7 +253,7 @@ if(NOT WIN32)
 endif()
 
 # Restore library suffixes
-if(NOT NOSTATIC)
+if(STATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 

@@ -1,31 +1,34 @@
 #ifndef TLEVELCHEST_H
 #define TLEVELCHEST_H
 
+enum class LevelItemType;
+
 class TLevelChest
 {
 	public:
-		TLevelChest(char nx, char ny, char itemIdx, char signIdx)
+		TLevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
 			: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny) {
 		}
 
-		inline int getItemIndex() const {
+		LevelItemType getItemIndex() const {
 			return itemIndex;
 		}
 
-		inline int getSignIndex() const {
+		int getSignIndex() const {
 			return signIndex;
 		}
 
-		inline int getX() const {
+		int getX() const {
 			return x;
 		}
 
-		inline int getY() const {
+		int getY() const {
 			return y;
 		}
 
 	private:
-		int itemIndex, signIndex, x, y;
+		LevelItemType itemIndex;
+		int signIndex, x, y;
 };
 
 
