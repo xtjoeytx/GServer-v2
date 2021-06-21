@@ -365,7 +365,7 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 
 	// Logging
 	CString logMsg;
-	logMsg << "Script " << className << " " << (hasClass ? "added" : "updated") << " by " << accountName << "\n";
+	logMsg << "Script " << className << " " << (!hasClass ? "added" : "updated") << " by " << accountName << "\n";
 	npclog.out(logMsg);
 	server->sendToNC(logMsg);
 	return true;
@@ -572,7 +572,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	}
 
 	// Start our packet.
-	CString ret = CString() >> (char)PLO_NC_LEVELLIST;
+	CString ret;
 
 	auto levelList = server->getLevelList();
 	if (!levelList->empty())
@@ -581,7 +581,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 			ret << (*it)->getActualLevelName() << "\n";
 	}
 
-	sendPacket(ret);
+	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());
 	return true;
 }
 
@@ -595,12 +595,14 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != nullptr)
 	{
-		// TODO(joey): should be same as gserver ip
-
 		// Grab NPCServer & Send
 		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "auto").toLower();
 		if (npcServerIp == "auto") {
 			npcServerIp = server->getServerList()->getServerIP();
+
+			// Fix for localhost setups
+			if (accountIpStr == playerSock->getLocalIp())
+				npcServerIp = accountIpStr;
 		}
 
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));

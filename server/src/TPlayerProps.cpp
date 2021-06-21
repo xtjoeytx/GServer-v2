@@ -119,7 +119,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 		{
 			if (isClient())// || type == PLTYPE_AWAIT)
 			{
-				if (pmap && pmap->getType() == MAPTYPE_GMAP)
+				if (pmap && pmap->getType() == MapType::GMAP)
 					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
 				{
@@ -250,34 +250,37 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 		case PLPROP_X2:
 		{
-			unsigned short val = abs(x2) << 1;
-			if (x2 < 0) val |= 0x0001;
+			uint16_t val = ((uint16_t)std::abs(x * 16.0f)) << 1;
+			if (x < 0)
+				val |= 0x0001;
 			buffer.writeGShort(val);
 			return;
 		}
 
 		case PLPROP_Y2:
 		{
-			unsigned short val = abs(y2) << 1;
-			if (y2 < 0) val |= 0x0001;
-			buffer.writeGShort((short)val);
+			uint16_t val = ((uint16_t)std::abs(y * 16.0f)) << 1;
+			if (y < 0)
+				val |= 0x0001;
+			buffer.writeGShort(val);
 			return;
 		}
 
 		case PLPROP_Z2:
 		{
-			unsigned short val = abs(z2) << 1;
-			if (z2 < 0) val |= 0x0001;
+			uint16_t val = ((uint16_t)std::abs(z * 16.0f)) << 1;
+			if (z < 0)
+				val |= 0x0001;
 			buffer.writeGShort(val);
 			return;
 		}
 
 		case PLPROP_GMAPLEVELX:
-			buffer >> (char)gmaplevelx;
+			buffer >> (char)(level ? level->getMapX() : 0);
 			return;
 
 		case PLPROP_GMAPLEVELY:
-			buffer >> (char)gmaplevely;
+			buffer >> (char)(level ? level->getMapY() : 0);
 			return;
 
 		// TODO(joey): figure this out. Something to do with guilds? irc-related
@@ -309,14 +312,12 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 	}
 }
 
-void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPlayer *rc)
+void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 {
-	CSettings *settings = server->getSettings();
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
-	bool doSignCheck = false;
 	bool doTouchTest = false;
-	int len = 0;
 	bool sentInvalid = false;
+	int len = 0;
 
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -335,30 +336,39 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick, (rc != nullptr));
+				else setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
 				
-				globalBuff >> (char)propId << getProp(propId);
+				if (options & PLSETPROPS_FORWARD)
+					globalBuff >> (char)propId << getProp(propId);
 
 				// Send this if the player is located on another server
 				// globalBuff >> (char)81;
 
-				if (!pForwardToSelf)
+				if (!(options & PLSETPROPS_FORWARDSELF))
 					selfBuff >> (char)propId << getProp(propId);
 			}
 			break;
 
 			case PLPROP_MAXPOWER:
 			{
-				auto newMaxPower = pPacket.readGUChar();
-				setMaxPower(newMaxPower);
-				setPower((float)maxPower);
+				uint8_t newMaxPower = pPacket.readGUChar();
 
 #ifdef V8NPCSERVER
-				levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
-				selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
 #endif
-				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
-				selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+					setMaxPower(newMaxPower);
+					setPower((float)maxPower);
+
+#ifdef V8NPCSERVER
+					levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+					selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
+#endif
+					levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+					selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+#ifdef V8NPCSERVER
+				}
+#endif
+
 				break;
 			}
 
@@ -373,23 +383,26 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			}
 
 			case PLPROP_RUPEESCOUNT:
-				if (rc != 0)
-				{
-					if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+			{
+				unsigned int newGralatCount = std::min(pPacket.readGUInt(), 9999999u);
+
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					if (rc != nullptr)
 					{
-						gralatc = pPacket.readGUInt();
-						gralatc = clip(gralatc, 0, 9999999);
+						if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+							gralatc = newGralatCount;
 					}
 					else
-						pPacket.readGUInt();
-
+					{
+						gralatc = newGralatCount;
+					}
+#ifdef V8NPCSERVER
 				}
-				else
-				{
-					gralatc = pPacket.readGUInt();
-					gralatc = clip(gralatc, 0, 9999999);
-				}
-			break;
+#endif
+				break;
+			}
 
 			case PLPROP_ARROWSCOUNT:
 				arrowc = pPacket.readGUChar();
@@ -402,9 +415,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_GLOVEPOWER:
-				glovePower = pPacket.readGUChar();
-				glovePower = clip(glovePower, 0, 3);
-			break;
+			{
+				uint8_t newGlovePower = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					glovePower = std::min<uint8_t>(newGlovePower, 3);
+#ifdef V8NPCSERVER
+				}
+#endif
+				break;
+			}
 
 			case PLPROP_BOMBPOWER:
 				bombPower = pPacket.readGUChar();
@@ -418,6 +439,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 				if (sp <= 4)
 				{
+					CSettings* settings = server->getSettings(); 
 					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
 					img = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -434,7 +456,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					else img = "";
 				}
 
-				setSwordPower(sp);
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					setSwordPower(sp);
+#ifdef V8NPCSERVER
+				}
+#endif
 				setSwordImage(img);
 			}
 			break;
@@ -446,6 +474,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 				if (sp <= 3)
 				{
+					CSettings* settings = server->getSettings(); 
 					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
 					img = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -466,7 +495,13 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 					else img = "";
 				}
 
-				setShieldPower(sp);
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					setShieldPower(sp);
+#ifdef V8NPCSERVER
+				}
+#endif
 				setShieldImage(img);
 			}
 			break;
@@ -549,8 +584,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				if (!processChat(chatMsg))
 				{
 					int found = server->getWordFilter()->apply(this, chatMsg, FILTER_CHECK_CHAT);
-					if (pForwardToSelf == false && ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN)))
-						selfBuff >> (char)propId << getProp(propId);
+					if (!(options & PLSETPROPS_FORWARDSELF))
+					{
+						if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
+							selfBuff >> (char)propId << getProp(propId);
+					}
 				}
 
 #ifdef V8NPCSERVER
@@ -565,8 +603,8 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_COLORS:
-				for (unsigned int i = 0; i < sizeof(colors) / sizeof(unsigned char); ++i)
-					colors[i] = pPacket.readGUChar();
+				for (unsigned char & color : colors)
+					color = pPacket.readGUChar();
 			break;
 
 			case PLPROP_ID:
@@ -578,10 +616,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				x2 = (int)(x * 16);
 				levelBuff2 >> (char)PLPROP_X2 << getProp(PLPROP_X2);
 			break;
 
@@ -590,14 +629,12 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				y2 = (int)(y * 16);
 				levelBuff2 >> (char)PLPROP_Y2 << getProp(PLPROP_Y2);
-
-				// Do collision testing.
-				doSignCheck = true;
 			break;
 
 			case PLPROP_Z:
@@ -608,7 +645,6 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				doTouchTest = true;
 
 				// Let 2.30+ clients see pre-2.30 movement.
-				z2 = (int)(z * 16);
 				levelBuff2 >> (char)PLPROP_Z2 << getProp(PLPROP_Z2);
 			break;
 
@@ -616,7 +652,7 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 				sprite = pPacket.readGUChar();
 
 				// Do collision testing.
-				doSignCheck = true;
+				doTouchTest = true;
 			break;
 
 			case PLPROP_STATUS:
@@ -673,7 +709,11 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_CURLEVEL:
 				len = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				pPacket.readChars(len);
+#else
 				levelName = pPacket.readChars(len);
+#endif
 			break;
 
 			case PLPROP_HORSEGIF:
@@ -736,9 +776,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_MAGICPOINTS:
-				mp = pPacket.readGUChar();
-				mp = clip(mp, 0, 100);
-			break;
+			{
+				uint8_t newMP = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					mp = std::min<uint8_t>(newMP, 100);
+#ifdef V8NPCSERVER
+				}
+#endif
+				break;
+			}
 
 			case PLPROP_KILLSCOUNT:
 				pPacket.readGInt();
@@ -764,9 +812,17 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			break;
 
 			case PLPROP_ALIGNMENT:
-				ap = pPacket.readGUChar();
-				ap = clip(ap, 0, 100);
-			break;
+			{
+				uint8_t newAlignment = pPacket.readGUChar();
+#ifdef V8NPCSERVER
+				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+#endif
+					ap = std::min<uint8_t>(newAlignment, 100);
+#ifdef V8NPCSERVER
+				}
+#endif
+				break;
+			}
 
 			case PLPROP_ADDITFLAGS:
 				additionalFlags = pPacket.readGUChar();
@@ -799,30 +855,34 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 
 			case PLPROP_GMAPLEVELX:
 			{
-				gmaplevelx = pPacket.readGUChar();
-				if (pmap)
+				int mx = pPacket.readGUChar();
+
+				if (level && level->getMap())
 				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					auto cmap = level->getMap();
+					auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
 					leaveLevel();
-					setLevel(levelName, -1);
+					setLevel(newLevelName, -1);
 				}
 #ifdef DEBUG
-				printf("gmap level x: %d\n", gmaplevelx);
+				printf("gmap level x: %d\n", level->getMapX());
 #endif
 				break;
 			}
 
 			case PLPROP_GMAPLEVELY:
 			{
-				gmaplevely = pPacket.readGUChar();
-				if (pmap)
+				int my = pPacket.readGUChar();
+
+				if (level && level->getMap())
 				{
-					levelName = pmap->getLevelAt(gmaplevelx, gmaplevely);
+					auto cmap = level->getMap();
+					auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
 					leaveLevel();
-					setLevel(levelName, -1);
+					setLevel(newLevelName, -1);
 				}
 #ifdef DEBUG
-				printf("gmap level y: %d\n", gmaplevely);
+				printf("gmap level y: %d\n", level->getMapY());
 #endif
 				break;
 			}
@@ -894,54 +954,61 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			// Bit 0x0001 controls if it is negative or not.
 			// Bits 0xFFFE are the actual value.
 			case PLPROP_X2:
-				x2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				x = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					x = -x;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_X << getProp(PLPROP_X);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
 				doTouchTest = true;
-
-				// If the first bit is 1, our position is negative.
-				x2 >>= 1;
-				if ((short)len & 0x0001) x2 = -x2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				x = (float)x2 / 16.0f;
-				levelBuff2 >> (char)PLPROP_X << getProp(PLPROP_X);
 				break;
 
 			case PLPROP_Y2:
-				y2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				y = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					y = -y;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
-				doTouchTest = true;
-
-				// If the first bit is 1, our position is negative.
-				y2 >>= 1;
-				if ((short)len & 0x0001) y2 = -y2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				y = (float)y2 / 16.0f;
-				levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
 
 				// Do collision testing.
-				doSignCheck = true;
+				doTouchTest = true;
 				break;
 
 			case PLPROP_Z2:
-				z2 = len = pPacket.readGUShort();
+				len = pPacket.readGUShort();
+				z = (len >> 1) / 16.0f;
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					z = -z;
+
+				// Let pre-2.30+ clients see 2.30+ movement.
+				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
+
 				status &= (~PLSTATUS_PAUSED);
 				lastMovement = time(0);
 				grMovementUpdated = true;
+
+				// Do collision testing.
 				doTouchTest = true;
 
-				// If the first bit is 1, our position is negative.
-				z2 >>= 1;
-				if ((short)len & 0x0001) z2 = -z2;
-
-				// Let pre-2.30+ clients see 2.30+ movement.
-				z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
-				levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
+				//// Let pre-2.30+ clients see 2.30+ movement.
+				//z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				break;
 
 			case PLPROP_COMMUNITYNAME:
@@ -961,10 +1028,10 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 			return;
 		}
 
-		if (pForward && __sendLocal[propId] == true)
+		if ((options & PLSETPROPS_FORWARD) && __sendLocal[propId])
 			levelBuff >> (char)propId << getProp(propId);
 
-		if (pForwardToSelf)
+		if ((options & PLSETPROPS_FORWARDSELF))
 			selfBuff >> (char)propId << getProp(propId);
 	}
 
@@ -986,17 +1053,20 @@ void TPlayer::setProps(CString& pPacket, bool pForward, bool pForwardToSelf, TPl
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
 
+#ifdef V8NPCSERVER
 		// Movement check.
+		//if (options & PLSETPROPS_SETBYPLAYER)
 		if (!rc)
 		{
-			if (doSignCheck)
-				testSign();
-
-#ifdef V8NPCSERVER
 			if (doTouchTest)
+			{
+				if (sprite % 4 == 0)
+					testSign();
 				testTouch();
-#endif
+			}
+
 		}
+#endif
 	}
 
 	if (sentInvalid)

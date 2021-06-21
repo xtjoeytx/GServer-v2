@@ -31,56 +31,59 @@ const char *__itemList[] = {
 	"spinattack"		// 24
 };
 
+const int __itemCount = (sizeof(__itemList) / sizeof(const char *));
+
 CString TLevelItem::getItemStr() const
 {
 	return CString() >> (char)PLO_ITEMADD >> (char)x >> (char)y >> (char)item;
 }
 
-int TLevelItem::getItemId(const CString& pItemName)
+LevelItemType TLevelItem::getItemId(signed char itemId)
 {
-	for (unsigned int i = 0; i < sizeof(__itemList) / sizeof(const char *); ++i)
-	{
-		if (__itemList[i] == pItemName)
-			return i;
-	}
+	if (itemId < 0 || itemId >= __itemCount)
+		return LevelItemType::INVALID;
 
-	return -1;
+	return LevelItemType(itemId);
 }
 
-CString TLevelItem::getItemName(const unsigned char id)
+LevelItemType TLevelItem::getItemId(const CString& pItemName)
 {
-	if (id >= sizeof(__itemList) / sizeof(char*)) return CString();
+	for (unsigned int i = 0; i < __itemCount; ++i)
+	{
+		if (__itemList[i] == pItemName)
+			return LevelItemType(i);
+	}
+
+	return LevelItemType::INVALID;
+}
+
+CString TLevelItem::getItemName(LevelItemType itemId)
+{
+	auto id = TLevelItem::getItemTypeId(itemId);
+	if (id < 0 || id >= __itemCount) return CString();
 	return CString(__itemList[id]);
 }
 
-CString TLevelItem::getItemPlayerProp(const signed char pItemId, TPlayer* player)
+CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 {
-	return TLevelItem::getItemPlayerProp(__itemList[(int)pItemId], player);
-}
-
-CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
-{
-	int itemID = TLevelItem::getItemId(pItemName);
-	if (itemID == -1) return CString();
-
-	switch (itemID)
+	switch (itemType)
 	{
-		case 0:		// greenrupee
-		case 1:		// bluerupee
-		case 2:		// redrupee
-		case 19:	// goldrupee
+		case LevelItemType::GREENRUPEE:		// greenrupee
+		case LevelItemType::BLUERUPEE:		// bluerupee
+		case LevelItemType::REDRUPEE:		// redrupee
+		case LevelItemType::GOLDRUPEE:		// goldrupee
 		{
 			CString playerProp = player->getProp(PLPROP_RUPEESCOUNT);
 			int rupeeCount = playerProp.readGInt();
-			if (itemID == 19) rupeeCount += 100;
-			else if (itemID == 2) rupeeCount += 30;
-			else if (itemID == 1) rupeeCount += 5;
+			if (itemType == LevelItemType::GOLDRUPEE) rupeeCount += 100;
+			else if (itemType == LevelItemType::REDRUPEE) rupeeCount += 30;
+			else if (itemType == LevelItemType::BLUERUPEE) rupeeCount += 5;
 			else rupeeCount += 1;
 			rupeeCount = clip(rupeeCount, 0, 9999999);
 			return CString() >> (char)PLPROP_RUPEESCOUNT >> (int)rupeeCount;
 		}
 
-		case 3:		// bombs
+		case LevelItemType::BOMBS:		// bombs
 		{
 			CString playerProp = player->getProp(PLPROP_BOMBSCOUNT);
 			char bombCount = playerProp.readGChar() + 5;
@@ -88,7 +91,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			return CString() >> (char)PLPROP_BOMBSCOUNT >> (char)bombCount;
 		}
 
-		case 4:		// darts
+		case LevelItemType::DARTS:		// darts
 		{
 			CString playerProp = player->getProp(PLPROP_ARROWSCOUNT);
 			char arrowCount = playerProp.readGChar() + 5;
@@ -96,7 +99,7 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			return CString() >> (char)PLPROP_ARROWSCOUNT >> (char)arrowCount;
 		}
 
-		case 5:		// heart
+		case LevelItemType::HEART:		// heart
 		{
 			CString playerProp = player->getProp(PLPROP_CURPOWER);
 			char heartCount = playerProp.readGChar() + (1 * 2);
@@ -106,48 +109,54 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			return CString() >> (char)PLPROP_CURPOWER >> (char)heartCount;
 		}
 
-		case 6:		// glove1
-		case 16:	// glove2
+		case LevelItemType::GLOVE1:		// glove1
+		case LevelItemType::GLOVE2:		// glove2
 		{
 			CString playerProp = player->getProp(PLPROP_GLOVEPOWER);
 			char glovePower = playerProp.readGChar();
-			if (itemID == 16) glovePower = 3;
+			if (itemType == LevelItemType::GLOVE2) glovePower = 3;
 			else glovePower = (glovePower < 2 ? 2 : glovePower);
 			return CString() >> (char)PLPROP_GLOVEPOWER >> (char)glovePower;
 		}
 
-		case 7:		// bow
-		case 8:		// bomb
+		case LevelItemType::BOW:		// bow
+		case LevelItemType::BOMB:		// bomb
+
+		case LevelItemType::SUPERBOMB:	// superbomb
+		case LevelItemType::FIREBALL:	// fireball
+		case LevelItemType::FIREBLAST:	// fireblast
+		case LevelItemType::NUKESHOT:	// nukeshot
+		case LevelItemType::JOLTBOMB:	// joltbomb
 		{
-			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)itemID);
+			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType));
 			break;
 		}
 
-		case 9:		// shield
-		case 15:	// mirrorshield
-		case 17:	// lizardshield
+		case LevelItemType::SHIELD:			// shield
+		case LevelItemType::MIRRORSHIELD:	// mirrorshield
+		case LevelItemType::LIZARDSHIELD:	// lizardshield
 		{
 			char shieldPower = player->getShieldPower();
-			if (itemID == 17) shieldPower = 3;
-			else if (itemID == 15) shieldPower = (shieldPower < 2 ? 2 : shieldPower);
+			if (itemType == LevelItemType::LIZARDSHIELD) shieldPower = 3;
+			else if (itemType == LevelItemType::MIRRORSHIELD) shieldPower = (shieldPower < 2 ? 2 : shieldPower);
 			else shieldPower = (shieldPower < 1 ? 1 : shieldPower);
 			return CString() >> (char)PLPROP_SHIELDPOWER >> (char)shieldPower;
 		}
 
-		case 10:	// sword
-		case 13:	// battleaxe
-		case 18:	// lizardsword
-		case 14:	// goldensword
+		case LevelItemType::SWORD:			// sword
+		case LevelItemType::BATTLEAXE:		// battleaxe
+		case LevelItemType::LIZARDSWORD:	// lizardsword
+		case LevelItemType::GOLDENSWORD:	// goldensword
 		{
 			char swordPower = (char)player->getSwordPower();
-			if (itemID == 14) swordPower = 4;
-			else if (itemID == 18) swordPower = (swordPower < 3 ? 3 : swordPower);
-			else if (itemID == 13) swordPower = (swordPower < 2 ? 2 : swordPower);
+			if (itemType == LevelItemType::GOLDENSWORD) swordPower = 4;
+			else if (itemType == LevelItemType::LIZARDSWORD) swordPower = (swordPower < 3 ? 3 : swordPower);
+			else if (itemType == LevelItemType::BATTLEAXE) swordPower = (swordPower < 2 ? 2 : swordPower);
 			else swordPower = (swordPower < 1 ? 1 : swordPower);
 			return CString() >> (char)PLPROP_SWORDPOWER >> (char)swordPower;
 		}
 
-		case 11:	// fullheart
+		case LevelItemType::FULLHEART:	// fullheart
 		{
 			CString playerProp = player->getProp(PLPROP_MAXPOWER);
 			unsigned char heartMax = playerProp.readGUChar() + 1;
@@ -155,22 +164,12 @@ CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
 			return CString() >> (char)PLPROP_MAXPOWER >> (char)heartMax >> (char)PLPROP_CURPOWER >> (char)(heartMax * 2);
 		}
 
-		case 12:	// superbomb
-		case 20:	// fireball
-		case 21:	// fireblast
-		case 22:	// nukeshot
-		case 23:	// joltbomb
-		{
-			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)itemID);
-			break;
-		}
-
-		case 24:	// spinattack
+		case LevelItemType::SPINATTACK:	// spinattack
 		{
 			CString playerProp = player->getProp(PLPROP_STATUS);
 			char status = playerProp.readGChar();
-			if (status & 64) return CString();
-			status |= 64;
+			if (status & PLSTATUS_HASSPIN) return CString();
+			status |= PLSTATUS_HASSPIN;
 			return CString() >> (char)PLPROP_STATUS >> (char)status;
 		}
 	}

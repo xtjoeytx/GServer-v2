@@ -7,3 +7,6 @@
 [submodule "dependencies/gs2lib"]
 	path = dependencies/gs2lib
 	url = https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
+[submodule "dependencies/gs2compiler"]
+	path = dependencies/gs2compiler
+	url = https://github.com/xx-shitai-xx/gs2compiler.git

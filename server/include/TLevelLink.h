@@ -8,7 +8,7 @@ class TLevelLink
 {
 	public:
 		// constructor - destructor
-		TLevelLink() { }
+		TLevelLink() : x(0), y(0), width(0), height(0) { }
 		TLevelLink(const std::vector<CString>& pLink);
 
 		// functions
