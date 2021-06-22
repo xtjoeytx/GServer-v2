@@ -271,7 +271,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
 	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
-	TPLFunc[PLI_UNKNOWN159UPDATEPACKAGE] = &TPlayer::msgPLI_UNKNOWN159UPDATEPACKAGE;
+	TPLFunc[PLI_UPDATEPACKAGEREQUESTFILE] = &TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE;
 	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
 
 	// NPC-Server Functions
@@ -730,6 +730,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	if (path.isEmpty())
 	{
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+
 		return false;
 	}
 
@@ -757,6 +758,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	if (fileData.length() == 0)
 	{
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+
 		return false;
 	}
 
@@ -3995,8 +3997,8 @@ bool TPlayer::msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket)
 	// TODO: Fix the modtime stuff
 	//if (fModTime > modTime) {
 
-		return msgPLI_WANTFILE(file);
-
+		this->sendFile(file);
+		sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << file);
 		return true;
 	//}
 
@@ -4488,16 +4490,47 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UNKNOWN159UPDATEPACKAGE(CString& pPacket)
+bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 {
 	char num = pPacket.readChar();
-	CString file = pPacket.readString("!");
+	CString file = pPacket.readString(".gupd");
+	pPacket.removeI(0,file.length() + 7);
+	unsigned char num2 = pPacket.readGUChar();
 	CString text = pPacket.readString("");
-	CString packet1 = CString() >> (char)PLO_UNKNOWN105UPDATEPACKAGE << num << file << text;
-	CString packet2 = CString() >> (char)PLO_UNKNOWN106UPDATEPACKAGE << file;
+	std::vector<CString> updatePackage = server->getFileSystem()->load(file << ".gupd").tokenize("\n");
+	auto* fileNames = new std::vector<CString>();
 
-	sendPacket(packet1);
-	sendPacket(packet2);
+	int files = 0;
+	int totalFiles = text.length()/5;
+	int totalFileSize = 0;
+	for (const auto& line : updatePackage) {
+		if (line.findi("FILE") > -1) {
+			files++;
+			CString file2 = line.subString(line.findi("FILE") + 5);
+			if (num2 == files) {
+				totalFileSize = server->getFileSystem()->getFileSize(file2.trimI());
+				int fileSize = text.readGInt5();
+#if defined(DEBUG)
+				server->getServerLog().out(CString() << "UPDATEPACKAGE - Num: " << CString(num2) << " - Package: " << file << " - File: " << file2 << " - Filesystem size: " << CString(totalFileSize) << " - their size: " << CString(fileSize) << "\n");
+#endif
+				fileNames->push_back(file2.trimI());
+			} else if (totalFiles > 1){
+				totalFileSize += server->getFileSystem()->getFileSize(file2.trimI());
+				fileNames->push_back(file2.trimI());
+			}
+
+		}
+	}
+
+	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE << num << file >> (long long)totalFileSize);
+
+	for ( auto wantFile : *fileNames ) { this->sendFile(wantFile); }
+
+#if defined(DEBUG)
+	server->getServerLog().out(CString() << "UPDATEPACKAGE - Num: " << CString(num2) << " - Files: " << CString(files) << " - Length left: " << CString(text.length()) << " - Rest: " << text << "\n");
+#endif
+
+	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << file);
 
 	// Stub.
 	return true;

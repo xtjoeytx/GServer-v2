@@ -294,7 +294,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
-		bool msgPLI_UNKNOWN159UPDATEPACKAGE(CString& pPacket);
+		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
 	private:
