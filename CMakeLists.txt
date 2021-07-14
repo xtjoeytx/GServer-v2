@@ -19,7 +19,7 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 3.0.0)
 project(GS2Emu C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
@@ -59,7 +59,7 @@ set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
-set(GSERVER_CREDITS "Joey, Nalin, Codr and Cadavre")
+set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 
