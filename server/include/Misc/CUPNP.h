@@ -1,3 +1,4 @@
+#ifdef UPNP
 #ifndef CUPNP_H
 #define CUPNP_H
 
@@ -63,4 +64,5 @@ class CUPNP
 		struct IGDdatas data;
 };
 
+#endif
 #endif

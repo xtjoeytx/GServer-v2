@@ -168,8 +168,8 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 		{
 			CString playerProp = player->getProp(PLPROP_STATUS);
 			char status = playerProp.readGChar();
-			if (status & 64) return CString();
-			status |= 64;
+			if (status & PLSTATUS_HASSPIN) return CString();
+			status |= PLSTATUS_HASSPIN;
 			return CString() >> (char)PLPROP_STATUS >> (char)status;
 		}
 	}

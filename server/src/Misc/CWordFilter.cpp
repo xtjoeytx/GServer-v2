@@ -275,7 +275,7 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 						}
 						if (found) break;
 					}
-					
+
 					// Don't count empty spaces.
 					while (true)
 					{

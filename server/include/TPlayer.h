@@ -21,7 +21,13 @@ class TMap;
 class TWeapon;
 
 enum class LevelItemType;
-//class CFileQueue;
+
+enum
+{
+	PLSETPROPS_SETBYPLAYER	= 0x01,	// if set, do serverside checks to prevent attributes from being changed
+	PLSETPROPS_FORWARD		= 0x02,	// forward data to other players
+	PLSETPROPS_FORWARDSELF  = 0x04, // forward data back to the player
+};
 
 struct SCachedLevel
 {
@@ -47,7 +53,7 @@ class TPlayer : public TAccount, public CSocketStub
 		~TPlayer();
 
 		// Manage Account
-		inline bool isLoggedIn() const;
+		bool isLoggedIn() const;
 		bool sendLogin();
 
 		// Get Properties
@@ -90,7 +96,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		CString getProps(const bool *pProps, int pCount);
 		CString getPropsRC();
-		void setProps(CString& pPacket, bool pForward = false, bool pForwardToSelf = false, TPlayer *rc = 0);
+		void setProps(CString& pPacket, uint8_t options, TPlayer* rc = 0);
 		void sendProps(const bool *pProps, int pCount);
 		void setPropsRC(CString& pPacket, TPlayer* rc);
 
@@ -207,7 +213,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
-		bool msgPLI_UNKNOWN47(CString& pPacket);
+		bool msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket);
 		bool msgPLI_UPDATECLASS(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
@@ -288,6 +294,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_UNKNOWN157(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
+		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
 	private:
@@ -306,6 +313,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Misc.
 		void dropItemsOnDeath();
+		bool removeItem(LevelItemType itemType);
 
 		// Socket Variables
 		CSocket *playerSock;

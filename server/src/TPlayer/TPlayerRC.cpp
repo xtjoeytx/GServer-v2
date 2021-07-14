@@ -67,7 +67,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	CString props = pPacket.readChars(pPacket.readGUChar());
 
 	// Send props out.
-	setProps(props, (id != -1 ? true : false), (id != -1 ? true : false), rc);
+	setProps(props, (id != -1 ? PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF : 0), rc);
 
 	// Clear flags
 	for (auto i = flagList.begin(); i != flagList.end(); ++i)
@@ -1775,6 +1775,9 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+
+		if (file.find(".gupd") != -1)
+			server->sendPacketToAll(CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << file, this);
 
 		// Update file.
 		updateFile(this, server, lastFolder, file);

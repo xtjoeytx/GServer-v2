@@ -48,7 +48,7 @@ void TLevelBaddy::dropItem()
 	// 41.66...% chance of something else.
 	// 16.66...% chance of nothing.
 	int itemId = rand()%12;
-	bool valid = true;
+	LevelItemType itemType = LevelItemType::INVALID;
 
 	switch (itemId)
 	{
@@ -58,19 +58,19 @@ void TLevelBaddy::dropItem()
 		case 3:	//BOMBS
 		case 4:	//DARTS
 		case 5:	//HEART
+			itemType = TLevelItem::getItemId(itemId);
 			break;
-		break;
 
 		default:
-			if (itemId > 5 && itemId < 10) itemId = 0;	//GREENRUPEE
-			else valid = false;
+			if (itemId > 5 && itemId < 10)
+				itemType = LevelItemType::GREENRUPEE;
 			break;
 	}
 
-	if (valid)
+	if (itemType != LevelItemType::INVALID)
 	{
-		level->addItem(this->x, this->y, LevelItemType(itemId));
-		server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x*2) >> (char)(this->y*2) >> (char)itemId, 0, level);
+		if (level->addItem(this->x, this->y, itemType))
+			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), 0, level);
 	}
 }
 

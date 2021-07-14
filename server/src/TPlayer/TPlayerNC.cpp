@@ -595,12 +595,14 @@ void TPlayer::sendNCAddr()
 	TPlayer *npcServer = server->getNPCServer();
 	if (npcServer != nullptr)
 	{
-		// TODO(joey): should be same as gserver ip
-
 		// Grab NPCServer & Send
 		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "auto").toLower();
 		if (npcServerIp == "auto") {
 			npcServerIp = server->getServerList()->getServerIP();
+
+			// Fix for localhost setups
+			if (accountIpStr == playerSock->getLocalIp())
+				npcServerIp = accountIpStr;
 		}
 
 		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
