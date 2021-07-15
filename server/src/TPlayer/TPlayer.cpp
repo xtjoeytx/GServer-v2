@@ -3,6 +3,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <IConfig.h>
 
 #include "TPlayer.h"
 #include "IEnums.h"
@@ -411,7 +412,7 @@ bool TPlayer::onRecv()
 		rBuffer.write(data, size);
 
 		if (this->playerSock->webSocket)
-			webSocketFixIncomingPacket(rBuffer);
+			if (webSocketFixIncomingPacket(rBuffer) < 0) return true;
 	}
 	else if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
@@ -461,12 +462,13 @@ bool TPlayer::doMain()
 	rBuffer.setRead(0);
 	while (rBuffer.length() > 1)
 	{
-		if (!this->playerSock->webSocket && rBuffer.findi("GET / HTTP/1.1\r\n") > -1)
+		if (!this->playerSock->webSocket && rBuffer.findi("GET /") > -1 && rBuffer.findi("HTTP/1.1\r\n") > -1)
 		{
 
 			CString webSocketKeyHeader = "Sec-WebSocket-Key:";
 			if (rBuffer.findi(webSocketKeyHeader) < 0) {
-				CString webResponse = "HTTP/1.1 403 Forbidden\r\n";
+				CString simpleHtml = CString() << "<html><head><title>Graal GServer</title></head><body><h1>Welcome to " << server->getSettings()->getStr("name") << "!</h1>" << server->getServerMessage()->replaceAll("my server", server->getSettings()->getStr("name")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by OpenGraal GS2Emu<br/>Programmed by " << CString(GSERVER_CREDITS) << "</p></body></html>";
+				CString webResponse = CString() << "HTTP/1.1 200 OK\r\nServer: OpenGraal GS2Emu\r\nContent-Length: " << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n" << simpleHtml << "\r\n";//"HTTP/1.1 403 Forbidden\r\n";
 				unsigned int dsize = webResponse.length();
 				this->playerSock->sendData(webResponse.text(), &dsize);
 				return false;
@@ -494,7 +496,7 @@ bool TPlayer::doMain()
 
 			this->playerSock->sendData(webSockHandshake.text(), &dsize);
 
-			CString testText = "Welcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocketWelcome to the OpenGraal GServer WebSocket";
+			CString testText = "Welcome to the OpenGraal GServer WebSocket";
 
 			webSocketFixOutgoingPacket(testText);
 
