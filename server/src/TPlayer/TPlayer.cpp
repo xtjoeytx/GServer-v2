@@ -410,9 +410,10 @@ bool TPlayer::onRecv()
 	char* data = playerSock->getData(&size);
 	if (size != 0) {
 		rBuffer.write(data, size);
-
+#if defined(WOLFSSL_ENABLED)
 		if (this->playerSock->webSocket)
 			if (webSocketFixIncomingPacket(rBuffer) < 0) return true;
+#endif
 	}
 	else if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
@@ -462,6 +463,7 @@ bool TPlayer::doMain()
 	rBuffer.setRead(0);
 	while (rBuffer.length() > 1)
 	{
+#if defined(WOLFSSL_ENABLED)
 		if (!this->playerSock->webSocket && rBuffer.findi("GET /") > -1 && rBuffer.findi("HTTP/1.1\r\n") > -1)
 		{
 
@@ -506,7 +508,7 @@ bool TPlayer::doMain()
 			in_codec.setGen(ENCRYPT_GEN_1);
 			return true;
 		}
-
+#endif
 		// New data.
 		lastData = time(0);
 
