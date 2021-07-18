@@ -489,7 +489,8 @@ bool TPlayer::doMain()
 
 			CString webSockHandshake = CString() <<"HTTP/1.1 101 Switching Protocols\r\n"
 											 << "Upgrade: websocket\r\n"
-											 <<"Connection: Upgrade\r\n"
+											 << "Connection: Upgrade\r\n"
+											 << "Sec-WebSocket-Protocol: binary\r\n"
 											 << "Sec-WebSocket-Accept: "
 											 << webSocketKey
 											 << "\r\n\r\n";
