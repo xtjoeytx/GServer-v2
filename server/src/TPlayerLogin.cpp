@@ -120,7 +120,7 @@ bool TPlayer::sendLogin()
 			unsigned short oid = (unsigned short)player->getId();
 			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
 			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
-			if (oacc == accountName && meClient == themClient && oid != id)
+			if (oacc.comparei(accountName) && meClient == themClient && oid != id)
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{
