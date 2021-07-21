@@ -276,6 +276,8 @@ bool TPlayer::sendLoginClient()
 		}
 	}
 
+	// Sent to rc and client, but rc ignores it so...
+    sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
@@ -330,8 +332,6 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
-	// Sent to rc and client, but rc ignores it so...
-	sendPacket(CString() >> (char)PLO_UNKNOWN194);
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	bool warpSuccess = warp(levelName, x, y);
