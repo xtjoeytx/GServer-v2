@@ -281,11 +281,13 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 
 			auto byteCode = compilerVisitor.getByteCode(mWeaponName.text());
 
-			CString buf = (const char*)byteCode.buffer();
+			CString buf;
+			buf.write((const char*)byteCode.buffer(), byteCode.length());
 
 			// Compile source file to bytecode
 			mByteCode.clear();
-			mByteCode.emplace_back(mWeaponName,CString() >> char(140) << buf);
+			mByteCode.emplace_back(mWeaponName,CString() >> char(PLO_NPCWEAPONSCRIPT) << buf);
+			buf.clear();
 		}
 
 	} else setClientScript(fixedScript.readString(""));
