@@ -264,10 +264,25 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");
 #endif
-	if (fixedScript.findi("//#GS2") > -1) {
-		setClientScript(fixedScript.readString("//#GS2"));
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
+
+	if (fixedScript.findi("//#GS2") > -1 || gs2default) {
+
+		if (!gs2default)
+			setClientScript(fixedScript.readString("//#GS2"));
+
+		CString gs2 = "";
+
+		if (gs2default && fixedScript.findi("//#GS1") > -1) {
+			gs2 = fixedScript.readString("//#GS1");
+			setClientScript(fixedScript.readString(""));
+		} else if (gs2default ) {
+			gs2 = fixedScript.readString("");
+			setClientScript("");
+		}
+
 		ParserData parserStruct;
-		parserStruct.parse(fixedScript.readString("").text());
+		parserStruct.parse(gs2.text());
 
 		StatementBlock* stmtBlock = parserStruct.prog;
 
@@ -279,7 +294,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 			GS2CompilerVisitor compilerVisitor(&parserStruct);
 			compilerVisitor.Visit(stmtBlock);
 
-			auto byteCode = compilerVisitor.getByteCode(mWeaponName.text());
+			auto byteCode = compilerVisitor.getByteCode("weapon", mWeaponName.text(), true);
 
 			CString buf;
 			buf.write((const char*)byteCode.buffer(), byteCode.length());
