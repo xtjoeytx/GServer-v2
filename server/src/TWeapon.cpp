@@ -7,7 +7,11 @@
 #include "IEnums.h"
 #include "IUtil.h"
 
-#include <gs1/vm/Device.hpp>
+// GS2 Compiler includes
+#include "Parser.h"
+#include "ast.h"
+#include "GS2SourceVisitor.h"
+#include "GS2CompilerVisitor.h"
 
 
 #ifdef V8NPCSERVER
@@ -219,40 +223,6 @@ CString TWeapon::getWeaponPacket(bool forceGS1) const
 	}
 }
 
-// Prototypes for commands/functions are necessary for correct parsing
-gs1::PrototypeMap cmds = {{"setarray", {false, false}},
-					 {"freezeplayer", {false}},
-					 {"hideplayer", {false}},
-					 {"addstring", {false, true}},
-					 {"showimg", {false, true, false, false}},
-					 {"changeimgcolors", {false, false, false, false, false}},
-					 {"addstring", {false, true}},
-					 {"hideimg", {false}},
-					 {"showtext", {false, false, false, true, true, true}},
-					 {"play", {true}},
-					 {"stopmidi", {}},
-					 {"changeimgvis", {false, false}},
-					 {"debug", {false}},
-					 {"debugstr", {true}},
-					 {"setplayerprop", {true, true}},
-
-					 {"set", {true}},
-					 {"unset", {true}},
-
-					 {"setstring", {true, true}},
-					 {"addstring", {true, true}},
-
-					 {"message", {true}},
-		//{ "echo",         	{ true }},
-					 {"say2", {true}},
-					 {"print", {true}},
-		//{ "echo",           { true }},
-					 {"ASdasd.asd", {true}}};
-
-gs1::PrototypeMap funcs = {
-		{"strtofloat", {true}},
-};
-
 // -- Function: Update Weapon Image/Script -- //
 void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
 {
@@ -294,19 +264,46 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");
 #endif
-	if (fixedScript.findi("//#GS2") > -1) {
-		setClientScript(fixedScript.readString("//#GS2"));
-		gs1::Device device;
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
 
-		// Create variable store
-		auto primaryVarStore = device.CreateVarStore();
+	if (fixedScript.findi("//#GS2") > -1 || gs2default) {
 
-		// Create context
-		//auto context = device.CreateContext(primaryVarStore);
+		if (!gs2default)
+			setClientScript(fixedScript.readString("//#GS2"));
 
-		// Compile source file to bytecode
-		mByteCode.clear();
-		mByteCode.emplace_back(mWeaponName,device.CompileSourceFromString(fixedScript.readString(""), mWeaponName, cmds, funcs));
+		CString gs2 = "";
+
+		if (gs2default && fixedScript.findi("//#GS1") > -1) {
+			gs2 = fixedScript.readString("//#GS1");
+			setClientScript(fixedScript.readString(""));
+		} else if (gs2default ) {
+			gs2 = fixedScript.readString("");
+			setClientScript("");
+		}
+
+		ParserData parserStruct;
+		parserStruct.parse(gs2.text());
+
+		StatementBlock* stmtBlock = parserStruct.prog;
+
+		if (stmtBlock != nullptr)
+		{
+			GS2SourceVisitor visit;
+			visit.Visit(stmtBlock);
+
+			GS2CompilerVisitor compilerVisitor(&parserStruct);
+			compilerVisitor.Visit(stmtBlock);
+
+			auto byteCode = compilerVisitor.getByteCode("weapon", mWeaponName.text(), true);
+
+			CString buf;
+			buf.write((const char*)byteCode.buffer(), byteCode.length());
+
+			// Compile source file to bytecode
+			mByteCode.clear();
+			mByteCode.emplace_back(mWeaponName,CString() >> char(PLO_NPCWEAPONSCRIPT) << buf);
+			buf.clear();
+		}
 
 	} else setClientScript(fixedScript.readString(""));
 

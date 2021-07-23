@@ -120,7 +120,7 @@ bool TPlayer::sendLogin()
 			unsigned short oid = (unsigned short)player->getId();
 			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
 			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
-			if (oacc == accountName && meClient == themClient && oid != id)
+			if (oacc.comparei(accountName) && meClient == themClient && oid != id)
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{
@@ -276,6 +276,8 @@ bool TPlayer::sendLoginClient()
 		}
 	}
 
+	// Sent to rc and client, but rc ignores it so...
+    sendPacket(CString() >> (char)PLO_UNKNOWN194);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
@@ -330,8 +332,6 @@ bool TPlayer::sendLoginClient()
 	// Was blank.  Sent before weapon list.
 	sendPacket(CString() >> (char)PLO_UNKNOWN190);
 
-	// Sent to rc and client, but rc ignores it so...
-	sendPacket(CString() >> (char)PLO_UNKNOWN194);
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	bool warpSuccess = warp(levelName, x, y);
