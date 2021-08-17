@@ -10,11 +10,12 @@ class SourceCode
 {
 public:
 	SourceCode() { }
-	SourceCode(const std::string& src) : _src(src) { init(); }
-	SourceCode(std::string&& src) noexcept : _src(std::move(src)) { init(); }
-	SourceCode(SourceCode&& o) noexcept : _src(std::move(o._src)) { init(); }
-	
+	SourceCode(const std::string& src, bool gs2default = false) : _src(src), _gs2default(gs2default) { init(); }
+	SourceCode(std::string&& src, bool gs2default = false) noexcept : _src(std::move(src)), _gs2default(gs2default) { init(); }
+	SourceCode(SourceCode&& o, bool gs2default = false) noexcept : _src(std::move(o._src)), _gs2default(gs2default) { init(); }
+
 	SourceCode& operator=(SourceCode&& o) noexcept {
+		_gs2default = std::move(o._gs2default);
 		_src = std::move(o._src);
 		_clientside = std::move(o._clientside);
 		_serverside = std::move(o._serverside);
@@ -56,6 +57,7 @@ public:
 	}
 
 private:
+	bool _gs2default;
 	std::string _src;
 	std::string_view _clientside, _serverside;
 	std::string_view _clientGS1, _clientGS2;
@@ -69,14 +71,32 @@ private:
 			_clientside = std::string_view{ _src.begin() + clientSideSep, _src.end() };
 			_serverside = std::string_view{ _src.begin(), _src.begin() + clientSideSep };
 
+			// Switch separator depending on if GS2 is set to default or not
+			const char* gs2sep_char;
+			if (_gs2default)
+				gs2sep_char = "//#GS1";
+			else
+				gs2sep_char = "//#GS2";
+
 			// Separate GS2 section in clientside
-			auto gs2Sep = _clientside.find("//#GS2");
-			if (gs2Sep != std::string::npos)
+			auto gs2Sep = _clientside.find(gs2sep_char);
+			if (gs2Sep != std::string::npos && !_gs2default)
 			{
 				_clientGS1 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
 				_clientGS2 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
 			}
-			else _clientGS1 = _clientside;
+			else if (gs2Sep == std::string::npos && !_gs2default)
+			{
+				_clientGS1 = _clientside;
+			}
+			else if (gs2Sep != std::string::npos && _gs2default)
+			{
+				_clientGS2 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
+				_clientGS1 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
+			}
+			else if (gs2Sep == std::string::npos && _gs2default) {
+				_clientGS2 = _clientside;
+			}
 		}
 		else _serverside = std::string_view{ _src.begin(), _src.end() };
 	}

@@ -1263,7 +1263,7 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, convertCString(pScript), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
+	TNPC* newNPC = new TNPC(pImage, pScript.toString(), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
@@ -1383,8 +1383,8 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = std::make_unique<TScriptClass>(this, className, classCode); 
-	
+	classList[className] = std::make_unique<TScriptClass>(this, className, classCode);
+
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	CFileSystem::fixPathSeparators(filePath);
 

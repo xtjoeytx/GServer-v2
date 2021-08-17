@@ -3238,7 +3238,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is 0, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == 0)
 		{
-			weapon = new TWeapon(server, convertCString(name), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
+			weapon = new TWeapon(server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 

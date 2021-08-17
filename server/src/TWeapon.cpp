@@ -21,7 +21,7 @@ TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 , _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
-	_weaponName = convertCString(TLevelItem::getItemName(mWeaponDefault));
+	_weaponName = TLevelItem::getItemName(mWeaponDefault).toString();
 }
 
 // -- Constructor: Weapon Script -- //
@@ -79,9 +79,9 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 		// Parse Line
 		if (curCommand == "REALNAME")
-			weaponName = convertCString(curLine.readString(""));
+			weaponName = curLine.readString("").toString();
 		else if (curCommand == "IMAGE")
-			weaponImage = convertCString(curLine.readString(""));
+			weaponImage = curLine.readString("").toString();
 		else if (curCommand == "BYTECODE")
 		{
 			CString fileName = curLine.readString("");
@@ -119,7 +119,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
-	
+
 	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty() && weapon->_bytecode.isEmpty())
 	{
@@ -156,7 +156,7 @@ bool TWeapon::saveWeapon()
 	{
 		output << "SCRIPT\r\n";
 		output << CString(_source.getSource()).replaceAll("\n", "\r\n");
-		
+
 		// Append a new line to the end of the script if one doesn't exist.
 		if (_source.getSource().back() != '\n')
 			output << "\r\n";
@@ -250,7 +250,9 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		freeScriptResources();
 #endif
 
-	_source = SourceCode{ std::move(pCode) };
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
+
+	_source = SourceCode{ std::move(pCode), gs2default };
 	_weaponImage = std::move(pImage);
 	setModTime(pModTime == 0 ? time(0) : pModTime);
 
@@ -289,7 +291,7 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
 		}
 	}
-	
+
 	// Save Weapon
 	if (pSaveWeapon)
 		saveWeapon();

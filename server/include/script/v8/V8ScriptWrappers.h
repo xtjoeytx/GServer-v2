@@ -13,7 +13,7 @@ inline std::string WrapScript(const std::string& code) {
 
 template <typename T>
 inline std::string WrapScript(const std::string_view& code) {
-	return code;
+	return code.data();
 }
 
 class TNPC;

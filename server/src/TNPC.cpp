@@ -29,7 +29,7 @@ std::string minifyClientCode(const CString& src)
 		std::vector<CString> codeLines = tmp.tokenize("\n");
 
 		for (const auto& line : codeLines)
-			minified.append(convertCString(line.trim())).append("\xa7");
+			minified.append(line.trim().toString()).append("\xa7");
 	}
 
 	return std::move(minified);
@@ -116,8 +116,9 @@ void TNPC::setScriptCode(std::string pScript)
 	if (_scriptObject)
 		freeScriptResources();
 #endif
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
 
-	npcScript = SourceCode{ std::move(pScript) };
+	npcScript = SourceCode{ std::move(pScript), gs2default };
 
 	bool levelModificationNPCHack = false;
 
@@ -926,7 +927,7 @@ void TNPC::updateClientCode()
 {
 	// Skip servercode, and read client script
 	CString tmpScript = std::string{ npcScript.getClientGS1() };
-	
+
 	// Iterate current classes, and add to end of code
 	for (auto& it : classMap)
 		tmpScript << "\n" << it.second;
@@ -1401,7 +1402,7 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
-	
+
 	if (!npcName.empty())
 		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
@@ -1413,7 +1414,7 @@ void TNPC::saveNPC()
 {
 	// TODO(joey): check if properties have been modified before deciding to save
 	// enumerate scriptObject variables, to save into file and load later..?
-	
+
 	// Clean up old samples
 	//_scriptExecutionContext.getExecutionData();
 
@@ -1435,7 +1436,7 @@ void TNPC::saveNPC()
 			saveName << removeExtension(origLevel) << "_" << level->getMapX() << "_" << level->getMapY();
 		}
 	}
-	
+
 	// Level npcs shouldn't be saved
 	if (saveDir.isEmpty())
 	{
@@ -1483,7 +1484,7 @@ void TNPC::saveNPC()
 	fileData << "LAYER 0" << NL;
 	fileData << "SHAPETYPE 0" << NL;
 	fileData << "SHAPE " << CString(width) << " " << CString(height) << NL;
-	
+
 	if (blockFlags & NPCBLOCKFLAG_NOBLOCK)
 		fileData << "DONTBLOCK 1" << NL;
 

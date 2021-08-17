@@ -191,6 +191,7 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
 				byteCodePacket << "\n";
 
+			server->getServerLog().out("NPCBYTECODE_PACKET: %s\n",byteCodePacket.text());
 			retVal >> (char)PLO_RAWDATA >> (int)byteCodePacket.length() << "\n";
 			retVal << byteCodePacket;
 		}
@@ -954,7 +955,7 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 		delete level;
 		return nullptr;
 	}
-	
+
 	auto& mapList = server->getMapList();
 	for (const auto& map : mapList)
 	{
@@ -1081,7 +1082,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 	if (TLevelItem::isRupeeType(pItem))
 	{
 		TNPC* gralatNPC = nullptr;
-		
+
 		// Find existing rupees, and add to the npc
 		auto npcList = findAreaNpcs(pX - 0.5, pY - 0.5, 32, 32);
 		for (auto& npc : npcList)

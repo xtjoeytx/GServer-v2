@@ -179,7 +179,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	TNPC *npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		npc->setScriptCode(convertCString(npcScript));
+		npc->setScriptCode(npcScript.toString());
 		npc->saveNPC();
 
 		CString logMsg;
@@ -207,7 +207,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 	{
 		auto flagList = npc->getFlagList();
 		auto newFlags = npcFlags.tokenize("\n");
-		
+
 		CString addedFlagMsg, deletedFlagMsg;
 		std::unordered_map<std::string, CString> newFlagList;
 
@@ -379,7 +379,7 @@ bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	}
 
 	std::string className = pPacket.readString("").text();
-	
+
 	CString logMsg;
 	if (server->deleteClass(className))
 	{
@@ -414,7 +414,7 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	if (npcLevel != nullptr)
 	{
 		CString npcDump;
-		// Variables dump from level mapname (level.nw) 
+		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->getLevelName() << "\n";
 
 		auto npcList = npcLevel->getLevelNPCs();
@@ -449,7 +449,7 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 		CString weaponName = it->second->getName();
 		ret >> (char)weaponName.length() << weaponName;
 	}
-	
+
 	sendPacket(ret);
 	return true;
 }
@@ -470,7 +470,7 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 	{
 		std::string script = weapon->getFullScript();
 		std::replace(script.begin(), script.end(), '\n', '\xa7');
-		
+
 		if (getVersion() < NCVER_2_1)
 		{
 			sendPacket(CString() >> (char)PLO_NPCWEAPONADD
@@ -500,9 +500,9 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	}
 
 	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
-	std::string weaponName = convertCString(pPacket.readChars(pPacket.readGUChar()));
-	std::string weaponImage = convertCString(pPacket.readChars(pPacket.readGUChar()));
-	std::string weaponCode = convertCString(pPacket.readString(""));
+	std::string weaponName = pPacket.readChars(pPacket.readGUChar()).toString();
+	std::string weaponImage = pPacket.readChars(pPacket.readGUChar()).toString();
+	std::string weaponCode = pPacket.readString("").toString();
 
 	std::replace(weaponCode.begin(), weaponCode.end(), '\xa7', '\n');
 
@@ -554,7 +554,7 @@ bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 
 	// {118}{weapon}
 	CString weaponName = pPacket.readString("");
-	
+
 	CString logMsg;
 	if (server->NC_DelWeapon(weaponName))
 		logMsg << "Weapon " << weaponName << " deleted by " << accountName << "\n";
