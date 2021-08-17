@@ -11,9 +11,14 @@ inline std::string WrapScript(const std::string& code) {
 	return code;
 }
 
+template <typename T>
+inline std::string WrapScript(const std::string_view& code) {
+	return code;
+}
+
 class TNPC;
 template <>
-inline std::string WrapScript<TNPC>(const std::string& code) {
+inline std::string WrapScript<TNPC>(const std::string_view& code) {
 	// self.onCreated || onCreated, for first declared to take precedence
 	// if (onCreated) for latest function to override
 	static const char* prefixString = "(function(npc) {" \
@@ -50,7 +55,7 @@ inline std::string WrapScript<TPlayer>(const std::string& code) {
 
 class TWeapon;
 template <>
-inline std::string WrapScript<TWeapon>(const std::string& code) {
+inline std::string WrapScript<TWeapon>(const std::string_view& code) {
 	static const char* prefixString = "(function(weapon) {" \
 		"var onCreated, onActionServerSide;" \
 		"const self = weapon;" \

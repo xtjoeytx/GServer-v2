@@ -10,6 +10,7 @@
 #include "V8ScriptObject.h"
 
 #include "TLevel.h"
+#include "TMap.h"
 #include "TNPC.h"
 #include "TPlayer.h"
 
@@ -28,6 +29,22 @@ void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelObject->getLevelName().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
+}
+
+// PROPERTY: level.mapname
+void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	auto map = levelObject->getMap();
+	if (map)
+	{
+		v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), map->getMapName().c_str()).ToLocalChecked();
+		info.GetReturnValue().Set(strText);
+		return;
+	}
+	
+	info.GetReturnValue().SetNull();
 }
 
 // PROPERTY: level.npcs
@@ -232,7 +249,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		if (npc != nullptr)
 		{
-			npc->setType("LOCALN");
+			npc->setScriptType("LOCALN");
 			levelObject->addNPC(npc);
 
 			V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
@@ -297,6 +314,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "name"), Level_GetStr_Name);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
 //	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles);

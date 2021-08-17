@@ -766,7 +766,7 @@ void TServer::loadWeapons(bool print)
 		if (weaponList.find(weapon->getName()) == weaponList.end())
 		{
 			weaponList[weapon->getName()] = weapon;
-			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().text());
+			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().c_str());
 		}
 		else
 		{
@@ -778,16 +778,16 @@ void TServer::loadWeapons(bool print)
 				weaponList[weapon->getName()] = weapon;
 				updateWeaponForPlayers(weapon);
 				if (print) {
-					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
+					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
 
-					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName().text() << " ");
+					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
 			else
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().text());
+				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().c_str());
 				delete weapon;
 			}
 		}
@@ -930,7 +930,7 @@ void TServer::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false);
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, NPCType::DBNPC);
 		if (newNPC->loadNPC((*it).second))
 		{
 			int npcId = newNPC->getId();
@@ -1016,7 +1016,7 @@ void TServer::saveNpcs()
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
-		if (npc->getPersist())
+		if (npc->getType() != NPCType::LEVELNPC)
 			npc->saveNPC();
 	}
 }
@@ -1199,7 +1199,7 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 	}
 
 	// Create the npc
-	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, false);
+	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
 	npcList.push_back(newNPC);
 
@@ -1263,7 +1263,7 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC);
+	TNPC* newNPC = new TNPC(pImage, convertCString(pScript), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
@@ -1299,29 +1299,20 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	return newNPC;
 }
 
-bool TServer::deleteNPC(const unsigned int pId, bool eraseFromLevel)
-{
-	// Grab the NPC.
-	TNPC* npc = getNPC(pId);
-	if (npc == nullptr) return false;
-
-	return deleteNPC(npc, eraseFromLevel);
-}
-
 bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
+	assert(npc);
+	assert(npc->getId() < npcIds.size());
+
 	if (npc == nullptr) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
 	// Remove the NPC from all the lists.
 	npcIds[npc->getId()] = nullptr;
 
-	for ( auto npcL = npcList.begin(); npcL != npcList.end(); )
-	{
-		if ((*npcL) == npc)
-			npcL = npcList.erase(npcL);
-		else ++npcL;
-	}
+	npcList.erase(
+		std::remove(npcList.begin(), npcList.end(), npc),
+		npcList.end());
 
 	TLevel *level = npc->getLevel();
 
@@ -1337,26 +1328,28 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 
 		for (auto p : playerList)
 		{
-				if (p->isControlClient()) continue;
-
-			if (isOnMap || p->getVersion() < CLVER_2_1)
-				p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-			else
-				p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+			if (p->isClient())
+			{
+				if (isOnMap || p->getVersion() < CLVER_2_1)
+					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+				else
+					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+			}
 		}
 	}
 
 #ifdef V8NPCSERVER
 	// TODO(joey): Need to deal with illegal characters
+	// TODO(joey): add putnpc storage
 	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
-	if (npc->getPersist())
+	if (npc->getType() == NPCType::DBNPC)
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
 		CFileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
 
-	if (!npc->isLevelNPC())
+	if (npc->getType() == NPCType::DBNPC)
 	{
 		// Remove npc name assignment
 		if (!npc->getName().empty())
@@ -1582,6 +1575,36 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *sender) const
 			continue;
 
 		player->sendPacket(pPacket);
+	}
+}
+
+
+void TServer::sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer) const
+{
+	if (!pLevel)
+		return;
+
+	if (!pLevel->getMap())
+	{
+		for (auto p : playerList)
+		{
+			if (p != pPlayer && p->isClient() && p->getLevel() == pLevel)
+				p->sendPacket(pPacket);
+		}
+	}
+	else
+	{
+		for (auto other : playerList)
+		{
+			if (other != pPlayer && other->isClient() && other->getMap() == pLevel->getMap())
+			{
+				int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
+				int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
+
+				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+					other->sendPacket(pPacket);
+			}
+		}
 	}
 }
 

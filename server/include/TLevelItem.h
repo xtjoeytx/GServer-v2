@@ -65,6 +65,9 @@ class TLevelItem
 		static CString getItemPlayerProp(const CString& pItemName, TPlayer* player);
 		static constexpr auto getItemTypeId(LevelItemType val);
 
+		static bool isRupeeType(LevelItemType itemType);
+		static uint16_t GetRupeeCount(LevelItemType type);
+
 	private:
 		float x;
 		float y;
@@ -80,6 +83,26 @@ inline CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* 
 constexpr auto TLevelItem::getItemTypeId(LevelItemType val)
 {
 	return static_cast<std::underlying_type<LevelItemType>::type>(val);
+}
+
+inline uint16_t TLevelItem::GetRupeeCount(LevelItemType type)
+{
+	switch (type)
+	{
+		case LevelItemType::GREENRUPEE: return 1;
+		case LevelItemType::BLUERUPEE:	return 5;
+		case LevelItemType::REDRUPEE:	return 30;
+		case LevelItemType::GOLDRUPEE:  return 100;
+		default: return 0;
+	}
+}
+
+inline bool TLevelItem::isRupeeType(LevelItemType itemType)
+{
+	return (itemType == LevelItemType::GREENRUPEE ||
+		itemType == LevelItemType::BLUERUPEE ||
+		itemType == LevelItemType::REDRUPEE ||
+		itemType == LevelItemType::GOLDRUPEE);
 }
 
 #endif // TLEVELITEM_H

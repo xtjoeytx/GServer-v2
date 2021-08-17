@@ -42,7 +42,8 @@ TLevel::~TLevel()
 		// Remove every NPC in the level.
 		for (auto& levelNPC : levelNPCs)
 		{
-			if (levelNPC->isLevelNPC())
+			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
+			if (levelNPC->getType() == NPCType::LEVELNPC)
 				server->deleteNPC(levelNPC, false);
 		}
 		levelNPCs.clear();
@@ -183,7 +184,18 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 	for (auto& npc : levelNPCs)
 	{
 		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
+
+		if (!npc->getByteCode().isEmpty())
+		{
+			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->getId() << npc->getByteCode();
+			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
+				byteCodePacket << "\n";
+
+			retVal >> (char)PLO_RAWDATA >> (int)byteCodePacket.length() << "\n";
+			retVal << byteCodePacket;
+		}
 	}
+
 	return retVal;
 }
 
@@ -210,12 +222,13 @@ bool TLevel::reload()
 		for (auto it = levelNPCs.begin(); it != levelNPCs.end();)
 		{
 			TNPC *npc = *it;
-			if (npc->isLevelNPC())
+			if (npc->getType() == NPCType::LEVELNPC)
 			{
 				server->deleteNPC(npc, false);
 				it = levelNPCs.erase(it);
 			}
-			else {
+			else
+			{
 #ifdef V8NPCSERVER
 				npc->reloadNPC();
 #endif
@@ -1063,6 +1076,41 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 {
+#ifdef V8NPCSERVER
+#ifdef GRALATNPC
+	if (TLevelItem::isRupeeType(pItem))
+	{
+		TNPC* gralatNPC = nullptr;
+		
+		// Find existing rupees, and add to the npc
+		auto npcList = findAreaNpcs(pX - 0.5, pY - 0.5, 32, 32);
+		for (auto& npc : npcList)
+		{
+			if (npc->joinedClass("gralats"))
+			{
+				gralatNPC = npc;
+				break;
+			}
+		}
+
+		// Create a new gralat npc for these rupees
+		if (!gralatNPC)
+		{
+			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
+			gralatNPC->setScriptType("LOCALN");
+			addNPC(gralatNPC);
+		}
+
+		// Update rupees
+		gralatNPC->setRupees(gralatNPC->getRupees() + TLevelItem::GetRupeeCount(pItem));
+		gralatNPC->updatePropModTime(NPCPROP_RUPEES);
+		gralatNPC->queueNpcTrigger("update", nullptr, "");
+
+		return false;
+	}
+#endif
+#endif
+
 	levelItems.push_back(TLevelItem(pX, pY, pItem));
 	return true;
 }

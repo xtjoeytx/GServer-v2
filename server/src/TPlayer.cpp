@@ -2662,8 +2662,15 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 		if (removeItem(itemType))
 		{
 #endif
-			level->addItem(loc[0], loc[1], itemType);
-			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+			if (level->addItem(loc[0], loc[1], itemType))
+			{
+				server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+			}
+			else
+			{
+				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+			}
+
 #ifdef V8NPCSERVER
 		}
 #endif
@@ -2994,7 +3001,10 @@ bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
-	server->deleteNPC(nid, level != nullptr);
+	auto npc = server->getNPC(nid);
+	if (npc)
+		server->deleteNPC(npc, level != nullptr);
+
 	return true;
 }
 
@@ -3228,7 +3238,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is 0, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == 0)
 		{
-			weapon = new TWeapon(server, name, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime(), true);
+			weapon = new TWeapon(server, convertCString(name), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 
@@ -3237,7 +3247,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime());
 
 			// Send to Players
 			server->updateWeaponForPlayers(weapon);
@@ -3247,6 +3257,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (!hasWeapon(weapon->getName()))
 			this->addWeapon(weapon);
 	}
+
 	return true;
 }
 

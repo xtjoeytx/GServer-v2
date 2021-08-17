@@ -69,6 +69,7 @@ set(
 	include/TServer.h
 	include/TServerList.h
 	include/TWeapon.h
+	include/script/SourceCode.h
 )
 
 if(UPNP)
