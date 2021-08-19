@@ -355,6 +355,9 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	bool hasClass = server->hasClass(className);
 	server->updateClass(className, classCode.text());
 
+	// Update Player-Weapons
+	server->updateClassForPlayers(server->getClass(className));
+
 	if (!hasClass)
 	{
 		CString ret;

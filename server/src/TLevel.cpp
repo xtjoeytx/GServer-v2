@@ -191,7 +191,6 @@ CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
 				byteCodePacket << "\n";
 
-			server->getServerLog().out("NPCBYTECODE_PACKET: %s\n",byteCodePacket.text());
 			retVal >> (char)PLO_RAWDATA >> (int)byteCodePacket.length() << "\n";
 			retVal << byteCodePacket;
 		}

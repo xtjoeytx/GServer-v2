@@ -35,6 +35,7 @@ class TWeapon
 		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID); }
 		inline bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
 		inline LevelItemType getWeaponId()				{ return mWeaponDefault; }
+		inline const CString& getByteCode() const		{ return _bytecode; }
 		inline const CString& getByteCodeFile() const	{ return _bytecodeFile; }
 		inline const std::string& getImage() const		{ return _weaponImage; }
 		inline const std::string& getName() const		{ return _weaponName; }
@@ -56,7 +57,7 @@ class TWeapon
 #endif
 	protected:
 		void setClientScript(const CString& pScript);
-		
+
 		// Varaibles -> Weapon Data
 		LevelItemType mWeaponDefault;
 		//CString mByteCodeFile;

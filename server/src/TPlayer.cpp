@@ -2044,7 +2044,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 		if (id == -1) return true;
 
 		// Send weapon.
-		sendPacket(CString() << weapon->getWeaponPacket());
+		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
 	}
 
 	return true;
@@ -4018,46 +4018,50 @@ bool TPlayer::msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket)
 	return true;
 }
 
+
+bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+{
+	CString weaponName = pPacket.readString("");
+
+	server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
+
+	CString out;
+
+	TWeapon * weaponObj = server->getWeapon(weaponName);
+
+	if (weaponObj != nullptr)
+	{
+		CString b = weaponObj->getByteCode();
+		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+		out >> (char)PLO_NPCWEAPONSCRIPT << b;
+
+		sendPacket(out);
+	}
+
+	return true;
+}
+
 bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 {
-	/*
-	CFileSystem* fileSystem = server->getFileSystem();
-	std::vector<std::pair<CString, CString> > byteCode;
 	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGUInt5();
-	CString fname = pPacket.readString("");
-	CString bytecode, out;
-	bytecode.load(server->getServerPath() << "class_bytecode/" << fname << ".txt");
-	printf("UPDATECLASS: %s\n", fname.text());
-	if (!bytecode.isEmpty())
+	time_t modTime = pPacket.readGInt5();
+	std::string className = pPacket.readString("").toString();
+
+	server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
+
+	CString out;
+
+	TScriptClass* classObj = server->getClass(className);
+
+	if (classObj != nullptr)
 	{
-		byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+		CString b = classObj->getByteCode();
+		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+		out >> (char)PLO_NPCWEAPONSCRIPT << b;
 
-		for (std::vector<std::pair<CString, CString> >::const_iterator i = byteCode.begin(); i != byteCode.end(); ++i)
-		{
-			CString b = i->second;
-
-			unsigned char id = b.readGUChar();
-			CString header = b.readChars(b.readGUShort());
-			CString header2 = header.guntokenize();
-
-			CString type = header2.readString("\n");
-			CString name = header2.readString("\n");
-			CString unknown = header2.readString("\n");
-			CString hash = header2.readString("\n");
-
-			// Get the mod time and send packet 197.
-			CString smod = CString() >> (long long)time(0);
-			smod.gtokenizeI();
-			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-			// Add to the output stream.
-			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-			out << b;
-		}
-		sendPacket(CString() << out);
+		sendPacket(out);
 	}
-	*/
+
 	return true;
 }
 
@@ -4492,12 +4496,6 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 		}
 	}
 	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
-	return true;
-}
-
-bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
-{
-	// Stub.
 	return true;
 }
 

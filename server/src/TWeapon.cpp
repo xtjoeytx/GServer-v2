@@ -194,48 +194,12 @@ CString TWeapon::getWeaponPacket(bool forceGS1) const
 
 		CString b = _bytecode;
 
-		unsigned char id = b.readGUChar();
 		CString header = b.readChars(b.readGUShort());
-		CString header2 = header.guntokenize();
-
-		CString type = header2.readString("\n");
-		CString name = header2.readString("\n");
-		CString unknown = header2.readString("\n");
-		CString hash = header2.readString("\n");
 
 		// Get the mod time and send packet 197.
 		CString smod = CString() >> (long long)time(0);
 		smod.gtokenizeI();
 		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-		// Add to the output stream.
-		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-		out << b;
-
-		/*
-		for (std::vector<std::pair<CString, CString> >::const_iterator i = mByteCode.begin(); i != mByteCode.end(); ++i)
-		{
-			CString b = i->second;
-
-			unsigned char id = b.readGUChar();
-			CString header = b.readChars(b.readGUShort());
-			CString header2 = header.guntokenize();
-
-			CString type = header2.readString("\n");
-			CString name = header2.readString("\n");
-			CString unknown = header2.readString("\n");
-			CString hash = header2.readString("\n");
-
-			// Get the mod time and send packet 197.
-			CString smod = CString() >> (long long)time(0);
-			smod.gtokenizeI();
-			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-			// Add to the output stream.
-			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-			out << b;
-		}
-		*/
 
 		return out;
 	}
@@ -283,7 +247,6 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		if (!context.hasErrors())
 		{
 			_bytecode.clear();
-			_bytecode.writeGChar(PLO_NPCWEAPONSCRIPT);
 			_bytecode.write((const char*)byteCode.buffer(), byteCode.length());
 		}
 		else

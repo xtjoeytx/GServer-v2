@@ -743,6 +743,8 @@ void TServer::loadClasses(bool print)
 		CString scriptData;
 		scriptData.load(scriptFile.second);
 		classList[className] = std::make_unique<TScriptClass>(this, className, scriptData.text());
+
+		updateClassForPlayers(getClass(className));
 	}
 }
 
@@ -1775,6 +1777,30 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 		}
 	}
 }
+
+void TServer::updateClassForPlayers(TScriptClass *pClass)
+{
+	// Update Weapons
+	for (auto player : playerList)
+	{
+		if (!player->isClient())
+			continue;
+
+		if (player->getVersion() >= CLVER_4_0211)
+		{
+			if (pClass != nullptr)
+			{
+				CString out;
+				CString b = pClass->getByteCode();
+				out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+				out >> (char)PLO_NPCWEAPONSCRIPT << b;
+
+				player->sendPacket(out);
+			}
+		}
+	}
+}
+
 
 /*
 	Translation Functionality

@@ -320,6 +320,16 @@ bool TPlayer::sendLoginClient()
 		sendPacket(weapon->getWeaponPacket());
 	}
 
+	if (versionID >= CLVER_4_0211)
+	{
+		// Send the player's weapons.
+		for (auto & i : server->getClassList())
+		{
+			if (i.second != nullptr)
+				sendPacket(i.second->getClassPacket());
+		}
+	}
+
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (versionID >= CLVER_2_21 && versionID <= CLVER_2_31)
 	{
