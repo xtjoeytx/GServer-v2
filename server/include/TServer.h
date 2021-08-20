@@ -170,7 +170,6 @@ class TServer : public CSocketStub
 		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
 		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
@@ -190,6 +189,7 @@ class TServer : public CSocketStub
 
 		// Packet sending.
 		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
+		void sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
@@ -211,6 +211,7 @@ class TServer : public CSocketStub
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void updateWeaponForPlayers(TWeapon *pWeapon);
+		void updateClassForPlayers(TScriptClass *pClass);
 
 	private:
 		bool doTimedEvents();

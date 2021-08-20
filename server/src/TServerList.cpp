@@ -685,7 +685,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	TPlayer* player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == 0) return;
 
-	// Overwrite the player's account name with the one from the gserver.
+	// Overwrite the player's account name with the one from the listserver.
 	player->setAccountName(account);
 
 	// If we did not get the success message, inform the client of his failure.

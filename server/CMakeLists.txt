@@ -58,6 +58,7 @@ set(
 		include/TServer.h
 		include/TServerList.h
 		include/TWeapon.h
+		include/Scripting/SourceCode.h
 )
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
@@ -193,10 +194,10 @@ endif()
 
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
-target_include_directories(${TARGET_NAME} PUBLIC ${gs1parse_INCLUDE_DIRECTORY})
+target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
-add_dependencies(${TARGET_NAME} gs1common gs1parse gs1compiler gs1vm)
-target_link_libraries(${TARGET_NAME} gs1common gs1compiler gs1transpiler gs1parse gs1vm)
+add_dependencies(${TARGET_NAME} gs2compiler)
+target_link_libraries(${TARGET_NAME} gs2compiler)
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} gs2lib)
 

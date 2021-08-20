@@ -44,6 +44,21 @@ inline void ScriptExecutionContext::addExecutionSample(const ScriptTimeSample& s
 {
 #ifndef NOSCRIPTPROFILING
 	_scriptTimeSamples.push_back(sample);
+
+	// Remove any script samples over a minute old
+	//if (_scriptTimeSamples.size() > 1024)
+	{
+		auto curSampleTime = sample.sample_time;
+		while (!_scriptTimeSamples.empty())
+		{
+			auto oldSample = _scriptTimeSamples.begin();
+			auto sample_diff = std::chrono::duration_cast<std::chrono::minutes>(curSampleTime - oldSample->sample_time);
+			if (sample_diff.count() < 1)
+				break;
+
+			_scriptTimeSamples.erase(oldSample);
+		}
+	}
 #endif
 }
 
@@ -75,12 +90,16 @@ inline std::pair<unsigned int, double> ScriptExecutionContext::getExecutionData(
 
 inline void ScriptExecutionContext::addAction(ScriptAction& action)
 {
-	_actions.push_back(std::move(action));
+	if (action.getFunction()) {
+		_actions.push_back(std::move(action));
+	}
 }
 
 inline void ScriptExecutionContext::addAction(ScriptAction&& action)
 {
-	_actions.push_back(std::move(action));
+	if (action.getFunction()) {
+		_actions.push_back(std::move(action));
+	}
 }
 
 inline void ScriptExecutionContext::resetExecution()

@@ -378,7 +378,7 @@ void NPC_SetStr_SwordImage(v8::Local<v8::String> props, v8::Local<v8::Value> val
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 
-	npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+	npcObject->setSwordImage(std::string(*newValue, newValue.length()));
 	npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 }
 
@@ -674,7 +674,7 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	npcObject->setHeadImage("head0.png");
 	npcObject->setBodyImage("body.png");
 	npcObject->setShieldImage("shield1.png");
-	npcObject->SetSwordImage("sword1.png");
+	npcObject->setSwordImage("sword1.png");
 	npcObject->setColorId(0, 2);   // orange
 	npcObject->setColorId(1, 5);   // dark red
 	npcObject->setColorId(2, 21);  // black
@@ -748,7 +748,7 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 			case '1': // sword image
 			{
-				npcObject->SetSwordImage(std::string(*newValue, newValue.length()));
+				npcObject->setSwordImage(std::string(*newValue, newValue.length()));
 				npcObject->updatePropModTime(NPCPROP_SWORDIMAGE);
 				break;
 			}

@@ -2044,7 +2044,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 		if (id == -1) return true;
 
 		// Send weapon.
-		sendPacket(CString() << weapon->getWeaponPacket());
+		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
 	}
 
 	return true;
@@ -2662,8 +2662,15 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 		if (removeItem(itemType))
 		{
 #endif
-			level->addItem(loc[0], loc[1], itemType);
-			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+			if (level->addItem(loc[0], loc[1], itemType))
+			{
+				server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), 0, level, this);
+			}
+			else
+			{
+				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+			}
+
 #ifdef V8NPCSERVER
 		}
 #endif
@@ -2994,7 +3001,10 @@ bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
-	server->deleteNPC(nid, level != nullptr);
+	auto npc = server->getNPC(nid);
+	if (npc)
+		server->deleteNPC(npc, level != nullptr);
+
 	return true;
 }
 
@@ -3228,7 +3238,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is 0, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == 0)
 		{
-			weapon = new TWeapon(server, name, npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime(), true);
+			weapon = new TWeapon(server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 
@@ -3237,7 +3247,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->getImage(), npc->getClientScript(), npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime());
 
 			// Send to Players
 			server->updateWeaponForPlayers(weapon);
@@ -3247,6 +3257,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		if (!hasWeapon(weapon->getName()))
 			this->addWeapon(weapon);
 	}
+
 	return true;
 }
 
@@ -3980,46 +3991,77 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	return true;
 }
 
+bool TPlayer::msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket)
+{
+
+	CFileSystem* fileSystem = server->getFileSystem();
+
+	// Get the packet data and file mod time.
+	time_t modTime = pPacket.readGInt5();
+	CString file = pPacket.readString("");
+
+	time_t fModTime = fileSystem->getModTime(file);
+
+	// If the file on disk is different, send it to the player.
+	file.setRead(0);
+
+	// TODO: Fix the modtime stuff
+	//if (fModTime > modTime) {
+
+		this->sendFile(file);
+		sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << file);
+		return true;
+	//}
+
+	sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+
+	return true;
+}
+
+
+bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+{
+	CString weaponName = pPacket.readString("");
+
+	server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
+
+	CString out;
+
+	TWeapon * weaponObj = server->getWeapon(weaponName);
+
+	if (weaponObj != nullptr)
+	{
+		CString b = weaponObj->getByteCode();
+		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+		out >> (char)PLO_NPCWEAPONSCRIPT << b;
+
+		sendPacket(out);
+	}
+
+	return true;
+}
+
 bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 {
-	/*
-	CFileSystem* fileSystem = server->getFileSystem();
-	std::vector<std::pair<CString, CString> > byteCode;
 	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGUInt5();
-	CString fname = pPacket.readString("");
-	CString bytecode, out;
-	bytecode.load(server->getServerPath() << "class_bytecode/" << fname << ".txt");
-	printf("UPDATECLASS: %s\n", fname.text());
-	if (!bytecode.isEmpty())
+	time_t modTime = pPacket.readGInt5();
+	std::string className = pPacket.readString("").toString();
+
+	server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
+
+	CString out;
+
+	TScriptClass* classObj = server->getClass(className);
+
+	if (classObj != nullptr)
 	{
-		byteCode.push_back(std::pair<CString, CString>(fname, bytecode));
+		CString b = classObj->getByteCode();
+		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+		out >> (char)PLO_NPCWEAPONSCRIPT << b;
 
-		for (std::vector<std::pair<CString, CString> >::const_iterator i = byteCode.begin(); i != byteCode.end(); ++i)
-		{
-			CString b = i->second;
-
-			unsigned char id = b.readGUChar();
-			CString header = b.readChars(b.readGUShort());
-			CString header2 = header.guntokenize();
-
-			CString type = header2.readString("\n");
-			CString name = header2.readString("\n");
-			CString unknown = header2.readString("\n");
-			CString hash = header2.readString("\n");
-
-			// Get the mod time and send packet 197.
-			CString smod = CString() >> (long long)time(0);
-			smod.gtokenizeI();
-			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-			// Add to the output stream.
-			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-			out << b;
-		}
-		sendPacket(CString() << out);
+		sendPacket(out);
 	}
-	*/
+
 	return true;
 }
 

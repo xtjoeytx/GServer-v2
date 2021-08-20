@@ -7,8 +7,8 @@
 #include "IEnums.h"
 #include "IUtil.h"
 
-#include <gs1/vm/Device.hpp>
-
+// GS2 Compiler includes
+#include "GS2Context.h"
 
 #ifdef V8NPCSERVER
 #include "TPlayer.h"
@@ -21,18 +21,18 @@ TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 , _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
-	mWeaponName = TLevelItem::getItemName(mWeaponDefault);
+	_weaponName = TLevelItem::getItemName(mWeaponDefault).toString();
 }
 
 // -- Constructor: Weapon Script -- //
-TWeapon::TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime, bool pSaveWeapon)
-: server(pServer), mWeaponName(pName), mWeaponImage(pImage), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
+TWeapon::TWeapon(TServer *pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
+: server(pServer), _weaponName(std::move(pName)), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 , _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	// Update Weapon
-	this->updateWeapon(pImage, pScript, pModTime, pSaveWeapon);
+	this->updateWeapon(std::move(pImage), std::move(pScript), pModTime, pSaveWeapon);
 }
 
 TWeapon::~TWeapon()
@@ -66,8 +66,8 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		return nullptr;
 
 	// Definitions
-	CString weaponImage, weaponName, weaponScript, byteCodeFile;
-	std::vector<std::pair<CString, CString> > byteCode;
+	CString byteCodeFile, byteCodeData;
+	std::string weaponImage, weaponName, weaponScript;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -79,19 +79,16 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 		// Parse Line
 		if (curCommand == "REALNAME")
-			weaponName = curLine.readString("");
+			weaponName = curLine.readString("").toString();
 		else if (curCommand == "IMAGE")
-			weaponImage = curLine.readString("");
+			weaponImage = curLine.readString("").toString();
 		else if (curCommand == "BYTECODE")
 		{
-			CString fname = curLine.readString("");
-			CString bytecode;
-			bytecode.load(server->getServerPath() << "weapon_bytecode/" << fname);
+			CString fileName = curLine.readString("");
 
-			if (!bytecode.isEmpty()) {
-				byteCode.emplace_back(fname, bytecode);
-				byteCodeFile = fname;
-			}
+			byteCodeData.load(server->getServerPath() << "weapon_bytecode/" << fileName);
+			if (!byteCodeData.isEmpty())
+				byteCodeFile = fileName;
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -103,45 +100,45 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 					break;
 				}
 
-				weaponScript << curLine << "\n";
+				weaponScript.append(curLine.text()).append("\n");
 			} while (fileData.bytesLeft());
 		}
 	}
 
 	// Valid Weapon Name?
-	if (weaponName.isEmpty())
+	if (weaponName.empty())
 		return nullptr;
 
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
 	{
-		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(), weaponName.text());
+		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(), weaponName.c_str());
 		server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", server->getName().text());
 	}
 
 	// Give a warning if both a script and a bytecode was found.
-	if (!weaponScript.isEmpty() && !byteCode.empty())
-		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.text());
+	if (!weaponScript.empty() && !byteCodeData.isEmpty())
+		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
 
-	TWeapon* ret = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (!byteCode.empty() && ret->mByteCode.empty())
-		ret->mByteCode = byteCode;
+	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
+	if (!byteCodeData.isEmpty() && weapon->_bytecode.isEmpty())
+	{
+		weapon->_bytecode = byteCodeData;
+		weapon->_bytecodeFile = byteCodeFile;
+	}
 
-	if (!byteCodeFile.isEmpty())
-		ret->mByteCodeFile = byteCodeFile;
-
-	return ret;
+	return weapon;
 }
 
 // -- Function: Save Weapon -- //
 bool TWeapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
-	if (this->isDefault() || mWeaponName.isEmpty())
+	if (this->isDefault() || _weaponName.empty())
 		return false;
 
 	// Prevent the loading/saving of filenames with illegal characters.
-	CString name = mWeaponName;
+	CString name = _weaponName;
 	name.replaceAllI("\\", "_");
 	name.replaceAllI("/", "_");
 	name.replaceAllI("*", "@");
@@ -151,22 +148,25 @@ bool TWeapon::saveWeapon()
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
-	output << "REALNAME " << mWeaponName << "\r\n";
-	output << "IMAGE " << mWeaponImage << "\r\n";
-	for (unsigned int i = 0; i < mByteCode.size(); ++i)
-		output << "BYTECODE " << mByteCode[i].first << "\r\n";
+	output << "REALNAME " << _weaponName << "\r\n";
+	output << "IMAGE " << _weaponImage << "\r\n";
+	output << "BYTECODE " << "weapon" << _weaponName << ".gs2bc" << "\r\n";
 
-	if (!mWeaponScript.isEmpty())
+	if (_source)
 	{
 		output << "SCRIPT\r\n";
-		output << mWeaponScript.replaceAll("\n", "\r\n");
+		output << CString(_source.getSource()).replaceAll("\n", "\r\n");
 
 		// Append a new line to the end of the script if one doesn't exist.
-		if (mWeaponScript[mWeaponScript.length() - 1] != '\n')
+		if (_source.getSource().back() != '\n')
 			output << "\r\n";
 
 		output << "SCRIPTEND\r\n";
 	}
+
+	// Save bytecode
+	CString byteCodeFileName = server->getServerPath() << "weapons_bytecode" << CFileSystem::getPathSeparator() << "weapon" << name << ".gs2bc";
+	_bytecode.save(byteCodeFileName);
 
 	// Save it.
 	return output.save(filename);
@@ -178,107 +178,49 @@ CString TWeapon::getWeaponPacket(bool forceGS1) const
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	if (mByteCode.empty() || forceGS1)
+	if (_bytecode.isEmpty() || forceGS1)
 	{
 		return CString() >> (char)PLO_NPCWEAPONADD
-			>> (char)mWeaponName.length() << mWeaponName
-			>> (char)NPCPROP_IMAGE >> (char)mWeaponImage.length() << mWeaponImage
-			>> (char)NPCPROP_SCRIPT >> (short)mScriptClient.length() << mScriptClient;
+			>> (char)_weaponName.length() << _weaponName
+			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
+			>> (char)NPCPROP_SCRIPT >> (short)clientScriptFormatted.length() << clientScriptFormatted;
 	}
 	else
 	{
 		CString out;
-		out >> (char)PLO_NPCWEAPONADD >> (char)mWeaponName.length() << mWeaponName
-			>> (char)NPCPROP_IMAGE >> (char)mWeaponImage.length() << mWeaponImage
+		out >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
+			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
 			>> (char)NPCPROP_CLASS >> (short)0 << "\n";
 
-		for (std::vector<std::pair<CString, CString> >::const_iterator i = mByteCode.begin(); i != mByteCode.end(); ++i)
-		{
-			CString b = i->second;
+		CString b = _bytecode;
 
-			unsigned char id = b.readGUChar();
-			CString header = b.readChars(b.readGUShort());
-			CString header2 = header.guntokenize();
+		CString header = b.readChars(b.readGUShort());
 
-			CString type = header2.readString("\n");
-			CString name = header2.readString("\n");
-			CString unknown = header2.readString("\n");
-			CString hash = header2.readString("\n");
-
-			// Get the mod time and send packet 197.
-			CString smod = CString() >> (long long)time(0);
-			smod.gtokenizeI();
-			out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-			// Add to the output stream.
-			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-			out << b;
-		}
+		// Get the mod time and send packet 197.
+		CString smod = CString() >> (long long)time(0);
+		smod.gtokenizeI();
+		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
 
 		return out;
 	}
 }
 
-// Prototypes for commands/functions are necessary for correct parsing
-gs1::PrototypeMap cmds = {{"setarray", {false, false}},
-					 {"freezeplayer", {false}},
-					 {"hideplayer", {false}},
-					 {"addstring", {false, true}},
-					 {"showimg", {false, true, false, false}},
-					 {"changeimgcolors", {false, false, false, false, false}},
-					 {"addstring", {false, true}},
-					 {"hideimg", {false}},
-					 {"showtext", {false, false, false, true, true, true}},
-					 {"play", {true}},
-					 {"stopmidi", {}},
-					 {"changeimgvis", {false, false}},
-					 {"debug", {false}},
-					 {"debugstr", {true}},
-					 {"setplayerprop", {true, true}},
-
-					 {"set", {true}},
-					 {"unset", {true}},
-
-					 {"setstring", {true, true}},
-					 {"addstring", {true, true}},
-
-					 {"message", {true}},
-		//{ "echo",         	{ true }},
-					 {"say2", {true}},
-					 {"print", {true}},
-		//{ "echo",           { true }},
-					 {"ASdasd.asd", {true}}};
-
-gs1::PrototypeMap funcs = {
-		{"strtofloat", {true}},
-};
-
 // -- Function: Update Weapon Image/Script -- //
-void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime, bool pSaveWeapon)
+void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
 {
 #ifdef V8NPCSERVER
 	// Clear script function
-	if (!mScriptServer.isEmpty() || _scriptExecutionContext.hasActions())
+	if (_source || _scriptExecutionContext.hasActions())
 		freeScriptResources();
 #endif
 
-	// TODO(joey): find out where \xa7 would be used, believe its in an earlier RC-version
-	// Replace '\xa7' line endings with "\n"
-	CString fixedScript;
-	if (pCode.find("\xa7") != -1)
-		fixedScript = pCode.replaceAll("\xa7", "\n");
-	else
-		fixedScript = pCode;
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
 
-	// Copy Data
-	this->setFullScript(fixedScript);
-	this->setImage(pImage);
-	this->setModTime(pModTime == 0 ? time(0) : pModTime);
+	_source = SourceCode{ std::move(pCode), gs2default };
+	_weaponImage = std::move(pImage);
+	setModTime(pModTime == 0 ? time(0) : pModTime);
 
 #ifdef V8NPCSERVER
-	// Separate client and server code
-	setServerScript(fixedScript.readString("//#CLIENTSIDE"));
-
 	// Compile and execute the script.
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	bool executed = scriptEngine->ExecuteWeapon(this);
@@ -286,7 +228,7 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	{
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
-		if (!mScriptServer.isEmpty()) {
+		if (!_source.getServerSide().empty()) {
 			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
 			scriptEngine->RegisterWeaponUpdate(this);
 		}
@@ -294,21 +236,24 @@ void TWeapon::updateWeapon(const CString& pImage, const CString& pCode, const ti
 	else
 		SCRIPTENV_D("Could not compile weapon script\n");
 #endif
-	if (fixedScript.findi("//#GS2") > -1) {
-		setClientScript(fixedScript.readString("//#GS2"));
-		gs1::Device device;
 
-		// Create variable store
-		auto primaryVarStore = device.CreateVarStore();
+	// Compile GS2 code
+	auto gs2Script = _source.getClientGS2();
+	if (!gs2Script.empty())
+	{
+		GS2Context context;
+		auto byteCode = context.compile(std::string{ gs2Script }, "weapon", _weaponName, true);
 
-		// Create context
-		//auto context = device.CreateContext(primaryVarStore);
-
-		// Compile source file to bytecode
-		mByteCode.clear();
-		mByteCode.emplace_back(mWeaponName,device.CompileSourceFromString(fixedScript.readString(""), mWeaponName, cmds, funcs));
-
-	} else setClientScript(fixedScript.readString(""));
+		if (!context.hasErrors())
+		{
+			_bytecode.clear();
+			_bytecode.write((const char*)byteCode.buffer(), byteCode.length());
+		}
+		else
+		{
+			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
+		}
+	}
 
 	// Save Weapon
 	if (pSaveWeapon)
@@ -319,12 +264,12 @@ void TWeapon::setClientScript(const CString& pScript)
 {
 	// Remove any comments in the code
 	CString formattedScript = removeComments(pScript);
-	mScriptClient.clear(formattedScript.length());
+	clientScriptFormatted.clear(formattedScript.length());
 
 	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
 	std::vector<CString> code = formattedScript.tokenize("\n");
 	for (auto & it : code)
-		mScriptClient << it.trim() << "\xa7";
+		clientScriptFormatted << it.trim() << "\xa7";
 }
 
 #ifdef V8NPCSERVER
@@ -333,7 +278,7 @@ void TWeapon::freeScriptResources()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache<TWeapon>(mScriptServer.text());
+	scriptEngine->ClearCache<TWeapon>(_source.getServerSide());
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())

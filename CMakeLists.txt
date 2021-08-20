@@ -26,7 +26,9 @@ set(CMAKE_DEBUG_POSTFIX _d)
 
 set(BIN_DIR "bin" CACHE STRING "Binary output directory")
 
+# specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -141,7 +143,7 @@ if(APPLE)
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
 	# Visual C++ Compiler options
 	if(MSVC)
@@ -191,7 +193,7 @@ elseif(WIN32)
 		add_definitions(-D__STDC_FORMAT_MACROS)
 		add_definitions(-D_BSD_SOURCE=1)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
@@ -207,7 +209,7 @@ else()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
 
 endif()
 
