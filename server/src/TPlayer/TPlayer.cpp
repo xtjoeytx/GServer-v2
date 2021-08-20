@@ -3991,34 +3991,6 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket)
-{
-
-	CFileSystem* fileSystem = server->getFileSystem();
-
-	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGInt5();
-	CString file = pPacket.readString("");
-
-	time_t fModTime = fileSystem->getModTime(file);
-
-	// If the file on disk is different, send it to the player.
-	file.setRead(0);
-
-	// TODO: Fix the modtime stuff
-	//if (fModTime > modTime) {
-
-		this->sendFile(file);
-		sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << file);
-		return true;
-	//}
-
-	sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
-
-	return true;
-}
-
-
 bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
 	CString weaponName = pPacket.readString("");
@@ -4107,12 +4079,6 @@ bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
 		}
 	}
 	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
-	return true;
-}
-
-bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
-{
-	// Stub.
 	return true;
 }
 
