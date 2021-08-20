@@ -5,6 +5,7 @@
 #include <ctime>
 #include "CString.h"
 #include "IUtil.h"
+#include "SourceCode.h"
 
 #ifdef V8NPCSERVER
 #include <queue>
@@ -130,6 +131,13 @@ enum
 };
 
 #ifdef V8NPCSERVER
+enum class NPCType
+{
+	LEVELNPC,	// npcs found in a level
+	PUTNPC,		// npcs created via script (putnpc)
+	DBNPC		// npcs created in RC (Database-NPCs)
+};
+
 //! NPC Event Flags
 enum
 {
@@ -159,11 +167,11 @@ class TScriptClass;
 class TNPC
 {
 	public:
-		TNPC(TServer* pServer, bool pLevelNPC = false);
-		TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC = true);
+		TNPC(TServer* pServer, NPCType type);
+		TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type);
 		~TNPC();
 
-		void setScriptCode(const CString& pScript);
+		void setScriptCode(std::string pScript);
 
 		// prop functions
 		CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
@@ -205,7 +213,7 @@ class TNPC
 		void setShieldImage(const std::string& pShieldImage);
 
 		const CString& getSwordImage() const;
-		void SetSwordImage(const std::string& pSwordImage);
+		void setSwordImage(const std::string& pSwordImage);
 
 		// NPCPROP functions end
 
@@ -218,7 +226,7 @@ class TNPC
 		void setWidth(int val)					{ width = val; }
 		void setName(const std::string& name)	{ npcName = name; }
 		void setScripter(const CString& name)	{ npcScripter = name; }
-		void setType(const CString& type)		{ npcType = type; }
+		void setScriptType(const CString& type)	{ npcScriptType = type; }
 		void setBlockingFlags(int val)			{ blockFlags = val; }
 		void setVisibleFlags(int val)			{ visFlags = val; }
 		void setColorId(unsigned int idx, unsigned char val);
@@ -226,7 +234,7 @@ class TNPC
 
 		// get functions
 		unsigned int getId() const				{ return id; }
-		bool isLevelNPC() const					{ return levelNPC; }
+		NPCType getType() const					{ return npcType; }
 		float getX() const						{ return x; }
 		float getY() const						{ return y; }
 		int getHeight() const 					{ return height; }
@@ -236,11 +244,9 @@ class TNPC
 		int getVisibleFlags() const 			{ return visFlags; }
 		int getTimeout() const 					{ return timeout; }
 
+		const SourceCode& getSource() const		{ return npcScript; }
 		const std::string& getName() const		{ return npcName; }
-		const CString& getType() const			{ return npcType; }
-		const CString& getClientScript() const	{ return clientScript; }
-		const CString& getServerScript() const	{ return serverScript; }
-		const CString& getScriptCode() const	{ return originalScript; }
+		const CString& getScriptType() const	{ return npcScriptType; }
 		const CString& getScripter() const		{ return npcScripter; }
 		const CString& getWeaponName() const	{ return weaponName; }
 		TLevel * getLevel() const				{ return level; }
@@ -249,8 +255,8 @@ class TNPC
 
 #ifdef V8NPCSERVER
 		bool joinedClass(const std::string& name) {
-			auto it = std::find(joinedClasses.begin(), joinedClasses.end(), name);
-			return (it != joinedClasses.end());
+			auto it = classMap.find(name); // std::find(classMap.begin(), classMap.end(), name);
+			return (it != classMap.end());
 		}
 
 		TScriptClass * joinClass(const std::string& className);
@@ -281,13 +287,11 @@ class TNPC
 		void warpNPC(TLevel *pLevel, float pX, float pY);
 
 		// file
-		bool getPersist() const			{ return persistNpc; }
-		void setPersist(bool persist)	{ persistNpc = persist; }
 		bool loadNPC(const CString& fileName);
 		void saveNPC();
 
-		void queueNpcAction(const std::string& action, TPlayer *player = 0, bool registerAction = true);
-		void queueNpcTrigger(const std::string& action, TPlayer *player, const std::string& data);
+		void queueNpcAction(const std::string& action, TPlayer *player = nullptr, bool registerAction = true);
+		void queueNpcTrigger(const std::string& action, TPlayer *player = nullptr, const std::string& data = "");
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
@@ -300,11 +304,18 @@ class TNPC
 		bool runScriptEvents();
 
 		CString getVariableDump();
+		
+		inline const CString& getByteCode() const {
+			return npcBytecode;
+		}
+
 #endif
 
 	private:
+		NPCType npcType;
+		SourceCode npcScript;
+
 		bool blockPositionUpdates;
-		bool levelNPC;
 		time_t modTime[NPCPROP_COUNT];
 		float x, y, hurtX, hurtY;
 		unsigned int id;
@@ -314,7 +325,6 @@ class TNPC
 		CString gAttribs[30];
 		CString swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage;
 		CString imagePart, weaponName;
-		CString serverScript, clientScript, clientScriptFormatted, originalScript;
 		unsigned char saves[10];
 		TLevel* level;
 		TServer* server;
@@ -322,10 +332,13 @@ class TNPC
 		std::string chatMsg, gani, image;
 		std::string nickName;
 
-		CString npcScripter, npcType;
+		CString npcScripter, npcScriptType;
 		std::string npcName;
+		std::string clientScriptFormatted;
 		int timeout;
 		int width, height;
+
+		CString npcBytecode;
 
 #ifdef V8NPCSERVER
 		bool hasTimerUpdates() const;
@@ -344,7 +357,6 @@ class TNPC
 		// npc-server
 		bool canWarp;
 		bool npcDeleteRequested;
-		bool persistNpc;
 		std::unordered_map<std::string, CString> flagList;
 
 		unsigned int _scriptEventsMask;
@@ -540,7 +552,7 @@ const CString& TNPC::getSwordImage() const
 }
 
 inline
-void TNPC::SetSwordImage(const std::string& pSwordImage)
+void TNPC::setSwordImage(const std::string& pSwordImage)
 {
 	swordImage = pSwordImage.substr(0, 120);
 }
@@ -559,7 +571,7 @@ void TNPC::updatePropModTime(unsigned char propId)
 inline
 void TNPC::allowNpcWarping(bool canWarp)
 {
-	if (!isLevelNPC())
+	if (npcType != NPCType::LEVELNPC)
 		this->canWarp = canWarp;
 }
 

@@ -15,6 +15,7 @@
 #include "ScriptBindings.h"
 #include "ScriptAction.h"
 #include "ScriptFactory.h"
+#include "SourceCode.h"
 
 #ifdef V8NPCSERVER
 #include "V8ScriptWrappers.h"
@@ -26,6 +27,7 @@ class IScriptFunction;
 class TNPC;
 class TServer;
 class TWeapon;
+
 
 class CScriptEngine
 {
@@ -70,6 +72,9 @@ public:
 	// Clear cache for code, with a WrapperScript of Type T
 	template<typename T>
 	bool ClearCache(const std::string& code);
+
+	template<typename T>
+	bool ClearCache(const std::string_view& code);
 
 	template<class... Args>
 	ScriptAction CreateAction(const std::string& action, Args... An);
@@ -222,5 +227,10 @@ inline bool CScriptEngine::ClearCache(const std::string& code)
 	return ClearCache(WrapScript<T>(code));
 }
 
+template<typename T>
+inline bool CScriptEngine::ClearCache(const std::string_view& code)
+{
+	return ClearCache(WrapScript<T>(code));
+}
 
 #endif

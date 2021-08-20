@@ -214,6 +214,8 @@ bool CScriptEngine::ClearCache(const std::string& code)
 	return true;
 }
 
+#include "TLevel.h"
+
 bool CScriptEngine::ExecuteNpc(TNPC *npc)
 {
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
@@ -222,12 +224,12 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	IScriptObject<TNPC> *wrappedObject = WrapObject(npc);
 
 	// No script, nothing to execute.
-	CString npcScript = npc->getServerScript();
-	if (npcScript.isEmpty())
+	auto npcScript = npc->getSource().getServerSide();
+	if (npcScript.empty())
 		return false;
 
 	// Wrap user code in a function-object, returning some useful symbols to call for events
-	std::string codeStr = WrapScript<TNPC>(npcScript.text());
+	std::string codeStr = WrapScript<TNPC>(npcScript);
 
 	// Search the cache, or compile the script
 	IScriptFunction *compiledScript = CompileCache(codeStr);
@@ -243,7 +245,28 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 		IScriptArguments *args = ScriptFactory::CreateArguments(_env, wrappedObject);
 		bool result = args->Invoke(compiledScript, true);
 		if (!result)
-			_server->reportScriptException(_env->getScriptError());
+		{
+			auto level = npc->getLevel();
+			if (level)
+			{
+				std::string exceptionMsg("NPC Exception at ");
+
+				exceptionMsg.append(level->getLevelName().text());
+				exceptionMsg.append(",");
+				exceptionMsg.append(std::to_string(npc->getX()));
+				exceptionMsg.append(",");
+				exceptionMsg.append(std::to_string(npc->getY()));
+				exceptionMsg.append(": ");
+				if (!npc->getName().empty())
+				{
+					exceptionMsg.append(npc->getName());
+					exceptionMsg.append(" - ");
+				}
+				exceptionMsg.append(_env->getScriptError().getErrorString());
+				_server->reportScriptException(exceptionMsg);
+			}
+			else _server->reportScriptException(_env->getScriptError());
+		}
 		delete args;
 	});
 
@@ -259,11 +282,11 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	// Wrap object
 	IScriptObject<TWeapon> *wrappedObject = WrapObject(weapon);
 	
-	auto& weaponScript = weapon->getServerScript();
-	if (!weaponScript.isEmpty())
+	auto weaponScript = weapon->getServerScript();
+	if (!weaponScript.empty())
 	{
 		// Wrap user code in a function-object, returning some useful symbols to call for events
-		std::string codeStr = WrapScript<TWeapon>(weaponScript.text());
+		std::string codeStr = WrapScript<TWeapon>(weaponScript);
 
 		// Search the cache, or compile the script
 		IScriptFunction* compiledScript = CompileCache(codeStr);

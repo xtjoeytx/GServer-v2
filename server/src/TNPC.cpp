@@ -20,14 +20,28 @@ const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55
 static CString toWeaponName(const CString& code);
 static CString doJoins(const CString& code, CFileSystem* fs);
 
-TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, bool pLevelNPC)
-	: TNPC(pServer, pLevelNPC)
+std::string minifyClientCode(const CString& src)
+{
+	std::string minified;
+	if (!src.isEmpty())
+	{
+		auto tmp = removeComments(src, "\n");
+		std::vector<CString> codeLines = tmp.tokenize("\n");
+
+		for (const auto& line : codeLines)
+			minified.append(line.trim().toString()).append("\xa7");
+	}
+
+	return std::move(minified);
+}
+
+TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type)
+	: TNPC(pServer, type)
 {
 	setX(pX);
 	setY(pY);
 	image = pImage.text();
 	level = pLevel;
-	originalScript = pScript;
 #ifdef V8NPCSERVER
 	origImage = image;
 	origX = x;
@@ -46,11 +60,11 @@ TNPC::TNPC(const CString& pImage, const CString& pScript, float pX, float pY, TS
 
 	// Needs to be called so it creates a script-object
 	//if (!pScript.isEmpty())
-		setScriptCode(pScript);
+		setScriptCode(std::move(pScript));
 }
 
-TNPC::TNPC(TServer *pServer, bool pLevelNPC)
-	: server(pServer), levelNPC(pLevelNPC), blockPositionUpdates(false),
+TNPC::TNPC(TServer *pServer, NPCType type)
+	: server(pServer), npcType(type), blockPositionUpdates(false),
 	x(30), y(30.5),
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
 	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
@@ -58,7 +72,7 @@ TNPC::TNPC(TServer *pServer, bool pLevelNPC)
 	gani("idle"), level(nullptr)
 #ifdef V8NPCSERVER
 	, _scriptExecutionContext(pServer->getScriptEngine())
-	, origX(x), origY(y), persistNpc(false), npcDeleteRequested(false), canWarp(false), width(32), height(32)
+	, origX(x), origY(y), npcDeleteRequested(false), canWarp(false), width(32), height(32)
 	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
 #endif
 {
@@ -91,10 +105,9 @@ TNPC::~TNPC()
 #endif
 }
 
-void TNPC::setScriptCode(const CString& pScript)
+void TNPC::setScriptCode(std::string pScript)
 {
-	bool firstExecution = originalScript.isEmpty();
-	originalScript = pScript;
+	bool firstExecution = npcScript.empty();
 
 #ifdef V8NPCSERVER
 	// Clear any joined code
@@ -103,64 +116,57 @@ void TNPC::setScriptCode(const CString& pScript)
 	if (_scriptObject)
 		freeScriptResources();
 #endif
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
+
+	npcScript = SourceCode{ std::move(pScript), gs2default };
 
 	bool levelModificationNPCHack = false;
 
-	// TODO(joey): remove sparringzone / singleplayer stuff before compiling script
-
 	// See if the NPC sets the level as a sparring zone.
-	if (pScript.subString(0, 12) == "sparringzone")
+	if (npcScript.getServerSide().starts_with("sparringzone"))
 	{
 		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
-
 	// See if the NPC sets the level as singleplayer.
-	if (pScript.subString(0, 12) == "singleplayer")
+	else if (npcScript.getServerSide().starts_with("singleplayer"))
 	{
 		level->setSingleplayer(true);
 		levelModificationNPCHack = true;
 	}
 
-	// Separate clientside and serverside scripts.
-#ifdef V8NPCSERVER
-	CString s = pScript;
-	serverScript = s.readString("//#CLIENTSIDE");
-	clientScript = s.readString("");
-#else
-	clientScript = pScript;
-
-	// Do joins.
-	if (!serverScript.isEmpty()) serverScript = doJoins(serverScript, server->getFileSystem());
-	if (!clientScript.isEmpty()) clientScript = doJoins(clientScript, server->getFileSystem());
-#endif
+	// Remove sparringzone / singleplayer from the server script
+	if (levelModificationNPCHack)
+	{
+		std::string_view sv = npcScript.getServerSide();
+		sv.remove_prefix(12);
+		npcScript.setServerSide(sv);
+	}
 
 	// See if the NPC should block position updates from the level leader.
 #ifdef V8NPCSERVER
 	blockPositionUpdates = true;
 #else
-	if (clientScript.find("//#BLOCKPOSITIONUPDATES") != -1)
+	if (script.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
 		blockPositionUpdates = true;
 #endif
 
-	// Remove comments and trim the code if specified.
-	if (!clientScript.isEmpty())
-	{
-		clientScriptFormatted = removeComments(clientScript, "\n");
-		std::vector<CString> code = clientScriptFormatted.tokenize("\n");
-		clientScriptFormatted.clear();
-		for (std::vector<CString>::iterator i = code.begin(); i != code.end(); ++i)
-			clientScriptFormatted << (*i).trim() << "\xa7";
-	}
-
 #ifndef V8NPCSERVER
 	// Search for toweapons in the clientside code and extract the name of the weapon.
-	weaponName = toWeaponName(clientScript);
+	weaponName = toWeaponName(std::string{ script.getClientGS1() });
 #endif
+
+	// Remove comments and trim the code if specified. Also changes line-endings
+#ifdef V8NPCSERVER
+	updateClientCode();
+#else
+	auto tmpScript = doJoins(std::string{ script.getClientGS1() }, server->getFileSystem());
+	clientScriptFormatted = minifyClientCode(tmpScript);
 
 	// Just a little warning for people who don't know.
 	if (clientScriptFormatted.length() > 0x705F)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.c_str()));
+#endif
 
 #ifdef V8NPCSERVER
 	// Compile and execute the script.
@@ -174,7 +180,7 @@ void TNPC::setScriptCode(const CString& pScript)
 
 	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
 	//	would need "update level" to take changes.
-	if (!firstExecution && !levelNPC && level)
+	if (!firstExecution && getType() != NPCType::LEVELNPC && level)
 	{
 		// this property forces showcharacter, preventing ganis to go back to images
 		modTime[NPCPROP_GANI] = 0;
@@ -199,7 +205,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
-			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.subString(0, 0x3FFF);
+			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.substr(0, 0x3FFF);
 
 		case NPCPROP_X:
 			return CString() >> (char)(x * 2);
@@ -314,7 +320,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)npcName.length() << npcName;
 
 		case NPCPROP_TYPE:
-			return CString() >> (char)npcType.length() << npcType;
+			return CString() >> (char)npcScriptType.length() << npcScriptType;
 
 		case NPCPROP_CURLEVEL:
 		{
@@ -406,7 +412,10 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_SCRIPT:
-				clientScript = pProps.readChars(pProps.readGUShort());
+				pProps.readChars(pProps.readGUShort());
+
+				// TODO(joey): is this used for putnpcs?
+				//clientScript = pProps.readChars(pProps.readGUShort());
 				break;
 
 			case NPCPROP_X:
@@ -601,7 +610,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_TYPE:
-				npcType = pProps.readChars(pProps.readGUChar());
+				npcScriptType = pProps.readChars(pProps.readGUChar());
 				break;
 
 			case NPCPROP_CURLEVEL:
@@ -799,14 +808,16 @@ void TNPC::freeScriptResources()
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
 	// Clear cached script
-	if (!serverScript.isEmpty())
-		scriptEngine->ClearCache<TNPC>(serverScript.text());
+	if (!npcScript.getServerSide().empty())
+		scriptEngine->ClearCache<TNPC>(npcScript.getServerSide());
 
 	// Clear any queued actions
+	scriptEngine->UnregisterNpcUpdate(this);
+
 	if (_scriptExecutionContext.hasActions())
 	{
 		// Unregister npc from any queued event calls
-		scriptEngine->UnregisterNpcUpdate(this);
+		//scriptEngine->UnregisterNpcUpdate(this);
 
 		// Reset execution
 		_scriptExecutionContext.resetExecution();
@@ -849,6 +860,31 @@ void TNPC::registerTriggerAction(const std::string& action, IScriptFunction *cbF
 
 void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std::string& data)
 {
+	assert(_scriptObject);
+
+	// Check if we respond to this trigger
+	auto triggerIter = _triggerActions.find(action);
+	if (triggerIter == _triggerActions.end())
+		return;
+
+	CScriptEngine* scriptEngine = server->getScriptEngine();
+
+	IScriptObject<TPlayer>* playerObject = nullptr;
+	if (player != nullptr)
+		playerObject = player->getScriptObject();
+
+	if (playerObject)
+	{
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data));
+	}
+	else
+	{
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data));
+	}
+
+	scriptEngine->RegisterNpcUpdate(this);
+
+	/*
 	assert(player);
 
 	// Check if we respond to this trigger
@@ -867,6 +903,7 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 
 	//_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterNpcUpdate(this);
+	*/
 }
 
 TScriptClass * TNPC::joinClass(const std::string& className)
@@ -884,26 +921,19 @@ TScriptClass * TNPC::joinClass(const std::string& className)
 	return classObj;
 }
 
+#include "GS2Context.h"
+
 void TNPC::updateClientCode()
 {
 	// Skip servercode, and read client script
-	CString script = originalScript;
-	script.readString("//#CLIENTSIDE");
-	clientScript = script.readString("");
+	CString tmpScript = std::string{ npcScript.getClientGS1() };
 
 	// Iterate current classes, and add to end of code
 	for (auto& it : classMap)
-		clientScript << "\n" << it.second;
+		tmpScript << "\n" << it.second;
 
 	// Remove comments and trim the code if specified.
-	if (!clientScript.isEmpty())
-	{
-		clientScriptFormatted = removeComments(clientScript, "\n");
-		std::vector<CString> code = clientScriptFormatted.tokenize("\n");
-		clientScriptFormatted.clear();
-		for (auto& line : code)
-			clientScriptFormatted << line.trim() << "\xa7";
-	}
+	clientScriptFormatted = minifyClientCode(tmpScript);
 
 	// Just a little warning for people who don't know.
 	if (clientScriptFormatted.length() > 0x705F)
@@ -911,6 +941,26 @@ void TNPC::updateClientCode()
 
 	// Update prop for players
 	this->updatePropModTime(NPCPROP_SCRIPT);
+
+	// Compile gs2
+	auto gs2Script = npcScript.getClientGS2();
+	if (!gs2Script.empty())
+	{
+		GS2Context context;
+		auto byteCode = context.compile(std::string{ gs2Script });
+
+		if (!context.hasErrors())
+		{
+			npcBytecode.clear(byteCode.length());
+			npcBytecode.write((const char*)byteCode.buffer(), byteCode.length());
+
+			//visFlags |= NPCVISFLAG_SOMETHIN;
+		}
+		else
+		{
+			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
+		}
+	}
 }
 
 void TNPC::setTimeout(int newTimeout)
@@ -1061,7 +1111,7 @@ CString TNPC::getVariableDump()
 		npcNameStr = CString() << "npcs[" << CString(id) << "]";
 
 	npcDump << "Variables dump from npc " << npcNameStr << "\n\n";
-	if (!npcType.isEmpty()) npcDump << npcNameStr << ".type: " << npcType << "\n";
+	if (!npcScriptType.isEmpty()) npcDump << npcNameStr << ".type: " << npcScriptType << "\n";
 	if (!npcScripter.isEmpty()) npcDump << npcNameStr << ".scripter: " << npcScripter << "\n";
 	if (level) npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
 
@@ -1263,7 +1313,8 @@ CString TNPC::getVariableDump()
 
 bool TNPC::deleteNPC()
 {
-	if (!isLevelNPC() && npcType == "LOCALN")
+	//if (!isLevelNPC() && npcScriptType == "LOCALN")
+	if (getType() == NPCType::PUTNPC)
 	{
 		npcDeleteRequested = true;
 		registerNpcUpdates();
@@ -1273,7 +1324,7 @@ bool TNPC::deleteNPC()
 
 void TNPC::reloadNPC()
 {
-	setScriptCode(originalScript);
+	setScriptCode(npcScript.getSource());
 }
 
 void TNPC::resetNPC()
@@ -1289,7 +1340,8 @@ void TNPC::resetNPC()
 	image = "";
 	gani = "idle";
 
-	setScriptCode(originalScript);
+	// Reset script execution
+	setScriptCode(npcScript.getSource());
 
 	if (!origLevel.isEmpty())
 	{
@@ -1350,7 +1402,7 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 	// Send the properties to the players in the new level
 	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
-	
+
 	if (!npcName.empty())
 		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
@@ -1362,15 +1414,44 @@ void TNPC::saveNPC()
 {
 	// TODO(joey): check if properties have been modified before deciding to save
 	// enumerate scriptObject variables, to save into file and load later..?
+
 	// Clean up old samples
-	_scriptExecutionContext.getExecutionData();
-	//_scriptExecutionContext
+	//_scriptExecutionContext.getExecutionData();
+
+	/*
+	CString saveDir;
+	CString saveName;
+	if (getType() == NPCType::DBNPC)
+	{
+		saveDir = "npcs/";
+		saveName = npcName;
+	}
+	else if (getType() == NPCType::PUTNPC)
+	{
+		saveDir = "npcprops/";
+		saveName = CString("localnpc_");
+
+		if (level && level->getMap())
+		{
+			saveName << removeExtension(origLevel) << "_" << level->getMapX() << "_" << level->getMapY();
+		}
+	}
+
+	// Level npcs shouldn't be saved
+	if (saveDir.isEmpty())
+	{
+		return;
+	}
+	*/
+
+	// TODO(joey): persist putnpcs
+
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
 	fileData << "NAME " << npcName << NL;
 	fileData << "ID " << CString(id) << NL;
-	fileData << "TYPE " << npcType << NL;
+	fileData << "TYPE " << npcScriptType << NL;
 	fileData << "SCRIPTER " << npcScripter << NL;
 	fileData << "IMAGE " << image << NL;
 	fileData << "STARTLEVEL " << origLevel << NL;
@@ -1403,6 +1484,10 @@ void TNPC::saveNPC()
 	fileData << "LAYER 0" << NL;
 	fileData << "SHAPETYPE 0" << NL;
 	fileData << "SHAPE " << CString(width) << " " << CString(height) << NL;
+
+	if (blockFlags & NPCBLOCKFLAG_NOBLOCK)
+		fileData << "DONTBLOCK 1" << NL;
+
 	fileData << "SAVEARR " << CString((int)saves[0]) << "," << CString((int)saves[1]) << "," << CString((int)saves[2]) << ","
 			 << CString((int)saves[3]) << "," << CString((int)saves[4]) << "," << CString((int)saves[5]) << ","
 			 << CString((int)saves[6]) << "," << CString((int)saves[7]) << "," << CString((int)saves[8]) << ","
@@ -1417,8 +1502,8 @@ void TNPC::saveNPC()
 	for (auto it = flagList.begin(); it != flagList.end(); ++it)
 		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
 
-	fileData << "NPCSCRIPT" << NL << originalScript.replaceAll("\n", NL);
-	if (originalScript[originalScript.length() - 1] != '\n')
+	fileData << "NPCSCRIPT" << NL << CString(npcScript.getSource()).replaceAll("\n", NL);
+	if (npcScript.getSource().back() != '\n')
 		fileData << NL;
 	fileData << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
@@ -1443,7 +1528,8 @@ bool TNPC::loadNPC(const CString& fileName)
 	//	modtime is not being updated for these properties
 
 	time_t updateTime = time(0);
-	CString npcScript, npcLevel;
+	CString npcLevel;
+	std::string script;
 
 	CString propPacket;
 
@@ -1464,7 +1550,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		else if (curCommand == "ID")
 			id = strtoint(curLine.readString(""));
 		else if (curCommand == "TYPE")
-			npcType = curLine.readString("");
+			npcScriptType = curLine.readString("");
 		else if (curCommand == "SCRIPTER")
 		{
 			npcScripter = curLine.readString("");
@@ -1620,13 +1706,14 @@ bool TNPC::loadNPC(const CString& fileName)
 				if (curLine == "NPCSCRIPTEND")
 					break;
 
-				npcScript << curLine << "\n";
+				script.append(curLine.text(), curLine.length()).append(1, '\n');
 			} while (fileData.bytesLeft());
+
 			modTime[NPCPROP_SCRIPT] = updateTime;
 		}
 	}
 
-	setScriptCode(npcScript);
+	setScriptCode(std::move(script));
 
 	if (npcLevel.isEmpty())
 		npcLevel = origLevel;
@@ -1634,7 +1721,6 @@ bool TNPC::loadNPC(const CString& fileName)
 	if (!npcLevel.isEmpty())
 		level = TLevel::findLevel(npcLevel, server);
 
-	persistNpc = true;
 	return true;
 }
 

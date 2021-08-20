@@ -58,6 +58,7 @@ set(
 		include/TServer.h
 		include/TServerList.h
 		include/TWeapon.h
+		include/Scripting/SourceCode.h
 )
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)

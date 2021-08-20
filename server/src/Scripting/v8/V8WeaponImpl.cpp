@@ -16,7 +16,7 @@ void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	v8::Local<v8::Object> self = info.This();
 	TWeapon *weaponObject = UnwrapObject<TWeapon>(self);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getName().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getName().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -26,7 +26,7 @@ void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	v8::Local<v8::Object> self = info.This();
 	TWeapon *weaponObject = UnwrapObject<TWeapon>(self);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
