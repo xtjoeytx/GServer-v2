@@ -176,17 +176,19 @@ elseif(WIN32)
 		cmake_policy(SET CMP0043 NEW)
 
 		# hack to fix clion + msvc together
-		set(CompilerFlags
-				CMAKE_CXX_FLAGS
-				CMAKE_CXX_FLAGS_DEBUG
-				CMAKE_CXX_FLAGS_RELEASE
-				CMAKE_C_FLAGS
-				CMAKE_C_FLAGS_DEBUG
-				CMAKE_C_FLAGS_RELEASE
-				)
-		foreach(CompilerFlag ${CompilerFlags})
-			string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-		endforeach()
+		if (CLIONHAX)
+			set(CompilerFlags
+					CMAKE_CXX_FLAGS
+					CMAKE_CXX_FLAGS_DEBUG
+					CMAKE_CXX_FLAGS_RELEASE
+					CMAKE_C_FLAGS
+					CMAKE_C_FLAGS_DEBUG
+					CMAKE_C_FLAGS_RELEASE
+					)
+			foreach(CompilerFlag ${CompilerFlags})
+				string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+			endforeach()
+		endif()
 	endif()
 
 	if( MINGW )

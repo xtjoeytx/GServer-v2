@@ -155,12 +155,12 @@ if(APPLE)
 elseif(WIN32)
 	# hax to get clion to work on windows for me
 	if(V8NPCSERVER)
-		if(CLIONHAX)
-			include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/include)
-			link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/lib/Debug)
-		endif()
+	#	if(CLIONHAX)
+	#		include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/include)
+	#		link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/lib/Debug)
+	#	endif()
 	endif()
-
+	
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
@@ -170,8 +170,10 @@ elseif(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-
+		
 		if(V8NPCSERVER)
+			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
+
 			# Using MSVC now looks for V8 as a nuget package first
 			# Looking in lib folders if not found
 			if(NOT V8_FOUND)
