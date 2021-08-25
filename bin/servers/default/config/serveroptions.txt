@@ -10,7 +10,7 @@ unstickmelevel = onlinestartlocal.nw
 unstickmex = 30
 unstickmey = 30.5
 
-# Players in these levels can't warp out nor can they PM other players.
+# Players in these levels can''t warp out nor can they PM other players.
 jaillevels = police2.graal,police4.graal
 
 # Enable/disable explosions.
@@ -62,8 +62,8 @@ warptoforall = false
 # Alters the possible status options in the player list.
 playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
 
-# Selects what is displayed in the player's profile.
-# Name:=variable, where variable can also be a flag on the player's account.
+# Selects what is displayed in the player''s profile.
+# Name:=variable, where variable can also be a flag on the player''s account.
 profilevars = Kills:=playerkills,Deaths:=playerdeaths,Maxpower:=playerfullhearts,Rating:=playerrating,Alignment:=playerap,Gralat:=playerrupees,Swordpower:=playerswordpower,Spin Attack:=canspin
 
 # Global guild settings.
@@ -105,7 +105,7 @@ cropflags = true
 disconnectifnotmoved = true
 maxnomovement = 1200
 
-# If true, moved push/pull blocks aren't sent to other players.
+# If true, moved push/pull blocks aren''t sent to other players.
 clientsidepushpull = true
 
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
@@ -196,3 +196,6 @@ sharefolder =
 
 # Sets the language.  Currently not implemented.
 language = English
+
+# Scripting
+gs2default = false

@@ -19,13 +19,16 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 3.0.0)
 project(GS2Emu C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
 set(BIN_DIR "bin" CACHE STRING "Binary output directory")
 
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -58,7 +61,7 @@ set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
-set(GSERVER_CREDITS "Joey, Nalin, Codr and Cadavre")
+set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 
@@ -68,8 +71,8 @@ configure_file(
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
-option(NOSTATIC "Don't compile as a static runtime." OFF)
-if(NOSTATIC)
+option(STATIC "Compile as a static runtime." ON)
+if(STATIC)
 	message("Don't compile as a static runtime")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 else()
@@ -86,8 +89,8 @@ else()
 	message("Disabling built-in V8 NPC-Server")
 endif()
 
-option(NOUPNP "Don't compile with UPNP support" OFF)
-if(NOT NOUPNP)
+option(UPNP "Compile with UPNP support" OFF)
+if(UPNP)
 	message("Enabling UPNP support")
 	add_definitions(-DUPNP)
 else()
@@ -140,7 +143,7 @@ if(APPLE)
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
 	# Visual C++ Compiler options
 	if(MSVC)
@@ -173,24 +176,26 @@ elseif(WIN32)
 		cmake_policy(SET CMP0043 NEW)
 
 		# hack to fix clion + msvc together
-		set(CompilerFlags
-				CMAKE_CXX_FLAGS
-				CMAKE_CXX_FLAGS_DEBUG
-				CMAKE_CXX_FLAGS_RELEASE
-				CMAKE_C_FLAGS
-				CMAKE_C_FLAGS_DEBUG
-				CMAKE_C_FLAGS_RELEASE
-				)
-		foreach(CompilerFlag ${CompilerFlags})
-			string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-		endforeach()
+		if (CLIONHAX)
+			set(CompilerFlags
+					CMAKE_CXX_FLAGS
+					CMAKE_CXX_FLAGS_DEBUG
+					CMAKE_CXX_FLAGS_RELEASE
+					CMAKE_C_FLAGS
+					CMAKE_C_FLAGS_DEBUG
+					CMAKE_C_FLAGS_RELEASE
+					)
+			foreach(CompilerFlag ${CompilerFlags})
+				string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+			endforeach()
+		endif()
 	endif()
 
 	if( MINGW )
 		add_definitions(-D__STDC_FORMAT_MACROS)
 		add_definitions(-D_BSD_SOURCE=1)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
@@ -200,18 +205,18 @@ elseif(WIN32)
 elseif(AROS)
 elseif(AMIGA)
 else()
-	if(NOT NOSTATIC)
+	if(STATIC)
 	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
 
 endif()
 
 # Prefer static linkage
-if(NOT NOSTATIC)
+if(STATIC)
 	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
 	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
@@ -223,13 +228,13 @@ if(V8NPCSERVER)
 	endif()
 endif()
 
-if(NOT NOUPNP)
+if(UPNP)
 	find_package(Miniupnpc)
 
 	if(NOT MINIUPNPC_FOUND)
 		message("MiniUPNPC not found in system. Compiling it ourselves.")
 
-		if(NOT NOSTATIC)
+		if(STATIC)
 			add_definitions(-DMINIUPNP_STATICLIB)
 			set(UPNPC_BUILD_STATIC TRUE CACHE BOOL "-" FORCE)
 			set(UPNPC_BUILD_SHARED FALSE CACHE BOOL "-" FORCE)
@@ -252,11 +257,13 @@ if(NOT WIN32)
 endif()
 
 # Restore library suffixes
-if(NOT NOSTATIC)
+if(STATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

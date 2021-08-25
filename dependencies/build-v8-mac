@@ -1,10 +1,38 @@
 #!/bin/bash
 export PATH="$PWD/depot_tools:$PATH"
+export V8_VERSION=9.1.269.9
+
+if [[ -z ${BUILDARCH} ]]; then
+	echo "Setting buildarch"
+	export BUILDARCH=$(uname -m)
+fi
+
+if [[ ${BUILDARCH} == "x86_64" ]]; then
+	BUILDARCH=x64
+elif [[ ${BUILDARCH} == *"arm"* ]]; then
+	BUILDARCH=arm
+fi
+
+echo "Buildarch ${BUILDARCH}"
+
+if [[ -d "v8/out.gn/${BUILDARCH}.release" ]]; then
+	echo "Skipping v8 build"
+	exit
+fi
+
+if [[ -d "v8" ]]; then
+	rm -rf v8
+fi
+
+if [[ -f ".gclient" ]]; then
+	rm -f .gclient
+fi
+
 fetch v8 \
 && cd v8 \
-&& git checkout 7.4.288.26 \
+&& git checkout ${V8_VERSION} \
 && gclient sync -D \
-&& ./tools/dev/v8gen.py x64.release -- \
+&& ./tools/dev/v8gen.py ${BUILDARCH}.release -- \
 is_component_build=false \
 is_debug=false \
 use_custom_libcxx=false \
@@ -15,13 +43,12 @@ target_os=\"mac\" \
 target_cpu=\"x64\" \
 v8_target_cpu=\"x64\" \
 v8_enable_future=true \
-is_official_build=true \
+is_official_build=false \
 is_cfi=false \
 is_clang=true \
 use_custom_libcxx=false \
 use_sysroot=false \
 use_gold=false \
-use_allocator_shim=false \
 treat_warnings_as_errors=false \
 symbol_level=0 \
 strip_debug_info=true \
@@ -29,6 +56,5 @@ v8_use_external_startup_data=false \
 v8_enable_i18n_support=false \
 v8_enable_gdbjit=false \
 v8_static_library=false \
-v8_experimental_extra_library_files=[] \
-v8_extra_library_files=[] \
-&& ninja -C out.gn/x64.release -j $(getconf _NPROCESSORS_ONLN)
+v8_enable_pointer_compression=false \
+&& ninja -C out.gn/${BUILDARCH}.release -j $(getconf _NPROCESSORS_ONLN)

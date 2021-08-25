@@ -4,6 +4,8 @@
 #include <vector>
 #include <time.h>
 #include "CString.h"
+#include "TLevelItem.h"
+#include "SourceCode.h"
 
 #ifdef V8NPCSERVER
 #include <string>
@@ -18,32 +20,30 @@ class TWeapon
 {
 	public:
 		// -- Constructor | Destructor -- //
-		TWeapon(TServer *pServer, const signed char pId);
-		TWeapon(TServer *pServer, const CString& pName, const CString& pImage, const CString& pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
+		TWeapon(TServer *pServer, LevelItemType itemType);
+		TWeapon(TServer *pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
 		~TWeapon();
 
 		// -- Functions -- //
 		bool saveWeapon();
-		void updateWeapon(const CString& pImage, const CString& pCode, const time_t pModTime = 0, bool pSaveWeapon = true);
+		void updateWeapon(std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = true);
 
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		CString getWeaponPacket() const;
-		inline bool isDefault() const					{ return (mWeaponDefault != -1); }
-		inline bool hasBytecode() const					{ return (!mByteCode.empty()); }
-		inline signed char getWeaponId()				{ return mWeaponDefault; }
-		inline const CString& getByteCodeFile() const	{ return mByteCodeFile; }
-		inline const CString& getImage() const			{ return mWeaponImage; }
-		inline const CString& getName() const			{ return mWeaponName; }
-		inline const CString& getClientScript() const	{ return mScriptClient; }
-		inline const CString& getServerScript() const	{ return mScriptServer; }
-		inline const CString& getFullScript() const		{ return mWeaponScript; }
+		CString getWeaponPacket(bool forceGS1 = false) const;
+		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID); }
+		inline bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
+		inline LevelItemType getWeaponId()				{ return mWeaponDefault; }
+		inline const CString& getByteCode() const		{ return _bytecode; }
+		inline const CString& getByteCodeFile() const	{ return _bytecodeFile; }
+		inline const std::string& getImage() const		{ return _weaponImage; }
+		inline const std::string& getName() const		{ return _weaponName; }
+		inline const std::string& getFullScript() const	{ return _source.getSource(); }
+		inline std::string_view getServerScript() const { return _source.getServerSide(); }
 		inline time_t getModTime() const				{ return mModTime; }
 
 		// Functions -> Set Variables
-		void setImage(const CString& pImage)			{ mWeaponImage = pImage; }
-		void setFullScript(const CString& pScript)		{ mWeaponScript = pScript; }
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 
 #ifdef V8NPCSERVER
@@ -57,15 +57,23 @@ class TWeapon
 #endif
 	protected:
 		void setClientScript(const CString& pScript);
-		void setServerScript(const CString& pScript) { mScriptServer = pScript; }
 
 		// Varaibles -> Weapon Data
-		char mWeaponDefault;
-		CString mWeaponImage, mWeaponName, mWeaponScript, mByteCodeFile;
-		CString mScriptClient, mScriptServer;
-		std::vector<std::pair<CString, CString> > mByteCode;
+		LevelItemType mWeaponDefault;
+		//CString mByteCodeFile;
+		//CString mByteCodeData;
 		time_t mModTime;
 		TServer *server;
+
+		SourceCode _source;
+		CString clientScriptFormatted;
+
+		CString _bytecode;
+		CString _bytecodeFile;
+
+		std::string _weaponImage;
+		std::string _weaponName;
+		std::string _clientFormattedScript;
 
 	private:
 #ifdef V8NPCSERVER
