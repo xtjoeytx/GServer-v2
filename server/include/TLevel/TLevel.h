@@ -247,7 +247,7 @@ class TLevel
 		CString fileName, fileVersion, actualLevelName, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;
 		std::vector<TLevelBaddy *> levelBaddyIds;
-		std::vector<TLevelBoardChange *> levelBoardChanges;
+		std::vector<TLevelBoardChange> levelBoardChanges;
 		std::vector<TLevelChest> levelChests;
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;

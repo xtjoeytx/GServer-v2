@@ -12,12 +12,30 @@
 /*
 	Global Variables
 */
-CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+//CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 short respawningTiles[] = {
 	0x1ff, 0x3ff, 0x2ac, 0x002, 0x200,
 	0x022, 0x3de, 0x1a4, 0x14a, 0x674,
 	0x72a,
 };
+
+int getBase64Position(char c)
+{
+	if (c >= 'a')
+		return 26 + (c - 'a');
+	else if (c >= 'A')
+		return (c - 'A');
+	else if (c >= '0' && c <= '9')
+		return 52 + (c - '0');
+
+	switch (c)
+	{
+		case '+': return 52 + 10;
+		case '/': return 52 + 11;
+	}
+
+	return 0;
+}
 
 /*
 	TLevel: Constructor - Deconstructor
@@ -73,8 +91,6 @@ TLevel::~TLevel()
 	levelItems.clear();
 
 	// Delete board changes.
-	for (auto& levelBoardChange : levelBoardChanges)
-		delete levelBoardChange;
 	levelBoardChanges.clear();
 
 #ifdef V8NPCSERVER
@@ -117,10 +133,10 @@ CString TLevel::getBoardChangesPacket(time_t time)
 {
 	CString retVal;
 	retVal >> (char)PLO_LEVELBOARD;
-	for (auto change : levelBoardChanges)
+	for (const auto& change : levelBoardChanges)
 	{
-		if (change->getModTime() >= time)
-			retVal << change->getBoardStr();
+		if (change.getModTime() >= time)
+			retVal << change.getBoardStr();
 	}
 	return retVal;
 }
@@ -129,10 +145,10 @@ CString TLevel::getBoardChangesPacket2(time_t time)
 {
 	CString retVal;
 	retVal >> (char)PLO_BOARDMODIFY;
-	for (auto change : levelBoardChanges)
+	for (const auto& change : levelBoardChanges)
 	{
-		if (change->getModTime() >= time)
-			retVal << change->getBoardStr();
+		if (change.getModTime() >= time)
+			retVal << change.getBoardStr();
 	}
 	return retVal;
 }
@@ -262,7 +278,6 @@ bool TLevel::reload()
 	levelItems.clear();
 
 	// Delete board changes.
-	for (auto& levelBoardChange : levelBoardChanges) delete levelBoardChange;
 	levelBoardChanges.clear();
 
 	// Clean up the rest.
@@ -800,8 +815,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 				{
 					char left = curLine[5].readChar();
 					char top = curLine[5].readChar();
-					short tile = base64.find(left) << 6;
-					tile += base64.find(top);
+					short tile = getBase64Position(left) << 6;
+					tile += getBase64Position(top);
 					levelTiles[ii + y*64] = tile;
 				}
 			}
@@ -1036,15 +1051,15 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 	}
 
 	// Delete any existing changes within the same region.
-	for (std::vector<TLevelBoardChange*>::iterator i = levelBoardChanges.begin(); i != levelBoardChanges.end(); )
+	for (auto i = levelBoardChanges.begin(); i != levelBoardChanges.end(); )
 	{
-		TLevelBoardChange* change = *i;
-		if ((change->getX() >= pX && change->getX() + change->getWidth() <= pX + pWidth) &&
-			(change->getY() >= pY && change->getY() + change->getHeight() <= pY + pHeight))
+		TLevelBoardChange& change = *i;
+		if ((change.getX() >= pX && change.getX() + change.getWidth() <= pX + pWidth) &&
+			(change.getY() >= pY && change.getY() + change.getHeight() <= pY + pHeight))
 		{
-			delete change;
 			i = levelBoardChanges.erase(i);
-		} else ++i;
+		}
+		else ++i;
 	}
 
 	// Check if the tiles should be respawned.
@@ -1070,7 +1085,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 
 	// TODO: old gserver didn't save the board change if oldTiles.length() == 0.
 	// Should we do it that way still?
-	levelBoardChanges.push_back(new TLevelBoardChange(pX, pY, pWidth, pHeight, pTileData, oldTiles, (doRespawn ? respawnTime : -1)));
+	levelBoardChanges.push_back(TLevelBoardChange(pX, pY, pWidth, pHeight, pTileData, oldTiles, (doRespawn ? respawnTime : -1)));
 	return true;
 }
 
@@ -1282,17 +1297,17 @@ void TLevel::setMap(TMap* pMap, int pMapX, int pMapY)
 bool TLevel::doTimedEvents()
 {
 	// Check if we should revert any board changes.
-	for (auto change : levelBoardChanges)
+	for (auto& change : levelBoardChanges)
 	{
-		int respawnTimer = change->timeout.doTimeout();
+		int respawnTimer = change.timeout.doTimeout();
 		if (respawnTimer == 0)
 		{
 			// Put the old data back in.  DON'T DELETE THE CHANGE.
 			// The client remembers board changes and if we delete the
 			// change, the client won't get the new data.
-			change->swapTiles();
-			change->setModTime(time(0));
-			server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change->getBoardStr(), 0, this);
+			change.swapTiles();
+			change.setModTime(time(0));
+			server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), 0, this);
 		}
 	}
 
