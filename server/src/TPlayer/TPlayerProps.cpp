@@ -300,11 +300,11 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 	if (inrange(pPropId, 37, 41) || inrange(pPropId, 46, 49) || inrange(pPropId, 54, 74))
 	{
-		for (unsigned int i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
+		for (auto i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
 		{
 			if (__attrPackets[i] == pPropId)
 			{
-				auto len = std::min(attrList[i].length(), 223);
+				char len = std::min(attrList[i].length(), 223);
 				buffer >> (char)len << attrList[i].subString(0, len);
 				return;
 			}

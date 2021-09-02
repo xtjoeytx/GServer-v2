@@ -215,7 +215,6 @@ class TServer : public CSocketStub
 
 	private:
 		bool doTimedEvents();
-		void acceptSock(CSocket& pSocket);
 		void cleanupDeletedPlayers();
 
 		bool doRestart;

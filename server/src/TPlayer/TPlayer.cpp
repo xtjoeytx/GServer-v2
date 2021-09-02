@@ -2725,10 +2725,10 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 		float dSpar[2] = {static_cast<float>(1.0f / (pow(0.0057565f,2)*pow(gSpar[0],2)*ESpar[0]*(1.0f-ESpar[0]))),						//Winner
 			static_cast<float>(1.0f / (pow(0.0057565f,2)*pow(gSpar[1],2)*ESpar[1]*(1.0f-ESpar[1])))};						//Loser
 
-		float tWinRating = oldStats[2] + (0.0057565f / ( 1.0f / pow(oldStats[3],2) + 1.0f/dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
-		float tLoseRating = oldStats[0] + (0.0057565f / ( 1.0f / pow(oldStats[1],2) + 1.0f/dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
-  		float tWinDeviation = pow((1.0f/(1.0f/pow(oldStats[3],2)+1/dSpar[0])),0.5f);
-  		float tLoseDeviation = pow((1.0f/(1.0f/pow(oldStats[1],2)+1/dSpar[1])),0.5f);
+		float tWinRating = oldStats[2] + (0.0057565f / ( 1.0f / powf(oldStats[3],2) + 1.0f/dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
+		float tLoseRating = oldStats[0] + (0.0057565f / ( 1.0f / powf(oldStats[1],2) + 1.0f/dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
+  		float tWinDeviation = powf((1.0f/(1.0f/powf(oldStats[3],2)+1/dSpar[0])),0.5f);
+  		float tLoseDeviation = powf((1.0f/(1.0f/powf(oldStats[1],2)+1/dSpar[1])),0.5f);
 
 		// Cap the rating.
 		tWinRating = clip( tWinRating, 0.0f, 4000.0f );

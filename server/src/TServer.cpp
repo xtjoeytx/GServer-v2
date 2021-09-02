@@ -1241,9 +1241,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
 	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	printf("Msg: %s\n", std::string(message.text()).c_str());
-
-	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text())));
+	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
 }
 
@@ -1397,7 +1395,7 @@ void TServer::updateClass(const std::string& className, const std::string& class
 unsigned int TServer::getFreePlayerId()
 {
 	unsigned int newId = 0;
-	for (unsigned int i = 2; i < playerIds.size(); ++i)
+	for (auto i = 2; i < playerIds.size(); ++i)
 	{
 		if (playerIds[i] == nullptr)
 		{

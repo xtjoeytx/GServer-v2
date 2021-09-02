@@ -277,7 +277,7 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Sent to rc and client, but rc ignores it so...
-    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+    sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
@@ -428,7 +428,9 @@ bool TPlayer::sendLoginNC()
 
 bool TPlayer::sendLoginRC()
 {
-    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+	// This packet clears the players weapons on the client, but official
+	// also sends it to the RC's so we are maintaining the same behavior
+    sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
     // If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)

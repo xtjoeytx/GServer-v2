@@ -269,7 +269,7 @@ inline unsigned char TAccount::getColorId(unsigned int idx) const
 
 inline void TAccount::setPower(float newPower)
 {
-	power = clip(newPower, 0, (float)maxPower);
+	power = clip(newPower, 0.0f, (float)maxPower);
 }
 
 inline void TAccount::setShieldImage(const CString& newImage)

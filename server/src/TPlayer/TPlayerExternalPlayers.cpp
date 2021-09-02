@@ -73,8 +73,7 @@ bool TPlayer::remPMServer(CString& option)
 bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
-	int i22 = 0;
-
+	
 	if (!externalPlayerList.empty())
 	{
 		// Check if a player has disconnected
@@ -135,7 +134,6 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 
 		if (!exist)
 		{
-			i22 = externalPlayerList.size();
 			// Get a free id to be assigned to the new player.
 			unsigned int newId = 0;
 			for (unsigned int i = 16000; i < externalPlayerIds.size(); ++i)

@@ -1503,7 +1503,7 @@ void TNPC::saveNPC()
 		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
 
 	fileData << "NPCSCRIPT" << NL << CString(npcScript.getSource()).replaceAll("\n", NL);
-	if (npcScript.getSource().back() != '\n')
+	if (fileData[fileData.length() - 1] != '\n')
 		fileData << NL;
 	fileData << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
