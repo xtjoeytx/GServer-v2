@@ -343,22 +343,34 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{
 		_env->CallFunctionInScope([&]() -> void {
+			std::vector<TNPC*> deleteNpcs;
+
 			// Iterate over npcs
 			for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); )
 			{
 				TNPC *npc = *it;
-				bool hasActions = npc->runScriptEvents();
+				auto response = npc->runScriptEvents();
 
-				if (!hasActions)
-					it = _updateNpcs.erase(it);
-				else
+				if (response == NPCEventResponse::PendingEvents)
+				{
 					it++;
+					continue;
+				}
+
+				if (response == NPCEventResponse::Delete)
+					deleteNpcs.push_back(npc);
+
+				it = _updateNpcs.erase(it);
 			}
 
 			// Iterate over weapons
 			for (auto weapon : _updateWeapons)
 				weapon->runScriptEvents();
 			_updateWeapons.clear();
+
+			// Delete any npcs
+			for (auto n : deleteNpcs)
+				_server->deleteNPC(n);
 		});
 	}
 

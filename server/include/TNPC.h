@@ -131,6 +131,14 @@ enum
 };
 
 #ifdef V8NPCSERVER
+
+enum class NPCEventResponse
+{
+	NoEvents,
+	PendingEvents,
+	Delete
+};
+
 enum class NPCType
 {
 	LEVELNPC,	// npcs found in a level
@@ -301,7 +309,7 @@ class TNPC
 		void scheduleEvent(unsigned int timeout, ScriptAction& action);
 
 		bool runScriptTimer();
-		bool runScriptEvents();
+		NPCEventResponse runScriptEvents();
 
 		CString getVariableDump();
 		

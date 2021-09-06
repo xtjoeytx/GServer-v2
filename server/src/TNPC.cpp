@@ -1032,7 +1032,7 @@ bool TNPC::runScriptTimer()
 	return hasTimerUpdates();
 }
 
-bool TNPC::runScriptEvents()
+NPCEventResponse TNPC::runScriptEvents()
 {
 	// Returns true if we still have actions to run
 	bool hasActions = _scriptExecutionContext.runExecution();
@@ -1059,12 +1059,11 @@ bool TNPC::runScriptEvents()
 
 	if (npcDeleteRequested)
 	{
-		server->deleteNPC(this);
 		npcDeleteRequested = false;
-		return false;
+		return NPCEventResponse::Delete;
 	}
 
-	return hasActions;
+	return (hasActions ? NPCEventResponse::PendingEvents : NPCEventResponse::NoEvents);
 }
 
 CString TNPC::getVariableDump()
@@ -1313,12 +1312,12 @@ CString TNPC::getVariableDump()
 
 bool TNPC::deleteNPC()
 {
-	//if (!isLevelNPC() && npcScriptType == "LOCALN")
 	if (getType() == NPCType::PUTNPC)
 	{
 		npcDeleteRequested = true;
 		registerNpcUpdates();
 	}
+
 	return npcDeleteRequested;
 }
 
