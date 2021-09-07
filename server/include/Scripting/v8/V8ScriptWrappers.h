@@ -43,7 +43,7 @@ inline std::string WrapScript<TNPC>(const std::string_view& code) {
 
 class TPlayer;
 template <>
-inline std::string WrapScript<TPlayer>(const std::string& code) {
+inline std::string WrapScript<TPlayer>(const std::string_view& code) {
 	static const char* prefixString = "(function(player) {" \
 		"const self = player;\n";
 

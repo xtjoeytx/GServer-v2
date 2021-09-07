@@ -122,14 +122,17 @@ void TNPC::setScriptCode(std::string pScript)
 
 	bool levelModificationNPCHack = false;
 
+	// NOTE: since we are not removing comments from the source, any comments at the start of the script
+	// interferes with the starts_with check, so a temporary workaround is to check for it within the first 100 lines
+
 	// See if the NPC sets the level as a sparring zone.
-	if (npcScript.getServerSide().starts_with("sparringzone"))
+	if (npcScript.getServerSide().starts_with("sparringzone") || npcScript.getServerSide().find("sparringzone\n") < 100)
 	{
 		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
 	// See if the NPC sets the level as singleplayer.
-	else if (npcScript.getServerSide().starts_with("singleplayer"))
+	else if (npcScript.getServerSide().starts_with("singleplayer") || npcScript.getServerSide().find("singleplayer\n") < 100)
 	{
 		level->setSingleplayer(true);
 		levelModificationNPCHack = true;
@@ -138,9 +141,8 @@ void TNPC::setScriptCode(std::string pScript)
 	// Remove sparringzone / singleplayer from the server script
 	if (levelModificationNPCHack)
 	{
-		std::string_view sv = npcScript.getServerSide();
-		sv.remove_prefix(12);
-		npcScript.setServerSide(sv);
+		// just delete the entire serverside script
+		npcScript.setServerSide({});
 	}
 
 	// See if the NPC should block position updates from the level leader.
@@ -883,27 +885,6 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 	}
 
 	scriptEngine->RegisterNpcUpdate(this);
-
-	/*
-	assert(player);
-
-	// Check if we respond to this trigger
-	auto triggerIter = _triggerActions.find(action);
-	if (triggerIter == _triggerActions.end())
-		return;
-
-	CScriptEngine *scriptEngine = server->getScriptEngine();
-
-	IScriptObject<TPlayer>* playerObject = player->getScriptObject();
-	if (playerObject != nullptr) {
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data));
-	} else {
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data));
-	}
-
-	//_scriptExecutionContext.addAction(scriptAction);
-	scriptEngine->RegisterNpcUpdate(this);
-	*/
 }
 
 TScriptClass * TNPC::joinClass(const std::string& className)
@@ -916,12 +897,10 @@ TScriptClass * TNPC::joinClass(const std::string& className)
 	if (!classObj)
 		return nullptr;
 
-	classMap[className] = classObj->clientCode();
+	classMap[className] = classObj->source().getClientGS1();
 	updateClientCode();
 	return classObj;
 }
-
-#include "GS2Context.h"
 
 void TNPC::updateClientCode()
 {
@@ -939,28 +918,29 @@ void TNPC::updateClientCode()
 	if (clientScriptFormatted.length() > 0x705F)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.c_str()));
 
-	// Update prop for players
-	this->updatePropModTime(NPCPROP_SCRIPT);
-
 	// Compile gs2
 	auto gs2Script = npcScript.getClientGS2();
 	if (!gs2Script.empty())
 	{
-		GS2Context context;
-		auto byteCode = context.compile(std::string{ gs2Script });
+		// Compile gs2 code
+		server->compileGS2Script(std::string{ gs2Script },
+			[this](const CompilerResponse& response)
+			{
+				if (response.success)
+				{
+					auto& byteCode = response.bytecode;
+					npcBytecode.clear(byteCode.length());
+					npcBytecode.write((const char*)byteCode.buffer(), byteCode.length());
 
-		if (!context.hasErrors())
-		{
-			npcBytecode.clear(byteCode.length());
-			npcBytecode.write((const char*)byteCode.buffer(), byteCode.length());
-
-			//visFlags |= NPCVISFLAG_SOMETHIN;
-		}
-		else
-		{
-			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
-		}
+					// Clear gs1 code, otherwise bytecode will not run
+					clientScriptFormatted.clear();
+				}
+			}
+		);
 	}
+
+	// Update prop for players
+	this->updatePropModTime(NPCPROP_SCRIPT);
 }
 
 void TNPC::setTimeout(int newTimeout)

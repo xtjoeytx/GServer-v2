@@ -937,18 +937,18 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		TScriptClass *classObject = npcObject->joinClass(className);
 		if (classObject != nullptr)
 		{
-			auto classCodeWrap = WrapScript<TNPC>(classObject->serverCode());
-			auto scriptFuncction = scriptEngine->CompileCache(classCodeWrap, false);
+			auto classCodeWrap = WrapScript<TNPC>(classObject->source().getServerSide());
+			auto scriptFunction = scriptEngine->CompileCache(classCodeWrap, false);
 
-			if (scriptFuncction != nullptr)
+			if (scriptFunction != nullptr)
 			{
-				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(scriptFuncction);
+				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(scriptFunction);
 				v8::Local<v8::Value> newArgs[] = { args.This() };
 
 				// Execute
 				v8::TryCatch try_catch(isolate);
-				v8::Local<v8::Function> scriptFunction = v8_function->Function();
-				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+				v8::Local<v8::Function> localFunction = v8_function->Function();
+				v8::MaybeLocal<v8::Value> scriptTableRet = localFunction->Call(context, args.This(), 1, newArgs);
 				if (!scriptTableRet.IsEmpty())
 				{
 					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());

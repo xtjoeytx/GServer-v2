@@ -9,13 +9,12 @@
 class SourceCode
 {
 public:
-	SourceCode() { }
-	SourceCode(const std::string& src, bool gs2default = false) : _src(src), _gs2default(gs2default) { init(); }
-	SourceCode(std::string&& src, bool gs2default = false) noexcept : _src(std::move(src)), _gs2default(gs2default) { init(); }
-	SourceCode(SourceCode&& o, bool gs2default = false) noexcept : _src(std::move(o._src)), _gs2default(gs2default) { init(); }
+	SourceCode() : _gs2default(false) { }
+	SourceCode(std::string src, bool gs2default = false) : _src(std::move(src)), _gs2default(gs2default) { init(); }
+	SourceCode(SourceCode&& o) noexcept : _src(std::move(o._src)), _gs2default(o._gs2default) { init(); }
 
 	SourceCode& operator=(SourceCode&& o) noexcept {
-		_gs2default = std::move(o._gs2default);
+		_gs2default = o._gs2default;
 		_src = std::move(o._src);
 		_clientside = std::move(o._clientside);
 		_serverside = std::move(o._serverside);

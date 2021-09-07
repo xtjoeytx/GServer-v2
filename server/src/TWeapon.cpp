@@ -241,18 +241,38 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 	auto gs2Script = _source.getClientGS2();
 	if (!gs2Script.empty())
 	{
-		GS2Context context;
-		auto byteCode = context.compile(std::string{ gs2Script }, "weapon", _weaponName, true);
+		// Compile gs2 code
+		server->compileGS2Script(std::string{ gs2Script }, [this](const CompilerResponse &response) {
+			if (response.success)
+			{
+				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", _weaponName, true);
 
-		if (!context.hasErrors())
-		{
-			_bytecode.clear();
-			_bytecode.write((const char*)byteCode.buffer(), byteCode.length());
-		}
-		else
-		{
-			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
-		}
+				// these should be sent for compilation right after
+				_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
+
+				_bytecode.clear(bytecodeWithHeader.length());
+				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+
+				// temp: save bytecode to file
+				/*
+				CString bytecodeFile;
+				bytecodeFile << server->getServerPath() << "bytecode/weapons/";
+				std::filesystem::create_directories(bytecodeFile.text());
+				bytecodeFile << "weapon_" << _weaponName << ".gs2bc";
+
+				CString bytecodeDump;
+				bytecodeDump.writeInt(1);
+				bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+				bytecodeDump.save(bytecodeFile);
+				*/
+			}
+		});
+	}
+	else
+	{
+		auto gs1Script = _source.getClientGS1();
+		if (!gs1Script.empty())
+			setClientScript(std::string{ gs1Script });
 	}
 
 	// Save Weapon

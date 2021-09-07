@@ -60,8 +60,6 @@ class TWeapon
 
 		// Varaibles -> Weapon Data
 		LevelItemType mWeaponDefault;
-		//CString mByteCodeFile;
-		//CString mByteCodeData;
 		time_t mModTime;
 		TServer *server;
 
@@ -74,6 +72,7 @@ class TWeapon
 		std::string _weaponImage;
 		std::string _weaponName;
 		std::string _clientFormattedScript;
+		std::vector<std::string> _joinedClasses;
 
 	private:
 #ifdef V8NPCSERVER

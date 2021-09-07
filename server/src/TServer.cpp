@@ -347,6 +347,9 @@ bool TServer::doMain()
 
 #ifdef V8NPCSERVER
     mScriptEngine.RunScripts(currentTimer);
+
+	// enable when we switch to async compiling
+	//gs2ScriptManager.runQueue();
 #endif
 
 	// Every second, do some events.
@@ -1799,6 +1802,31 @@ void TServer::updateClassForPlayers(TScriptClass *pClass)
 	}
 }
 
+/*
+	GS2 Functionality
+*/
+void TServer::compileGS2Script(const std::string& script, std::function<void(const CompilerResponse &)> cb)
+{
+	gs2ScriptManager.compileScript(script, [cb, script, this](const CompilerResponse& resp)
+	{
+		if (!resp.errors.empty())
+			handleGS2Errors(resp.errors);
+		
+		cb(resp);
+	});
+}
+
+void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors)
+{
+	// TODO(joey): identify the origin of script, report to syntax log + NC channel
+	printf("\t\t%zu errors during compiling bytecode:\n", errors.size());
+
+	int errnum = 1;
+	for (auto &err : errors)
+	{
+		printf("[ Error %d]: %s [CODE %d]\n", errnum++, err.msg().c_str(), err.code());
+	}
+}
 
 /*
 	Translation Functionality

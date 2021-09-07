@@ -31,6 +31,7 @@
 #include "CScriptEngine.h"
 #endif
 
+#include "GS2ScriptManager.h"
 #include "TScriptClass.h"
 
 class TPlayer;
@@ -212,6 +213,12 @@ class TServer : public CSocketStub
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void updateWeaponForPlayers(TWeapon *pWeapon);
 		void updateClassForPlayers(TScriptClass *pClass);
+
+		// GS2 Management
+		void compileGS2Script(const std::string& script, std::function<void(const CompilerResponse &)> cb);
+	private:
+		GS2ScriptManager gs2ScriptManager;
+		void handleGS2Errors(const std::vector<GS2CompilerError>& errors);
 
 	private:
 		bool doTimedEvents();

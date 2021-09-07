@@ -34,6 +34,7 @@ set(
 	src/TServer.cpp
 	src/TServerList.cpp
 	src/TWeapon.cpp
+	src/Scripting/GS2ScriptManager.cpp
 )
 
 file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)
@@ -58,6 +59,7 @@ set(
 		include/TServer.h
 		include/TServerList.h
 		include/TWeapon.h
+		include/Scripting/GS2ScriptManager.h
 		include/Scripting/SourceCode.h
 )
 
