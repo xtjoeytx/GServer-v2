@@ -1390,6 +1390,14 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 void TNPC::saveNPC()
 {
+	// TODO(joey): save localnpcs aka putnpcs to a localnpcs folder, as of now
+	// we are only saving database npcs.
+
+	if (getType() != NPCType::DBNPC)
+	{
+		return;
+	}
+
 	// TODO(joey): check if properties have been modified before deciding to save
 	// enumerate scriptObject variables, to save into file and load later..?
 
@@ -1421,8 +1429,6 @@ void TNPC::saveNPC()
 		return;
 	}
 	*/
-
-	// TODO(joey): persist putnpcs
 
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
