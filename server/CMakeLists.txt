@@ -62,6 +62,7 @@ set(
 		include/Scripting/GS2ScriptManager.h
 		include/Scripting/ScriptOrigin.h
 		include/Scripting/SourceCode.h
+		include/utilities/timeunits.h
 )
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
@@ -120,6 +121,7 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include/Misc
 	${PROJECT_SOURCE_DIR}/server/include/TLevel
+	${PROJECT_SOURCE_DIR}/server/include/utilities
 	${PROJECT_SOURCE_DIR}/server/include/Scripting
 	${PROJECT_SOURCE_DIR}/server/include/Scripting/interface
 	${PROJECT_SOURCE_DIR}/server/include/Scripting/v8

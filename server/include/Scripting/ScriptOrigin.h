@@ -12,14 +12,7 @@
 
 namespace scripting
 {
-	template<typename Obj>
-	std::string getErrorOrigin(const Obj& obj) {
-		static_assert(false == true);
-		return {};
-	}
-
-	template <>
-	std::string getErrorOrigin<TNPC>(const TNPC& npc)
+	std::string getErrorOrigin(const TNPC& npc)
 	{
 		std::string origin;
 
@@ -49,14 +42,12 @@ namespace scripting
 		return std::move(origin);
 	}
 
-	template <>
-	std::string getErrorOrigin<TScriptClass>(const TScriptClass& cls)
+	std::string getErrorOrigin(const TScriptClass& cls)
 	{
 		return fmt::format("Class {}", cls.getName());
 	}
 
-	template <>
-	std::string getErrorOrigin<TWeapon>(const TWeapon& npc)
+	std::string getErrorOrigin(const TWeapon& npc)
 	{
 		return fmt::format("Weapon {}", npc.getName());
 	}

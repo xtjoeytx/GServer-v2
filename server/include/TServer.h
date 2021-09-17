@@ -221,6 +221,10 @@ class TServer : public CSocketStub
 		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
 		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
 
+		std::time_t getServerStartTime() const {
+			return serverStartTime;
+		}
+
 	private:
 		GS2ScriptManager gs2ScriptManager;
 		
@@ -263,7 +267,9 @@ class TServer : public CSocketStub
 
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+		std::time_t serverStartTime;
 		unsigned int serverTime;
+
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
 		int mNCPort;

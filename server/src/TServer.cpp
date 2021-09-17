@@ -14,6 +14,7 @@
 #include "TNPC.h"
 #include "TMap.h"
 #include "TLevel.h"
+#include "ScriptOrigin.h"
 
 static const char* const filesystemTypes[] =
 {
@@ -30,7 +31,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), serverStartTime(0)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -172,6 +173,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
 
+	serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	return 0;
 }
 
@@ -1813,8 +1815,6 @@ void TServer::updateClassForPlayers(TScriptClass *pClass)
 /*
 	GS2 Functionality
 */
-#include "ScriptOrigin.h"
-
 template<typename ScriptObjType>
 void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
 {

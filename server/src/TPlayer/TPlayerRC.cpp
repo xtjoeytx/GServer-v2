@@ -10,6 +10,8 @@
 	#include <unistd.h>
 #endif
 #include <stdio.h>
+#include <fmt/format.h>
+#include "utilities/timeunits.h"
 
 #include "TServer.h"
 #include "TPlayer.h"
@@ -1072,6 +1074,27 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			rclog.out("%s sent ServerHQ updates.\n", accountName.text());
 			server->loadAdminSettings();
 			server->getServerList()->sendServerHQ();
+		}
+		else if (words[0] == "/serveruptime" && words.size() == 1)
+		{
+			auto time_units = utilities::TimeUnits(std::time(nullptr) - server->getServerStartTime());
+
+			constexpr auto format_time_fn = [](std::string& m, const uint64_t t, const char *fmtStr) {
+				if (t > 0) {
+					m.append(fmt::format(" {} {}", t, fmtStr));
+					if (t > 1)
+						m.append("s");
+				}
+			};
+
+			std::string msg;
+			format_time_fn(msg, time_units.days, "day");
+			format_time_fn(msg, time_units.hours, "hour");
+			format_time_fn(msg, time_units.minutes, "minute");
+			if (time_units.days == 0)
+				format_time_fn(msg, time_units.seconds, "second");
+
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
 		}
 		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 		{
