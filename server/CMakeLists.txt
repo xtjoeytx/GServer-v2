@@ -60,6 +60,7 @@ set(
 		include/TServerList.h
 		include/TWeapon.h
 		include/Scripting/GS2ScriptManager.h
+		include/Scripting/ScriptOrigin.h
 		include/Scripting/SourceCode.h
 )
 

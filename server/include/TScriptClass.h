@@ -17,11 +17,15 @@ public:
 	// Functions -> Inline Get-Functions
 	CString getClassPacket() const;
 	
+	const std::string& getName() const {
+		return _className;
+	}
+
 	const CString& getByteCode() const {
 		return _bytecode;
 	}
 
-	const SourceCode& source() const {
+	const SourceCode& getSource() const {
 		return _source;
 	}
 

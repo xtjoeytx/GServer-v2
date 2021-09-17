@@ -4,6 +4,8 @@
 #include <chrono>
 #include <functional>
 
+#include <fmt/format.h>
+
 #include "TServer.h"
 #include "main.h"
 #include "TPlayer.h"
@@ -1081,8 +1083,13 @@ void TServer::reportScriptException(const ScriptRunError& error)
 
 void TServer::reportScriptException(const std::string& error_message)
 {
-	sendToNC(error_message);
-	getScriptLog().out(error_message + "\n");
+	auto lines = CString{ error_message }.tokenize("\n");
+
+	for (const auto& line : lines)
+	{
+		sendToNC(line);
+		getScriptLog().out(line + "\n");
+	}
 }
 
 #endif
@@ -1802,30 +1809,56 @@ void TServer::updateClassForPlayers(TScriptClass *pClass)
 	}
 }
 
+
 /*
 	GS2 Functionality
 */
-void TServer::compileGS2Script(const std::string& script, std::function<void(const CompilerResponse &)> cb)
+#include "ScriptOrigin.h"
+
+template<typename ScriptObjType>
+void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
 {
-	gs2ScriptManager.compileScript(script, [cb, script, this](const CompilerResponse& resp)
-	{
+	std::string script{ scriptObject.getSource().getClientGS2() };
+
+	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp) {
 		if (!resp.errors.empty())
-			handleGS2Errors(resp.errors);
-		
+		{
+			handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
+		}
+
 		cb(resp);
 	});
 }
 
-void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors)
+void TServer::compileGS2Script(TNPC *scriptObject, GS2ScriptManager::user_callback_type cb)
 {
-	// TODO(joey): identify the origin of script, report to syntax log + NC channel
-	printf("\t\t%zu errors during compiling bytecode:\n", errors.size());
-
-	int errnum = 1;
-	for (auto &err : errors)
+	if (scriptObject)
 	{
-		printf("[ Error %d]: %s [CODE %d]\n", errnum++, err.msg().c_str(), err.code());
+		compileScript(*scriptObject, cb);
 	}
+}
+
+void TServer::compileGS2Script(TScriptClass *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::compileGS2Script(TWeapon *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
+{
+	// Report the script exception
+	for (auto& err : errors)
+		reportScriptException(fmt::format("Script compiler output for {}:\nerror: {}", origin, err.msg()));
 }
 
 /*

@@ -330,7 +330,7 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 
 	if (classObj != nullptr)
 	{
-		CString classCode(classObj->source().getSource());
+		CString classCode(classObj->getSource().getSource());
 
 		CString ret;
 		ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();

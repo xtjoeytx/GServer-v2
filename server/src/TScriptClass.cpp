@@ -23,7 +23,7 @@ void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 	auto gs2Script = _source.getClientGS2();
 	if (!gs2Script.empty())
 	{
-		server->compileGS2Script(std::string{ gs2Script }, [this](const CompilerResponse &response)
+		server->compileGS2Script(this, [this](const CompilerResponse &response)
 		{
 			if (response.success)
 			{

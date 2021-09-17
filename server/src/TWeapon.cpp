@@ -238,11 +238,10 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 #endif
 
 	// Compile GS2 code
-	auto gs2Script = _source.getClientGS2();
-	if (!gs2Script.empty())
+	if (!_source.getClientGS2().empty())
 	{
 		// Compile gs2 code
-		server->compileGS2Script(std::string{ gs2Script }, [this](const CompilerResponse &response) {
+		server->compileGS2Script(this, [this](const CompilerResponse &response) {
 			if (response.success)
 			{
 				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", _weaponName, true);

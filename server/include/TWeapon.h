@@ -43,6 +43,8 @@ class TWeapon
 		inline std::string_view getServerScript() const { return _source.getServerSide(); }
 		inline time_t getModTime() const				{ return mModTime; }
 
+		const SourceCode& getSource() const				{ return _source; }
+
 		// Functions -> Set Variables
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
 

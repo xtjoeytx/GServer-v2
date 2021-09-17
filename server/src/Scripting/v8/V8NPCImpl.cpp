@@ -937,7 +937,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		TScriptClass *classObject = npcObject->joinClass(className);
 		if (classObject != nullptr)
 		{
-			auto classCodeWrap = WrapScript<TNPC>(classObject->source().getServerSide());
+			auto classCodeWrap = WrapScript<TNPC>(classObject->getSource().getServerSide());
 			auto scriptFunction = scriptEngine->CompileCache(classCodeWrap, false);
 
 			if (scriptFunction != nullptr)

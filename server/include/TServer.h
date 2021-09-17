@@ -214,11 +214,20 @@ class TServer : public CSocketStub
 		void updateWeaponForPlayers(TWeapon *pWeapon);
 		void updateClassForPlayers(TScriptClass *pClass);
 
-		// GS2 Management
-		void compileGS2Script(const std::string& script, std::function<void(const CompilerResponse &)> cb);
+		/*
+		 * GS2 Functionality
+		 */
+		void compileGS2Script(TNPC *npc, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
+
 	private:
 		GS2ScriptManager gs2ScriptManager;
-		void handleGS2Errors(const std::vector<GS2CompilerError>& errors);
+		
+		template<typename ScriptObjType>
+		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
+
+		void handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin);
 
 	private:
 		bool doTimedEvents();

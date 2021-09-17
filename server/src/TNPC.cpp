@@ -897,7 +897,7 @@ TScriptClass * TNPC::joinClass(const std::string& className)
 	if (!classObj)
 		return nullptr;
 
-	classMap[className] = classObj->source().getClientGS1();
+	classMap[className] = classObj->getSource().getClientGS1();
 	updateClientCode();
 	return classObj;
 }
@@ -919,11 +919,10 @@ void TNPC::updateClientCode()
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.c_str()));
 
 	// Compile gs2
-	auto gs2Script = npcScript.getClientGS2();
-	if (!gs2Script.empty())
+	if (!npcScript.getClientGS2().empty())
 	{
 		// Compile gs2 code
-		server->compileGS2Script(std::string{ gs2Script },
+		server->compileGS2Script(this,
 			[this](const CompilerResponse& response)
 			{
 				if (response.success)

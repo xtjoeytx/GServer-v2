@@ -1209,9 +1209,9 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		TServer *server = scriptEngine->getServer();
 		auto classObj = server->getClass(className);
 
-		if (classObj && !classObj->source().empty())
+		if (classObj && !classObj->getSource().empty())
 		{
-			auto &classCode = classObj->source();
+			auto &classCode = classObj->getSource();
 
 			// Wrap code
 			std::string classCodeWrap = WrapScript<TPlayer>(classCode.getServerSide());

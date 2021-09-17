@@ -17,10 +17,11 @@ class GS2ScriptManager
 	// used for threadpool job queue
 	using CompilerThreadPool = CustomThreadPool<CallbackThreadJob>;
 	using internal_callback_type = std::function<void(CompilerResponse&)>;
-	using user_callback_type = std::function<void(const CompilerResponse&)>;
 	using queue_item_type = std::pair<internal_callback_type, CompilerResponse>;
 
 public:
+	using user_callback_type = std::function<void(const CompilerResponse&)>;
+
 	GS2ScriptManager();
 	~GS2ScriptManager() {}
 
