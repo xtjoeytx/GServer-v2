@@ -188,7 +188,7 @@ CString TWeapon::getWeaponPacket(bool forceGS1) const
 		return CString() >> (char)PLO_NPCWEAPONADD
 			>> (char)_weaponName.length() << _weaponName
 			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
-			>> (char)NPCPROP_SCRIPT >> (short)clientScriptFormatted.length() << clientScriptFormatted;
+			>> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
 	}
 	else
 	{
@@ -242,6 +242,10 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		SCRIPTENV_D("Could not compile weapon script\n");
 #endif
 
+	// Clear any GS1 scripts/GS2 bytecode
+	_bytecode.clear();
+	_formattedClientGS1.clear();
+
 	// Compile GS2 code
 	if (!_source.getClientGS2().empty())
 	{
@@ -274,12 +278,12 @@ void TWeapon::setClientScript(const CString& pScript)
 {
 	// Remove any comments in the code
 	CString formattedScript = removeComments(pScript);
-	clientScriptFormatted.clear(formattedScript.length());
+	_formattedClientGS1.clear(formattedScript.length());
 
 	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
 	std::vector<CString> code = formattedScript.tokenize("\n");
 	for (auto & it : code)
-		clientScriptFormatted << it.trim() << "\xa7";
+		_formattedClientGS1 << it.trim() << "\xa7";
 }
 
 #ifdef V8NPCSERVER

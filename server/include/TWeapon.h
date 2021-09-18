@@ -65,7 +65,7 @@ class TWeapon
 		TServer *server;
 
 		SourceCode _source;
-		CString clientScriptFormatted;
+		CString _formattedClientGS1;
 
 		CString _bytecode;
 		std::string _bytecodeFile;

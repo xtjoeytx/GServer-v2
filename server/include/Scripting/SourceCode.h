@@ -77,25 +77,14 @@ private:
 			else
 				gs2sep_char = "//#GS2";
 
-			// Separate GS2 section in clientside
+			// Determine if this code is GS1 or GS2
 			auto gs2Sep = _clientside.find(gs2sep_char);
-			if (gs2Sep != std::string::npos && !_gs2default)
-			{
-				_clientGS1 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
-				_clientGS2 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
-			}
-			else if (gs2Sep == std::string::npos && !_gs2default)
-			{
-				_clientGS1 = _clientside;
-			}
-			else if (gs2Sep != std::string::npos && _gs2default)
-			{
-				_clientGS2 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
-				_clientGS1 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
-			}
-			else if (gs2Sep == std::string::npos && _gs2default) {
+			bool using_gs2 = (gs2Sep != std::string::npos) ^ _gs2default;
+
+			if (using_gs2)
 				_clientGS2 = _clientside;
-			}
+			else
+				_clientGS1 = _clientside;
 		}
 		else _serverside = std::string_view{ _src.begin(), _src.end() };
 	}
