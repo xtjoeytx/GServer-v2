@@ -766,7 +766,7 @@ void TServer::loadWeapons(bool print)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
-		if (weapon->getByteCodeFile().isEmpty())
+		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
@@ -1820,13 +1820,31 @@ void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_
 {
 	std::string script{ scriptObject.getSource().getClientGS2() };
 
-	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp) {
+	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
+	{
 		if (!resp.errors.empty())
 		{
 			handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
 		}
 
-		cb(resp);
+		// Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
+		//if (resp.success)
+		//{
+		//	for (auto& joinedClass : resp.joinedClasses)
+		//	{
+		//		auto cls = getClass(joinedClass);
+		//		if (cls && cls->getByteCode().isEmpty())
+		//		{
+		//			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
+		//			compileScript(*cls, fn);
+		//		}
+		//	}
+		//}
+
+		if (cb)
+		{
+			cb(resp);
+		}
 	});
 }
 

@@ -66,8 +66,8 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		return nullptr;
 
 	// Definitions
-	CString byteCodeFile, byteCodeData;
-	std::string weaponImage, weaponName, weaponScript;
+	CString byteCodeData;
+	std::string byteCodeFile, weaponImage, weaponName, weaponScript;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -88,7 +88,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 			byteCodeData.load(server->getServerPath() << "weapon_bytecode/" << fileName);
 			if (!byteCodeData.isEmpty())
-				byteCodeFile = fileName;
+				byteCodeFile = fileName.toString();
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -118,13 +118,16 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
+	{
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
+		weaponScript.clear();
+	}
 
 	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (!byteCodeData.isEmpty() && weapon->_bytecode.isEmpty())
+	if (!byteCodeData.isEmpty())
 	{
 		weapon->_bytecode = byteCodeData;
-		weapon->_bytecodeFile = byteCodeFile;
+		weapon->_bytecodeFile = std::move(byteCodeFile);
 	}
 
 	return weapon;
@@ -136,6 +139,13 @@ bool TWeapon::saveWeapon()
 	// Don't save default weapons / empty weapons
 	if (this->isDefault() || _weaponName.empty())
 		return false;
+
+	// If bytecode filename is set, the weapon is treated as read-only so it can't be updated
+	if (!_bytecodeFile.empty())
+	{
+		server->getServerLog().out("[%s] WARNING: Attempted to overwrite bytecode weapon %s\n", server->getName().text(), _weaponName.c_str());
+		return false;
+	}
 
 	// Prevent the loading/saving of filenames with illegal characters.
 	CString name = _weaponName;
@@ -150,7 +160,6 @@ bool TWeapon::saveWeapon()
 	CString output = "GRAWP001\r\n";
 	output << "REALNAME " << _weaponName << "\r\n";
 	output << "IMAGE " << _weaponImage << "\r\n";
-	output << "BYTECODE " << "weapon" << _weaponName << ".gs2bc" << "\r\n";
 
 	if (_source)
 	{
@@ -163,10 +172,6 @@ bool TWeapon::saveWeapon()
 
 		output << "SCRIPTEND\r\n";
 	}
-
-	// Save bytecode
-	CString byteCodeFileName = server->getServerPath() << "weapons_bytecode" << CFileSystem::getPathSeparator() << "weapon" << name << ".gs2bc";
-	_bytecode.save(byteCodeFileName);
 
 	// Save it.
 	return output.save(filename);
@@ -244,26 +249,12 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		server->compileGS2Script(this, [this](const CompilerResponse &response) {
 			if (response.success)
 			{
-				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", _weaponName, true);
-
 				// these should be sent for compilation right after
 				_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
 
+				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", _weaponName, true);
 				_bytecode.clear(bytecodeWithHeader.length());
 				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-
-				// temp: save bytecode to file
-				/*
-				CString bytecodeFile;
-				bytecodeFile << server->getServerPath() << "bytecode/weapons/";
-				std::filesystem::create_directories(bytecodeFile.text());
-				bytecodeFile << "weapon_" << _weaponName << ".gs2bc";
-
-				CString bytecodeDump;
-				bytecodeDump.writeInt(1);
-				bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-				bytecodeDump.save(bytecodeFile);
-				*/
 			}
 		});
 	}

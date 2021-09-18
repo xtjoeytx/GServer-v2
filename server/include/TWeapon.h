@@ -32,18 +32,17 @@ class TWeapon
 
 		// Functions -> Inline Get-Functions
 		CString getWeaponPacket(bool forceGS1 = false) const;
-		inline bool isDefault() const					{ return (mWeaponDefault != LevelItemType::INVALID); }
-		inline bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
-		inline LevelItemType getWeaponId()				{ return mWeaponDefault; }
-		inline const CString& getByteCode() const		{ return _bytecode; }
-		inline const CString& getByteCodeFile() const	{ return _bytecodeFile; }
-		inline const std::string& getImage() const		{ return _weaponImage; }
-		inline const std::string& getName() const		{ return _weaponName; }
-		inline const std::string& getFullScript() const	{ return _source.getSource(); }
-		inline std::string_view getServerScript() const { return _source.getServerSide(); }
-		inline time_t getModTime() const				{ return mModTime; }
-
-		const SourceCode& getSource() const				{ return _source; }
+		bool isDefault() const						{ return (mWeaponDefault != LevelItemType::INVALID); }
+		bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
+		LevelItemType getWeaponId()					{ return mWeaponDefault; }
+		const SourceCode& getSource() const			{ return _source; }
+		const CString& getByteCode() const			{ return _bytecode; }
+		const std::string& getByteCodeFile() const	{ return _bytecodeFile; }
+		const std::string& getImage() const			{ return _weaponImage; }
+		const std::string& getName() const			{ return _weaponName; }
+		const std::string& getFullScript() const	{ return _source.getSource(); }
+		std::string_view getServerScript() const	{ return _source.getServerSide(); }
+		time_t getModTime() const					{ return mModTime; }
 
 		// Functions -> Set Variables
 		void setModTime(time_t pModTime)				{ mModTime = pModTime; }
@@ -69,7 +68,7 @@ class TWeapon
 		CString clientScriptFormatted;
 
 		CString _bytecode;
-		CString _bytecodeFile;
+		std::string _bytecodeFile;
 
 		std::string _weaponImage;
 		std::string _weaponName;
