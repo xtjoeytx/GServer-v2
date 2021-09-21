@@ -140,10 +140,9 @@ bool TWeapon::saveWeapon()
 	if (this->isDefault() || _weaponName.empty())
 		return false;
 
-	// If bytecode filename is set, the weapon is treated as read-only so it can't be updated
+	// If the bytecode filename is set, the weapon is treated as read-only so it can't be saved
 	if (!_bytecodeFile.empty())
 	{
-		server->getServerLog().out("[%s] WARNING: Attempted to overwrite bytecode weapon %s\n", server->getName().text(), _weaponName.c_str());
 		return false;
 	}
 
