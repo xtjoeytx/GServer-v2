@@ -39,15 +39,15 @@ STAFFACCOUNT=<account-name>
 ### 3. Create a file in your main directory called `docker-compose.yml` and put following in it: 
 ```yml
 version: "3"
- services:
-   gserver:
-     image: "xtjoeytx/gserver-v2:feature-npc-server"
-     restart: always
-     env_file: server.env
-     volumes:
-       - ./server:/gserver/servers/<your-server-directory-name>
-     ports:
-       - 14900:14900
+services:
+  gserver:
+    image: "xtjoeytx/gserver-v2:feature-npc-server"
+    restart: always
+    env_file: server.env
+    volumes:
+      - ./server:/gserver/servers/<your-server-directory-name>
+    ports:
+      - 14900:14900
 ```
 
 ### 4. Create a directory in called `server` in your main directory.
