@@ -3,9 +3,8 @@ set -e
 
 if [[ "${USE_ENV}" == "true" ]]; then
 	TMPDIR = "/gserver/servers/${SERVER}"
-	shopt -s nullglob dotglob     # To include hidden files
-	files=(${TMPDIR}/*)
-	if [ ${#files[@]} -lt 1 ]; then
+
+	if [ `find ${TMPDIR} -prune -empty 2>/dev/null` ]; then
 		echo "Directory empty, copying over default files"
 		cp -fr /gserver/servers/default/* ${TMPDIR}/
 	fi
