@@ -26,8 +26,9 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /gserver/bin /gserver
+COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
 WORKDIR /gserver
 VOLUME /gserver/servers
-ENTRYPOINT ["./gs2emu"]
-CMD []
+ENTRYPOINT ["/gserver/entrypoint.sh"]
+CMD ["/gserver/gs2emu"]
