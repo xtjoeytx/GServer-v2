@@ -50,18 +50,11 @@ def buildStep(dockerImage, os, defines) {
 
 			def pathInContainer
 
-			if ("${os}" == "windows") {
-				echo "hello";
-				echo env.PATH;
-				env.PATH = env.PATH + ";c:\\Windows\\System32";
-				echo env.PATH;
-			}
-
 			def dockerImageRef = docker.image("${dockerImage}");
 			dockerImageRef.pull();
 
 			dockerImageRef.inside("") {
-				pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
+				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
 
 			dockerImageRef.inside("-e HOME='/tmp' --privileged") {
@@ -80,15 +73,25 @@ def buildStep(dockerImage, os, defines) {
 				//	sh "BUILDARCH=${arch} ./build-v8-linux"
 				}
 
-				sh "mkdir -p build/"
-				sh "mkdir -p lib/"
-				sh "rm -rfv build/*"
+				if ("${os}" == "windows") {
+					bat "rmdir /s /q build"
+					bat "mkdir build"
+				} else {
+					sh "mkdir -p build/"
+					sh "mkdir -p lib/"
+					sh "rm -rfv build/*"
+				}
 
 				slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
 				dir("build") {
-					sh "cmake ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
-					sh "cmake --build . --config Release --target package -- -j 8"
-					//sh "cmake --build . --config Release --target package_source -- -j 8"
+					if ("${os}" == "windows") {
+						bat "cmake ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
+						bat "cmake --build . --config Release --target package -- -j 8"
+					} else {
+						sh "cmake ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
+						sh "cmake --build . --config Release --target package -- -j 8"
+						//sh "cmake --build . --config Release --target package_source -- -j 8"
+					}
 
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 				}
