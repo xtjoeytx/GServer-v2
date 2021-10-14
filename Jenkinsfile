@@ -50,6 +50,12 @@ def buildStep(dockerImage, os, defines) {
 
 			def pathInContainer
 
+			if ("${os}" == "windows") {
+			   environment {
+                   env.PATH = env.PATH + ";c:\\Windows\\System32"
+               }
+			}
+
 			def dockerImageRef = docker.image("${dockerImage}")
 			dockerImageRef.pull()
 
