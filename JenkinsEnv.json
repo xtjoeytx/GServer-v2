@@ -19,7 +19,7 @@
 			"Type": "native",
 		  	"OS": "windows",
 			"Config": {
-				"DockerImage": "gserver-v2",
+				"DockerImage": "registry.home.eevul.net/build-2k19",
 				"Flags": ""
 			}
 		}
