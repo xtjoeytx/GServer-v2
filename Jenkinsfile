@@ -57,7 +57,7 @@ def buildStep(dockerImage, os, defines) {
 				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
 
-			dockerImageRef.inside("-e HOME='/tmp' --privileged") {
+			dockerImageRef.inside("") {
 				checkout scm
 
 				if (env.CHANGE_ID) {
