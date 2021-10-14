@@ -157,7 +157,7 @@ node('master') {
 	project.builds.each { v ->
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
-				if (v.Type.Equals("docker")) {
+				if ("${v.Type}" == "docker") {
 					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.DockerTag, v.Config.Dockerfile, v.Config.BuildIfSuccessful);
 				} else {
 					buildStep(v.Config.DockerImage, v.Title, v.Config.Flags)
