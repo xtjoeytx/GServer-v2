@@ -75,7 +75,7 @@ def buildStep(dockerImage, os, defines) {
 
 				if ("${os}" == "windows") {
 					dir("build") {
-						f(fileExists("/"))
+						if(fileExists("/"))
                         {
                         	bat "rmdir /s /q ..\\build"
                         }
