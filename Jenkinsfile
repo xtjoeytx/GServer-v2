@@ -74,12 +74,7 @@ def buildStep(dockerImage, os, defines) {
 				}
 
 				if ("${os}" == "windows") {
-					dir("build") {
-						if(fileExists("/"))
-                        {
-                        	bat "rmdir /s /q ..\\build"
-                        }
-					}
+
 				} else {
 					sh "mkdir -p build/"
 					sh "mkdir -p lib/"
