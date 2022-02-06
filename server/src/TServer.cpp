@@ -4,6 +4,8 @@
 #include <chrono>
 #include <functional>
 
+#include <fmt/format.h>
+
 #include "TServer.h"
 #include "main.h"
 #include "TPlayer.h"
@@ -12,6 +14,7 @@
 #include "TNPC.h"
 #include "TMap.h"
 #include "TLevel.h"
+#include "ScriptOrigin.h"
 
 static const char* const filesystemTypes[] =
 {
@@ -28,7 +31,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), serverStartTime(0)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -170,6 +173,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
 
+	serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	return 0;
 }
 
@@ -305,9 +309,6 @@ void TServer::cleanup()
 	}
 	levelList.clear();
 
-	for (auto& map : mapList) {
-		delete map;
-	}
 	mapList.clear();
 
 	for (auto& npc : npcList) {
@@ -350,6 +351,9 @@ bool TServer::doMain()
 
 #ifdef V8NPCSERVER
     mScriptEngine.RunScripts(currentTimer);
+
+	// enable when we switch to async compiling
+	//gs2ScriptManager.runQueue();
 #endif
 
 	// Every second, do some events.
@@ -629,6 +633,10 @@ int TServer::loadConfigFiles()
 	loadNpcs(true);
 #endif
 
+	// Load map levels - doing this after db npcs are loaded incase
+	// some level scripts may require access to the databases.
+	loadMapLevels();
+
 	// Load translations.
 	serverlog.out("[%s]      Loading translations...\n", name.text());
 	loadTranslations();
@@ -704,7 +712,7 @@ void TServer::loadFileSystem()
 	for (auto & i : filesystem)
 		i.clear();
 	filesystem_accounts.clear();
-	filesystem_accounts.addDir("accounts");
+	filesystem_accounts.addDir("accounts", "*.txt");
 	if ( settings.getBool("nofoldersconfig", false))
 		loadAllFolders();
 	else
@@ -742,6 +750,8 @@ void TServer::loadClasses(bool print)
 		CString scriptData;
 		scriptData.load(scriptFile.second);
 		classList[className] = std::make_unique<TScriptClass>(this, className, scriptData.text());
+
+		updateClassForPlayers(getClass(className));
 	}
 }
 
@@ -756,7 +766,7 @@ void TServer::loadWeapons(bool print)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
-		if (!weapon->hasBytecode())
+		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
@@ -765,7 +775,7 @@ void TServer::loadWeapons(bool print)
 		if (weaponList.find(weapon->getName()) == weaponList.end())
 		{
 			weaponList[weapon->getName()] = weapon;
-			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().text());
+			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().c_str());
 		}
 		else
 		{
@@ -777,16 +787,16 @@ void TServer::loadWeapons(bool print)
 				weaponList[weapon->getName()] = weapon;
 				updateWeaponForPlayers(weapon);
 				if (print) {
-					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().text());
+					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
 
-					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName().text() << " ");
+					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
 			else
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().text());
+				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().c_str());
 				delete weapon;
 			}
 		}
@@ -802,20 +812,27 @@ void TServer::loadWeapons(bool print)
 	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(this, TLevelItem::getItemId("joltbomb"));
 }
 
+void TServer::loadMapLevels()
+{
+	// Load gmap levels based on options provided by the gmap file
+	for (const auto& map : mapList)
+	{
+        if (map->getType() == MapType::GMAP)
+			map->loadMapLevels(this);
+	}
+}
+
 void TServer::loadMaps(bool print)
 {
-	// Remove existing maps.
-	for (auto i = mapList.begin(); i != mapList.end(); )
+	// Remove players off all maps
+	for (auto& player : playerList)
 	{
-		TMap* map = *i;
-		for (auto & player : playerList)
-		{
-			if (player->getMap() == map)
-				player->setMap(0);
-		}
-		delete map;
-		i = mapList.erase(i);
+		if (player->getMap() != nullptr)
+			player->setMap(nullptr);
 	}
+
+	// Remove existing maps.
+	mapList.clear();
 
 	// Load gmaps.
 	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
@@ -824,22 +841,21 @@ void TServer::loadMaps(bool print)
 		// Check for blank lines.
 		if ( gmapName == "\r") continue;
 
-		// Load the gmap.
-		TMap* gmap = new TMap(MAPTYPE_GMAP);
-
+		// Gmaps in server options don't need the .gmap suffix, so we will add the suffix
 		if (gmapName.right(5) != ".gmap") {
 			gmapName << ".gmap";
 		}
 
+		// Load the gmap.
+		auto gmap = std::make_unique<TMap>(MapType::GMAP);
 		if ( !gmap->load(CString() << gmapName, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << gmapName << ".gmap" << "\n");
-			delete gmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [gmap] %s\n", name.text(), gmapName.text());
-		mapList.push_back(gmap);
+		mapList.push_back(std::move(gmap));
 	}
 
 	// Load bigmaps.
@@ -850,16 +866,15 @@ void TServer::loadMaps(bool print)
 		if (i == "\r") continue;
 
 		// Load the bigmap.
-		TMap* bigmap = new TMap(MAPTYPE_BIGMAP);
+		auto bigmap = std::make_unique<TMap>(MapType::BIGMAP);
 		if ( !bigmap->load(i.trim(), this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << i << "\n");
-			delete bigmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [bigmap] %s\n", name.text(), i.text());
-		mapList.push_back(bigmap);
+		mapList.push_back(std::move(bigmap));
 	}
 
 	// Load group maps.
@@ -874,23 +889,42 @@ void TServer::loadMaps(bool print)
 		ext.toLowerI();
 
 		// Create the new map based on the file extension.
-		TMap* gmap = nullptr;
+		std::unique_ptr<TMap> gmap;
 		if (ext == ".txt")
-			gmap = new TMap(MAPTYPE_BIGMAP, true);
+			gmap = std::make_unique<TMap>(MapType::BIGMAP, true);
 		else if (ext == ".gmap")
-			gmap = new TMap(MAPTYPE_GMAP, true);
+			gmap = std::make_unique<TMap>(MapType::GMAP, true);
 		else continue;
 
 		// Load the map.
 		if ( !gmap->load(CString() << groupmap, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] " << "** [Error] Could not load " << groupmap << "\n");
-			delete gmap;
 			continue;
 		}
 
 		if (print) serverlog.out("[%s]        [group map] %s\n", name.text(), groupmap.text());
-		mapList.push_back(gmap);
+		mapList.push_back(std::move(gmap));
+	}
+
+	// Update all map <--> level relationships
+	for (const auto& level : levelList)
+	{
+		bool found = false;
+		for (const auto& map : mapList)
+		{
+			int mx, my;
+			if (map->isLevelOnMap(level->getLevelName().toLower().text(), mx, my))
+			{
+				level->setMap(map.get(), mx, my);
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			level->setMap(nullptr);
+		}
 	}
 }
 
@@ -905,7 +939,7 @@ void TServer::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, false);
+		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, NPCType::DBNPC);
 		if (newNPC->loadNPC((*it).second))
 		{
 			int npcId = newNPC->getId();
@@ -991,7 +1025,7 @@ void TServer::saveNpcs()
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		TNPC *npc = *it;
-		if (npc->getPersist())
+		if (npc->getType() != NPCType::LEVELNPC)
 			npc->saveNPC();
 	}
 }
@@ -1015,8 +1049,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 			TLevel *npcLevel = npc->getLevel();
 			if (npcLevel != nullptr) {
 				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
-					append(" at pos (").append(CString((float)npc->getPixelX() / 16.0f).text()).
-					append(", ").append(CString((float)npc->getPixelY() / 16.0f).text()).append(")");
+					append(" at pos (").append(CString(npc->getY()).text()).
+					append(", ").append(CString(npc->getX()).text()).append(")");
 			}
 
 			script_profiles.push_back(std::make_pair(executionData.second, npcName));
@@ -1051,15 +1085,20 @@ void TServer::reportScriptException(const ScriptRunError& error)
 
 void TServer::reportScriptException(const std::string& error_message)
 {
-	sendToNC(error_message);
-	getScriptLog().out(error_message + "\n");
+	auto lines = CString{ error_message }.tokenize("\n");
+
+	for (const auto& line : lines)
+	{
+		sendToNC(line);
+		getScriptLog().out(line + "\n");
+	}
 }
 
 #endif
 
 /////////////////////////////////////////////////////
 
-TPlayer * TServer::getPlayer(const unsigned short id) const
+TPlayer * TServer::getPlayer(unsigned short id) const
 {
 	if (id >= (unsigned short)playerIds.size())
 		return nullptr;
@@ -1067,7 +1106,7 @@ TPlayer * TServer::getPlayer(const unsigned short id) const
 	return playerIds[id];
 }
 
-TPlayer* TServer::getPlayer(const unsigned short id, int type) const
+TPlayer* TServer::getPlayer(unsigned short id, int type) const
 {
 	if (id >= (unsigned short)playerIds.size())
 		return nullptr;
@@ -1084,14 +1123,10 @@ TPlayer* TServer::getPlayer(const unsigned short id, int type) const
 
 TPlayer* TServer::getPlayer(const CString& account, int type) const
 {
-	for (auto i : playerList)
+	for (auto player : playerList)
 	{
-		TPlayer *player = (TPlayer*)i;
-		if (player == 0)
-			continue;
-
 		// Check if its the type of player we are looking for
-		if (!(player->getType() & type))
+		if (!player || !(player->getType() & type))
 			continue;
 
 		// Compare account names.
@@ -1101,84 +1136,10 @@ TPlayer* TServer::getPlayer(const CString& account, int type) const
 
 	return nullptr;
 }
-
-/*
-TPlayer* TServer::getPlayer(const unsigned short id, bool includeRC) const
-{
-	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (playerIds[id] == nullptr) return 0;
-	if (!includeRC && playerIds[id]->isControlClient()) return 0;
-	if (playerIds[id]->isHiddenClient()) return 0;
-	return playerIds[id];
-}
-
-TPlayer* TServer::getPlayer(const CString& account, bool includeRC) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0 || player->isHiddenClient())
-			continue;
-
-		if (!includeRC && player->isRC())
-			continue;
-
-		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
-	}
-	return 0;
-}
-
-TPlayer* TServer::getRC(const unsigned short id) const
-{
-	if (id >= (unsigned short)playerIds.size()) return 0;
-	if (playerIds[id] == nullptr) return 0;
-	if (!playerIds[id]->isRC()) return 0;
-	return playerIds[id];
-}
-
-TPlayer* TServer::getRC(const CString& account) const
-{
-	for (std::vector<TPlayer *>::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
-	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0 || !player->isRC())
-			continue;
-
-		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
-	}
-	return 0;
-}
-*/
 
 TLevel* TServer::getLevel(const CString& pLevel)
 {
 	return TLevel::findLevel(pLevel, this);
-}
-
-TMap* TServer::getMap(const CString& name) const
-{
-	for (auto map : mapList)
-	{
-			if (map->getMapName() == name)
-			return map;
-	}
-	return nullptr;
-}
-
-TMap* TServer::getMap(const TLevel* pLevel) const
-{
-	if (pLevel == 0) return 0;
-
-	for (auto pMap : mapList)
-	{
-			if (pMap->isLevelOnMap(pLevel->getLevelName()))
-			return pMap;
-	}
-	return nullptr;
 }
 
 TWeapon* TServer::getWeapon(const CString& name)
@@ -1252,7 +1213,7 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 	}
 
 	// Create the npc
-	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, false);
+	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
 	npcList.push_back(newNPC);
 
@@ -1262,16 +1223,18 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 
 	// Add the npc to the level
 	if (pLevel)
+	{
 		pLevel->addNPC(newNPC);
 
-	// Send the NPC's props to everybody in range.
-	if (sendToPlayers)
-	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
+		// Send the NPC's props to everybody in range.
+		if (sendToPlayers)
+		{
+			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
 
-		// Send to level.
-		TMap* map = getMap(pLevel);
-		sendPacketToLevel(packet, map, pLevel, 0, true);
+			// Send to level.
+			TMap* map = pLevel->getMap();
+			sendPacketToLevel(packet, map, pLevel, 0, true);
+		}
 	}
 
 	return newNPC;
@@ -1290,9 +1253,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
 	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	printf("Msg: %s\n", std::string(message.text()).c_str());
-
-	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text())));
+	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
 }
 
@@ -1314,7 +1275,7 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript, pX, pY, this, pLevel, pLevelNPC);
+	TNPC* newNPC = new TNPC(pImage, pScript.toString(), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 	npcList.push_back(newNPC);
 
 	// Assign NPC Id
@@ -1343,36 +1304,27 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
 
 		// Send to level.
-		TMap* map = getMap(pLevel);
+		TMap* map = pLevel->getMap();
 		sendPacketToLevel(packet, map, pLevel, 0, true);
 	}
 
 	return newNPC;
 }
 
-bool TServer::deleteNPC(const unsigned int pId, bool eraseFromLevel)
-{
-	// Grab the NPC.
-	TNPC* npc = getNPC(pId);
-	if (npc == nullptr) return false;
-
-	return deleteNPC(npc, eraseFromLevel);
-}
-
 bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 {
+	assert(npc);
+	assert(npc->getId() < npcIds.size());
+
 	if (npc == nullptr) return false;
 	if (npc->getId() >= npcIds.size()) return false;
 
 	// Remove the NPC from all the lists.
 	npcIds[npc->getId()] = nullptr;
 
-	for ( auto npcL = npcList.begin(); npcL != npcList.end(); )
-	{
-		if ((*npcL) == npc)
-			npcL = npcList.erase(npcL);
-		else ++npcL;
-	}
+	npcList.erase(
+		std::remove(npcList.begin(), npcList.end(), npc),
+		npcList.end());
 
 	TLevel *level = npc->getLevel();
 
@@ -1388,26 +1340,28 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 
 		for (auto p : playerList)
 		{
-				if (p->isControlClient()) continue;
-
-			if (isOnMap || p->getVersion() < CLVER_2_1)
-				p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
-			else
-				p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+			if (p->isClient())
+			{
+				if (isOnMap || p->getVersion() < CLVER_2_1)
+					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+				else
+					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+			}
 		}
 	}
 
 #ifdef V8NPCSERVER
 	// TODO(joey): Need to deal with illegal characters
+	// TODO(joey): add putnpc storage
 	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
-	if (npc->getPersist())
+	if (npc->getType() == NPCType::DBNPC)
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
 		CFileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
 
-	if (!npc->isLevelNPC())
+	if (npc->getType() == NPCType::DBNPC)
 	{
 		// Remove npc name assignment
 		if (!npc->getName().empty())
@@ -1441,8 +1395,8 @@ bool TServer::deleteClass(const std::string& className)
 
 void TServer::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = std::make_unique<TScriptClass>(this, className, classCode); 
-	
+	classList[className] = std::make_unique<TScriptClass>(this, className, classCode);
+
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	CFileSystem::fixPathSeparators(filePath);
 
@@ -1453,7 +1407,7 @@ void TServer::updateClass(const std::string& className, const std::string& class
 unsigned int TServer::getFreePlayerId()
 {
 	unsigned int newId = 0;
-	for (unsigned int i = 2; i < playerIds.size(); ++i)
+	for (auto i = 2; i < playerIds.size(); ++i)
 	{
 		if (playerIds[i] == nullptr)
 		{
@@ -1519,6 +1473,7 @@ void TServer::playerLoggedIn(TPlayer *player)
 	// Send event to server that player is logging in
 	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
 	{
+		// TODO(joey): check if they have the event before queueing for them
 		TNPC *npcObject = (*it).second;
 		npcObject->queueNpcAction("npc.playerlogin", player);
 	}
@@ -1597,7 +1552,7 @@ bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
 
 bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
-	if ( settings.getBool("dontaddserverflags", false))
+	if (settings.getBool("dontaddserverflags", false))
 		return false;
 
 	// delete flag
@@ -1624,19 +1579,50 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket, TPlayer *pPlayer) const
+void TServer::sendPacketToAll(CString pPacket, TPlayer *sender) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer || player->isNPCServer()) continue;
+		if (player == sender || player->isNPCServer())
+			continue;
 
 		player->sendPacket(pPacket);
 	}
 }
 
+
+void TServer::sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer) const
+{
+	if (!pLevel)
+		return;
+
+	if (!pLevel->getMap())
+	{
+		for (auto p : playerList)
+		{
+			if (p != pPlayer && p->isClient() && p->getLevel() == pLevel)
+				p->sendPacket(pPacket);
+		}
+	}
+	else
+	{
+		for (auto other : playerList)
+		{
+			if (other != pPlayer && other->isClient() && other->getMap() == pLevel->getMap())
+			{
+				int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
+				int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
+
+				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+					other->sendPacket(pPacket);
+			}
+		}
+	}
+}
+
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP))// || pLevel->isGroupLevel())
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP))// || pLevel->isGroupLevel())
 	{
 		for (auto p : playerList)
 		{
@@ -1648,7 +1634,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	}
 
 	if (pLevel == 0) return;
-	bool _groupMap = (pPlayer == 0 ? false : pPlayer->getMap()->isGroupMap());
+	bool _groupMap = pPlayer && pPlayer->getMap()->isGroupMap();
 	for (auto other : playerList)
 	{
 			if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
@@ -1656,21 +1642,21 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 
 		if (other->getMap() == pMap)
 		{
-			int sgmap[2] = {pMap->getLevelX(pLevel->getActualLevelName()), pMap->getLevelY(pLevel->getActualLevelName())};
-			int ogmap[2];
-			switch (pMap->getType())
-			{
-				case MAPTYPE_GMAP:
-					ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
-					ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
-					break;
+			int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
+			int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
+			//switch (pMap->getType())
+			//{
+			//	case MapType::GMAP:
+			//		ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
+			//		ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
+			//		break;
 
-				default:
-				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX(other->getLevel()->getActualLevelName());
-					ogmap[1] = pMap->getLevelY(other->getLevel()->getActualLevelName());
-					break;
-			}
+			//	default:
+			//	case MapType::BIGMAP:
+			//		ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
+			//		ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
+			//		break;
+			//}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 				other->sendPacket(pPacket);
@@ -1680,9 +1666,10 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 
 void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
-	if (pPlayer->getLevel() == nullptr) return;
+	if (!pPlayer->getLevel())
+		return;
 
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MAPTYPE_BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
 	{
 		TLevel* level = pPlayer->getLevel();
 		if (level == nullptr) return;
@@ -1712,7 +1699,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			int ogmap[2], sgmap[2];
 			switch (pMap->getType())
 			{
-				case MAPTYPE_GMAP:
+				case MapType::GMAP:
 					ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
 					ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
 					sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
@@ -1720,11 +1707,11 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 					break;
 
 				default:
-				case MAPTYPE_BIGMAP:
-					ogmap[0] = pMap->getLevelX(player->getLevel()->getActualLevelName());
-					ogmap[1] = pMap->getLevelY(player->getLevel()->getActualLevelName());
-					sgmap[0] = pMap->getLevelX(pPlayer->getLevel()->getActualLevelName());
-					sgmap[1] = pMap->getLevelY(pPlayer->getLevel()->getActualLevelName());
+				case MapType::BIGMAP:
+					ogmap[0] = player->getLevel()->getMapX();
+					ogmap[1] = player->getLevel()->getMapY();
+					sgmap[0] = pPlayer->getLevel()->getMapX();
+					sgmap[1] = pPlayer->getLevel()->getMapY();
 					break;
 			}
 
@@ -1738,9 +1725,11 @@ void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 {
 	for (auto player : playerList)
 	{
-		if ( player == pPlayer) continue;
-		if ( player->getType() & who)
-			player->sendPacket(pPacket);
+		if (player != pPlayer)
+		{
+			if (player->getType() & who)
+				player->sendPacket(pPacket);
+		}
 	}
 }
 
@@ -1760,7 +1749,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 {
 	// Definitions
 	TWeapon *weaponObj = getWeapon(pWeaponName);
-	if (weaponObj == 0 || weaponObj->isDefault())
+	if (!weaponObj || weaponObj->isDefault())
 		return false;
 
 	// Delete from File Browser
@@ -1797,6 +1786,97 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 			player->sendPacket(CString() << pWeapon->getWeaponPacket());
 		}
 	}
+}
+
+void TServer::updateClassForPlayers(TScriptClass *pClass)
+{
+	// Update Weapons
+	for (auto player : playerList)
+	{
+		if (!player->isClient())
+			continue;
+
+		if (player->getVersion() >= CLVER_4_0211)
+		{
+			if (pClass != nullptr)
+			{
+				CString out;
+				CString b = pClass->getByteCode();
+				out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+				out >> (char)PLO_NPCWEAPONSCRIPT << b;
+
+				player->sendPacket(out);
+			}
+		}
+	}
+}
+
+
+/*
+	GS2 Functionality
+*/
+template<typename ScriptObjType>
+void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
+{
+	std::string script{ scriptObject.getSource().getClientGS2() };
+
+	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
+	{
+		if (!resp.errors.empty())
+		{
+			handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
+		}
+
+		// Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
+		//if (resp.success)
+		//{
+		//	for (auto& joinedClass : resp.joinedClasses)
+		//	{
+		//		auto cls = getClass(joinedClass);
+		//		if (cls && cls->getByteCode().isEmpty())
+		//		{
+		//			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
+		//			compileScript(*cls, fn);
+		//		}
+		//	}
+		//}
+
+		if (cb)
+		{
+			cb(resp);
+		}
+	});
+}
+
+void TServer::compileGS2Script(TNPC *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::compileGS2Script(TScriptClass *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::compileGS2Script(TWeapon *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
+{
+	// Report the script exception
+	for (auto& err : errors)
+		reportScriptException(fmt::format("Script compiler output for {}:\nerror: {}", origin, err.msg()));
 }
 
 /*

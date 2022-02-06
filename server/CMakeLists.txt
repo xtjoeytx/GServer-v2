@@ -22,125 +22,96 @@
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 
+
 set(
 	SOURCES
 	src/CFileSystem.cpp
-	src/CWordFilter.cpp
 	src/main.cpp
 	src/TAccount.cpp
-	src/TLevel.cpp
-	src/TLevelBaddy.cpp
-	src/TLevelBoardChange.cpp
-	src/TLevelItem.cpp
-	src/TLevelLink.cpp
-	src/TLevelSign.cpp
 	src/TMap.cpp
 	src/TNPC.cpp
-	src/TPlayer.cpp
-	src/TPlayerLogin.cpp
-	src/TPlayerNC.cpp
-	src/TPlayerProps.cpp
-	src/TPlayerRC.cpp
 	src/TScriptClass.cpp
 	src/TServer.cpp
 	src/TServerList.cpp
 	src/TWeapon.cpp
+	src/Scripting/GS2ScriptManager.cpp
 )
+
+file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)
+list(APPEND SOURCES ${TPLAYER_SOURCES})
+
+file(GLOB TLEVEL_SOURCES src/TLevel/**.cpp)
+list(APPEND SOURCES ${TLEVEL_SOURCES})
+
+file(GLOB MISC_SOURCES src/Misc/**.cpp)
+list(APPEND SOURCES ${MISC_SOURCES})
 
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	include/CFileSystem.h
-	include/CWordFilter.h
-	include/main.h
-	include/TAccount.h
-	include/TLevel.h
-	include/TLevelBaddy.h
-	include/TLevelBoardChange.h
-	include/TLevelChest.h
-	include/TLevelHorse.h
-	include/TLevelItem.h
-	include/TLevelLink.h
-	include/TLevelSign.h
-	include/TMap.h
-	include/TNPC.h
-	include/TPlayer.h
-	include/TScriptClass.h
-	include/TServer.h
-	include/TServerList.h
-	include/TWeapon.h
+		include/CFileSystem.h
+		include/main.h
+		include/TAccount.h
+		include/TMap.h
+		include/TNPC.h
+		include/TPlayer.h
+		include/TScriptClass.h
+		include/TServer.h
+		include/TServerList.h
+		include/TWeapon.h
+		include/Scripting/GS2ScriptManager.h
+		include/Scripting/ScriptOrigin.h
+		include/Scripting/SourceCode.h
+		include/utilities/timeunits.h
 )
 
-if(NOT NOUPNP)
-	list(
-		APPEND
-		SOURCES
-		src/CUPNP.cpp
-	)
+file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
+list(APPEND HEADERS ${TLEVEL_HEADERS})
 
-	list(
-		APPEND
-		HEADERS
-		include/CUPNP.h
-	)
-endif()
+file(GLOB MISC_HEADERS include/Misc/**.h)
+list(APPEND HEADERS ${MISC_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
-	list(
-		APPEND
-		HEADERS
-		include/script/interface/ScriptArguments.h
-		include/script/interface/ScriptBindings.h
-		include/script/interface/ScriptEnv.h
-		include/script/interface/ScriptFunction.h
-		include/script/interface/ScriptObject.h
-		include/script/interface/ScriptUtils.h
-	)
+	file(GLOB SCRIPT_INTERFACE_HEADERS include/Scripting/interface/**.h)
+	list(APPEND HEADERS ${SCRIPT_INTERFACE_HEADERS})
 
 	# Headers for script library v8 implementation
-	list(
-		APPEND
-		HEADERS
-		include/script/v8/V8ScriptArguments.h
-		include/script/v8/V8ScriptBindings.h
-		include/script/v8/V8ScriptEnv.h
-		include/script/v8/V8ScriptFunction.h
-		include/script/v8/V8ScriptObject.h
-		include/script/v8/V8ScriptUtils.h
-	)
+	file(GLOB SCRIPT_V8_HEADERS include/Scripting/v8/**.h)
+	list(APPEND HEADERS ${SCRIPT_V8_HEADERS})
+
 
 	# Source for script library v8 implementation
 	list(
 		APPEND
 		SOURCES
-		src/script/v8/V8ScriptEnv.cpp
+		src/Scripting/v8/V8ScriptEnv.cpp
 	)
 
 	# GServer specific headers for implementation
 	list(
 		APPEND
 		HEADERS
-		include/CScriptEngine.h
-		include/script/ScriptAction.h
-		include/script/ScriptExecutionContext.h
-		include/script/ScriptFactory.h
-		include/script/v8/V8ScriptWrappers.h
+		include/Scripting/CScriptEngine.h
+		include/Scripting/ScriptAction.h
+		include/Scripting/ScriptExecutionContext.h
+		include/Scripting/ScriptFactory.h
+		include/Scripting/v8/V8ScriptWrappers.h
 	)
 
 	# GServer specific source for implementation
 	list(
 		APPEND
 		SOURCES
-		src/CScriptEngine.cpp
-		src/script/v8/V8EnvironmentImpl.cpp
-		src/script/v8/V8FunctionsImpl.cpp
-		src/script/v8/V8LevelImpl.cpp
-		src/script/v8/V8NPCImpl.cpp
-		src/script/v8/V8PlayerImpl.cpp
-		src/script/v8/V8ScriptEnv.cpp
-		src/script/v8/V8ServerImpl.cpp
-		src/script/v8/V8WeaponImpl.cpp
+		src/Scripting/CScriptEngine.cpp
+		src/Scripting/v8/V8EnvironmentImpl.cpp
+		src/Scripting/v8/V8FunctionsImpl.cpp
+		src/Scripting/v8/V8LevelImpl.cpp
+		src/Scripting/v8/V8NPCImpl.cpp
+		src/Scripting/v8/V8PlayerImpl.cpp
+		src/Scripting/v8/V8ScriptEnv.cpp
+		src/Scripting/v8/V8ServerImpl.cpp
+		src/Scripting/v8/V8WeaponImpl.cpp
 	)
 endif()
 
@@ -148,9 +119,12 @@ include_directories(
 	# Include the CMake-generated version header from the build directory
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
-	${PROJECT_SOURCE_DIR}/server/include/script
-	${PROJECT_SOURCE_DIR}/server/include/script/interface
-	${PROJECT_SOURCE_DIR}/server/include/script/v8
+	${PROJECT_SOURCE_DIR}/server/include/Misc
+	${PROJECT_SOURCE_DIR}/server/include/TLevel
+	${PROJECT_SOURCE_DIR}/server/include/utilities
+	${PROJECT_SOURCE_DIR}/server/include/Scripting
+	${PROJECT_SOURCE_DIR}/server/include/Scripting/interface
+	${PROJECT_SOURCE_DIR}/server/include/Scripting/v8
 )
 
 # Set target names for the executables
@@ -169,9 +143,10 @@ if(V8NPCSERVER)
 	include_directories(${V8_INCLUDE_DIR})
 endif()
 
-if(NOT NOUPNP AND NOT MINIUPNPC_FOUND)
+if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
+
 
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
@@ -185,12 +160,12 @@ if(APPLE)
 elseif(WIN32)
 	# hax to get clion to work on windows for me
 	if(V8NPCSERVER)
-		if(CLIONHAX)
-			include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/include)
-			link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/v8-v142-x64.7.5.288.23/lib/Debug)
-		endif()
+	#	if(CLIONHAX)
+	#		include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/include)
+	#		link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/lib/Debug)
+	#	endif()
 	endif()
-
+	
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
@@ -200,8 +175,10 @@ elseif(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-
+		
 		if(V8NPCSERVER)
+			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
+
 			# Using MSVC now looks for V8 as a nuget package first
 			# Looking in lib folders if not found
 			if(NOT V8_FOUND)
@@ -222,12 +199,18 @@ if(WIN32)
 	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
 
+target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
+
+target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
+
+add_dependencies(${TARGET_NAME} gs2compiler)
+target_link_libraries(${TARGET_NAME} gs2compiler)
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} gs2lib)
 
-if(NOT NOUPNP)
+if(UPNP)
 	if(NOT MINIUPNPC_FOUND)
-		if(NOSTATIC)
+		if(NOT STATIC)
 			add_dependencies(${TARGET_NAME} libminiupnpc-shared)
 			target_link_libraries(${TARGET_NAME} libminiupnpc-shared)
 		else()

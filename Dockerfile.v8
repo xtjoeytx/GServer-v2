@@ -25,13 +25,13 @@ RUN apk add --update --virtual .gn-build-dependencies \
 # Google V8 Clone Environment
 # gclient does NOT work with Alpine
 FROM debian:buster-slim as source
-ARG V8_VERSION=8.4.371.15
+ARG V8_VERSION=9.1.269.9
 RUN set -x && \
 	apt-get update && \
 	apt-get install -y \
 		git \
 		curl \
-		python && \
+		python3 && \
 	git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /tmp/depot_tools && \
 	PATH=$PATH:/tmp/depot_tools && \
 	cd /tmp && \
@@ -42,7 +42,7 @@ RUN set -x && \
 	apt-get remove --purge -y \
 		git \
 		curl \
-		python && \
+		python3 && \
 	apt-get autoremove -y && \
 	rm -rf /var/lib/apt/lists/*
 
@@ -76,13 +76,12 @@ RUN \
 		target_cpu=\"x64\" \
 		v8_target_cpu=\"x64\" \
 		v8_enable_future=true \
-		is_official_build=true \
+		is_official_build=false \
 		is_cfi=false \
 		is_clang=false \
 		use_custom_libcxx=false \
 		use_sysroot=false \
 		use_gold=false \
-		use_allocator_shim=false \
 		treat_warnings_as_errors=false \
 		symbol_level=0 \
 		strip_debug_info=true \
@@ -90,9 +89,11 @@ RUN \
 		v8_enable_i18n_support=false \
 		v8_enable_gdbjit=false \
 		v8_static_library=true \
-		v8_experimental_extra_library_files=[] \
-		v8_extra_library_files=[] \
-		v8_enable_pointer_compression=false \ 
+		v8_enable_pointer_compression=false \
 	&& ninja -C out.gn/x64.release -j $(getconf _NPROCESSORS_ONLN) \
 	&& find /tmp/v8/out.gn/x64.release -name '*.a' \
+	&& rm -rf /tmp/v8/third_party /tmp/v8/test \
 	&& apk del --purge .v8-build-dependencies
+
+FROM alpine:3.12 as v8-final
+COPY --from=v8 /tmp/v8 /tmp/v8

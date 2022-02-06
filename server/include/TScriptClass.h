@@ -4,6 +4,8 @@
 #pragma once
 
 #include <string>
+#include "CString.h"
+#include "SourceCode.h"
 
 class TServer;
 class TScriptClass
@@ -12,25 +14,27 @@ public:
 	TScriptClass(TServer* server, const std::string& className, const std::string& classSource);
 	~TScriptClass();
 
-	const std::string& source() const {
-		return _classSource;
+	// Functions -> Inline Get-Functions
+	CString getClassPacket() const;
+	
+	const std::string& getName() const {
+		return _className;
 	}
 
-	const std::string& serverCode() const {
-		return _serverCode;
+	const CString& getByteCode() const {
+		return _bytecode;
 	}
 
-	const std::string& clientCode() const {
-		return _clientCode;
+	const SourceCode& getSource() const {
+		return _source;
 	}
 
 private:
-	void parseScripts();
+	void parseScripts(TServer *server, const std::string& classSource);
 
-	TServer* _server;
 	std::string _className;
-	std::string _classSource;
-	std::string _clientCode, _serverCode;
+	SourceCode _source;
+	CString _bytecode;
 };
 
 #endif

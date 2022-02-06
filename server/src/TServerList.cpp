@@ -685,7 +685,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	TPlayer* player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == 0) return;
 
-	// Overwrite the player's account name with the one from the gserver.
+	// Overwrite the player's account name with the one from the listserver.
 	player->setAccountName(account);
 
 	// If we did not get the success message, inform the client of his failure.
@@ -829,24 +829,24 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 		switch (type)
 		{
 			case SVF_HEAD:
-				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, true, true);
+				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 
 			case SVF_BODY:
-				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, true, true);
+				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 
 			case SVF_SWORD:
 			{
 				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 			}
 
 			case SVF_SHIELD:
 			{
 				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, true, true);
+				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 			}
 		}

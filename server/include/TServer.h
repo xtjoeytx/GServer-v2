@@ -31,6 +31,7 @@
 #include "CScriptEngine.h"
 #endif
 
+#include "GS2ScriptManager.h"
 #include "TScriptClass.h"
 
 class TPlayer;
@@ -92,6 +93,7 @@ class TServer : public CSocketStub
 		void loadClasses(bool print = false);
 		void loadWeapons(bool print = false);
 		void loadMaps(bool print = false);
+		void loadMapLevels();
 #ifdef V8NPCSERVER
 		void loadNpcs(bool print = false);
 #endif
@@ -140,7 +142,7 @@ class TServer : public CSocketStub
 		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
-		std::vector<TMap *>* getMapList()				{ return &mapList; }
+		const std::vector<std::unique_ptr<TMap>>& getMapList() const { return mapList; }
 		std::vector<CString>* getStatusList()			{ return &statusList; }
 		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
@@ -154,11 +156,9 @@ class TServer : public CSocketStub
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
 		TLevel* getLevel(const CString& pLevel);
-		TMap* getMap(const CString& name) const;
-		TMap* getMap(const TLevel* pLevel) const;
-		TNPC* getNPC(const unsigned int id) const;
-		TPlayer* getPlayer(const unsigned short id) const;
-		TPlayer* getPlayer(const unsigned short id, int type) const;
+		TNPC* getNPC(unsigned int id) const;
+		TPlayer* getPlayer(unsigned short id) const;
+		TPlayer* getPlayer(unsigned short id, int type) const; // = PLTYPE_ANYCLIENT) const;
 		TPlayer* getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
@@ -171,7 +171,6 @@ class TServer : public CSocketStub
 		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(const unsigned int pId, bool eraseFromLevel = true);
 		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
@@ -186,11 +185,12 @@ class TServer : public CSocketStub
 		bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 
 		// Admin chat functions
-		inline void sendToRC(const CString& pMessage, TPlayer *pPlayer = 0) const;
-		inline void sendToNC(const CString& pMessage, TPlayer *pPlayer = 0) const;
+		void sendToRC(const CString& pMessage, TPlayer *pSender = nullptr) const;
+		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
 
 		// Packet sending.
-		void sendPacketToAll(CString pPacket, TPlayer *pPlayer) const;
+		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
+		void sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
 		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
 		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
@@ -212,10 +212,29 @@ class TServer : public CSocketStub
 		bool NC_AddWeapon(TWeapon *pWeaponObj);
 		bool NC_DelWeapon(const CString& pWeaponName);
 		void updateWeaponForPlayers(TWeapon *pWeapon);
+		void updateClassForPlayers(TScriptClass *pClass);
+
+		/*
+		 * GS2 Functionality
+		 */
+		void compileGS2Script(TNPC *npc, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
+
+		std::time_t getServerStartTime() const {
+			return serverStartTime;
+		}
+
+	private:
+		GS2ScriptManager gs2ScriptManager;
+		
+		template<typename ScriptObjType>
+		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
+
+		void handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin);
 
 	private:
 		bool doTimedEvents();
-		void acceptSock(CSocket& pSocket);
 		void cleanupDeletedPlayers();
 
 		bool doRestart;
@@ -240,7 +259,7 @@ class TServer : public CSocketStub
 		std::unordered_map<std::string, TNPC *> npcNameList;
 		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
 		std::vector<TLevel *> levelList;
-		std::vector<TMap *> mapList;
+		std::vector<std::unique_ptr<TMap>> mapList;
 		std::vector<TNPC *> npcIds, npcList;
 		std::vector<TPlayer *> playerIds, playerList;
 
@@ -248,7 +267,9 @@ class TServer : public CSocketStub
 
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+		std::time_t serverStartTime;
 		unsigned int serverTime;
+
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
 		int mNCPort;
@@ -299,20 +320,22 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 
 #include "IEnums.h"
 
-inline void TServer::sendToRC(const CString& pMessage, TPlayer *pPlayer) const
+inline void TServer::sendToRC(const CString& pMessage, TPlayer *pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
+
+	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
-inline void TServer::sendToNC(const CString& pMessage, TPlayer *pPlayer) const
+inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pPlayer);
+
+	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
 #endif

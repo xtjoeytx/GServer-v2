@@ -12,6 +12,7 @@ IF (NOT $ENV{V8_DIR} STREQUAL "")
 	SET(V8_DIR $ENV{V8_DIR})
 ENDIF()
 
+set(V8_NUGET_VERSION "v8-v142-x64.9.1.269.9")
 
 SET(V8_LIBRARY_SEARCH_PATHS
 	${V8_DIR}/
@@ -40,6 +41,14 @@ SET(V8_LIBRARY_SEARCH_PATHS
 	${V8_DIR}/out.gn/x64.release.sample/lib.target/third_party/icu/
 	${V8_DIR}/out.gn/x64.release.sample/obj/
 	${V8_DIR}/out.gn/x64.release.sample/obj/third_party/icu/
+	${V8_DIR}/out.gn/arm64.release/lib.target/
+	${V8_DIR}/out.gn/arm64.release/lib.target/third_party/icu/
+	${V8_DIR}/out.gn/arm64.release/obj/
+	${V8_DIR}/out.gn/arm64.release/obj/third_party/icu/
+	${V8_DIR}/out.gn/arm64.release.sample/lib.target/
+	${V8_DIR}/out.gn/arm64.release.sample/lib.target/third_party/icu/
+	${V8_DIR}/out.gn/arm64.release.sample/obj/
+	${V8_DIR}/out.gn/arm64.release.sample/obj/third_party/icu/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release/lib.target/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release/lib.target/third_party/icu/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/x64.release/obj/
@@ -56,6 +65,14 @@ SET(V8_LIBRARY_SEARCH_PATHS
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/lib.target/third_party/icu/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/obj/
 	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm.release.sample/obj/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release/lib.target/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release/lib.target/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release/obj/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release/obj/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release.sample/lib.target/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release.sample/lib.target/third_party/icu/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release.sample/obj/
+	${PROJECT_SOURCE_DIR}/dependencies/v8/out.gn/arm64.release.sample/obj/third_party/icu/
 	~/Library/Frameworks
 	/Library/Frameworks
 	/usr/local/lib
@@ -99,15 +116,15 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 	endif()
 	message("Monolith search failed, looking for nuget package")
 
-	find_path(V8_INCLUDE_DIR v8.h
-		PATHS
-		${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/include
-		${V8_DIR}/include)
+	FIND_PATH(V8_INCLUDE_DIR v8.h
+		${CMAKE_CURRENT_BINARY_DIR}/packages/${V8_NUGET_VERSION}/include
+		${V8_DIR}/include
+	)
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message("Searching for Release libraries as chosen")
 		set(V8_LIBRARY_SEARCH_PATHS
-			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Release
+			${CMAKE_CURRENT_BINARY_DIR}/packages/${V8_NUGET_VERSION}/lib/Release
 			${V8_DIR}/Release
 			${V8_DIR}/lib/Release
 		)
@@ -120,7 +137,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 			message("Build type not recognized, searching for Debug libraries")
 		endif()
 		set(V8_LIBRARY_SEARCH_PATHS
-			${PROJECT_SOURCE_DIR}/packages/v8-v142-x64.7.4.288.26/lib/Debug
+			${CMAKE_CURRENT_BINARY_DIR}/packages/${V8_NUGET_VERSION}/lib/Debug
 			${V8_DIR}/Debug
 			${V8_DIR}/lib/Debug
 		)
