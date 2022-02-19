@@ -825,16 +825,11 @@ void TNPC::freeScriptResources()
 		_scriptExecutionContext.resetExecution();
 	}
 
-	// Clear timeouts
-	if (timeout > 0)
-	{
-		scriptEngine->UnregisterNpcTimer(this);
-		timeout = 0;
-	}
-
-	// Clear scheduled events
+	// Clear timeouts & scheduled events
+	scriptEngine->UnregisterNpcTimer(this);
 	_scriptTimers.clear();
-
+	timeout = 0;
+	
 	// Clear triggeraction functions
 	for (auto & _triggerAction : _triggerActions)
 		delete _triggerAction.second;
