@@ -1443,7 +1443,7 @@ bool TServer::addPlayer(TPlayer *player, unsigned int id)
 
 #ifdef V8NPCSERVER
 	// Create script object for player
-	mScriptEngine.WrapObject(player);
+	mScriptEngine.wrapScriptObject(player);
 #endif
 
 	return true;

@@ -73,7 +73,7 @@ TNPC::TNPC(TServer *pServer, NPCType type)
 #ifdef V8NPCSERVER
 	, _scriptExecutionContext(pServer->getScriptEngine())
 	, origX(x), origY(y), npcDeleteRequested(false), canWarp(false), width(32), height(32)
-	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
+	, timeout(0), _scriptEventsMask(0xFF)
 #endif
 {
 	memset((void*)colors, 0, sizeof(colors));
@@ -837,10 +837,7 @@ void TNPC::freeScriptResources()
 
 	// Delete script object
 	if (_scriptObject)
-	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
-	}
+		_scriptObject.reset();
 }
 
 // Set callbacks for triggeractions!
@@ -872,11 +869,11 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 
 	if (playerObject)
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
 	}
 	else
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
 	}
 
 	scriptEngine->RegisterNpcUpdate(this);
@@ -959,11 +956,11 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 
 	if (playerObject)
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, _scriptObject, playerObject));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject(), playerObject));
 	}
 	else
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, _scriptObject));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject()));
 	}
 
 	if (registerAction)

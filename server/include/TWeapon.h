@@ -8,6 +8,7 @@
 #include "SourceCode.h"
 
 #ifdef V8NPCSERVER
+#include <memory>
 #include <string>
 #include "ScriptBindings.h"
 #include "ScriptExecutionContext.h"
@@ -54,7 +55,7 @@ class TWeapon
 		void freeScriptResources();
 		void queueWeaponAction(TPlayer *player, const std::string& args);
 		void runScriptEvents();
-		void setScriptObject(IScriptObject<TWeapon> *object);
+		void setScriptObject(std::unique_ptr<IScriptObject<TWeapon>> object);
 #endif
 	protected:
 		void setClientScript(const CString& pScript);
@@ -77,7 +78,7 @@ class TWeapon
 
 	private:
 #ifdef V8NPCSERVER
-		IScriptObject<TWeapon> *_scriptObject;
+		std::unique_ptr<IScriptObject<TWeapon>> _scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
@@ -89,15 +90,15 @@ inline ScriptExecutionContext& TWeapon::getExecutionContext() {
 }
 
 inline IScriptObject<TWeapon> * TWeapon::getScriptObject() const {
-	return _scriptObject;
+	return _scriptObject.get();
 }
 
 inline void TWeapon::runScriptEvents() {
 	_scriptExecutionContext.runExecution();
 }
 
-inline void TWeapon::setScriptObject(IScriptObject<TWeapon> *object) {
-	_scriptObject = object;
+inline void TWeapon::setScriptObject(std::unique_ptr<IScriptObject<TWeapon>> object) {
+	_scriptObject = std::move(object);
 }
 
 #endif

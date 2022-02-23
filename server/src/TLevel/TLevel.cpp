@@ -96,8 +96,7 @@ TLevel::~TLevel()
 #ifdef V8NPCSERVER
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 #endif
 }
@@ -327,7 +326,7 @@ TLevel* TLevel::clone()
 bool TLevel::loadLevel(const CString& pLevelName)
 {
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->WrapObject(this);
+	server->getScriptEngine()->wrapScriptObject(this);
 #endif
 
 	CString ext(getExtension(pLevelName));

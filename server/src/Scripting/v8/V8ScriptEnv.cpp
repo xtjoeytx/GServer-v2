@@ -194,3 +194,13 @@ void V8ScriptEnv::TerminateExecution()
 	assert(_isolate);
 	_isolate->TerminateExecution();
 }
+
+bool V8ScriptEnv::SetConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl)
+{
+	auto it = _constructorMap.find(key);
+	if (it != _constructorMap.end())
+		return false;
+
+	_constructorMap[key] = v8::Global<v8::FunctionTemplate>(Isolate(), func_tpl);
+	return true;
+}

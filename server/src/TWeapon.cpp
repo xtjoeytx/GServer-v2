@@ -18,7 +18,7 @@
 TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 : server(pServer), mModTime(0), mWeaponDefault(pId)
 #ifdef V8NPCSERVER
-, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	_weaponName = TLevelItem::getItemName(mWeaponDefault).toString();
@@ -28,7 +28,7 @@ TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 TWeapon::TWeapon(TServer *pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
 : server(pServer), _weaponName(std::move(pName)), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
-, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	// Update Weapon
@@ -233,7 +233,7 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		if (!_source.getServerSide().empty()) {
-			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
+			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", getScriptObject()));
 			scriptEngine->RegisterWeaponUpdate(this);
 		}
 	}
@@ -306,8 +306,7 @@ void TWeapon::freeScriptResources()
 	// Delete script object
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 }
 
@@ -315,7 +314,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }

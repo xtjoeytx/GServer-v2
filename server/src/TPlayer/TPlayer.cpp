@@ -315,7 +315,7 @@ grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true), invalidPackets(0)
 #ifdef V8NPCSERVER
-, _processRemoval(false), _scriptObject(0)
+, _processRemoval(false)
 #endif
 {
 	lastData = lastMovement = lastSave = last1m = time(0);
@@ -392,8 +392,7 @@ TPlayer::~TPlayer()
 #ifdef V8NPCSERVER
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 #endif
 }

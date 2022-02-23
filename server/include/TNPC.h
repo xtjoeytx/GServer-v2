@@ -277,7 +277,7 @@ class TNPC
 
 		ScriptExecutionContext& getExecutionContext();
 		IScriptObject<TNPC> * getScriptObject() const;
-		void setScriptObject(IScriptObject<TNPC> *object);
+		void setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object);
 
 		// -- flags
 		CString getFlag(const std::string& pFlagName) const;
@@ -368,7 +368,7 @@ class TNPC
 		std::unordered_map<std::string, CString> flagList;
 
 		unsigned int _scriptEventsMask;
-		IScriptObject<TNPC> *_scriptObject;
+		std::unique_ptr<IScriptObject<TNPC>> _scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 		std::vector<ScriptEventTimer> _scriptTimers;
@@ -603,11 +603,11 @@ inline ScriptExecutionContext& TNPC::getExecutionContext() {
 }
 
 inline IScriptObject<TNPC> * TNPC::getScriptObject() const {
-	return _scriptObject;
+	return _scriptObject.get();
 }
 
-inline void TNPC::setScriptObject(IScriptObject<TNPC> *object) {
-	_scriptObject = object;
+inline void TNPC::setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object) {
+	_scriptObject = std::move(object);
 }
 
 inline CString TNPC::getFlag(const std::string& pFlagName) const
@@ -635,7 +635,7 @@ template<class... Args>
 inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
-	ScriptAction scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
+	ScriptAction scriptAction = scriptEngine->CreateAction(action, getScriptObject(), std::forward<Args>(An)...);
 
 	_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)

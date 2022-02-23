@@ -72,7 +72,7 @@ bool CScriptEngine::Initialize()
 
 	// Execute the bootstrap function
 	_env->CallFunctionInScope([&]() -> void {
-		IScriptArguments *args = ScriptFactory::CreateArguments(_env, _environmentObject);
+		IScriptArguments *args = ScriptFactory::CreateArguments(_env, _environmentObject.get());
 		args->Invoke(_bootstrapFunction);
 		delete args;
 	});
@@ -146,13 +146,11 @@ void CScriptEngine::Cleanup(bool shutDown)
 
 	// Remove script objects
 	if (_environmentObject) {
-		delete _environmentObject;
-		_environmentObject = nullptr;
+		_environmentObject.reset();
 	}
 
 	if (_serverObject) {
-		delete _serverObject;
-		_serverObject = nullptr;
+		_serverObject.reset();
 	}
 
 	// Cleanup the Script Environment
@@ -221,7 +219,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
 	// We always want to create an object for the npc
-	IScriptObject<TNPC> *wrappedObject = WrapObject(npc);
+	wrapScriptObject(npc);
 
 	// No script, nothing to execute.
 	auto npcScript = npc->getSource().getServerSide();
@@ -242,7 +240,7 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 	// Execute the compiled script
 	//
 	_env->CallFunctionInScope([&]() -> void {
-		IScriptArguments *args = ScriptFactory::CreateArguments(_env, wrappedObject);
+		IScriptArguments *args = ScriptFactory::CreateArguments(_env, npc->getScriptObject());
 		bool result = args->Invoke(compiledScript, true);
 		if (!result)
 		{
@@ -279,8 +277,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 	SCRIPTENV_D("Begin Global::ExecuteWeapon()\n\n");
 
 	// We always want to create an object for the weapon
-	// Wrap object
-	IScriptObject<TWeapon> *wrappedObject = WrapObject(weapon);
+	wrapScriptObject(weapon);
 	
 	auto weaponScript = weapon->getServerScript();
 	if (!weaponScript.empty())
@@ -299,7 +296,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 		// Execute the compiled script
 		//
 		_env->CallFunctionInScope([&]() -> void {
-			IScriptArguments* args = ScriptFactory::CreateArguments(_env, wrappedObject);
+			IScriptArguments* args = ScriptFactory::CreateArguments(_env, weapon->getScriptObject());
 			bool result = args->Invoke(compiledScript, true);
 			if (!result)
 				_server->reportScriptException(_env->getScriptError());

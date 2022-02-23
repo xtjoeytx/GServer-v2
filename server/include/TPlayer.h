@@ -156,11 +156,11 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendNCAddr();
 
 		inline IScriptObject<TPlayer> * getScriptObject() const {
-			return _scriptObject;
+			return _scriptObject.get();
 		}
 
-		inline void setScriptObject(IScriptObject<TPlayer> *object) {
-			_scriptObject = object;
+		inline void setScriptObject(std::unique_ptr<IScriptObject<TPlayer>> object) {
+			_scriptObject = std::move(object);
 		}
 #endif
 
@@ -357,7 +357,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 #ifdef V8NPCSERVER
 		bool _processRemoval;
-		IScriptObject<TPlayer> *_scriptObject;
+		std::unique_ptr<IScriptObject<TPlayer>> _scriptObject;
 #endif
 };
 

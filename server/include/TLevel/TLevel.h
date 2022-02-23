@@ -224,7 +224,7 @@ class TLevel
 		void sendChatToLevel(const TPlayer *player, const std::string& message);
 
 		IScriptObject<TLevel>* getScriptObject() const;
-		void setScriptObject(IScriptObject<TLevel>* object);
+		void setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object);
 #endif
 
 	private:
@@ -257,18 +257,18 @@ class TLevel
 		std::vector<TPlayer *> levelPlayerList;
 
 #ifdef V8NPCSERVER
-		IScriptObject<TLevel> *_scriptObject;
+		std::unique_ptr<IScriptObject<TLevel>> _scriptObject;
 #endif
 };
 
 #ifdef V8NPCSERVER
 
 inline IScriptObject<TLevel>* TLevel::getScriptObject() const {
-	return _scriptObject;
+	return _scriptObject.get();
 }
 
-inline void TLevel::setScriptObject(IScriptObject<TLevel>* object) {
-	_scriptObject = object;
+inline void TLevel::setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object) {
+	_scriptObject = std::move(object);
 }
 
 #endif
