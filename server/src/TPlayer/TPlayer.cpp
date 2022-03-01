@@ -844,13 +844,17 @@ bool TPlayer::testSign()
 void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
-	//static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
-	static const float touchtestd[] = { 1.5f,1, 0,2.0f, 1.5f,3.5f, 3.0f,2.0f };
+	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
 	int dir = sprite % 4;
 
-	auto npcList = level->testTouch(x + touchtestd[dir * 2], y + touchtestd[dir * 2 + 1]);
+	int pixelX = int(x * 16.0);
+	int pixelY = int(y * 16.0);
+
+	auto npcList = level->testTouch(pixelX + touchtestd[dir * 2], pixelY + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
+	{
 		npc->queueNpcAction("npc.playertouchsme", this);
+	}
 #endif
 }
 
@@ -3808,14 +3812,14 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				if (npc)
 				{
 					CString packet;
-					packet >> (char)(npc->getX() * 2.0f) >> (char)(npc->getY() * 2.0f);
+					packet >> (char)(npc->getX() / 8.0f) >> (char)(npc->getY() / 8.0f);
 					packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 					packet >> (short)(duration / 0.05f);
 					packet >> (char)options;
 					server->sendPacketToLevel(CString() >> (char)PLO_MOVE >> (int)id << packet, 0, this, true);
 
-					npc->setX(npc->getX() + dx);
-					npc->setY(npc->getY() + dy);
+					npc->setX(npc->getX() + dx * 16);
+					npc->setY(npc->getY() + dy * 16);
 					//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
 				}
 			}
@@ -3833,8 +3837,8 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				TNPC* npc = server->getNPC(id);
 				if (npc)
 				{
-					npc->setX(x);
-					npc->setY(y);
+					npc->setX(int(x * 16.0));
+					npc->setY(int(y * 16.0));
 
 					// Send the prop packet to the level.
 					CString packet;
@@ -3883,8 +3887,9 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		//handled = false; // client and server scripts should both be able to respond to triggers
 		CString triggerData = action.readString("");
 
-		auto npcList = level->findAreaNpcs(loc[0], loc[1], 8, 8);
-		for (auto npcTouched : npcList) {
+		auto npcList = level->findAreaNpcs(int(loc[0] * 16.0), int(loc[1] * 16.0), 8, 8);
+		for (auto npcTouched : npcList)
+		{
 			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
 		}
 

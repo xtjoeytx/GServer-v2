@@ -1232,7 +1232,9 @@ int TLevel::addPlayer(TPlayer* player)
 	for (auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
+		{
 			npc->queueNpcAction("npc.playerenters", player);
+		}
 	}
 #endif
 
@@ -1253,20 +1255,27 @@ void TLevel::removePlayer(TPlayer* player)
 	for (auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
+		{
 			npc->queueNpcAction("npc.playerleaves", player);
+		}
 	}
 #endif
 }
 
 TPlayer* TLevel::getPlayer(unsigned int id)
 {
-	if (id >= levelPlayerList.size()) return nullptr;
+	if (id >= levelPlayerList.size())
+	{
+		return nullptr;
+	}
+
 	return levelPlayerList[id];
 }
 
 bool TLevel::addNPC(TNPC* npc)
 {
-	if (std::find(levelNPCs.begin(), levelNPCs.end(), npc) != levelNPCs.end()) {
+	if (std::find(levelNPCs.begin(), levelNPCs.end(), npc) != levelNPCs.end())
+	{
 		return false;
 	}
 
@@ -1395,16 +1404,35 @@ bool TLevel::doTimedEvents()
 	return true;
 }
 
-bool TLevel::isOnWall(double pX, double pY) const
+bool TLevel::isOnWall(int pX, int pY) const
 {
-	if (pX < 0 || pY < 0 || pX > 63 || pY > 63) return true;
+	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
+	{
+		return true;
+	}
 
-	return tiletypes[levelTiles[int(round(pY)) * 64 + int(round(pX))]] >= 20;
+	return tiletypes[levelTiles[pY * 64 + pX]] >= 20;
 }
 
-bool TLevel::isOnWater(double pX, double pY) const
+bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) const
 {
-	return (tiletypes[levelTiles[(int)pY * 64 + (int)pX]] == 11);
+	for (int cy = pY; cy < pY + pHeight; ++cy)
+	{
+		for (int cx = pX; cx < pX + pWidth; ++cx)
+		{
+			if (isOnWall(cx, cy))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool TLevel::isOnWater(int pX, int pY) const
+{
+	return (tiletypes[levelTiles[pY * 64 + pX]] == 11);
 }
 
 std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
@@ -1442,16 +1470,17 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 }
 
 #ifdef V8NPCSERVER
-std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHeight)
+
+std::vector<TNPC*> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
 {
-	float testEndX = pX + (float)(pWidth / 16.0f);
-	float testEndY = pY + (float)(pHeight / 16.0f);
+	int testEndX = pX + pWidth;
+	int testEndY = pY + pHeight;
 
 	std::vector<TNPC *> npcList;
 	for (const auto& npc : levelNPCs)
 	{
-		if (pX < npc->getX() + (float)(npc->getWidth() / 16.0f) && testEndX > npc->getX() &&
-			pY < npc->getY() + (float)(npc->getHeight() / 16.0f) && testEndY > npc->getY())
+		if (pX < npc->getX() + npc->getWidth() && testEndX > npc->getX() &&
+			pY < npc->getY() + npc->getHeight() && testEndY > npc->getY())
 		{
 			npcList.push_back(npc);
 		}
@@ -1460,15 +1489,15 @@ std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHe
 	return npcList;
 }
 
-std::vector<TNPC*> TLevel::testTouch(float pX, float pY)
+std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 {
 	std::vector<TNPC*> npcList;
 	for (const auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if (npc->getX() <= pX && npc->getX() + (float)(npc->getWidth() / 16.0f) >= pX &&
-				npc->getY() <= pY && npc->getY() + (float)(npc->getHeight() / 16.0f) >= pY)
+			if (npc->getX() <= pX && npc->getX() + npc->getWidth() >= pX &&
+				npc->getY() <= pY && npc->getY() + npc->getHeight() >= pY)
 			{
 				npcList.push_back(npc);
 			}

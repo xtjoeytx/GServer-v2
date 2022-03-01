@@ -108,10 +108,8 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	//int startX = (int)(16 * args[0]->NumberValue(context).ToChecked());
-	//int startY = (int)(16 * args[1]->NumberValue(context).ToChecked());
-	float startX = (float)args[0]->NumberValue(context).ToChecked();
-	float startY = (float)args[1]->NumberValue(context).ToChecked();
+	int startX = (int)(16 * args[0]->NumberValue(context).ToChecked());
+	int startY = (int)(16 * args[1]->NumberValue(context).ToChecked());
 	int endX = 16 * args[2]->Int32Value(context).ToChecked();
 	int endY = 16 * args[3]->Int32Value(context).ToChecked();
 
@@ -121,9 +119,9 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList.size());
 
 	int idx = 0;
-	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	for (auto npc : npcList)
 	{
-		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -275,10 +273,47 @@ void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
 		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
 
 		// Argument parsing
-		double npcX = (float)args[0]->NumberValue(context).ToChecked();
-		double npcY = (float)args[1]->NumberValue(context).ToChecked();
+		int npcX = int(16.0 * args[0]->NumberValue(context).ToChecked());
+		int npcY = int(16.0 * args[1]->NumberValue(context).ToChecked());
 
 		args.GetReturnValue().Set(levelObject->isOnWall(npcX, npcY));
+	}
+}
+
+// Level Method: level.onwall2(x, y, w, h);
+void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 4);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		auto npcX = args[0]->NumberValue(context).ToChecked();
+		auto npcY = args[1]->NumberValue(context).ToChecked();
+		auto width = args[2]->Int32Value(context).ToChecked();
+		auto height = args[3]->Int32Value(context).ToChecked();
+
+		if (std::lround(npcX) != int(npcX))
+		{
+			width++;
+		}
+
+		if (std::lround(npcY) != int(npcY))
+		{
+			height++;
+		}
+
+		args.GetReturnValue().Set(levelObject->isOnWall2(int(npcX), int(npcY), width, height));
 	}
 }
 
@@ -308,6 +343,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
 
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something

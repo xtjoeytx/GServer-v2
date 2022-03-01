@@ -251,9 +251,9 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 
 				exceptionMsg.append(level->getLevelName().text());
 				exceptionMsg.append(",");
-				exceptionMsg.append(std::to_string(npc->getX()));
+				exceptionMsg.append(std::to_string(npc->getX() / 16.0));
 				exceptionMsg.append(",");
-				exceptionMsg.append(std::to_string(npc->getY()));
+				exceptionMsg.append(std::to_string(npc->getY() / 16.0));
 				exceptionMsg.append(": ");
 				if (!npc->getName().empty())
 				{
