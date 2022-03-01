@@ -2267,9 +2267,9 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Check if the specified client is allowed access.
 	if (isClient())
 	{
-		std::vector<CString>* allowedVersions = server->getAllowedVersions();
+		auto& allowedVersions = server->getAllowedVersions();
 		bool allowed = false;
-		for (auto ver : *allowedVersions)
+		for (auto ver : allowedVersions)
 		{
 			if (ver.find(":") != -1)
 			{

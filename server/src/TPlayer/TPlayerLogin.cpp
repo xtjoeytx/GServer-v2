@@ -163,10 +163,10 @@ bool TPlayer::sendLogin()
 	if ((isClient() && versionID >= CLVER_2_1) || isRC())
 	{
 		// graal doesn't quote these
-		std::vector<CString>* plicons = server->getStatusList();
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-			pliconPacket << ((CString)(*i)).trim() << ",";
+		for (const auto& status : server->getStatusList())
+			pliconPacket << status.trim() << ",";
+
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}
 

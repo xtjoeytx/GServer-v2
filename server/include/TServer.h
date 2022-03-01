@@ -143,8 +143,8 @@ class TServer : public CSocketStub
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
 		const std::vector<std::unique_ptr<TMap>>& getMapList() const { return mapList; }
-		std::vector<CString>* getStatusList()			{ return &statusList; }
-		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
+		const std::vector<CString>& getStatusList() const		{ return statusList; }
+		const std::vector<CString>& getAllowedVersions() const	{ return allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
 
 #ifdef V8NPCSERVER

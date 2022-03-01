@@ -250,11 +250,10 @@ bool TLevel::reload()
 				it++;
 			}
 		}
-		//levelNPCs.clear();
 	}
 
 	// Delete baddies.
-	for (auto& levelBaddie : levelBaddies) delete levelBaddie;
+	for (auto levelBaddie : levelBaddies) delete levelBaddie;
 	levelBaddies.clear();
 	levelBaddyIds.clear();
 
@@ -268,10 +267,10 @@ bool TLevel::reload()
 	levelSigns.clear();
 
 	// Delete items.
-	for (auto& item : levelItems)
+	for (const auto& item : levelItems)
 	{
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
-		for (auto& player : levelPlayerList)
+		for (auto player : levelPlayerList)
 			player->sendPacket(packet);
 	}
 	levelItems.clear();
@@ -292,9 +291,9 @@ bool TLevel::reload()
 
 	// Reset the level cache for all the players on the server.
 	auto playerList = server->getPlayerList();
-	for (auto & i : *playerList)
+	for (auto p : *playerList)
 	{
-		i->resetLevelCache(this);
+		p->resetLevelCache(this);
 	}
 
 	// Re-load the level now.
@@ -1378,9 +1377,8 @@ bool TLevel::doTimedEvents()
 			else
 			{
 				baddy->reset();
-				for (auto i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+				for (auto p : levelPlayerList)
 				{
-					TPlayer* p = *i;
 					p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
 				}
 			}
@@ -1388,9 +1386,8 @@ bool TLevel::doTimedEvents()
 	}
 	{	// Mark all the baddies as dead now.
 		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
-		for (auto i = set_dead.begin(); i != set_dead.end(); ++i)
+		for (auto baddy : set_dead)
 		{
-			TLevelBaddy* baddy = *i;
 			baddy->setProps(props);
 		}
 	}
@@ -1412,12 +1409,12 @@ bool TLevel::isOnWater(double pX, double pY) const
 
 std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
 {
-	for (auto& link : levelLinks)
+	for (const auto& link : levelLinks)
 	{
 		if ((pX >= link.getX() && pX <= link.getX() + link.getWidth()) &&
 			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
 		{
-			return std::optional<TLevelLink>(link);
+			return std::make_optional(link);
 		}
 	}
 
@@ -1426,11 +1423,11 @@ std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
 
 std::optional<TLevelChest> TLevel::getChest(int x, int y) const
 {
-	for (auto& chest : levelChests)
+	for (const auto& chest : levelChests)
 	{
 		if (chest.getX() == x && chest.getY() == y)
 		{
-			return std::optional<TLevelChest>(chest);
+			return std::make_optional(chest);
 		}
 	}
 

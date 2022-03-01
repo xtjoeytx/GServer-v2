@@ -229,7 +229,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 			//if (id == -1)
 			//	break;
 
-			if (statusMsg > server->getStatusList()->size() - 1)
+			if (statusMsg > server->getStatusList().size() - 1)
 				buffer >> (char)0;
 			else
 				buffer >> (char)statusMsg;

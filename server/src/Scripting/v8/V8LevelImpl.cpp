@@ -155,11 +155,10 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		std::vector<TPlayer *> *playerList = levelObject->getPlayerList();
 		std::vector<std::pair<double, TPlayer *>> playerListSorted;
 
-		for (auto it = playerList->begin(); it != playerList->end(); ++it)
+		for (auto pl : *playerList)
 		{
-			TPlayer *pl = *it;
 			double distance = sqrt(pow(pl->getY() - targetY, 2) + pow(pl->getX() - targetX, 2));
-			playerListSorted.push_back({ distance, pl });
+			playerListSorted.emplace_back( distance, pl );
 		}
 
 		std::sort(playerListSorted.begin(), playerListSorted.end());
@@ -170,13 +169,13 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerListSorted.size());
 
 		int idx = 0;
-		for (auto it = playerListSorted.begin(); it != playerListSorted.end(); ++it)
+		for (auto & it : playerListSorted)
 		{
-			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it).second->getScriptObject());
+			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(it.second->getScriptObject());
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
-			object->Set(context, key_distance, v8::Number::New(isolate, (*it).first));
-			object->Set(context, key_player, v8_wrapped->Handle(isolate));
+			object->Set(context, key_distance, v8::Number::New(isolate, it.first)).Check();
+			object->Set(context, key_player, v8_wrapped->Handle(isolate)).Check();
 			result->Set(context, idx++, object).Check();
 		}
 
