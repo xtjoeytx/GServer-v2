@@ -60,7 +60,6 @@ class TPlayer : public TAccount, public CSocketStub
 		CSocket* getSocket()			{ return playerSock; }
 		TLevel* getLevel() const		{ return level; }
 		TMap* getMap()				{ return pmap; }
-		CString getGroup()			{ return levelGroup; }
 		int getId() const;
 		time_t getLastData() const		{ return lastData; }
 		CString getGuild() const		{ return guild; }
@@ -75,7 +74,6 @@ class TPlayer : public TAccount, public CSocketStub
 		void setNick(CString pNickName, bool force = false);
 		void setId(int pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
-		void setGroup(CString group)	{ levelGroup = group; }
 		void deleteFlag(const std::string& pFlagName, bool sendToPlayer = false);
 		void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false);
 		void setMap(TMap* map)			{ pmap = map; }
@@ -331,7 +329,6 @@ class TPlayer : public TAccount, public CSocketStub
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
-		std::map<CString, TLevel*> spLevels;
 		std::set<std::string> channelList;
 		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
 		TMap* pmap;
@@ -347,7 +344,6 @@ class TPlayer : public TAccount, public CSocketStub
 		CString npcserverPort;
 		int packetCount;
 		bool firstLevel;
-		CString levelGroup;
 		int invalidPackets;
 
 		CString grExecParameterList;

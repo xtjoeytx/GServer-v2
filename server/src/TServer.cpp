@@ -1634,29 +1634,15 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPl
 	}
 
 	if (pLevel == 0) return;
-	bool _groupMap = pPlayer && pPlayer->getMap()->isGroupMap();
+
 	for (auto other : playerList)
 	{
-			if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
-		if (_groupMap && pPlayer != 0 && pPlayer->getGroup() != other->getGroup()) continue;
+		if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
 
 		if (other->getMap() == pMap)
 		{
 			int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
 			int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
-			//switch (pMap->getType())
-			//{
-			//	case MapType::GMAP:
-			//		ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
-			//		ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
-			//		break;
-
-			//	default:
-			//	case MapType::BIGMAP:
-			//		ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
-			//		ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
-			//		break;
-			//}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
 				other->sendPacket(pPacket);
@@ -1669,7 +1655,7 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 	if (!pPlayer->getLevel())
 		return;
 
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP))
 	{
 		TLevel* level = pPlayer->getLevel();
 		if (level == nullptr) return;
@@ -1682,7 +1668,6 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 		return;
 	}
 
-	bool _groupMap = pPlayer->getMap()->isGroupMap();
 	for (auto player : playerList)
 	{
 		if (!player->isClient()) continue;
@@ -1692,7 +1677,6 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 			continue;
 		}
 		if ( player->getLevel() == nullptr) continue;
-		if (_groupMap && pPlayer->getGroup() != player->getGroup()) continue;
 
 		if ( player->getMap() == pMap)
 		{

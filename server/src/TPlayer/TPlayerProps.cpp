@@ -122,12 +122,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 				if (pmap && pmap->getType() == MapType::GMAP)
 					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
-				{
-					if (level != 0 && level->isSingleplayer() == true)
-						buffer >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
-					else
-						buffer >> (char)levelName.length() << levelName;
-				}
+					buffer >> (char)levelName.length() << levelName;
 				return;
 			}
 			else

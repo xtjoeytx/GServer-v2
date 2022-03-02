@@ -379,12 +379,6 @@ TPlayer::~TPlayer()
 		delete cl;
 		i = cachedLevels.erase(i);
 	}
-	for (std::map<CString, TLevel*>::iterator i = spLevels.begin(); i != spLevels.end(); )
-	{
-		TLevel* cl = i->second;
-		delete cl;
-		spLevels.erase(i++);
-	}
 
 	if (playerSock)
 		delete playerSock;
@@ -565,16 +559,6 @@ bool TPlayer::doTimedEvents()
 			else if (ap < 60) apCounter = settings->getInt("aptime2", 300);
 			else if (ap < 80) apCounter = settings->getInt("aptime3", 600);
 			else apCounter = settings->getInt("aptime4", 1200);
-		}
-	}
-
-	// Do singleplayer level events.
-	{
-		for (auto& spLevel : spLevels)
-		{
-			TLevel* level = spLevel.second;
-			if (level)
-				level->doTimedEvents();
 		}
 	}
 
@@ -1501,46 +1485,6 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 		return false;
 	}
 
-	// Check if the level is a singleplayer level.
-	// If so, see if we have been there before.  If not, duplicate it.
-	if (level->isSingleplayer())
-	{
-		TLevel* nl = (spLevels.find(level->getLevelName()) != spLevels.end() ? spLevels[level->getLevelName()] : 0);
-		if (nl == 0)
-		{
-			level = level->clone();
-			spLevels[level->getLevelName()] = level;
-		}
-		else level = nl;
-	}
-
-	// Check if the map is a group map.
-	if (pmap && pmap->isGroupMap())
-	{
-		if (!levelGroup.isEmpty())
-		{
-			// If any players are in this level, they might have been cached on the client.  Solve this by manually removing them.
-			std::vector<TPlayer*>* plist = level->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = plist->begin(); i != plist->end(); ++i)
-			{
-				TPlayer* p = *i;
-				sendPacket(p->getProps(0, 0) >> (char)PLPROP_CURLEVEL >> (char)(level->getLevelName().length() + 1 + 7) << level->getLevelName() << ".unknown" >> (char)PLPROP_X << p->getProp(PLPROP_X) >> (char)PLPROP_Y << p->getProp(PLPROP_Y));
-			}
-
-			// Set the correct level now.
-			std::map<CString, std::map<CString, TLevel*> >* groupLevels = server->getGroupLevels();
-			std::map<CString, TLevel*>& group = (*groupLevels)[levelGroup];
-			TLevel* nl = group[level->getLevelName()];
-			if (nl == 0)
-			{
-				level = level->clone();
-				level->setLevelName(level->getLevelName());
-				group[level->getLevelName()] = level;
-			}
-			else level = nl;
-		}
-	}
-
 	// Add myself to the level playerlist.
 	level->addPlayer(this);
 	levelName = level->getLevelName();
@@ -1586,8 +1530,6 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		TPlayer* p = *i;
 		if (p == this)
-			continue;
-		if (pmap && pmap->isGroupMap() && levelGroup != p->getGroup())
 			continue;
 
 		p->sendPacket(minimap);
@@ -1640,7 +1582,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if ( !fromAdjacent || pmap != 0)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1677,46 +1619,42 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if (!level->isSingleplayer())
+	if (pmap)
 	{
-		if (pmap)
+		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
+		std::vector<TPlayer*>* playerList = server->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
-			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			TPlayer* player = (TPlayer*)*i;
+			if (player == 0) continue;
+			if (player == this || player->getMap() != pmap) continue;
+
+			if (pmap->getType() == MapType::GMAP)
 			{
-				TPlayer* player = (TPlayer*)*i;
-				if (player == 0) continue;
-				if (player == this || player->getMap() != pmap) continue;
-				if (pmap->isGroupMap() && levelGroup != player->getGroup()) continue;
+				int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
+				if (abs(ogmap[0] - level->getMapX()) < 2 && abs(ogmap[1] - level->getMapY()) < 2)
+					this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
+			}
+			else if (pmap->getType() == MapType::BIGMAP)
+			{
+				if (player->getLevel() == 0) continue;
+				int ogmap[2] = { player->getLevel()->getMapX(), player->getLevel()->getMapY() };
+				int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
 
-				if (pmap->getType() == MapType::GMAP)
-				{
-					int ogmap[2] = {player->getProp(PLPROP_GMAPLEVELX).readGUChar(), player->getProp(PLPROP_GMAPLEVELY).readGUChar()};
-					if (abs(ogmap[0] - level->getMapX()) < 2 && abs(ogmap[1] - level->getMapY()) < 2)
-						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-				}
-				else if (pmap->getType() == MapType::BIGMAP)
-				{
-					if (player->getLevel() == 0) continue;
-					int ogmap[2] = { player->getLevel()->getMapX(), player->getLevel()->getMapY() };
-					int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
-
-					if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-						this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-				}
+				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+					this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 			}
 		}
-		else
+	}
+	else
+	{
+		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
+		std::vector<TPlayer*>* playerList = level->getPlayerList();
+		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
 		{
-			server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
-			std::vector<TPlayer*>* playerList = level->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-			{
-				TPlayer* player = (TPlayer*)*i;
-				if (player == this) continue;
-				this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
-			}
+			TPlayer* player = (TPlayer*)*i;
+			if (player == this) continue;
+			this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 		}
 	}
 
@@ -1777,7 +1715,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1790,7 +1728,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
-	if ( !level->isSingleplayer() && !fromAdjacent )
+	if ( !fromAdjacent )
 	{
 		server->sendPacketToLevel(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
 		std::vector<TPlayer*>* playerList = level->getPlayerList();
@@ -3612,39 +3550,39 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if ( settings->getBool("triggerhack_groups", true))
-		{
-			if (action.find("gr.setgroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 2)
-					levelGroup = actionParts[1];
-				return true;
-			}
-			else if (action.find("gr.setlevelgroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 2)
-				{
-					std::vector<TPlayer*>* playerList = level->getPlayerList();
-					for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-					{
-						TPlayer* player = *i;
-						player->setGroup(actionParts[1]);
-					}
-				}
-				return true;
-			}
-			else if (action.find("gr.setplayergroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 3)
-				{
-					TPlayer* player = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
-					player->setGroup(actionParts[2]);
-				}
-			}
-		}
+//		if ( settings->getBool("triggerhack_groups", true))
+//		{
+//			if (action.find("gr.setgroup") == 0)
+//			{
+//				std::vector<CString> actionParts = action.tokenize(",");
+//				if (actionParts.size() == 2)
+//					levelGroup = actionParts[1];
+//				return true;
+//			}
+//			else if (action.find("gr.setlevelgroup") == 0)
+//			{
+//				std::vector<CString> actionParts = action.tokenize(",");
+//				if (actionParts.size() == 2)
+//				{
+//					std::vector<TPlayer*>* playerList = level->getPlayerList();
+//					for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+//					{
+//						TPlayer* player = *i;
+//						player->setGroup(actionParts[1]);
+//					}
+//				}
+//				return true;
+//			}
+//			else if (action.find("gr.setplayergroup") == 0)
+//			{
+//				std::vector<CString> actionParts = action.tokenize(",");
+//				if (actionParts.size() == 3)
+//				{
+//					TPlayer* player = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
+//					player->setGroup(actionParts[2]);
+//				}
+//			}
+//		}
 
 		if ( settings->getBool("triggerhack_files", false))
 		{
@@ -3785,11 +3723,8 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 						level->reload();
 					else
 					{
-						TLevel* targetLevel = 0;
-						if (getExtension(levelName) == ".singleplayer")
-							targetLevel = spLevels[removeExtension(levelName)];
-						else targetLevel = server->getLevel(levelName);
-						if (targetLevel != 0)
+						TLevel *targetLevel = server->getLevel(levelName);
+						if (targetLevel)
 							targetLevel->reload();
 					}
 				}

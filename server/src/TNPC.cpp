@@ -131,12 +131,6 @@ void TNPC::setScriptCode(std::string pScript)
 		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
-	// See if the NPC sets the level as singleplayer.
-	else if (npcScript.getServerSide().starts_with("singleplayer") || npcScript.getServerSide().find("singleplayer\n") < 100)
-	{
-		level->setSingleplayer(true);
-		levelModificationNPCHack = true;
-	}
 
 	// Remove sparringzone / singleplayer from the server script
 	if (levelModificationNPCHack)

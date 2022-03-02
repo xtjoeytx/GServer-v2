@@ -56,7 +56,6 @@ class TMap
         size_t getHeight() const				{ return height; }
 		bool isBigMap() const					{ return type == MapType::BIGMAP; }
 		bool isGmap() const						{ return type == MapType::GMAP; }
-		bool isGroupMap() const					{ return groupMap; }
 
 	private:
 		bool loadBigMap(const CString& pFileName, TServer* pServer);
@@ -66,7 +65,6 @@ class TMap
 		time_t modTime;
 		size_t width;
         size_t height;
-		bool groupMap;
 		bool loadFullMap;
 		std::string mapName;
 		std::string mapImage;

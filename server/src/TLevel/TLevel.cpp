@@ -42,7 +42,7 @@ int getBase64Position(char c)
 */
 TLevel::TLevel(TServer* pServer)
 :
-server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMap(nullptr), mapx(0), mapy(0)
+server(pServer), modTime(0), levelSpar(false), levelMap(nullptr), mapx(0), mapy(0)
 #ifdef V8NPCSERVER
 , _scriptObject(nullptr)
 #endif
@@ -280,7 +280,6 @@ bool TLevel::reload()
 
 	// Clean up the rest.
 	levelSpar = false;
-	levelSingleplayer = false;
 
 	// Remove all the players from the level.
 	std::vector<TPlayer*> oldplayers = levelPlayerList;
