@@ -59,6 +59,7 @@ class TServerList : public CSocketStub
 
 		// Send New Server-Info
 		void sendServerHQ();
+		void sendVersionConfig();
 
 		// Incoming message parsing functions
 		static bool created;

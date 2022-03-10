@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include "IDebug.h"
 #include "IConfig.h"
 
@@ -277,11 +279,32 @@ bool TServerList::connectServer()
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 
+	sendVersionConfig();
+
 	// Send Players
 	sendPlayers();
 
 	// Return Connection-Status
 	return getConnected();
+}
+
+void TServerList::sendVersionConfig()
+{
+	if (!getConnected())
+		return;
+
+	// Send allowed versions to the listserver
+	CString versionNames;
+	auto& versionList = _server->getAllowedVersions();
+	for (const auto& version : versionList)
+	{
+		if (!versionNames.isEmpty())
+			versionNames << ",";
+
+		versionNames << version.gtokenize();
+	}
+
+	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
 void TServerList::sendPacket(CString& pPacket, bool sendNow)
