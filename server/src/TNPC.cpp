@@ -745,8 +745,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 void TNPC::testForLinks()
 {
-	static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
-
 	// Overworld links
 	if (level->getMap())
 	{
@@ -766,7 +764,7 @@ void TNPC::testForLinks()
 				TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
 				if (newLevel != nullptr)
 				{
-					this->warpNPC(newLevel, gmapX % 64, gmapY % 64);
+					this->warpNPC(newLevel, gmapX % 1024, gmapY % 1024);
 					return;
 				}
 			}
@@ -775,6 +773,8 @@ void TNPC::testForLinks()
 
 	if (canWarp == NPCWarpType::AllLinks)
 	{
+		static const int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		
 		int dir = sprite % 4;
 
 		auto linkTouched = level->getLink((int)(x / 16) + touchtestd[dir * 2], (int)(y / 16) + touchtestd[dir * 2 + 1]);
@@ -999,7 +999,10 @@ NPCEventResponse TNPC::runScriptEvents()
 	// Send properties modified by scripts
 	if (!propModified.empty())
 	{
-		testTouch();
+		if (propModified.contains(NPCPROP_X2) || propModified.contains(NPCPROP_Y2))
+		{
+			testTouch();
+		}
 
 		time_t newModTime = time(0);
 

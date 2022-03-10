@@ -1011,18 +1011,22 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				//z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				break;
 
+			case PLPROP_UNKNOWN81:
+			{
+				auto val = pPacket.readGUChar();
+				break;
+			}
+
 			case PLPROP_COMMUNITYNAME:
 				pPacket.readChars(pPacket.readGUChar());
 				break;
 
 			default:
 			{
-#ifdef DEBUG
 				printf("Unidentified PLPROP: %i, readPos: %d\n", propId, pPacket.readPos());
 				for (int i = 0; i < pPacket.length(); ++i)
 					printf("%02x ", (unsigned char)pPacket[i]);
 				printf("\n");
-#endif
 				sentInvalid = true;
 			}
 			return;
