@@ -37,9 +37,9 @@ namespace scripting
 
 		auto level = npc.getLevel();
 		if (level)
-			origin.append(fmt::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX(), npc.getY()));
+			origin.append(fmt::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
 
-		return std::move(origin);
+		return origin;
 	}
 
 	std::string getErrorOrigin(const TScriptClass& cls)
