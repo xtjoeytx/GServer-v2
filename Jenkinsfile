@@ -14,34 +14,35 @@ def notify(status){
 
 @NonCPS
 def killall_jobs() {
-	def jobname = env.JOB_NAME
-	def buildnum = env.BUILD_NUMBER.toInteger()
-	def killnums = ""
-	def job = Jenkins.instance.getItemByFullName(jobname)
-	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
+	def jobname = env.JOB_NAME;
+	def buildnum = env.BUILD_NUMBER.toInteger();
+	def killnums = "";
+	def job = Jenkins.instance.getItemByFullName(jobname);
+	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 
 	for (build in job.builds) {
 		if (!build.isBuilding()) { continue; }
-		if (buildnum == build.getNumber().toInteger()) { continue; println "equals" }
-		if (buildnum < build.getNumber().toInteger()) { continue; println "newer" }
+		if (buildnum == build.getNumber().toInteger()) { continue; println "equals"; }
+		if (buildnum < build.getNumber().toInteger()) { continue; println "newer"; }
 
-		echo "Kill task = ${build}"
+		echo "Kill task = ${build}";
 
-		killnums += "#" + build.getNumber().toInteger() + ", "
+		killnums += "#" + build.getNumber().toInteger() + ", ";
 
 		build.doStop();
 	}
 
 	if (killnums != "") {
-		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK
+		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK;
 	}
 	echo "Done killing"
 }
 
 def buildStep(dockerImage, os, defines) {
-	def split_job_name = env.JOB_NAME.split(/\/{1}/)
-	def fixed_job_name = split_job_name[1].replace('%2F',' ')
-	def fixed_os = os.replace(' ','-')
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
+	def fixed_job_name = split_job_name[1].replace('%2F',' ');
+	def fixed_os = os.replace(' ','-');
 
 	try{
 		stage("Building on \"${dockerImage}\" for \"${os}\"...") {
@@ -93,6 +94,10 @@ def buildStep(dockerImage, os, defines) {
 					}
 
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+				}
+
+				if ("${os}" == "windows") {
+					bat "rmdir /s /q build"
 				}
 
 				discordSend description: "Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
