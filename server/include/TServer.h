@@ -107,11 +107,11 @@ class TServer : public CSocketStub
 		void saveWeapons();
 #ifdef V8NPCSERVER
 		void saveNpcs();
-
 		std::vector<std::pair<double, std::string>> calculateNpcStats();
+#endif
+
 		void reportScriptException(const ScriptRunError& error);
 		void reportScriptException(const std::string& error_message);
-#endif
 
 		// Get functions.
 		const CString& getName()						{ return name; }
@@ -120,9 +120,7 @@ class TServer : public CSocketStub
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
-#ifdef V8NPCSERVER
 		CLog& getScriptLog()							{ return scriptlog; }
-#endif
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
 		CSocketManager* getSocketManager()				{ return &sockManager; }
@@ -240,10 +238,7 @@ class TServer : public CSocketStub
 		bool doRestart;
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
-		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
-#ifdef V8NPCSERVER
-		CLog scriptlog;
-#endif
+		CLog npclog, rclog, serverlog, scriptlog; //("logs/npclog|rclog|serverlog|scriptlog.txt");
 		CSettings adminsettings, settings;
 		CSocket playerSock;
 		CSocketManager sockManager;

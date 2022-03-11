@@ -130,6 +130,13 @@ enum
 	NPCMOVEFLAG_APPLYDIR		= 0x10
 };
 
+enum class NPCType
+{
+	LEVELNPC,	// npcs found in a level
+	PUTNPC,		// npcs created via script (putnpc)
+	DBNPC		// npcs created in RC (Database-NPCs)
+};
+
 #ifdef V8NPCSERVER
 
 enum class NPCEventResponse
@@ -137,13 +144,6 @@ enum class NPCEventResponse
 	NoEvents,
 	PendingEvents,
 	Delete
-};
-
-enum class NPCType
-{
-	LEVELNPC,	// npcs found in a level
-	PUTNPC,		// npcs created via script (putnpc)
-	DBNPC		// npcs created in RC (Database-NPCs)
 };
 
 enum class NPCWarpType
@@ -268,6 +268,10 @@ class TNPC
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getColorId(unsigned int idx) const;
 
+		const CString& getByteCode() const {
+			return npcBytecode;
+		}
+
 #ifdef V8NPCSERVER
 		bool joinedClass(const std::string& name) {
 			auto it = classMap.find(name); // std::find(classMap.begin(), classMap.end(), name);
@@ -319,10 +323,6 @@ class TNPC
 		NPCEventResponse runScriptEvents();
 
 		CString getVariableDump();
-		
-		inline const CString& getByteCode() const {
-			return npcBytecode;
-		}
 
 #endif
 

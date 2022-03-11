@@ -116,7 +116,7 @@ enum
 	PLPROP_X2				= 78,
 	PLPROP_Y2				= 79,
 	PLPROP_Z2				= 80,
-	PLPROP_UNKNOWN81		= 81,
+	PLPROP_UNKNOWN81		= 81, // {GCHAR flag} - flag 0 places in playerlist, flag 1 places in servers tab, flag 3 places in channels tab (unconfirmed)
 
 	// In Graal v5, where players have the Graal######## accounts, this is their chosen account alias (community name.)
 	PLPROP_COMMUNITYNAME	= 82,

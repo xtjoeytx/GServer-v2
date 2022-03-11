@@ -149,20 +149,20 @@ void TNPC::setScriptCode(std::string pScript)
 #ifdef V8NPCSERVER
 	blockPositionUpdates = true;
 #else
-	if (script.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
+	if (npcScript.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
 		blockPositionUpdates = true;
 #endif
 
 #ifndef V8NPCSERVER
 	// Search for toweapons in the clientside code and extract the name of the weapon.
-	weaponName = toWeaponName(std::string{ script.getClientGS1() });
+	weaponName = toWeaponName(std::string{ npcScript.getClientGS1() });
 #endif
 
 	// Remove comments and trim the code if specified. Also changes line-endings
 #ifdef V8NPCSERVER
 	updateClientCode();
 #else
-	auto tmpScript = doJoins(std::string{ script.getClientGS1() }, server->getFileSystem());
+	auto tmpScript = doJoins(std::string{ npcScript.getClientGS1() }, server->getFileSystem());
 	clientScriptFormatted = minifyClientCode(tmpScript);
 
 	// Just a little warning for people who don't know.

@@ -1076,6 +1076,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	return script_profiles;
 }
 
+#endif
+
 void TServer::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = error.getErrorString();
@@ -1094,7 +1096,6 @@ void TServer::reportScriptException(const std::string& error_message)
 	}
 }
 
-#endif
 
 /////////////////////////////////////////////////////
 
