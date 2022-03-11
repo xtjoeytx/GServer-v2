@@ -1,19 +1,6 @@
 {
 	"builds": [
 		{
-			"Title": "Docker Image",
-			"Description": "",
-			"Type": "docker",
-		    "OS": "linux",
-			"Config": {
-				"DockerRoot": "xtjoeytx",
-				"DockerImage": "gserver-v2",
-				"DockerTag": "production",
-				"Dockerfile": "Dockerfile",
-				"BuildIfSuccessful": ""
-			}
-		},
-		{
 			"Title": "Windows x86_64 build",
 			"Description": "",
 			"Type": "native",
