@@ -3,9 +3,18 @@
 		{
 			"DockerRoot": "xtjoeytx",
 			"DockerImage": "gserver-v2",
-			"DockerTag": "production",
+			"DockerTag": "",
 			"Dockerfile": "Dockerfile",
-			"BuildIfSuccessful": ""
+			"BuildIfSuccessful": "",
+			"BuildEnv": "--build-arg NPCSERVER=on"
+		},
+		{
+			"DockerRoot": "xtjoeytx",
+			"DockerImage": "gserver-v2",
+			"DockerTag": "-no-npcserver",
+			"Dockerfile": "Dockerfile",
+			"BuildIfSuccessful": "",
+			"BuildEnv": "--build-arg NPCSERVER=off"
 		}
 	]
 }
