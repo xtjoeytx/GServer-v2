@@ -8,7 +8,7 @@ ONBUILD COPY --from=v8 /tmp/v8 /gserver/dependencies/v8
 
 FROM alpine:3.14 AS build-env-npcserver-off
 
-FROM build-env-npcserver-${NPCSERVER}
+FROM build-env-npcserver-${NPCSERVER} AS build-env
 COPY ./ /gserver
 
 RUN apk add --update --virtual .gserver-build-dependencies \
@@ -32,7 +32,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 # GServer Run Environment
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
-COPY --from=build-env-npcserver-${NPCSERVER} /gserver/bin /gserver
+COPY --from=build-env /gserver/bin /gserver
 COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
 WORKDIR /gserver
