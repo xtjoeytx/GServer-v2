@@ -123,16 +123,23 @@ void TNPC::setScriptCode(std::string pScript)
 	bool levelModificationNPCHack = false;
 
 	// NOTE: since we are not removing comments from the source, any comments at the start of the script
-	// interferes with the starts_with check, so a temporary workaround is to check for it within the first 100 lines
+	// interferes with the starts_with check, so a temporary workaround is to check for it within the first 100 characters
+
+	// All code is stored in clientside when building without an npc-server, and split as-expected with the npc-server
+#ifdef V8NPCSERVER
+	std::string_view npcScriptSearch = npcScript.getServerSide();
+#else
+	std::string_view npcScriptSearch = npcScript.getClientSide();
+#endif
 
 	// See if the NPC sets the level as a sparring zone.
-	if (npcScript.getServerSide().starts_with("sparringzone") || npcScript.getServerSide().find("sparringzone\n") < 100)
+	if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
 	{
 		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
 	// See if the NPC sets the level as singleplayer.
-	else if (npcScript.getServerSide().starts_with("singleplayer") || npcScript.getServerSide().find("singleplayer\n") < 100)
+	else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
 	{
 		level->setSingleplayer(true);
 		levelModificationNPCHack = true;
@@ -141,8 +148,8 @@ void TNPC::setScriptCode(std::string pScript)
 	// Remove sparringzone / singleplayer from the server script
 	if (levelModificationNPCHack)
 	{
-		// just delete the entire serverside script
-		npcScript.setServerSide({});
+		// Clearing the entire script 
+		npcScript.clearServerSide();
 	}
 
 	// See if the NPC should block position updates from the level leader.
