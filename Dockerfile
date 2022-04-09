@@ -10,6 +10,7 @@ FROM alpine:3.14 AS build-env-npcserver-off
 
 FROM build-env-npcserver-${NPCSERVER} AS build-env
 COPY ./ /gserver
+ARG NPCSERVER
 
 RUN apk add --update --virtual .gserver-build-dependencies \
 		cmake \
