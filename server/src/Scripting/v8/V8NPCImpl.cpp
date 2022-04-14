@@ -1073,7 +1073,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			TLevel *level = server->getLevel(*levelName);
 			if (level != nullptr)
 			{
-				npcObject->warpNPC(level, (float)newX, (float)newY);
+				npcObject->warpNPC(level, newX, newY);
 				args.GetReturnValue().Set(true);
 				return;
 			}

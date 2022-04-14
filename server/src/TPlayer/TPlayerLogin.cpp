@@ -103,6 +103,8 @@ bool TPlayer::sendLogin()
 #ifdef V8NPCSERVER
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
+		// 
+		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
 		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
 
@@ -236,6 +238,7 @@ bool TPlayer::sendLogin()
 	if (isClient()) {
 		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
 	}
+
 	return true;
 }
 
