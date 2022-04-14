@@ -234,10 +234,9 @@ bool TPlayer::sendLogin()
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Currently online: " << rcsOnline);
 	}
 
-	// Ask for processes.
-	if (isClient()) {
+	// Ask for processes. This causes windows v6 clients to crash
+	if (isClient() && versionID < CLVER_6_015)
 		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
-	}
 
 	return true;
 }
