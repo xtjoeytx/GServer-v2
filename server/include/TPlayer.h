@@ -213,7 +213,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
-		bool msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket);
+		bool msgPLI_VERIFYWANTSEND(CString& pPacket);
 		bool msgPLI_UPDATECLASS(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 

@@ -46,6 +46,9 @@ list(APPEND SOURCES ${TLEVEL_SOURCES})
 file(GLOB MISC_SOURCES src/Misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
+file(GLOB UPDATEPACKAGES_SOURCES src/UpdatePkgs/**.cpp)
+list(APPEND SOURCES ${UPDATEPACKAGES_SOURCES})
+
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
@@ -62,14 +65,16 @@ set(
 		include/Scripting/GS2ScriptManager.h
 		include/Scripting/ScriptOrigin.h
 		include/Scripting/SourceCode.h
-		include/utilities/timeunits.h
-)
+		include/utilities/timeunits.h)
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
 list(APPEND HEADERS ${TLEVEL_HEADERS})
 
 file(GLOB MISC_HEADERS include/Misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
+
+file(GLOB UPDATEPACKAGES_HEADERS include/UpdatePkgs/**.h)
+list(APPEND HEADERS ${UPDATEPACKAGES_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
@@ -158,14 +163,6 @@ if(APPLE)
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
 elseif(WIN32)
-	# hax to get clion to work on windows for me
-	if(V8NPCSERVER)
-	#	if(CLIONHAX)
-	#		include_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/include)
-	#		link_directories(${PROJECT_SOURCE_DIR}/build/vs2019/packages/${V8_NUGET_VERSION}/lib/Debug)
-	#	endif()
-	endif()
-	
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")

@@ -33,6 +33,7 @@
 
 #include "GS2ScriptManager.h"
 #include "TScriptClass.h"
+#include "UpdatePkgs/PackageManager.h"
 
 class TPlayer;
 class TLevel;
@@ -130,6 +131,7 @@ class TServer : public CSocketStub
 		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
 		CWordFilter* getWordFilter()					{ return &wordFilter; }
 		TServerList* getServerList()					{ return &serverlist; }
+		PackageManager& getPackageManager()				{ return packageManager; }
 		unsigned int getNWTime() const					{ return serverTime; }
 		void calculateServerTime();
 
@@ -246,6 +248,7 @@ class TServer : public CSocketStub
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
 		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
+		PackageManager packageManager;
 
 		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
