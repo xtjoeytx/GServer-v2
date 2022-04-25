@@ -33,6 +33,7 @@ set(
 	src/TScriptClass.cpp
 	src/TServer.cpp
 	src/TServerList.cpp
+	src/TUpdatePackage.cpp
 	src/TWeapon.cpp
 	src/Scripting/GS2ScriptManager.cpp
 )
@@ -46,8 +47,11 @@ list(APPEND SOURCES ${TLEVEL_SOURCES})
 file(GLOB MISC_SOURCES src/Misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
-file(GLOB UPDATEPACKAGES_SOURCES src/UpdatePkgs/**.cpp)
-list(APPEND SOURCES ${UPDATEPACKAGES_SOURCES})
+file(GLOB UTILITIES_SOURCES src/utilities/**.cpp)
+list(APPEND SOURCES ${UTILITIES_SOURCES})
+
+file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
+list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 set(
 	HEADERS
@@ -61,11 +65,11 @@ set(
 		include/TScriptClass.h
 		include/TServer.h
 		include/TServerList.h
+		include/TUpdatePackage.h
 		include/TWeapon.h
 		include/Scripting/GS2ScriptManager.h
 		include/Scripting/ScriptOrigin.h
-		include/Scripting/SourceCode.h
-		include/utilities/timeunits.h)
+		include/Scripting/SourceCode.h)
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
 list(APPEND HEADERS ${TLEVEL_HEADERS})
@@ -73,8 +77,11 @@ list(APPEND HEADERS ${TLEVEL_HEADERS})
 file(GLOB MISC_HEADERS include/Misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
 
-file(GLOB UPDATEPACKAGES_HEADERS include/UpdatePkgs/**.h)
-list(APPEND HEADERS ${UPDATEPACKAGES_HEADERS})
+file(GLOB UTILITIES_HEADERS include/utilities/**.h)
+list(APPEND HEADERS ${UTILITIES_HEADERS})
+
+file(GLOB ANIMATION_HEADERS include/Animation/**.h)
+list(APPEND HEADERS ${ANIMATION_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
@@ -84,7 +91,6 @@ if(V8NPCSERVER)
 	# Headers for script library v8 implementation
 	file(GLOB SCRIPT_V8_HEADERS include/Scripting/v8/**.h)
 	list(APPEND HEADERS ${SCRIPT_V8_HEADERS})
-
 
 	# Source for script library v8 implementation
 	list(

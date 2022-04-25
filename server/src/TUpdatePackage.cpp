@@ -1,16 +1,19 @@
 #include <filesystem>
-#include "UpdatePkgs/UpdatePackage.h"
+#include "TUpdatePackage.h"
 #include "CFileSystem.h"
+#include "TServer.h"
 
-std::optional<UpdatePackage> UpdatePackage::loadPackage(const CFileSystem* fileSystem, const std::string& name)
+std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const std::string& name)
 {
+	auto fileSystem = server->getFileSystem();
+
 	// Search for the file in the filesystem, and load the contents
 	auto fileContents = fileSystem->load(name);
 	if (fileContents.isEmpty())
 		return std::nullopt;
 	
 	// Calculate the checksum for the gupd file
-	UpdatePackage updatePackage(name);
+	TUpdatePackage updatePackage(name);
 	updatePackage.checksum = calculateCrc32Checksum(fileContents);
 	
 	// Calculate the checksum and filesize for each file referenced in the package

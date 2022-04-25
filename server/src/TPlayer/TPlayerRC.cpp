@@ -2214,4 +2214,39 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		server->loadIPBans();
 	else if (file == "rules.txt")
 		server->loadWordFilter();
+	else
+	{
+		// Check if this is a file in the FILE folder config
+		auto fileSystem = server->getFileSystem(FS_FILE);
+		if (!fileSystem->find(file).isEmpty())
+		{
+			// Game files
+			const auto& playerList = *server->getPlayerList();
+			auto fileName = file.toString();
+
+			CString updatePacket;
+			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << file << "\n";
+
+			// Ganis need to be recompiled on update
+			if (ext == ".gani")
+			{
+				auto& aniManager = server->getAnimationManager();
+
+				// delete the resource
+				aniManager.deleteResource(fileName);
+
+				// reload the resource to compile the bytecode again
+				auto findAni = aniManager.findOrAddResource(fileName);
+				if (findAni)
+					updatePacket << findAni->getBytecodePacket();
+			}
+
+			// Send the update packet to any clients that have seen this file
+			for (auto pl : playerList)
+			{
+				if (pl->isClient() && pl->hasSeenFile(fileName))
+					pl->sendPacket(updatePacket);
+			}
+		}
+	}
 }

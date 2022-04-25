@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <set>
 #include <thread>
@@ -33,7 +34,11 @@
 
 #include "GS2ScriptManager.h"
 #include "TScriptClass.h"
-#include "UpdatePkgs/PackageManager.h"
+
+// Resources
+#include "ResourceManager.h"
+#include "Animation/TGameAni.h"
+#include "TUpdatePackage.h"
 
 class TPlayer;
 class TLevel;
@@ -59,6 +64,9 @@ enum
 	FS_SHIELD		= 6,
 };
 #define FS_COUNT	7
+
+using AnimationManager = ResourceManager<TGameAni, TServer *>;
+using PackageManager = ResourceManager<TUpdatePackage, TServer *>;
 
 class TServer : public CSocketStub
 {
@@ -131,6 +139,7 @@ class TServer : public CSocketStub
 		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
 		CWordFilter* getWordFilter()					{ return &wordFilter; }
 		TServerList* getServerList()					{ return &serverlist; }
+		AnimationManager& getAnimationManager()			{ return animationManager; }
 		PackageManager& getPackageManager()				{ return packageManager; }
 		unsigned int getNWTime() const					{ return serverTime; }
 		void calculateServerTime();
@@ -217,6 +226,7 @@ class TServer : public CSocketStub
 		/*
 		 * GS2 Functionality
 		 */
+		void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
 		void compileGS2Script(TNPC *npc, GS2ScriptManager::user_callback_type cb);
 		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
 		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
@@ -248,6 +258,7 @@ class TServer : public CSocketStub
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
 		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
+		AnimationManager animationManager;
 		PackageManager packageManager;
 
 		std::unordered_map<std::string, CString> mServerFlags;

@@ -31,7 +31,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), packageManager(this), serverStartTime(0)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -1847,6 +1847,11 @@ void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_
 			cb(resp);
 		}
 	});
+}
+
+void TServer::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
+{
+	gs2ScriptManager.compileScript(source, cb);
 }
 
 void TServer::compileGS2Script(TNPC *scriptObject, GS2ScriptManager::user_callback_type cb)

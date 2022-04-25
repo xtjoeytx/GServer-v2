@@ -1,7 +1,7 @@
 #include "TPlayer.h"
 #include "TServer.h"
 #include "CFileSystem.h"
-#include "UpdatePkgs/UpdatePackage.h"
+#include "TUpdatePackage.h"
 
 bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
@@ -50,7 +50,7 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 	std::vector<std::string> missingFiles;
 	
 	{
-		auto updatePackage = server->getPackageManager().findOrAddPackage(packageName.toString());
+		auto updatePackage = server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
 		{
 			for (const auto& [fileName, entry] : updatePackage->getFileList())

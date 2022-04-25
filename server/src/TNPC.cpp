@@ -214,6 +214,9 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
+			if (clientScriptFormatted.empty())
+				return CString() >> (short)0;
+
 			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.substr(0, 0x3FFF);
 
 		case NPCPROP_X:

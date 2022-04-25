@@ -269,7 +269,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
 	TPLFunc[PLI_REQUESTTEXT] = &TPlayer::msgPLI_REQUESTTEXT;
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
-	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
+	TPLFunc[PLI_UPDATEGANI] = &TPlayer::msgPLI_UPDATEGANI;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
 	TPLFunc[PLI_UPDATEPACKAGEREQUESTFILE] = &TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE;
 	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
@@ -722,6 +722,11 @@ void TPlayer::sendPacket(CString pPacket, bool appendNL)
 
 bool TPlayer::sendFile(const CString& pFile)
 {
+	// Add the filename to the list of known files so we can resend the file
+	// to the client if it gets changed after it was originally sent
+	if (isClient())
+		knownFiles.insert(pFile.toString());
+	
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
@@ -4019,26 +4024,6 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
-	return true;
-}
-
-bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
-{
-	// v4 and up needs this for some reason.
-	time_t mod = pPacket.readGUInt5();
-	CString gani = pPacket.readString("");
-	CString ganiData = server->getFileSystem()->load(CString() << gani << ".gani");
-	if (!ganiData.isEmpty())
-	{
-		ganiData.readString("SETBACKTO");
-		if (ganiData.bytesLeft())
-		{
-			CString backGani = ganiData.readString("\n").trim();
-			sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << backGani << "\"");
-			return true;
-		}
-	}
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
 	return true;
 }
 
