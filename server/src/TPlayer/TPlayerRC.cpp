@@ -2147,12 +2147,17 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		return;
 	}
 
+	bool isNewFile = false;
+
 	// If folder config is off, add it to the file list.
 	if ( settings->getBool("nofoldersconfig", false))
 	{
 		CFileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
+		{
 			fs->addFile(CString() << dir << file);
+			isNewFile = true;
+		}
 	}
 	// If folder config is on, try to find which file system to add it to.
 	else
@@ -2176,6 +2181,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 						fs2->addFile(fullPath);
 
 					fs->addFile(fullPath);
+					isNewFile = true;
 					//printf("adding %s to %s\n", file.text(), type.text());
 					break;
 				}
@@ -2213,9 +2219,10 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		server->loadWordFilter();
 	else
 	{
-		// Check if this is a file in the FILE folder config
+		// Check if this is a file that previously existed on the server so we
+		// can notify existing clients that the file was updated.
 		auto fileSystem = server->getFileSystem(FS_FILE);
-		if (!fileSystem->find(file).isEmpty())
+		if (!isNewFile && !fileSystem->find(file).isEmpty())
 		{
 			// Game files
 			const auto& playerList = *server->getPlayerList();
@@ -2239,16 +2246,16 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 					bytecodePacket << findAni->getBytecodePacket();
 			}
 
-			// Send the update packet to any clients that have seen this file
+			// Send the update packet to any v4+ clients that have seen this file
 			for (auto pl : playerList)
 			{
-				if (pl->isClient())
+				if (pl->isClient() && pl->getVersion() >= CLVER_4_0211)
 				{
 					if (pl->hasSeenFile(fileName))
 						pl->sendPacket(updatePacket);
 
-					// Send GS2 gani scripts for v4+ up clients
-					if (!bytecodePacket.isEmpty() && pl->getVersion() >= CLVER_4_0211)
+					// Send GS2 gani scripts
+					if (!bytecodePacket.isEmpty())
 						pl->sendPacket(bytecodePacket);
 				}
 			}
