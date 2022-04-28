@@ -56,7 +56,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # Version number in format X.YY.ZZ
 set(VER_X 3)
 set(VER_Y 0)
-set(VER_Z 3)
+set(VER_Z 4)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
