@@ -1799,9 +1799,6 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
 
-		if (file.find(".gupd") != -1)
-			server->sendPacketToAll(CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << file, this);
-
 		// Update file.
 		updateFile(this, server, lastFolder, file);
 	}
@@ -2228,6 +2225,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << file << "\n";
 
 			// Ganis need to be recompiled on update
+			CString bytecodePacket;
 			if (ext == ".gani")
 			{
 				auto& aniManager = server->getAnimationManager();
@@ -2238,14 +2236,21 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 				// reload the resource to compile the bytecode again
 				auto findAni = aniManager.findOrAddResource(fileName);
 				if (findAni)
-					updatePacket << findAni->getBytecodePacket();
+					bytecodePacket << findAni->getBytecodePacket();
 			}
 
 			// Send the update packet to any clients that have seen this file
 			for (auto pl : playerList)
 			{
-				if (pl->isClient() && pl->hasSeenFile(fileName))
-					pl->sendPacket(updatePacket);
+				if (pl->isClient())
+				{
+					if (pl->hasSeenFile(fileName))
+						pl->sendPacket(updatePacket);
+
+					// Send GS2 gani scripts for v4+ up clients
+					if (!bytecodePacket.isEmpty() && pl->getVersion() >= CLVER_4_0211)
+						pl->sendPacket(bytecodePacket);
+				}
 			}
 		}
 	}

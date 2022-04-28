@@ -319,7 +319,7 @@ bool TPlayer::sendLoginClient()
 			}
 			continue;
 		}
-		sendPacket(weapon->getWeaponPacket());
+		sendPacket(weapon->getWeaponPacket(versionID < CLVER_4_0211));
 	}
 
 	if (versionID >= CLVER_4_0211)

@@ -1784,7 +1784,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 		if (player->hasWeapon(pWeapon->getName()))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
-			player->sendPacket(CString() << pWeapon->getWeaponPacket());
+			player->sendPacket(CString() << pWeapon->getWeaponPacket(player->getVersion() < CLVER_4_0211));
 		}
 	}
 }

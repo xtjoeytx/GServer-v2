@@ -196,11 +196,11 @@ CString TLevel::getLinksPacket()
 CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 {
 	CString retVal;
-	for (auto& npc : levelNPCs)
+	for (auto npc : levelNPCs)
 	{
 		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
 
-		if (!npc->getByteCode().isEmpty())
+		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->getId() << npc->getByteCode();
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')

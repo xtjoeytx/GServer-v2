@@ -84,11 +84,21 @@ private:
 				gs2sep_char = "//#GS2";
 
 			// Determine if this code is GS1 or GS2
-			bool gs2sep_found = _clientside.find(gs2sep_char) != std::string::npos;
-			if (_gs2default ^ gs2sep_found)
-				_clientGS2 = _clientside;
+			size_t codeSeparatorLoc = _clientside.find(gs2sep_char);
+			if (codeSeparatorLoc != std::string::npos)
+			{
+				auto origCode = _clientside.substr(0, codeSeparatorLoc);
+				auto otherCode = _clientside.substr(codeSeparatorLoc);
+				_clientGS2 = _gs2default ? origCode : otherCode;
+				_clientGS1 = _gs2default ? otherCode : origCode;
+			}
 			else
-				_clientGS1 = _clientside;
+			{
+				if (_gs2default)
+					_clientGS2 = _clientside;
+				else
+					_clientGS1 = _clientside;
+			}
 		}
 	}
 };

@@ -26,13 +26,17 @@ std::string minifyClientCode(const CString& src)
 	if (!src.isEmpty())
 	{
 		auto tmp = removeComments(src, "\n");
-		std::vector<CString> codeLines = tmp.tokenize("\n");
 
+		// Scripts should start with //#CLIENTSIDE since this is client code
+		if (tmp.find("//#CLIENTSIDE") != 0)
+			minified.append("//#CLIENTSIDE").append("\xa7");
+
+		std::vector<CString> codeLines = tmp.tokenize("\n");
 		for (const auto& line : codeLines)
 			minified.append(line.trim().toString()).append("\xa7");
 	}
 
-	return std::move(minified);
+	return minified;
 }
 
 TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type)
@@ -214,8 +218,17 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
-			if (clientScriptFormatted.empty())
-				return CString() >> (short)0;
+			// GS2 support
+			if (clientVersion >= CLVER_4_0211)
+			{
+				// GS1 was disabled after this client version
+				if (clientVersion > CLVER_5_07)
+					return CString() >> (short)0;
+
+				// If we have bytecode, don't send gs1 script
+				if (!npcBytecode.isEmpty())
+					return CString() >> (short)0;
+			}
 
 			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.substr(0, 0x3FFF);
 
@@ -920,9 +933,6 @@ void TNPC::updateClientCode()
 					auto& byteCode = response.bytecode;
 					npcBytecode.clear(byteCode.length());
 					npcBytecode.write((const char*)byteCode.buffer(), (int)byteCode.length());
-
-					// Clear gs1 code, otherwise bytecode will not run
-					clientScriptFormatted.clear();
 				}
 			}
 		);

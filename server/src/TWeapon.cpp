@@ -182,7 +182,7 @@ CString TWeapon::getWeaponPacket(bool forceGS1) const
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
 
-	if (_bytecode.isEmpty() || forceGS1)
+	if (forceGS1)
 	{
 		return CString() >> (char)PLO_NPCWEAPONADD
 			>> (char)_weaponName.length() << _weaponName
@@ -261,12 +261,11 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 			}
 		});
 	}
-	else
-	{
-		auto gs1Script = _source.getClientGS1();
-		if (!gs1Script.empty())
-			setClientScript(std::string{ gs1Script });
-	}
+	
+	auto gs1Script = _source.getClientGS1();
+	if (!gs1Script.empty())
+		setClientScript(std::string{ gs1Script });
+	
 
 	// Save Weapon
 	if (pSaveWeapon)
@@ -277,7 +276,13 @@ void TWeapon::setClientScript(const CString& pScript)
 {
 	// Remove any comments in the code
 	CString formattedScript = removeComments(pScript);
-	_formattedClientGS1.clear(formattedScript.length());
+
+	// Extra padding incase we need to add //#CLIENTSIDE to the script
+	_formattedClientGS1.clear(formattedScript.length() + 14);
+
+	if (formattedScript.find("//#CLIENTSIDE") != 0) {
+		_formattedClientGS1 << "//#CLIENTSIDE" << "\xa7";
+	}
 
 	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
 	std::vector<CString> code = formattedScript.tokenize("\n");
