@@ -99,10 +99,11 @@ class TServerList : public CSocketStub
 		bool nextIsRaw;
 		int rawPacketSize;
 		CFileQueue _fileQueue;
-		CString rBuffer, sBuffer;
+		CString readBuffer;
 		CSocket sock;
-		time_t lastData, lastPing, lastTimer, lastPlayerSync;
-		time_t _lastConnectionAttempt;
+		time_t lastData, lastTimer;
+		time_t nextConnectionAttempt;
+		uint8_t connectionAttempts;
 		TServer *_server;
 
 		std::map<std::string, int> serverListCount;
