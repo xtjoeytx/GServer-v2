@@ -56,8 +56,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	fileData.removeAllI("\r");
 
 	// Grab some information.
-	bool has_script = (fileData.find("SCRIPT") != -1 ? true : false);
-	bool has_scriptend = (fileData.find("SCRIPTEND") != -1 ? true : false);
+	bool has_scriptend = fileData.find("SCRIPTEND") != -1;
 	bool found_scriptend = false;
 
 	// Parse header
@@ -126,7 +125,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty())
 	{
-		weapon->_bytecode = byteCodeData;
+		weapon->_bytecode = CString(std::move(byteCodeData));
 		weapon->_bytecodeFile = std::move(byteCodeFile);
 	}
 
@@ -177,36 +176,37 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket(bool forceGS1) const
+CString TWeapon::getWeaponPacket(int clientVersion) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
+	
+	CString weaponPacket;
+	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
+				 >> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage;
 
-	if (forceGS1)
+	// GS2 is available for v4+
+	if (clientVersion >= CLVER_4_0211)
 	{
-		return CString() >> (char)PLO_NPCWEAPONADD
-			>> (char)_weaponName.length() << _weaponName
-			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
-			>> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
+		if (!_bytecode.isEmpty())
+		{
+			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
+
+			CString b = _bytecode;
+			CString header = b.readChars(b.readGUShort());
+
+			// Get the mod time and send packet 197.
+			weaponPacket >> (char)PLO_UNKNOWN197 << header << "," >> (long long)time(0) << "\n";
+			return weaponPacket;
+		}
+
+		// GS1 is disabled for > 5.0.0.7
+		if (clientVersion > CLVER_5_07)
+			return weaponPacket;
 	}
-	else
-	{
-		CString out;
-		out >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
-			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
-			>> (char)NPCPROP_CLASS >> (short)0 << "\n";
 
-		CString b = _bytecode;
-
-		CString header = b.readChars(b.readGUShort());
-
-		// Get the mod time and send packet 197.
-		CString smod = CString() >> (long long)time(0);
-		smod.gtokenizeI();
-		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-		return out;
-	}
+	weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
+	return weaponPacket;
 }
 
 // -- Function: Update Weapon Image/Script -- //

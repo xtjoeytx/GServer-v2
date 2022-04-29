@@ -32,7 +32,7 @@ class TWeapon
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		CString getWeaponPacket(bool forceGS1 = false) const;
+		CString getWeaponPacket(int clientVersion) const;
 		bool isDefault() const						{ return (mWeaponDefault != LevelItemType::INVALID); }
 		bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
 		LevelItemType getWeaponId()					{ return mWeaponDefault; }
@@ -73,7 +73,6 @@ class TWeapon
 
 		std::string _weaponImage;
 		std::string _weaponName;
-		std::string _clientFormattedScript;
 		std::vector<std::string> _joinedClasses;
 
 	private:

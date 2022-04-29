@@ -2029,7 +2029,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
 		weaponList.push_back(weapon->getName());
-		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
+		sendPacket(weapon->getWeaponPacket(versionID));
 	}
 
 	return true;
@@ -2052,7 +2052,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 		if (id == -1) return true;
 
 		// Send weapon.
-		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
+		sendPacket(weapon->getWeaponPacket(versionID));
 	}
 
 	return true;
