@@ -60,6 +60,8 @@ private:
 
 	void init() noexcept
 	{
+		_clientside = _serverside = _clientGS1 = _clientGS2 = {};
+
 #ifdef V8NPCSERVER
 		auto clientSep = _src.find("//#CLIENTSIDE");
 		if (clientSep != std::string::npos)
