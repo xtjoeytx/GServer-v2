@@ -163,7 +163,7 @@ bool TServerList::doTimedEvents()
 				if (connectionAttempts < 8)
 					connectionAttempts += 1;
 
-				uint8_t waitTime = std::min(uint32_t(std::pow(2u, connectionAttempts)), 300u);
+				auto waitTime = std::min(uint32_t(std::pow(2u, connectionAttempts)), 300u);
 				nextConnectionAttempt = lastTimer + waitTime + (rand() % 5);
 			}
 			else connectionAttempts = 0;
