@@ -33,14 +33,14 @@ void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set(npcObject->getX());
+	info.GetReturnValue().Set(npcObject->getX() / 16.0);
 }
 
 void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	float newValue = (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	int newValue = int(16 * value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked());
 	npcObject->setX(newValue);
 	//npcObject->updatePropModTime(NPCPROP_X);
 	npcObject->updatePropModTime(NPCPROP_X2);
@@ -51,14 +51,14 @@ void NPC_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	info.GetReturnValue().Set(npcObject->getY());
+	info.GetReturnValue().Set(npcObject->getY() / 16.0);
 }
 
 void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	float newValue = (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
+	int newValue = int(16 * (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked());
 	npcObject->setY(newValue);
 
 	//npcObject->updatePropModTime(NPCPROP_Y);
@@ -433,7 +433,19 @@ void NPC_Function_CanWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-	npcObject->allowNpcWarping(true);
+	npcObject->allowNpcWarping(NPCWarpType::AllLinks);
+}
+
+// NPC Method: npc.canwarp2();
+void NPC_Function_CanWarp2(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+	npcObject->allowNpcWarping(NPCWarpType::OverworldLinks);
 }
 
 // NPC Method: npc.cannotwarp();
@@ -445,7 +457,7 @@ void NPC_Function_CannotWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-	npcObject->allowNpcWarping(false);
+	npcObject->allowNpcWarping(NPCWarpType::None);
 }
 
 // NPC Method: npc.destroy();
@@ -595,8 +607,8 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Argument parsing
-	float dx = (float)args[0]->NumberValue(context).ToChecked();
-	float dy = (float)args[1]->NumberValue(context).ToChecked();
+	int dx = int(16.0 * args[0]->NumberValue(context).ToChecked());
+	int dy = int(16.0 * args[1]->NumberValue(context).ToChecked());
 	double time_fps = args[2]->NumberValue(context).ToChecked();
 	int options = args[3]->Int32Value(context).ToChecked();
 
@@ -937,18 +949,18 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		TScriptClass *classObject = npcObject->joinClass(className);
 		if (classObject != nullptr)
 		{
-			auto classCodeWrap = WrapScript<TNPC>(classObject->serverCode());
-			auto scriptFuncction = scriptEngine->CompileCache(classCodeWrap, false);
+			auto classCodeWrap = WrapScript<TNPC>(classObject->getSource().getServerSide());
+			auto scriptFunction = scriptEngine->CompileCache(classCodeWrap, false);
 
-			if (scriptFuncction != nullptr)
+			if (scriptFunction != nullptr)
 			{
-				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(scriptFuncction);
+				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(scriptFunction);
 				v8::Local<v8::Value> newArgs[] = { args.This() };
 
 				// Execute
 				v8::TryCatch try_catch(isolate);
-				v8::Local<v8::Function> scriptFunction = v8_function->Function();
-				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
+				v8::Local<v8::Function> localFunction = v8_function->Function();
+				v8::MaybeLocal<v8::Value> scriptTableRet = localFunction->Call(context, args.This(), 1, newArgs);
 				if (!scriptTableRet.IsEmpty())
 				{
 					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
@@ -1051,8 +1063,8 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			v8::String::Utf8Value levelName(isolate, args[0]->ToString(context).ToLocalChecked());
-			double newX = args[1]->NumberValue(context).ToChecked();
-			double newY = args[2]->NumberValue(context).ToChecked();
+			int newX = int(16.0 * args[1]->NumberValue(context).ToChecked());
+			int newY = int(16.0 * args[2]->NumberValue(context).ToChecked());
 
 			v8::Local<v8::External> data = args.Data().As<v8::External>();
 			CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
@@ -1061,7 +1073,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			TLevel *level = server->getLevel(*levelName);
 			if (level != nullptr)
 			{
-				npcObject->warpNPC(level, (float)newX, (float)newY);
+				npcObject->warpNPC(level, newX, newY);
 				args.GetReturnValue().Set(true);
 				return;
 			}
@@ -1473,6 +1485,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	// TODO(joey): Implement these functions
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "blockagain"), v8::FunctionTemplate::New(isolate, NPC_Function_BlockAgain, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "canwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "canwarp2"), v8::FunctionTemplate::New(isolate, NPC_Function_CanWarp2, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "cannotwarp"), v8::FunctionTemplate::New(isolate, NPC_Function_CannotWarp, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "destroy"), v8::FunctionTemplate::New(isolate, NPC_Function_Destroy, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "dontblock"), v8::FunctionTemplate::New(isolate, NPC_Function_DontBlock, engine_ref));

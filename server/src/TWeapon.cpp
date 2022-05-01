@@ -18,7 +18,7 @@
 TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 : server(pServer), mModTime(0), mWeaponDefault(pId)
 #ifdef V8NPCSERVER
-, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	_weaponName = TLevelItem::getItemName(mWeaponDefault).toString();
@@ -28,7 +28,7 @@ TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 TWeapon::TWeapon(TServer *pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
 : server(pServer), _weaponName(std::move(pName)), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
-, _scriptObject(0), _scriptExecutionContext(pServer->getScriptEngine())
+, _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	// Update Weapon
@@ -56,8 +56,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 	fileData.removeAllI("\r");
 
 	// Grab some information.
-	bool has_script = (fileData.find("SCRIPT") != -1 ? true : false);
-	bool has_scriptend = (fileData.find("SCRIPTEND") != -1 ? true : false);
+	bool has_scriptend = fileData.find("SCRIPTEND") != -1;
 	bool found_scriptend = false;
 
 	// Parse header
@@ -66,8 +65,8 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		return nullptr;
 
 	// Definitions
-	CString byteCodeFile, byteCodeData;
-	std::string weaponImage, weaponName, weaponScript;
+	CString byteCodeData;
+	std::string byteCodeFile, weaponImage, weaponName, weaponScript;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -88,7 +87,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 			byteCodeData.load(server->getServerPath() << "weapon_bytecode/" << fileName);
 			if (!byteCodeData.isEmpty())
-				byteCodeFile = fileName;
+				byteCodeFile = fileName.toString();
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -118,13 +117,16 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
+	{
 		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
+		weaponScript.clear();
+	}
 
 	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
-	if (!byteCodeData.isEmpty() && weapon->_bytecode.isEmpty())
+	if (!byteCodeData.isEmpty())
 	{
-		weapon->_bytecode = byteCodeData;
-		weapon->_bytecodeFile = byteCodeFile;
+		weapon->_bytecode = CString(std::move(byteCodeData));
+		weapon->_bytecodeFile = std::move(byteCodeFile);
 	}
 
 	return weapon;
@@ -136,6 +138,12 @@ bool TWeapon::saveWeapon()
 	// Don't save default weapons / empty weapons
 	if (this->isDefault() || _weaponName.empty())
 		return false;
+
+	// If the bytecode filename is set, the weapon is treated as read-only so it can't be saved
+	if (!_bytecodeFile.empty())
+	{
+		return false;
+	}
 
 	// Prevent the loading/saving of filenames with illegal characters.
 	CString name = _weaponName;
@@ -150,7 +158,6 @@ bool TWeapon::saveWeapon()
 	CString output = "GRAWP001\r\n";
 	output << "REALNAME " << _weaponName << "\r\n";
 	output << "IMAGE " << _weaponImage << "\r\n";
-	output << "BYTECODE " << "weapon" << _weaponName << ".gs2bc" << "\r\n";
 
 	if (_source)
 	{
@@ -164,45 +171,42 @@ bool TWeapon::saveWeapon()
 		output << "SCRIPTEND\r\n";
 	}
 
-	// Save bytecode
-	CString byteCodeFileName = server->getServerPath() << "weapons_bytecode" << CFileSystem::getPathSeparator() << "weapon" << name << ".gs2bc";
-	_bytecode.save(byteCodeFileName);
-
 	// Save it.
 	return output.save(filename);
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket(bool forceGS1) const
+CString TWeapon::getWeaponPacket(int clientVersion) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
+	
+	CString weaponPacket;
+	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
+				 >> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage;
 
-	if (_bytecode.isEmpty() || forceGS1)
+	// GS2 is available for v4+
+	if (clientVersion >= CLVER_4_0211)
 	{
-		return CString() >> (char)PLO_NPCWEAPONADD
-			>> (char)_weaponName.length() << _weaponName
-			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
-			>> (char)NPCPROP_SCRIPT >> (short)clientScriptFormatted.length() << clientScriptFormatted;
+		if (!_bytecode.isEmpty())
+		{
+			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
+
+			CString b = _bytecode;
+			CString header = b.readChars(b.readGUShort());
+
+			// Get the mod time and send packet 197.
+			weaponPacket >> (char)PLO_UNKNOWN197 << header << "," >> (long long)time(0) << "\n";
+			return weaponPacket;
+		}
+
+		// GS1 is disabled for > 5.0.0.7
+		if (clientVersion > CLVER_5_07)
+			return weaponPacket;
 	}
-	else
-	{
-		CString out;
-		out >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
-			>> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage
-			>> (char)NPCPROP_CLASS >> (short)0 << "\n";
 
-		CString b = _bytecode;
-
-		CString header = b.readChars(b.readGUShort());
-
-		// Get the mod time and send packet 197.
-		CString smod = CString() >> (long long)time(0);
-		smod.gtokenizeI();
-		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
-
-		return out;
-	}
+	weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
+	return weaponPacket;
 }
 
 // -- Function: Update Weapon Image/Script -- //
@@ -229,7 +233,7 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		if (!_source.getServerSide().empty()) {
-			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", _scriptObject));
+			_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", getScriptObject()));
 			scriptEngine->RegisterWeaponUpdate(this);
 		}
 	}
@@ -237,23 +241,31 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		SCRIPTENV_D("Could not compile weapon script\n");
 #endif
 
-	// Compile GS2 code
-	auto gs2Script = _source.getClientGS2();
-	if (!gs2Script.empty())
-	{
-		GS2Context context;
-		auto byteCode = context.compile(std::string{ gs2Script }, "weapon", _weaponName, true);
+	// Clear any GS1 scripts/GS2 bytecode
+	_bytecode.clear();
+	_formattedClientGS1.clear();
 
-		if (!context.hasErrors())
-		{
-			_bytecode.clear();
-			_bytecode.write((const char*)byteCode.buffer(), byteCode.length());
-		}
-		else
-		{
-			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
-		}
+	// Compile GS2 code
+	if (!_source.getClientGS2().empty())
+	{
+		// Compile gs2 code
+		server->compileGS2Script(this, [this](const CompilerResponse &response) {
+			if (response.success)
+			{
+				// these should be sent for compilation right after
+				_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
+
+				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", _weaponName, true);
+				_bytecode.clear(bytecodeWithHeader.length());
+				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+			}
+		});
 	}
+	
+	auto gs1Script = _source.getClientGS1();
+	if (!gs1Script.empty())
+		setClientScript(std::string{ gs1Script });
+	
 
 	// Save Weapon
 	if (pSaveWeapon)
@@ -264,12 +276,18 @@ void TWeapon::setClientScript(const CString& pScript)
 {
 	// Remove any comments in the code
 	CString formattedScript = removeComments(pScript);
-	clientScriptFormatted.clear(formattedScript.length());
+
+	// Extra padding incase we need to add //#CLIENTSIDE to the script
+	_formattedClientGS1.clear(formattedScript.length() + 14);
+
+	if (formattedScript.find("//#CLIENTSIDE") != 0) {
+		_formattedClientGS1 << "//#CLIENTSIDE" << "\xa7";
+	}
 
 	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
 	std::vector<CString> code = formattedScript.tokenize("\n");
 	for (auto & it : code)
-		clientScriptFormatted << it.trim() << "\xa7";
+		_formattedClientGS1 << it.trim() << "\xa7";
 }
 
 #ifdef V8NPCSERVER
@@ -293,8 +311,7 @@ void TWeapon::freeScriptResources()
 	// Delete script object
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 }
 
@@ -302,7 +319,7 @@ void TWeapon::queueWeaponAction(TPlayer *player, const std::string& args)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 
-	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", _scriptObject, player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
 	_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->RegisterWeaponUpdate(this);
 }

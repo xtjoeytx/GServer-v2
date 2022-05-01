@@ -73,74 +73,72 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 		case LevelItemType::REDRUPEE:		// redrupee
 		case LevelItemType::GOLDRUPEE:		// goldrupee
 		{
-			CString playerProp = player->getProp(PLPROP_RUPEESCOUNT);
-			int rupeeCount = playerProp.readGInt();
+			int rupeeCount = player->getRupees();
 			if (itemType == LevelItemType::GOLDRUPEE) rupeeCount += 100;
 			else if (itemType == LevelItemType::REDRUPEE) rupeeCount += 30;
 			else if (itemType == LevelItemType::BLUERUPEE) rupeeCount += 5;
 			else rupeeCount += 1;
+
 			rupeeCount = clip(rupeeCount, 0, 9999999);
 			return CString() >> (char)PLPROP_RUPEESCOUNT >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS:		// bombs
 		{
-			CString playerProp = player->getProp(PLPROP_BOMBSCOUNT);
-			char bombCount = playerProp.readGChar() + 5;
-			bombCount = clip(bombCount, 0, 99);
+			int bombCount = clip(player->getBombCount() + 5, 0, 99);
 			return CString() >> (char)PLPROP_BOMBSCOUNT >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS:		// darts
 		{
-			CString playerProp = player->getProp(PLPROP_ARROWSCOUNT);
-			char arrowCount = playerProp.readGChar() + 5;
-			arrowCount = clip(arrowCount, 0, 99);
+			int arrowCount = clip(player->getArrowCount() + 5, 0, 99);
 			return CString() >> (char)PLPROP_ARROWSCOUNT >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART:		// heart
 		{
-			CString playerProp = player->getProp(PLPROP_CURPOWER);
-			char heartCount = playerProp.readGChar() + (1 * 2);
-			playerProp = player->getProp(PLPROP_MAXPOWER);
-			char heartMax = playerProp.readGChar() * 2;
-			heartCount = clip(heartCount, 0, heartMax);
-			return CString() >> (char)PLPROP_CURPOWER >> (char)heartCount;
+			float newPower = clip(player->getPower() + 1.0f, 0.0f, player->getMaxPower() * 1.0f);
+			return CString() >> (char)PLPROP_CURPOWER >> (char)(newPower * 2.0f);
 		}
 
 		case LevelItemType::GLOVE1:		// glove1
 		case LevelItemType::GLOVE2:		// glove2
 		{
-			CString playerProp = player->getProp(PLPROP_GLOVEPOWER);
-			char glovePower = playerProp.readGChar();
-			if (itemType == LevelItemType::GLOVE2) glovePower = 3;
-			else glovePower = (glovePower < 2 ? 2 : glovePower);
+			auto glovePower = player->getGlovePower();
+			if (itemType == LevelItemType::GLOVE2)
+				glovePower = 3;
+			else if (glovePower < 2)
+				glovePower = 2;
+
 			return CString() >> (char)PLPROP_GLOVEPOWER >> (char)glovePower;
 		}
 
 		case LevelItemType::BOW:		// bow
 		case LevelItemType::BOMB:		// bomb
-
 		case LevelItemType::SUPERBOMB:	// superbomb
 		case LevelItemType::FIREBALL:	// fireball
 		case LevelItemType::FIREBLAST:	// fireblast
 		case LevelItemType::NUKESHOT:	// nukeshot
 		case LevelItemType::JOLTBOMB:	// joltbomb
 		{
-			player->msgPLI_WEAPONADD(CString() >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType));
-			break;
+			player->addWeapon(itemType);
+			return {};
 		}
 
 		case LevelItemType::SHIELD:			// shield
 		case LevelItemType::MIRRORSHIELD:	// mirrorshield
 		case LevelItemType::LIZARDSHIELD:	// lizardshield
 		{
-			char shieldPower = player->getShieldPower();
-			if (itemType == LevelItemType::LIZARDSHIELD) shieldPower = 3;
-			else if (itemType == LevelItemType::MIRRORSHIELD) shieldPower = (shieldPower < 2 ? 2 : shieldPower);
-			else shieldPower = (shieldPower < 1 ? 1 : shieldPower);
-			return CString() >> (char)PLPROP_SHIELDPOWER >> (char)shieldPower;
+			int newShieldPower = 1;
+			if (itemType == LevelItemType::LIZARDSHIELD)
+				newShieldPower = 3;
+			else if (itemType == LevelItemType::MIRRORSHIELD)
+				newShieldPower = 2;
+
+			if (player->getShieldPower() > newShieldPower)
+				newShieldPower = player->getShieldPower();
+
+			return CString() >> (char)PLPROP_SHIELDPOWER >> (char)newShieldPower;
 		}
 
 		case LevelItemType::SWORD:			// sword
@@ -158,9 +156,7 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 
 		case LevelItemType::FULLHEART:	// fullheart
 		{
-			CString playerProp = player->getProp(PLPROP_MAXPOWER);
-			unsigned char heartMax = playerProp.readGUChar() + 1;
-			heartMax = clip(heartMax, 0, 20);		// Hard limit of 20 hearts.
+			char heartMax = clip(player->getMaxPower() + 1, 0, 20);		// Hard limit of 20 hearts.
 			return CString() >> (char)PLPROP_MAXPOWER >> (char)heartMax >> (char)PLPROP_CURPOWER >> (char)(heartMax * 2);
 		}
 
@@ -168,11 +164,14 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 		{
 			CString playerProp = player->getProp(PLPROP_STATUS);
 			char status = playerProp.readGChar();
-			if (status & PLSTATUS_HASSPIN) return CString();
+			if (status & PLSTATUS_HASSPIN) return {};
 			status |= PLSTATUS_HASSPIN;
 			return CString() >> (char)PLPROP_STATUS >> (char)status;
 		}
+
+		default:
+			break;
 	}
 
-	return CString();
+	return { };
 }

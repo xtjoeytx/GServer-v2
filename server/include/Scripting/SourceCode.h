@@ -9,18 +9,14 @@
 class SourceCode
 {
 public:
-	SourceCode() { }
-	SourceCode(const std::string& src, bool gs2default = false) : _src(src), _gs2default(gs2default) { init(); }
-	SourceCode(std::string&& src, bool gs2default = false) noexcept : _src(std::move(src)), _gs2default(gs2default) { init(); }
-	SourceCode(SourceCode&& o, bool gs2default = false) noexcept : _src(std::move(o._src)), _gs2default(gs2default) { init(); }
+	SourceCode() : _gs2default(false) { }
+	SourceCode(std::string src, bool gs2default = false) : _src(std::move(src)), _gs2default(gs2default) { init(); }
+	SourceCode(SourceCode&& o) noexcept : _src(std::move(o._src)), _gs2default(o._gs2default) { init(); }
 
 	SourceCode& operator=(SourceCode&& o) noexcept {
-		_gs2default = std::move(o._gs2default);
+		_gs2default = o._gs2default;
 		_src = std::move(o._src);
-		_clientside = std::move(o._clientside);
-		_serverside = std::move(o._serverside);
-		_clientGS1 = std::move(o._clientGS1);
-		_clientGS2 = std::move(o._clientGS2);
+		init();
 		return *this;
 	}
 
@@ -52,8 +48,8 @@ public:
 		return _clientGS2;
 	}
 
-	void setServerSide(std::string_view sv) {
-		_serverside = sv;
+	void clearServerSide() {
+		_serverside = {};
 	}
 
 private:
@@ -62,15 +58,26 @@ private:
 	std::string_view _clientside, _serverside;
 	std::string_view _clientGS1, _clientGS2;
 
-	void init()
+	void init() noexcept
 	{
-		auto clientSideSep = _src.find("//#CLIENTSIDE");
-		if (clientSideSep != std::string::npos)
+		_clientside = _serverside = _clientGS1 = _clientGS2 = {};
+
+#ifdef V8NPCSERVER
+		auto clientSep = _src.find("//#CLIENTSIDE");
+		if (clientSep != std::string::npos)
 		{
 			// Separate clientside and serverside
-			_clientside = std::string_view{ _src.begin() + clientSideSep, _src.end() };
-			_serverside = std::string_view{ _src.begin(), _src.begin() + clientSideSep };
+			_clientside = std::string_view{ _src }.substr(clientSep);
+			_serverside = std::string_view{ _src }.substr(0, clientSep);
+		}
+		else _serverside = std::string_view{ _src };
+#else
+		// For non-npcserver builds all code is considered clientside
+		_clientside = std::string_view{ _src };
+#endif
 
+		if (!_clientside.empty())
+		{
 			// Switch separator depending on if GS2 is set to default or not
 			const char* gs2sep_char;
 			if (_gs2default)
@@ -78,27 +85,23 @@ private:
 			else
 				gs2sep_char = "//#GS2";
 
-			// Separate GS2 section in clientside
-			auto gs2Sep = _clientside.find(gs2sep_char);
-			if (gs2Sep != std::string::npos && !_gs2default)
+			// Determine if this code is GS1 or GS2
+			size_t codeSeparatorLoc = _clientside.find(gs2sep_char);
+			if (codeSeparatorLoc != std::string::npos)
 			{
-				_clientGS1 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
-				_clientGS2 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
+				auto origCode = _clientside.substr(0, codeSeparatorLoc);
+				auto otherCode = _clientside.substr(codeSeparatorLoc);
+				_clientGS2 = _gs2default ? origCode : otherCode;
+				_clientGS1 = _gs2default ? otherCode : origCode;
 			}
-			else if (gs2Sep == std::string::npos && !_gs2default)
+			else
 			{
-				_clientGS1 = _clientside;
-			}
-			else if (gs2Sep != std::string::npos && _gs2default)
-			{
-				_clientGS2 = std::string_view{ _clientside.begin(), _clientside.begin() + gs2Sep };
-				_clientGS1 = std::string_view{ _clientside.begin() + gs2Sep, _clientside.end() };
-			}
-			else if (gs2Sep == std::string::npos && _gs2default) {
-				_clientGS2 = _clientside;
+				if (_gs2default)
+					_clientGS2 = _clientside;
+				else
+					_clientGS1 = _clientside;
 			}
 		}
-		else _serverside = std::string_view{ _src.begin(), _src.end() };
 	}
 };
 

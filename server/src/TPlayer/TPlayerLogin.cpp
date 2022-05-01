@@ -103,6 +103,8 @@ bool TPlayer::sendLogin()
 #ifdef V8NPCSERVER
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
+		// 
+		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
 		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
 
@@ -163,10 +165,10 @@ bool TPlayer::sendLogin()
 	if ((isClient() && versionID >= CLVER_2_1) || isRC())
 	{
 		// graal doesn't quote these
-		std::vector<CString>* plicons = server->getStatusList();
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (std::vector<CString>::iterator i = plicons->begin(); i != plicons->end(); ++i)
-			pliconPacket << ((CString)(*i)).trim() << ",";
+		for (const auto& status : server->getStatusList())
+			pliconPacket << status.trim() << ",";
+
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}
 
@@ -232,10 +234,10 @@ bool TPlayer::sendLogin()
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Currently online: " << rcsOnline);
 	}
 
-	// Ask for processes.
-	if (isClient()) {
+	// Ask for processes. This causes windows v6 clients to crash
+	if (isClient() && versionID < CLVER_6_015)
 		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
-	}
+
 	return true;
 }
 
@@ -277,7 +279,7 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Sent to rc and client, but rc ignores it so...
-    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+    sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings->getBool("flaghack_ip", false) == true)
@@ -317,7 +319,7 @@ bool TPlayer::sendLoginClient()
 			}
 			continue;
 		}
-		sendPacket(weapon->getWeaponPacket());
+		sendPacket(weapon->getWeaponPacket(versionID));
 	}
 
 	if (versionID >= CLVER_4_0211)
@@ -428,7 +430,9 @@ bool TPlayer::sendLoginNC()
 
 bool TPlayer::sendLoginRC()
 {
-    sendPacket(CString() >> (char)PLO_UNKNOWN194);
+	// This packet clears the players weapons on the client, but official
+	// also sends it to the RC's so we are maintaining the same behavior
+    sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
     // If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)

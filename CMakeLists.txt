@@ -56,7 +56,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # Version number in format X.YY.ZZ
 set(VER_X 3)
 set(VER_Y 0)
-set(VER_Z 3)
+set(VER_Z 4)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
@@ -176,17 +176,19 @@ elseif(WIN32)
 		cmake_policy(SET CMP0043 NEW)
 
 		# hack to fix clion + msvc together
-		set(CompilerFlags
-				CMAKE_CXX_FLAGS
-				CMAKE_CXX_FLAGS_DEBUG
-				CMAKE_CXX_FLAGS_RELEASE
-				CMAKE_C_FLAGS
-				CMAKE_C_FLAGS_DEBUG
-				CMAKE_C_FLAGS_RELEASE
-				)
-		foreach(CompilerFlag ${CompilerFlags})
-			string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-		endforeach()
+		if (CLIONHAX)
+			set(CompilerFlags
+					CMAKE_CXX_FLAGS
+					CMAKE_CXX_FLAGS_DEBUG
+					CMAKE_CXX_FLAGS_RELEASE
+					CMAKE_C_FLAGS
+					CMAKE_C_FLAGS_DEBUG
+					CMAKE_C_FLAGS_RELEASE
+					)
+			foreach(CompilerFlag ${CompilerFlags})
+				string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+			endforeach()
+		endif()
 	endif()
 
 	if( MINGW )

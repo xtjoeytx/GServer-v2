@@ -4,6 +4,7 @@
 #include <time.h>
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <vector>
 #include "IEnums.h"
 #include "CFileQueue.h"
@@ -137,6 +138,7 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendSignMessage(const CString& message);
 		void setAni(CString gani);
 
+		bool hasSeenFile(const std::string& file) const;
 		bool addPMServer(CString& option);
 		bool remPMServer(CString& option);
 		bool inChatChannel(const std::string& channel) const;
@@ -156,11 +158,11 @@ class TPlayer : public TAccount, public CSocketStub
 		void sendNCAddr();
 
 		inline IScriptObject<TPlayer> * getScriptObject() const {
-			return _scriptObject;
+			return _scriptObject.get();
 		}
 
-		inline void setScriptObject(IScriptObject<TPlayer> *object) {
-			_scriptObject = object;
+		inline void setScriptObject(std::unique_ptr<IScriptObject<TPlayer>> object) {
+			_scriptObject = std::move(object);
 		}
 #endif
 
@@ -213,7 +215,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
-		bool msgPLI_REQUESTUPDATEPACKAGE(CString& pPacket);
+		bool msgPLI_VERIFYWANTSEND(CString& pPacket);
 		bool msgPLI_UPDATECLASS(CString& pPacket);
 		bool msgPLI_RAWDATA(CString& pPacket);
 
@@ -292,7 +294,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_REQUESTTEXT(CString& pPacket);
 		bool msgPLI_SENDTEXT(CString& pPacket);
 
-		bool msgPLI_UNKNOWN157(CString& pPacket);
+		bool msgPLI_UPDATEGANI(CString& pPacket);
 		bool msgPLI_UPDATESCRIPT(CString& pPacket);
 		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
@@ -333,6 +335,7 @@ class TPlayer : public TAccount, public CSocketStub
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;
 		std::set<std::string> channelList;
+		std::unordered_set<std::string> knownFiles;
 		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
 		TMap* pmap;
 		unsigned int carryNpcId;
@@ -357,7 +360,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 #ifdef V8NPCSERVER
 		bool _processRemoval;
-		IScriptObject<TPlayer> *_scriptObject;
+		std::unique_ptr<IScriptObject<TPlayer>> _scriptObject;
 #endif
 };
 
@@ -374,6 +377,11 @@ inline int TPlayer::getId() const
 inline void TPlayer::setId(int pId)
 {
 	id = pId;
+}
+
+inline bool TPlayer::hasSeenFile(const std::string & file) const
+{
+	return knownFiles.find(file) != knownFiles.end();
 }
 
 inline bool TPlayer::inChatChannel(const std::string& channel) const

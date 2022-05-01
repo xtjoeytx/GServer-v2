@@ -13,7 +13,7 @@
 #include "CLog.h"
 #include "CSocket.h"
 #include "TServer.h"
-#include <TAccount.h>
+#include "TAccount.h"
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
@@ -141,20 +141,26 @@ int main(int argc, char* argv[])
 			if (!overrideName.isEmpty())
 				settings->addKey("name", overrideName);
 
-			if (!overrideStaff.isEmpty()) {
-				settings->addKey("staff", overrideStaff);
-				auto * accfs = new TAccount(server);
-				accfs->loadAccount(overrideStaff, false);
-				if (accfs->getNickname() == "default") {
-					accfs->loadAccount("YOURACCOUNT", false);
-
-					accfs->setAccountName(overrideStaff);
-					accfs->saveAccount();
+			if (!overrideStaff.isEmpty())
+			{
+				if (!server->isStaff(overrideStaff))
+				{
+					auto staff = settings->getStr("staff");
+					settings->addKey("staff", staff << "," << overrideStaff);
 				}
-				accfs = NULL;
+
+				TAccount accfs(server);
+				accfs.loadAccount(overrideStaff, false);
+				if (accfs.getOnlineTime() == 0)
+				{
+					accfs.loadAccount("YOURACCOUNT");
+					accfs.setAccountName(overrideStaff);
+					accfs.saveAccount();
+				}
 			}
 
 			settings->saveFile();
+			server->loadSettings();
 
 			serverList[overrideServer] = server;
 

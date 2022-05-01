@@ -229,7 +229,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 			//if (id == -1)
 			//	break;
 
-			if (statusMsg > server->getStatusList()->size() - 1)
+			if (statusMsg > server->getStatusList().size() - 1)
 				buffer >> (char)0;
 			else
 				buffer >> (char)statusMsg;
@@ -300,11 +300,11 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 	if (inrange(pPropId, 37, 41) || inrange(pPropId, 46, 49) || inrange(pPropId, 54, 74))
 	{
-		for (unsigned int i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
+		for (auto i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
 		{
 			if (__attrPackets[i] == pPropId)
 			{
-				auto len = std::min(attrList[i].length(), 223);
+				char len = std::min(attrList[i].length(), 223);
 				buffer >> (char)len << attrList[i].subString(0, len);
 				return;
 			}
@@ -1011,18 +1011,22 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				//z = (float)(int)(((float)z2 / 16.0f) + 0.5f);
 				break;
 
+			case PLPROP_UNKNOWN81:
+			{
+				auto val = pPacket.readGUChar();
+				break;
+			}
+
 			case PLPROP_COMMUNITYNAME:
 				pPacket.readChars(pPacket.readGUChar());
 				break;
 
 			default:
 			{
-#ifdef DEBUG
 				printf("Unidentified PLPROP: %i, readPos: %d\n", propId, pPacket.readPos());
 				for (int i = 0; i < pPacket.length(); ++i)
 					printf("%02x ", (unsigned char)pPacket[i]);
 				printf("\n");
-#endif
 				sentInvalid = true;
 			}
 			return;

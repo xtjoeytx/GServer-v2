@@ -10,6 +10,8 @@
 	#include <unistd.h>
 #endif
 #include <stdio.h>
+#include <fmt/format.h>
+#include "utilities/timeunits.h"
 
 #include "TServer.h"
 #include "TPlayer.h"
@@ -1073,6 +1075,27 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			server->loadAdminSettings();
 			server->getServerList()->sendServerHQ();
 		}
+		else if (words[0] == "/serveruptime" && words.size() == 1)
+		{
+			auto time_units = utilities::TimeUnits(std::time(nullptr) - server->getServerStartTime());
+
+			constexpr auto format_time_fn = [](std::string& m, const uint64_t t, const char *fmtStr) {
+				if (t > 0) {
+					m.append(fmt::format(" {} {}", t, fmtStr));
+					if (t > 1)
+						m.append("s");
+				}
+			};
+
+			std::string msg;
+			format_time_fn(msg, time_units.days, "day");
+			format_time_fn(msg, time_units.hours, "hour");
+			format_time_fn(msg, time_units.minutes, "minute");
+			if (time_units.days == 0)
+				format_time_fn(msg, time_units.seconds, "second");
+
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
+		}
 		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 		{
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " reloaded the word filter.");
@@ -1776,9 +1799,6 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		rclog.out("%s uploaded file %s\n", accountName.text(), file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
 
-		if (file.find(".gupd") != -1)
-			server->sendPacketToAll(CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << file, this);
-
 		// Update file.
 		updateFile(this, server, lastFolder, file);
 	}
@@ -2127,12 +2147,17 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		return;
 	}
 
+	bool isNewFile = false;
+
 	// If folder config is off, add it to the file list.
 	if ( settings->getBool("nofoldersconfig", false))
 	{
 		CFileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
+		{
 			fs->addFile(CString() << dir << file);
+			isNewFile = true;
+		}
 	}
 	// If folder config is on, try to find which file system to add it to.
 	else
@@ -2156,6 +2181,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 						fs2->addFile(fullPath);
 
 					fs->addFile(fullPath);
+					isNewFile = true;
 					//printf("adding %s to %s\n", file.text(), type.text());
 					break;
 				}
@@ -2191,4 +2217,48 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		server->loadIPBans();
 	else if (file == "rules.txt")
 		server->loadWordFilter();
+	else
+	{
+		// Check if this is a file that previously existed on the server so we
+		// can notify existing clients that the file was updated.
+		auto fileSystem = server->getFileSystem(FS_FILE);
+		if (!isNewFile && !fileSystem->find(file).isEmpty())
+		{
+			// Game files
+			const auto& playerList = *server->getPlayerList();
+			auto fileName = file.toString();
+
+			CString updatePacket;
+			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << file << "\n";
+
+			// Ganis need to be recompiled on update
+			CString bytecodePacket;
+			if (ext == ".gani")
+			{
+				auto& aniManager = server->getAnimationManager();
+
+				// delete the resource
+				aniManager.deleteResource(fileName);
+
+				// reload the resource to compile the bytecode again
+				auto findAni = aniManager.findOrAddResource(fileName);
+				if (findAni)
+					bytecodePacket << findAni->getBytecodePacket();
+			}
+
+			// Send the update packet to any v4+ clients that have seen this file
+			for (auto pl : playerList)
+			{
+				if (pl->isClient() && pl->getVersion() >= CLVER_4_0211)
+				{
+					if (pl->hasSeenFile(fileName))
+						pl->sendPacket(updatePacket);
+
+					// Send GS2 gani scripts
+					if (!bytecodePacket.isEmpty())
+						pl->sendPacket(bytecodePacket);
+				}
+			}
+		}
+	}
 }

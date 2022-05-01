@@ -1,0 +1,75 @@
+requestText( "clientrc", int 1 or 0 ); - opens/closes a Client-RC session (only works if you have admin rights set up correctly on the server)
+
+requestText( "list", NULL ); - returns the serverlist (Tested, Does not work with normal scripts)
+requestText( "simplelist", NULL ); - returns a simplified version of the serverlist (Tested, Does not work with normal scripts)
+requestText( "upgradeinfo", NULL ); ^ - returns the upgrade information of the current player
+requestText( "bantypes", NULL ); - returns possible ban types (Client-RC)
+requestText( "localbans", NULL ); - returns a list of local bans (Client-RC)
+
+requestText( "pmservers", NULL ); ^ - returns a list of public servers (used in the playerlist)
+requestText( "pmserverplayers", str servername ); ^ - shows the players of a given server in the playerlist
+requestText( "pmunmapserver", str servername ); ^ - hides the players of a given server in the playerlist
+requestText( "pmguilds", NULL ); ^ - returns a list of the guild tags currently in use
+requestText( "pmguildplayers", str guildname ); ^ - shows the players wearing the given guild tag in the playerlist
+requestText( "pmunmapguild", str guildname ); ^ - hides the players wearing the given guild tag in the playerlist
+
+Requests marked with a ^ are special requests that might not be accessible by normal scripts, i.e. for privileged scripts such as the playerlist and serverlist.
+
+requestText( "weaponlist", NULL ); - retrieves the weapon list from the server (Client-RC)
+requestText( "classlist", NULL ); - retrieves the class list from the server (Client-RC)
+requestText( "npclist", NULL ); - retrieves the DB NPC list from the server (Client-RC)
+requestText( "weapon", str weaponname ); * - returns the weapon script of the given weapon (Client-RC)
+requestText( "class", str classname ); * - returns the class script of the given class (Client-RC)
+requestText( "npc", str npcname/int npcid ); * - returns the NPC script of the given DB NPC (Client-RC)
+requestText( "npcflags", str npcname/int npcid ); * - returns the flag list of the given DB NPC (Client-RC)
+requestText( "options", NULL ); * - returns the server options (Client-RC)
+requestText( "folderconfig", NULL ); * - returns the folder config (Client-RC)
+requestText( "serverflags", NULL ); * - returns the server flags (Client-RC)
+requestText( "folders", NULL ); - retrieves a list of folders accessible to RC (Client-RC)
+requestText( "folder", str foldername ); - retrieves a list of files in the given folder (Client-RC)
+requestText( "rights", str accountname ); * - returns the local rights of the player (Client-RC)
+requestText( "comments", str accountname ); * - returns the local comments of the player (Client-RC)
+requestText( "playerflags", str accountname ); * - returns the script flags of the given player (Client-RC)
+requestText( "playerweapons", str accountname ); * - returns the weapons list of the given player (Client-RC)
+requestText( "playerchests", str accountname ); * - returns the chest list of the given player (Client-RC)
+requestText( "playerattributes", str accountname ); * - returns the basic attributes of the given player (Client-RC)
+requestText( "nextdbnpcid", NULL ); - retrieves the next available DB NPC ID (Client-RC)
+requestText( "scripthelp", str searchterm ); - searches scripthelp texts for information on commands and objects (Client-RC)
+
+Requests marked with * are similar in requesting as they are sending data back using sendtext, i.e. to send a new weapons list.
+
+requestText( "playerweapons", "Skyld" ); // requesting
+sendText( "playerweapons", "Skyld", {"Test/NPC", "Foo/Bar"} ); // sending a new list
+
+sendText( "adminmessage", int playerid, str message ); - sends an admin message to a player (Client-RC)
+sendText( "disconnect", int playerid, str disconnectreason ); - disconnects the given player ID (Client-RC)
+sendText( "lister", "getbanhistory", str accountname ); - gets the ban history of a players account
+sendText( "lister", "staffactivity", str accountname ); - gets the staff activity of a players account
+sendText( "resetnpc", str npcname/int npcid, NULL ); - resets the given DB NPC (Client-RC)
+sendText( "deleteweapon", str weaponname, NULL ); - deletes the given weapon (Client-RC)
+sendText( "deleteclass", str classname, NULL ); - deletes the given class (Client-RC)
+sendText( "deletenpc", str npcname, NULL ); - deletes the given DB NPC (Client-RC)
+
+
+sendText( "irc", str option, { params } ); - See "IRC sendtext params" a few lines below for options, params and actions
+sendText( "lister", "checkinguild", { str accountname, str guildname } ); - returns the players nick in the guild and the players guildrank - also returns if the guild is pending !
+sendText( "lister", "checkguildexists", str guildname ); - returns true or false if the guildname exists - also returns true if the guild is pending ! 
+
+sendtext("syncoptions","distance", {horizontal, vertical}); 
+
+Outgoing data:
+sendText( "irc", "login", str ircname ); - Connects to the IRC using name as the connections nickname
+sendText( "irc", "logout", "" ); - Disconnects from the IRC
+sendText( "irc", "privmsg", { str destination, str message } ); - Sends a message to a channel or user
+sendText( "irc", "notice", { str destination, str message } ); - Sends a "notice" message to a channel or user
+sendText( "irc", "join", str channelname ); - Join channelname
+sendText( "irc", "part", str channelname ); - Leave channelname
+sendText( "irc", "topic", { str channelname, str topic } ); - Set the topic for the channel 
+
+Incoming data:
+onReceiveText( "irc", "privmsg", { str source, str destination, str message } ) - Sends the source of a message, where the message was directed to (destination) and the message
+onReceiveText( "irc", "notice", { str source, str destination, str message } ) - Sends the source of a notice, where the notice was directed to (destination) and the notice
+onReceiveText( "irc", "addchanneluser", { str channel, str name, ( str servername ), ( str accountname ) } ) - Mechanism used to alert IRC scripts when users have joined the current channel, and lists users in the channel upon join. Shows the channel that name joined.
+onReceiveText( "irc", "deletechanneluser", { str channel, str name } ) - Mechanism used to alert IRC scripts when users have left the current channel
+onReceiveText( "irc", "join", { str channel } ) - Mechanism used to confirm that you have joined channel
+onReceiveText( "irc", "part", { str channel } ) - Mechanism used to confirm that you have left channel

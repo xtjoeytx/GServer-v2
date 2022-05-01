@@ -1,11 +1,11 @@
-#include <GS2Context.h>
+#include "GS2Context.h"
 #include "TScriptClass.h"
 #include "TServer.h"
 
-TScriptClass::TScriptClass(TServer* server, const std::string& className, const std::string& classSource)
-	: _server(server), _className(className), _classSource(classSource)
+TScriptClass::TScriptClass(TServer *server, const std::string& className, const std::string& classSource)
+	: _className(className)
 {
-	parseScripts();
+	parseScripts(server, classSource);
 }
 
 TScriptClass::~TScriptClass()
@@ -13,30 +13,40 @@ TScriptClass::~TScriptClass()
 
 }
 
-void TScriptClass::parseScripts()
+void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 {
-	bool gs2default = _server->getSettings()->getBool("gs2default", false);
+	bool gs2default = server->getSettings()->getBool("gs2default", false);
 
-	_source = {_classSource, gs2default };
-	_serverCode = _source.getServerSide();
-	_clientCode = _source.getClientGS1();
+	_source = { classSource, gs2default };
 
 	// Compile GS2 code
 	auto gs2Script = _source.getClientGS2();
 	if (!gs2Script.empty())
 	{
-		GS2Context context;
-		auto byteCode = context.compile(std::string{ gs2Script }, "class", _className, true);
+		server->compileGS2Script(this, [this](const CompilerResponse &response)
+		{
+			if (response.success)
+			{
+				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "class", _className, true);
 
-		if (!context.hasErrors())
-		{
-			_bytecode.clear();
-			_bytecode.write((const char*)byteCode.buffer(), byteCode.length());
-		}
-		else
-		{
-			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
-		}
+				// these should be sent for compilation right after
+				//_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
+
+				_bytecode.clear(bytecodeWithHeader.length());
+				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+
+				// temp: save bytecode to file
+				//CString bytecodeFile;
+				//bytecodeFile << _server->getServerPath() << "bytecode/classes/";
+				//std::filesystem::create_directories(bytecodeFile.text());
+				//bytecodeFile << "class_" << _className << ".gs2bc";
+
+				//CString bytecodeDump;
+				//bytecodeDump.writeInt(1);
+				//bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+				//bytecodeDump.save(bytecodeFile);
+			}
+		});
 	}
 }
 

@@ -135,7 +135,7 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 	{
 		TLevel *newLevel = server->getLevel(npcLevel);
 		if (newLevel != nullptr)
-			npc->warpNPC(newLevel, npcX, npcY);
+			npc->warpNPC(newLevel, int(npcX * 16.0), int(npcY * 16.0));
 	}
 
 	return true;
@@ -330,7 +330,7 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 
 	if (classObj != nullptr)
 	{
-		CString classCode(classObj->source());
+		CString classCode(classObj->getSource().getSource());
 
 		CString ret;
 		ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();

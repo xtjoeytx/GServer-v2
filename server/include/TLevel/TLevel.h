@@ -211,20 +211,21 @@ class TLevel
 		//! \return Currently, it always returns true.
 		bool doTimedEvents();
 
-		bool isOnWall(double pX, double pY) const;
-		bool isOnWater(double pX, double pY) const;
+		bool isOnWall(int pX, int pY) const;
+		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0) const;
+		bool isOnWater(int pX, int pY) const;
 		std::optional<TLevelChest> getChest(int x, int y) const;
 		std::optional<TLevelLink> getLink(int pX, int pY) const;
 		CString getChestStr(const TLevelChest& chest) const;
 
 #ifdef V8NPCSERVER
-		std::vector<TNPC *> findAreaNpcs(float pX, float pY, int pWidth, int pHeight);
-		std::vector<TNPC*> testTouch(float pX, float pY);
+		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
+		std::vector<TNPC *> testTouch(int pX, int pY);
 		TNPC *isOnNPC(float pX, float pY, bool checkEventFlag = false);
 		void sendChatToLevel(const TPlayer *player, const std::string& message);
 
 		IScriptObject<TLevel>* getScriptObject() const;
-		void setScriptObject(IScriptObject<TLevel>* object);
+		void setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object);
 #endif
 
 	private:
@@ -247,7 +248,7 @@ class TLevel
 		CString fileName, fileVersion, actualLevelName, levelName;
 		std::vector<TLevelBaddy *> levelBaddies;
 		std::vector<TLevelBaddy *> levelBaddyIds;
-		std::vector<TLevelBoardChange *> levelBoardChanges;
+		std::vector<TLevelBoardChange> levelBoardChanges;
 		std::vector<TLevelChest> levelChests;
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
@@ -257,18 +258,18 @@ class TLevel
 		std::vector<TPlayer *> levelPlayerList;
 
 #ifdef V8NPCSERVER
-		IScriptObject<TLevel> *_scriptObject;
+		std::unique_ptr<IScriptObject<TLevel>> _scriptObject;
 #endif
 };
 
 #ifdef V8NPCSERVER
 
 inline IScriptObject<TLevel>* TLevel::getScriptObject() const {
-	return _scriptObject;
+	return _scriptObject.get();
 }
 
-inline void TLevel::setScriptObject(IScriptObject<TLevel>* object) {
-	_scriptObject = object;
+inline void TLevel::setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object) {
+	_scriptObject = std::move(object);
 }
 
 #endif

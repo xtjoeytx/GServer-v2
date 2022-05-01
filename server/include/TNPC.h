@@ -130,12 +130,27 @@ enum
 	NPCMOVEFLAG_APPLYDIR		= 0x10
 };
 
-#ifdef V8NPCSERVER
 enum class NPCType
 {
 	LEVELNPC,	// npcs found in a level
 	PUTNPC,		// npcs created via script (putnpc)
 	DBNPC		// npcs created in RC (Database-NPCs)
+};
+
+#ifdef V8NPCSERVER
+
+enum class NPCEventResponse
+{
+	NoEvents,
+	PendingEvents,
+	Delete
+};
+
+enum class NPCWarpType
+{
+	None,
+	AllLinks,
+	OverworldLinks
 };
 
 //! NPC Event Flags
@@ -220,8 +235,8 @@ class TNPC
 		// set functions
 		void setId(unsigned int pId)			{ id = pId; }
 		void setLevel(TLevel* pLevel)			{ level = pLevel; }
-		void setX(float val)					{ x = val; }
-		void setY(float val)					{ y = val; }
+		void setX(int val)						{ x = val; }
+		void setY(int val)						{ y = val; }
 		void setHeight(int val)					{ height = val; }
 		void setWidth(int val)					{ width = val; }
 		void setName(const std::string& name)	{ npcName = name; }
@@ -235,8 +250,8 @@ class TNPC
 		// get functions
 		unsigned int getId() const				{ return id; }
 		NPCType getType() const					{ return npcType; }
-		float getX() const						{ return x; }
-		float getY() const						{ return y; }
+		int getX() const						{ return x; }
+		int getY() const						{ return y; }
 		int getHeight() const 					{ return height; }
 		int getWidth() const 					{ return width; }
 		unsigned char getSprite() const			{ return sprite; }
@@ -252,6 +267,10 @@ class TNPC
 		TLevel * getLevel() const				{ return level; }
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getColorId(unsigned int idx) const;
+
+		const CString& getByteCode() const {
+			return npcBytecode;
+		}
 
 #ifdef V8NPCSERVER
 		bool joinedClass(const std::string& name) {
@@ -269,7 +288,7 @@ class TNPC
 
 		ScriptExecutionContext& getExecutionContext();
 		IScriptObject<TNPC> * getScriptObject() const;
-		void setScriptObject(IScriptObject<TNPC> *object);
+		void setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object);
 
 		// -- flags
 		CString getFlag(const std::string& pFlagName) const;
@@ -281,10 +300,10 @@ class TNPC
 		void reloadNPC();
 		void resetNPC();
 
-		bool isWarpable() const { return canWarp; }
-		void allowNpcWarping(bool canWarp);
-		void moveNPC(float dx, float dy, double time, int options);
-		void warpNPC(TLevel *pLevel, float pX, float pY);
+		bool isWarpable() const;
+		void allowNpcWarping(NPCWarpType canWarp);
+		void moveNPC(int dx, int dy, double time, int options);
+		void warpNPC(TLevel *pLevel, int pX, int pY);
 
 		// file
 		bool loadNPC(const CString& fileName);
@@ -301,13 +320,9 @@ class TNPC
 		void scheduleEvent(unsigned int timeout, ScriptAction& action);
 
 		bool runScriptTimer();
-		bool runScriptEvents();
+		NPCEventResponse runScriptEvents();
 
 		CString getVariableDump();
-		
-		inline const CString& getByteCode() const {
-			return npcBytecode;
-		}
 
 #endif
 
@@ -317,7 +332,8 @@ class TNPC
 
 		bool blockPositionUpdates;
 		time_t modTime[NPCPROP_COUNT];
-		float x, y, hurtX, hurtY;
+		float hurtX, hurtY;
+		int x, y;
 		unsigned int id;
 		int rupees;
 		unsigned char darts, bombs, glovePower, bombPower, swordPower, shieldPower;
@@ -344,6 +360,7 @@ class TNPC
 		bool hasTimerUpdates() const;
 		void freeScriptResources();
 		void testTouch();
+		void testForLinks();
 		void updateClientCode();
 
 		std::map<std::string, std::string> classMap;
@@ -352,15 +369,15 @@ class TNPC
 
 		// Defaults
 		CString origImage, origLevel;
-		float origX, origY;
+		int origX, origY;
 
 		// npc-server
-		bool canWarp;
+		NPCWarpType canWarp;
 		bool npcDeleteRequested;
 		std::unordered_map<std::string, CString> flagList;
 
 		unsigned int _scriptEventsMask;
-		IScriptObject<TNPC> *_scriptObject;
+		std::unique_ptr<IScriptObject<TNPC>> _scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 		std::vector<ScriptEventTimer> _scriptTimers;
@@ -559,17 +576,21 @@ void TNPC::setSwordImage(const std::string& pSwordImage)
 
 #ifdef V8NPCSERVER
 
-inline
-void TNPC::updatePropModTime(unsigned char propId)
+inline void TNPC::updatePropModTime(unsigned char propId)
 {
-	if (propId < NPCPROP_COUNT) {
+	if (propId < NPCPROP_COUNT)
+	{
 		propModified.insert(propId);
 		registerNpcUpdates();
 	}
 }
 
-inline
-void TNPC::allowNpcWarping(bool canWarp)
+inline bool TNPC::isWarpable() const
+{
+	return canWarp != NPCWarpType::None;
+}
+
+inline void TNPC::allowNpcWarping(NPCWarpType canWarp)
 {
 	if (npcType != NPCType::LEVELNPC)
 		this->canWarp = canWarp;
@@ -595,11 +616,11 @@ inline ScriptExecutionContext& TNPC::getExecutionContext() {
 }
 
 inline IScriptObject<TNPC> * TNPC::getScriptObject() const {
-	return _scriptObject;
+	return _scriptObject.get();
 }
 
-inline void TNPC::setScriptObject(IScriptObject<TNPC> *object) {
-	_scriptObject = object;
+inline void TNPC::setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object) {
+	_scriptObject = std::move(object);
 }
 
 inline CString TNPC::getFlag(const std::string& pFlagName) const
@@ -627,7 +648,7 @@ template<class... Args>
 inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
-	ScriptAction scriptAction = scriptEngine->CreateAction(action, _scriptObject, std::forward<Args>(An)...);
+	ScriptAction scriptAction = scriptEngine->CreateAction(action, getScriptObject(), std::forward<Args>(An)...);
 
 	_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)

@@ -4,6 +4,8 @@
 #include <chrono>
 #include <functional>
 
+#include <fmt/format.h>
+
 #include "TServer.h"
 #include "main.h"
 #include "TPlayer.h"
@@ -12,6 +14,7 @@
 #include "TNPC.h"
 #include "TMap.h"
 #include "TLevel.h"
+#include "ScriptOrigin.h"
 
 static const char* const filesystemTypes[] =
 {
@@ -28,7 +31,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -170,6 +173,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Register ourself with the socket manager.
 	sockManager.registerSocket((CSocketStub*)this);
 
+	serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	return 0;
 }
 
@@ -347,6 +351,9 @@ bool TServer::doMain()
 
 #ifdef V8NPCSERVER
     mScriptEngine.RunScripts(currentTimer);
+
+	// enable when we switch to async compiling
+	//gs2ScriptManager.runQueue();
 #endif
 
 	// Every second, do some events.
@@ -759,7 +766,7 @@ void TServer::loadWeapons(bool print)
 	{
 		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
-		if (weapon->getByteCodeFile().isEmpty())
+		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
@@ -1042,8 +1049,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 			TLevel *npcLevel = npc->getLevel();
 			if (npcLevel != nullptr) {
 				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
-					append(" at pos (").append(CString(npc->getY()).text()).
-					append(", ").append(CString(npc->getX()).text()).append(")");
+					append(" at pos (").append(CString(npc->getY() / 16.0).text()).
+					append(", ").append(CString(npc->getX() / 16.0).text()).append(")");
 			}
 
 			script_profiles.push_back(std::make_pair(executionData.second, npcName));
@@ -1069,6 +1076,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	return script_profiles;
 }
 
+#endif
+
 void TServer::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = error.getErrorString();
@@ -1078,11 +1087,15 @@ void TServer::reportScriptException(const ScriptRunError& error)
 
 void TServer::reportScriptException(const std::string& error_message)
 {
-	sendToNC(error_message);
-	getScriptLog().out(error_message + "\n");
+	auto lines = CString{ error_message }.tokenize("\n");
+
+	for (const auto& line : lines)
+	{
+		sendToNC(line);
+		getScriptLog().out(line + "\n");
+	}
 }
 
-#endif
 
 /////////////////////////////////////////////////////
 
@@ -1241,9 +1254,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
 	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	printf("Msg: %s\n", std::string(message.text()).c_str());
-
-	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), std::string(message.text())));
+	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
 }
 
@@ -1397,7 +1408,7 @@ void TServer::updateClass(const std::string& className, const std::string& class
 unsigned int TServer::getFreePlayerId()
 {
 	unsigned int newId = 0;
-	for (unsigned int i = 2; i < playerIds.size(); ++i)
+	for (auto i = 2; i < playerIds.size(); ++i)
 	{
 		if (playerIds[i] == nullptr)
 		{
@@ -1433,7 +1444,7 @@ bool TServer::addPlayer(TPlayer *player, unsigned int id)
 
 #ifdef V8NPCSERVER
 	// Create script object for player
-	mScriptEngine.WrapObject(player);
+	mScriptEngine.wrapScriptObject(player);
 #endif
 
 	return true;
@@ -1773,7 +1784,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 		if (player->hasWeapon(pWeapon->getName()))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
-			player->sendPacket(CString() << pWeapon->getWeaponPacket());
+			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));
 		}
 	}
 }
@@ -1801,6 +1812,78 @@ void TServer::updateClassForPlayers(TScriptClass *pClass)
 	}
 }
 
+
+/*
+	GS2 Functionality
+*/
+template<typename ScriptObjType>
+void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
+{
+	std::string script{ scriptObject.getSource().getClientGS2() };
+
+	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
+	{
+		if (!resp.errors.empty())
+		{
+			handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
+		}
+
+		// Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
+		//if (resp.success)
+		//{
+		//	for (auto& joinedClass : resp.joinedClasses)
+		//	{
+		//		auto cls = getClass(joinedClass);
+		//		if (cls && cls->getByteCode().isEmpty())
+		//		{
+		//			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
+		//			compileScript(*cls, fn);
+		//		}
+		//	}
+		//}
+
+		if (cb)
+		{
+			cb(resp);
+		}
+	});
+}
+
+void TServer::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
+{
+	gs2ScriptManager.compileScript(source, cb);
+}
+
+void TServer::compileGS2Script(TNPC *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::compileGS2Script(TScriptClass *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::compileGS2Script(TWeapon *scriptObject, GS2ScriptManager::user_callback_type cb)
+{
+	if (scriptObject)
+	{
+		compileScript(*scriptObject, cb);
+	}
+}
+
+void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
+{
+	// Report the script exception
+	for (auto& err : errors)
+		reportScriptException(fmt::format("Script compiler output for {}:\nerror: {}", origin, err.msg()));
+}
 
 /*
 	Translation Functionality

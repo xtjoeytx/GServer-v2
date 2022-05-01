@@ -26,20 +26,24 @@ std::string minifyClientCode(const CString& src)
 	if (!src.isEmpty())
 	{
 		auto tmp = removeComments(src, "\n");
-		std::vector<CString> codeLines = tmp.tokenize("\n");
 
+		// Scripts should start with //#CLIENTSIDE since this is client code
+		if (tmp.find("//#CLIENTSIDE") != 0)
+			minified.append("//#CLIENTSIDE").append("\xa7");
+
+		std::vector<CString> codeLines = tmp.tokenize("\n");
 		for (const auto& line : codeLines)
 			minified.append(line.trim().toString()).append("\xa7");
 	}
 
-	return std::move(minified);
+	return minified;
 }
 
 TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type)
 	: TNPC(pServer, type)
 {
-	setX(pX);
-	setY(pY);
+	setX(int(pX * 16));
+	setY(int(pY * 16));
 	image = pImage.text();
 	level = pLevel;
 #ifdef V8NPCSERVER
@@ -65,15 +69,15 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 
 TNPC::TNPC(TServer *pServer, NPCType type)
 	: server(pServer), npcType(type), blockPositionUpdates(false),
-	x(30), y(30.5),
+	x(int(30 * 16)), y(int(30.5 * 16)),
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
 	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
 	gani("idle"), level(nullptr)
 #ifdef V8NPCSERVER
 	, _scriptExecutionContext(pServer->getScriptEngine())
-	, origX(x), origY(y), npcDeleteRequested(false), canWarp(false), width(32), height(32)
-	, timeout(0), _scriptEventsMask(0xFF), _scriptObject(0)
+	, origX(x), origY(y), npcDeleteRequested(false), canWarp(NPCWarpType::None), width(32), height(32)
+	, timeout(0), _scriptEventsMask(0xFF)
 #endif
 {
 	memset((void*)colors, 0, sizeof(colors));
@@ -122,14 +126,24 @@ void TNPC::setScriptCode(std::string pScript)
 
 	bool levelModificationNPCHack = false;
 
+	// NOTE: since we are not removing comments from the source, any comments at the start of the script
+	// interferes with the starts_with check, so a temporary workaround is to check for it within the first 100 characters
+
+	// All code is stored in clientside when building without an npc-server, and split as-expected with the npc-server
+#ifdef V8NPCSERVER
+	std::string_view npcScriptSearch = npcScript.getServerSide();
+#else
+	std::string_view npcScriptSearch = npcScript.getClientSide();
+#endif
+
 	// See if the NPC sets the level as a sparring zone.
-	if (npcScript.getServerSide().starts_with("sparringzone"))
+	if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
 	{
 		level->setSparringZone(true);
 		levelModificationNPCHack = true;
 	}
 	// See if the NPC sets the level as singleplayer.
-	else if (npcScript.getServerSide().starts_with("singleplayer"))
+	else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
 	{
 		level->setSingleplayer(true);
 		levelModificationNPCHack = true;
@@ -138,29 +152,28 @@ void TNPC::setScriptCode(std::string pScript)
 	// Remove sparringzone / singleplayer from the server script
 	if (levelModificationNPCHack)
 	{
-		std::string_view sv = npcScript.getServerSide();
-		sv.remove_prefix(12);
-		npcScript.setServerSide(sv);
+		// Clearing the entire script 
+		npcScript.clearServerSide();
 	}
 
 	// See if the NPC should block position updates from the level leader.
 #ifdef V8NPCSERVER
 	blockPositionUpdates = true;
 #else
-	if (script.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
+	if (npcScript.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
 		blockPositionUpdates = true;
 #endif
 
 #ifndef V8NPCSERVER
 	// Search for toweapons in the clientside code and extract the name of the weapon.
-	weaponName = toWeaponName(std::string{ script.getClientGS1() });
+	weaponName = toWeaponName(std::string{ npcScript.getClientGS1() });
 #endif
 
 	// Remove comments and trim the code if specified. Also changes line-endings
 #ifdef V8NPCSERVER
 	updateClientCode();
 #else
-	auto tmpScript = doJoins(std::string{ script.getClientGS1() }, server->getFileSystem());
+	auto tmpScript = doJoins(std::string{ npcScript.getClientGS1() }, server->getFileSystem());
 	clientScriptFormatted = minifyClientCode(tmpScript);
 
 	// Just a little warning for people who don't know.
@@ -205,13 +218,25 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)image.length() << image;
 
 		case NPCPROP_SCRIPT:
+			// GS2 support
+			if (clientVersion >= CLVER_4_0211)
+			{
+				// GS1 was disabled after this client version
+				if (clientVersion > CLVER_5_07)
+					return CString() >> (short)0;
+
+				// If we have bytecode, don't send gs1 script
+				if (!npcBytecode.isEmpty())
+					return CString() >> (short)0;
+			}
+
 			return CString() >> (short)(clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : clientScriptFormatted.length()) << clientScriptFormatted.substr(0, 0x3FFF);
 
 		case NPCPROP_X:
-			return CString() >> (char)(x * 2);
+			return CString() >> (char)(x / 8.0);
 
 		case NPCPROP_Y:
-			return CString() >> (char)(y * 2);
+			return CString() >> (char)(y / 8.0);
 
 		case NPCPROP_POWER:
 			return CString() >> (char)power;
@@ -334,7 +359,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 		case NPCPROP_X2:
 		{
-			uint16_t val = ((uint16_t)std::abs(x * 16.0f)) << 1;
+			uint16_t val = ((uint16_t)std::abs(x)) << 1;
 			if (x < 0)
 				val |= 0x0001;
 			return CString().writeGShort(val);
@@ -342,7 +367,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 		case NPCPROP_Y2:
 		{
-			uint16_t val = ((uint16_t)std::abs(y * 16.0f)) << 1;
+			uint16_t val = ((uint16_t)std::abs(y)) << 1;
 			if (y < 0)
 				val |= 0x0001;
 			return CString().writeGShort(val);
@@ -424,7 +449,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					pProps.readGChar();
 					continue;
 				}
-				x = (float)(pProps.readGChar()) / 2.0f;
+				x = pProps.readGChar() * 8;
 				hasMoved = true;
 				break;
 
@@ -434,7 +459,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					pProps.readGChar();
 					continue;
 				}
-				y = (float)(pProps.readGChar()) / 2.0f;
+				y = pProps.readGChar() * 8;
 				hasMoved = true;
 				break;
 
@@ -632,7 +657,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				}
 
 				len = pProps.readGUShort();
-				x = (len >> 1) / 16.0f;
+				x = (len >> 1);
 
 				// If the first bit is 1, our position is negative.
 				if ((uint16_t)len & 0x0001)
@@ -649,7 +674,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				}
 
 				len = pProps.readGUShort();
-				y = (len >> 1) / 16.0f;
+				y = (len >> 1);
 
 				// If the first bit is 1, our position is negative.
 				if ((uint16_t)len & 0x0001)
@@ -702,7 +727,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 			default:
 			{
-				printf("NPC %ud (%.2f, %.2f): ", id, x, y);
+				printf("NPC %ud (%.2f, %.2f): ", id, (float)x / 16.0f, (float)y / 16.0f);
 				printf("Unknown prop: %ud, readPos: %d\n", propId, pProps.readPos());
 				for (int i = 0; i < pProps.length(); ++i)
 					printf("%02x ", (unsigned char)pProps[i]);
@@ -741,66 +766,60 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 #ifdef V8NPCSERVER
 
-void TNPC::testTouch()
+void TNPC::testForLinks()
 {
-	if (level == 0)
-		return;
+	// Overworld links
+	if (level->getMap())
+	{
+		auto map = level->getMap();
 
-	bool tryLocalLinks = canWarp;
+		// Gmaps are treated as one large map, and so (local?) npcs can freely walk
+		// across maps without canwarp being enabled (source: post=1193766)
+		if (map->isGmap() || canWarp != NPCWarpType::None)
+		{
+			int gmapX = x + 1024 * level->getMapX();
+			int gmapY = y + 1024 * level->getMapY();
+			int mapx = gmapX / 1024;
+			int mapy = gmapY / 1024;
 
-	// 2, 3
-	if (!canWarp) {
-		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+			if (level->getMapX() != mapx || level->getMapY() != mapy)
+			{
+				TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
+				if (newLevel != nullptr)
+				{
+					this->warpNPC(newLevel, gmapX % 1024, gmapY % 1024);
+					return;
+				}
+			}
+		}
+	}
+
+	if (canWarp == NPCWarpType::AllLinks)
+	{
+		static const int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		
 		int dir = sprite % 4;
 
-		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
+		auto linkTouched = level->getLink((int)(x / 16) + touchtestd[dir * 2], (int)(y / 16) + touchtestd[dir * 2 + 1]);
 		if (linkTouched)
 		{
 			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
 			if (newLevel != 0)
 			{
-				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
-				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
+				int newX = (linkTouched->getNewX() == "playerx" ? x : int(16.0 * strtofloat(linkTouched->getNewX())));
+				int newY = (linkTouched->getNewY() == "playery" ? y : int(16.0 * strtofloat(linkTouched->getNewY())));
 				this->warpNPC(newLevel, newX, newY);
 			}
 		}
 	}
-	else if (level->getMap())
-	{
-		auto map = level->getMap();
-		float gmapX = x + 64.0f * level->getMapX();
-		float gmapY = y + 64.0f * level->getMapY();
-		int mapx = gmapX / 64;
-		int mapy = gmapY / 64;
+}
 
-		if (level->getMapX() != mapx || level->getMapY() != mapy) {
-			TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
-			if (newLevel != nullptr) {
-				//float newX = x + 64.0f * newLevel->getMapX();
-				//float newY = y + 64.0f * newLevel->getMapY();
-				this->warpNPC(newLevel, fmodf(gmapX, 64.0f), fmodf(gmapY, 64.0f));
-				tryLocalLinks = false;
-			}
-		}
-	}
-
-	if (tryLocalLinks)
-	{
-		static int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
-		int dir = sprite % 4;
-
-		auto linkTouched = level->getLink((int)x + touchtestd[dir * 2], (int)y + touchtestd[dir * 2 + 1]);
-		if (linkTouched)
-		{
-			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
-			if (newLevel && !(level->getMap() && level->getMap() == newLevel->getMap()))
-			{
-				float newX = (linkTouched->getNewX() == "playerx" ? x : strtofloat(linkTouched->getNewX()));
-				float newY = (linkTouched->getNewY() == "playery" ? y : strtofloat(linkTouched->getNewY()));
-				this->warpNPC(newLevel, newX, newY);
-			}
-		}
-	}
+void TNPC::testTouch()
+{
+	if (!level)
+		return;
+	
+	testForLinks();
 }
 
 void TNPC::freeScriptResources()
@@ -811,28 +830,17 @@ void TNPC::freeScriptResources()
 	if (!npcScript.getServerSide().empty())
 		scriptEngine->ClearCache<TNPC>(npcScript.getServerSide());
 
+	// Reset script execution
+	_scriptExecutionContext.resetExecution();
+
 	// Clear any queued actions
 	scriptEngine->UnregisterNpcUpdate(this);
 
-	if (_scriptExecutionContext.hasActions())
-	{
-		// Unregister npc from any queued event calls
-		//scriptEngine->UnregisterNpcUpdate(this);
-
-		// Reset execution
-		_scriptExecutionContext.resetExecution();
-	}
-
-	// Clear timeouts
-	if (timeout > 0)
-	{
-		scriptEngine->UnregisterNpcTimer(this);
-		timeout = 0;
-	}
-
-	// Clear scheduled events
+	// Clear timeouts & scheduled events
+	scriptEngine->UnregisterNpcTimer(this);
 	_scriptTimers.clear();
-
+	timeout = 0;
+	
 	// Clear triggeraction functions
 	for (auto & _triggerAction : _triggerActions)
 		delete _triggerAction.second;
@@ -840,10 +848,7 @@ void TNPC::freeScriptResources()
 
 	// Delete script object
 	if (_scriptObject)
-	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
-	}
+		_scriptObject.reset();
 }
 
 // Set callbacks for triggeractions!
@@ -875,35 +880,14 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 
 	if (playerObject)
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
 	}
 	else
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
 	}
 
 	scriptEngine->RegisterNpcUpdate(this);
-
-	/*
-	assert(player);
-
-	// Check if we respond to this trigger
-	auto triggerIter = _triggerActions.find(action);
-	if (triggerIter == _triggerActions.end())
-		return;
-
-	CScriptEngine *scriptEngine = server->getScriptEngine();
-
-	IScriptObject<TPlayer>* playerObject = player->getScriptObject();
-	if (playerObject != nullptr) {
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, playerObject, data));
-	} else {
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", _scriptObject, triggerIter->second, nullptr, data));
-	}
-
-	//_scriptExecutionContext.addAction(scriptAction);
-	scriptEngine->RegisterNpcUpdate(this);
-	*/
 }
 
 TScriptClass * TNPC::joinClass(const std::string& className)
@@ -916,12 +900,10 @@ TScriptClass * TNPC::joinClass(const std::string& className)
 	if (!classObj)
 		return nullptr;
 
-	classMap[className] = classObj->clientCode();
+	classMap[className] = classObj->getSource().getClientGS1();
 	updateClientCode();
 	return classObj;
 }
-
-#include "GS2Context.h"
 
 void TNPC::updateClientCode()
 {
@@ -939,28 +921,25 @@ void TNPC::updateClientCode()
 	if (clientScriptFormatted.length() > 0x705F)
 		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (weaponName.length() != 0 ? weaponName.text() : image.c_str()));
 
+	// Compile gs2
+	if (!npcScript.getClientGS2().empty())
+	{
+		// Compile gs2 code
+		server->compileGS2Script(this,
+			[this](const CompilerResponse& response)
+			{
+				if (response.success)
+				{
+					auto& byteCode = response.bytecode;
+					npcBytecode.clear(byteCode.length());
+					npcBytecode.write((const char*)byteCode.buffer(), (int)byteCode.length());
+				}
+			}
+		);
+	}
+
 	// Update prop for players
 	this->updatePropModTime(NPCPROP_SCRIPT);
-
-	// Compile gs2
-	auto gs2Script = npcScript.getClientGS2();
-	if (!gs2Script.empty())
-	{
-		GS2Context context;
-		auto byteCode = context.compile(std::string{ gs2Script });
-
-		if (!context.hasErrors())
-		{
-			npcBytecode.clear(byteCode.length());
-			npcBytecode.write((const char*)byteCode.buffer(), byteCode.length());
-
-			//visFlags |= NPCVISFLAG_SOMETHIN;
-		}
-		else
-		{
-			printf("Compilation Error: %s\n", context.getErrors()[0].msg().c_str());
-		}
-	}
 }
 
 void TNPC::setTimeout(int newTimeout)
@@ -985,11 +964,11 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool regis
 
 	if (playerObject)
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, _scriptObject, playerObject));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject(), playerObject));
 	}
 	else
 	{
-		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, _scriptObject));
+		_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject()));
 	}
 
 	if (registerAction)
@@ -1011,11 +990,11 @@ bool TNPC::runScriptTimer()
 	bool queued = false;
 	for (auto it = _scriptTimers.begin(); it != _scriptTimers.end();)
 	{
-		ScriptEventTimer *timer = &(*it);
-		timer->timer--;
-		if (timer->timer == 0)
+		ScriptEventTimer& timer = *it;
+		timer.timer--;
+		if (timer.timer == 0)
 		{
-			_scriptExecutionContext.addAction(timer->action);
+			_scriptExecutionContext.addAction(timer.action);
 			it = _scriptTimers.erase(it);
 			queued = true;
 			continue;
@@ -1032,7 +1011,7 @@ bool TNPC::runScriptTimer()
 	return hasTimerUpdates();
 }
 
-bool TNPC::runScriptEvents()
+NPCEventResponse TNPC::runScriptEvents()
 {
 	// Returns true if we still have actions to run
 	bool hasActions = _scriptExecutionContext.runExecution();
@@ -1040,8 +1019,10 @@ bool TNPC::runScriptEvents()
 	// Send properties modified by scripts
 	if (!propModified.empty())
 	{
-		if (canWarp)
+		if (propModified.contains(NPCPROP_X2) || propModified.contains(NPCPROP_Y2))
+		{
 			testTouch();
+		}
 
 		time_t newModTime = time(0);
 
@@ -1059,12 +1040,11 @@ bool TNPC::runScriptEvents()
 
 	if (npcDeleteRequested)
 	{
-		server->deleteNPC(this);
 		npcDeleteRequested = false;
-		return false;
+		return NPCEventResponse::Delete;
 	}
 
-	return hasActions;
+	return (hasActions ? NPCEventResponse::PendingEvents : NPCEventResponse::NoEvents);
 }
 
 CString TNPC::getVariableDump()
@@ -1313,12 +1293,12 @@ CString TNPC::getVariableDump()
 
 bool TNPC::deleteNPC()
 {
-	//if (!isLevelNPC() && npcScriptType == "LOCALN")
 	if (getType() == NPCType::PUTNPC)
 	{
 		npcDeleteRequested = true;
 		registerNpcUpdates();
 	}
+
 	return npcDeleteRequested;
 }
 
@@ -1330,7 +1310,7 @@ void TNPC::reloadNPC()
 void TNPC::resetNPC()
 {
 	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
-	canWarp = false;
+	canWarp = NPCWarpType::None;
 	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y]
 		= modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE]
 		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
@@ -1349,15 +1329,15 @@ void TNPC::resetNPC()
 	}
 }
 
-void TNPC::moveNPC(float dx, float dy, double time, int options)
+void TNPC::moveNPC(int dx, int dy, double time, int options)
 {
 	// TODO(joey): Implement options? Or does the client handle them? TBD
 	//	- If we want function callbacks we will need to handle time, can schedule an event once that is implemented
 
-	int start_x = ((uint16_t)std::abs(x * 16.0f) << 1) | (x < 0 ? 0x0001 : 0x0000);
-	int start_y = ((uint16_t)std::abs(y * 16.0f) << 1) | (y < 0 ? 0x0001 : 0x0000);
-	int delta_x = ((uint16_t)std::abs(dx * 16.0f) << 1) | (dx < 0 ? 0x0001 : 0x0000);
-	int delta_y = ((uint16_t)std::abs(dy * 16.0f) << 1) | (dy < 0 ? 0x0001 : 0x0000);
+	int start_x = ((uint16_t)std::abs(x) << 1) | (x < 0 ? 0x0001 : 0x0000);
+	int start_y = ((uint16_t)std::abs(y) << 1) | (y < 0 ? 0x0001 : 0x0000);
+	int delta_x = ((uint16_t)std::abs(dx) << 1) | (dx < 0 ? 0x0001 : 0x0000);
+	int delta_y = ((uint16_t)std::abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
 	short itime = (short)(time / 0.05);
 
 	setX(x + dx);
@@ -1370,7 +1350,7 @@ void TNPC::moveNPC(float dx, float dy, double time, int options)
 		testTouch();
 }
 
-void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
+void TNPC::warpNPC(TLevel *pLevel, int pX, int pY)
 {
 	if (!pLevel)
 		return;
@@ -1412,6 +1392,14 @@ void TNPC::warpNPC(TLevel *pLevel, float pX, float pY)
 
 void TNPC::saveNPC()
 {
+	// TODO(joey): save localnpcs aka putnpcs to a localnpcs folder, as of now
+	// we are only saving database npcs.
+
+	if (getType() != NPCType::DBNPC)
+	{
+		return;
+	}
+
 	// TODO(joey): check if properties have been modified before deciding to save
 	// enumerate scriptObject variables, to save into file and load later..?
 
@@ -1444,8 +1432,6 @@ void TNPC::saveNPC()
 	}
 	*/
 
-	// TODO(joey): persist putnpcs
-
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
@@ -1455,13 +1441,13 @@ void TNPC::saveNPC()
 	fileData << "SCRIPTER " << npcScripter << NL;
 	fileData << "IMAGE " << image << NL;
 	fileData << "STARTLEVEL " << origLevel << NL;
-	fileData << "STARTX " << CString(origX) << NL;
-	fileData << "STARTY " << CString(origY) << NL;
+	fileData << "STARTX " << CString((float)origX / 16.0) << NL;
+	fileData << "STARTY " << CString((float)origY / 16.0) << NL;
 	if (level)
 	{
 		fileData << "LEVEL " << level->getLevelName() << NL;
-		fileData << "X " << CString(x) << NL;
-		fileData << "Y " << CString(y) << NL;
+		fileData << "X " << CString((float)x / 16.0) << NL;
+		fileData << "Y " << CString((float)y / 16.0) << NL;
 	}
 	fileData << "NICK " << nickName << NL;
 	fileData << "ANI " << gani << NL;
@@ -1503,7 +1489,7 @@ void TNPC::saveNPC()
 		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
 
 	fileData << "NPCSCRIPT" << NL << CString(npcScript.getSource()).replaceAll("\n", NL);
-	if (npcScript.getSource().back() != '\n')
+	if (fileData[fileData.length() - 1] != '\n')
 		fileData << NL;
 	fileData << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
@@ -1563,15 +1549,15 @@ bool TNPC::loadNPC(const CString& fileName)
 		else if (curCommand == "STARTLEVEL")
 			origLevel = curLine.readString("");
 		else if (curCommand == "STARTX")
-			origX = strtofloat(curLine.readString(""));
+			origX = int(strtofloat(curLine.readString("")) * 16.0);
 		else if (curCommand == "STARTY")
-			origY = strtofloat(curLine.readString(""));
+			origY = int(strtofloat(curLine.readString("")) * 16.0);
 		else if (curCommand == "LEVEL")
 			npcLevel = curLine.readString("");
 		else if (curCommand == "X")
-			setX(strtofloat(curLine.readString("")));
+			setX(int(strtofloat(curLine.readString("")) * 16.0));
 		else if (curCommand == "Y")
-			setY(strtofloat(curLine.readString("")));
+			setY(int(strtofloat(curLine.readString("")) * 16.0));
 		else if (curCommand == "MAPX")
 		{
 			//gmaplevelx = strtoint(curLine.readString(""));
@@ -1678,9 +1664,13 @@ bool TNPC::loadNPC(const CString& fileName)
 			height = strtoint(curLine.readString(" "));
 		}
 		else if (curCommand == "CANWARP")
-			canWarp = strtoint(curLine.readString("")) != 0;
-		//else if (curCommand == "CANWARP2")
-		//	canWarp = strtoint(curLine.readString("")) != 0;
+		{
+			canWarp = strtoint(curLine.readString("")) != 0 ? NPCWarpType::AllLinks : canWarp;
+		}
+		else if (curCommand == "CANWARP2")
+		{
+			canWarp = strtoint(curLine.readString("")) != 0 ? NPCWarpType::OverworldLinks : canWarp;
+		}
 		else if (curCommand == "TIMEOUT")
 			timeout = strtoint(curLine.readString("")) * 20;
 		else if (curCommand == "FLAG")

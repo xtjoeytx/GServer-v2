@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <set>
 #include <thread>
@@ -31,7 +32,13 @@
 #include "CScriptEngine.h"
 #endif
 
+#include "GS2ScriptManager.h"
 #include "TScriptClass.h"
+
+// Resources
+#include "ResourceManager.h"
+#include "Animation/TGameAni.h"
+#include "TUpdatePackage.h"
 
 class TPlayer;
 class TLevel;
@@ -57,6 +64,9 @@ enum
 	FS_SHIELD		= 6,
 };
 #define FS_COUNT	7
+
+using AnimationManager = ResourceManager<TGameAni, TServer *>;
+using PackageManager = ResourceManager<TUpdatePackage, TServer *>;
 
 class TServer : public CSocketStub
 {
@@ -106,11 +116,11 @@ class TServer : public CSocketStub
 		void saveWeapons();
 #ifdef V8NPCSERVER
 		void saveNpcs();
-
 		std::vector<std::pair<double, std::string>> calculateNpcStats();
+#endif
+
 		void reportScriptException(const ScriptRunError& error);
 		void reportScriptException(const std::string& error_message);
-#endif
 
 		// Get functions.
 		const CString& getName()						{ return name; }
@@ -119,9 +129,7 @@ class TServer : public CSocketStub
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
-#ifdef V8NPCSERVER
 		CLog& getScriptLog()							{ return scriptlog; }
-#endif
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
 		CSocketManager* getSocketManager()				{ return &sockManager; }
@@ -131,6 +139,8 @@ class TServer : public CSocketStub
 		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
 		CWordFilter* getWordFilter()					{ return &wordFilter; }
 		TServerList* getServerList()					{ return &serverlist; }
+		AnimationManager& getAnimationManager()			{ return animationManager; }
+		PackageManager& getPackageManager()				{ return packageManager; }
 		unsigned int getNWTime() const					{ return serverTime; }
 		void calculateServerTime();
 
@@ -142,8 +152,8 @@ class TServer : public CSocketStub
 		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
 		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
 		const std::vector<std::unique_ptr<TMap>>& getMapList() const { return mapList; }
-		std::vector<CString>* getStatusList()			{ return &statusList; }
-		std::vector<CString>* getAllowedVersions()		{ return &allowedVersions; }
+		const std::vector<CString>& getStatusList() const		{ return statusList; }
+		const std::vector<CString>& getAllowedVersions() const	{ return allowedVersions; }
 		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
 
 #ifdef V8NPCSERVER
@@ -213,18 +223,34 @@ class TServer : public CSocketStub
 		void updateWeaponForPlayers(TWeapon *pWeapon);
 		void updateClassForPlayers(TScriptClass *pClass);
 
+		/*
+		 * GS2 Functionality
+		 */
+		void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TNPC *npc, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
+		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
+
+		std::time_t getServerStartTime() const {
+			return serverStartTime;
+		}
+
+	private:
+		GS2ScriptManager gs2ScriptManager;
+		
+		template<typename ScriptObjType>
+		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
+
+		void handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin);
+
 	private:
 		bool doTimedEvents();
-		void acceptSock(CSocket& pSocket);
 		void cleanupDeletedPlayers();
 
 		bool doRestart;
 
 		CFileSystem filesystem[FS_COUNT], filesystem_accounts;
-		CLog npclog, rclog, serverlog; //("logs/npclog|rclog|serverlog.txt");
-#ifdef V8NPCSERVER
-		CLog scriptlog;
-#endif
+		CLog npclog, rclog, serverlog, scriptlog; //("logs/npclog|rclog|serverlog|scriptlog.txt");
 		CSettings adminsettings, settings;
 		CSocket playerSock;
 		CSocketManager sockManager;
@@ -232,6 +258,8 @@ class TServer : public CSocketStub
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
 		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
+		AnimationManager animationManager;
+		PackageManager packageManager;
 
 		std::unordered_map<std::string, CString> mServerFlags;
 		std::map<CString, TWeapon *> weaponList;
@@ -248,7 +276,9 @@ class TServer : public CSocketStub
 
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
+		std::time_t serverStartTime;
 		unsigned int serverTime;
+
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
 		int mNCPort;

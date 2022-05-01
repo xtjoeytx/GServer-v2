@@ -80,7 +80,7 @@ public:
 	ScriptAction CreateAction(const std::string& action, Args... An);
 
 	template<class T>
-	IScriptObject<T> * WrapObject(T *obj) const;
+	void wrapScriptObject(T *obj) const;
 
 	const ScriptRunError& getScriptError() const;
 
@@ -89,8 +89,8 @@ private:
 
 	IScriptEnv *_env;
 	IScriptFunction *_bootstrapFunction;
-	IScriptObject<TServer> *_environmentObject;
-	IScriptObject<TServer> *_serverObject;
+	std::unique_ptr<IScriptObject<TServer>> _environmentObject;
+	std::unique_ptr<IScriptObject<TServer>> _serverObject;
 	TServer *_server;
 
 	std::chrono::high_resolution_clock::time_point lastScriptTimer;
@@ -139,7 +139,7 @@ inline IScriptEnv * CScriptEngine::getScriptEnv() const {
 }
 
 inline IScriptObject<TServer> * CScriptEngine::getServerObject() const {
-	return _serverObject;
+	return _serverObject.get();
 }
 
 inline IScriptFunction * CScriptEngine::getCallBack(const std::string& callback) const {
@@ -209,16 +209,15 @@ ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
 }
 
 template<class T>
-inline IScriptObject<T> * CScriptEngine::WrapObject(T *obj) const
+inline void CScriptEngine::wrapScriptObject(T *obj) const
 {
-	SCRIPTENV_D("Begin Global::WrapObject()\n");
+	SCRIPTENV_D("Begin Global::wrapScriptObject()\n");
 
 	// Wrap the object, and set the new script object on the original object
-	IScriptObject<T> *wrappedObject = ScriptFactory::WrapObject(_env, ScriptConstructorId<T>::result, obj);
-	obj->setScriptObject(wrappedObject);
+	auto wrappedObject = ScriptFactory::WrapObject(_env, ScriptConstructorId<T>::result, obj);
+	obj->setScriptObject(std::move(wrappedObject));
 
-	SCRIPTENV_D("End Global::WrapObject()\n\n");
-	return wrappedObject;
+	SCRIPTENV_D("End Global::wrapScriptObject()\n\n");
 }
 
 template<typename T>

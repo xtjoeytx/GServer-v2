@@ -116,7 +116,7 @@ enum
 	PLPROP_X2				= 78,
 	PLPROP_Y2				= 79,
 	PLPROP_Z2				= 80,
-	PLPROP_UNKNOWN81		= 81,
+	PLPROP_UNKNOWN81		= 81, // {GCHAR flag} - flag 0 places in playerlist, flag 1 places in servers tab, flag 3 places in channels tab (unconfirmed)
 
 	// In Graal v5, where players have the Graal######## accounts, this is their chosen account alias (community name.)
 	PLPROP_COMMUNITYNAME	= 82,
@@ -269,7 +269,7 @@ inline unsigned char TAccount::getColorId(unsigned int idx) const
 
 inline void TAccount::setPower(float newPower)
 {
-	power = clip(newPower, 0, (float)maxPower);
+	power = clip(newPower, 0.0f, (float)maxPower);
 }
 
 inline void TAccount::setShieldImage(const CString& newImage)
