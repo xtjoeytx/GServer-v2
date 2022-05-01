@@ -135,7 +135,7 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 	{
 		TLevel *newLevel = server->getLevel(npcLevel);
 		if (newLevel != nullptr)
-			npc->warpNPC(newLevel, npcX, npcY);
+			npc->warpNPC(newLevel, int(npcX * 16.0), int(npcY * 16.0));
 	}
 
 	return true;

@@ -3,6 +3,7 @@
 #ifndef V8SCRIPTENV_H
 #define V8SCRIPTENV_H
 
+#include <memory>
 #include <vector>
 #include <v8.h>
 #include "ScriptBindings.h"
@@ -42,7 +43,7 @@ public:
 
 	// --
 	template<class T>
-	IScriptObject<T> * Wrap(const std::string& constructor_name, T *obj);
+	std::unique_ptr<IScriptObject<T>> Wrap(const std::string& constructor_name, T* obj);
 
 	template<class T>
 	T * Unwrap(v8::Local<v8::Value> value) const;
@@ -98,18 +99,8 @@ inline v8::Local<v8::FunctionTemplate> V8ScriptEnv::GetConstructor(const std::st
 	return GlobalPersistentToLocal(Isolate(), (*it).second);
 }
 
-inline bool V8ScriptEnv::SetConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl)
-{
-	auto it = _constructorMap.find(key);
-	if (it != _constructorMap.end())
-		return false;
-
-	_constructorMap[key] = v8::Global<v8::FunctionTemplate>(Isolate(), func_tpl);
-	return true;
-}
-
 template<class T>
-inline IScriptObject<T> * V8ScriptEnv::Wrap(const std::string& constructor_name, T *obj)
+inline std::unique_ptr<IScriptObject<T>> V8ScriptEnv::Wrap(const std::string& constructor_name, T *obj)
 {
 	// Fetch the v8 isolate and context
 	v8::Isolate *isolate = Isolate();
@@ -128,9 +119,7 @@ inline IScriptObject<T> * V8ScriptEnv::Wrap(const std::string& constructor_name,
 	v8::Local<v8::Object> new_instance = obj_tpl->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, obj);
 
-	// TODO(joey): Use unique_ptr for this
-	V8ScriptObject<T> *wrapped_object = new V8ScriptObject<T>(obj, isolate, new_instance);
-	return wrapped_object;
+	return std::make_unique<V8ScriptObject<T>>(obj, isolate, new_instance);
 }
 
 template<class T>

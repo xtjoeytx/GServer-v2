@@ -27,6 +27,8 @@ SCRIPTFACTORY_CONSTRUCTOR(TWeapon, weapon)
 #include "V8ScriptArguments.h"
 #endif
 
+#include <memory>
+
 struct ScriptFactory
 {
 	/*
@@ -63,12 +65,12 @@ struct ScriptFactory
 	*/
 
 	template <typename T, typename Cls>
-	static inline IScriptObject<Cls> * WrapObject(T *env, const std::string& ctor_name, Cls *obj) {
-		return nullptr;
+	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(T *env, const std::string& ctor_name, Cls *obj) {
+		return {};
 	}
 
 	template <typename Cls>
-	static inline IScriptObject<Cls> * WrapObject(IScriptEnv *env, const std::string& ctor_name, Cls *obj) {
+	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(IScriptEnv *env, const std::string& ctor_name, Cls *obj) {
 		switch (env->GetType()) {
 #ifdef SCRIPTSYS_HASV8
 			case 1: // v8
@@ -76,13 +78,13 @@ struct ScriptFactory
 #endif
 
 			default: // couldn't deduce type
-				return nullptr;
+				return {};
 		}
 	}
 
 #ifdef SCRIPTSYS_HASV8
 	template <typename Cls>
-	static inline IScriptObject<Cls> * WrapObject(V8ScriptEnv *env, const std::string& ctor_name, Cls *obj) {
+	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(V8ScriptEnv *env, const std::string& ctor_name, Cls *obj) {
 		return env->Wrap(ctor_name, obj);
 	}
 #endif

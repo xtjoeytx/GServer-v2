@@ -213,7 +213,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
 
 	TPLFunc[PLI_UNKNOWN46] = &TPlayer::msgPLI_UNKNOWN46;
-	TPLFunc[PLI_REQUESTUPDATEPACKAGE] = &TPlayer::msgPLI_REQUESTUPDATEPACKAGE;
+	TPLFunc[PLI_VERIFYWANTSEND] = &TPlayer::msgPLI_VERIFYWANTSEND;
 	TPLFunc[PLI_UPDATECLASS] = &TPlayer::msgPLI_UPDATECLASS;
 	TPLFunc[PLI_RAWDATA] = &TPlayer::msgPLI_RAWDATA;
 
@@ -269,7 +269,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_RC_FOLDERDELETE] = &TPlayer::msgPLI_RC_FOLDERDELETE;
 	TPLFunc[PLI_REQUESTTEXT] = &TPlayer::msgPLI_REQUESTTEXT;
 	TPLFunc[PLI_SENDTEXT] = &TPlayer::msgPLI_SENDTEXT;
-	TPLFunc[PLI_UNKNOWN157] = &TPlayer::msgPLI_UNKNOWN157;
+	TPLFunc[PLI_UPDATEGANI] = &TPlayer::msgPLI_UPDATEGANI;
 	TPLFunc[PLI_UPDATESCRIPT] = &TPlayer::msgPLI_UPDATESCRIPT;
 	TPLFunc[PLI_UPDATEPACKAGEREQUESTFILE] = &TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE;
 	TPLFunc[PLI_RC_UNKNOWN162] = &TPlayer::msgPLI_RC_UNKNOWN162;
@@ -315,7 +315,7 @@ grMovementUpdated(false),
 fileQueue(pSocket),
 packetCount(0), firstLevel(true), invalidPackets(0)
 #ifdef V8NPCSERVER
-, _processRemoval(false), _scriptObject(0)
+, _processRemoval(false)
 #endif
 {
 	lastData = lastMovement = lastSave = last1m = time(0);
@@ -392,8 +392,7 @@ TPlayer::~TPlayer()
 #ifdef V8NPCSERVER
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 #endif
 }
@@ -723,6 +722,11 @@ void TPlayer::sendPacket(CString pPacket, bool appendNL)
 
 bool TPlayer::sendFile(const CString& pFile)
 {
+	// Add the filename to the list of known files so we can resend the file
+	// to the client if it gets changed after it was originally sent
+	if (isClient())
+		knownFiles.insert(pFile.toString());
+	
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
@@ -845,13 +849,17 @@ bool TPlayer::testSign()
 void TPlayer::testTouch()
 {
 #ifdef V8NPCSERVER
-	//static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
-	static const float touchtestd[] = { 1.5f,1, 0,2.0f, 1.5f,3.5f, 3.0f,2.0f };
+	static const int touchtestd[] = { 24,16, 0,32, 24,56, 48,32 };
 	int dir = sprite % 4;
 
-	auto npcList = level->testTouch(x + touchtestd[dir * 2], y + touchtestd[dir * 2 + 1]);
+	int pixelX = int(x * 16.0);
+	int pixelY = int(y * 16.0);
+
+	auto npcList = level->testTouch(pixelX + touchtestd[dir * 2], pixelY + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
+	{
 		npc->queueNpcAction("npc.playertouchsme", this);
+	}
 #endif
 }
 
@@ -2021,7 +2029,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
 		weaponList.push_back(weapon->getName());
-		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
+		sendPacket(weapon->getWeaponPacket(versionID));
 	}
 
 	return true;
@@ -2044,7 +2052,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 		if (id == -1) return true;
 
 		// Send weapon.
-		sendPacket(CString() << weapon->getWeaponPacket(versionID < CLVER_4_0211));
+		sendPacket(weapon->getWeaponPacket(versionID));
 	}
 
 	return true;
@@ -2268,9 +2276,9 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Check if the specified client is allowed access.
 	if (isClient())
 	{
-		std::vector<CString>* allowedVersions = server->getAllowedVersions();
+		auto& allowedVersions = server->getAllowedVersions();
 		bool allowed = false;
-		for (auto ver : *allowedVersions)
+		for (auto ver : allowedVersions)
 		{
 			if (ver.find(":") != -1)
 			{
@@ -3809,14 +3817,14 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				if (npc)
 				{
 					CString packet;
-					packet >> (char)(npc->getX() * 2.0f) >> (char)(npc->getY() * 2.0f);
+					packet >> (char)(npc->getX() / 8.0f) >> (char)(npc->getY() / 8.0f);
 					packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 					packet >> (short)(duration / 0.05f);
 					packet >> (char)options;
 					server->sendPacketToLevel(CString() >> (char)PLO_MOVE >> (int)id << packet, 0, this, true);
 
-					npc->setX(npc->getX() + dx);
-					npc->setY(npc->getY() + dy);
+					npc->setX(npc->getX() + dx * 16);
+					npc->setY(npc->getY() + dy * 16);
 					//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
 				}
 			}
@@ -3834,8 +3842,8 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				TNPC* npc = server->getNPC(id);
 				if (npc)
 				{
-					npc->setX(x);
-					npc->setY(y);
+					npc->setX(int(x * 16.0));
+					npc->setY(int(y * 16.0));
 
 					// Send the prop packet to the level.
 					CString packet;
@@ -3884,8 +3892,9 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		//handled = false; // client and server scripts should both be able to respond to triggers
 		CString triggerData = action.readString("");
 
-		auto npcList = level->findAreaNpcs(loc[0], loc[1], 8, 8);
-		for (auto npcTouched : npcList) {
+		auto npcList = level->findAreaNpcs(int(loc[0] * 16.0), int(loc[1] * 16.0), 8, 8);
+		for (auto npcTouched : npcList)
+		{
 			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
 		}
 
@@ -4015,26 +4024,6 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
 	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
-	return true;
-}
-
-bool TPlayer::msgPLI_UNKNOWN157(CString& pPacket)
-{
-	// v4 and up needs this for some reason.
-	time_t mod = pPacket.readGUInt5();
-	CString gani = pPacket.readString("");
-	CString ganiData = server->getFileSystem()->load(CString() << gani << ".gani");
-	if (!ganiData.isEmpty())
-	{
-		ganiData.readString("SETBACKTO");
-		if (ganiData.bytesLeft())
-		{
-			CString backGani = ganiData.readString("\n").trim();
-			sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << backGani << "\"");
-			return true;
-		}
-	}
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO \"");
 	return true;
 }
 
