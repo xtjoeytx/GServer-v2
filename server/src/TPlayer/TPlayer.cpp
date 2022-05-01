@@ -2318,7 +2318,6 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
-	serverlog.out("[%s]    Password:\t%s\n", server->getName().text(), password.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
