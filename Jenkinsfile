@@ -57,9 +57,9 @@ def buildStep(dockerImage, os, defines) {
 			dockerImageRef.inside("") {
 				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
+			checkout scm;
 
 			dockerImageRef.inside("") {
-				checkout scm
 
 				if (env.CHANGE_ID) {
 					echo 'Trying to build pull request'
