@@ -89,7 +89,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				if (isRC())
 				{
 					// Irc players start at 16k
-					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)81 >> (char)3);
+					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
 				}
 				else sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
 			}
@@ -147,11 +147,14 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		{
 			if (option == "serverinfo")
 				list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
-			else if (option == "verifybuddies" && !getGuest())
+
+			if (!getGuest())
 			{
-				list->sendPacket(CString() >> (char)SVO_REQUESTBUDDIES >> (short)id << accountName.gtokenize() << "," << packet);
+				if (option == "verifybuddies" || option == "addbuddy" || option == "deletebuddy")
+					list->sendTextForPlayer(this, packet);
 			}
-			else if (isRC())
+
+			if (isRC())
 			{
 				// TODO(joey): Implement for RC3
 				//	banhistory - each comma separated item per line, just text
@@ -167,17 +170,9 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				}
 			}
 		}
-		else if (type == "pmservers" || type == "pmguilds") {
-			server->getServerLog().out("[ISSUE] [SENDTEXT] - pmservers/pmguilds received under sendtext??");
-			//list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
-		}
-		else if (type == "pmserverplayers")
-			addPMServer(option);
-		else if (type == "pmunmapserver")
-			remPMServer(option);
 	}
 
-	server->getServerLog().out("[ IN] [SendText] %s,%s\n", accountName.gtokenize().text(), packet.text());
+	server->getServerLog().out("[ IN] [SendText] %s: %s\n", accountName.gtokenize().text(), packet.text());
 
 	return true;
 }

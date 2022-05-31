@@ -122,15 +122,15 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT)
 		def buildenv = "${DOCKERTAG}";
 		def tag = '';
 		if (env.BRANCH_NAME.equals('master')) {
-			tag = "latest";
+			tag = "latest${DOCKERTAG}";
 		} else {
-			tag = "${env.BRANCH_NAME.replace('/','-')}";
+			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
-				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} --network=host --pull -f ${DOCKERFILE} .");
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
 			stage("Pushing to docker hub registry...") {

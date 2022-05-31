@@ -31,7 +31,7 @@ static const char* const filesystemTypes[] =
 extern std::atomic_bool shutdownProgram;
 
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), serverStartTime(0)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0)
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -1049,8 +1049,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 			TLevel *npcLevel = npc->getLevel();
 			if (npcLevel != nullptr) {
 				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
-					append(" at pos (").append(CString(npc->getY()).text()).
-					append(", ").append(CString(npc->getX()).text()).append(")");
+					append(" at pos (").append(CString(npc->getY() / 16.0).text()).
+					append(", ").append(CString(npc->getX() / 16.0).text()).append(")");
 			}
 
 			script_profiles.push_back(std::make_pair(executionData.second, npcName));
@@ -1076,6 +1076,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	return script_profiles;
 }
 
+#endif
+
 void TServer::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = error.getErrorString();
@@ -1094,7 +1096,6 @@ void TServer::reportScriptException(const std::string& error_message)
 	}
 }
 
-#endif
 
 /////////////////////////////////////////////////////
 
@@ -1443,7 +1444,7 @@ bool TServer::addPlayer(TPlayer *player, unsigned int id)
 
 #ifdef V8NPCSERVER
 	// Create script object for player
-	mScriptEngine.WrapObject(player);
+	mScriptEngine.wrapScriptObject(player);
 #endif
 
 	return true;
@@ -1783,7 +1784,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 		if (player->hasWeapon(pWeapon->getName()))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
-			player->sendPacket(CString() << pWeapon->getWeaponPacket());
+			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));
 		}
 	}
 }
@@ -1846,6 +1847,11 @@ void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_
 			cb(resp);
 		}
 	});
+}
+
+void TServer::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
+{
+	gs2ScriptManager.compileScript(source, cb);
 }
 
 void TServer::compileGS2Script(TNPC *scriptObject, GS2ScriptManager::user_callback_type cb)

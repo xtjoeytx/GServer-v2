@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include "IDebug.h"
 #include "IConfig.h"
 
@@ -52,14 +54,13 @@ void TServerList::createFunctions()
 	Constructor - Deconstructor
 */
 TServerList::TServerList(TServer *server)
-: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0), _serverRemoteIp("127.0.0.1")
+	: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0), _serverRemoteIp("127.0.0.1"), connectionAttempts(0), nextConnectionAttempt(0)
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
 	sock.setType(SOCKET_TYPE_CLIENT);
 	sock.setDescription("listserver");
 
-	lastData = lastPing = lastTimer = lastPlayerSync = time(0);
-	_lastConnectionAttempt = 0;
+	lastData = lastTimer = time(0);
 
 	// Create Functions
 	if (!TServerList::created)
@@ -84,7 +85,7 @@ bool TServerList::onRecv()
 	unsigned int size = 0;
 	char* data = sock.getData(&size);
 	if (size != 0)
-		rBuffer.write(data, size);
+		readBuffer.write(data, size);
 	else if (sock.getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
@@ -119,20 +120,20 @@ bool TServerList::main()
 	CString unBuffer;
 
 	// parse data
-	rBuffer.setRead(0);
-	while (rBuffer.length() > 1)
+	readBuffer.setRead(0);
+	while (readBuffer.length() > 1)
 	{
 		// New data.
 		lastData = time(0);
 
 		// packet length
-		unsigned short len = (unsigned short)rBuffer.readShort();
-		if ((unsigned int)len > (unsigned int)rBuffer.length() - 2)
+		unsigned short len = (unsigned short)readBuffer.readShort();
+		if ((unsigned int)len > (unsigned int)readBuffer.length() - 2)
 			break;
 
 		// decompress packet
-		unBuffer = rBuffer.readChars(len);
-		rBuffer.removeI(0, len + 2);
+		unBuffer = readBuffer.readChars(len);
+		readBuffer.removeI(0, len + 2);
 		unBuffer.zuncompressI();
 
 		// well theres your buffer
@@ -145,6 +146,7 @@ bool TServerList::main()
 	return getConnected();
 }
 
+// Called every second by TServer
 bool TServerList::doTimedEvents()
 {
 	lastTimer = time(0);
@@ -153,48 +155,20 @@ bool TServerList::doTimedEvents()
 
 	if (!isConnected)
 	{
-		// Only re-establish a connection 5 minutes after the previous attempt
-		if (difftime(lastTimer, _lastConnectionAttempt) >= 300) {
-			connectServer();
-		}
-	}
-
-	// Send a ping every 30 seconds.
-	/*
-	if ((int)difftime(lastTimer, lastPing) >= 30 && isConnected)
-	{
-		lastPing = lastTimer;
-
-		sendPacket(CString() >> (char)SVO_PING);
-
-		std::vector<TPlayer *> playerListTmp = *_server->getPlayerList();
-		for (std::vector<TPlayer *>::const_iterator i = playerListTmp.begin(); i != playerListTmp.end(); ++i)
+		// Reconnect to the listserver, with connection backoff to prevent a flood of connections
+		if (difftime(lastTimer, nextConnectionAttempt) >= 0)
 		{
-			std::vector<CString> pmServers = (*i)->getPMServerList();
-
-			if (!pmServers.empty())
+			if (!connectServer())
 			{
-				for (std::vector<CString>::const_iterator ij = pmServers.begin(); ij != pmServers.end(); ++ij)
-				{
-					sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)(*i)->getId() << CString(CString() << (*i)->getAccountName() << "\n" << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << (ij)->text() << "\n").gtokenizeI());
-				}
+				if (connectionAttempts < 8)
+					connectionAttempts += 1;
+
+				auto waitTime = std::min(uint32_t(std::pow(2u, connectionAttempts)), 300u);
+				nextConnectionAttempt = lastTimer + waitTime + (rand() % 5);
 			}
+			else connectionAttempts = 0;
 		}
 	}
-	*/
-
-	// Synchronize players every minute.
-	/*
-	if ((int)difftime(lastTimer, lastPlayerSync) >= 60)
-	{
-		lastPlayerSync = lastTimer;
-
-		if (isConnected)
-			sendPlayers();
-		//else
-		//	connectServer();
-	}
-	*/
 
 	return true;
 }
@@ -205,8 +179,6 @@ bool TServerList::connectServer()
 
 	if (getConnected())
 		return true;
-
-	_lastConnectionAttempt = time(nullptr);
 
 	auto& serverLog = _server->getServerLog();
 
@@ -277,11 +249,32 @@ bool TServerList::connectServer()
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
 
+	sendVersionConfig();
+
 	// Send Players
 	sendPlayers();
 
 	// Return Connection-Status
 	return getConnected();
+}
+
+void TServerList::sendVersionConfig()
+{
+	if (!getConnected())
+		return;
+
+	// Send allowed versions to the listserver
+	CString versionNames;
+	auto& versionList = _server->getAllowedVersions();
+	for (const auto& version : versionList)
+	{
+		if (!versionNames.isEmpty())
+			versionNames << ",";
+
+		versionNames << version.gtokenize();
+	}
+
+	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
 void TServerList::sendPacket(CString& pPacket, bool sendNow)
@@ -942,7 +935,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		}
 		else
 		{
-			_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
+			//_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
 				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);

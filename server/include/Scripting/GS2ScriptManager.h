@@ -9,6 +9,7 @@
 #include "utils/ContextThreadPool.h"
 #include "CompilerThreadJob.h"
 #include "GS2Context.h"
+#include "interface/ScriptUtils.h"
 
 class GS2ScriptManager
 {

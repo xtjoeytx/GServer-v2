@@ -96,8 +96,7 @@ TLevel::~TLevel()
 #ifdef V8NPCSERVER
 	if (_scriptObject)
 	{
-		delete _scriptObject;
-		_scriptObject = nullptr;
+		_scriptObject.reset();
 	}
 #endif
 }
@@ -197,11 +196,11 @@ CString TLevel::getLinksPacket()
 CString TLevel::getNpcsPacket(time_t time, int clientVersion)
 {
 	CString retVal;
-	for (auto& npc : levelNPCs)
+	for (auto npc : levelNPCs)
 	{
 		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
 
-		if (!npc->getByteCode().isEmpty())
+		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->getId() << npc->getByteCode();
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
@@ -251,11 +250,10 @@ bool TLevel::reload()
 				it++;
 			}
 		}
-		//levelNPCs.clear();
 	}
 
 	// Delete baddies.
-	for (auto& levelBaddie : levelBaddies) delete levelBaddie;
+	for (auto levelBaddie : levelBaddies) delete levelBaddie;
 	levelBaddies.clear();
 	levelBaddyIds.clear();
 
@@ -269,10 +267,10 @@ bool TLevel::reload()
 	levelSigns.clear();
 
 	// Delete items.
-	for (auto& item : levelItems)
+	for (const auto& item : levelItems)
 	{
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
-		for (auto& player : levelPlayerList)
+		for (auto player : levelPlayerList)
 			player->sendPacket(packet);
 	}
 	levelItems.clear();
@@ -293,9 +291,9 @@ bool TLevel::reload()
 
 	// Reset the level cache for all the players on the server.
 	auto playerList = server->getPlayerList();
-	for (auto & i : *playerList)
+	for (auto p : *playerList)
 	{
-		i->resetLevelCache(this);
+		p->resetLevelCache(this);
 	}
 
 	// Re-load the level now.
@@ -327,7 +325,7 @@ TLevel* TLevel::clone()
 bool TLevel::loadLevel(const CString& pLevelName)
 {
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->WrapObject(this);
+	server->getScriptEngine()->wrapScriptObject(this);
 #endif
 
 	CString ext(getExtension(pLevelName));
@@ -1234,7 +1232,9 @@ int TLevel::addPlayer(TPlayer* player)
 	for (auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
+		{
 			npc->queueNpcAction("npc.playerenters", player);
+		}
 	}
 #endif
 
@@ -1255,20 +1255,27 @@ void TLevel::removePlayer(TPlayer* player)
 	for (auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
+		{
 			npc->queueNpcAction("npc.playerleaves", player);
+		}
 	}
 #endif
 }
 
 TPlayer* TLevel::getPlayer(unsigned int id)
 {
-	if (id >= levelPlayerList.size()) return nullptr;
+	if (id >= levelPlayerList.size())
+	{
+		return nullptr;
+	}
+
 	return levelPlayerList[id];
 }
 
 bool TLevel::addNPC(TNPC* npc)
 {
-	if (std::find(levelNPCs.begin(), levelNPCs.end(), npc) != levelNPCs.end()) {
+	if (std::find(levelNPCs.begin(), levelNPCs.end(), npc) != levelNPCs.end())
+	{
 		return false;
 	}
 
@@ -1379,9 +1386,8 @@ bool TLevel::doTimedEvents()
 			else
 			{
 				baddy->reset();
-				for (auto i = levelPlayerList.begin(); i != levelPlayerList.end(); ++i)
+				for (auto p : levelPlayerList)
 				{
-					TPlayer* p = *i;
 					p->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(p->getVersion()));
 				}
 			}
@@ -1389,9 +1395,8 @@ bool TLevel::doTimedEvents()
 	}
 	{	// Mark all the baddies as dead now.
 		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
-		for (auto i = set_dead.begin(); i != set_dead.end(); ++i)
+		for (auto baddy : set_dead)
 		{
-			TLevelBaddy* baddy = *i;
 			baddy->setProps(props);
 		}
 	}
@@ -1399,26 +1404,45 @@ bool TLevel::doTimedEvents()
 	return true;
 }
 
-bool TLevel::isOnWall(double pX, double pY) const
+bool TLevel::isOnWall(int pX, int pY) const
 {
-	if (pX < 0 || pY < 0 || pX > 63 || pY > 63) return true;
+	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
+	{
+		return true;
+	}
 
-	return tiletypes[levelTiles[int(round(pY)) * 64 + int(round(pX))]] >= 20;
+	return tiletypes[levelTiles[pY * 64 + pX]] >= 20;
 }
 
-bool TLevel::isOnWater(double pX, double pY) const
+bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) const
 {
-	return (tiletypes[levelTiles[(int)pY * 64 + (int)pX]] == 11);
+	for (int cy = pY; cy < pY + pHeight; ++cy)
+	{
+		for (int cx = pX; cx < pX + pWidth; ++cx)
+		{
+			if (isOnWall(cx, cy))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool TLevel::isOnWater(int pX, int pY) const
+{
+	return (tiletypes[levelTiles[pY * 64 + pX]] == 11);
 }
 
 std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
 {
-	for (auto& link : levelLinks)
+	for (const auto& link : levelLinks)
 	{
 		if ((pX >= link.getX() && pX <= link.getX() + link.getWidth()) &&
 			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
 		{
-			return std::optional<TLevelLink>(link);
+			return std::make_optional(link);
 		}
 	}
 
@@ -1427,11 +1451,11 @@ std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
 
 std::optional<TLevelChest> TLevel::getChest(int x, int y) const
 {
-	for (auto& chest : levelChests)
+	for (const auto& chest : levelChests)
 	{
 		if (chest.getX() == x && chest.getY() == y)
 		{
-			return std::optional<TLevelChest>(chest);
+			return std::make_optional(chest);
 		}
 	}
 
@@ -1446,16 +1470,17 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 }
 
 #ifdef V8NPCSERVER
-std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHeight)
+
+std::vector<TNPC*> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
 {
-	float testEndX = pX + (float)(pWidth / 16.0f);
-	float testEndY = pY + (float)(pHeight / 16.0f);
+	int testEndX = pX + pWidth;
+	int testEndY = pY + pHeight;
 
 	std::vector<TNPC *> npcList;
 	for (const auto& npc : levelNPCs)
 	{
-		if (pX < npc->getX() + (float)(npc->getWidth() / 16.0f) && testEndX > npc->getX() &&
-			pY < npc->getY() + (float)(npc->getHeight() / 16.0f) && testEndY > npc->getY())
+		if (pX < npc->getX() + npc->getWidth() && testEndX > npc->getX() &&
+			pY < npc->getY() + npc->getHeight() && testEndY > npc->getY())
 		{
 			npcList.push_back(npc);
 		}
@@ -1464,15 +1489,15 @@ std::vector<TNPC *> TLevel::findAreaNpcs(float pX, float pY, int pWidth, int pHe
 	return npcList;
 }
 
-std::vector<TNPC*> TLevel::testTouch(float pX, float pY)
+std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 {
 	std::vector<TNPC*> npcList;
 	for (const auto& npc : levelNPCs)
 	{
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if (npc->getX() <= pX && npc->getX() + (float)(npc->getWidth() / 16.0f) >= pX &&
-				npc->getY() <= pY && npc->getY() + (float)(npc->getHeight() / 16.0f) >= pY)
+			if (npc->getX() <= pX && npc->getX() + npc->getWidth() >= pX &&
+				npc->getY() <= pY && npc->getY() + npc->getHeight() >= pY)
 			{
 				npcList.push_back(npc);
 			}

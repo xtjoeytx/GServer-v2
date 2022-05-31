@@ -54,6 +54,8 @@ class TMap
 		MapType getType() const					{ return type; }
 		size_t getWidth() const					{ return width; }
         size_t getHeight() const				{ return height; }
+		bool isBigMap() const					{ return type == MapType::BIGMAP; }
+		bool isGmap() const						{ return type == MapType::GMAP; }
 		bool isGroupMap() const					{ return groupMap; }
 
 	private:
