@@ -57,7 +57,7 @@ def buildStep(dockerImage, os, defines) {
 			dockerImageRef.inside("") {
 				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
-			checkout scm;
+			//checkout scm;
 
 			dockerImageRef.inside("") {
 
