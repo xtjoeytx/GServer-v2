@@ -308,7 +308,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_UNKNOWN),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -726,7 +726,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	// to the client if it gets changed after it was originally sent
 	if (isClient())
 		knownFiles.insert(pFile.toString());
-	
+
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
@@ -2199,7 +2199,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		case PLTYPE_CLIENT:
 			serverlog.append("Client\n");
-			in_codec.setGen(ENCRYPT_GEN_3);
+			in_codec.setGen(ENCRYPT_GEN_2);
 			break;
 		case PLTYPE_RC:
 			serverlog.append("RC\n");
@@ -2234,22 +2234,36 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			break;
 	}
 
-	// Get Iterator-Key
-	// 2.19+ RC and any client should get the key.
-	if (isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
-	{
-		key = (unsigned char)pPacket.readGChar();
-		in_codec.reset(key);
-		if (in_codec.getGen() > ENCRYPT_GEN_3)
-			fileQueue.setCodec(in_codec.getGen(), key);
+	if (type == PLTYPE_CLIENT) {
+		// Read Client-Version for v1.3 clients
+		version = pPacket.readChars(8);
+		versionID = getVersionID(version);
+
+		if (versionID == CLVER_UNKNOWN)
+			pPacket.setRead(1);
 	}
 
-	// Read Client-Version
-	version = pPacket.readChars(8);
-	if (isClient()) versionID = getVersionID(version);
-	else if (isNC()) versionID = getNCVersionID(version);
-	else if (isRC()) versionID = getRCVersionID(version);
-	else versionID = CLVER_UNKNOWN;
+	if (versionID == CLVER_UNKNOWN) {
+		// Get Iterator-Key
+		// 2.19+ RC and any client should get the key.
+		if ( isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true ) {
+			key = (unsigned char)pPacket.readGChar();
+
+			in_codec.reset(key);
+			if ( in_codec.getGen() > ENCRYPT_GEN_3 )
+				fileQueue.setCodec(in_codec.getGen(), key);
+		}
+
+		// Read Client-Version
+		version = pPacket.readChars(8);
+		versionID = getVersionIDByVersion(version);
+	}
+
+	if ( versionID > CLVER_1_392 ) {
+		in_codec.setGen(ENCRYPT_GEN_3);
+		fileQueue.setCodec(ENCRYPT_GEN_3, key);
+	}
+
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
@@ -2258,6 +2272,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
+	serverlog.out("[%s]    Password:\t%s\n", server->getName().text(), password.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2322,6 +2337,13 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		);
 
 	return true;
+}
+
+int TPlayer::getVersionIDByVersion(const CString& versionInput) const {
+	if ( isClient()) return getVersionID(versionInput);
+	else if ( isNC()) return getNCVersionID(versionInput);
+	else if ( isRC()) return getRCVersionID(versionInput);
+	else return CLVER_UNKNOWN;
 }
 
 bool TPlayer::msgPLI_LEVELWARP(CString& pPacket)
