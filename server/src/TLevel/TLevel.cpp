@@ -1109,7 +1109,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new gralat npc for these rupees
 		if (!gralatNPC)
 		{
-			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
+			gralatNPC = server->addNPC("", "npc.join(\"gralats\");\n//#CLIENTSIDE\njoin(\"gralats\");", pX, pY, this, false, true);
 			gralatNPC->setScriptType("LOCALN");
 			addNPC(gralatNPC);
 		}
