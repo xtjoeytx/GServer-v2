@@ -73,12 +73,20 @@ configure_file(
 
 option(STATIC "Compile as a static runtime." ON)
 if(STATIC)
-	message("Don't compile as a static runtime")
-	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
-else()
 	message("Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
+else()
+	message("Don't compile as a static runtime")
+	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
+endif()
+
+option(GRALATNPC "Compile with Gralat NPC support, only works when V8NPCSERVER is enabled." ON)
+if(GRALATNPC)
+	message("Compile with Gralat NPC support")
+	add_definitions(-DGRALATNPC)
+else()
+	message("Don't compile with Gralat NPC support")
 endif()
 
 option(V8NPCSERVER "Compile built-in V8 NPC-Server" OFF)
