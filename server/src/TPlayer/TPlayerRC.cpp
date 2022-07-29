@@ -17,6 +17,7 @@
 #include "TPlayer.h"
 #include "IEnums.h"
 #include "TLevel.h"
+#include "IConfig.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()
@@ -975,6 +976,11 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			for (std::vector<CString>::iterator i = commands.begin(); i != commands.end(); ++i)
 				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
 		}
+		else if (words[0] == "/version" && words.size() == 1)
+		{
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: GS2Emu version " << GSERVER_VERSION);
+			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Programmed by " << GSERVER_CREDITS);
+		}
 		else if (words[0] == "/open" && words.size() != 1)
 		{
 			message.setRead(0);
@@ -1023,6 +1029,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed the server message.");
 			rclog.out("%s refreshed the server message.\n", accountName.text());
 		}
+
 		else if (words[0] == "/refreshfilesystem" && words.size() == 1)
 		{
 			server->loadFileSystem();

@@ -59,6 +59,20 @@ set(VER_Y 0)
 set(VER_Z 4)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
+# Build date Information
+string(TIMESTAMP VER_YEAR "%Y")
+string(TIMESTAMP VER_MONTH "%m")
+string(TIMESTAMP VER_DAY "%d")
+string(TIMESTAMP VER_HOUR "%H")
+string(TIMESTAMP VER_MINUTE "%M")
+string(REGEX REPLACE "^0+" "" VER_HOUR "${VER_HOUR}")
+string(REGEX REPLACE "^0+" "" VER_MINUTE "${VER_MINUTE}")
+string(REGEX REPLACE "^0+" "" VER_MONTH "${VER_MONTH}")
+string(REGEX REPLACE "^0+" "" VER_DAY "${VER_DAY}")
+
+set(VER_EXTRA "${VER_EXTRA} (${VER_YEAR}-${VER_MONTH}-${VER_DAY} ${VER_HOUR}:${VER_MINUTE})")
+
+
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
 set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
