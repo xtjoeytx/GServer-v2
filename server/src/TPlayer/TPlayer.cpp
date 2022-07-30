@@ -726,7 +726,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	// to the client if it gets changed after it was originally sent
 	if (isClient())
 		knownFiles.insert(pFile.toString());
-	
+
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
@@ -1615,8 +1615,14 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	{
 		if (modTime != pLevel->getModTime())
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1+(64*64*2)+1)));
 			sendPacket(CString() << pLevel->getBoardPacket());
+
+			for (auto layerNumber : pLevel->getLayers()) {
+				CString layer = pLevel->getLayerPacket(layerNumber);
+				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
+				sendPacket(layer);
+			}
 		}
 
 		// Send links, signs, and mod time.
