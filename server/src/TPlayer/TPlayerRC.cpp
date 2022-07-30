@@ -973,13 +973,16 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		if (words[0] == "/help" && words.size() == 1)
 		{
 			std::vector<CString> commands = CString::loadToken(CString() << server->getServerPath() << "config/rchelp.txt", "\n", true);
-			for (std::vector<CString>::iterator i = commands.begin(); i != commands.end(); ++i)
-				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
+			for (auto & command : commands)
+				sendPacket(CString() >> (char)PLO_RC_CHAT << command);
 		}
 		else if (words[0] == "/version" && words.size() == 1)
 		{
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: GS2Emu version " << GSERVER_VERSION);
-			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Programmed by " << GSERVER_CREDITS);
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "GS2Emu version: " << GSERVER_VERSION);
+		}
+		else if (words[0] == "/credits" && words.size() == 1)
+		{
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Programmed by " << GSERVER_CREDITS);
 		}
 		else if (words[0] == "/open" && words.size() != 1)
 		{
