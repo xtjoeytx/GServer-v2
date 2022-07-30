@@ -1619,6 +1619,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			sendPacket(CString() << pLevel->getBoardPacket());
 
 			for (auto layerNumber : pLevel->getLayers()) {
+				if (layerNumber == 0) continue;
 				CString layer = pLevel->getLayerPacket(layerNumber);
 				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
 				sendPacket(layer);
