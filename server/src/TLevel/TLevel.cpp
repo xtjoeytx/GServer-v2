@@ -47,7 +47,7 @@ server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMa
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, 0, sizeof(levelTiles));
+	memset(levelTiles, 0xFF, sizeof(levelTiles));
 
 	// Baddy id 0 breaks the client.  Put a null pointer in id 0.
 	levelBaddyIds.resize(1, 0);
