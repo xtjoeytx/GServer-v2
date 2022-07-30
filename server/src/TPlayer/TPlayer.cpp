@@ -3298,8 +3298,11 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if (!isDefault && fModTime > modTime)
-		return msgPLI_WANTFILE(file);
+	if (!isDefault)
+	{
+		if (std::difftime(modTime, fModTime) != 0)
+			return msgPLI_WANTFILE(file);
+	}
 
 	if (versionID < CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
