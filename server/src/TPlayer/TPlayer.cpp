@@ -3868,7 +3868,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	bool handled = false;
 
 #ifdef V8NPCSERVER
-	CString triggerAction = action.readString(",");
+	CString triggerAction = action.readString(",").toLower();
 	if (triggerAction == "serverside")
 	{
 		handled = true;

@@ -1,8 +1,9 @@
 #ifdef V8NPCSERVER
 
+#include <algorithm>
 #include <cassert>
-#include <v8.h>
 #include <unordered_map>
+#include <v8.h>
 #include "IUtil.h"
 #include "CScriptEngine.h"
 #include "TLevel.h"
@@ -860,6 +861,7 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 
 		// Callback name
 		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+		std::transform(eventName.begin(), eventName.end(), eventName.begin(), ::tolower);
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
