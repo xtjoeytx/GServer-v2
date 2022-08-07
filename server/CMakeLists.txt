@@ -36,6 +36,8 @@ set(
 	src/TUpdatePackage.cpp
 	src/TWeapon.cpp
 	src/Scripting/GS2ScriptManager.cpp
+	src/TriggerCommandHandlers.cpp
+	${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
 )
 
 file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)

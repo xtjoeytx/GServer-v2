@@ -125,9 +125,10 @@
 	/*
 	 * Event -> Triggeractions
 	 */
-	env.setCallBack("npc.trigger", function (npc, func, ...args) {
+	env.setCallBack("npc.trigger", function (npc, func, player, data) {
 		try {
-			func.apply(npc, args);
+			const params = tokenize(data, ',');
+			func.call(npc, player, params);
 		} catch (e) {
 			env.reportException("NPC Trigger Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -137,26 +138,18 @@
 	 * Events -> weapon.onCreated(npc, args...)
 	 */
 	env.setCallBack("weapon.created", function (weapon, ...args) {
-		//try {
-			if (weapon.onCreated)
-				weapon.onCreated.apply(weapon, args);
-		//} catch (e) {
-		//	env.reportException("Weapon Exception at " + weapon.name + ": " + e.name + " - " + e.message + " | " + JSON.stringify(e));
-		//}
+		if (weapon.onCreated)
+			weapon.onCreated.apply(weapon, args);
 	});
 
 	/*
 	 * Event -> weapon.onActionServerSide(player, data)
 	 */
 	env.setCallBack("weapon.serverside", function (weapon, player, data) {
-		//try {
-			if (weapon.onActionServerSide) {
-				const params = tokenize(data, ',').slice(1);
-				weapon.onActionServerSide(player, params);
-			}
-		//} catch (e) {
-		//	env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
-		//}
+		if (weapon.onActionServerSide) {
+			const params = tokenize(data, ',');
+			weapon.onActionServerSide(player, params);
+		}
 	});
 
 	/*

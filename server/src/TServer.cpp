@@ -30,8 +30,16 @@ static const char* const filesystemTypes[] =
 
 extern std::atomic_bool shutdownProgram;
 
+template<class T, class R, class...Args>
+auto methodstub(T* t, R(T::*m)(Args...)) {
+	return [=](auto&&...args)->R {
+		return (t->*m)(decltype(args)(args)...);
+	};
+}
+
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
+	triggerActionDispatcher(methodstub(this, &TServer::createTriggerCommands))
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
