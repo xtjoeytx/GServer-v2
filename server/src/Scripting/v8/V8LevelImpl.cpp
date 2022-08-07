@@ -134,7 +134,7 @@ void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 {
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
-	if ( index > sizeof(levelObject->getTiles()))
+	if ( index > 4096 )
 		return;
 
 	v8::Isolate* isolate = info.GetIsolate();
@@ -149,7 +149,7 @@ void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 {
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
-	if ( index > sizeof(levelObject->getTiles()))
+	if ( index > 4096 )
 		return;
 
 	v8::Isolate* isolate = info.GetIsolate();
