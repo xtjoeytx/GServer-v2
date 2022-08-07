@@ -43,7 +43,7 @@ void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallback
 		info.GetReturnValue().Set(strText);
 		return;
 	}
-	
+
 	info.GetReturnValue().SetNull();
 }
 
@@ -89,6 +89,84 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 	}
 
 	info.GetReturnValue().Set(result);
+}
+
+// PROPERTY: level.tiles
+void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalTiles = v8::String::NewFromUtf8(isolate, "_internalTiles", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalTiles).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalTiles).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.tiles");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, levelObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+	v8_wrapped->addChild("tiles", new_instance);
+
+	auto propTiles = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalTiles, new_instance, propTiles).FromJust();
+	info.GetReturnValue().Set(new_instance);
+}
+
+
+void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	if ( index > sizeof(levelObject->getTiles()))
+		return;
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto tile = levelObject->getTiles()[index];
+
+	v8::Local<v8::Integer> tileValue = v8::Integer::New(isolate, tile);
+	info.GetReturnValue().Set(tileValue);
+}
+
+void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	if ( index > sizeof(levelObject->getTiles()))
+		return;
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	// Get new value
+	if (value->IsUint32())
+	{
+		// Get new value
+		unsigned int newValue = value->Uint32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
+		if (newValue > 32) // Unsure how many colors exist, capping at 32 for now
+			newValue = 32;
+
+		levelObject->getTiles()[index] = (short)newValue;
+	}
+
+	// Needed to indicate we handled the request
+	info.GetReturnValue().Set(value);
 }
 
 // Level Method: level.findareanpcs(x, y, width, height);
@@ -352,7 +430,17 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
-//	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles);
+
+	// Create the player attr template
+	v8::Local<v8::FunctionTemplate> level_tiles_ctor = v8::FunctionTemplate::New(isolate);
+	level_tiles_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "tiles"));
+	level_tiles_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	level_tiles_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
+			Level_Tile_Getter, Level_Tile_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kNone));
+	env->SetConstructor("level.tiles", level_tiles_ctor);
+
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);
