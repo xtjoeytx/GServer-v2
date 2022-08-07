@@ -53,23 +53,27 @@ list(APPEND SOURCES ${UTILITIES_SOURCES})
 file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
 list(APPEND SOURCES ${ANIMATION_SOURCES})
 
+include(${PROJECT_SOURCE_DIR}/cmake/bin2h.cmake)
+bin2h(SOURCE_FILE ${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js HEADER_FILE ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h VARIABLE_NAME "JSBOOTSTRAPSCRIPT" NULL_TERMINATE)
+
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-		include/CFileSystem.h
-		include/main.h
-		include/TAccount.h
-		include/TMap.h
-		include/TNPC.h
-		include/TPlayer.h
-		include/TScriptClass.h
-		include/TServer.h
-		include/TServerList.h
-		include/TUpdatePackage.h
-		include/TWeapon.h
-		include/Scripting/GS2ScriptManager.h
-		include/Scripting/ScriptOrigin.h
-		include/Scripting/SourceCode.h)
+	${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+	include/CFileSystem.h
+	include/main.h
+	include/TAccount.h
+	include/TMap.h
+	include/TNPC.h
+	include/TPlayer.h
+	include/TScriptClass.h
+	include/TServer.h
+	include/TServerList.h
+	include/TUpdatePackage.h
+	include/TWeapon.h
+	include/Scripting/GS2ScriptManager.h
+	include/Scripting/ScriptOrigin.h
+	include/Scripting/SourceCode.h)
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
 list(APPEND HEADERS ${TLEVEL_HEADERS})

@@ -137,24 +137,26 @@
 	 * Events -> weapon.onCreated(npc, args...)
 	 */
 	env.setCallBack("weapon.created", function (weapon, ...args) {
-		try {
+		//try {
 			if (weapon.onCreated)
 				weapon.onCreated.apply(weapon, args);
-		} catch (e) {
-			env.reportException("Weapon Exception at " + weapon.name + ": " + e.name + " - " + e.message);
-		}
+		//} catch (e) {
+		//	env.reportException("Weapon Exception at " + weapon.name + ": " + e.name + " - " + e.message + " | " + JSON.stringify(e));
+		//}
 	});
 
 	/*
 	 * Event -> weapon.onActionServerSide(player, data)
 	 */
 	env.setCallBack("weapon.serverside", function (weapon, player, data) {
-		try {
-			if (weapon.onActionServerSide)
-				weapon.onActionServerSide(player, data);
-		} catch (e) {
-			env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
-		}
+		//try {
+			if (weapon.onActionServerSide) {
+				const params = tokenize(data, ',').slice(1);
+				weapon.onActionServerSide(player, params);
+			}
+		//} catch (e) {
+		//	env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
+		//}
 	});
 
 	/*
@@ -210,4 +212,65 @@
 		stringList.push(currentString);
 		return stringList;
 	};
+	
+	// Math helper functions
+	(function() {
+		const _intVecX = [0, -1, 0, 1];
+		const _intVecY = [-1, 0, 1, 0];
+
+		env.global.vecx = function(dir) {
+			return _intVecX[dir % 4];
+			// return Math.trunc(Math.cos(Math.PI/2 * (dir+1)));
+		};
+		
+		env.global.vecy = function(dir) {
+			return _intVecY[dir % 4];
+			// return -Math.trunc(Math.sin(Math.PI/2 * (dir+1)));
+		};
+	})();
+
+	// Server functions
+	(function() {
+		env.global.findlevel = function(...args) {
+			return server.findlevel(...args);
+		};
+
+		env.global.findnpc = function(...args) {
+			return server.findnpc(...args);
+		};
+
+		env.global.findplayer = function(...args) {
+			return server.findplayer(...args);
+		};
+
+		env.global.savelog = function(...args) {
+			return server.savelog(...args);
+		};
+
+		env.global.sendtorc = function(...args) {
+			return server.sendtorc(...args);
+		};
+
+		env.global.sendtonc = function(...args) {
+			return server.sendtonc(...args);
+		};
+
+		Object.defineProperty(env.global, 'allplayers', {
+			get: function() {
+				return server.players;
+			}
+		});
+
+		Object.defineProperty(env.global, 'timevar', {
+			get: function() {
+				return server.timevar;
+			}
+		});
+
+		Object.defineProperty(env.global, 'timevar2', {
+			get: function() {
+				return server.timevar2;
+			}
+		});
+	})();
 });

@@ -84,6 +84,9 @@ public:
 
 	const ScriptRunError& getScriptError() const;
 
+	void reportScriptException(const ScriptRunError& error);
+	void reportScriptException(const std::string& error_message);
+
 private:
 	void runTimers(const std::chrono::high_resolution_clock::time_point& time);
 

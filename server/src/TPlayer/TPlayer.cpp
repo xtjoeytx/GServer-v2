@@ -3869,31 +3869,30 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 
 #ifdef V8NPCSERVER
 	CString triggerAction = action.readString(",").toLower();
+	std::vector<CString> triggerActionData = action.gCommaStrTokens();
 	if (triggerAction == "serverside")
 	{
 		handled = true;
-		CString weaponName = action.readString(",");
-
-		TWeapon *weaponObject = server->getWeapon(weaponName);
-		if (weaponObject != nullptr)
+		if (triggerActionData.size() > 1)
 		{
-			CString triggerData = action.readString("");
-			weaponObject->queueWeaponAction(this, triggerData.text());
+			TWeapon *weaponObject = server->getWeapon(triggerActionData[1]);
+			if (weaponObject != nullptr)
+			{
+				auto triggerData = action.readString("").toString();
+				weaponObject->queueWeaponAction(this, triggerData);
+			}
 		}
 	}
 	else if (triggerAction == "servernpc")
 	{
 		handled = true;
-		CString npcName = action.readString(",");
-
-		auto npcObject = server->getNPCByName(npcName.text());
-		if (npcObject != nullptr)
+		if (triggerActionData.size() > 2)
 		{
-			CString npcTriggerAction = action.readString(",");
-			if (!npcTriggerAction.isEmpty())
+			auto npcObject = server->getNPCByName(triggerActionData[1].toString());
+			if (npcObject != nullptr)
 			{
-				CString triggerData = action.readString("");
-				npcObject->queueNpcTrigger(npcTriggerAction.text(), this, triggerData.text());
+				auto triggerData = action.readString("").toString();
+				npcObject->queueNpcTrigger(triggerActionData[2].toString(), this, triggerData);
 			}
 		}
 	}
