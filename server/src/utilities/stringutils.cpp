@@ -15,4 +15,18 @@ namespace utilities
 
 		return ret;
 	}
+
+	CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx)
+	{
+		CString ret;
+		for (auto i = start_idx; i < triggerData.size(); i++)
+		{
+			if (!ret.isEmpty())
+				ret << ",";
+
+			ret << triggerData[i].gtokenize();
+		}
+
+		return ret;
+	}
 }
