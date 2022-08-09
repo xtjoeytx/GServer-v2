@@ -18,7 +18,21 @@ o Slightly improved some runtime execution errors in NC-tab
 + Exposed some common functionality into the global object, so you can call them directly without referencing the server object:
   - functions: findlevel, findnpc, findplayer, savelog, sendtorc, sendtonc
   - global variables: allplayers, timevar, timevar2
-  
+  - standard functions:
+    - random(min, max)
+    - abs(num)
+    - arctan(angle)
+    - char(code) - returns ascii character for the code
+    - cos(angle)
+    - exp(x)
+    - getangle(dx, dy)
+    - float(num) - cast to float
+    - int(num) - cast to int
+    - log(base, x)
+    - max(x, y)
+    - min(x, y)
+    - sin(angle)
+
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
     v3.0.0

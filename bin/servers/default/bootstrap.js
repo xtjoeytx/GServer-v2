@@ -213,12 +213,62 @@
 
 		env.global.vecx = function(dir) {
 			return _intVecX[dir % 4];
-			// return Math.trunc(Math.cos(Math.PI/2 * (dir+1)));
 		};
 		
 		env.global.vecy = function(dir) {
 			return _intVecY[dir % 4];
-			// return -Math.trunc(Math.sin(Math.PI/2 * (dir+1)));
+		};
+
+		env.global.random = function(min, max) {
+			return Math.random() * (max - min) + min;
+		};
+
+		env.global.abs = function(num) {
+			return Math.abs(num);
+		};
+
+		env.global.arctan = function (angle) {
+			return Math.atan(angle);
+		};
+
+		env.global.char = function (code) {
+			return String.fromCharCode(code);
+		};
+
+		env.global.cos = function (angle) {
+			return Math.cos(angle);
+		};
+
+		env.global.exp = function (x) {
+			return Math.exp(x);
+		};
+
+		env.global.float = function(num) {
+			return parseFloat(num) || 0;
+		};
+
+		env.global.getangle = function (dx, dy) {
+			return Math.atan2(dx, dy);
+		};
+
+		env.global.int = function(num) {
+			return parseInt(num) || 0;
+		};
+
+		env.global.log = function (base, x) {
+			return Math.log(x) / Math.log(base);
+		};
+
+		env.global.max = function(n1, n2) {
+			return Math.max(n1, n2);
+		};
+
+		env.global.min = function(n1, n2) {
+			return Math.min(n1, n2);
+		};
+
+		env.global.sin = function (angle) {
+			return Math.sin(angle);
 		};
 	})();
 
