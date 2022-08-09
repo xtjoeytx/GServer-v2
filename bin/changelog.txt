@@ -1,5 +1,26 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.5
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Bug Fix - modified local files should now be replaced by the server
+o Change triggeractions to be case-insensitive
+* Update gs2compiler - fix for assignment operators (+=, -=, *=, /=)
+* Update gs2compiler - fix for-loop continue/break
+* Update gs2compiler - fix for integer casting
++ Embed javascript bootstrap file into gserver build
++ Changed sendtorc/sendtonc functions to print all arguments to the function
+o Modified call signature of onActionServerSide - onActionServerSide(player: Player, params: String[]) {}
+* Fixed GS2 triggeractions to serverside
+o Slightly improved some runtime execution errors in NC-tab
++ Exposed some common functionality into the global object, so you can call them directly without referencing the server object:
+  - functions: findlevel, findnpc, findplayer, savelog, sendtorc, sendtonc
+  - global variables: allplayers, timevar, timevar2
+  
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.0
 
   * bug fix, + new feature, o other
