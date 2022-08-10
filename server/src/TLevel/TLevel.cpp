@@ -47,7 +47,7 @@ server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMa
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, 0, sizeof(levelTiles));
+	memset(levelTiles, 0xFF, sizeof(levelTiles));
 
 	// Baddy id 0 breaks the client.  Put a null pointer in id 0.
 	levelBaddyIds.resize(1, 0);
@@ -123,8 +123,20 @@ CString TLevel::getBoardPacket()
 {
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
-	retVal.write((char *)levelTiles, sizeof(levelTiles));
+	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
 	retVal << "\n";
+
+	return retVal;
+}
+
+CString TLevel::getLayerPacket(int layer)
+{
+	CString retVal;
+	retVal.writeGChar(PLO_UNKNOWN107);
+	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
+	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
+	retVal << "\n";
+
 	return retVal;
 }
 
@@ -438,7 +450,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			// If our count is 1, just read in a tile.  This is the default mode.
 			if (count == 1)
 			{
-				levelTiles[boardIndex++] = (short)code;
+				levelTiles[0][boardIndex++] = (short)code;
 				continue;
 			}
 
@@ -459,8 +471,8 @@ bool TLevel::loadZelda(const CString& pLevelName)
 				// Add the tiles now.
 				for (int i = 0; i < count && boardIndex < 64*64-1; ++i)
 				{
-					levelTiles[boardIndex++] = tiles[0];
-					levelTiles[boardIndex++] = tiles[1];
+					levelTiles[0][boardIndex++] = tiles[0];
+					levelTiles[0][boardIndex++] = tiles[1];
 				}
 
 				// Clean up.
@@ -472,7 +484,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			else
 			{
 				for (int i = 0; i < count && boardIndex < 64*64; ++i)
-					levelTiles[boardIndex++] = (short)code;
+					levelTiles[0][boardIndex++] = (short)code;
 				count = 1;
 			}
 		}
@@ -620,7 +632,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			// If our count is 1, just read in a tile.  This is the default mode.
 			if (count == 1)
 			{
-				levelTiles[boardIndex++] = (short)code;
+				levelTiles[0][boardIndex++] = (short)code;
 				continue;
 			}
 
@@ -641,8 +653,8 @@ bool TLevel::loadGraal(const CString& pLevelName)
 				// Add the tiles now.
 				for (int i = 0; i < count && boardIndex < 64*64-1; ++i)
 				{
-					levelTiles[boardIndex++] = tiles[0];
-					levelTiles[boardIndex++] = tiles[1];
+					levelTiles[0][boardIndex++] = tiles[0];
+					levelTiles[0][boardIndex++] = tiles[1];
 				}
 
 				// Clean up.
@@ -654,7 +666,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			else
 			{
 				for (int i = 0; i < count && boardIndex < 64*64; ++i)
-					levelTiles[boardIndex++] = (short)code;
+					levelTiles[0][boardIndex++] = (short)code;
 				count = 1;
 			}
 		}
@@ -804,6 +816,8 @@ bool TLevel::loadNW(const CString& pLevelName)
 			w = strtoint(curLine[3]);
 			layer = strtoint(curLine[4]);
 
+			layers.push_back(layer);
+
 			if (!inrange(x, 0, 64) || !inrange(y, 0, 64) || w <= 0 || x + w > 64)
 				continue;
 
@@ -815,7 +829,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 					char top = curLine[5].readChar();
 					short tile = getBase64Position(left) << 6;
 					tile += getBase64Position(top);
-					levelTiles[ii + y*64] = tile;
+					levelTiles[layer][ii + y*64] = tile;
 				}
 			}
 		}
@@ -1065,7 +1079,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 	// These are things like signs, bushes, pots, etc.
 	int respawnTime = settings->getInt("respawntime", 15);
 	bool doRespawn = false;
-	short testTile = levelTiles[pX + (pY * 64)];
+	short testTile = levelTiles[0][pX + (pY * 64)];
 	int tileCount = sizeof(respawningTiles) / sizeof(short);
 	for (int i = 0; i < tileCount; ++i)
 		if (testTile == respawningTiles[i]) doRespawn = true;
@@ -1077,7 +1091,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 		for (int j = pY; j < pY + pHeight; ++j)
 		{
 			for (int i = pX; i < pX + pWidth; ++i)
-				oldTiles.writeGShort(levelTiles[i + (j * 64)]);
+				oldTiles.writeGShort(levelTiles[0][i + (j * 64)]);
 		}
 	}
 
@@ -1109,7 +1123,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new gralat npc for these rupees
 		if (!gralatNPC)
 		{
-			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
+			gralatNPC = server->addNPC("", "npc.join(\"gralats\");\n//#CLIENTSIDE\njoin(\"gralats\");", pX, pY, this, false, true);
 			gralatNPC->setScriptType("LOCALN");
 			addNPC(gralatNPC);
 		}
@@ -1411,7 +1425,7 @@ bool TLevel::isOnWall(int pX, int pY) const
 		return true;
 	}
 
-	return tiletypes[levelTiles[pY * 64 + pX]] >= 20;
+	return tiletypes[levelTiles[0][pY * 64 + pX]] >= 20;
 }
 
 bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) const
@@ -1432,7 +1446,7 @@ bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) c
 
 bool TLevel::isOnWater(int pX, int pY) const
 {
-	return (tiletypes[levelTiles[pY * 64 + pX]] == 11);
+	return (tiletypes[levelTiles[0][pY * 64 + pX]] == 11);
 }
 
 std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const

@@ -1,5 +1,42 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.5
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++ Added npc.settimer() for setting timeout, similar to gs2
+* Fixed a bug preventing serverside joins from propagating to the client in gs2
+* Bug Fix - modified local files should now be replaced by the server
+o Change triggeractions to be case-insensitive
+* Update gs2compiler - fix for assignment operators (+=, -=, *=, /=)
+* Update gs2compiler - fix for-loop continue/break
+* Update gs2compiler - fix for integer casting
++ Embed javascript bootstrap file into gserver build
++ Changed sendtorc/sendtonc functions to print all arguments to the function
+o Modified call signature of onActionServerSide - onActionServerSide(player: Player, params: String[]) {}
+* Fixed GS2 triggeractions to serverside
+o Slightly improved some runtime execution errors in NC-tab
++ Exposed some common functionality into the global object, so you can call them directly without referencing the server object:
+  - functions: findlevel, findnpc, findplayer, savelog, sendtorc, sendtonc
+  - global variables: allplayers, timevar, timevar2
+  - standard functions:
+    - random(min, max)
+    - abs(num)
+    - arctan(angle)
+    - char(code) - returns ascii character for the code
+    - cos(angle)
+    - exp(x)
+    - getangle(dx, dy)
+    - float(num) - cast to float
+    - int(num) - cast to int
+    - log(base, x)
+    - max(x, y)
+    - min(x, y)
+    - sin(angle)
+
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.0
 
   * bug fix, + new feature, o other

@@ -1,18 +1,16 @@
 #ifndef TSERVER_H
 #define TSERVER_H
 
+#include <climits>
+#include <chrono>
 #include <vector>
 #include <map>
 #include <memory>
 #include <unordered_map>
 #include <set>
-#include <thread>
-#include <chrono>
-#include <climits>
-#ifdef V8NPCSERVER
 #include <string>
+#include <thread>
 #include <unordered_set>
-#endif
 
 #include "IEnums.h"
 #include "CString.h"
@@ -23,6 +21,8 @@
 #include "CTranslationManager.h"
 #include "CWordFilter.h"
 #include "TServerList.h"
+
+#include "CommandDispatcher.h"
 
 #ifdef UPNP
 #include "CUPNP.h"
@@ -67,6 +67,7 @@ enum
 
 using AnimationManager = ResourceManager<TGameAni, TServer *>;
 using PackageManager = ResourceManager<TUpdatePackage, TServer *>;
+using TriggerDispatcher = CommandDispatcher<std::string, TPlayer *, std::vector<CString>&>;
 
 class TServer : public CSocketStub
 {
@@ -235,6 +236,10 @@ class TServer : public CSocketStub
 			return serverStartTime;
 		}
 
+		TriggerDispatcher getTriggerDispatcher() const {
+			return triggerActionDispatcher;
+		}
+
 	private:
 		GS2ScriptManager gs2ScriptManager;
 		
@@ -278,6 +283,10 @@ class TServer : public CSocketStub
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
 		std::time_t serverStartTime;
 		unsigned int serverTime;
+
+		// Trigger dispatcher
+		TriggerDispatcher triggerActionDispatcher;
+		void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
 
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
