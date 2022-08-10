@@ -152,7 +152,7 @@ void TNPC::setScriptCode(std::string pScript)
 	// Remove sparringzone / singleplayer from the server script
 	if (levelModificationNPCHack)
 	{
-		// Clearing the entire script 
+		// Clearing the entire script
 		npcScript.clearServerSide();
 	}
 
@@ -357,8 +357,12 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 		case NPCPROP_CLASS:
 		{
 			CString classList;
+
+#ifdef V8NPCSERVER
 			for (const auto& it : classMap)
 				classList << it.first << ",";
+#endif
+
 			if (!classList.isEmpty())
 				classList.removeI(classList.length() - 1);
 			return CString() >> (short)classList.length() << classList;
@@ -804,7 +808,7 @@ void TNPC::testForLinks()
 	if (canWarp == NPCWarpType::AllLinks)
 	{
 		static const int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
-		
+
 		int dir = sprite % 4;
 
 		auto linkTouched = level->getLink((int)(x / 16) + touchtestd[dir * 2], (int)(y / 16) + touchtestd[dir * 2 + 1]);
@@ -825,7 +829,7 @@ void TNPC::testTouch()
 {
 	if (!level)
 		return;
-	
+
 	testForLinks();
 }
 
@@ -847,7 +851,7 @@ void TNPC::freeScriptResources()
 	scriptEngine->UnregisterNpcTimer(this);
 	_scriptTimers.clear();
 	timeout = 0;
-	
+
 	// Clear triggeraction functions
 	for (auto & _triggerAction : _triggerActions)
 		delete _triggerAction.second;
