@@ -5,6 +5,8 @@
   * bug fix, + new feature, o other
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
++ Added npc.settimer() for setting timeout, similar to gs2
+* Fixed a bug preventing serverside joins from propagating to the client in gs2
 * Bug Fix - modified local files should now be replaced by the server
 o Change triggeractions to be case-insensitive
 * Update gs2compiler - fix for assignment operators (+=, -=, *=, /=)

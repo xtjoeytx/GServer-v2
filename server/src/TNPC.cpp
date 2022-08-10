@@ -355,7 +355,14 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 #endif
 
 		case NPCPROP_CLASS:
-			return CString() >> (short)0;
+		{
+			CString classList;
+			for (const auto& it : classMap)
+				classList << it.first << ",";
+			if (!classList.isEmpty())
+				classList.removeI(classList.length() - 1);
+			return CString() >> (short)classList.length() << classList;
+		}
 
 		case NPCPROP_X2:
 		{
@@ -902,6 +909,7 @@ TScriptClass * TNPC::joinClass(const std::string& className)
 
 	classMap[className] = classObj->getSource().getClientGS1();
 	updateClientCode();
+	modTime[NPCPROP_CLASS] = time(0);
 	return classObj;
 }
 

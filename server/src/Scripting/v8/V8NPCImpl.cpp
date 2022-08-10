@@ -813,6 +813,26 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// NPC Method: npc.settimer(time);
+void NPC_Function_SetTimer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		double timeout = args[0]->NumberValue(isolate->GetCurrentContext()).ToChecked();
+		npcObject->setTimeout((int)(timeout * 20));
+	}
+}
+
 // NPC Method: npc.setshape(type, pixelWidth, pixelHeight);
 void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1503,6 +1523,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setcharani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "settimer"), v8::FunctionTemplate::New(isolate, NPC_Function_SetTimer, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
