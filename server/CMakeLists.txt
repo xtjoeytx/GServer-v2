@@ -22,7 +22,6 @@
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 
-
 set(
 	SOURCES
 	src/CFileSystem.cpp
@@ -55,8 +54,7 @@ list(APPEND SOURCES ${UTILITIES_SOURCES})
 file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
 list(APPEND SOURCES ${ANIMATION_SOURCES})
 
-include(${PROJECT_SOURCE_DIR}/cmake/bin2h.cmake)
-bin2h(SOURCE_FILE ${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js HEADER_FILE ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h VARIABLE_NAME "JSBOOTSTRAPSCRIPT" NULL_TERMINATE)
+include(bin2h)
 
 set(
 	HEADERS
@@ -184,7 +182,7 @@ elseif(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-		
+
 		if(V8NPCSERVER)
 			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
 
@@ -241,6 +239,22 @@ if(V8NPCSERVER)
 		else()
 			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
 		endif()
+
+		add_custom_command(
+				OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+				COMMAND ${CMAKE_COMMAND}
+				-DSOURCE_FILE=${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
+				-DHEADER_FILE=${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+				-DVARIABLE_NAME=JSBOOTSTRAPSCRIPT
+				-P "${CMAKE_SOURCE_DIR}/cmake/bootstrap_js_to_h.cmake"
+				COMMENT "Generating \"bootstrap.js\" header file..."
+				WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+				DEPENDS "${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
+				VERBATIM
+		)
+
+		add_custom_target(bootstrap_js_to_h DEPENDS ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h)
+		add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 	endif()
 endif()
 
