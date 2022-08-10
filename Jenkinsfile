@@ -39,7 +39,7 @@ def killall_jobs() {
 	echo "Done killing"
 }
 
-def buildStep(dockerImage, os, defines) {
+def buildStep(dockerImage, os, defines, DOCKERTAG) {
 	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 	def fixed_job_name = split_job_name[1].replace('%2F',' ');
 	def fixed_os = os.replace(' ','-');
@@ -57,7 +57,16 @@ def buildStep(dockerImage, os, defines) {
 			dockerImageRef.inside("") {
 				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
 			}
-			//checkout scm;
+			checkout scm;
+
+			def tag = '';
+			def extra_ver = '';
+			if (env.BRANCH_NAME.equals('master')) {
+				tag = "latest${DOCKERTAG}";
+			} else {
+				tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
+				extra_ver = "-${tag}";
+			}
 
 			dockerImageRef.inside("") {
 
@@ -77,22 +86,19 @@ def buildStep(dockerImage, os, defines) {
 				if ("${os}" == "windows") {
 
 				} else {
-					sh "mkdir -p build/"
-					sh "mkdir -p lib/"
 					sh "rm -rfv build/*"
 				}
 
-				slackSend color: "good", channel: "#jenkins", message: "Starting ${os} build target..."
-				dir("build") {
-					if ("${os}" == "windows") {
-						bat "cmake ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
-						bat "cmake --build . --config Release --target package -- -j 8"
-					} else {
-						sh "cmake ${defines} -DVER_EXTRA=\"-${fixed_os}-${fixed_job_name}\" .."
-						sh "cmake --build . --config Release --target package -- -j 8"
-						//sh "cmake --build . --config Release --target package_source -- -j 8"
-					}
+				if ("${os}" == "windows") {
+					bat "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+					bat "cmake --build build/ --config Release --target package -- -j 8"
+				} else {
+					sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+					sh "cmake --build build/ --config Release --target package -- -j 8"
+					//sh "cmake --build . --config Release --target package_source -- -j 8"
+				}
 
+				dir("build") {
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 				}
 
@@ -100,7 +106,7 @@ def buildStep(dockerImage, os, defines) {
 					bat "rmdir /s /q build"
 				}
 
-				discordSend description: "Target: ${os} DockerImage: ${dockerImage} Generator: ${generator} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+				discordSend description: "Target: ${os} DockerImage: ${dockerImage} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
 			}
 		}
 	} catch(err) {
@@ -174,9 +180,9 @@ node('master') {
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
 				if ("${v.Type}" == "docker") {
-					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.DockerTag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.BuildEnv);
+					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.BuildEnv);
 				} else {
-					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags)
+					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
 				}
 			}
 		}

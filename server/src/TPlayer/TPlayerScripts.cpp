@@ -11,33 +11,7 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 	uint32_t checksum = pPacket.readGUInt5();
 	std::string gani = pPacket.readString("").toString();
 	const std::string ganiFile = gani + ".gani";
-	
-	// Try to find the animation in memory or on disk
-	auto findAni = server->getAnimationManager().findOrAddResource(ganiFile);
-	if (!findAni)
-	{
-		//printf("Client requested gani %s, but was not found\n", ganiFile.c_str());
-		return true;
-	}
-	
-	// Compare the bytecode checksum from the client with the one for the
-	// current script, if it doesn't match send the updated bytecode
-	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		sendPacket(findAni->getBytecodePacket());
-	
-	// v4 and up needs this for some reason.
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
-	return true;
-}
 
-// packet 157
-bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
-{
-	// Read packet data
-	uint32_t checksum = pPacket.readGUInt5();
-	std::string gani = pPacket.readString("").toString();
-	const std::string ganiFile = gani + ".gani";
-	
 	// Try to find the animation in memory or on disk
 	auto findAni = server->getAnimationManager().findOrAddResource(ganiFile);
 	if (!findAni)
@@ -45,12 +19,12 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 		//printf("Client requested gani %s, but was not found\n", ganiFile.c_str());
 		return true;
 	}
-	
+
 	// Compare the bytecode checksum from the client with the one for the
 	// current script, if it doesn't match send the updated bytecode
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
 		sendPacket(findAni->getBytecodePacket());
-	
+
 	// v4 and up needs this for some reason.
 	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
 	return true;

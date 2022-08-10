@@ -1,29 +1,42 @@
 {
 	"builds": [
 		{
-			"DockerRoot": "xtjoeytx",
-			"DockerImage": "gserver-v2",
-			"DockerTag": "",
-			"Dockerfile": "Dockerfile",
-			"BuildIfSuccessful": "",
-			"BuildEnv": "--build-arg NPCSERVER=on"
+			"Title": "Docker Linux Alpine x86_64",
+			"Description": "",
+			"Type": "docker",
+			"OS": "linux",
+			"Config": {
+			  	"DockerRoot": "xtjoeytx",
+				"DockerImage": "gserver-v2",
+				"Tag": "",
+				"Dockerfile": "Dockerfile",
+				"BuildIfSuccessful": "",
+				"BuildEnv": "--build-arg NPCSERVER=on"
+			}
+		},
+	  	{
+			"Title": "Docker Linux Alpine x86_64 - No npc-server",
+			"Description": "",
+			"Type": "docker",
+			"OS": "linux",
+			"Config": {
+			  	"DockerRoot": "xtjoeytx",
+				"DockerImage": "gserver-v2",
+				"Tag": "-no-npcserver",
+				"Dockerfile": "Dockerfile",
+				"BuildIfSuccessful": "",
+				"BuildEnv": "--build-arg NPCSERVER=off"
+			}
 		},
 		{
-			"DockerRoot": "xtjoeytx",
-			"DockerImage": "gserver-v2",
-			"DockerTag": "-no-npcserver",
-			"Dockerfile": "Dockerfile",
-			"BuildIfSuccessful": "",
-			"BuildEnv": "--build-arg NPCSERVER=off"
-		},
-		{
-			"Title": "Windows x86_64 build",
+			"Title": "Linux x86_64 - No npc-server",
 			"Description": "",
 			"Type": "native",
-		  	"OS": "windows",
+			"OS": "linux",
 			"Config": {
-				"DockerImage": "registry.home.eevul.net/build-2k19",
-				"Flags": ""
+				"DockerImage": "dockcross/linux-x64",
+				"Flags": "-DV8NPCSERVER=off -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF",
+				"Tag": "-no-npcserver"
 			}
 		}
 	]
