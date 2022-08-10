@@ -1,4 +1,5 @@
 ARG NPCSERVER=on
+ARG VER_EXTRA=""
 
 FROM xtjoeytx/v8:9.1.269.9 as v8
 
@@ -11,6 +12,7 @@ FROM alpine:3.14 AS build-env-npcserver-off
 FROM build-env-npcserver-${NPCSERVER} AS build-env
 COPY ./ /gserver
 ARG NPCSERVER
+ARG VER_EXTRA
 
 RUN apk add --update --virtual .gserver-build-dependencies \
 		cmake \
@@ -23,11 +25,10 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 		git \
 		automake \
 		autoconf \
-	&& mkdir /gserver/build \
-	&& cd /gserver/build \
-	&& cmake .. -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	&& cmake -S/gserver -B/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& make clean \
 	&& cmake --build . --config Release -- -j $(getconf _NPROCESSORS_ONLN) \
+	&& cmake --build . --config Release --target package -- -j $(getconf _NPROCESSORS_ONLN) \
 	&& apk del --purge .gserver-build-dependencies
 
 # GServer Run Environment

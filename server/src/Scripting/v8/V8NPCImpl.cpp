@@ -1,8 +1,9 @@
 #ifdef V8NPCSERVER
 
+#include <algorithm>
 #include <cassert>
-#include <v8.h>
 #include <unordered_map>
+#include <v8.h>
 #include "IUtil.h"
 #include "CScriptEngine.h"
 #include "TLevel.h"
@@ -812,6 +813,26 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// NPC Method: npc.settimer(time);
+void NPC_Function_SetTimer(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
+
+		double timeout = args[0]->NumberValue(isolate->GetCurrentContext()).ToChecked();
+		npcObject->setTimeout((int)(timeout * 20));
+	}
+}
+
 // NPC Method: npc.setshape(type, pixelWidth, pixelHeight);
 void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -860,6 +881,7 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 
 		// Callback name
 		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+		std::transform(eventName.begin(), eventName.end(), eventName.begin(), ::tolower);
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
@@ -1501,6 +1523,7 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setcharani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setcharprop"), v8::FunctionTemplate::New(isolate, NPC_Function_SetCharProp, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "settimer"), v8::FunctionTemplate::New(isolate, NPC_Function_SetTimer, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshape"), v8::FunctionTemplate::New(isolate, NPC_Function_SetShape, engine_ref)); // setshape(1, pixelWidth, pixelHeight)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "show"), v8::FunctionTemplate::New(isolate, NPC_Function_Show, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;

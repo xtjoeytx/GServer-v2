@@ -26,12 +26,6 @@ if(V8NPCSERVER)
 
 	install(FILES ${DOCS} DESTINATION "./docs")
 
-	file(GLOB SERVERS_DEFAULT_BOOTSTRAP
-		 servers/default/bootstrap.js
-		 )
-
-	install(FILES ${SERVERS_DEFAULT_BOOTSTRAP} DESTINATION "./servers/default/")
-
 	file(GLOB SERVERS_DEFAULT_NPCS
 		 servers/default/npcs/npcControl-NPC.txt
 		 )
@@ -44,7 +38,7 @@ if(V8NPCSERVER)
 		 )
 
 	install(FILES ${SERVERS_DEFAULT_NPCLOGS} DESTINATION "./servers/default/logs")
-	
+
 	install(DIRECTORY DESTINATION "./servers/default/scripts")
 endif()
 

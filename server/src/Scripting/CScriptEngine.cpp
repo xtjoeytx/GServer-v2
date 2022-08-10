@@ -6,6 +6,10 @@
 #include "TServer.h"
 #include "TWeapon.h"
 #include "V8ScriptWrappers.h"
+#include "EmbeddedBootstrapScript.h"
+
+extern const unsigned char JSBOOTSTRAPSCRIPT[];
+extern const size_t JSBOOTSTRAPSCRIPT_SIZE;
 
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
@@ -34,11 +38,7 @@ bool CScriptEngine::Initialize()
 		return true;
 
 	CString bootstrapScript;
-	if (!bootstrapScript.load(CString() << _server->getServerPath() << "bootstrap.js"))
-	{
-		// Failed to load file
-		return false;
-	}
+	bootstrapScript.write((const char *)JSBOOTSTRAPSCRIPT, JSBOOTSTRAPSCRIPT_SIZE);
 
 	// bootstrap file print
 	SCRIPTENV_D("---START SCRIPT---\n%s\n---END SCRIPT\n\n", bootstrapScript.text());
@@ -180,9 +180,8 @@ IScriptFunction * CScriptEngine::CompileCache(const std::string& code, bool refe
 	IScriptFunction *compiledScript = _env->Compile(std::to_string(SCRIPT_ID++), code);
 	if (compiledScript == nullptr)
 	{
-		auto scriptError = _env->getScriptError();
-		_server->reportScriptException(scriptError);
-		SCRIPTENV_D("Error Compiling: %s\n", scriptError.getErrorString().c_str());
+		reportScriptException(_env->getScriptError());
+		SCRIPTENV_D("Error Compiling: %s\n", _env->getScriptError().getErrorString().c_str());
 		return nullptr;
 	}
 
@@ -261,9 +260,9 @@ bool CScriptEngine::ExecuteNpc(TNPC *npc)
 					exceptionMsg.append(" - ");
 				}
 				exceptionMsg.append(_env->getScriptError().getErrorString());
-				_server->reportScriptException(exceptionMsg);
+				reportScriptException(exceptionMsg);
 			}
-			else _server->reportScriptException(_env->getScriptError());
+			else reportScriptException(_env->getScriptError());
 		}
 		delete args;
 	});
@@ -299,7 +298,8 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 			IScriptArguments* args = ScriptFactory::CreateArguments(_env, weapon->getScriptObject());
 			bool result = args->Invoke(compiledScript, true);
 			if (!result)
-				_server->reportScriptException(_env->getScriptError());
+				reportScriptException(_env->getScriptError());
+			
 			delete args;
 		});
 	}
@@ -404,6 +404,16 @@ void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction *cb
 
 	_callbacks[callback] = cbFunc;
 	cbFunc->increaseReference();
+}
+
+void CScriptEngine::reportScriptException(const ScriptRunError& error)
+{
+	_server->reportScriptException(error);
+}
+
+void CScriptEngine::reportScriptException(const std::string& error_message)
+{
+	_server->reportScriptException(error_message);
 }
 
 #endif
