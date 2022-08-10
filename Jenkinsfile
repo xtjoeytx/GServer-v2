@@ -18,6 +18,8 @@ def killall_jobs() {
 	def buildnum = env.BUILD_NUMBER.toInteger()
 	def killnums = ""
 	def job = Jenkins.instance.getItemByFullName(jobname)
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
+
 	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
 
 	for (build in job.builds) {

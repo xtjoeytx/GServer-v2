@@ -26,7 +26,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 		automake \
 		autoconf \
 	&& cmake -S/gserver -B/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
-	&& make clean \
+	&& cmake --build . --config Release --target clean \
 	&& cmake --build . --config Release -- -j $(getconf _NPROCESSORS_ONLN) \
 	&& cmake --build . --config Release --target package -- -j $(getconf _NPROCESSORS_ONLN) \
 	&& apk del --purge .gserver-build-dependencies
