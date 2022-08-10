@@ -59,7 +59,6 @@ include(bin2h)
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 	include/CFileSystem.h
 	include/main.h
 	include/TAccount.h
@@ -107,6 +106,7 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		HEADERS
+		${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 		include/Scripting/CScriptEngine.h
 		include/Scripting/ScriptAction.h
 		include/Scripting/ScriptExecutionContext.h
