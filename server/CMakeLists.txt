@@ -246,7 +246,7 @@ if(V8NPCSERVER)
 				-DSOURCE_FILE=${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
 				-DHEADER_FILE=${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 				-DVARIABLE_NAME=JSBOOTSTRAPSCRIPT
-				-P "${CMAKE_SOURCE_DIR}/cmake/bootstrap_js_to_h.cmake"
+				-P "${CMAKE_SOURCE_DIR}/cmake/generate_header_file.cmake"
 				COMMENT "Generating \"bootstrap.js\" header file..."
 				WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 				DEPENDS "${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
