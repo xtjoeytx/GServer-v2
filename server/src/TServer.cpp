@@ -1491,8 +1491,9 @@ void TServer::playerLoggedIn(TPlayer *player)
 
 void TServer::calculateServerTime()
 {
-	// timevar apparently subtracts 11078 days from time(0) then divides by 5.
-	serverTime = ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
+	// Thu Feb 01 2001 17:33:34 GMT+0000
+	// this is likely the actual start time of timevar
+	serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
 }
 
 bool TServer::isIpBanned(const CString& ip)
