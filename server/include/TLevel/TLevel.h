@@ -39,16 +39,16 @@ class TLevel
 		TLevel* clone();
 
 		// get crafted packets
-		CString getBaddyPacket(int clientVersion = CLVER_2_17);
-		CString getBoardPacket();
+		void sendBaddyPacket(TPlayer *pPlayer, int clientVersion = CLVER_2_17);
+		void sendBoardPacket(TPlayer *pPlayer);
 		CString getLayerPacket(int i);
-		CString getBoardChangesPacket(time_t time);
-		CString getBoardChangesPacket2(time_t time);
-		CString getChestPacket(TPlayer *pPlayer);
-		CString getHorsePacket();
-		CString getLinksPacket();
-		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
-		CString getSignsPacket(TPlayer *pPlayer);
+		void sendBoardChangesPacket(TPlayer *pPlayer, time_t time);
+		void sendBoardChangesPacket2(TPlayer *pPlayer, time_t time);
+		void sendChestPacket(TPlayer *pPlayer);
+		void sendHorsePacket(TPlayer *pPlayer);
+		void sendLinksPacket(TPlayer *pPlayer);
+		void sendNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
+		void sendSignsPacket(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
 		//! \return The action level name.

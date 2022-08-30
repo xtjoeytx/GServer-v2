@@ -103,7 +103,8 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Socket-Functions
 		bool doMain();
-		void sendPacket(CString pPacket, bool appendNL = true);
+		void sendPacket(char packetId, CString pPacket, bool sendNow = false, bool appendNL = true);
+		void sendPacketOld(CString pPacket, bool appendNL = true);
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);
 
@@ -299,7 +300,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
-	private:
+	bool newProtocol;
+private:
 		// Login functions.
 		bool sendLoginClient();
 		bool sendLoginNC();
@@ -330,7 +332,7 @@ class TPlayer : public TAccount, public CSocketStub
 		int codepage;
 		TLevel *level;
 		int id, type, versionID;
-		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
+	time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;

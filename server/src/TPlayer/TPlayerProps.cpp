@@ -322,7 +322,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	while (pPacket.bytesLeft() > 0)
 	{
 		unsigned char propId = pPacket.readGUChar();
-		
+
 		switch (propId)
 		{
 			case PLPROP_NICKNAME:
@@ -337,7 +337,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						setNick("unknown");
 				}
 				else setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
-				
+
 				if (options & PLSETPROPS_FORWARD)
 					globalBuff >> (char)propId << getProp(propId);
 
@@ -439,7 +439,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 4)
 				{
-					CSettings* settings = server->getSettings(); 
+					CSettings* settings = server->getSettings();
 					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
 					img = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -474,7 +474,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 3)
 				{
-					CSettings* settings = server->getSettings(); 
+					CSettings* settings = server->getSettings();
 					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
 					img = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -532,13 +532,13 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				if (gani == "spin")
 				{
 					CString nPacket;
-					nPacket >> (char)PLO_HITOBJECTS >> (short)id >> (char)swordPower;
+					nPacket >> (short)id >> (char)swordPower;
 					char hx = (char)((x + 1.5f) * 2);
 					char hy = (char)((y + 2.0f) * 2);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx) >> (char)(hy - 4), 0, level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx) >> (char)(hy + 4), 0, level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx - 4) >> (char)(hy), 0, level, this);
-					server->sendPacketToLevel(CString() << nPacket >> (char)(hx + 4) >> (char)(hy), 0, level, this);
+					server->sendPacketToLevel(PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy - 4), 0, level, this);
+					server->sendPacketToLevel(PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy + 4), 0, level, this);
+					server->sendPacketToLevel(PLO_HITOBJECTS, CString() << nPacket >> (char)(hx - 4) >> (char)(hy), 0, level, this);
+					server->sendPacketToLevel(PLO_HITOBJECTS, CString() << nPacket >> (char)(hx + 4) >> (char)(hy), 0, level, this);
 				}
 			}
 			break;
@@ -673,7 +673,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					levelBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 
 					if (level != 0 && level->getPlayer(0) == this)
-						sendPacket(CString() >> (char)PLO_ISLEADER);
+						sendPacket(PLO_ISLEADER, CString() << "");
 					/*
 					// If we are the leader of the level, call warp().  This will fix NPCs not
 					// working again after we respawn.
@@ -697,7 +697,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					{
 						level->removePlayer(this);
 						level->addPlayer(this);
-						level->getPlayer(0)->sendPacket(CString() >> (char)PLO_ISLEADER);
+						level->getPlayer(0)->sendPacket(PLO_ISLEADER, CString() << "");
 					}
 				}
 			}
@@ -753,9 +753,9 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 								// and tell the player to remove the NPC from memory.
 								carryNpcId = 0;
 								isOwner = false;
-								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
-								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
-								server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, pmap, this);
+								sendPacket(PLO_PLAYERPROPS, CString() >> (char)PLPROP_CARRYNPC >> (int)0);
+								sendPacket(PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
+								server->sendPacketToLevel(PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0, pmap, this);
 								break;
 							}
 						}
@@ -765,7 +765,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						// We own this NPC now so remove it from the level and have everybody else delete it.
 						TNPC* npc = server->getNPC(carryNpcId);
 						level->removeNPC(npc);
-                        server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId, nullptr);
+                        server->sendPacketToAll(PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId, nullptr);
 					}
 				}
 			}
@@ -807,7 +807,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
 				if (id != -1 && loaded)
-					server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
+					server->sendPacketTo(PLO_OTHERPLPROPS, PLTYPE_ANYCLIENT, CString() >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
 				// TODO: udp support.
 			break;
 
@@ -904,7 +904,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				if (id == -1 || !loaded)
 					break;
 
-				server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg, this);
+				server->sendPacketToAll(PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg, this);
 			break;
 
 			case PLPROP_GATTRIB1:  attrList[0]  = pPacket.readChars(pPacket.readGUChar()); break;
@@ -1043,7 +1043,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
-			server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << globalBuff, this);
+			server->sendPacketToAll(PLO_OTHERPLPROPS, CString() >> (short)this->id << globalBuff, this);
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending
@@ -1052,10 +1052,10 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			bool MOVE_PRECISE = false;
 			if (versionID >= CLVER_2_3) MOVE_PRECISE = true;
 
-			server->sendPacketToLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
+			server->sendPacketToLevel(PLO_OTHERPLPROPS, CString() >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), pmap, this, false);
 		}
 		if (selfBuff.length() > 0)
-			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
+			this->sendPacket(PLO_PLAYERPROPS, CString() << selfBuff);
 
 #ifdef V8NPCSERVER
 		// Movement check.
@@ -1080,7 +1080,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 		if (invalidPackets > 5)
 		{
 			serverlog.out("[%s] Player %s is sending invalid packets.\n", server->getName().text(), nickName.text());
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
+			sendPacket(PLO_DISCMESSAGE, CString() << "Disconnected for sending invalid packets.");
 			server->deletePlayer(this);
 		}
 	}
@@ -1100,7 +1100,7 @@ void TPlayer::sendProps(const bool *pProps, int pCount)
 	}
 
 	// Send Packet
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
+	sendPacket(PLO_PLAYERPROPS, CString() << propPacket);
 }
 
 CString TPlayer::getProps(const bool *pProps, int pCount)
@@ -1108,7 +1108,7 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 	CString propPacket;
 
 	// Start the prop packet.
-	propPacket >> (char)PLO_OTHERPLPROPS >> (short)this->id;
+	propPacket >> (short)this->id;
 
 	if (pCount > 0)
 	{
@@ -1121,7 +1121,7 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;
-			
+
 			if (i == PLPROP_ATTACHNPC && attachNPC != 0)
 			{
 				propPacket >> (char)i;
@@ -1139,6 +1139,6 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 
 	if (isExternal)
 		propPacket >> (char)81 << "!";
-	
+
 	return propPacket;
 }

@@ -286,8 +286,8 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 		unsigned char epower = 1;
 
 		// Send the packet out.
-		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-		server->sendPacketToLevel(packet, nullptr, levelObject);
+		CString packet = CString() >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+		server->sendPacketToLevel(PLO_EXPLOSION, packet, nullptr, levelObject);
 	}
 }
 

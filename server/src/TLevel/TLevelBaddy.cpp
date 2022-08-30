@@ -70,7 +70,7 @@ void TLevelBaddy::dropItem()
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (level->addItem(this->x, this->y, itemType))
-			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), 0, level);
+			server->sendPacketToLevel(PLO_ITEMADD, CString() >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), 0, level);
 	}
 }
 

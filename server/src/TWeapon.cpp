@@ -176,7 +176,7 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket(int clientVersion) const
+void TWeapon::sendWeaponPacket(TPlayer *p, int clientVersion) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;

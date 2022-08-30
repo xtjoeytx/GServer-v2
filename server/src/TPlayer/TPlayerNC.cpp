@@ -36,7 +36,7 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 		if (npc != nullptr)
 		{
 			CString npcDump = npc->getVariableDump();
-			sendPacket(CString() >> (char)PLO_NC_NPCATTRIBUTES << npcDump.gtokenize());
+			sendPacket(PLO_NC_NPCATTRIBUTES, CString() << npcDump.gtokenize());
 		}
 	}
 
@@ -60,7 +60,7 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 		bool result = server->deleteNPC(npc, true);
 		if (result)
 		{
-			server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
+			server->sendPacketTo(PLO_NC_NPCDELETE, PLTYPE_ANYNC, CString() >> (int)npcId);
 
 			CString logMsg;
 			logMsg << "NPC " << npcName << " deleted by " << accountName << "\n";
@@ -110,7 +110,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	if (npc != nullptr)
 	{
 		CString code = npc->getSource().getSource();
-		sendPacket(CString() >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << code.gtokenize());
+		sendPacket(PLO_NC_NPCSCRIPT, CString() >> (int)npcId << code.gtokenize());
 	}
 //	else printf("npc doesn't exist\n");
 
@@ -159,7 +159,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		for (auto it = flagList->begin(); it != flagList->end(); ++it)
 			flagListStr << (*it).first << "=" << (*it).second << "\n";
 
-		sendPacket(CString() >> (char)PLO_NC_NPCFLAGS >> (int)npcId << flagListStr.gtokenize());
+		sendPacket(PLO_NC_NPCFLAGS, CString() >> (int)npcId << flagListStr.gtokenize());
 	}
 
 	return true;
@@ -299,7 +299,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
 
 		// Send packet to npc controls about new npc
-		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);
+		server->sendPacketTo(PLO_NC_NPCADD, PLTYPE_ANYNC, CString() >> (int)newNpc->getId() << npcProps);
 
 		// Persist NPC
 		newNpc->saveNPC();
@@ -333,8 +333,8 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 		CString classCode(classObj->getSource().getSource());
 
 		CString ret;
-		ret >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << classCode.gtokenize();
-		sendPacket(ret);
+		ret >> (char)className.length() << className << classCode.gtokenize();
+		sendPacket(PLO_NC_CLASSGET, ret);
 	}
 
 	return true;
@@ -361,8 +361,8 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	if (!hasClass)
 	{
 		CString ret;
-		ret >> (char)PLO_NC_CLASSADD << className;
-		server->sendPacketTo(PLTYPE_ANYNC, ret);
+		ret << className;
+		server->sendPacketTo(PLO_NC_CLASSADD, PLTYPE_ANYNC, ret);
 	}
 
 	// Logging
@@ -387,8 +387,8 @@ bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	if (server->deleteClass(className))
 	{
 		CString ret;
-		ret >> (char)PLO_NC_CLASSDELETE << className;
-		server->sendPacketTo(PLTYPE_ANYNC, ret);
+		ret << className;
+		server->sendPacketTo(PLO_NC_CLASSDELETE, PLTYPE_ANYNC, ret);
 		logMsg << accountName << " has deleted class " << className << "\n";
 	}
 	else
@@ -424,7 +424,7 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 		for (auto it = npcList->begin(); it != npcList->end(); ++it)
 			npcDump << "\n" << (*it)->getVariableDump() << "\n";
 
-		sendPacket(CString() >> (char)PLO_NC_LEVELDUMP << npcDump.gtokenize());
+		sendPacket(PLO_NC_LEVELDUMP, CString() << npcDump.gtokenize());
 	}
 
 	return true;
@@ -440,7 +440,6 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 
 	// Start our packet.
 	CString ret;
-	ret >> (char)PLO_NC_WEAPONLISTGET;
 
 	// Iterate weapon list and send names
 	auto weaponList = server->getWeaponList();
@@ -453,7 +452,7 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 		ret >> (char)weaponName.length() << weaponName;
 	}
 
-	sendPacket(ret);
+	sendPacket(PLO_NC_WEAPONLISTGET, ret);
 	return true;
 }
 
@@ -476,20 +475,20 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 		if (getVersion() < NCVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_NPCWEAPONADD
+			sendPacket(PLO_NPCWEAPONADD, CString()
 				>> (char)weaponName.length() << weaponName
 				>> (char)0 >> (char)weapon->getImage().length() << weapon->getImage()
 				>> (char)1 >> (short)script.length() << script);
 		}
 		else
 		{
-			sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
+			sendPacket(PLO_NC_WEAPONGET, CString() >>
 				(char)weaponName.length() << weaponName >>
 				(char)weapon->getImage().length() << weapon->getImage() <<
 				script);
 		}
 	}
-	else server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
+	else server->sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYNC, CString() << accountName << " prob: weapon " << weaponName << " doesn't exist");
 
 	return true;
 }
@@ -588,7 +587,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 			ret << (*it)->getActualLevelName() << "\n";
 	}
 
-	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());
+	sendPacket(PLO_NC_LEVELLIST, CString() << ret.gtokenize());
 	return true;
 }
 
@@ -612,7 +611,7 @@ void TPlayer::sendNCAddr()
 				npcServerIp = accountIpStr;
 		}
 
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
+		sendPacket(PLO_NPCSERVERADDR, CString() >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
 	}
 }
 

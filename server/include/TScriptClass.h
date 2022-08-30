@@ -6,6 +6,7 @@
 #include <string>
 #include "CString.h"
 #include "SourceCode.h"
+#include "TPlayer.h"
 
 class TServer;
 class TScriptClass
@@ -15,8 +16,8 @@ public:
 	~TScriptClass();
 
 	// Functions -> Inline Get-Functions
-	CString getClassPacket() const;
-	
+	void sendClassPacket(TPlayer *p) const;
+
 	const std::string& getName() const {
 		return _className;
 	}

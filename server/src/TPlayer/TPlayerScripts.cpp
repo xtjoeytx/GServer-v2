@@ -26,7 +26,7 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 		sendPacket(findAni->getBytecodePacket());
 
 	// v4 and up needs this for some reason.
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
+	sendPacket(PLO_UNKNOWN195, CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
 	return true;
 }
 
@@ -36,17 +36,15 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 
 	server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
 
-	CString out;
-
 	TWeapon * weaponObj = server->getWeapon(weaponName);
 
 	if (weaponObj != nullptr)
 	{
 		CString b = weaponObj->getByteCode();
-		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << b;
-
-		sendPacket(out);
+		if (newProtocol)
+			sendPacket(PLO_NPCWEAPONSCRIPT, b);
+		else
+			sendPacket(PLO_RAWDATA, CString() >> (int)b.length() << "\n" >> (char)PLO_NPCWEAPONSCRIPT << b);
 	}
 
 	return true;
@@ -64,10 +62,10 @@ bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 
 	if (classObj != nullptr)
 	{
-		CString out;
-		out >> (char)PLO_RAWDATA >> (int)classObj->getByteCode().length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << classObj->getByteCode();
-		sendPacket(out);
+		if (!newProtocol)
+			sendPacket(PLO_RAWDATA, CString() >> (int)classObj->getByteCode().length() << "\n" >> (char)PLO_NPCWEAPONSCRIPT << classObj->getByteCode());
+		else
+			sendPacket(PLO_NPCWEAPONSCRIPT, classObj->getByteCode());
 	}
 	else
 	{
@@ -83,7 +81,7 @@ bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 		// Should technically be PLO_UNKNOWN197 but for some reason the client breaks player.join() scripts
 		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by
 		// sending an empty bytecode
-		sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)gstr.length() << gstr);
+		sendPacket(PLO_NPCWEAPONSCRIPT, CString() >> (short)gstr.length() << gstr);
 	}
 
 	return true;

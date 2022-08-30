@@ -23,7 +23,7 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)
 			{
-				sendPacket(CString() >> (char)PLO_FILEUPTODATE << fileName);
+				sendPacket(PLO_FILEUPTODATE, CString() << fileName);
 				return true;
 			}
 		}
@@ -37,7 +37,7 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 {
 	CString packageName = pPacket.readChars(pPacket.readGUChar());
-	
+
 	// 1 -> Install, 2 -> Reinstall
 	unsigned char installType = pPacket.readGUChar();
 	CString fileChecksums = pPacket.readString("");
@@ -73,12 +73,12 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 		}
 	}
 	
-	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE >> (char)packageName.length() << packageName
+	sendPacket(PLO_UPDATEPACKAGESIZE, CString() >> (char)packageName.length() << packageName
 	                     >> (long long)totalDownloadSize);
 	
 	for (const auto& wantFile : missingFiles)
 		this->sendFile(wantFile);
 	
-	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << packageName);
+	sendPacket(PLO_UPDATEPACKAGEDONE, CString() << packageName);
 	return true;
 }

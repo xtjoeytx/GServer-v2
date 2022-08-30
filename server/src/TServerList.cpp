@@ -358,7 +358,7 @@ void TServerList::handleText(const CString& data)
 						if (pl->inChatChannel(channel))
 						{
 							CString weapon = pl->isClient() ? "-Serverlist_Chat" : "GraalEngine";
-							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << tmpData);
+							pl->sendPacket(PLO_SERVERTEXT, CString() << weapon << tmpData);
 						}
 					}
 				}
@@ -487,10 +487,10 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 		// Assign the nickname to the player.
 		p->setNick(nickname, true);
-		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
+		p->sendPacket(PLO_PLAYERPROPS, CString() << prop);
 
 		// Tell everybody else the new nickname.
-		_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, p);
+		_server->sendPacketToAll(PLO_OTHERPLPROPS, CString() >> (short)playerID << prop, p);
 	}
 }
 
@@ -659,7 +659,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	}
 
 	// Send the profiles.
-	p1->sendPacket(CString() >> (char)PLO_PROFILE << profile);
+	p1->sendPacket(PLO_PROFILE, CString() << profile);
 }
 
 void TServerList::msgSVI_ERRMSG(CString& pPacket)
@@ -684,7 +684,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
-		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
+		player->sendPacket(PLO_DISCMESSAGE, CString() << message);
 		player->setId(0);	// Prevent saving of the account.
 		player->disconnect();
 		return;
@@ -854,7 +854,7 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 	// A hack to allow v5 clients to serverwarp to servers
 	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
-		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
+		player->sendPacket(PLO_SERVERWARP, CString() << serverpacket);
 }
 
 void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
@@ -886,13 +886,13 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 					{
 						CString channel = params[3].guntokenize();
 						if (player->addChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
+							player->sendPacket(PLO_SERVERTEXT, CString() << weapon << ",irc,join," << params[3].gtokenize());
 					}
 					else if (params[2] == "part")
 					{
 						CString channel = params[3].guntokenize();
 						if (player->inChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
+							player->sendPacket(PLO_SERVERTEXT, CString() << weapon << ",irc,part," << params[3].gtokenize());
 					}
 				}
 			}
@@ -938,7 +938,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 			//_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
-				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+				player->sendPacket(PLO_SERVERTEXT, CString() << message);
 		}
 	}
 }
@@ -974,7 +974,7 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);
 		TPlayer* tmpPlyr = p->getExternalPlayer(account);
-		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3,true);
+		p->sendPacket(PLO_PRIVATEMESSAGE, CString() >> (short)tmpPlyr->getId() << pmMessageType << message3,true);
 	}
 
 	message2 = "";

@@ -199,11 +199,11 @@ class TServer : public CSocketStub
 		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
 
 		// Packet sending.
-		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
-		void sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
+		void sendPacketToAll(char packetId, CString pPacket, TPlayer *pSender) const;
+		void sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
+		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
+		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketTo(char packetId, int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 		// Player Management
 		unsigned int getFreePlayerId();
@@ -242,7 +242,7 @@ class TServer : public CSocketStub
 
 	private:
 		GS2ScriptManager gs2ScriptManager;
-		
+
 		template<typename ScriptObjType>
 		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
 
@@ -344,7 +344,7 @@ inline void TServer::sendToRC(const CString& pMessage, TPlayer *pSender) const
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYRC, CString() << pMessage.subString(0, len), pSender);
 }
 
 inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
@@ -353,7 +353,7 @@ inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYNC, CString() << pMessage.subString(0, len), pSender);
 }
 
 #endif

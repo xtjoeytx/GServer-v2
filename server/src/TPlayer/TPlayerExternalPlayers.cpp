@@ -49,9 +49,9 @@ bool TPlayer::remPMServer(CString& option)
 				ij = externalPlayerList.erase(ij);
 
 				if (isRC())
-					sendPacket(CString() >> (char)PLO_DELPLAYER >> pid);
+					sendPacket(PLO_DELPLAYER, CString() >> pid);
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+					sendPacket(PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED);
 			}
 			else
 				++ij;
@@ -77,7 +77,7 @@ bool TPlayer::remPMServer(CString& option)
 bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
-	
+
 	if (!externalPlayerList.empty())
 	{
 		// Check if a player has disconnected
@@ -105,11 +105,11 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 					short pid = p->getId();
 					delete p;
 					ij = externalPlayerList.erase(ij);
-					
+
 					if (isRC())
-						sendPacket(CString() >> (char)PLO_DELPLAYER >> pid);
+						sendPacket(PLO_DELPLAYER, CString() >> pid);
 					else
-						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+						sendPacket(PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED);
 
 					//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
 					//server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
@@ -180,10 +180,10 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
 		{
 			if (isRC()) {
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(*ij)->getId() << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
+				sendPacket(PLO_ADDPLAYER, CString() >> (short)(*ij)->getId() << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
 			}
 			else {
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(*ij)->getId() >> (char)PLPROP_ACCOUNTNAME << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
+				sendPacket(PLO_OTHERPLPROPS, CString() >> (short)(*ij)->getId() >> (char)PLPROP_ACCOUNTNAME << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
 			}
 
 			++ij;
