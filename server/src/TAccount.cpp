@@ -23,7 +23,7 @@ deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), m
 onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
 attachNPC(0),
 lastSparTime(0),
-statusMsg(0)
+statusMsg(0), deviceId(0)
 {
 	// Other Defaults
 	colors[0] = 2;	// c

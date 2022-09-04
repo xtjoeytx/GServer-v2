@@ -53,6 +53,8 @@ class TServerList : public CSocketStub
 		void sendText(const std::vector<CString>& stringList);
 		void sendTextForPlayer(TPlayer *player, const CString& data);
 
+		void sendLoginPacketForPlayer(TPlayer *player, const CString& password, const CString& identity);
+
 		const std::map<std::string, int>& getServerList() { return serverListCount; }
 		const std::string& getLocalIP() const { return _serverLocalIp; }
 		const std::string& getServerIP() const { return _serverRemoteIp; }
@@ -90,6 +92,7 @@ class TServerList : public CSocketStub
 		void msgSVI_REQUESTTEXT(CString& pPacket);
 		void msgSVI_SENDTEXT(CString& pPacket);
 		void msgSVI_PMPLAYER(CString& pPacket);
+		void msgSVI_ASSIGNPCID(CString& pPacket);
 		
 	protected:
 		// Packet Functions

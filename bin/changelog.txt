@@ -16,7 +16,7 @@ o Change triggeractions to be case-insensitive
 + Changed sendtorc/sendtonc functions to print all arguments to the function
 o Modified call signature of onActionServerSide - onActionServerSide(player: Player, params: String[]) {}
 * Fixed GS2 triggeractions to serverside
-o Slightly improved some runtime execution errors in NC-tab
+o Slightly improved some serverside runtime execution errors in NC-tab
 + Exposed some common functionality into the global object, so you can call them directly without referencing the server object:
   - functions: findlevel, findnpc, findplayer, savelog, sendtorc, sendtonc
   - global variables: allplayers, timevar, timevar2
