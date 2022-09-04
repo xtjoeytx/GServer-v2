@@ -2262,10 +2262,16 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
+	
+	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
+	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
+	CString identity = pPacket.readString("");
 
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
+	if (!identity.isEmpty())
+		serverlog.out("[%s]    Identity:\t%s\n", server->getName().text(), identity.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2323,12 +2329,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
 		return false;
 	}
-	server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
-		>> (char)accountName.length() << accountName
-		>> (char)password.length() << password
-		>> (short)id >> (char)type
-		);
 
+	server->getServerList()->sendLoginPacketForPlayer(this, password, identity);
 	return true;
 }
 
