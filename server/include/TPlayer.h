@@ -212,6 +212,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
+		bool msgPLI_SHOOT2(CString& pPacket);
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);

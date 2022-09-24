@@ -209,6 +209,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
+	TPLFunc[PLI_SHOOT2] = &TPlayer::msgPLI_SHOOT2;
 	TPLFunc[PLI_SERVERWARP] = &TPlayer::msgPLI_SERVERWARP;
 
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
@@ -3713,6 +3714,123 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 
 	// Send data now.
 	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);
+
+	return true;
+}
+
+int16_t convertToPixelPos(uint16_t val) {
+	int16_t x = (val >> 1);
+
+	// If the first bit is 1, our position is negative.
+	if (val & 0x0001)
+		x = -x;
+
+	return x;
+}
+
+bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
+{
+	auto curLoc = pPacket.readPos();
+	while (pPacket.bytesLeft()) {
+		auto curch = pPacket.readChar();
+		printf("%c", curch);
+	}
+	printf("\nNORM: ");
+
+	pPacket.setRead(curLoc);
+	//
+	while (pPacket.bytesLeft()) {
+		uint8_t curch = pPacket.readChar();
+		printf("%02X ", curch);
+	}
+	printf("\nGSTR: ");
+
+	pPacket.setRead(curLoc);
+
+	//
+	while (pPacket.bytesLeft()) {
+		uint8_t curch = pPacket.readGUChar();
+		printf("%02X ", curch);
+	}
+	printf("\n");
+
+	pPacket.setRead(curLoc);
+
+	// seems to just be pixelx, no negative checks
+	auto pixelX = pPacket.readGUShort(); // convertToPixelPos(pPacket.readGUShort());
+	auto pixelY = pPacket.readGUShort(); //convertToPixelPos(pPacket.readGUShort());
+	auto pixelZ = pPacket.readGUShort(); //convertToPixelPos(pPacket.readGUShort());
+	auto unknown1 = pPacket.readGUShort();
+	unsigned char sangle = pPacket.readGUChar();
+	unsigned char sanglez = pPacket.readGUChar();
+	unsigned char sspeed = pPacket.readGUChar();
+	unsigned char sgravity = pPacket.readGUChar(); // default is gravity=2 on client, global client var
+	auto ganiLength = pPacket.readGUShort();
+	CString shootGaniWithParams = pPacket.readChars(ganiLength);
+	// set by setshootparams()
+	CString shootParams;
+	if (pPacket.bytesLeft()) { // clients send 0 for length, so unnecessary
+		auto shootParamLength = pPacket.readGUChar();
+		shootParams = pPacket.readChars(shootParamLength);
+	}
+
+	printf("Shoot2: %d, %d, %d with gani %s (len: %d)\n", pixelX, pixelY, pixelZ, shootGaniWithParams.text(), ganiLength);
+	printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
+	printf("\t Angle: %d\n", sangle);
+	printf("\t Z-Angle: %d\n", sanglez);
+	printf("\t Power: %d\n", sspeed);
+	printf("\t Gravity: %d\n", sgravity);
+	printf("\t Unknown1: %d\n", unknown1);
+	//int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server. (5/25/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
+	//float loc[3] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+	//unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
+	//unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
+	//unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	//CString sgani = pPacket.readChars(pPacket.readGUChar());
+	//unsigned char shootParamsLength = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	//CString shootparams = pPacket.readString("");
+
+	//printf("		--- Shoot2?\n");
+
+	//printf("Shoot Params (%d): %s\n", shootparams.length(), shootparams.text());
+
+	// ActionProjectile on server.
+	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
+
+	//this.speed = (this.power > 0 ? 0 : 20 * 0.05);
+	//this.horzspeed = cos(this.zangle) * this.speed;
+	//this.vertspeed = sin(this.zangle) * this.speed;
+	//this.newx = playerx + 1.5; // offset
+	//this.newy = playery + 2; // offset
+	//function CalcPos() {
+	//	this.newx = this.newx + (cos(this.angle) * this.horzspeed);
+	//	this.newy = this.newy - (sin(this.angle) * this.horzspeed);
+	//	setplayerprop #c, Positions #v(this.newx), #v(this.newy);
+	//	if (onwall(this.newx, this.newy)) {
+	//		this.calcpos = 0;
+	//		this.hittime = timevar2;
+	//	}
+	//}
+
+	/*
+	CString shootPacket;
+	shootPacket.writeGShort(id); // shooters player-id
+	shootPacket.writeGChar((unsigned char)(loc[0] * 2)); // start-x
+	shootPacket.writeGChar((unsigned char)(loc[1] * 2)); // start-y
+	shootPacket.writeGChar((unsigned char)(loc[2] * 2)); // start-z
+	shootPacket.writeGChar(sangle); // shoot angle
+	shootPacket.writeGChar(sanglez); // shoot z angle
+	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
+
+	shootPacket.writeGChar(sgani.length()); // animation
+	shootPacket.write(sgani);
+
+	shootPacket.writeGChar(shootParamsLength); // params
+	shootPacket.write(shootparams);
+	*/
+
+	// Send data now.
+	//server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);
 
 	return true;
 }
