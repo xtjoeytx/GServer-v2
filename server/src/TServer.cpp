@@ -1086,11 +1086,26 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 
 #endif
 
+std::string transformString(const std::string& str) {
+	std::string newStr;
+	for (char ch : str)
+	{
+		if (ch == '"' || ch == '\\')
+			newStr += "\\";
+		else if (ch == '%')
+			newStr += '%';
+		newStr += ch;
+	}
+
+	return newStr;
+}
+
 void TServer::reportScriptException(const ScriptRunError& error)
 {
-	std::string error_message = error.getErrorString();
+	std::string error_message = transformString(error.getErrorString());
 	sendToNC(error_message);
-	getScriptLog().out(error_message + "\n");
+	error_message += "\n";
+	getScriptLog().out(error_message);
 }
 
 void TServer::reportScriptException(const std::string& error_message)
