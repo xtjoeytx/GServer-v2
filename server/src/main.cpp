@@ -44,6 +44,7 @@ static void getBasePath();
 
 std::atomic_bool shutdownProgram{ false };
 
+#ifndef NOMAIN
 int main(int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))
@@ -200,7 +201,7 @@ int main(int argc, char* argv[])
 
 	return ERR_SUCCESS;
 }
-
+#endif
 /*
 	Extra-Cool Functions :D
 */

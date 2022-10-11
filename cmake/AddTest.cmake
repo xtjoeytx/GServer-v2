@@ -5,7 +5,7 @@ function(add_test TARGET_NAME TARGET_PATH)
   file(GLOB_RECURSE TESTS "${TARGET_PATH}/${TARGET_NAME}/*.cpp")
 
   add_executable(${TARGET_NAME} ${TESTS})
-  target_link_libraries(${TARGET_NAME} PRIVATE gs2emu Catch2::Catch2WithMain)
+  target_link_libraries(${TARGET_NAME} PRIVATE gs2emu_lib Catch2::Catch2WithMain)
 
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 

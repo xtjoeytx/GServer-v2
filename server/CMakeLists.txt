@@ -153,6 +153,9 @@ else()
 	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
+set(TARGET_NAME_OLD ${TARGET_NAME})
+set(TARGET_NAME ${TARGET_NAME}_lib)
+
 if(V8NPCSERVER)
 	message("V8 include: ${V8_INCLUDE_DIR}")
 	include_directories(${V8_INCLUDE_DIR})
@@ -166,14 +169,14 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
 elseif(WIN32)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
@@ -195,18 +198,21 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 else()
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 endif()
+
+target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
+
+add_executable(${TARGET_NAME_OLD} src/main.cpp)
+target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 if(WIN32)
 	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
-
-set_target_properties(${TARGET_NAME} PROPERTIES ENABLE_EXPORTS 1)
 
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
