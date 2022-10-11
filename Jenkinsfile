@@ -88,6 +88,7 @@ def buildStep(dockerImage, os, defines, DOCKERTAG) {
 				sh "rm -rfv build/*"
 
 				sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+				sh "cmake --build build/ --config Release -- -j 8"
 				sh "cmake --build build/ --config Release --target package -- -j 8"
 				//sh "cmake --build . --config Release --target package_source -- -j 8"
 
