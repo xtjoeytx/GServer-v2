@@ -4,10 +4,10 @@ ARG VER_EXTRA=""
 FROM xtjoeytx/v8:9.1.269.9 as v8
 
 # GServer Build Environment
-FROM alpine:3.14 AS build-env-npcserver-on
+FROM alpine:3.16 AS build-env-npcserver-on
 ONBUILD COPY --from=v8 /tmp/v8 /gserver/dependencies/v8
 
-FROM alpine:3.14 AS build-env-npcserver-off
+FROM alpine:3.16 AS build-env-npcserver-off
 
 FROM build-env-npcserver-${NPCSERVER} AS build-env
 COPY ./ /gserver
@@ -31,7 +31,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& apk del --purge .gserver-build-dependencies
 
 # GServer Run Environment
-FROM alpine:3.14
+FROM alpine:3.16
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /gserver/bin /gserver
 COPY entrypoint.sh /gserver/
