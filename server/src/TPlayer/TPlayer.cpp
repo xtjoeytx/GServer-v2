@@ -465,59 +465,18 @@ bool TPlayer::doMain()
 			{
 				if (rBuffer.subString(0, 8) == "GNP1905C")
 				{
-					serverlog.out("[%s] New Protocol client connected! Forwarding client!\n", server->getName().text());
+					serverlog.out("[%s] New Protocol client connected! Sending weapons!\n", server->getName().text());
 					in_codec.setGen(ENCRYPT_GEN_6);
 					fileQueue.setCodec(ENCRYPT_GEN_6, 0);
 					newProtocol = true;
-					sendRPGMessage(CString() << "Hello world!");
-					//sendPacket(PLO_SERVERWARP, CString() << "offline,Offline," << server->getSettings()->getStr("serverip") << "," << server->getSettings()->getStr("serverport"), true);
-					/*
-					loadAccount("guest", true);
-					sendPacket(PLO_SIGNATURE, CString() >> (char)73);
 
-					sendPacket(PLO_HASNPCSERVER, CString() << "");
-
-					sendPacket(PLO_UNKNOWN168, CString() << "");
-					//sendProps(__sendLogin, sizeof(__sendLogin) / sizeof(bool));
-					sendPacket(PLO_CLEARWEAPONS, CString() << "");
-
-
-
-					// Was blank.  Sent before weapon list.
-					sendPacket(PLO_UNKNOWN190, CString() << "");
-					sendPacket(PLO_LISTPROCESSES, CString() << "");
-					*/
-					type =  (int)(1 << 5);
-					sendLogin();
-
-					// Send the player's weapons.
-					for (auto & i : weaponList)
-					{
-						TWeapon* weapon = server->getWeapon(i);
-						if (weapon == nullptr)
-						{
-							/*
-							// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-							LevelItemType itemType = TLevelItem::getItemId(*i);
-							if (itemType != LevelItemType::INVALID)
-							{
-								CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
-								defWeapPacket.readGChar();
-								msgPLI_WEAPONADD(defWeapPacket);
-								continue;
-							}
-							*/
-							continue;
-						}
-						//weapon->sendWeaponPacket(this);
-						CString b = weapon->getByteCode();
-						if (newProtocol)
-							sendPacket(PLO_NPCWEAPONSCRIPT, b);
+					for (auto weapon : *server->getWeaponList()) {
+						weapon.second->sendWeaponPacket(this, CLVER_4_0211);
+						sendPacket(PLO_NPCWEAPONSCRIPT, weapon.second->getByteCode(), true);
 					}
-					fileQueue.sendCompress();
+
 					rBuffer.removeI(0, 8);
-					//break;
-					return false;
+					return true;
 				}
 			}
 		}
@@ -1720,9 +1679,8 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 			for (auto layerNumber : pLevel->getLayers()) {
 				if (layerNumber == 0) continue;
-				CString layer = pLevel->getLayerPacket(layerNumber);
-				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
-				sendPacket(layer);
+				pLevel->sendLayerPacket(this, layerNumber);
+
 			}
 		}
 
@@ -2218,7 +2176,7 @@ void TPlayer::unfreezePlayer()
 
 void TPlayer::sendRPGMessage(const CString &message)
 {
-	sendPacket(PLO_RPGWINDOW, CString() << message.gtokenize());
+	sendPacket(PLO_RPGWINDOW, CString() << message.gtokenize(), true);
 }
 
 void TPlayer::sendSignMessage(const CString &message)
@@ -3489,7 +3447,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f
 	};
 	CString action = pPacket.readString("").trim();
-	
+
 	// Split action data into tokens
 	std::vector<CString> triggerActionData = action.gCommaStrTokens();
 	if (triggerActionData.empty()) {

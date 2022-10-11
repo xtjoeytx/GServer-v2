@@ -15,6 +15,7 @@
 #include "TMap.h"
 #include "TLevel.h"
 #include "ScriptOrigin.h"
+#include <dpp/dpp.h>
 
 static const char* const filesystemTypes[] =
 {
@@ -182,6 +183,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	sockManager.registerSocket((CSocketStub*)this);
 
 	serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
 	return 0;
 }
 
@@ -421,7 +423,7 @@ bool TServer::doTimedEvents()
 		calculateServerTime();
 
 		lastNWTimer = lastTimer;
-        sendPacketToAll(PLO_NEWWORLDTIME, CString() << CString().writeGInt4(getNWTime()), nullptr);
+        //sendPacketToAll(PLO_NEWWORLDTIME, CString() << CString().writeGInt4(getNWTime()), nullptr);
 	}
 
 	// Stuff that happens every minute.

@@ -212,6 +212,7 @@ target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY
 
 add_dependencies(${TARGET_NAME} gs2compiler)
 target_link_libraries(${TARGET_NAME} gs2compiler)
+
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} gs2lib)
 

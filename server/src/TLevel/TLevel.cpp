@@ -126,15 +126,15 @@ void TLevel::sendBoardPacket(TPlayer *pPlayer)
 	pPlayer->sendPacket(PLO_BOARDPACKET, retVal);
 }
 
-CString TLevel::getLayerPacket(int layer)
+void TLevel::sendLayerPacket(TPlayer *pPlayer, int layer)
 {
-	CString retVal;
-	retVal.writeGChar(PLO_UNKNOWN107);
-	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
-	retVal << "\n";
+	CString layerPacket;
+	layerPacket << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
+	layerPacket.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
 
-	return retVal;
+	if (pPlayer->newProtocol)
+		pPlayer->sendPacket(PLO_RAWDATA, CString() >> (int)(layerPacket.length()+2));
+	pPlayer->sendPacket(PLO_BOARDLAYER, layerPacket);
 }
 
 void TLevel::sendBoardChangesPacket(TPlayer *pPlayer, time_t time)

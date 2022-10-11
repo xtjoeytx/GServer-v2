@@ -11,14 +11,14 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 	auto filePath = fileSystem->find(name);
 	if (filePath.isEmpty())
 		return std::nullopt;
-	
+
 	// Load the animation file for parsing
 	std::vector<CString> fileData = CString::loadToken(filePath, "\n", true);
 	if (fileData.empty())
 		return std::nullopt;
-	
+
 	TGameAni gameAni(name);
-	
+
 	// Parse the animation
 	for (auto i = fileData.begin(); i != fileData.end(); ++i)
 	{
@@ -26,7 +26,7 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 		std::vector<CString> curLine = i->tokenize();
 		if (curLine.empty())
 			continue;
-		
+
 		if (curLine[0] == "CONTINUOUS")
 		{
 			if (curLine.size() == 1 || strtoint(curLine[1]) != 0)
@@ -69,7 +69,7 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 		if (i == fileData.end())
 			break;
 	}
-	
+
 	// Attempt to compile the script in GS2
 	if (!gameAni._script.empty())
 	{
@@ -84,23 +84,22 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 			else gameAni._bytecode.clear();
 		});
 	}
-	
+
 	return gameAni;
 }
 
-CString TGameAni::getBytecodePacket() const
+void TGameAni::sendBytecodePacket(TPlayer* p) const
 {
 	std::string_view gani = _aniName;
 	if (gani.ends_with(".gani"))
 		gani = gani.substr(0, gani.length() - 5);
 
-	CString out;
 	// filename ".gani" protection
 	if (!gani.empty() && !_bytecode.isEmpty())
 	{
-		out >> (char)PLO_RAWDATA >> (int)(_bytecode.length() + gani.length() + 1) << "\n";
-		out >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << _bytecode;
+		if (!p->newProtocol)
+			p->sendPacket(PLO_RAWDATA, CString() >> (int)(_bytecode.length() + gani.length() + 1) << "\n" >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << _bytecode);
+		else
+			p->sendPacket(PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << _bytecode);
 	}
-
-	return out;
 }

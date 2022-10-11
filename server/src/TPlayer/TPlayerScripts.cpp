@@ -23,7 +23,7 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 	// Compare the bytecode checksum from the client with the one for the
 	// current script, if it doesn't match send the updated bytecode
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		sendPacket(findAni->getBytecodePacket());
+		findAni->sendBytecodePacket(this);
 
 	// v4 and up needs this for some reason.
 	sendPacket(PLO_UNKNOWN195, CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");

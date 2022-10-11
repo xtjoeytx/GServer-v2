@@ -41,7 +41,7 @@ class TLevel
 		// get crafted packets
 		void sendBaddyPacket(TPlayer *pPlayer, int clientVersion = CLVER_2_17);
 		void sendBoardPacket(TPlayer *pPlayer);
-		CString getLayerPacket(int i);
+		void sendLayerPacket(TPlayer *pPlayer, int i);
 		void sendBoardChangesPacket(TPlayer *pPlayer, time_t time);
 		void sendBoardChangesPacket2(TPlayer *pPlayer, time_t time);
 		void sendChestPacket(TPlayer *pPlayer);

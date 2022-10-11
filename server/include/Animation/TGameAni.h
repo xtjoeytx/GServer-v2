@@ -4,7 +4,9 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include "CString.h"
+#include "TPlayer.h"
 
 class TServer;
 
@@ -15,7 +17,7 @@ class TGameAni
 		LoopAnimation   = 0x2,
 		SingleDirOnly   = 0x4
 	};
-	
+
 public:
 	explicit TGameAni(std::string aniName);
 
@@ -50,7 +52,7 @@ public:
 	const std::string& getSetBackTo() const {
 		return _setBackTo;
 	}
-	
+
 	//! Is the animation continuous (doesn't restart the animation on subsequent calls)
 	//! \return true/false
 	bool isContinuous() const {
@@ -71,8 +73,8 @@ public:
 
 	//! Get the bytecode packet to send to clients for the ani script
 	//! \return bytecode packet
-	CString getBytecodePacket() const;
-	
+	void sendBytecodePacket(TPlayer* p) const;
+
 	//! Load a TGameAni from the filesystem
 	//! \param server Global server pointer so we can fetch the correct filesystem
 	//! \param name filename of the animation (ex: idle.gani)

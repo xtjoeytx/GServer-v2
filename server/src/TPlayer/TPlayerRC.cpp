@@ -2236,11 +2236,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 			const auto& playerList = *server->getPlayerList();
 			auto fileName = file.toString();
 
-			CString updatePacket;
-			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << file << "\n";
-
+			std::shared_ptr<TGameAni> findAni = nullptr;
 			// Ganis need to be recompiled on update
-			CString bytecodePacket;
 			if (ext == ".gani")
 			{
 				auto& aniManager = server->getAnimationManager();
@@ -2249,9 +2246,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 				aniManager.deleteResource(fileName);
 
 				// reload the resource to compile the bytecode again
-				auto findAni = aniManager.findOrAddResource(fileName);
-				if (findAni)
-					bytecodePacket << findAni->getBytecodePacket();
+				findAni = aniManager.findOrAddResource(fileName);
 			}
 
 			// Send the update packet to any v4+ clients that have seen this file
@@ -2260,11 +2255,11 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 				if (pl->isClient() && pl->getVersion() >= CLVER_4_0211)
 				{
 					if (pl->hasSeenFile(fileName))
-						pl->sendPacket(updatePacket);
+						pl->sendPacket(PLO_UPDATEPACKAGEISUPDATED, file);
 
 					// Send GS2 gani scripts
-					if (!bytecodePacket.isEmpty())
-						pl->sendPacket(bytecodePacket);
+					if (findAni)
+						findAni->sendBytecodePacket(pl);
 				}
 			}
 		}

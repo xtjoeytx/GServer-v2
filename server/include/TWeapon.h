@@ -32,7 +32,7 @@ class TWeapon
 		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		void sendWeaponPacket(TPlayer *p, int clientVersion) const;
+		void sendWeaponPacket(TPlayer *pPlayer, int clientVersion) const;
 		bool isDefault() const						{ return (mWeaponDefault != LevelItemType::INVALID); }
 		bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
 		LevelItemType getWeaponId()					{ return mWeaponDefault; }

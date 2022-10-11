@@ -22,7 +22,6 @@ build*/*
 cmake-build-*/
 dependencies/
 dependencies/.cipd/
-!dependencies/gs2lib
 lib/
 out/
 packages/

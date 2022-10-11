@@ -299,6 +299,7 @@ class TServer : public CSocketStub
 		CUPNP upnp;
 		std::thread upnp_thread;
 #endif
+	//dpp::cluster botObj;
 };
 
 inline TNPC * TServer::getNPC(const unsigned int id) const

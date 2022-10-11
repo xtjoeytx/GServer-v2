@@ -176,13 +176,16 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-void TWeapon::sendWeaponPacket(TPlayer *p, int clientVersion) const
+void TWeapon::sendWeaponPacket(TPlayer *pPlayer, int clientVersion) const
 {
-	if (this->isDefault())
-		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
-	
+	if ( this->isDefault())
+	{
+		pPlayer->sendPacket(PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault, true);
+		return;
+	}
+
 	CString weaponPacket;
-	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
+	weaponPacket >> (char)_weaponName.length() << _weaponName
 				 >> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage;
 
 	// GS2 is available for v4+
@@ -191,22 +194,23 @@ void TWeapon::sendWeaponPacket(TPlayer *p, int clientVersion) const
 		if (!_bytecode.isEmpty())
 		{
 			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-
+			pPlayer->sendPacket(PLO_NPCWEAPONADD, weaponPacket, true);
 			CString b = _bytecode;
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			weaponPacket >> (char)PLO_UNKNOWN197 << header << "," >> (long long)time(0) << "\n";
-			return weaponPacket;
+			pPlayer->sendPacket(PLO_UNKNOWN197, CString() << header << "," >> (long long)time(0), true);
+			return ;
 		}
 
 		// GS1 is disabled for > 5.0.0.7
 		if (clientVersion > CLVER_5_07)
-			return weaponPacket;
+			return;
 	}
 
-	weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
-	return weaponPacket;
+	pPlayer->sendPacket(PLO_NPCWEAPONADD, weaponPacket, true);
+
+	pPlayer->sendPacket(NPCPROP_SCRIPT, CString() >> (short)_formattedClientGS1.length() << _formattedClientGS1, true);
 }
 
 // -- Function: Update Weapon Image/Script -- //
@@ -261,11 +265,11 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 			}
 		});
 	}
-	
+
 	auto gs1Script = _source.getClientGS1();
 	if (!gs1Script.empty())
 		setClientScript(std::string{ gs1Script });
-	
+
 
 	// Save Weapon
 	if (pSaveWeapon)
