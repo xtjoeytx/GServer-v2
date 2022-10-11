@@ -79,32 +79,49 @@ def buildStep(dockerImage, os, defines, DOCKERTAG) {
 				//	sh "mkdir -p publishing/deploy/gs2emu"
 				}
 
-				dir("dependencies") {
-				//	sh "BUILDARCH=${arch} ./build-v8-linux"
+				if (defines.toLowerCase().contains("v8npcserver=on")) {
+					dir("dependencies") {
+						sh "BUILDARCH=${arch} ./build-v8-linux"
+					}
 				}
 
-				if ("${os}" == "windows") {
+				sh "rm -rfv build/*"
 
-				} else {
-					sh "rm -rfv build/*"
-				}
+				sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+				sh "cmake --build build/ --config Release --target package -- -j 8"
+				//sh "cmake --build . --config Release --target package_source -- -j 8"
 
-				if ("${os}" == "windows") {
-					bat "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
-					bat "cmake --build build/ --config Release --target package -- -j 8"
-				} else {
-					sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
-					sh "cmake --build build/ --config Release --target package -- -j 8"
-					//sh "cmake --build . --config Release --target package_source -- -j 8"
-				}
 
 				dir("build") {
+					sh "ctest -T test --no-compress-output"
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+					archiveArtifacts (
+						artifacts: 'Testing/**/*.xml',
+						fingerprint: true
+					)
 				}
 
-				if ("${os}" == "windows") {
-					bat "rmdir /s /q build"
+				stage("Xunit") {
+					// Process the CTest xml output with the xUnit plugin
+					xunit (
+						testTimeMargin: '3000',
+						thresholdMode: 1,
+						thresholds: [
+							skipped(failureThreshold: '0'),
+							failed(failureThreshold: '0')
+						],
+						tools: [CTest(
+							pattern: 'build/Testing/**/*.xml',
+							deleteOutputFiles: true,
+							failIfNotNew: false,
+							skipNoTestFiles: true,
+							stopProcessingIfError: true
+						)]
+					);
 				}
+
+				// Clear the source and build dirs before next run
+				deleteDir();
 
 				discordSend description: "Target: ${os} DockerImage: ${dockerImage} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
 			}
