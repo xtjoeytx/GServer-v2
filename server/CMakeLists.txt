@@ -206,6 +206,8 @@ if(WIN32)
 	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
 
+set_target_properties(${TARGET_NAME} PROPERTIES ENABLE_EXPORTS 1)
+
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
