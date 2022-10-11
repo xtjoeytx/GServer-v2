@@ -288,6 +288,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 
+enable_testing()
 add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

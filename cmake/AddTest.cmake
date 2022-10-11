@@ -1,4 +1,4 @@
-function(add_test TARGET_NAME TARGET_PATH)
+function(add_test_og TARGET_NAME TARGET_PATH)
   cmake_minimum_required(VERSION 3.22)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 

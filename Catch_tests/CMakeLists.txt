@@ -15,5 +15,5 @@ FetchContent_MakeAvailable(Catch2)
 subdir_list(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 foreach(subdir ${SUBDIRS})
-	add_test(${subdir} ${CMAKE_CURRENT_SOURCE_DIR})
+	add_test_og(${subdir} ${CMAKE_CURRENT_SOURCE_DIR})
 endforeach()
