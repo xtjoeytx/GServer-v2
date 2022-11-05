@@ -266,6 +266,10 @@ if(V8NPCSERVER)
 	endif()
 endif()
 
+set(GSERVER_LIBRARY_NAME
+		"${TARGET_NAME}"
+		PARENT_SCOPE)
+
 file(GLOB TEXT
 	"${PROJECT_NAME_LOWER}.wasm"
 )
