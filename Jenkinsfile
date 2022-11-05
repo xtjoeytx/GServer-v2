@@ -94,12 +94,19 @@ def buildStep(dockerImage, os, defines, DOCKERTAG) {
 
 
 				dir("build") {
-					sh "ctest -T test --no-compress-output --output-on-failure"
-					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+					try{
+						sh "ctest -T test --no-compress-output --output-on-failure"
+					} catch(err) {
+						currentBuild.result = 'FAILURE'
+
+						discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+						notify('Build failed')
+					}
 					archiveArtifacts (
 						artifacts: 'Testing/**/*.xml',
 						fingerprint: true
 					)
+					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 				}
 
 				stage("Xunit") {
