@@ -94,7 +94,7 @@ def buildStep(dockerImage, os, defines, DOCKERTAG) {
 
 
 				dir("build") {
-					sh "ctest -T test --no-compress-output"
+					sh "ctest -T test --no-compress-output --output-on-failure"
 					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 					archiveArtifacts (
 						artifacts: 'Testing/**/*.xml',
