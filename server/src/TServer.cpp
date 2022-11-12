@@ -15,7 +15,6 @@
 #include "TMap.h"
 #include "TLevel.h"
 #include "ScriptOrigin.h"
-#include <dpp/dpp.h>
 
 static const char* const filesystemTypes[] =
 {
