@@ -2408,7 +2408,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 bool TPlayer::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 {
 	// {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
-	CString level = pPacket.readString(pPacket.readGUChar());
+	CString level = pPacket.readChars(pPacket.readGUChar());
 
 	time_t modTime = (time_t)pPacket.readGUInt5();
 
