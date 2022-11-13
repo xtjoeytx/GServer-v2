@@ -1110,7 +1110,10 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		TNPC* gralatNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
-		auto npcList = findAreaNpcs(pX - 0.5, pY - 0.5, 32, 32);
+		auto pixelX = (pX - 0.5) * 16;
+		auto pixelY = (pY - 0.5) * 16;
+
+		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
 		for (auto& npc : npcList)
 		{
 			if (npc->joinedClass("gralats"))

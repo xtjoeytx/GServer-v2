@@ -1,5 +1,17 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.6
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++ Added npc.settimer() for setting timeout, similar to gs2
+* Fixed a bug preventing serverside joins from propagating to the client in gs2
+* Update gs2compiler - fix for assignment operators (+=, -=, *=, /=)
+* Fix for tiles[x, y]
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.5
 
   * bug fix, + new feature, o other
