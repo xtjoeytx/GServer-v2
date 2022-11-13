@@ -170,6 +170,7 @@ void TPlayer::createFunctions()
 	// now set non-nulls
 	TPLFunc[PLI_LEVELWARP] = &TPlayer::msgPLI_LEVELWARP;
 	TPLFunc[PLI_BOARDMODIFY] = &TPlayer::msgPLI_BOARDMODIFY;
+	TPLFunc[PLI_REQUESTUPDATEBOARD] = &TPlayer::msgPLI_REQUESTUPDATEBOARD;
 	TPLFunc[PLI_PLAYERPROPS] = &TPlayer::msgPLI_PLAYERPROPS;
 	TPLFunc[PLI_NPCPROPS] = &TPlayer::msgPLI_NPCPROPS;
 	TPLFunc[PLI_BOMBADD] = &TPlayer::msgPLI_BOMBADD;
@@ -2262,7 +2263,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
-	
+
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");
@@ -2400,6 +2401,24 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		msgPLI_ITEMADD(packet2);
 		sendPacket(CString() >> (char)PLO_ITEMADD << packet);
 	}
+
+	return true;
+}
+
+bool TPlayer::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
+{
+	// {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
+	CString level = pPacket.readString(pPacket.readGUChar());
+
+	time_t modTime = (time_t)pPacket.readGUInt5();
+
+	short x = pPacket.readGShort();
+	short y = pPacket.readGShort();
+	short w = pPacket.readGShort();
+	short h = pPacket.readGShort();
+
+	// TODO: What to return?
+	serverlog.out("[%s] :: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", server->getName().text(), level.text(), x, y, w, h, modTime);
 
 	return true;
 }
@@ -3394,7 +3413,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f
 	};
 	CString action = pPacket.readString("").trim();
-	
+
 	// Split action data into tokens
 	std::vector<CString> triggerActionData = action.gCommaStrTokens();
 	if (triggerActionData.empty()) {

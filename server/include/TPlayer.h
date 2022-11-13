@@ -175,6 +175,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_LEVELWARP(CString& pPacket);
 		bool msgPLI_BOARDMODIFY(CString& pPacket);
+		bool msgPLI_REQUESTUPDATEBOARD(CString& pPacket);
 		bool msgPLI_PLAYERPROPS(CString& pPacket);
 		bool msgPLI_NPCPROPS(CString& pPacket);
 		bool msgPLI_BOMBADD(CString& pPacket);
