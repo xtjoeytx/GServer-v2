@@ -132,7 +132,7 @@ CString TLevel::getBoardPacket()
 CString TLevel::getLayerPacket(int layer)
 {
 	CString retVal;
-	retVal.writeGChar(PLO_UNKNOWN107);
+	retVal.writeGChar(PLO_BOARDLAYER);
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
 	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
 	retVal << "\n";
