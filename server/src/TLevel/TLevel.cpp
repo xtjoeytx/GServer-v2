@@ -1123,7 +1123,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new gralat npc for these rupees
 		if (!gralatNPC)
 		{
-			gralatNPC = server->addNPC("", "npc.join(\"gralats\");\n//#CLIENTSIDE\njoin(\"gralats\");", pX, pY, this, false, true);
+			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
 			gralatNPC->setScriptType("LOCALN");
 			addNPC(gralatNPC);
 		}
@@ -1552,6 +1552,19 @@ void TLevel::sendChatToLevel(const TPlayer *player, const std::string& message)
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
 			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), message);
 	}
+}
+
+void TLevel::modifyBoardDirect(uint32_t index, short tile) {
+	int pX = index % 64;
+	int pY = index / 64;
+
+	short oldTile = levelTiles[0][index];
+	levelTiles[0][index] = tile;
+
+	auto change = TLevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
+
+	levelBoardChanges.push_back(change);
+	server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), 0, this);
 }
 
 #endif
