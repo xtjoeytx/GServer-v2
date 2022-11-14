@@ -215,6 +215,9 @@ class TNPC
 		int getRupees() const;
 		void setRupees(int val);
 
+		int getDarts() const;
+		void setDarts(int val);
+
 		const CString& getBodyImage() const;
 		void setBodyImage(const std::string& pBodyImage);
 
@@ -465,6 +468,20 @@ void TNPC::setRupees(int val)
 	rupees = val;
 }
 
+//////////
+
+inline
+int TNPC::getDarts() const
+{
+	return darts;
+}
+
+inline
+void TNPC::setDarts(int val)
+{
+	setProps(CString() >> (char)NPCPROP_ARROWS >> (char)clip(val, 0, 99), CLVER_2_17, true);
+}
+
 /////////
 
 inline
@@ -506,7 +523,7 @@ void TNPC::setNickname(const std::string& pNick)
 
 //////////
 
-inline 
+inline
 const CString& TNPC::getBodyImage() const
 {
 	return bodyImage;

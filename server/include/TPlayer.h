@@ -316,6 +316,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Misc.
 		void dropItemsOnDeath();
+		bool spawnLevelItem(CString& pPacket, bool playerDrop = true);
 		bool removeItem(LevelItemType itemType);
 
 		// Socket Variables

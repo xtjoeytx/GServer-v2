@@ -2398,8 +2398,10 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar();		// So msgPLI_ITEMADD works.
 
-		msgPLI_ITEMADD(packet2);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet);
+		spawnLevelItem(packet2, false);
+
+		if (getVersion() <= CLVER_5_12)
+			sendPacket(CString() >> (char)PLO_ITEMADD << packet);
 	}
 
 	return true;
@@ -2689,6 +2691,10 @@ bool TPlayer::removeItem(LevelItemType itemType)
 
 bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 {
+	return spawnLevelItem(pPacket, true);
+}
+
+bool TPlayer::spawnLevelItem(CString& pPacket, bool playerDrop) {
 	// TODO(joey): serverside item checking
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char item = pPacket.readGUChar();
@@ -2697,7 +2703,7 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 	if (itemType != LevelItemType::INVALID)
 	{
 #ifdef V8NPCSERVER
-		if (removeItem(itemType))
+		if (removeItem(itemType) || !playerDrop)
 		{
 #endif
 			if (level->addItem(loc[0], loc[1], itemType))

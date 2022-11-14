@@ -1138,6 +1138,40 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 
 		return false;
 	}
+
+	if (LevelItemType::DARTS == pItem)
+	{
+		TNPC* dartNPC = nullptr;
+
+		// Find existing rupees, and add to the npc
+		auto pixelX = (pX - 0.5) * 16;
+		auto pixelY = (pY - 0.5) * 16;
+
+		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
+		for (auto& npc : npcList)
+		{
+			if (npc->joinedClass("darts"))
+			{
+				dartNPC = npc;
+				break;
+			}
+		}
+
+		// Create a new darts npc for these darts
+		if (!dartNPC)
+		{
+			dartNPC = server->addNPC("", "npc.join(\"darts\");", pX, pY, this, false, true);
+			dartNPC->setScriptType("LOCALN");
+			addNPC(dartNPC);
+		}
+
+		// Update darts
+		dartNPC->setDarts(dartNPC->getDarts() + 1);
+		dartNPC->updatePropModTime(NPCPROP_ARROWS);
+		dartNPC->queueNpcTrigger("update", nullptr, "");
+
+		return false;
+	}
 #endif
 #endif
 
