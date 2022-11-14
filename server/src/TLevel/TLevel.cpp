@@ -1107,6 +1107,9 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 #ifdef GRALATNPC
 	if (TLevelItem::isRupeeType(pItem))
 	{
+		if (server->getClass("gralats") == nullptr)
+			return true;
+
 		TNPC* gralatNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
@@ -1141,6 +1144,9 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 
 	if (LevelItemType::DARTS == pItem)
 	{
+		if (server->getClass("darts") == nullptr)
+			return true;
+
 		TNPC* dartNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
