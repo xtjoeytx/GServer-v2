@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <IConfig.h>
 
+#include "utilities/stringutils.h"
 #include "TPlayer.h"
 #include "IEnums.h"
 #include "IUtil.h"
@@ -780,7 +781,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	// to the client if it gets changed after it was originally sent
 	if (isClient())
 		knownFiles.insert(pFile.toString());
-	
+
 	CFileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
@@ -1669,8 +1670,15 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	{
 		if (modTime != pLevel->getModTime())
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1+(64*64*2)+1));
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1+(64*64*2)+1)));
 			sendPacket(CString() << pLevel->getBoardPacket());
+
+			for (auto layerNumber : pLevel->getLayers()) {
+				if (layerNumber == 0) continue;
+				CString layer = pLevel->getLayerPacket(layerNumber);
+				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
+				sendPacket(layer);
+			}
 		}
 
 		// Send links, signs, and mod time.
@@ -2314,10 +2322,16 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
+	
+	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
+	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
+	CString identity = pPacket.readString("");
 
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
+	if (!identity.isEmpty())
+		serverlog.out("[%s]    Identity:\t%s\n", server->getName().text(), identity.text());
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2375,12 +2389,8 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
 		return false;
 	}
-	server->getServerList()->sendPacket(CString() >> (char)SVO_VERIACC2
-		>> (char)accountName.length() << accountName
-		>> (char)password.length() << password
-		>> (short)id >> (char)type
-		);
 
+	server->getServerList()->sendLoginPacketForPlayer(this, password, identity);
 	return true;
 }
 
@@ -3358,8 +3368,11 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 
 	// If the file on disk is different, send it to the player.
 	file.setRead(0);
-	if (!isDefault && fModTime > modTime)
-		return msgPLI_WANTFILE(file);
+	if (!isDefault)
+	{
+		if (std::difftime(modTime, fModTime) != 0)
+			return msgPLI_WANTFILE(file);
+	}
 
 	if (versionID < CLVER_2_1)
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
@@ -3434,52 +3447,28 @@ bool TPlayer::msgPLI_LANGUAGE(CString& pPacket)
 
 bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 {
+	// Read packet data
 	unsigned int npcId = pPacket.readGUInt();
-	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+	float loc[2] = {
+		(float)pPacket.readGUChar() / 2.0f,
+		(float)pPacket.readGUChar() / 2.0f
+	};
 	CString action = pPacket.readString("").trim();
-	CSettings* settings = server->getSettings();
+	
+	// Split action data into tokens
+	std::vector<CString> triggerActionData = action.gCommaStrTokens();
+	if (triggerActionData.empty()) {
+		return true;
+	}
+
+	// Grab action name
+	std::string actualActionName = triggerActionData[0].toLower().toString();
 
 	// (int)(loc[0]) % 64 == 0.0f, for gmap?
+	// TODO(joey): move into trigger command dispatcher, some use private player vars.
 	if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
-		if (action.find("gr.serverlist") == 0)
-		{
-			TServerList *listServer = server->getServerList();
-			auto serverList = listServer->getServerList();
-
-			CString actionData("clientside,-Serverlist_v4,updateservers,");
-			for (auto & serverData : serverList)
-				actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
-
-			sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
-			return true;
-		}
-
-		if ( settings->getBool("triggerhack_weapons", false))
-		{
-			if (action.find("gr.addweapon") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() != 1)
-				{
-					std::vector<CString>::iterator i = actionParts.begin();
-					for (++i; i != actionParts.end(); ++i)
-						this->addWeapon(i->trim());
-				}
-				return true;
-			}
-			else if (action.find("gr.deleteweapon") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() != 1)
-				{
-					std::vector<CString>::iterator i = actionParts.begin();
-					for (++i; i != actionParts.end(); ++i)
-						this->deleteWeapon(i->trim());
-				}
-				return true;
-			}
-		}
+		CSettings* settings = server->getSettings();
 
 		if ( settings->getBool("triggerhack_execscript", false))
 		{
@@ -3568,149 +3557,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if ( settings->getBool("triggerhack_guilds", false))
-		{
-			if (action.find("gr.addguildmember") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				CString guild, account, nick;
-				if (actionParts.size() > 1) guild = actionParts[1];
-				if (actionParts.size() > 2) account = actionParts[2];
-				if (actionParts.size() > 3) nick = actionParts[3];
-
-				if (!guild.isEmpty() && !account.isEmpty())
-				{
-					// Read the guild list.
-					CFileSystem guildFS(server);
-					guildFS.addDir("guilds");
-					CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-
-					if (guildList.find(account) == -1)
-					{
-						if (guildList[guildList.length() - 1] != '\n') guildList << "\n";
-						guildList << account;
-						if (!nick.isEmpty()) guildList << ":" << nick;
-
-						guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
-					}
-				}
-				return true;
-			}
-			else if (action.find("gr.removeguildmember") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				CString guild, account;
-				if (actionParts.size() > 1) guild = actionParts[1];
-				if (actionParts.size() > 2) account = actionParts[2];
-
-				if (!guild.isEmpty() && !account.isEmpty())
-				{
-					// Read the guild list.
-					CFileSystem guildFS(server);
-					guildFS.addDir("guilds");
-					CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-
-					if (guildList.find(account) != -1)
-					{
-						int pos = guildList.find(account);
-						int length = guildList.find("\n", pos) - pos;
-						if (length < 0) length = -1;
-						else ++length;
-
-						guildList.removeI(pos, length);
-						guildList.save(CString() << server->getServerPath() << "guilds/guild" << guild << ".txt");
-					}
-				}
-				return true;
-			}
-			else if (action.find("gr.removeguild") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				CString guild;
-				if (actionParts.size() > 1) guild = actionParts[1];
-
-				if (!guild.isEmpty())
-				{
-					// Read the guild list.
-					CFileSystem guildFS(server);
-					guildFS.addDir("guilds");
-					CString path = guildFS.find(CString() << "guild" << guild << ".txt");
-
-					// Remove the guild.
-					remove(path.text());
-
-					// Remove the guild from all players.
-					for (std::vector<TPlayer*>::iterator i = server->getPlayerList()->begin(); i != server->getPlayerList()->end(); ++i)
-					{
-						TPlayer* p = *i;
-						if (p->getGuild() == guild)
-						{
-							CString nick = p->getNickname();
-							p->setNick(nick.readString("(").trimI());
-							p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
-							server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
-						}
-					}
-				}
-				return true;
-			}
-			else if (action.find("gr.setguild") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				CString guild, account;
-				if (actionParts.size() > 1) guild = actionParts[1];
-				if (actionParts.size() > 2) account = actionParts[2];
-
-				if (!guild.isEmpty())
-				{
-					TPlayer* p = this;
-					if (!account.isEmpty()) p = server->getPlayer(account, PLTYPE_ANYCLIENT);
-					if (p)
-					{
-						CString nick = p->getNickname();
-						p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
-						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
-						server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
-					}
-				}
-				return true;
-			}
-		}
-
-		if ( settings->getBool("triggerhack_groups", true))
-		{
-			if (action.find("gr.setgroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 2)
-					levelGroup = actionParts[1];
-				return true;
-			}
-			else if (action.find("gr.setlevelgroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 2)
-				{
-					std::vector<TPlayer*>* playerList = level->getPlayerList();
-					for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
-					{
-						TPlayer* player = *i;
-						player->setGroup(actionParts[1]);
-					}
-				}
-				return true;
-			}
-			else if (action.find("gr.setplayergroup") == 0)
-			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() == 3)
-				{
-					TPlayer* player = server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
-					player->setGroup(actionParts[2]);
-				}
-			}
-		}
-
 		if ( settings->getBool("triggerhack_files", false))
 		{
 			if  (action.find("gr.appendfile") == 0)
@@ -3795,20 +3641,6 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if ( settings->getBool("triggerhack_rc", false))
-		{
-			if (action.find("gr.rcchat") == 0)
-			{
-				int start = action.find(",");
-				if (start != -1)
-				{
-					++start;
-					server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << action.subString(start));
-				}
-				return true;
-			}
-		}
-
 		if ( settings->getBool("triggerhack_props", false))
 		{
 			if (action.find("gr.attr") == 0)
@@ -3861,116 +3693,24 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 				else level->reload();
 			}
 		}
-
-		if (action.find("gr.npc.move") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 6)
-			{
-				unsigned int id = strtoint(actionParts[1]);
-				int dx = strtoint(actionParts[2]);
-				int dy = strtoint(actionParts[3]);
-				float duration = (float)strtofloat(actionParts[4]);
-				int options = strtoint(actionParts[5]);
-
-				TNPC* npc = server->getNPC(id);
-				if (npc)
-				{
-					CString packet;
-					packet >> (char)(npc->getX() / 8.0f) >> (char)(npc->getY() / 8.0f);
-					packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
-					packet >> (short)(duration / 0.05f);
-					packet >> (char)options;
-					server->sendPacketToLevel(CString() >> (char)PLO_MOVE >> (int)id << packet, 0, this, true);
-
-					npc->setX(npc->getX() + dx * 16);
-					npc->setY(npc->getY() + dy * 16);
-					//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
-				}
-			}
-		}
-
-		if (action.find("gr.npc.setpos") == 0)
-		{
-			std::vector<CString> actionParts = action.tokenize(",");
-			if (actionParts.size() == 4)
-			{
-				unsigned int id = strtoint(actionParts[1]);
-				float x = (float)strtofloat(actionParts[2]);
-				float y = (float)strtofloat(actionParts[3]);
-
-				TNPC* npc = server->getNPC(id);
-				if (npc)
-				{
-					npc->setX(int(x * 16.0));
-					npc->setY(int(y * 16.0));
-
-					// Send the prop packet to the level.
-					CString packet;
-					packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
-					packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-					server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, 0, this, true);
-				}
-			}
-		}
 	}
 
-	bool handled = false;
+	bool handled = server->getTriggerDispatcher().execute(actualActionName, this, triggerActionData);
 
+	if (!handled)
+	{
+		if (level)
+		{
 #ifdef V8NPCSERVER
-	CString triggerAction = action.readString(",");
-	if (triggerAction == "serverside")
-	{
-		handled = true;
-		CString weaponName = action.readString(",");
-
-		TWeapon *weaponObject = server->getWeapon(weaponName);
-		if (weaponObject != nullptr)
-		{
-			CString triggerData = action.readString("");
-			weaponObject->queueWeaponAction(this, triggerData.text());
-		}
-	}
-	else if (triggerAction == "servernpc")
-	{
-		handled = true;
-		CString npcName = action.readString(",");
-
-		auto npcObject = server->getNPCByName(npcName.text());
-		if (npcObject != nullptr)
-		{
-			CString npcTriggerAction = action.readString(",");
-			if (!npcTriggerAction.isEmpty())
-			{
-				CString triggerData = action.readString("");
-				npcObject->queueNpcTrigger(npcTriggerAction.text(), this, triggerData.text());
-			}
-		}
-	}
-	else if (level)
-	{
-		//handled = false; // client and server scripts should both be able to respond to triggers
-		CString triggerData = action.readString("");
-
-		auto npcList = level->findAreaNpcs(int(loc[0] * 16.0), int(loc[1] * 16.0), 8, 8);
-		for (auto npcTouched : npcList)
-		{
-			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
-		}
-
-		/*
-		TNPC* npcTouched = level->isOnNPC(triggerX, triggerY, false);
-		if (npcTouched != nullptr)
-		{
-			CString triggerData = action.readString("");
-			npcTouched->queueNpcTrigger(triggerAction.text(), this, triggerData.text());
-		}*/
-	}
+			// Send to server scripts
+			auto npcList = level->findAreaNpcs(int(loc[0] * 16.0), int(loc[1] * 16.0), 8, 8);
+			for (auto npcTouched : npcList)
+				npcTouched->queueNpcTrigger(actualActionName, this, utilities::retokenizeArray(triggerActionData, 1));
 #endif
 
-	// Send to the level.
-	if (!handled) {
-		server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+			// Send to the level.
+			server->sendPacketToLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)id << (pPacket.text() + 1), 0, level, this);
+		}
 	}
 
 	return true;

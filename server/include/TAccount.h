@@ -1,6 +1,7 @@
 #ifndef TACCOUNT_H
 #define TACCOUNT_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -171,6 +172,7 @@ class TAccount
 		int getKills() const			{ return kills; }
 		int getDeaths() const			{ return deaths; }
 		int getAdminRights() const		{ return adminRights; }
+		int64_t getDeviceId() const	{ return deviceId; }
 		bool getBanned() const			{ return isBanned; }
 		bool getLoadOnly() const		{ return isLoadOnly; }
 		unsigned char getColorId(unsigned int idx) const;
@@ -197,6 +199,7 @@ class TAccount
 		std::vector<CString> * getWeaponList()						{ return &weaponList; }
 
 		// set functions
+		void setDeviceId(int64_t newDeviceId)		{ deviceId = newDeviceId;}
 		void setLastSparTime(time_t newTime)		{ lastSparTime = newTime; }
 		void setApCounter(int newTime)				{ apCounter = newTime; }
 		void setKills(int newKills)					{ kills = newKills; }
@@ -232,6 +235,7 @@ class TAccount
 		CString accountIpStr;
 		unsigned long accountIp;
 		int adminRights;
+		int64_t deviceId;
 
 		// Player-Attributes
 		CString attrList[30], bodyImg, chatMsg, headImg, horseImg, gani, bowImage, language;

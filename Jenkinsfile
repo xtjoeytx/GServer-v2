@@ -14,31 +14,111 @@ def notify(status){
 
 @NonCPS
 def killall_jobs() {
-	def jobname = env.JOB_NAME
-	def buildnum = env.BUILD_NUMBER.toInteger()
-	def killnums = ""
-	def job = Jenkins.instance.getItemByFullName(jobname)
-	def fixed_job_name = env.JOB_NAME.replace('%2F','/')
+	def jobname = env.JOB_NAME;
+	def buildnum = env.BUILD_NUMBER.toInteger();
+	def killnums = "";
+	def job = Jenkins.instance.getItemByFullName(jobname);
+	def fixed_job_name = env.JOB_NAME.replace('%2F','/');
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 
 	for (build in job.builds) {
 		if (!build.isBuilding()) { continue; }
-		if (buildnum == build.getNumber().toInteger()) { continue; println "equals" }
-		if (buildnum < build.getNumber().toInteger()) { continue; println "newer" }
+		if (buildnum == build.getNumber().toInteger()) { continue; println "equals"; }
+		if (buildnum < build.getNumber().toInteger()) { continue; println "newer"; }
 
-		echo "Kill task = ${build}"
+		echo "Kill task = ${build}";
 
-		killnums += "#" + build.getNumber().toInteger() + ", "
+		killnums += "#" + build.getNumber().toInteger() + ", ";
 
 		build.doStop();
 	}
 
 	if (killnums != "") {
-		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK
+		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK;
 	}
 	echo "Done killing"
 }
 
-def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT, BUILDENV) {
+def buildStep(dockerImage, os, defines, DOCKERTAG) {
+	def split_job_name = env.JOB_NAME.split(/\/{1}/);
+	def fixed_job_name = split_job_name[1].replace('%2F',' ');
+	def fixed_os = os.replace(' ','-');
+
+	try{
+		stage("Building on \"${dockerImage}\" for \"${os}\"...") {
+			properties([pipelineTriggers([githubPush()])])
+			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
+
+			def pathInContainer
+
+			def dockerImageRef = docker.image("${dockerImage}");
+			dockerImageRef.pull();
+
+			dockerImageRef.inside("") {
+				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
+			}
+			checkout scm;
+
+			def tag = '';
+			def extra_ver = '';
+			if (env.BRANCH_NAME.equals('master')) {
+				tag = "latest${DOCKERTAG}";
+			} else {
+				tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
+				extra_ver = "-${tag}";
+			}
+
+			dockerImageRef.inside("") {
+
+				if (env.CHANGE_ID) {
+					echo 'Trying to build pull request'
+				}
+
+				if (!env.CHANGE_ID) {
+				//	sh "rm -rfv publishing/deploy/*"
+				//	sh "mkdir -p publishing/deploy/gs2emu"
+				}
+
+				dir("dependencies") {
+				//	sh "BUILDARCH=${arch} ./build-v8-linux"
+				}
+
+				if ("${os}" == "windows") {
+
+				} else {
+					sh "rm -rfv build/*"
+				}
+
+				if ("${os}" == "windows") {
+					bat "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+					bat "cmake --build build/ --config Release --target package -- -j 8"
+				} else {
+					sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
+					sh "cmake --build build/ --config Release --target package -- -j 8"
+					//sh "cmake --build . --config Release --target package_source -- -j 8"
+				}
+
+				dir("build") {
+					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+				}
+
+				if ("${os}" == "windows") {
+					bat "rmdir /s /q build"
+				}
+
+				discordSend description: "Target: ${os} DockerImage: ${dockerImage} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+			}
+		}
+	} catch(err) {
+		currentBuild.result = 'FAILURE'
+
+		discordSend description: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+		notify('Build failed')
+		throw err
+	}
+}
+
+def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT, BUILDENV) {
 	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 	def fixed_job_name = split_job_name[1].replace('%2F',' ');
 
@@ -47,16 +127,18 @@ def buildStep(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT, BUILD
 
 		def buildenv = "${DOCKERTAG}";
 		def tag = '';
+		def extra_ver = '';
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest${DOCKERTAG}";
 		} else {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
+			extra_ver = "--build-arg VER_EXTRA=-${tag}";
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
-				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
 			stage("Pushing to docker hub registry...") {
@@ -95,9 +177,13 @@ node('master') {
 	def project = readJSON file: "JenkinsEnv.json";
 
 	project.builds.each { v ->
-		branches["Build ${v.DockerRoot}/${v.DockerImage}:${v.DockerTag}"] = {
-			node {
-				buildStep(v.DockerRoot, v.DockerImage, v.DockerTag, v.Dockerfile, v.BuildIfSuccessful, v.BuildEnv)
+		branches["Build ${v.Title}"] = {
+			node(v.OS) {
+				if ("${v.Type}" == "docker") {
+					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.BuildEnv);
+				} else {
+					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
+				}
 			}
 		}
 	}

@@ -30,8 +30,16 @@ static const char* const filesystemTypes[] =
 
 extern std::atomic_bool shutdownProgram;
 
+template<class T, class R, class...Args>
+auto methodstub(T* t, R(T::*m)(Args...)) {
+	return [=](auto&&...args)->R {
+		return (t->*m)(decltype(args)(args)...);
+	};
+}
+
 TServer::TServer(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0)
+	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
+	triggerActionDispatcher(methodstub(this, &TServer::createTriggerCommands))
 #ifdef V8NPCSERVER
 	, mScriptEngine(this), mPmHandlerNpc(nullptr)
 #endif
@@ -1483,8 +1491,9 @@ void TServer::playerLoggedIn(TPlayer *player)
 
 void TServer::calculateServerTime()
 {
-	// timevar apparently subtracts 11078 days from time(0) then divides by 5.
-	serverTime = ((unsigned int)time(nullptr) - 11078 * 24 * 60 * 60) / 5;
+	// Thu Feb 01 2001 17:33:34 GMT+0000
+	// this is likely the actual start time of timevar
+	serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
 }
 
 bool TServer::isIpBanned(const CString& ip)

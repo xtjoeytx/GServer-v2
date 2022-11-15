@@ -1,5 +1,7 @@
 Available commands for GServer:
 /help: This message.
+/version: Displays gserver version
+/credits: Displays gserver credits
 /open accountname: Opens the player's attributes window.
 /openacc accountname: Opens the player's account window.
 /opencomments accountname: Opens the player's comments window.

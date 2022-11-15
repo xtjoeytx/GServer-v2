@@ -125,9 +125,10 @@
 	/*
 	 * Event -> Triggeractions
 	 */
-	env.setCallBack("npc.trigger", function (npc, func, ...args) {
+	env.setCallBack("npc.trigger", function (npc, func, player, data) {
 		try {
-			func.apply(npc, args);
+			const params = tokenize(data, ',');
+			func.call(npc, player, params);
 		} catch (e) {
 			env.reportException("NPC Trigger Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -137,23 +138,17 @@
 	 * Events -> weapon.onCreated(npc, args...)
 	 */
 	env.setCallBack("weapon.created", function (weapon, ...args) {
-		try {
-			if (weapon.onCreated)
-				weapon.onCreated.apply(weapon, args);
-		} catch (e) {
-			env.reportException("Weapon Exception at " + weapon.name + ": " + e.name + " - " + e.message);
-		}
+		if (weapon.onCreated)
+			weapon.onCreated.apply(weapon, args);
 	});
 
 	/*
 	 * Event -> weapon.onActionServerSide(player, data)
 	 */
 	env.setCallBack("weapon.serverside", function (weapon, player, data) {
-		try {
-			if (weapon.onActionServerSide)
-				weapon.onActionServerSide(player, data);
-		} catch (e) {
-			env.reportException("Weapon Trigger Exception at " + weapon.name + ": " + e.name + " - " + e.message);
+		if (weapon.onActionServerSide) {
+			const params = tokenize(data, ',');
+			weapon.onActionServerSide(player, params);
 		}
 	});
 
@@ -210,4 +205,115 @@
 		stringList.push(currentString);
 		return stringList;
 	};
+	
+	// Math helper functions
+	(function() {
+		const _intVecX = [0, -1, 0, 1];
+		const _intVecY = [-1, 0, 1, 0];
+
+		env.global.vecx = function(dir) {
+			return _intVecX[dir % 4];
+		};
+		
+		env.global.vecy = function(dir) {
+			return _intVecY[dir % 4];
+		};
+
+		env.global.random = function(min, max) {
+			return Math.random() * (max - min) + min;
+		};
+
+		env.global.abs = function(num) {
+			return Math.abs(num);
+		};
+
+		env.global.arctan = function (angle) {
+			return Math.atan(angle);
+		};
+
+		env.global.char = function (code) {
+			return String.fromCharCode(code);
+		};
+
+		env.global.cos = function (angle) {
+			return Math.cos(angle);
+		};
+
+		env.global.exp = function (x) {
+			return Math.exp(x);
+		};
+
+		env.global.float = function(num) {
+			return parseFloat(num) || 0;
+		};
+
+		env.global.getangle = function (dx, dy) {
+			return Math.atan2(dx, dy);
+		};
+
+		env.global.int = function(num) {
+			return parseInt(num) || 0;
+		};
+
+		env.global.log = function (base, x) {
+			return Math.log(x) / Math.log(base);
+		};
+
+		env.global.max = function(n1, n2) {
+			return Math.max(n1, n2);
+		};
+
+		env.global.min = function(n1, n2) {
+			return Math.min(n1, n2);
+		};
+
+		env.global.sin = function (angle) {
+			return Math.sin(angle);
+		};
+	})();
+
+	// Server functions
+	(function() {
+		env.global.findlevel = function(...args) {
+			return server.findlevel(...args);
+		};
+
+		env.global.findnpc = function(...args) {
+			return server.findnpc(...args);
+		};
+
+		env.global.findplayer = function(...args) {
+			return server.findplayer(...args);
+		};
+
+		env.global.savelog = function(...args) {
+			return server.savelog(...args);
+		};
+
+		env.global.sendtorc = function(...args) {
+			return server.sendtorc(...args);
+		};
+
+		env.global.sendtonc = function(...args) {
+			return server.sendtonc(...args);
+		};
+
+		Object.defineProperty(env.global, 'allplayers', {
+			get: function() {
+				return server.players;
+			}
+		});
+
+		Object.defineProperty(env.global, 'timevar', {
+			get: function() {
+				return server.timevar;
+			}
+		});
+
+		Object.defineProperty(env.global, 'timevar2', {
+			get: function() {
+				return server.timevar2;
+			}
+		});
+	})();
 });
