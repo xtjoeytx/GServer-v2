@@ -45,6 +45,8 @@ sendText( "adminmessage", int playerid, str message ); - sends an admin message 
 sendText( "disconnect", int playerid, str disconnectreason ); - disconnects the given player ID (Client-RC)
 sendText( "lister", "getbanhistory", str accountname ); - gets the ban history of a players account
 sendText( "lister", "staffactivity", str accountname ); - gets the staff activity of a players account
+sendText( "lister", "getbanbyid", str id ); - gets the ban history of a players account
+
 sendText( "resetnpc", str npcname/int npcid, NULL ); - resets the given DB NPC (Client-RC)
 sendText( "deleteweapon", str weaponname, NULL ); - deletes the given weapon (Client-RC)
 sendText( "deleteclass", str classname, NULL ); - deletes the given class (Client-RC)

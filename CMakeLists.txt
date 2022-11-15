@@ -56,14 +56,27 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # Version number in format X.YY.ZZ
 set(VER_X 3)
 set(VER_Y 0)
-set(VER_Z 4)
+set(VER_Z 6)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
+
+# Build date Information
+string(TIMESTAMP VER_YEAR "%Y")
+string(TIMESTAMP VER_MONTH "%m")
+string(TIMESTAMP VER_DAY "%d")
+string(TIMESTAMP VER_HOUR "%H")
+string(TIMESTAMP VER_MINUTE "%M")
+
+set(VER_EXTRA "${VER_EXTRA} (${VER_YEAR}-${VER_MONTH}-${VER_DAY} ${VER_HOUR}:${VER_MINUTE})")
+
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
 set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
+STRING(REGEX REPLACE "[\(]" "" VER_CPACK ${VER_CPACK})
+STRING(REGEX REPLACE "[\)]" "" VER_CPACK ${VER_CPACK})
+STRING(REGEX REPLACE "(-[0-9]+:[0-9]+)" "" VER_CPACK ${VER_CPACK})
 
 # Generate version header from the above
 configure_file(
@@ -73,12 +86,20 @@ configure_file(
 
 option(STATIC "Compile as a static runtime." ON)
 if(STATIC)
-	message("Don't compile as a static runtime")
-	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
-else()
 	message("Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
+else()
+	message("Don't compile as a static runtime")
+	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
+endif()
+
+option(GRALATNPC "Compile with Gralat NPC support, only works when V8NPCSERVER is enabled." ON)
+if(GRALATNPC)
+	message("Compile with Gralat NPC support")
+	add_definitions(-DGRALATNPC)
+else()
+	message("Don't compile with Gralat NPC support")
 endif()
 
 option(V8NPCSERVER "Compile built-in V8 NPC-Server" OFF)

@@ -17,6 +17,7 @@
 #include "TPlayer.h"
 #include "IEnums.h"
 #include "TLevel.h"
+#include "IConfig.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()
@@ -972,8 +973,16 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		if (words[0] == "/help" && words.size() == 1)
 		{
 			std::vector<CString> commands = CString::loadToken(CString() << server->getServerPath() << "config/rchelp.txt", "\n", true);
-			for (std::vector<CString>::iterator i = commands.begin(); i != commands.end(); ++i)
-				sendPacket(CString() >> (char)PLO_RC_CHAT << (*i));
+			for (auto & command : commands)
+				sendPacket(CString() >> (char)PLO_RC_CHAT << command);
+		}
+		else if (words[0] == "/version" && words.size() == 1)
+		{
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "GS2Emu version: " << GSERVER_VERSION);
+		}
+		else if (words[0] == "/credits" && words.size() == 1)
+		{
+			sendPacket(CString() >> (char)PLO_RC_CHAT << "Programmed by " << GSERVER_CREDITS);
 		}
 		else if (words[0] == "/open" && words.size() != 1)
 		{
@@ -995,6 +1004,20 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			message.readString(" ");
 			CString acc = message.readString("");
 			return msgPLI_RC_PLAYERCOMMENTSGET(CString() << acc);
+		}
+		else if (words[0] == "/openaccess" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+
+			CString acc = message.readString("");
+			TPlayer *pl = server->getPlayer(acc, PLTYPE_ANYPLAYER);
+			if (pl)
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->getAccountName() << "," << std::to_string(pl->getDeviceId()));
+			else
+			{
+				// TODO: player not logged in, load from offline?
+			}
 		}
 		else if (words[0] == "/openban" && words.size() != 1)
 		{
@@ -1023,6 +1046,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << accountName << " refreshed the server message.");
 			rclog.out("%s refreshed the server message.\n", accountName.text());
 		}
+
 		else if (words[0] == "/refreshfilesystem" && words.size() == 1)
 		{
 			server->loadFileSystem();

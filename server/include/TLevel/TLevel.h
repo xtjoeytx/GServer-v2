@@ -37,10 +37,11 @@ class TLevel
 
 		//! Returns a clone of the level.
 		TLevel* clone();
-		
+
 		// get crafted packets
 		CString getBaddyPacket(int clientVersion = CLVER_2_17);
 		CString getBoardPacket();
+		CString getLayerPacket(int i);
 		CString getBoardChangesPacket(time_t time);
 		CString getBoardChangesPacket2(time_t time);
 		CString getChestPacket(TPlayer *pPlayer);
@@ -63,7 +64,7 @@ class TLevel
 
 		//! Gets the raw level tile data.
 		//! \return A pointer to all 4096 raw level tiles.
-		short* getTiles()								{ return levelTiles; }
+		short* getTiles()								{ return levelTiles[0]; }
 
 		//! Gets the level mod time.
 		//! \return The modified time of the level when it was first loaded from the disk.
@@ -104,6 +105,9 @@ class TLevel
 		//! Gets the server this level belongs to.
 		//! \return The server this level belongs to.
 		TServer* getServer() const						{ return server; }
+
+
+		std::vector<int> getLayers() const				{ return layers; }
 
 		//! Gets the status on whether players are on the level.
 		//! \return The level has players.  If true, the level has players on it.
@@ -242,7 +246,8 @@ class TLevel
 		time_t modTime;
 		bool levelSpar;
 		bool levelSingleplayer;
-		short levelTiles[4096];
+		short levelTiles[256][4096];
+		std::vector<int> layers;
 		int mapx, mapy;
 		TMap* levelMap;
 		CString fileName, fileVersion, actualLevelName, levelName;

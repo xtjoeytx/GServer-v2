@@ -124,16 +124,21 @@ void Server_Function_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Isolate *isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+	
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 
-	if (args[0]->IsString())
+	std::string msg; 
+	for (int i = 0; i < args.Length(); i++)
+	{
+		v8::String::Utf8Value str(isolate, args[i]->ToString(context).ToLocalChecked());
+		msg.append(*str).append(" ");
+	}
+
+	if (!msg.empty())
 	{
 		V8ENV_SAFE_UNWRAP(args, TServer, serverObject);
-
-		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-		v8::String::Utf8Value message(isolate, args[0]->ToString(context).ToLocalChecked());
-
-		serverObject->sendToNC(*message);
+		serverObject->sendToNC(msg);
 	}
 }
 
@@ -142,16 +147,21 @@ void Server_Function_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	v8::Isolate *isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
-	V8ENV_THROW_ARGCOUNT(args, isolate, 1)
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+	
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 
-	if (args[0]->IsString())
+	std::string msg; 
+	for (int i = 0; i < args.Length(); i++)
+	{
+		v8::String::Utf8Value str(isolate, args[i]->ToString(context).ToLocalChecked());
+		msg.append(" ").append(*str);
+	}
+
+	if (!msg.empty())
 	{
 		V8ENV_SAFE_UNWRAP(args, TServer, serverObject);
-
-		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-		v8::String::Utf8Value message(isolate, args[0]->ToString(context).ToLocalChecked());
-
-		serverObject->sendToRC(CString("[Server]: ") << *message);
+		serverObject->sendToRC(CString("[Server]:") << msg);
 	}
 }
 

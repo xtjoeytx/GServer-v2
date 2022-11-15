@@ -10,8 +10,6 @@
 #include "ScriptUtils.h"
 #include "CScriptEngine.h"
 
-class ScriptAction;
-
 class ScriptExecutionContext
 {
 public:
@@ -126,7 +124,10 @@ inline bool ScriptExecutionContext::runExecution()
 	for (auto & action : iterateActions)
 	{
 		SCRIPTENV_D("Running action: %s\n", action.getAction().c_str());
-		action.Invoke();
+		auto res = action.Invoke();
+		if (!res) {
+			_scriptEngine->reportScriptException(_scriptEngine->getScriptError());
+		}
 	}
 
 	if (!_scriptEngine->StopScriptExecution())

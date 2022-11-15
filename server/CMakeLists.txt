@@ -22,7 +22,6 @@
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 
-
 set(
 	SOURCES
 	src/CFileSystem.cpp
@@ -36,6 +35,8 @@ set(
 	src/TUpdatePackage.cpp
 	src/TWeapon.cpp
 	src/Scripting/GS2ScriptManager.cpp
+	src/TriggerCommandHandlers.cpp
+	${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
 )
 
 file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)
@@ -53,23 +54,25 @@ list(APPEND SOURCES ${UTILITIES_SOURCES})
 file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
 list(APPEND SOURCES ${ANIMATION_SOURCES})
 
+include(bin2h)
+
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-		include/CFileSystem.h
-		include/main.h
-		include/TAccount.h
-		include/TMap.h
-		include/TNPC.h
-		include/TPlayer.h
-		include/TScriptClass.h
-		include/TServer.h
-		include/TServerList.h
-		include/TUpdatePackage.h
-		include/TWeapon.h
-		include/Scripting/GS2ScriptManager.h
-		include/Scripting/ScriptOrigin.h
-		include/Scripting/SourceCode.h)
+	include/CFileSystem.h
+	include/main.h
+	include/TAccount.h
+	include/TMap.h
+	include/TNPC.h
+	include/TPlayer.h
+	include/TScriptClass.h
+	include/TServer.h
+	include/TServerList.h
+	include/TUpdatePackage.h
+	include/TWeapon.h
+	include/Scripting/GS2ScriptManager.h
+	include/Scripting/ScriptOrigin.h
+	include/Scripting/SourceCode.h)
 
 file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
 list(APPEND HEADERS ${TLEVEL_HEADERS})
@@ -103,6 +106,7 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		HEADERS
+		${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 		include/Scripting/CScriptEngine.h
 		include/Scripting/ScriptAction.h
 		include/Scripting/ScriptExecutionContext.h
@@ -149,11 +153,6 @@ else()
 	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
-if(V8NPCSERVER)
-	message("V8 include: ${V8_INCLUDE_DIR}")
-	include_directories(${V8_INCLUDE_DIR})
-endif()
-
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
@@ -178,7 +177,7 @@ elseif(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-		
+
 		if(V8NPCSERVER)
 			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
 
@@ -236,6 +235,25 @@ if(V8NPCSERVER)
 			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
 		endif()
 	endif()
+
+	message("V8 include: ${V8_INCLUDE_DIR}")
+	include_directories(${V8_INCLUDE_DIR})
+
+	add_custom_command(
+			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+			COMMAND ${CMAKE_COMMAND}
+			-DSOURCE_FILE=${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
+			-DHEADER_FILE=${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+			-DVARIABLE_NAME=JSBOOTSTRAPSCRIPT
+			-P "${CMAKE_SOURCE_DIR}/cmake/generate_header_file.cmake"
+			COMMENT "Generating \"bootstrap.js\" header file..."
+			WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+			DEPENDS "${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
+			VERBATIM
+	)
+
+	add_custom_target(bootstrap_js_to_h DEPENDS ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h)
+	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 endif()
 
 file(GLOB TEXT

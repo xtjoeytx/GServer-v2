@@ -27,7 +27,7 @@
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
 			std::string("Cannot call function with ")				\
 				.append(std::to_string(args.Length()))				\
-				.append(" arguments, required ## required_args ")	\
+				.append(" arguments, required " #required_args)		\
 				.c_str()).ToLocalChecked()); 						\
 		return;														\
 	}
@@ -38,8 +38,8 @@
 		isolate->ThrowException(v8::String::NewFromUtf8(isolate,	\
 			std::string("Cannot call function with ")				\
 			.append(std::to_string(args.Length()))					\
-			.append(" arguments, required ## required_args ")		\
-			.c_str()).ToLocalChecked()); 											\
+			.append(" arguments, required " #required_args)			\
+			.c_str()).ToLocalChecked()); 							\
 		return;														\
 	}
 
