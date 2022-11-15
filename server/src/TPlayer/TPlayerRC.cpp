@@ -1003,6 +1003,20 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			CString acc = message.readString("");
 			return msgPLI_RC_PLAYERCOMMENTSGET(CString() << acc);
 		}
+		else if (words[0] == "/openaccess" && words.size() != 1)
+		{
+			message.setRead(0);
+			message.readString(" ");
+
+			CString acc = message.readString("");
+			TPlayer *pl = server->getPlayer(acc, PLTYPE_ANYPLAYER);
+			if (pl)
+				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->getAccountName() << "," << std::to_string(pl->getDeviceId()));
+			else
+			{
+				// TODO: player not logged in, load from offline?
+			}
+		}
 		else if (words[0] == "/openban" && words.size() != 1)
 		{
 			message.setRead(0);

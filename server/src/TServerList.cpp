@@ -45,6 +45,7 @@ void TServerList::createFunctions()
 	TSLFunc[SVI_REQUESTTEXT] = &TServerList::msgSVI_REQUESTTEXT;
 	TSLFunc[SVI_SENDTEXT] = &TServerList::msgSVI_SENDTEXT;
 	TSLFunc[SVI_PMPLAYER] = &TServerList::msgSVI_PMPLAYER;
+	TSLFunc[SVI_ASSIGNPCID] = &TServerList::msgSVI_ASSIGNPCID;
 
 	// Finished
 	TServerList::created = true;
@@ -427,6 +428,16 @@ void TServerList::sendTextForPlayer(TPlayer *player, const CString& data)
 	dataPacket.writeGChar(SVO_REQUESTLIST);
 	dataPacket >> (short)player->getId() << data;
 	sendPacket(dataPacket);
+}
+
+void TServerList::sendLoginPacketForPlayer(TPlayer *player, const CString& password, const CString& identity)
+{
+	sendPacket(CString() >> (char)SVO_VERIACC2
+		>> (char)player->getAccountName().length() << player->getAccountName()
+		>> (char)password.length() << password
+		>> (short)player->getId() >> (char)player->getType()
+		>> (short)identity.length() << identity
+	);
 }
 
 void TServerList::sendServerHQ()
@@ -978,4 +989,18 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	}
 
 	message2 = "";
+}
+
+void TServerList::msgSVI_ASSIGNPCID(CString& pPacket)
+{
+	uint16_t id = pPacket.readGUShort();
+	uint8_t type = pPacket.readGUChar();
+	CString pcId = pPacket.readChars(pPacket.readGUChar());
+
+	// Get the player, this should be a player who has not been loaded with the playerid of `id`
+	TPlayer* player = _server->getPlayer(id, type);
+	if (!player || player->isLoaded())
+		return;
+
+	player->setDeviceId(std::stoll(pcId.text()));
 }
