@@ -156,11 +156,6 @@ endif()
 set(TARGET_NAME_OLD ${TARGET_NAME})
 set(TARGET_NAME ${TARGET_NAME}_lib)
 
-if(V8NPCSERVER)
-	message("V8 include: ${V8_INCLUDE_DIR}")
-	include_directories(${V8_INCLUDE_DIR})
-endif()
-
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
@@ -247,23 +242,26 @@ if(V8NPCSERVER)
 		else()
 			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
 		endif()
-
-		add_custom_command(
-				OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
-				COMMAND ${CMAKE_COMMAND}
-				-DSOURCE_FILE=${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
-				-DHEADER_FILE=${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
-				-DVARIABLE_NAME=JSBOOTSTRAPSCRIPT
-				-P "${CMAKE_SOURCE_DIR}/cmake/generate_header_file.cmake"
-				COMMENT "Generating \"bootstrap.js\" header file..."
-				WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-				DEPENDS "${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
-				VERBATIM
-		)
-
-		add_custom_target(bootstrap_js_to_h DEPENDS ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h)
-		add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 	endif()
+
+	message("V8 include: ${V8_INCLUDE_DIR}")
+	include_directories(${V8_INCLUDE_DIR})
+
+	add_custom_command(
+			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+			COMMAND ${CMAKE_COMMAND}
+			-DSOURCE_FILE=${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
+			-DHEADER_FILE=${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
+			-DVARIABLE_NAME=JSBOOTSTRAPSCRIPT
+			-P "${CMAKE_SOURCE_DIR}/cmake/generate_header_file.cmake"
+			COMMENT "Generating \"bootstrap.js\" header file..."
+			WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+			DEPENDS "${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
+			VERBATIM
+	)
+
+	add_custom_target(bootstrap_js_to_h DEPENDS ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h)
+	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 endif()
 
 file(GLOB TEXT

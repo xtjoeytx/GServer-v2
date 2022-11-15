@@ -10,3 +10,6 @@
 [submodule "dependencies/gs2compiler"]
 	path = dependencies/gs2compiler
 	url = https://github.com/xtjoeytx/gs2-parser.git
+[submodule "cmake/nuget"]
+	path = cmake/nuget
+	url = https://github.com/katusk/CMakeNuGetTools
