@@ -5,7 +5,7 @@ function(add_test_og TARGET_NAME TARGET_PATH)
   file(GLOB_RECURSE TESTS "${TARGET_PATH}/${TARGET_NAME}/*.cpp")
 
   add_executable(${TARGET_NAME} ${TESTS})
-  target_link_libraries(${TARGET_NAME} PRIVATE gs2emu_lib Catch2::Catch2WithMain)
+  target_link_libraries(${TARGET_NAME} PRIVATE ${GSERVER_LIBRARY_NAME} Catch2::Catch2WithMain)
 
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
@@ -20,7 +20,7 @@ function(add_test_og TARGET_NAME TARGET_PATH)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/utilities)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Animation)
 
-  add_dependencies(${TARGET_NAME} gs2emu)
+  add_dependencies(${TARGET_NAME} ${GSERVER_LIBRARY_NAME})
 
   if(V8NPCSERVER)
     include_directories(${V8_INCLUDE_DIR})
