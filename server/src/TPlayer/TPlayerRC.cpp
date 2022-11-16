@@ -1011,7 +1011,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 			CString acc = message.readString("");
 			TPlayer *pl = server->getPlayer(acc, PLTYPE_ANYPLAYER);
 			if (pl)
-				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->getAccountName() << "," << std::to_string(pl->getDeviceId()));
+				sendPacket(PLO_SERVERTEXT, CString() << "GraalEngine,lister,ban," << pl->getAccountName() << "," << std::to_string(pl->getDeviceId()));
 			else
 			{
 				// TODO: player not logged in, load from offline?
