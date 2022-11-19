@@ -14,6 +14,8 @@
 
 #ifdef V8NPCSERVER
 #include "ScriptBindings.h"
+#include "TPacket.h"
+
 #endif
 
 class TLevel;
@@ -103,7 +105,9 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Socket-Functions
 		bool doMain();
-		void sendPacket(char packetId, CString pPacket, bool sendNow = false, bool appendNL = true);
+		template <class T>
+		void sendPacket(const TPacket<T>& packet, bool sendNow = false, bool appendNL = true) { sendPacket((unsigned char)packet.Id, packet.Data, sendNow, appendNL); };
+		void sendPacket(unsigned char packetId, const CString& pPacket, bool sendNow = false, bool appendNL = true);
 		void sendPacketOld(CString pPacket, bool appendNL = true);
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);

@@ -103,7 +103,7 @@ bool TPlayer::sendLogin()
 #ifdef V8NPCSERVER
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
-		// 
+		//
 		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
 		sendPacket(PLO_HASNPCSERVER, CString() << "");
 #endif
@@ -319,7 +319,10 @@ bool TPlayer::sendLoginClient()
 			}
 			continue;
 		}
-		weapon->sendWeaponPacket(this, versionID);
+
+		for(const auto& packet : weapon->getWeaponPackets(versionID)) {
+			sendPacket(packet, true);
+		}
 	}
 
 	if (versionID >= CLVER_4_0211)

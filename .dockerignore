@@ -1,2 +1,4 @@
 dependencies/v8
-build
+dependencies/depot_tools
+build*
+cmake-*

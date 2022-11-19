@@ -6,6 +6,8 @@
 #include <optional>
 #include "IUtil.h"
 #include "CString.h"
+#include "IEnums.h"
+#include "TPacket.h"
 #include "TLevelBaddy.h"
 #include "TLevelBoardChange.h"
 #include "TLevelChest.h"
@@ -39,16 +41,16 @@ class TLevel
 		TLevel* clone();
 
 		// get crafted packets
-		void sendBaddyPacket(TPlayer *pPlayer, int clientVersion = CLVER_2_17);
-		void sendBoardPacket(TPlayer *pPlayer);
-		void sendLayerPacket(TPlayer *pPlayer, int i);
-		void sendBoardChangesPacket(TPlayer *pPlayer, time_t time);
-		void sendBoardChangesPacket2(TPlayer *pPlayer, time_t time);
-		void sendChestPacket(TPlayer *pPlayer);
-		void sendHorsePacket(TPlayer *pPlayer);
-		void sendLinksPacket(TPlayer *pPlayer);
-		void sendNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
-		void sendSignsPacket(TPlayer *pPlayer);
+		std::vector<TPacket<PlayerOutPacket>> getBaddyPackets(int clientVersion = CLVER_2_17);
+		TPacket<PlayerOutPacket> getBoardPacket();
+		TPacket<PlayerOutPacket> getLayerPacket(int i);
+		void getBoardChangesPacket(TPlayer *pPlayer, time_t time);
+		void getBoardChangesPacket2(TPlayer *pPlayer, time_t time);
+		void getChestPacket(TPlayer *pPlayer);
+		void getHorsePacket(TPlayer *pPlayer);
+		void getLinksPacket(TPlayer *pPlayer);
+		void getNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
+		void getSignsPacket(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
 		//! \return The action level name.

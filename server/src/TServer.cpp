@@ -1794,7 +1794,9 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 		if (player->hasWeapon(pWeapon->getName()))
 		{
 			player->sendPacket(PLO_NPCWEAPONDEL, CString() << pWeapon->getName());
-			pWeapon->sendWeaponPacket(player, player->getVersion());
+			for (const auto& packet : pWeapon->getWeaponPackets(player->getVersion())) {
+				player->sendPacket(packet, true);
+			}
 		}
 	}
 }

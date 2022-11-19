@@ -116,7 +116,7 @@ CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 			else return CString() >> (char)0;
 		}
 	}
-	return CString();
+	return {};
 }
 
 CString TLevelBaddy::getProps(int clientVersion) const

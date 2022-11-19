@@ -14,6 +14,7 @@
 #include "TMap.h"
 #include "TWeapon.h"
 #include "TNPC.h"
+#include "TPacket.h"
 
 /*
 	Logs
@@ -458,7 +459,7 @@ bool TPlayer::doMain()
 	while (rBuffer.length() > 1)
 	{
 		// New data.
-		lastData = time(0);
+		lastData = time(nullptr);
 		if (packetCount == 0)
 		{
 			if (rBuffer.bytesLeft() >= 8)
@@ -470,8 +471,10 @@ bool TPlayer::doMain()
 					fileQueue.setCodec(ENCRYPT_GEN_6, 0);
 					newProtocol = true;
 
-					for (auto weapon : *server->getWeaponList()) {
-						weapon.second->sendWeaponPacket(this, CLVER_4_0211);
+					for (const auto& weapon : *server->getWeaponList()) {
+						for (const auto& packet : weapon.second->getWeaponPackets(CLVER_4_0211)) {
+							sendPacket(packet, true);
+						}
 						sendPacket(PLO_NPCWEAPONSCRIPT, weapon.second->getByteCode(), true);
 					}
 
@@ -487,7 +490,7 @@ bool TPlayer::doMain()
 		}
 
 		// packet length
-		unsigned short len = (unsigned short)rBuffer.readShort();
+		auto len = (unsigned short)rBuffer.readShort();
 		if ((unsigned int)len > (unsigned int)rBuffer.length()-2)
 			break;
 
@@ -730,7 +733,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 	}
 }
 
-void TPlayer::sendPacket(char packetId, CString pPacket, bool sendNow, bool appendNL)
+void TPlayer::sendPacket(unsigned char packetId, const CString& pPacket, bool sendNow, bool appendNL)
 {
 	serverlog.out("[%s][%i] %s\n", server->getName().text(), (int)packetId, pPacket.text());
 	if (newProtocol)
@@ -1675,28 +1678,34 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			if (!newProtocol)
 				sendPacket(PLO_RAWDATA, CString() >> (int)(1+(64*64*2)+1));
-			pLevel->sendBoardPacket(this);
+			sendPacket(pLevel->getBoardPacket());
 
 			for (auto layerNumber : pLevel->getLayers()) {
 				if (layerNumber == 0) continue;
-				pLevel->sendLayerPacket(this, layerNumber);
 
+				auto layerPacket = pLevel->getLayerPacket(layerNumber);
+				if (this->newProtocol)
+					sendPacket(PLO_RAWDATA, CString() >> (int)(layerPacket.Data.length()+2));
+
+				sendPacket(layerPacket);
 			}
 		}
 
 		// Send links, signs, and mod time.
 		sendPacket(PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime());
-		pLevel->sendLinksPacket(this);
-		pLevel->sendSignsPacket(this);
+		pLevel->getLinksPacket(this);
+		pLevel->getSignsPacket(this);
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if ( !fromAdjacent )
 	{
-		pLevel->sendBoardChangesPacket(this, l_time);
-		pLevel->sendChestPacket(this);
-		pLevel->sendHorsePacket(this);
-		pLevel->sendBaddyPacket(this, versionID);
+		pLevel->getBoardChangesPacket(this, l_time);
+		pLevel->getChestPacket(this);
+		pLevel->getHorsePacket(this);
+		for (const auto& packet : pLevel->getBaddyPackets(versionID)) {
+			sendPacket(packet);
+		}
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
@@ -1710,7 +1719,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if ( !fromAdjacent || pmap != 0)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer())
 			sendPacket(PLO_ISLEADER, CString() << "");
 	}
 
@@ -1723,7 +1732,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			sendPacket(PLO_SETACTIVELEVEL, CString() << pmap->getMapName());
 
-			pLevel->sendNpcsPacket(this, l_time, versionID);
+			pLevel->getNpcsPacket(this, l_time, versionID);
 
 			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 			CString pmapLevels = pmap->getLevels();
@@ -1739,7 +1748,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		else
 		{
 			sendPacket(PLO_SETACTIVELEVEL, CString() << pLevel->getLevelName());
-			pLevel->sendNpcsPacket(this, l_time, versionID);
+			pLevel->getNpcsPacket(this, l_time, versionID);
 		}
 	}
 
@@ -1800,7 +1809,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time != 0)
 	{
-		pLevel->sendBoardChangesPacket(this, l_time);
+		pLevel->getBoardChangesPacket(this, l_time);
 	}
 	else
 	{
@@ -1808,7 +1817,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			if (!newProtocol)
 				sendPacket(PLO_RAWDATA,CString() >> (int)(1+(64*64*2)+1));
-			pLevel->sendBoardPacket(this);
+			sendPacket(pLevel->getBoardPacket());
 
 			if (firstLevel)
 				sendPacket(PLO_LEVELNAME, CString() << pLevel->getLevelName());
@@ -1817,8 +1826,8 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			// Send links, signs, and mod time.
 			if ( !settings->getBool("serverside", false))	// TODO: NPC server check instead.
 			{
-				pLevel->sendLinksPacket(this);
-				pLevel->sendSignsPacket(this);
+				pLevel->getLinksPacket(this);
+				pLevel->getSignsPacket(this);
 			}
 			sendPacket(PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime());
 		}
@@ -1827,16 +1836,18 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 		if ( !fromAdjacent )
 		{
-			pLevel->sendBoardChangesPacket2(this, l_time);
-			pLevel->sendChestPacket(this);
+			pLevel->getBoardChangesPacket2(this, l_time);
+			pLevel->getChestPacket(this);
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if ( !fromAdjacent )
 	{
-		pLevel->sendHorsePacket(this);
-		pLevel->sendBaddyPacket(this, versionID);
+		pLevel->getHorsePacket(this);
+		for (const auto& packet : pLevel->getBaddyPackets(versionID)) {
+			sendPacket(packet);
+		}
 	}
 
 	// Tell the client if there are any ghost players in the level.
@@ -1846,7 +1857,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	if (fromAdjacent == false)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer() == true)
+		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer())
 			sendPacket(PLO_ISLEADER, CString() << "");
 	}
 
@@ -1855,7 +1866,7 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Send NPCs.
 	if ( !fromAdjacent )
-		pLevel->sendNpcsPacket(this, l_time, versionID);
+		pLevel->getNpcsPacket(this, l_time, versionID);
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
@@ -1863,9 +1874,8 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 	{
 		server->sendPacketToLevel(PLO_OTHERPLPROPS, this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
 		std::vector<TPlayer*>* playerList = level->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		for (TPlayer* player : *playerList)
 		{
-			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
 			this->sendPacket(PLO_OTHERPLPROPS, player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 		}
@@ -2083,7 +2093,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 		return false;
 
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
-	if (weapon == 0)
+	if (weapon == nullptr)
 	{
 		weapon = new TWeapon(server, defaultWeapon);
 		server->NC_AddWeapon(weapon);
@@ -2092,8 +2102,10 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	// See if the player already has the weapon.
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
-		weaponList.push_back(weapon->getName());
-		weapon->sendWeaponPacket(this, versionID);
+		weaponList.emplace_back(weapon->getName());
+		for (const auto& packet : weapon->getWeaponPackets(versionID)) {
+			sendPacket(packet, true);
+		}
 	}
 
 	return true;
@@ -2112,11 +2124,13 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 	// See if the player already has the weapon.
 	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
 	{
-		weaponList.push_back(weapon->getName());
+		weaponList.emplace_back(weapon->getName());
 		if (id == -1) return true;
 
 		// Send weapon.
-		weapon->sendWeaponPacket(this, versionID);
+		for (const auto& packet : weapon->getWeaponPackets(versionID)) {
+			sendPacket(packet, true);
+		}
 	}
 
 	return true;
@@ -2318,7 +2332,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
-	
+
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");

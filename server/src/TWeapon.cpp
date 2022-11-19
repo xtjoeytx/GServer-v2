@@ -176,12 +176,13 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-void TWeapon::sendWeaponPacket(TPlayer *pPlayer, int clientVersion) const
+std::vector<TPacket<PlayerOutPacket>> TWeapon::getWeaponPackets(int clientVersion) const
 {
+	std::vector<TPacket<PlayerOutPacket>> packets;
 	if ( this->isDefault())
 	{
-		pPlayer->sendPacket(PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault, true);
-		return;
+		packets.emplace_back(TPacket<PlayerOutPacket>{PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault});
+		return packets;
 	}
 
 	CString weaponPacket;
@@ -194,23 +195,23 @@ void TWeapon::sendWeaponPacket(TPlayer *pPlayer, int clientVersion) const
 		if (!_bytecode.isEmpty())
 		{
 			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-			pPlayer->sendPacket(PLO_NPCWEAPONADD, weaponPacket, true);
+			packets.emplace_back(TPacket<PlayerOutPacket>{PLO_NPCWEAPONADD, weaponPacket});
 			CString b = _bytecode;
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			pPlayer->sendPacket(PLO_UNKNOWN197, CString() << header << "," >> (long long)time(0), true);
-			return ;
+			packets.emplace_back(TPacket<PlayerOutPacket>{PLO_UNKNOWN197, CString() << header << "," >> (long long)time(0)});
+			return packets;
 		}
 
 		// GS1 is disabled for > 5.0.0.7
 		if (clientVersion > CLVER_5_07)
-			return;
+			return packets;
 	}
 
-	pPlayer->sendPacket(PLO_NPCWEAPONADD, weaponPacket, true);
+	packets.emplace_back(TPacket<PlayerOutPacket>{PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1});
 
-	pPlayer->sendPacket(NPCPROP_SCRIPT, CString() >> (short)_formattedClientGS1.length() << _formattedClientGS1, true);
+	return packets;
 }
 
 // -- Function: Update Weapon Image/Script -- //

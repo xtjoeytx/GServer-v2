@@ -50,7 +50,7 @@ server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMa
 	memset(levelTiles, 0xFF, sizeof(levelTiles));
 
 	// Baddy id 0 breaks the client.  Put a null pointer in id 0.
-	levelBaddyIds.resize(1, 0);
+	levelBaddyIds.resize(1, nullptr);
 }
 
 TLevel::~TLevel()
@@ -104,8 +104,9 @@ TLevel::~TLevel()
 /*
 	TLevel: Get Crafted Packets
 */
-void TLevel::sendBaddyPacket(TPlayer *pPlayer, int clientVersion)
+std::vector<TPacket<PlayerOutPacket>> TLevel::getBaddyPackets(int clientVersion)
 {
+	std::vector<TPacket<PlayerOutPacket>> packets;
 	CString retVal;
 	for (const auto& baddy : levelBaddies)
 	{
@@ -114,30 +115,31 @@ void TLevel::sendBaddyPacket(TPlayer *pPlayer, int clientVersion)
 			continue;
 
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		pPlayer->sendPacket(PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion));
+		packets.push_back(TPacket<PlayerOutPacket>{PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion)});
 	}
+
+	return packets;
 }
 
-void TLevel::sendBoardPacket(TPlayer *pPlayer)
+TPacket<PlayerOutPacket> TLevel::getBoardPacket()
 {
 	CString retVal;
 	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
 
-	pPlayer->sendPacket(PLO_BOARDPACKET, retVal);
+	return TPacket<PlayerOutPacket>{PLO_BOARDPACKET, retVal};
 }
 
-void TLevel::sendLayerPacket(TPlayer *pPlayer, int layer)
+TPacket<PlayerOutPacket> TLevel::getLayerPacket(int i)
 {
 	CString layerPacket;
-	layerPacket << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	layerPacket.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
+	layerPacket << (char)i << (char)0 << (char)0 << (char)64 << (char)64;
+	layerPacket.write((char *)levelTiles[i], sizeof(levelTiles[i]));
 
-	if (pPlayer->newProtocol)
-		pPlayer->sendPacket(PLO_RAWDATA, CString() >> (int)(layerPacket.length()+2));
-	pPlayer->sendPacket(PLO_BOARDLAYER, layerPacket);
+
+	return TPacket<PlayerOutPacket>{PLO_BOARDLAYER, layerPacket};
 }
 
-void TLevel::sendBoardChangesPacket(TPlayer *pPlayer, time_t time)
+void TLevel::getBoardChangesPacket(TPlayer *pPlayer, time_t time)
 {
 	CString retVal;
 
@@ -150,7 +152,7 @@ void TLevel::sendBoardChangesPacket(TPlayer *pPlayer, time_t time)
 	pPlayer->sendPacket(PLO_LEVELBOARD, retVal);
 }
 
-void TLevel::sendBoardChangesPacket2(TPlayer *pPlayer, time_t time)
+void TLevel::getBoardChangesPacket2(TPlayer *pPlayer, time_t time)
 {
 	CString retVal;
 
@@ -163,7 +165,7 @@ void TLevel::sendBoardChangesPacket2(TPlayer *pPlayer, time_t time)
 	pPlayer->sendPacket(PLO_BOARDMODIFY, retVal);
 }
 
-void TLevel::sendChestPacket(TPlayer *pPlayer)
+void TLevel::getChestPacket(TPlayer *pPlayer)
 {
 	if (pPlayer)
 	{
@@ -178,7 +180,7 @@ void TLevel::sendChestPacket(TPlayer *pPlayer)
 	}
 }
 
-void TLevel::sendHorsePacket(TPlayer *pPlayer)
+void TLevel::getHorsePacket(TPlayer *pPlayer)
 {
 	for (auto& horse : levelHorses)
 	{
@@ -186,7 +188,7 @@ void TLevel::sendHorsePacket(TPlayer *pPlayer)
 	}
 }
 
-void TLevel::sendLinksPacket(TPlayer *pPlayer)
+void TLevel::getLinksPacket(TPlayer *pPlayer)
 {
 	for (const auto& link : levelLinks)
 	{
@@ -195,7 +197,7 @@ void TLevel::sendLinksPacket(TPlayer *pPlayer)
 
 }
 
-void TLevel::sendNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion)
+void TLevel::getNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion)
 {
 	for (auto npc : levelNPCs)
 	{
@@ -213,7 +215,7 @@ void TLevel::sendNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion)
 	}
 }
 
-void TLevel::sendSignsPacket(TPlayer *pPlayer = 0)
+void TLevel::getSignsPacket(TPlayer *pPlayer = nullptr)
 {
 	for (const auto & sign : levelSigns)
 	{
