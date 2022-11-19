@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
-project(GS2Emu VERSION 3.0.6 DESCRIPTION "Graal Online v1.411 to v5.002 compatible server" LANGUAGES C CXX)
+project(GS2Emu VERSION 3.0.7 DESCRIPTION "Graal Online v1.411 to v5.002 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
