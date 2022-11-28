@@ -41,7 +41,6 @@ inline std::string getPublicFunctions(const std::string_view& code)
 	std::string out;
 	if (!varNames.empty())
 	{
-		out += "var " + varNames + ";\n";
 		out += "const __publicNames = [" + varNameQuotes + "];\n";
 		out += "const __publicFuncs = [" + varNames + "];\n";
 		out += R"(
@@ -94,6 +93,7 @@ inline std::string WrapScript<TNPC>(const std::string_view& code) {
 	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
+	wrappedCode.append(publicFunctions);
 	wrappedCode.append("\n});");
 	return wrappedCode;
 }
@@ -130,6 +130,7 @@ inline std::string WrapScript<TWeapon>(const std::string_view& code) {
 	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
+	wrappedCode.append(publicFunctions);
 	wrappedCode.append("\n});");
 	return wrappedCode;
 }
