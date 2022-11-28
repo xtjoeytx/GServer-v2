@@ -1,5 +1,15 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.7
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Update gs2compiler - fix getangle and getdir
++ Update gs2compiler - added gs2 support for arraylen/sarraylen functions
+* Fixed shoot2 for v6 clients
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.6
 
   * bug fix, + new feature, o other

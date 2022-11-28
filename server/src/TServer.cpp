@@ -1746,6 +1746,62 @@ void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, b
 	}
 }
 
+void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+{
+	if (!pPlayer->getLevel())
+		return;
+	
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	{
+		TLevel* level = pPlayer->getLevel();
+		for (auto p : playerList)
+		{
+			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
+			if (p->getLevel() == level && predicate(p))
+				p->sendPacket(pPacket);
+		}
+		return;
+	}
+
+	bool _groupMap = pPlayer->getMap()->isGroupMap();
+	for (auto player : playerList)
+	{
+		if (!player->isClient()) continue;
+		if (player == pPlayer)
+		{
+			if (sendToSelf) pPlayer->sendPacket(pPacket);
+			continue;
+		}
+		if (player->getLevel() == nullptr) continue;
+		if (_groupMap && pPlayer->getGroup() != player->getGroup()) continue;
+
+		if (player->getMap() == pMap && predicate(player))
+		{
+			int ogmap[2], sgmap[2];
+			switch (pMap->getType())
+			{
+			case MapType::GMAP:
+				ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
+				ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
+				sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
+				sgmap[1] = pPlayer->getProp(PLPROP_GMAPLEVELY).readGUChar();
+				break;
+
+			default:
+			case MapType::BIGMAP:
+				ogmap[0] = player->getLevel()->getMapX();
+				ogmap[1] = player->getLevel()->getMapY();
+				sgmap[0] = pPlayer->getLevel()->getMapX();
+				sgmap[1] = pPlayer->getLevel()->getMapY();
+				break;
+			}
+
+			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+				player->sendPacket(pPacket);
+		}
+	}
+}
+
 void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
 {
 	for (auto player : playerList)

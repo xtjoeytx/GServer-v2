@@ -210,6 +210,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
+	TPLFunc[PLI_SHOOT2] = &TPlayer::msgPLI_SHOOT2;
 	TPLFunc[PLI_SERVERWARP] = &TPlayer::msgPLI_SERVERWARP;
 
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
@@ -3691,19 +3692,103 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 	return true;
 }
 
+struct ShootPacketNew {
+	int16_t pixelx;
+	int16_t pixely;
+	int16_t pixelz;
+	int8_t offsetx;
+	int8_t offsety;
+	int8_t sangle;
+	int8_t sanglez;
+	int8_t speed;
+	int8_t gravity;
+	CString gani;
+	CString shootParams;
+
+	CString constructShootV1() {
+		CString packet;
+		packet.writeGInt(0); // shoot-id?
+		packet.writeGChar(pixelx / 16);
+		packet.writeGChar(pixely / 16);
+		packet.writeGChar((pixelz / 16) + 50);
+		packet.writeGChar(sangle);
+		packet.writeGChar(sanglez);
+		packet.writeGChar(speed);
+		packet.writeGChar(gani.length());
+		packet.write(gani);
+		packet.writeGChar(shootParams.length());
+		packet.write(shootParams);
+		return packet;
+	}
+
+	CString constructShootV2() {
+		CString packet;
+		packet.writeGShort(pixelx);
+		packet.writeGShort(pixely);
+		packet.writeGShort(pixelz);
+		packet.writeChar(offsetx + 32);
+		packet.writeChar(offsety + 32);
+		packet.writeGChar(sangle);
+		packet.writeGChar(sanglez);
+		packet.writeGChar(speed);
+		packet.writeGChar(gravity);
+		packet.writeGShort(gani.length());
+		packet.write(gani);
+		packet.writeGChar(shootParams.length());
+		packet.write(shootParams);
+		return packet;
+	}
+
+	void debug() {
+		printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx/16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
+		printf("\t Offset: %d, %d\n", offsetx, offsety);
+		printf("\t Angle: %d\n", sangle);
+		printf("\t Z-Angle: %d\n", sanglez);
+		printf("\t Power: %d\n", speed);
+		printf("\t Gravity: %d\n", gravity);
+		printf("\t Gani: %s (len: %d)\n", gani.text(), gani.length());
+		printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
+	}
+};
+
 bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
-	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server. (5/25/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	CString sgani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char shootParamsLength = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-	CString shootparams = pPacket.readString("");
-
-	//printf("Shoot Params (%d): %s\n", shootparams.length(), shootparams.text());
-
+	ShootPacketNew newPacket{};
+	int unknown = pPacket.readGInt();        // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
+	
+	newPacket.pixelx = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	newPacket.pixely = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	// TODO: calculate offsetx from pixelx/pixely/ - level offset
+	newPacket.offsetx = 0;
+	newPacket.offsety = 0;
+	//if (newPacket.pixelx < 0) {
+	//	newPacket.offsetx = -1;
+	//}
+	//if (newPacket.pixely < 0) {
+	//	newPacket.offsety = -1;
+	//}
+	newPacket.sangle = pPacket.readGUChar();        // 0-pi = 0-220
+	newPacket.sanglez = pPacket.readGUChar();        // 0-pi = 0-220
+	newPacket.speed = pPacket.readGUChar();            // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	newPacket.gravity = 8;
+	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
+	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	newPacket.shootParams = pPacket.readString("");
+	
+	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
+	
+	server->sendPacketToLevel([](const TPlayer* pl)
+	                          {
+		                          return pl->getVersion() < CLVER_5_07;
+	                          }, oldPacketBuf, pmap, this, false);
+	
+	server->sendPacketToLevel([](const TPlayer* pl)
+	                          {
+		                          return pl->getVersion() >= CLVER_5_07;
+	                          }, newPacketBuf, pmap, this, false);
+	
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
 
@@ -3722,26 +3807,38 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	//	}
 	//}
 
-	/*
-	CString shootPacket;
-	shootPacket.writeGShort(id); // shooters player-id
-	shootPacket.writeGChar((unsigned char)(loc[0] * 2)); // start-x
-	shootPacket.writeGChar((unsigned char)(loc[1] * 2)); // start-y
-	shootPacket.writeGChar((unsigned char)(loc[2] * 2)); // start-z
-	shootPacket.writeGChar(sangle); // shoot angle
-	shootPacket.writeGChar(sanglez); // shoot z angle
-	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
+	return true;
+}
 
-	shootPacket.writeGChar(sgani.length()); // animation
-	shootPacket.write(sgani);
-
-	shootPacket.writeGChar(shootParamsLength); // params
-	shootPacket.write(shootparams);
-	*/
-
-	// Send data now.
-	server->sendPacketToLevel(CString() >> (char)PLO_SHOOT >> (short)id << (pPacket.text() + 1), pmap, this, false);
-
+bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
+{
+	ShootPacketNew newPacket{};
+	newPacket.pixelx = pPacket.readGUShort();
+	newPacket.pixely = pPacket.readGUShort();
+	newPacket.pixelz = pPacket.readGUShort();
+	newPacket.offsetx = pPacket.readGChar();		// level offset x
+	newPacket.offsety = pPacket.readGChar();		// level offset y
+	newPacket.sangle = pPacket.readGUChar();		// 0-pi = 0-220
+	newPacket.sanglez = pPacket.readGUChar();		// 0-pi = 0-220
+	newPacket.speed = pPacket.readGUChar();			// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	newPacket.gravity = pPacket.readGUChar();		
+	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
+	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	newPacket.shootParams = pPacket.readString("");
+	
+	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
+	
+	server->sendPacketToLevel([](const TPlayer* pl) -> bool
+	                          {
+		                          return pl->getVersion() < CLVER_5_07;
+	                          }, oldPacketBuf, pmap, this, false);
+	
+	server->sendPacketToLevel([](const TPlayer* pl) -> bool
+	                          {
+		                          return pl->getVersion() >= CLVER_5_07;
+	                          }, newPacketBuf, pmap, this, false);
+	
 	return true;
 }
 
