@@ -233,6 +233,8 @@ if(V8NPCSERVER)
 			target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 		else()
 			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
+			set(INSTALL_DEST .)
+			install(FILES ${V8_REDIST_LIBS} DESTINATION ${INSTALL_DEST})
 		endif()
 	endif()
 

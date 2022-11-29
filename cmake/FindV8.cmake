@@ -85,7 +85,8 @@ SET(V8_LIBRARY_SEARCH_PATHS
 	/opt/csw/lib
 	/opt/lib
 	/usr/freeware/lib64
-
+	${TOOLCHAIN_PREFIX}/lib
+	${TOOLCHAIN_PREFIX}/usr/lib
 )
 
 FIND_PATH(V8_INCLUDE_DIR v8.h
@@ -117,67 +118,87 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 	if(NOT V8_INCLUDE_DIR)
 		message("Couldn't find v8 include dir.")
 	endif()
-	message("Monolith search failed, looking for nuget package")
 
-	if (NOT V8_LIBRARY AND NOT V8_INCLUDE_DIR AND MSVC)
-		file(DOWNLOAD https://dist.nuget.org/win-x86-commandline/latest/nuget.exe ${CMAKE_BINARY_DIR}/nuget.exe)
-		set(NUGET_COMMAND ${CMAKE_BINARY_DIR}/nuget.exe)
-		include("${CMAKE_SOURCE_DIR}/cmake/nuget/cmake/NuGetTools.cmake")
-		# Call this once before any other nuget_* calls.
-		nuget_initialize()
+	message("Monolith search failed, looking for mingw package")
 
-		# NuGet install icu and flatbuffers packages, and import their CMake export files.
-		nuget_add_dependencies(
-			PACKAGE ${V8_NUGET_NAME} VERSION ${V8_NUGET_VER} CMAKE_PREFIX_PATHS installed/x64-windows
-		)
+	find_library(V8_MAIN_LIBRARY libv8.dll.a
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+			)
+	find_library(V8_BASE_LIBRARY libv8_libbase.dll.a
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+			)
+	find_library(V8_PLATFORM_LIBRARY libv8_libplatform.dll.a
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+			)
+	if(V8_MAIN_LIBRARY OR V8_BASE_LIBRARY OR V8_PLATFORM_LIBRARY)
+		find_file(V8_REDIST_LIB libv8.dll
+				PATHS ${V8_LIBRARY_SEARCH_PATHS}
+				)
+		get_filename_component(V8_REDIST_DIR ${V8_REDIST_LIB} DIRECTORY CACHE)
 	endif()
 
-	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message("Searching for Release libraries as chosen")
-		set(V8_LIBRARY_SEARCH_PATHS
-			${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Release
-			${V8_DIR}/Release
-			${V8_DIR}/lib/Release
-		)
-		FIND_PATH(V8_INCLUDE_DIR v8.h
-			${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/include
-			${V8_DIR}/include
-		)
-		set(V8_REDIST_DIR ${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_REDIST}/lib/Release)
-	else()
-		if(NOT CMAKE_BUILD_TYPE)
-			message("Searching for Debug libraries by default")
-		elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-			message("Searching for Debug library as chosen")
-		else()
-			message("Build type not recognized, searching for Debug libraries")
+	if(NOT V8_MAIN_LIBRARY OR NOT V8_BASE_LIBRARY OR NOT V8_PLATFORM_LIBRARY)
+		message("Mingw package search failed, looking for nuget package")
+
+		if (NOT V8_LIBRARY AND NOT V8_INCLUDE_DIR AND MSVC)
+			file(DOWNLOAD https://dist.nuget.org/win-x86-commandline/latest/nuget.exe ${CMAKE_BINARY_DIR}/nuget.exe)
+			set(NUGET_COMMAND ${CMAKE_BINARY_DIR}/nuget.exe)
+			include("${CMAKE_SOURCE_DIR}/cmake/nuget/cmake/NuGetTools.cmake")
+			# Call this once before any other nuget_* calls.
+			nuget_initialize()
+
+			# NuGet install icu and flatbuffers packages, and import their CMake export files.
+			nuget_add_dependencies(
+				PACKAGE ${V8_NUGET_NAME} VERSION ${V8_NUGET_VER} CMAKE_PREFIX_PATHS installed/x64-windows
+			)
 		endif()
-		set(V8_LIBRARY_SEARCH_PATHS
-			${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Debug
-			${V8_DIR}/Debug
-			${V8_DIR}/lib/Debug
-		)
-		FIND_PATH(V8_INCLUDE_DIR v8.h
-			${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/include
-			${V8_DIR}/include
-		)
-		set(V8_REDIST_DIR ${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_REDIST}/lib/Debug)
-	endif()
 
-	find_library(V8_MAIN_LIBRARY v8.dll.lib
-		PATHS ${V8_LIBRARY_SEARCH_PATHS}
-	)
-	find_library(V8_BASE_LIBRARY v8_libbase.dll.lib
-		PATHS ${V8_LIBRARY_SEARCH_PATHS}
-	)
-	find_library(V8_PLATFORM_LIBRARY v8_libplatform.dll.lib
-		PATHS ${V8_LIBRARY_SEARCH_PATHS}
-	)
+		if(CMAKE_BUILD_TYPE STREQUAL "Release")
+			message("Searching for Release libraries as chosen")
+			set(V8_LIBRARY_SEARCH_PATHS
+				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Release
+				${V8_DIR}/Release
+				${V8_DIR}/lib/Release
+			)
+			FIND_PATH(V8_INCLUDE_DIR v8.h
+				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/include
+				${V8_DIR}/include
+			)
+			set(V8_REDIST_DIR ${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_REDIST}/lib/Release)
+		else()
+			if(NOT CMAKE_BUILD_TYPE)
+				message("Searching for Debug libraries by default")
+			elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+				message("Searching for Debug library as chosen")
+			else()
+				message("Build type not recognized, searching for Debug libraries")
+			endif()
+			set(V8_LIBRARY_SEARCH_PATHS
+				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Debug
+				${V8_DIR}/Debug
+				${V8_DIR}/lib/Debug
+			)
+			FIND_PATH(V8_INCLUDE_DIR v8.h
+				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/include
+				${V8_DIR}/include
+			)
+			set(V8_REDIST_DIR ${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_REDIST}/lib/Debug)
+		endif()
+
+		find_library(V8_MAIN_LIBRARY v8.dll.lib
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+		)
+		find_library(V8_BASE_LIBRARY v8_libbase.dll.lib
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+		)
+		find_library(V8_PLATFORM_LIBRARY v8_libplatform.dll.lib
+			PATHS ${V8_LIBRARY_SEARCH_PATHS}
+		)
+	endif()
 
 	if(NOT V8_MAIN_LIBRARY OR NOT V8_BASE_LIBRARY OR NOT V8_PLATFORM_LIBRARY)
 		message("Couldn't find v8 libraries as nuget package")
 	else()
-		set(V8_LIBRARY "${V8_MAIN_LIBRARY};${V8_BASE_LIBRARY};${V8_PLATFORM_LIBRARY};")
 		file(GLOB V8_REDIST_LIBS "${V8_REDIST_DIR}/*.dll")
 		foreach(V8_REDIST_LIB ${V8_REDIST_LIBS})
 			get_filename_component(V8_REDIST_LIB_FILE "${V8_REDIST_LIB}" NAME)
