@@ -150,9 +150,9 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
 						sh "mkdir -p content"
-						sh "cp -fvr /gserver/* ./content/"
+						sh "cp -fvr /gserver/*.zip /gserver/*.tgz /gserver/*.tar.gz ./content/"
 						dir("content") {
-							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz';
+							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
 					}
