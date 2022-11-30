@@ -186,7 +186,7 @@ node('master') {
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
 				if ("${v.Type}" == "docker") {
-					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.BuildEnv);
+					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.Config.BuildEnv);
 				} else {
 					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
 				}
