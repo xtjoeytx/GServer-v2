@@ -127,30 +127,32 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 
 		def buildenv = "${DOCKERTAG}";
 		def tag = '';
-		def extra_ver = '';
+		def EXTRA_VER = '';
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest${DOCKERTAG}";
 		} else {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
-			extra_ver = "--build-arg VER_EXTRA=-${tag}";
+			EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
-				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${EXTRA_VER} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
 			if (BUILD_NEXT.equals('image')) {
 				stage("Pushing to docker hub registry...") {
 					customImage.push();
-					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Image Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 				}
 			} else if (BUILD_NEXT.equals('artifact')) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
 						dir("/gserver") {
-							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+							sh "ls -la";
+							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz';
+							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
 					}
 				}

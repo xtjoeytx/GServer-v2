@@ -27,6 +27,6 @@ RUN cd /gserver \
 # GServer Run Environment
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
-COPY --from=build-env /gserver/build/*.zip /gserver/
+COPY --from=build-env /gserver/build /gserver
 WORKDIR /gserver
 
