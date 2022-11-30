@@ -149,7 +149,9 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 			} else if (BUILD_NEXT.equals('artifact')) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
-						archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+						dir("/gserver") {
+							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+						}
 					}
 				}
 			} else {
