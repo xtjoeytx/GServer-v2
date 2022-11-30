@@ -138,17 +138,23 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
-				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} --network=host --pull -f ${DOCKERFILE} .");
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
-			stage("Pushing to docker hub registry...") {
-				customImage.push();
-				discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+			if (BUILD_NEXT.equals('image')) {
+				stage("Pushing to docker hub registry...") {
+					customImage.push();
+					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+				}
+			} else if (BUILD_NEXT.equals('artifact')) {
+				stage("Archiving artifacts...") {
+					customImage.inside("") {
+						archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
+					}
+				}
+			} else {
+				// Do nothing
 			}
-		}
-
-		if (!BUILD_NEXT.equals('')) {
-			build "${BUILD_NEXT}/${env.BRANCH_NAME}";
 		}
 	} catch(err) {
 		currentBuild.result = 'FAILURE'
