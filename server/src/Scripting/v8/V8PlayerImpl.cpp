@@ -825,7 +825,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList->size());
 
 	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
-	//	in scripts.
+	//	           in scripts.
 	int idx = 0;
 	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
 		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
@@ -1217,7 +1217,7 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 			std::string classCodeWrap = WrapScript<TPlayer>(classCode.getServerSide());
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
-			// multiple wrappers.
+			//             multiple wrappers.
 			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
 			if (function != nullptr) {
 				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(function);
@@ -1241,6 +1241,9 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// TODO (samich): Consider this deprecated based on the behavior of PLO_TRIGGERACTION.
+//                Since "clientside" is the only action the client responds to, we can
+//                rely on Player_Function_TriggerClient instead.
 void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -1265,6 +1268,29 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 }
 
+// Player Function : player.triggerclient(wep, args) -> onActionClientSide
+void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+        CString trigaction = CString("clientside");
+		for (int i = 1; i < args.Length(); i++)
+			trigaction << "," << *v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked());
+
+		// Unwrap Object
+		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+		playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+	}
+}
+
 void bindClass_Player(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
@@ -1285,7 +1311,6 @@ void bindClass_Player(CScriptEngine *scriptEngine)
     player_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-	// TODO(joey): Implement these functions
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
@@ -1305,6 +1330,7 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "detachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggerclient"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerClient, engine_ref));
 
 	// Properties
     player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "id"), Player_GetInt_Id);
