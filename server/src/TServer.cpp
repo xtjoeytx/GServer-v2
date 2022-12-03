@@ -93,7 +93,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// The players from other servers should be unique lists for each player as they are fetched depending on
 	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 	playerIds.resize(2);
-	npcIds.resize(10001); // Starting npc ids at 10,000 for now on..
+	npcIds.resize(10001); // Starting npc ids at 10,000 from now on...
 
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
@@ -1027,7 +1027,6 @@ void TServer::saveWeapons()
 }
 
 #ifdef V8NPCSERVER
-
 void TServer::saveNpcs()
 {
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
@@ -1083,7 +1082,6 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	std::sort(script_profiles.rbegin(), script_profiles.rend());
 	return script_profiles;
 }
-
 #endif
 
 void TServer::reportScriptException(const ScriptRunError& error)
@@ -1103,7 +1101,6 @@ void TServer::reportScriptException(const std::string& error_message)
 		getScriptLog().out(line + "\n");
 	}
 }
-
 
 /////////////////////////////////////////////////////
 
@@ -1278,7 +1275,6 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 	mScriptEngine.setCallBack("npcserver.playerpm", function);
 	mPmHandlerNpc = npc;
 }
-
 #endif
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
@@ -1599,7 +1595,6 @@ void TServer::sendPacketToAll(CString pPacket, TPlayer *sender) const
 		player->sendPacket(pPacket);
 	}
 }
-
 
 void TServer::sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer) const
 {

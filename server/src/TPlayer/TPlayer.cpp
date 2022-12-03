@@ -2026,6 +2026,8 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	if ( !settings->getBool("defaultweapons", true))
 		return false;
 
+    // TODO: (samich) - is this creating a default weapon for the server if the one of the
+    //                  default weapons wasn't initialized yet? Why would this happen?
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
@@ -2033,14 +2035,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 		server->NC_AddWeapon(weapon);
 	}
 
-	// See if the player already has the weapon.
-	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
-	{
-		weaponList.push_back(weapon->getName());
-		sendPacket(weapon->getWeaponPacket(versionID));
-	}
-
-	return true;
+    return this->addWeapon(weapon);
 }
 
 bool TPlayer::addWeapon(const CString& name)
@@ -2069,9 +2064,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 bool TPlayer::deleteWeapon(LevelItemType defaultWeapon)
 {
 	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
-	this->deleteWeapon(weapon);
-
-	return true;
+	return this->deleteWeapon(weapon);
 }
 
 bool TPlayer::deleteWeapon(const CString& name)

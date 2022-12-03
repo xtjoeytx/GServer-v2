@@ -776,7 +776,6 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 }
 
 #ifdef V8NPCSERVER
-
 void TNPC::testForLinks()
 {
 	// Overworld links
@@ -1725,7 +1724,6 @@ bool TNPC::loadNPC(const CString& fileName)
 
 	return true;
 }
-
 #endif
 
 CString toWeaponName(const CString& code)
