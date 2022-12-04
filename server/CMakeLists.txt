@@ -168,7 +168,34 @@ if(APPLE)
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
 elseif(WIN32)
+	if(MINGW)
+		# Generate version header from the above
+		configure_file(
+				${PROJECT_SOURCE_DIR}/server/include/windresrc.h.in
+				${PROJECT_BINARY_DIR}/windresrc.h
+		)
+		configure_file(
+				${PROJECT_SOURCE_DIR}/my.rc.in
+				${PROJECT_BINARY_DIR}/main.rc
+		)
+		file(COPY
+				${PROJECT_SOURCE_DIR}/gs2emu.ico
+				DESTINATION
+				${PROJECT_BINARY_DIR}/
+				)
+		list(APPEND HEADERS
+				${PROJECT_BINARY_DIR}/windresrc.h
+				${PROJECT_BINARY_DIR}/main.rc
+				)
+		set(CMAKE_RC_COMPILER_INIT windres)
+
+		ENABLE_LANGUAGE(RC)
+		SET(CMAKE_RC_COMPILE_OBJECT
+				"<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
+	endif()
+
 	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+
 	if(MINGW)
 		if(V8NPCSERVER)
 			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
@@ -287,10 +314,6 @@ if (MINGW)
 		message( "Unresolved: ${FILE}")
 	  endforeach()
 	]])
-	add_custom_target(PACKAGE_DEBUG
-			COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose
-			--config CPackConfig.cmake
-			COMMENTS "Build package with debug and verbose output")
 endif()
 
 if(V8NPCSERVER)

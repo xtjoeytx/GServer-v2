@@ -6,6 +6,7 @@ FROM amigadev/crosstools:x86_64-w64-mingw32 AS build-env
 COPY ./ /gserver
 ARG NPCSERVER
 ARG VER_EXTRA
+USER root
 
 RUN cd /gserver \
         && wget https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-v8-9.1.269.39-5-any.pkg.tar.zst -O /gserver/mingw-w64-v8.tar.zst \
@@ -22,11 +23,14 @@ RUN cd /gserver \
         && cd /gserver \
         && cmake -GNinja -S/gserver -B/gserver/build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 		&& cmake --build /gserver/build --target clean \
-		&& cmake --build /gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN)
+		&& cmake --build /gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
+    	&& chmod 777 -R /gserver/build
 
 # GServer Run Environment
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /gserver/build /gserver
+USER root
+RUN chmod 777 -R /gserver
 WORKDIR /gserver
 

@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
-project(GS2Emu VERSION 3.0.7 DESCRIPTION "Graal Online v1.411 to v5.002 compatible server" LANGUAGES C CXX)
+project(GS2Emu VERSION 3.0.7 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
@@ -140,8 +140,8 @@ else()
 endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
-set(CPACK_PACKAGE_VENDOR "Graal Reborn Team")
-set(CPACK_PACKAGE_CONTACT "graal.in")
+set(CPACK_PACKAGE_VENDOR "OpenGraal Team")
+set(CPACK_PACKAGE_CONTACT "opengraal")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}")
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_Y})
@@ -154,6 +154,12 @@ set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
+
+# Generate version header from the above
+configure_file(
+		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+		${PROJECT_BINARY_DIR}/server/include/IConfig.h
+)
 
 if(APPLE)
 	# Set variables for generating the Info.plist file
