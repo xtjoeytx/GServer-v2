@@ -171,14 +171,18 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 			if (PUSH_ARTIFACT) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
-						sh "mkdir -p ./build && cp -fvr /build/* ./build"
-						def files = findFiles(glob: './build/*.zip,./build/*.tar.gz,./build/*.tgz');
-						dir("./build") {
-
+						sh "mkdir -p ./dist && cp -fvr /dist/* ./dist"
+						def files = findFiles(glob: './dist/*.*');
+						dir("./dist") {
 							echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
 							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
+					}
+					def dockerImageRef = docker.image("amigadev/docker-base");
+					dockerImageRef.pull();
+
+					dockerImageRef.inside("") {
 
 						stage("Github Release") {
 							withCredentials([string(credentialsId: 'PREAGONAL_GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
@@ -197,7 +201,7 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 									} catch(err) {
 
 									}
-									sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files[0].name}\" --file ./build/${files[0].name} --replace"
+									sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files[0].name}\" --file ./dist/${files[0].name} --replace"
 								}
 							}
 						}

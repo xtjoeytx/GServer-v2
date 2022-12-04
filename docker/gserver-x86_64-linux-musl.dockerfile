@@ -30,7 +30,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --config Release --target clean \
 	&& cmake --build /tmp/gserver/build --config Release --target package --parallel $(getconf _NPROCESSORS_ONLN) \
-	&& chmod 777 -R /tmp/gserver/build \
+	&& chmod 777 -R /tmp/gserver/dist \
     && chown 1001:1001 -R /tmp/gserver \
     && apk del --purge .gserver-build-dependencies
 
@@ -39,7 +39,7 @@ USER 1001
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /tmp/gserver/bin /gserver
-COPY --from=build-env /tmp/gserver/build /build
+COPY --from=build-env /tmp/gserver/dist /dist
 COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
 WORKDIR /gserver

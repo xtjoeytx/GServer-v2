@@ -27,12 +27,12 @@ RUN cd /tmp/gserver \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --target clean \
 	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
-	&& chmod 777 -R /tmp/gserver/build
+	&& chmod 777 -R /tmp/gserver/dist
 
 # GServer Run Environment
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
-COPY --from=build-env /tmp/gserver/build /build
+COPY --from=build-env /tmp/gserver/dist /dist
 USER 1001
 WORKDIR /gserver
 
