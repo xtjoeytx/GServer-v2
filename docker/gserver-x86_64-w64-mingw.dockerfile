@@ -24,15 +24,15 @@ USER 1001
 COPY --chown=1001:1001 ./ /tmp/gserver
 
 RUN cd /tmp/gserver \
-        && cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
-		&& cmake --build /tmp/gserver/build --target clean \
-		&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
-    	&& chmod 777 -R /tmp/gserver/build
+	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	&& cmake --build /tmp/gserver/build --target clean \
+	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
+	&& chmod 777 -R /tmp/gserver/build
 
 # GServer Run Environment
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
-COPY --from=build-env /tmp/gserver/build /gserver
+COPY --from=build-env /tmp/gserver/build /build
 USER 1001
 WORKDIR /gserver
 

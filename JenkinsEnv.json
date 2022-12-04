@@ -10,7 +10,7 @@
 				"DockerImage": "gserver-v2",
 				"Tag": "",
 				"Dockerfile": "docker/gserver-x86_64-linux-musl.dockerfile",
-				"BuildIfSuccessful": "image",
+				"BuildIfSuccessful": "both",
 				"BuildEnv": "--build-arg NPCSERVER=on"
 			}
 		},
@@ -24,7 +24,7 @@
 				"DockerImage": "gserver-v2",
 				"Tag": "-no-npcserver",
 				"Dockerfile": "docker/gserver-x86_64-linux-musl.dockerfile",
-				"BuildIfSuccessful": "image",
+				"BuildIfSuccessful": "both",
 				"BuildEnv": "--build-arg NPCSERVER=off"
 			}
 		},

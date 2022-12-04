@@ -128,6 +128,14 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 		def buildenv = "${DOCKERTAG}";
 		def tag = '';
 		def EXTRA_VER = '';
+		def PUSH_IMAGE = BUILD_NEXT.equals('image');
+		def PUSH_ARTIFACT = BUILD_NEXT.equals('artifact');
+
+		if (BUILD_NEXT.equals('both')) {
+			PUSH_IMAGE = BUILD_NEXT.equals('both');
+			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
+		}
+
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest${DOCKERTAG}";
 		} else {
@@ -141,16 +149,18 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${EXTRA_VER} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
-			if (BUILD_NEXT.equals('image')) {
+			if (PUSH_IMAGE) {
 				stage("Pushing to docker hub registry...") {
 					customImage.push();
 					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Image Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 				}
-			} else if (BUILD_NEXT.equals('artifact')) {
+			}
+
+			if (PUSH_ARTIFACT) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
-						sh "mkdir -p ./gserver && cp -fvr /gserver/* ./gserver"
-						dir("./gserver") {
+						sh "mkdir -p ./build && cp -fvr /build/* ./build"
+						dir("./build") {
 							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
