@@ -2026,8 +2026,6 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 	if ( !settings->getBool("defaultweapons", true))
 		return false;
 
-    // TODO: (samich) - is this creating a default weapon for the server if the one of the
-    //                  default weapons wasn't initialized yet? Why would this happen?
 	TWeapon *weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
 	if (weapon == 0)
 	{
