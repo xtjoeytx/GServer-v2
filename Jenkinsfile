@@ -149,8 +149,8 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 			} else if (BUILD_NEXT.equals('artifact')) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
-						sh "cp -fvr /gserver /tmp/gserver"
-						dir("/tmp/gserver") {
+						sh "mkdir -p ./gserver/* && cp -fvr /gserver ./gserver"
+						dir("./gserver") {
 							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
