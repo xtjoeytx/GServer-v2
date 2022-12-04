@@ -144,9 +144,21 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
+			def release_name = env.JOB_NAME.replace('%2F','/');
+			def release_type = ("${release_name}").replace('/','-').replace('GServer-v2-','').replace('master','').replace('dev','');
+
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
 				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${EXTRA_VER} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
+			}
+
+			def archive_date = sh (
+				script: 'date +"-%Y%m%d-%H%M"',
+				returnStdout: true
+			).trim();
+
+			if (env.TAG_NAME) {
+				archive_date = '';
 			}
 
 			if (PUSH_IMAGE) {
@@ -160,9 +172,34 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
 						sh "mkdir -p ./build && cp -fvr /build/* ./build"
+						def files = findFiles(glob: './build/*.zip,./build/*.tar.gz,./build/*.tgz');
 						dir("./build") {
+
+							echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
 							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
+						}
+
+						stage("Github Release") {
+							withCredentials([string(credentialsId: 'PREAGONAL_GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
+								if (!env.CHANGE_ID) { // Don't run on PR's
+									def release_type_tag = 'develop';
+									def pre_release = '--pre-release';
+									if (env.TAG_NAME) {
+										pre_release = '';
+										release_type_tag = env.TAG_NAME;
+									} else if (env.BRANCH_NAME.equals('master')) {
+										release_type_tag = 'nightly';
+									}
+
+									try {
+										sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+									} catch(err) {
+
+									}
+									sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files[0].name}\" --file ./build/${files[0].name} --replace"
+								}
+							}
 						}
 					}
 				}
