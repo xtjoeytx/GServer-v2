@@ -825,7 +825,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList->size());
 
 	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
-	//	           in scripts.
+	//		in scripts.
 	int idx = 0;
 	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
 		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());

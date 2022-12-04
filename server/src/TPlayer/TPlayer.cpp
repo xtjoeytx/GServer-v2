@@ -2033,7 +2033,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 		server->NC_AddWeapon(weapon);
 	}
 
-    return this->addWeapon(weapon);
+	return this->addWeapon(weapon);
 }
 
 bool TPlayer::addWeapon(const CString& name)
