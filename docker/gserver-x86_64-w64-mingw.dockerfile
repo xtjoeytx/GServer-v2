@@ -20,7 +20,10 @@ RUN cd /gserver \
         && tar xvf /gserver/mingw-w64-gcc-libs.tar.zst \
         && mkdir -p usr \
         && cp -fvr mingw64/* usr/ \
-        && cd /gserver \
+
+USER 1001
+
+RUN cd /gserver \
         && cmake -GNinja -S/gserver -B/gserver/build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 		&& cmake --build /gserver/build --target clean \
 		&& cmake --build /gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
@@ -30,7 +33,7 @@ RUN cd /gserver \
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /gserver/build /gserver
-USER root
+USER 1001
 RUN chmod 777 -R /gserver
 WORKDIR /gserver
 
