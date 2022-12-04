@@ -172,9 +172,8 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
 						sh "mkdir -p ./dist && cp -fvr /dist/* ./dist"
-						def files = findFiles(glob: './dist/*.*');
+
 						dir("./dist") {
-							echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
 							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
@@ -195,6 +194,9 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 									} else if (env.BRANCH_NAME.equals('master')) {
 										release_type_tag = 'nightly';
 									}
+
+									def files = findFiles(glob: './dist/*');
+									echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
 
 									try {
 										sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
