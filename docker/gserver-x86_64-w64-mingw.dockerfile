@@ -19,7 +19,7 @@ RUN cd /gserver \
         && tar xvf /gserver/mingw-w64-zlib.tar.zst \
         && tar xvf /gserver/mingw-w64-gcc-libs.tar.zst \
         && mkdir -p usr \
-        && cp -fvr mingw64/* usr/ \
+        && cp -fvr mingw64/* usr/
 
 USER 1001
 
