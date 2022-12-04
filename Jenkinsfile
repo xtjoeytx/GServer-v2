@@ -178,7 +178,7 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
 					}
-					def dockerImageRef = docker.image("amigadev/docker-base");
+					def dockerImageRef = docker.image("amigadev/docker-base:latest");
 					dockerImageRef.pull();
 
 					dockerImageRef.inside("") {
@@ -195,6 +195,7 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 										release_type_tag = 'nightly';
 									}
 
+									sh "ls -l ./dist"
 									def files = findFiles(glob: './dist/*');
 									echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
 
