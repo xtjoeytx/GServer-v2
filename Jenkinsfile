@@ -185,25 +185,27 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 
 						stage("Github Release") {
 							withCredentials([string(credentialsId: 'PREAGONAL_GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
-								if (!env.CHANGE_ID) { // Don't run on PR's
-									def release_type_tag = 'develop';
-									def pre_release = '--pre-release';
-									if (env.TAG_NAME) {
-										pre_release = '';
-										release_type_tag = env.TAG_NAME;
-									} else if (env.BRANCH_NAME.equals('master')) {
-										release_type_tag = 'nightly';
+								dir("./dist") {
+									if (!env.CHANGE_ID) { // Don't run on PR's
+										def release_type_tag = 'develop';
+										def pre_release = '--pre-release';
+										if (env.TAG_NAME) {
+											pre_release = '';
+											release_type_tag = env.TAG_NAME;
+										} else if (env.BRANCH_NAME.equals('master')) {
+											release_type_tag = 'nightly';
+										}
+
+										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"'); //findFiles(glob: './dist/*');
+										echo "${files}"
+
+										try {
+											sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+										} catch(err) {
+
+										}
+										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
 									}
-
-									//def files = findFiles(glob: './dist/*');
-									//echo "${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"
-
-									try {
-										sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
-									} catch(err) {
-
-									}
-									sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files[0].name}\" --file ./dist/* --replace"
 								}
 							}
 						}
