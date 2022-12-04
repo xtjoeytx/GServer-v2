@@ -197,6 +197,8 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 										}
 
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"'); //findFiles(glob: './dist/*');
+										files = sh (script: "basename ${files}",returnStdout:true).trim()
+
 										echo "${files}"
 
 										try {

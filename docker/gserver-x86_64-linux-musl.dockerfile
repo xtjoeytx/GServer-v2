@@ -31,6 +31,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& cmake --build /tmp/gserver/build --config Release --target clean \
 	&& cmake --build /tmp/gserver/build --config Release --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& chmod 777 -R /tmp/gserver/dist \
+	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
     && chown 1001:1001 -R /tmp/gserver \
     && apk del --purge .gserver-build-dependencies
 
