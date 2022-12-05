@@ -1265,7 +1265,7 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 }
 
-// Player Function : player.triggerclient(str, wep, args) -> onActionClientSide
+// Player Function : player.triggerclient("gui"/"weapon", wep, args) -> onActionClientSide
 void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -1273,7 +1273,7 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
 
-	if (args[0]->IsString() && args[1]->IsString())
+	if (args[0]->IsString() && (args[0] == "gui" || args[0] == "weapon") && args[1]->IsString())
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
