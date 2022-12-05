@@ -187,7 +187,7 @@ def buildStepDocker(config) {
 										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
 
 										if (env.TAG_NAME) {
-											discordSend description: "${RELEASE_DESCRIPTION}", footer: "", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+											discordSend description: "${env.RELEASE_DESCRIPTION}", footer: "", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
 										}
 									}
 								}
