@@ -180,7 +180,7 @@ def buildStepDocker(config) {
 										echo "${files}"
 
 										try {
-											sh "echo -e '${release_type_description}' | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
+											sh "echo -e "${release_type_description}" | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
 										} catch(err) {
 
 										}
