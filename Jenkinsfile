@@ -63,9 +63,9 @@ def buildStepDocker(config) {
 			PUSH_IMAGE = BUILD_NEXT.equals('both');
 			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
 		}
-
+		env.RELEASE_DESCRIPTION = "";
 		if(env.TAG_NAME) {
-			def RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME}");
+			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME}");
 		}
 
 		if (env.BRANCH_NAME.equals('master')) {
@@ -171,7 +171,7 @@ def buildStepDocker(config) {
 
 										def release_type_description = "${release_type_tag} releases";
 										if (env.TAG_NAME) {
-											release_type_description = "```\n${RELEASE_DESCRIPTION}\n```\n";
+											release_type_description = "```\n${env.RELEASE_DESCRIPTION}\n```\n";
 										}
 
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
