@@ -63,9 +63,11 @@ def buildStepDocker(config) {
 			PUSH_IMAGE = BUILD_NEXT.equals('both');
 			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
 		}
-		env.RELEASE_DESCRIPTION = "";
+
 		if(env.TAG_NAME) {
-			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} > RELEASE_DESCRIPTION.txt");
+			sh(returnStdout: true, script: "echo -e '```' > RELEASE_DESCRIPTION.txt");
+			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
+			sh(returnStdout: true, script: "echo -e '```' >> RELEASE_DESCRIPTION.txt");
 		}
 
 		if (env.BRANCH_NAME.equals('master')) {
@@ -169,9 +171,9 @@ def buildStepDocker(config) {
 											release_type_tag = 'nightly';
 										}
 
-										def release_type_description = "${release_type_tag} releases";
-										if (env.TAG_NAME) {
-											release_type_description = "```\n${env.RELEASE_DESCRIPTION}\n```\n";
+
+										if (!env.TAG_NAME) {
+											sh(returnStdout: true, script: "echo -e '${release_type_tag} releases' > ../RELEASE_DESCRIPTION.txt");
 										}
 
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
@@ -187,7 +189,8 @@ def buildStepDocker(config) {
 										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
 
 										if (env.TAG_NAME) {
-											discordSend description: "${env.RELEASE_DESCRIPTION}", footer: "", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+											def DESC = sh(returnStdout: true, script: 'cat ../RELEASE_DESCRIPTION.txt');
+											discordSend description: "```\n${DESC}\n```", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
 										}
 									}
 								}
