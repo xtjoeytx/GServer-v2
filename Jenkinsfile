@@ -65,9 +65,9 @@ def buildStepDocker(config) {
 		}
 
 		if(env.TAG_NAME) {
-			sh(returnStdout: true, script: "echo -e '```' > RELEASE_DESCRIPTION.txt");
+			sh(returnStdout: true, script: "echo '```' > RELEASE_DESCRIPTION.txt");
 			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
-			sh(returnStdout: true, script: "echo -e '```' >> RELEASE_DESCRIPTION.txt");
+			sh(returnStdout: true, script: "echo '```' >> RELEASE_DESCRIPTION.txt");
 		}
 
 		if (env.BRANCH_NAME.equals('master')) {
@@ -190,7 +190,7 @@ def buildStepDocker(config) {
 
 										if (env.TAG_NAME) {
 											def DESC = sh(returnStdout: true, script: 'cat ../RELEASE_DESCRIPTION.txt');
-											discordSend description: "```\n${DESC}\n```", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+											discordSend description: "${DESC}", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
 										}
 									}
 								}
