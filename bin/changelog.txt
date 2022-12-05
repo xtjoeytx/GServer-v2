@@ -13,8 +13,6 @@
 * Fixed updateboard request causing illegal packet disconnection
 * Fixed so player.platform is correctly set when connecting with a v4+ client
 
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
     v3.0.6
