@@ -112,7 +112,7 @@ def buildStepDocker(config) {
 							notify('Build failed')
 						}
 
-						sh "mkdir -p ./test && cp -fvr /build/Testing ./test/Testing"
+						sh "mkdir -p ./test && cp -fvr /tmp/gserver/build/Testing ./test/Testing"
 						dir("./test") {
 							archiveArtifacts (
 								artifacts: 'Testing/**/*.xml',
