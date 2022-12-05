@@ -170,7 +170,7 @@ def buildStepDocker(config) {
 
 										def release_type_description = "${release_type_tag} releases";
 										if (env.TAG_NAME) {
-											release_type_description = "${RELEASE_DESCRIPTION}";
+											release_type_description = "```\n${RELEASE_DESCRIPTION}\n```\n";
 										}
 
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
