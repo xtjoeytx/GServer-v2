@@ -65,7 +65,7 @@ def buildStepDocker(config) {
 		}
 		env.RELEASE_DESCRIPTION = "";
 		if(env.TAG_NAME) {
-			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME}");
+			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} > RELEASE_DESCRIPTION.txt");
 		}
 
 		if (env.BRANCH_NAME.equals('master')) {
@@ -180,7 +180,7 @@ def buildStepDocker(config) {
 										echo "${files}"
 
 										try {
-											sh "echo -e "${release_type_description}" | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
+											sh "cat ../RELEASE_DESCRIPTION.txt | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
 										} catch(err) {
 
 										}
