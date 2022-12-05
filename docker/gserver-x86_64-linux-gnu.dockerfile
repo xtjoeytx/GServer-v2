@@ -27,7 +27,7 @@ RUN cd /tmp/gserver \
 FROM alpine:3.14
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /tmp/gserver/dist /dist
-COPY --from=build-env /tmp/gserver/build /build
+COPY --from=build-env /tmp/gserver/build /tmp/gserver/build
 RUN apk add --update libstdc++ libatomic cmake
 USER 1001
 WORKDIR /gserver
