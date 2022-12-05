@@ -56,6 +56,7 @@ list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
 
+set(EXE_HEADERS "")
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
@@ -186,7 +187,7 @@ elseif(WIN32)
 				DESTINATION
 				${PROJECT_BINARY_DIR}/
 				)
-		list(APPEND HEADERS
+		list(APPEND EXE_HEADERS
 				${PROJECT_BINARY_DIR}/windresrc.h
 				${PROJECT_BINARY_DIR}/main.rc
 				)
@@ -232,7 +233,7 @@ endif()
 
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
 
-add_executable(${TARGET_NAME_OLD} src/main.cpp)
+add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
 target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
@@ -267,9 +268,10 @@ endif()
 if (MINGW)
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
 	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
-	#target_link_libraries(${TARGET_NAME} mingw_stdthreads)
+	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
 
-	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.exe\")")
+	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
 
 	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 	install(CODE "set(MY_DEPENDENCY_PATHS \"${CMAKE_FIND_DLL_PATH}\")")
@@ -372,5 +374,5 @@ install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
 
 set(INSTALL_DEST .)
 
-install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
+install(TARGETS ${TARGET_NAME_OLD} DESTINATION ${INSTALL_DEST})
 

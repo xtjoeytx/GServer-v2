@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 3.22)
 
-include(FetchContent)
-include(AddTest)
-include(SubdirList)
+if(MAKE_TESTS)
+	include(FetchContent)
+	include(AddTest)
+	include(SubdirList)
 
-FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG        v3.0.1 # or a later release
-)
+	FetchContent_Declare(
+			Catch2
+			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+			GIT_TAG        v3.0.1 # or a later release
+	)
 
-FetchContent_MakeAvailable(Catch2)
+	FetchContent_MakeAvailable(Catch2)
 
-subdir_list(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
+	subdir_list(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
-foreach(subdir ${SUBDIRS})
-	add_test_og(${subdir} ${CMAKE_CURRENT_SOURCE_DIR})
-endforeach()
+	foreach(subdir ${SUBDIRS})
+		add_test_og(${subdir} ${CMAKE_CURRENT_SOURCE_DIR})
+	endforeach()
+endif()

@@ -6,6 +6,8 @@ function(add_test_og TARGET_NAME TARGET_PATH)
 
   add_executable(${TARGET_NAME} ${TESTS})
   target_link_libraries(${TARGET_NAME} PRIVATE ${GSERVER_LIBRARY_NAME} Catch2::Catch2WithMain)
+  target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+  target_link_libraries(${TARGET_NAME} PUBLIC -static-libgcc -static-libstdc++)
 
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 

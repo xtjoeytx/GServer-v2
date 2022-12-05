@@ -164,6 +164,7 @@ configure_file(
 )
 
 if(APPLE)
+	set(MAKE_TESTS OFF)
 	# Set variables for generating the Info.plist file
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
 	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
@@ -175,6 +176,7 @@ if(APPLE)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
+	set(MAKE_TESTS OFF)
 	# Visual C++ Compiler options
 	if(MSVC)
 		# Suppress secure string function warnings
@@ -226,15 +228,14 @@ elseif(WIN32)
 		add_definitions(-D_BSD_SOURCE=1)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
+
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
 	# can use std::min/std::max (see https://support.microsoft.com/kb/143208)
 	add_definitions(-DNOMINMAX)
-
-elseif(AROS)
-elseif(AMIGA)
 else()
+	set(MAKE_TESTS ON)
 	if(STATIC)
 		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()

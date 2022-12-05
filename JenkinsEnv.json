@@ -11,7 +11,8 @@
 				"Tag": "",
 				"Dockerfile": "docker/gserver-x86_64-linux-musl.dockerfile",
 				"BuildIfSuccessful": "image",
-				"BuildEnv": "--build-arg NPCSERVER=on"
+				"BuildEnv": "--build-arg NPCSERVER=on",
+				"RunTests": false
 			}
 		},
 	  	{
@@ -25,7 +26,38 @@
 				"Tag": "-no-npcserver",
 				"Dockerfile": "docker/gserver-x86_64-linux-musl.dockerfile",
 				"BuildIfSuccessful": "image",
-				"BuildEnv": "--build-arg NPCSERVER=off"
+				"BuildEnv": "--build-arg NPCSERVER=off",
+				"RunTests": false
+			}
+		},
+		{
+			"Title": "Linux x86_64",
+			"Description": "",
+			"Type": "docker",
+			"OS": "linux",
+			"Config": {
+			  	"DockerRoot": "xtjoeytx",
+				"DockerImage": "gserver-v2",
+				"Tag": "",
+				"Dockerfile": "docker/gserver-x86_64-linux-gnu.dockerfile",
+				"BuildIfSuccessful": "artifact",
+				"BuildEnv": "--build-arg NPCSERVER=on",
+				"RunTests": true
+			}
+		},
+	  	{
+			"Title": "Linux x86_64 - No npc-server",
+			"Description": "",
+			"Type": "docker",
+			"OS": "linux",
+			"Config": {
+			  	"DockerRoot": "xtjoeytx",
+				"DockerImage": "gserver-v2",
+				"Tag": "-no-npcserver",
+				"Dockerfile": "docker/gserver-x86_64-linux-gnu.dockerfile",
+				"BuildIfSuccessful": "artifact",
+				"BuildEnv": "--build-arg NPCSERVER=off",
+				"RunTests": true
 			}
 		},
 		{
@@ -39,7 +71,8 @@
 				"Tag": "-win64",
 				"Dockerfile": "docker/gserver-x86_64-w64-mingw.dockerfile",
 				"BuildIfSuccessful": "artifact",
-				"BuildEnv": "--build-arg NPCSERVER=on"
+				"BuildEnv": "--build-arg NPCSERVER=on",
+				"RunTests": false
 			}
 		},
 		{
@@ -53,7 +86,8 @@
 				"Tag": "-win64-no-npcserver",
 				"Dockerfile": "docker/gserver-x86_64-w64-mingw.dockerfile",
 				"BuildIfSuccessful": "artifact",
-				"BuildEnv": "--build-arg NPCSERVER=off"
+				"BuildEnv": "--build-arg NPCSERVER=off",
+				"RunTests": false
 			}
 		}
 	]

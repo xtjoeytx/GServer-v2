@@ -39,111 +39,14 @@ def killall_jobs() {
 	echo "Done killing"
 }
 
-def buildStep(dockerImage, os, defines, DOCKERTAG) {
-	def split_job_name = env.JOB_NAME.split(/\/{1}/);
-	def fixed_job_name = split_job_name[1].replace('%2F',' ');
-	def fixed_os = os.replace(' ','-');
-
-	try{
-		stage("Building on \"${dockerImage}\" for \"${os}\"...") {
-			properties([pipelineTriggers([githubPush()])])
-			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
-
-			def pathInContainer
-
-			def dockerImageRef = docker.image("${dockerImage}");
-			dockerImageRef.pull();
-
-			dockerImageRef.inside("") {
-				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
-			}
-			checkout scm;
-
-			def tag = '';
-			def extra_ver = '';
-			if (env.BRANCH_NAME.equals('master')) {
-				tag = "latest${DOCKERTAG}";
-			} else {
-				tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
-				extra_ver = "-${tag}";
-			}
-
-			dockerImageRef.inside("") {
-
-				if (env.CHANGE_ID) {
-					echo 'Trying to build pull request'
-				}
-
-				if (!env.CHANGE_ID) {
-				//	sh "rm -rfv publishing/deploy/*"
-				//	sh "mkdir -p publishing/deploy/gs2emu"
-				}
-
-				if (defines.toLowerCase().contains("v8npcserver=on")) {
-					dir("dependencies") {
-						sh "BUILDARCH=${arch} ./build-v8-linux"
-					}
-				}
-
-				sh "rm -rfv build/*"
-
-				sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
-				sh "cmake --build build/ --config Release -- -j 8"
-				sh "cmake --build build/ --config Release --target package -- -j 8"
-				//sh "cmake --build . --config Release --target package_source -- -j 8"
-
-
-				dir("build") {
-					try{
-						sh "ctest -T test --no-compress-output --output-on-failure"
-					} catch(err) {
-						currentBuild.result = 'FAILURE'
-
-						discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-						notify('Build failed')
-					}
-					archiveArtifacts (
-						artifacts: 'Testing/**/*.xml',
-						fingerprint: true
-					)
-					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
-				}
-
-				stage("Xunit") {
-					// Process the CTest xml output with the xUnit plugin
-					xunit (
-						testTimeMargin: '3000',
-						thresholdMode: 1,
-						thresholds: [
-							skipped(failureThreshold: '0'),
-							failed(failureThreshold: '0')
-						],
-						tools: [CTest(
-							pattern: 'build/Testing/**/*.xml',
-							deleteOutputFiles: true,
-							failIfNotNew: false,
-							skipNoTestFiles: true,
-							stopProcessingIfError: true
-						)]
-					);
-				}
-
-				// Clear the source and build dirs before next run
-				deleteDir();
-
-				discordSend description: "Target: ${os} DockerImage: ${dockerImage} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-			}
-		}
-	} catch(err) {
-		currentBuild.result = 'FAILURE'
-
-		discordSend description: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-		notify('Build failed')
-		throw err
-	}
-}
-
-def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT, BUILDENV) {
+def buildStepDocker(config) {
+	def DOCKER_ROOT = config.DockerRoot;
+	def DOCKERIMAGE	= config.DockerImage;
+	def DOCKERTAG	= config.Tag;
+	def DOCKERFILE	= config.Dockerfile;
+	def BUILD_NEXT	= config.BuildIfSuccessful;
+	def BUILDENV	= config.BuildEnv;
+	def RUN_TESTS	= config.RunTests;
 	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 	def fixed_job_name = split_job_name[1].replace('%2F',' ');
 
@@ -159,6 +62,10 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 		if (BUILD_NEXT.equals('both')) {
 			PUSH_IMAGE = BUILD_NEXT.equals('both');
 			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
+		}
+
+		if(env.TAG_NAME) {
+			def RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME}");
 		}
 
 		if (env.BRANCH_NAME.equals('master')) {
@@ -193,6 +100,46 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				}
 			}
 
+			if (RUN_TESTS) {
+				stage("Run tests...") {
+					customImage.inside("") {
+						sh "mkdir -p ./test && cp -fvr /build/* ./test"
+						dir("./test") {
+							try{
+								sh "ctest -T test --no-compress-output --output-on-failure"
+							} catch(err) {
+								currentBuild.result = 'FAILURE'
+
+								discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} DockerImage: ${DOCKERIMAGE} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+								notify('Build failed')
+							}
+							archiveArtifacts (
+								artifacts: 'Testing/**/*.xml',
+								fingerprint: true
+							)
+							stage("Xunit") {
+								// Process the CTest xml output with the xUnit plugin
+								xunit (
+									testTimeMargin: '3000',
+									thresholdMode: 1,
+									thresholds: [
+										skipped(failureThreshold: '0'),
+										failed(failureThreshold: '0')
+									],
+									tools: [CTest(
+										pattern: 'build/Testing/**/*.xml',
+										deleteOutputFiles: true,
+										failIfNotNew: false,
+										skipNoTestFiles: true,
+										stopProcessingIfError: true
+									)]
+								);
+							}
+						}
+					}
+				}
+			}
+
 			if (PUSH_ARTIFACT) {
 				stage("Archiving artifacts...") {
 					customImage.inside("") {
@@ -221,17 +168,26 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 											release_type_tag = 'nightly';
 										}
 
+										def release_type_description = "${release_type_tag} releases";
+										if (env.TAG_NAME) {
+											release_type_description = "${RELEASE_DESCRIPTION}";
+										}
+
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
 										files = sh (script: "basename ${files}",returnStdout:true).trim()
 
 										echo "${files}"
 
 										try {
-											sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+											sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_description}\" ${pre_release}"
 										} catch(err) {
 
 										}
 										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
+
+										if (env.TAG_NAME) {
+											discordSend description: "${RELEASE_DESCRIPTION}", footer: "", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+										}
 									}
 								}
 							}
@@ -272,9 +228,7 @@ node('master') {
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
 				if ("${v.Type}" == "docker") {
-					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.Config.BuildEnv);
-				} else {
-					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
+					buildStepDocker(v.Config);
 				}
 			}
 		}
