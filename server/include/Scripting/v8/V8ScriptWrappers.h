@@ -10,6 +10,7 @@
 
 const std::regex word_regex(R"((public[\s]+function[\s]+){1}(\w+)[\s]*\()");
 
+//TODO: Move to CPP-file
 inline std::string getPublicFunctions(const std::string_view& code)
 {
 	std::vector<std::string> eventList;

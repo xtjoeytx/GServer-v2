@@ -11,9 +11,9 @@ BEGIN
       VALUE "FileDescription", "${PROJECT_DESCRIPTION}"
       VALUE "FileVersion", "${VER_X}.${VER_Y}${VER_Z}"
       VALUE "InternalName", "${PROJECT_NAME_CLEAN}"
-      VALUE "LegalCopyright", "Copyright © 2005-${VER_YEAR} ${CPACK_PACKAGE_VENDOR}"
+      VALUE "LegalCopyright", "Copyright Â© 2005-${VER_YEAR} ${CPACK_PACKAGE_VENDOR}"
       VALUE "OriginalFilename", "${PROJECT_NAME}.exe"
-      VALUE "ProductName", "${PROJECT_NAME_CLEAN}"
+      VALUE "ProductName", "${PROJECT_NAME}"
       VALUE "ProductVersion", "${VER_X}.${VER_YZ}"
     END
   END

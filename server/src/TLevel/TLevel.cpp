@@ -1142,6 +1142,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		return false;
 	}
 
+	//TODO: Make a super-class to handle all drops?
 	if (LevelItemType::DARTS == pItem)
 	{
 		if (server->getClass("darts") == nullptr)

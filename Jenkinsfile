@@ -196,7 +196,7 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 											release_type_tag = 'nightly';
 										}
 
-										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"'); //findFiles(glob: './dist/*');
+										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
 										files = sh (script: "basename ${files}",returnStdout:true).trim()
 
 										echo "${files}"
