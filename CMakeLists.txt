@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
-project(GS2Emu C CXX)
+project(GS2Emu VERSION 3.0.7 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
@@ -33,6 +33,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
+set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
+
 
 # Second, for multi-config builds (e.g. msvc)
 foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
@@ -54,9 +56,10 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 # Version number in format X.YY.ZZ
-set(VER_X 3)
-set(VER_Y 0)
-set(VER_Z 6)
+string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
+list(GET VERSION_LIST 0 VER_X)
+list(GET VERSION_LIST 1 VER_Y)
+list(GET VERSION_LIST 2 VER_Z)
 set(VER_EXTRA "-beta" CACHE STRING "Extra version")
 
 # Build date Information
@@ -80,8 +83,8 @@ STRING(REGEX REPLACE "(-[0-9]+:[0-9]+)" "" VER_CPACK ${VER_CPACK})
 
 # Generate version header from the above
 configure_file(
-	${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
-	${PROJECT_BINARY_DIR}/server/include/IConfig.h
+		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+		${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
 option(STATIC "Compile as a static runtime." ON)
@@ -123,12 +126,12 @@ if(APPLE)
 	set(CPACK_GENERATOR DragNDrop)
 	set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} ${VER_FULL}")
 	set(
-		CPACK_DMG_DS_STORE_SETUP_SCRIPT
-		${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt
+			CPACK_DMG_DS_STORE_SETUP_SCRIPT
+			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt
 	)
 	set(
-		CPACK_DMG_BACKGROUND_IMAGE
-		${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif
+			CPACK_DMG_BACKGROUND_IMAGE
+			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif
 	)
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP")
@@ -139,13 +142,13 @@ else()
 endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
-set(CPACK_PACKAGE_VENDOR "Graal Reborn Team")
-set(CPACK_PACKAGE_CONTACT "graal.in")
+set(CPACK_PACKAGE_VENDOR "OpenGraal Team")
+set(CPACK_PACKAGE_CONTACT "opengraal")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}")
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_Y})
 set(CPACK_PACKAGE_VERSION_PATCH ${VER_Z}${VER_EXTRA})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Graal Online v1.411 to v5.002 compatible server")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
 set(CPACK_PACKAGE_DESCRIPTION_FILE ${PROJECT_SOURCE_DIR}/README.md)
 set(CPACK_RESOURCE_FILE_README ${PROJECT_SOURCE_DIR}/README.md)
 set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE.md)
@@ -154,11 +157,17 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
+# Generate version header from the above
+configure_file(
+		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+		${PROJECT_BINARY_DIR}/server/include/IConfig.h
+)
+
 if(APPLE)
 	# Set variables for generating the Info.plist file
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
 	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.GraalReborn.GS2Emu")
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.OpenGraal.GS2Emu")
 	set(MACOSX_BUNDLE_NSMAIN_NIB_FILE "Application")
 	set(MACOSX_BUNDLE_ICON_FILE "carton")
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
@@ -190,8 +199,8 @@ elseif(WIN32)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 		set(
-			CMAKE_CXX_FLAGS_RELWITHDEBINFO
-			"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
+				CMAKE_CXX_FLAGS_RELWITHDEBINFO
+				"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
 		)
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
 		cmake_policy(SET CMP0043 NEW)
@@ -227,7 +236,7 @@ elseif(AROS)
 elseif(AMIGA)
 else()
 	if(STATIC)
-	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
+		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)

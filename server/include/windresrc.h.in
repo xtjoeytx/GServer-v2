@@ -1,0 +1,5 @@
+#ifndef GS2EMU_WINDRESRC_H
+#define GS2EMU_WINDRESRC_H
+#define IDR_MAINFRAME                   128
+
+#endif //GS2EMU_WINDRESRC_H
