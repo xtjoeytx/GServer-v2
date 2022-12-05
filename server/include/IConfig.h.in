@@ -1,7 +1,11 @@
 #ifndef ICONFIG_H
 #define ICONFIG_H
+#pragma once
 
 #define GSERVER_VERSION		"${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}"
 #define GSERVER_CREDITS		"${GSERVER_CREDITS}"
+
+static const char __attribute((used)) *ver = "$VER: ${PROJECT_NAME} ${VER_X}.${VER_Y}${VER_Z} (${VER_DAY}.${VER_MONTH}.${VER_YEAR}) ${PROJECT_DESCRIPTION} by ${CPACK_PACKAGE_VENDOR}\0";
+
 
 #endif

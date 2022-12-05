@@ -127,28 +127,95 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 
 		def buildenv = "${DOCKERTAG}";
 		def tag = '';
-		def extra_ver = '';
+		def EXTRA_VER = '';
+		def PUSH_IMAGE = BUILD_NEXT.equals('image');
+		def PUSH_ARTIFACT = BUILD_NEXT.equals('artifact');
+
+		if (BUILD_NEXT.equals('both')) {
+			PUSH_IMAGE = BUILD_NEXT.equals('both');
+			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
+		}
+
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest${DOCKERTAG}";
 		} else {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
-			extra_ver = "--build-arg VER_EXTRA=-${tag}";
+			EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
+			def release_name = env.JOB_NAME.replace('%2F','/');
+			def release_type = ("${release_name}").replace('/','-').replace('GServer-v2-','').replace('master','').replace('dev','');
+
 			def customImage
 			stage("Building ${DOCKERIMAGE}:${tag}...") {
-				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} --network=host --pull -f ${DOCKERFILE} .");
+				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${EXTRA_VER} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
-			stage("Pushing to docker hub registry...") {
-				customImage.push();
-				discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-			}
-		}
+			def archive_date = sh (
+				script: 'date +"-%Y%m%d-%H%M"',
+				returnStdout: true
+			).trim();
 
-		if (!BUILD_NEXT.equals('')) {
-			build "${BUILD_NEXT}/${env.BRANCH_NAME}";
+			if (env.TAG_NAME) {
+				archive_date = '';
+			}
+
+			if (PUSH_IMAGE) {
+				stage("Pushing to docker hub registry...") {
+					customImage.push();
+					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Image Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
+				}
+			}
+
+			if (PUSH_ARTIFACT) {
+				stage("Archiving artifacts...") {
+					customImage.inside("") {
+						sh "mkdir -p ./dist && cp -fvr /dist/* ./dist"
+
+						dir("./dist") {
+							archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz', allowEmptyArchive: true
+							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
+						}
+					}
+					def dockerImageRef = docker.image("amigadev/docker-base:latest");
+					dockerImageRef.pull();
+
+					dockerImageRef.inside("") {
+
+						stage("Github Release") {
+							withCredentials([string(credentialsId: 'PREAGONAL_GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
+								dir("./dist") {
+									if (!env.CHANGE_ID) { // Don't run on PR's
+										def release_type_tag = 'develop';
+										def pre_release = '--pre-release';
+										if (env.TAG_NAME) {
+											pre_release = '';
+											release_type_tag = env.TAG_NAME;
+										} else if (env.BRANCH_NAME.equals('master')) {
+											release_type_tag = 'nightly';
+										}
+
+										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
+										files = sh (script: "basename ${files}",returnStdout:true).trim()
+
+										echo "${files}"
+
+										try {
+											sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+										} catch(err) {
+
+										}
+										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
+									}
+								}
+							}
+						}
+					}
+				}
+			} else {
+				// Do nothing
+			}
 		}
 	} catch(err) {
 		currentBuild.result = 'FAILURE'
@@ -180,7 +247,7 @@ node('master') {
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
 				if ("${v.Type}" == "docker") {
-					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.BuildEnv);
+					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.Config.BuildEnv);
 				} else {
 					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
 				}
