@@ -103,16 +103,15 @@ def buildStepDocker(config) {
 			if (RUN_TESTS) {
 				stage("Run tests...") {
 					customImage.inside("") {
-						dir("/tmp/gserver/build") {
-							try{
-								sh "ctest -T test --no-compress-output --output-on-failure"
-							} catch(err) {
-								currentBuild.result = 'FAILURE'
+						try{
+							sh "cd /tmp/gserver/build && ctest -T test --no-compress-output --output-on-failure"
+						} catch(err) {
+							currentBuild.result = 'FAILURE'
 
-								discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} DockerImage: ${DOCKERIMAGE} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-								notify('Build failed')
-							}
+							discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} DockerImage: ${DOCKERIMAGE} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+							notify('Build failed')
 						}
+
 						sh "mkdir -p ./test && cp -fvr /build/Testing ./test/Testing"
 						dir("./test") {
 							archiveArtifacts (
