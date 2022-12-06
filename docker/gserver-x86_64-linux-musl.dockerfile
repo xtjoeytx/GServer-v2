@@ -40,7 +40,6 @@ USER 1001
 FROM alpine:3.16
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /tmp/gserver/bin /gserver
-COPY --from=build-env /tmp/gserver/dist /dist
 COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
 WORKDIR /gserver
