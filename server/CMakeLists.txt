@@ -56,6 +56,7 @@ list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
 
+set(EXE_HEADERS "")
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
@@ -153,6 +154,9 @@ else()
 	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
+set(TARGET_NAME_OLD ${TARGET_NAME})
+set(TARGET_NAME ${TARGET_NAME}_lib)
+
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
@@ -161,7 +165,7 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
@@ -183,7 +187,7 @@ elseif(WIN32)
 				DESTINATION
 				${PROJECT_BINARY_DIR}/
 				)
-		list(APPEND HEADERS
+		list(APPEND EXE_HEADERS
 				${PROJECT_BINARY_DIR}/windresrc.h
 				${PROJECT_BINARY_DIR}/main.rc
 				)
@@ -194,7 +198,7 @@ elseif(WIN32)
 				"<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
 	endif()
 
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 
 	if(MINGW)
 		if(V8NPCSERVER)
@@ -222,10 +226,15 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 else()
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 endif()
+
+target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
+
+add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
+target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
@@ -259,9 +268,10 @@ endif()
 if (MINGW)
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
 	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
-	#target_link_libraries(${TARGET_NAME} mingw_stdthreads)
+	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
 
-	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.exe\")")
+	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
 
 	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 	install(CODE "set(MY_DEPENDENCY_PATHS \"${CMAKE_FIND_DLL_PATH}\")")
@@ -350,6 +360,10 @@ if(V8NPCSERVER)
 	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 endif()
 
+set(GSERVER_LIBRARY_NAME
+		"${TARGET_NAME}"
+		PARENT_SCOPE)
+
 file(GLOB TEXT
 	"${PROJECT_NAME_LOWER}.wasm"
 )
@@ -360,5 +374,5 @@ install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
 
 set(INSTALL_DEST .)
 
-install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
+install(TARGETS ${TARGET_NAME_OLD} DESTINATION ${INSTALL_DEST})
 
