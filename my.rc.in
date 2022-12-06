@@ -1,0 +1,24 @@
+128 ICON "gs2emu.ico"
+1 VERSIONINFO
+FILEVERSION     ${VER_X},${VER_Y},${VER_Z},0
+PRODUCTVERSION  ${VER_X},${VER_Y},${VER_Z},0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "${CPACK_PACKAGE_VENDOR}"
+      VALUE "FileDescription", "${PROJECT_DESCRIPTION}"
+      VALUE "FileVersion", "${VER_X}.${VER_Y}${VER_Z}"
+      VALUE "InternalName", "${PROJECT_NAME_CLEAN}"
+      VALUE "LegalCopyright", "Copyright © 2005-${VER_YEAR} ${CPACK_PACKAGE_VENDOR}"
+      VALUE "OriginalFilename", "${PROJECT_NAME}.exe"
+      VALUE "ProductName", "${PROJECT_NAME}"
+      VALUE "ProductVersion", "${VER_X}.${VER_YZ}"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END

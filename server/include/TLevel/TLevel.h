@@ -232,6 +232,8 @@ class TLevel
 		void setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object);
 #endif
 
+		void modifyBoardDirect(uint32_t index, short tile);
+
 	private:
 		TLevel(TServer* pServer);
 

@@ -651,8 +651,10 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_SPRITE:
 				sprite = pPacket.readGUChar();
 
+#ifndef V8NPCSERVER
 				// Do collision testing.
 				doTouchTest = true;
+#endif
 			break;
 
 			case PLPROP_STATUS:

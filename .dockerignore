@@ -1,2 +1,4 @@
 dependencies/v8
 build
+cmake-build-debug/
+cmake-build-release/

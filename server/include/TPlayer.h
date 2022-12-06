@@ -175,6 +175,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		bool msgPLI_LEVELWARP(CString& pPacket);
 		bool msgPLI_BOARDMODIFY(CString& pPacket);
+		bool msgPLI_REQUESTUPDATEBOARD(CString& pPacket);
 		bool msgPLI_PLAYERPROPS(CString& pPacket);
 		bool msgPLI_NPCPROPS(CString& pPacket);
 		bool msgPLI_BOMBADD(CString& pPacket);
@@ -212,6 +213,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_TRIGGERACTION(CString& pPacket);
 		bool msgPLI_MAPINFO(CString& pPacket);
 		bool msgPLI_SHOOT(CString& pPacket);
+		bool msgPLI_SHOOT2(CString& pPacket);
 		bool msgPLI_SERVERWARP(CString& pPacket);
 		bool msgPLI_PROCESSLIST(CString& pPacket);
 		bool msgPLI_UNKNOWN46(CString& pPacket);
@@ -315,6 +317,7 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Misc.
 		void dropItemsOnDeath();
+		bool spawnLevelItem(CString& pPacket, bool playerDrop = true);
 		bool removeItem(LevelItemType itemType);
 
 		// Socket Variables
