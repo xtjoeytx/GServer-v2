@@ -235,12 +235,11 @@ node('master') {
 			}
 		}
 	}
+	sh "rm -rf ./*"
+	parallel branches;
 
 	if (env.TAG_NAME) {
 		def DESC = sh(returnStdout: true, script: 'cat RELEASE_DESCRIPTION.txt');
 		discordSend description: "${DESC}", customUsername: "OpenGraal", customAvatarUrl: "https://pbs.twimg.com/profile_images/1895028712/13460_106738052711614_100001262603030_51047_4149060_n_400x400.jpg", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
 	}
-	sh "rm -rf ./*"
-
-	parallel branches;
 }
