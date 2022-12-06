@@ -125,6 +125,7 @@ if(V8NPCSERVER)
 		src/Scripting/v8/V8NPCImpl.cpp
 		src/Scripting/v8/V8PlayerImpl.cpp
 		src/Scripting/v8/V8ScriptEnv.cpp
+		src/Scripting/v8/V8ScriptWrappers.cpp
 		src/Scripting/v8/V8ServerImpl.cpp
 		src/Scripting/v8/V8WeaponImpl.cpp
 	)

@@ -34,17 +34,6 @@ void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 
 				_bytecode.clear(bytecodeWithHeader.length());
 				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-
-				// temp: save bytecode to file
-				//CString bytecodeFile;
-				//bytecodeFile << _server->getServerPath() << "bytecode/classes/";
-				//std::filesystem::create_directories(bytecodeFile.text());
-				//bytecodeFile << "class_" << _className << ".gs2bc";
-
-				//CString bytecodeDump;
-				//bytecodeDump.writeInt(1);
-				//bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-				//bytecodeDump.save(bytecodeFile);
 			}
 		});
 	}

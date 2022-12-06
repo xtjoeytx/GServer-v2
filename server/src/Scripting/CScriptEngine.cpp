@@ -64,7 +64,12 @@ bool CScriptEngine::Initialize()
 
 	// Create a new context (occurs on initial compile)
 	_bootstrapFunction = _env->Compile("bootstrap", bootstrapScript.text());
-	assert(_bootstrapFunction);
+	if (!_bootstrapFunction)
+	{
+		_server->getScriptLog().append("Failed to compile bootstrap script");
+		reportScriptException(_env->getScriptError());
+		return false;
+	}
 
 	// Bind the server into two separate objects
 	_environmentObject = ScriptFactory::WrapObject(_env, "environment", _server);

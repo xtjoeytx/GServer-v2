@@ -603,11 +603,8 @@ int TServer::loadConfigFiles()
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	serverlog.out("[%s]      Folder config: ", name.text());
-	if ( !settings.getBool("nofoldersconfig", false))
-	{
-		serverlog.append("ENABLED\n");
-	} else serverlog.append("disabled\n");
+	serverlog.out("[%s]      Folder config: %s", name.text(), settings.getBool("nofoldersconfig", false) ? "DISABLED" : "ENABLED");
+	
 	serverlog.out("[%s]      Loading file system...\n", name.text());
 	loadFileSystem();
 

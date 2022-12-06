@@ -964,6 +964,34 @@ void TNPC::setTimeout(int newTimeout)
 		server->getScriptEngine()->UnregisterNpcTimer(this);
 }
 
+int getScriptEventFlag(const std::string& str)
+{
+	static const std::unordered_map<std::string, const int> eventValues =
+	{
+		{ "onCreated", NPCEVENTFLAG_CREATED },
+		{ "onTimeout", NPCEVENTFLAG_TIMEOUT },
+		{ "onPlayerChats", NPCEVENTFLAG_PLAYERCHATS },
+		{ "onPlayerEnters", NPCEVENTFLAG_PLAYERENTERS },
+		{ "onPlayerLeaves", NPCEVENTFLAG_PLAYERLEAVES },
+		{ "onPlayerTouchsMe", NPCEVENTFLAG_PLAYERTOUCHSME },
+		{ "onPlayerLogin", NPCEVENTFLAG_PLAYERLOGIN },
+		{ "onPlayerLogout", NPCEVENTFLAG_PLAYERLOGOUT },
+		{ "onNpcWarped", NPCEVENTFLAG_NPCWARPED },
+	};
+
+	auto iter = eventValues.find(str);
+	return iter == eventValues.end() ? 0 : iter->second;
+}
+
+void TNPC::setScriptEvents(const std::set<std::string>& eventList)
+{
+	auto mask = 0u;
+	for (const auto& v : eventList)
+		mask |= getScriptEventFlag(v);
+
+	setScriptEvents(mask);
+}
+
 void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
 {
 	assert(_scriptObject);
