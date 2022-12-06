@@ -179,19 +179,12 @@ def buildStepDocker(config) {
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
 										files = sh (script: "basename ${files}",returnStdout:true).trim()
 
-										echo "${files}"
-
 										try {
 											sh "cat ../RELEASE_DESCRIPTION.txt | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
 										} catch(err) {
 
 										}
 										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
-
-										if (env.TAG_NAME) {
-											def DESC = sh(returnStdout: true, script: 'cat ../RELEASE_DESCRIPTION.txt');
-											discordSend description: "${DESC}", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
-										}
 									}
 								}
 							}
@@ -227,6 +220,11 @@ node('master') {
 
 	def branches = [:]
 	def project = readJSON file: "JenkinsEnv.json";
+	if (env.TAG_NAME) {
+		sh(returnStdout: true, script: "echo '```' > RELEASE_DESCRIPTION.txt");
+		env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
+		sh(returnStdout: true, script: "echo '```' >> RELEASE_DESCRIPTION.txt");
+	}
 
 	project.builds.each { v ->
 		branches["Build ${v.Title}"] = {
@@ -238,6 +236,10 @@ node('master') {
 		}
 	}
 
+	if (env.TAG_NAME) {
+		def DESC = sh(returnStdout: true, script: 'cat RELEASE_DESCRIPTION.txt');
+		discordSend description: "${DESC}", customUsername: "OpenGraal", customAvatarUrl: "https://pbs.twimg.com/profile_images/1895028712/13460_106738052711614_100001262603030_51047_4149060_n_400x400.jpg", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+	}
 	sh "rm -rf ./*"
 
 	parallel branches;
