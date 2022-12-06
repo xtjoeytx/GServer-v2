@@ -159,10 +159,8 @@ void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 	{
 		// Get new value
 		unsigned int newValue = value->Uint32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-		if (newValue > 32) // Unsure how many colors exist, capping at 32 for now
-			newValue = 32;
 
-		levelObject->getTiles()[index] = (short)newValue;
+		levelObject->modifyBoardDirect(index, (short)newValue);
 	}
 
 	// Needed to indicate we handled the request

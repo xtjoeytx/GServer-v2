@@ -99,10 +99,7 @@ inline uint16_t TLevelItem::GetRupeeCount(LevelItemType type)
 
 inline bool TLevelItem::isRupeeType(LevelItemType itemType)
 {
-	return (itemType == LevelItemType::GREENRUPEE ||
-		itemType == LevelItemType::BLUERUPEE ||
-		itemType == LevelItemType::REDRUPEE ||
-		itemType == LevelItemType::GOLDRUPEE);
+	return GetRupeeCount(itemType) > 0;
 }
 
 #endif // TLEVELITEM_H

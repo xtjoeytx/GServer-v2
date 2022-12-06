@@ -56,6 +56,7 @@ list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
 
+set(EXE_HEADERS "")
 set(
 	HEADERS
 	${PROJECT_BINARY_DIR}/server/include/IConfig.h
@@ -153,6 +154,9 @@ else()
 	set(TARGET_NAME ${PROJECT_NAME_LOWER})
 endif()
 
+set(TARGET_NAME_OLD ${TARGET_NAME})
+set(TARGET_NAME ${TARGET_NAME}_lib)
+
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
 endif()
@@ -161,14 +165,46 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
 elseif(WIN32)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	if(MINGW)
+		# Generate version header from the above
+		configure_file(
+				${PROJECT_SOURCE_DIR}/server/include/windresrc.h.in
+				${PROJECT_BINARY_DIR}/windresrc.h
+		)
+		configure_file(
+				${PROJECT_SOURCE_DIR}/my.rc.in
+				${PROJECT_BINARY_DIR}/main.rc
+		)
+		file(COPY
+				${PROJECT_SOURCE_DIR}/gs2emu.ico
+				DESTINATION
+				${PROJECT_BINARY_DIR}/
+				)
+		list(APPEND EXE_HEADERS
+				${PROJECT_BINARY_DIR}/windresrc.h
+				${PROJECT_BINARY_DIR}/main.rc
+				)
+		set(CMAKE_RC_COMPILER_INIT windres)
+
+		ENABLE_LANGUAGE(RC)
+		SET(CMAKE_RC_COMPILE_OBJECT
+				"<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
+	endif()
+
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+
+	if(MINGW)
+		if(V8NPCSERVER)
+			set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "-DV8_COMPRESS_POINTERS -DV8_31BIT_SMIS_ON_64BIT_ARCH")
+		endif()
+	endif()
 	if(MSVC)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
@@ -190,10 +226,15 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 else()
-	add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 endif()
+
+target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
+
+add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
+target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
@@ -224,6 +265,67 @@ if(UPNP)
 	endif()
 endif()
 
+if (MINGW)
+	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
+	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+
+	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
+
+	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
+	install(CODE "set(MY_DEPENDENCY_PATHS \"${CMAKE_FIND_DLL_PATH}\")")
+	install(CODE [[
+        set(CMAKE_GET_RUNTIME_DEPENDENCIES_PLATFORM "windows+pe")
+        set(CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL "objdump")
+        set(CMAKE_GET_RUNTIME_DEPENDENCIES_COMMAND "./objdump_unix2dos.sh")
+
+        write_file("./objdump_unix2dos.sh" "${CMAKE_OBJDUMP} $@ | unix2dos")
+        file(CHMOD "./objdump_unix2dos.sh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+
+	  function(install_library_with_deps LIBRARY)
+	  	  message("Getting dependencies for ${LIBRARY}")
+
+		file(INSTALL
+		  DESTINATION "${CMAKE_INSTALL_PREFIX}/"
+		  TYPE SHARED_LIBRARY
+		  FOLLOW_SYMLINK_CHAIN
+		  FILES "${LIBRARY}"
+		)
+		file(GET_RUNTIME_DEPENDENCIES
+		  LIBRARIES ${LIBRARY}
+		  RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
+		  UNRESOLVED_DEPENDENCIES_VAR UNRESOLVED_DEPS
+		  DIRECTORIES ${MY_DEPENDENCY_PATHS}
+		)
+		foreach(FILE ${RESOLVED_DEPS})
+		  if(NOT IS_SYMLINK ${FILE})
+			install_library_with_deps(${FILE})
+		  else()
+		  	message( "Symlink ${LIBRARY}: ${FILE}")
+		  endif()
+		endforeach()
+		foreach(FILE ${UNRESOLVED_DEPS})
+		  message( "Unresolved from ${LIBRARY}: ${FILE}")
+		endforeach()
+	  endfunction()
+	  message("Getting dependencies for ${MY_EXE}")
+	  file(GET_RUNTIME_DEPENDENCIES
+			EXECUTABLES ${MY_EXE}
+		RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
+		UNRESOLVED_DEPENDENCIES_VAR UNRESOLVED_DEPS
+		    DIRECTORIES ${MY_DEPENDENCY_PATHS}
+
+	  )
+	  foreach(FILE ${RESOLVED_DEPS})
+		install_library_with_deps(${FILE})
+	  endforeach()
+	  foreach(FILE ${UNRESOLVED_DEPS})
+		message( "Unresolved: ${FILE}")
+	  endforeach()
+	]])
+endif()
+
 if(V8NPCSERVER)
 	if(NOT V8_FOUND)
 		add_dependencies(${TARGET_NAME} v8)
@@ -233,6 +335,8 @@ if(V8NPCSERVER)
 			target_link_libraries(${TARGET_NAME} ${V8_LIBRARY})
 		else()
 			target_link_libraries(${TARGET_NAME} ${V8_MAIN_LIBRARY} ${V8_BASE_LIBRARY} ${V8_PLATFORM_LIBRARY})
+			set(INSTALL_DEST .)
+			install(FILES ${V8_REDIST_LIBS} DESTINATION ${INSTALL_DEST})
 		endif()
 	endif()
 
@@ -256,6 +360,10 @@ if(V8NPCSERVER)
 	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 endif()
 
+set(GSERVER_LIBRARY_NAME
+		"${TARGET_NAME}"
+		PARENT_SCOPE)
+
 file(GLOB TEXT
 	"${PROJECT_NAME_LOWER}.wasm"
 )
@@ -266,5 +374,5 @@ install(FILES ${TEXT} DESTINATION ${INSTALL_DEST})
 
 set(INSTALL_DEST .)
 
-install(TARGETS ${TARGET_NAME} DESTINATION ${INSTALL_DEST})
+install(TARGETS ${TARGET_NAME_OLD} DESTINATION ${INSTALL_DEST})
 
