@@ -292,8 +292,8 @@ if(STATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)

@@ -2249,8 +2249,10 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		version = pPacket.readChars(8);
 		versionID = getVersionID(version);
 
-		if (versionID == CLVER_UNKNOWN)
+		if (versionID == CLVER_UNKNOWN) {
+			in_codec.setGen(ENCRYPT_GEN_3);
 			pPacket.setRead(1);
+		}
 	}
 
 	if (versionID == CLVER_UNKNOWN) {
@@ -2268,12 +2270,6 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 		version = pPacket.readChars(8);
 		versionID = getVersionIDByVersion(version);
 	}
-
-	if ( versionID > CLVER_1_392 ) {
-		in_codec.setGen(ENCRYPT_GEN_3);
-		fileQueue.setCodec(ENCRYPT_GEN_3, key);
-	}
-
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
@@ -3776,7 +3772,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
 	int unknown = pPacket.readGInt();        // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-	
+
 	newPacket.pixelx = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixely = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
@@ -3796,20 +3792,20 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
 
@@ -3842,24 +3838,24 @@ bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
 	newPacket.sangle = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.sanglez = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.speed = pPacket.readGUChar();			// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	newPacket.gravity = pPacket.readGUChar();		
+	newPacket.gravity = pPacket.readGUChar();
 	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	return true;
 }
 
