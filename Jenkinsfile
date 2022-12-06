@@ -130,12 +130,13 @@ def buildStepDocker(config) {
 										failed(failureThreshold: '0')
 									],
 									tools: [CTest(
-										pattern: 'build/Testing/**/*.xml',
+										pattern: 'Testing/**/*.xml',
 										deleteOutputFiles: true,
 										failIfNotNew: false,
 										skipNoTestFiles: true,
 										stopProcessingIfError: true
-									)]
+									)],
+									skipPublishingChecks: false
 								);
 							}
 						}
