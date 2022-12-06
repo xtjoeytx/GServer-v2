@@ -74,7 +74,11 @@ def buildStepDocker(config) {
 			tag = "latest${DOCKERTAG}";
 		} else {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
-			EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
+			if (env.TAG_NAME) {
+				EXTRA_VER = "--build-arg VER_EXTRA=${DOCKERTAG}";
+			} else {
+				EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
+			}
 		}
 
 		docker.withRegistry("https://index.docker.io/v1/", "dockergraal") {
