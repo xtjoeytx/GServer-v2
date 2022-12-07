@@ -964,7 +964,7 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	std::vector<TLevel*>* levelList = server->getLevelList();
 
 	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
-	// 	this is still going to break on the first occurence.
+	// 	this is still going to break on the first occurrence.
 
 	// Find Appropriate Level by Name
 	CString levelName = pLevelName.toLower();
