@@ -1,6 +1,6 @@
 #include "GS2ScriptManager.h"
 
-const uint32_t THREADPOOL_WORKERS = 4;
+const uint32_t THREADPOOL_WORKERS = 0;
 
 GS2ScriptManager::GS2ScriptManager()
 	: _compilerThreadPool(THREADPOOL_WORKERS)
