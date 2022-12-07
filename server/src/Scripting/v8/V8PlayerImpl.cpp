@@ -1273,18 +1273,22 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
 
-	if (args[0]->IsString() && (args[0] == "gui" || args[0] == "weapon") && args[1]->IsString())
+	if (args[0]->IsString() && args[1]->IsString())
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-		CString trigaction = CString("clientside");
-		for (int i = 1; i < args.Length(); i++)
-			trigaction << "," << *v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked());
+		CString actionType = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+		if (actionType == "gui" || actionType == "weapon")
+		{
+			CString trigaction = CString("clientside");
+			for (int i = 1; i < args.Length(); i++)
+				trigaction << "," << *v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked());
 
-		// Unwrap Object
-		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+			// Unwrap Object
+			V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 
-		playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+			playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+		}
 	}
 }
 
