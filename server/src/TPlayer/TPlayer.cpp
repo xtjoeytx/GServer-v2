@@ -311,7 +311,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_UNKNOWN),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -2200,7 +2200,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		case PLTYPE_CLIENT:
 			serverlog.append("Client\n");
-			in_codec.setGen(ENCRYPT_GEN_3);
+			in_codec.setGen(ENCRYPT_GEN_2);
 			break;
 		case PLTYPE_RC:
 			serverlog.append("RC\n");
@@ -2235,22 +2235,32 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			break;
 	}
 
-	// Get Iterator-Key
-	// 2.19+ RC and any client should get the key.
-	if (isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
-	{
-		key = (unsigned char)pPacket.readGChar();
-		in_codec.reset(key);
-		if (in_codec.getGen() > ENCRYPT_GEN_3)
-			fileQueue.setCodec(in_codec.getGen(), key);
+	if (type == PLTYPE_CLIENT) {
+		// Read Client-Version for v1.3 clients
+		version = pPacket.readChars(8);
+		versionID = getVersionID(version);
+
+		if (versionID == CLVER_UNKNOWN) {
+			in_codec.setGen(ENCRYPT_GEN_3);
+			pPacket.setRead(1);
+		}
 	}
 
-	// Read Client-Version
-	version = pPacket.readChars(8);
-	if (isClient()) versionID = getVersionID(version);
-	else if (isNC()) versionID = getNCVersionID(version);
-	else if (isRC()) versionID = getRCVersionID(version);
-	else versionID = CLVER_UNKNOWN;
+	if (versionID == CLVER_UNKNOWN) {
+		// Get Iterator-Key
+		// 2.19+ RC and any client should get the key.
+		if ( isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true ) {
+			key = (unsigned char)pPacket.readGChar();
+
+			in_codec.reset(key);
+			if ( in_codec.getGen() > ENCRYPT_GEN_3 )
+				fileQueue.setCodec(in_codec.getGen(), key);
+		}
+
+		// Read Client-Version
+		version = pPacket.readChars(8);
+		versionID = getVersionIDByVersion(version);
+	}
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
@@ -2328,6 +2338,13 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	server->getServerList()->sendLoginPacketForPlayer(this, password, identity);
 	return true;
+}
+
+int TPlayer::getVersionIDByVersion(const CString& versionInput) const {
+	if ( isClient()) return getVersionID(versionInput);
+	else if ( isNC()) return getNCVersionID(versionInput);
+	else if ( isRC()) return getRCVersionID(versionInput);
+	else return CLVER_UNKNOWN;
 }
 
 bool TPlayer::msgPLI_LEVELWARP(CString& pPacket)
@@ -3746,7 +3763,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
 	int unknown = pPacket.readGInt();        // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-	
+
 	newPacket.pixelx = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixely = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
@@ -3766,20 +3783,20 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
 
@@ -3812,24 +3829,24 @@ bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
 	newPacket.sangle = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.sanglez = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.speed = pPacket.readGUChar();			// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	newPacket.gravity = pPacket.readGUChar();		
+	newPacket.gravity = pPacket.readGUChar();
 	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	return true;
 }
 

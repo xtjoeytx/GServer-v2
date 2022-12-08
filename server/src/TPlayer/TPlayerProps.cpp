@@ -123,7 +123,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
 				{
-					if (level != 0 && level->isSingleplayer() == true)
+					if (level != nullptr && level->isSingleplayer())
 						buffer >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
 					else
 						buffer >> (char)levelName.length() << levelName;
@@ -322,7 +322,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	while (pPacket.bytesLeft() > 0)
 	{
 		unsigned char propId = pPacket.readGUChar();
-		
+
 		switch (propId)
 		{
 			case PLPROP_NICKNAME:
@@ -337,7 +337,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						setNick("unknown");
 				}
 				else setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
-				
+
 				if (options & PLSETPROPS_FORWARD)
 					globalBuff >> (char)propId << getProp(propId);
 
@@ -439,7 +439,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 4)
 				{
-					CSettings* settings = server->getSettings(); 
+					CSettings* settings = server->getSettings();
 					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
 					img = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -474,7 +474,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 3)
 				{
-					CSettings* settings = server->getSettings(); 
+					CSettings* settings = server->getSettings();
 					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
 					img = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
@@ -1123,7 +1123,7 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 		for (int i = 0; i < pCount; ++i)
 		{
 			if (i == PLPROP_JOINLEAVELVL) continue;
-			
+
 			if (i == PLPROP_ATTACHNPC && attachNPC != 0)
 			{
 				propPacket >> (char)i;
@@ -1141,6 +1141,6 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 
 	if (isExternal)
 		propPacket >> (char)81 << "!";
-	
+
 	return propPacket;
 }

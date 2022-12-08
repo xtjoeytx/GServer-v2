@@ -365,6 +365,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool _processRemoval;
 		std::unique_ptr<IScriptObject<TPlayer>> _scriptObject;
 #endif
+
+		int getVersionIDByVersion(const CString& versionInput) const;
 };
 
 inline bool TPlayer::isLoggedIn() const
