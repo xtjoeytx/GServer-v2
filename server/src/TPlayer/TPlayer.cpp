@@ -803,7 +803,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	// Send the file now.
 	while (fileData.length() != 0)
 	{
-		int sendSize = clip(32000, 0, fileData.length());
+		int sendSize = _clip(32000, 0, fileData.length());
 		if (isClient() && versionID < CLVER_2_14) sendSize = fileData.length();
 
 		// Older client versions didn't send the modTime.
@@ -879,7 +879,7 @@ void TPlayer::dropItemsOnDeath()
 	if (maxdeathgralats > 0)
 	{
 		drop_gralats = rand() % maxdeathgralats;
-		clip(drop_gralats, mindeathgralats, maxdeathgralats);
+		_clip(drop_gralats, mindeathgralats, maxdeathgralats);
 		if (drop_gralats > gralatc) drop_gralats = gralatc;
 	}
 
@@ -2778,10 +2778,10 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
   		float tLoseDeviation = powf((1.0f/(1.0f/powf(oldStats[1],2)+1/dSpar[1])),0.5f);
 
 		// Cap the rating.
-		tWinRating = clip( tWinRating, 0.0f, 4000.0f );
-		tLoseRating = clip( tLoseRating, 0.0f, 4000.0f );
-		tWinDeviation = clip( tWinDeviation, 50.0f, 350.0f );
-		tLoseDeviation = clip( tLoseDeviation, 50.0f, 350.0f );
+		tWinRating = _clip( tWinRating, 0.0f, 4000.0f );
+		tLoseRating = _clip( tLoseRating, 0.0f, 4000.0f );
+		tWinDeviation = _clip( tWinDeviation, 50.0f, 350.0f );
+		tLoseDeviation = _clip( tLoseDeviation, 50.0f, 350.0f );
 
 		// Update the Ratings.
 		// setProps will cause it to grab the new rating and send it to everybody in the level.
@@ -3755,7 +3755,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
 	int unknown = pPacket.readGInt();        // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-	
+
 	newPacket.pixelx = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixely = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
@@ -3775,20 +3775,20 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
 
@@ -3821,24 +3821,24 @@ bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
 	newPacket.sangle = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.sanglez = pPacket.readGUChar();		// 0-pi = 0-220
 	newPacket.speed = pPacket.readGUChar();			// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	newPacket.gravity = pPacket.readGUChar();		
+	newPacket.gravity = pPacket.readGUChar();
 	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
-	
+
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
 	                          }, oldPacketBuf, pmap, this, false);
-	
+
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
 	                          }, newPacketBuf, pmap, this, false);
-	
+
 	return true;
 }
 

@@ -15,6 +15,7 @@
 #include "TLevelSign.h"
 
 class TServer;
+class IMain;
 class TPlayer;
 class TNPC;
 class TMap;
@@ -29,11 +30,14 @@ class TLevel
 		//! \param pLevelName The name of the level to search for.
 		//! \param server The server the level belongs to.
 		//! \return A pointer to the level found.
-		static TLevel* findLevel(const CString& pLevelName, TServer* server);
+		static TLevel* findLevel(const CString& pLevelName, IMain* server, bool loadAbsolute = false);
+		static TLevel* createLevel(short fillTile, IMain* server);
 
 		//! Re-loads the level.
 		//! \return True if it succeeds in re-loading the level.
 		bool reload();
+
+		bool saveLevel(const std::string& filename);
 
 		//! Returns a clone of the level.
 		TLevel* clone();
@@ -64,7 +68,7 @@ class TLevel
 
 		//! Gets the raw level tile data.
 		//! \return A pointer to all 4096 raw level tiles.
-		short* getTiles()								{ return levelTiles[0]; }
+		short* getTiles(int layer = 0)					{ return levelTiles[layer]; }
 
 		//! Gets the level mod time.
 		//! \return The modified time of the level when it was first loaded from the disk.
@@ -104,7 +108,7 @@ class TLevel
 
 		//! Gets the server this level belongs to.
 		//! \return The server this level belongs to.
-		TServer* getServer() const						{ return server; }
+		IMain* getServer() const						{ return server; }
 
 
 		std::vector<int> getLayers() const				{ return layers; }
@@ -235,7 +239,8 @@ class TLevel
 		void modifyBoardDirect(uint32_t index, short tile);
 
 	private:
-		TLevel(TServer* pServer);
+		TLevel(IMain* pServer);
+		TLevel(short fillTile = 0xFF, IMain* pServer = nullptr);
 
 		// level-loading functions
 		bool loadLevel(const CString& pLevelName);
@@ -244,7 +249,7 @@ class TLevel
 		bool loadZelda(const CString& pLevelName);
 		bool loadNW(const CString& pLevelName);
 
-		TServer* server;
+		IMain* server;
 		time_t modTime;
 		bool levelSpar;
 		bool levelSingleplayer;

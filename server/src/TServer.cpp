@@ -1296,11 +1296,15 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 
 #endif
 
-TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
-{
+TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers) {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript.toString(), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
-	npcList.push_back(newNPC);
+	TNPC *newNPC = new TNPC(pImage, pScript.toString(), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
+
+	return addNPC(newNPC, pLevel, pLevelNPC, sendToPlayers);
+}
+
+TNPC* TServer::addNPC(TNPC* npc, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers) {
+	npcList.push_back(npc);
 
 	// Assign NPC Id
 	bool assignedId = false;
@@ -1308,8 +1312,8 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	{
 		if (npcIds[i] == 0)
 		{
-			npcIds[i] = newNPC;
-			newNPC->setId(i);
+			npcIds[i] = npc;
+			npc->setId(i);
 			assignedId = true;
 			break;
 		}
@@ -1318,8 +1322,8 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	// Assign NPC Id
 	if ( !assignedId )
 	{
-		newNPC->setId(npcIds.size());
-		npcIds.push_back(newNPC);
+		npc->setId(npcIds.size());
+		npcIds.push_back(npc);
 	}
 
 	// Send the NPC's props to everybody in range.
@@ -1332,17 +1336,21 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		sendPacketToLevel(packet, map, pLevel, 0, true);
 	}
 
-	return newNPC;
+	return npc;
 }
 
-bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
-{
+bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel) {
 	assert(npc);
 	assert(npc->getId() < npcIds.size());
 
-	if (npc == nullptr) return false;
-	if (npc->getId() >= npcIds.size()) return false;
+	if ( npc == nullptr ) return false;
+	if ( npc->getId() >= npcIds.size()) return false;
 
+	return deleteNPC(npc->getId(), eraseFromLevel);
+}
+
+bool TServer::deleteNPC(unsigned int id, bool eraseFromLevel) {
+	auto npc = getNPC(id);
 	// Remove the NPC from all the lists.
 	npcIds[npc->getId()] = nullptr;
 
@@ -1750,7 +1758,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap
 {
 	if (!pPlayer->getLevel())
 		return;
-	
+
 	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
 	{
 		TLevel* level = pPlayer->getLevel();

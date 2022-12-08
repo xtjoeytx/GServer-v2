@@ -24,6 +24,32 @@ class TLevelLink
 		inline int getWidth() const;
 		inline int getHeight() const;
 
+		// set private variables
+		inline void setNewLevel(const CString& _newLevel) {
+			newLevel = _newLevel;
+		}
+
+		inline void setNewX(const CString& _newX) {
+			newX = _newX;
+		}
+
+		inline void setNewY(const CString& _newY) {
+			newY = _newY;
+		}
+
+		inline void setX(int posX = 0) {
+			x = posX;
+		}
+
+		inline void setY(int posY = 0) {
+			y = posY;
+		}
+		inline void setWidth(int _width = 0) {
+			width = _width;
+		}
+		inline void setHeight(int _height = 0) {
+			height = _height;
+		}
 	private:
 		CString newLevel, newX, newY;
 		int x, y, width, height;

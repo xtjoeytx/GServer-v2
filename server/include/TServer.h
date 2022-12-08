@@ -18,6 +18,7 @@
 #include "CFileSystem.h"
 #include "CSettings.h"
 #include "CSocket.h"
+#include "IMain.h"
 #include "CTranslationManager.h"
 #include "CWordFilter.h"
 #include "TServerList.h"
@@ -69,7 +70,7 @@ using AnimationManager = ResourceManager<TGameAni, TServer *>;
 using PackageManager = ResourceManager<TUpdatePackage, TServer *>;
 using TriggerDispatcher = CommandDispatcher<std::string, TPlayer *, std::vector<CString>&>;
 
-class TServer : public CSocketStub
+class TServer : public CSocketStub, public IMain
 {
 	public:
 		// Required by CSocketStub.
@@ -134,7 +135,7 @@ class TServer : public CSocketStub
 		CSettings* getSettings()						{ return &settings; }
 		CSettings* getAdminSettings()					{ return &adminsettings; }
 		CSocketManager* getSocketManager()				{ return &sockManager; }
-		CString getServerPath()							{ return serverpath; }
+		CString getServerPath() override				{ return serverpath; }
 		CString* getServerMessage()						{ return &servermessage; }
 		CString* getAllowedVersionString()				{ return &allowedVersionString; }
 		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
@@ -165,8 +166,8 @@ class TServer : public CSocketStub
 
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
-		TLevel* getLevel(const CString& pLevel);
-		TNPC* getNPC(unsigned int id) const;
+		TLevel* getLevel(const CString& pLevel) override;
+		TNPC* getNPC(unsigned int id) const override;
 		TPlayer* getPlayer(unsigned short id) const;
 		TPlayer* getPlayer(unsigned short id, int type) const; // = PLTYPE_ANYCLIENT) const;
 		TPlayer* getPlayer(const CString& account, int type) const;
@@ -181,7 +182,10 @@ class TServer : public CSocketStub
 		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
 		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
+		TNPC* addNPC(TNPC* npc, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
+
+		bool deleteNPC(unsigned int id, bool eraseFromLevel = true) override;
+		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true) override;
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
 		TScriptClass * getClass(const std::string& className) const;
@@ -245,7 +249,7 @@ class TServer : public CSocketStub
 
 	private:
 		GS2ScriptManager gs2ScriptManager;
-		
+
 		template<typename ScriptObjType>
 		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
 

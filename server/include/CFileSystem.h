@@ -5,7 +5,7 @@
 #include <mutex>
 #include "CString.h"
 
-class TServer;
+class IMain;
 class CFileSystem
 {
 #if defined(_WIN32) || defined(_WIN64)
@@ -18,11 +18,11 @@ class CFileSystem
 
 	public:
 		CFileSystem();
-		CFileSystem(TServer* pServer);
+		CFileSystem(IMain* pServer);
 		~CFileSystem();
 		void clear();
 
-		void setServer(TServer* pServer) { server = pServer; }
+		void setServer(IMain* pServer) { server = pServer; }
 
 		void addDir(const CString& dir, const CString& wildcard = "*", bool forceRecursive = false);
 		void removeDir(const CString& dir);
@@ -48,7 +48,7 @@ class CFileSystem
 	private:
 		void loadAllDirectories(const CString& directory, bool recursive = false);
 
-		TServer* server;
+		IMain* server;
 		CString basedir;
 		std::map<CString, CString> fileList;
 		std::vector<CString> dirList;

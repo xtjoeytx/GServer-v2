@@ -11,7 +11,7 @@
 #include <map>
 #include "IDebug.h"
 #include "IUtil.h"
-#include "TServer.h"
+#include "IMain.h"
 #include "CFileSystem.h"
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -27,7 +27,7 @@ CFileSystem::CFileSystem()
 	m_preventChange = new std::recursive_mutex();
 }
 
-CFileSystem::CFileSystem(TServer* pServer)
+CFileSystem::CFileSystem(IMain* pServer)
 : server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include "CString.h"
+#include "IMain.h"
 
 enum class MapType
 {
@@ -35,14 +36,13 @@ struct SMapLevel
 	int mapy;
 };
 
-class TServer;
 
 class TMap
 {
 	public:
 		TMap(MapType pType, bool pGroupMap = false);
 
-        bool load(const CString& filename, TServer* pServer);
+        bool load(const CString& filename, IMain* pServer);
 		void loadMapLevels(TServer* server) const;
 
         bool isLevelOnMap(const std::string& level, int& mx, int& my) const;
@@ -59,8 +59,8 @@ class TMap
 		bool isGroupMap() const					{ return groupMap; }
 
 	private:
-		bool loadBigMap(const CString& pFileName, TServer* pServer);
-		bool loadGMap(const CString& pFileName, TServer* pServer);
+		bool loadBigMap(const CString& pFileName, IMain* pServer);
+		bool loadGMap(const CString& pFileName, IMain* pServer);
 
 		MapType type;
 		time_t modTime;

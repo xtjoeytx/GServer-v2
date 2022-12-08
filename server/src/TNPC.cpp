@@ -39,7 +39,7 @@ std::string minifyClientCode(const CString& src)
 	return minified;
 }
 
-TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type)
+TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, IMain* pServer, TLevel* pLevel, NPCType type)
 	: TNPC(pServer, type)
 {
 	setX(int(pX * 16));
@@ -67,7 +67,7 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 		setScriptCode(std::move(pScript));
 }
 
-TNPC::TNPC(TServer *pServer, NPCType type)
+TNPC::TNPC(IMain *pServer, NPCType type)
 	: server(pServer), npcType(type), blockPositionUpdates(false),
 	x(int(30 * 16)), y(int(30.5 * 16)),
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
@@ -618,7 +618,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 			case NPCPROP_ALIGNMENT:
 				ap = pProps.readGUChar();
-				ap = clip(ap, 0, 100);
+				ap = _clip(ap, 0, 100);
 				break;
 
 			case NPCPROP_IMAGEPART:

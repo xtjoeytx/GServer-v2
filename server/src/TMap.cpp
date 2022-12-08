@@ -17,7 +17,7 @@ TMap::TMap(MapType pType, bool pGroupMap)
 //	load(pFileName, pServer);
 //}
 
-bool TMap::load(const CString& pFileName, TServer* pServer)
+bool TMap::load(const CString& pFileName, IMain* pServer)
 {
 	if (type == MapType::BIGMAP)
 		return loadBigMap(pFileName, pServer);
@@ -49,7 +49,7 @@ const std::string& TMap::getLevelAt(int mx, int my) const
 	return emptyStr;
 }
 
-bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
+bool TMap::loadBigMap(const CString& pFileName, IMain* pServer)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
@@ -120,7 +120,7 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
+bool TMap::loadGMap(const CString& pFileName, IMain* pServer)
 {
 	// Get the appropriate filesystem.
 	CFileSystem* fileSystem = pServer->getFileSystem();
@@ -219,7 +219,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 		{
 			if (curLine.size() != 2)
 				continue;
-			
+
 			mapImage = curLine[1].text();
 		}
 		else if (curLine[0] == "MINIMAPIMG")
@@ -240,7 +240,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 		else if (curLine[0] == "LOADATSTART")
 		{
 			loadFullMap = false;
-			
+
 			++it;
 			while (it != fileData.end())
 			{

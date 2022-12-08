@@ -175,15 +175,15 @@ struct ScriptEventTimer
 
 #endif
 
-class TServer;
+class IMain;
 class TLevel;
 class TPlayer;
 class TScriptClass;
 class TNPC
 {
 	public:
-		TNPC(TServer* pServer, NPCType type);
-		TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type);
+		TNPC(IMain* pServer, NPCType type);
+		TNPC(const CString& pImage, std::string pScript, float pX, float pY, IMain* pServer, TLevel* pLevel, NPCType type);
 		~TNPC();
 
 		void setScriptCode(std::string pScript);
@@ -346,7 +346,7 @@ class TNPC
 		CString imagePart, weaponName;
 		unsigned char saves[10];
 		TLevel* level;
-		TServer* server;
+		IMain* server;
 
 		std::string chatMsg, gani, image;
 		std::string nickName;
@@ -479,7 +479,7 @@ int TNPC::getDarts() const
 inline
 void TNPC::setDarts(int val)
 {
-	setProps(CString() >> (char)NPCPROP_ARROWS >> (char)clip(val, 0, 99), CLVER_2_17, true);
+	setProps(CString() >> (char)NPCPROP_ARROWS >> (char)_clip(val, 0, 99), CLVER_2_17, true);
 }
 
 /////////

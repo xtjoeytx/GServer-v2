@@ -79,25 +79,25 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 			else if (itemType == LevelItemType::BLUERUPEE) rupeeCount += 5;
 			else rupeeCount += 1;
 
-			rupeeCount = clip(rupeeCount, 0, 9999999);
+			rupeeCount = _clip(rupeeCount, 0, 9999999);
 			return CString() >> (char)PLPROP_RUPEESCOUNT >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS:		// bombs
 		{
-			int bombCount = clip(player->getBombCount() + 5, 0, 99);
+			int bombCount = _clip(player->getBombCount() + 5, 0, 99);
 			return CString() >> (char)PLPROP_BOMBSCOUNT >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS:		// darts
 		{
-			int arrowCount = clip(player->getArrowCount() + 5, 0, 99);
+			int arrowCount = _clip(player->getArrowCount() + 5, 0, 99);
 			return CString() >> (char)PLPROP_ARROWSCOUNT >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART:		// heart
 		{
-			float newPower = clip(player->getPower() + 1.0f, 0.0f, player->getMaxPower() * 1.0f);
+			float newPower = _clip(player->getPower() + 1.0f, 0.0f, player->getMaxPower() * 1.0f);
 			return CString() >> (char)PLPROP_CURPOWER >> (char)(newPower * 2.0f);
 		}
 
@@ -156,7 +156,7 @@ CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
 
 		case LevelItemType::FULLHEART:	// fullheart
 		{
-			char heartMax = clip(player->getMaxPower() + 1, 0, 20);		// Hard limit of 20 hearts.
+			char heartMax = _clip(player->getMaxPower() + 1, 0, 20);		// Hard limit of 20 hearts.
 			return CString() >> (char)PLPROP_MAXPOWER >> (char)heartMax >> (char)PLPROP_CURPOWER >> (char)(heartMax * 2);
 		}
 

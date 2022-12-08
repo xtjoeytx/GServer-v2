@@ -20,7 +20,7 @@ const int baddyPower[baddytypes] = {
 };
 
 
-TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer)
+TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, IMain* pServer)
 : level(pLevel), server(pServer), type(pType), id(0),
 startX(pX), startY(pY),
 respawn(true), setImage(false)
@@ -141,12 +141,12 @@ void TLevelBaddy::setProps(CString &pProps)
 
 			case BDPROP_X:
 				x = (float)pProps.readGChar() / 2.0f;
-				x = clip(x, 0.0f, 63.5f);
+				x = _clip(x, 0.0f, 63.5f);
 			break;
 
 			case BDPROP_Y:
 				y = (float)pProps.readGChar() / 2.0f;
-				y = clip(y, 0.0f, 63.5f);
+				y = _clip(y, 0.0f, 63.5f);
 			break;
 
 			case BDPROP_TYPE:
