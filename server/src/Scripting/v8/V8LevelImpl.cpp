@@ -167,6 +167,29 @@ void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 	info.GetReturnValue().Set(value);
 }
 
+// Level Method: level.savelevel(levelname);
+void Level_Function_SaveLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+	// Create level from user input
+	if (args[0]->IsString())
+	{
+		std::string filename = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		if (levelObject != nullptr)
+		{
+			levelObject->saveLevel(filename);
+		}
+	}
+}
+
 // Level Method: level.findareanpcs(x, y, width, height);
 void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -413,6 +436,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 
 	// Method functions
 //	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "clone"), v8::FunctionTemplate::New(isolate, Level_Function_Clone, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelevel"), v8::FunctionTemplate::New(isolate, Level_Function_SaveLevel, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));

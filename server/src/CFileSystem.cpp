@@ -42,7 +42,7 @@ CFileSystem::~CFileSystem()
 void CFileSystem::clear()
 {
 	fileList.clear();
-	dirList.clear();
+	directoryList.clear();
 }
 
 void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
@@ -63,14 +63,14 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 
 	// Add the directory to the directory list.
 	CString ndir = CString() << server->getServerPath() << newDir << wildcard;
-	if (vecSearch<CString>(dirList, ndir) != -1)	// Already exists?  Resync.
+	if ( vecSearch<CString>(directoryList, ndir) != -1)	// Already exists?  Resync.
 		resync();
 	else
 	{
-		dirList.push_back(ndir);
+		directoryList.push_back(ndir);
 
 		// Load up the files in the directory.
-		loadAllDirectories(ndir, (forceRecursive ? true : server->getSettings()->getBool("nofoldersconfig", false)));
+		loadAllDirectories(ndir, forceRecursive || server->getSettings()->getBool("nofoldersconfig", false));
 	}
 }
 
@@ -80,8 +80,8 @@ void CFileSystem::addFile(CString file)
 
 	// Grab the file name and directory.
 	CFileSystem::fixPathSeparators(file);
-	CString filename(file.subString(file.findl(fSep) + 1));
-	CString directory(file.subString(0, file.find(filename)));
+	CString filename(getFilename(file, fSep));
+	CString directory(getPath(file, fSep));
 
 	// Fix directory path separators.
 	if (directory.find(server->getServerPath()) != -1)
@@ -114,35 +114,35 @@ void CFileSystem::resync()
 	fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
-	for (std::vector<CString>::const_iterator i = dirList.begin(); i != dirList.end(); ++i)
-		loadAllDirectories(*i, server->getSettings()->getBool("nofoldersconfig", false));
+	for (const auto & directory : directoryList)
+		loadAllDirectories(directory, server->getSettings()->getBool("nofoldersconfig", false));
 }
 
 CString CFileSystem::find(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	std::map<CString, CString>::const_iterator i = fileList.find(file);
-	if (i == fileList.end()) return CString();
-	return CString(i->second);
+	auto fileIter = fileList.find(file);
+	if ( fileIter == fileList.end()) return {};
+	return {fileIter->second};
 }
 
 CString CFileSystem::findi(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
-		if (i->first.comparei(file)) return CString(i->second);
-	return CString();
+	for (const auto & fileIter : fileList)
+		if (fileIter.first.comparei(file)) return {fileIter.second};
+	return {};
 }
 
 CString CFileSystem::fileExistsAs(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
-		if (i->first.comparei(file)) return CString(i->first);
-	return CString();
+	for (const auto & fileIter : fileList)
+		if (fileIter.first.comparei(file)) return {fileIter.first};
+	return {};
 }
 
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
@@ -182,7 +182,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	CString path = CString() << directory.remove(directory.findl(fSep)) << fSep;
 	CString wildcard = directory.subString(directory.findl(fSep) + 1);
 	DIR *dir;
-	struct stat statx;
+	struct stat statx{};
 	struct dirent *ent;
 
 	// Try to open the directory.
@@ -242,7 +242,7 @@ time_t CFileSystem::getModTime(const CString& file) const
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
 
-	struct stat fileStat;
+	struct stat fileStat{};
 	if (stat(fileName.text(), &fileStat) != -1)
 		return (time_t)fileStat.st_mtime;
 	return 0;
@@ -257,7 +257,7 @@ bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 	if (fileName.length() == 0) return false;
 
 	// Set the times.
-	struct utimbuf ut;
+	struct utimbuf ut{};
 	ut.actime = modTime;
 	ut.modtime = modTime;
 
@@ -273,9 +273,22 @@ int CFileSystem::getFileSize(const CString& file) const
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
 
-	struct stat fileStat;
+	struct stat fileStat{};
 	if (stat(fileName.text(), &fileStat) != -1)
 		return fileStat.st_size;
 	return 0;
+}
+
+CString CFileSystem::getDirByExtension(const std::string &extension) const
+{
+	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+
+	for (const auto& directory : directoryList) {
+		if (getExtension(directory) == extension) {
+			return { getPath(directory) };
+		}
+	}
+
+	return {};
 }
 
