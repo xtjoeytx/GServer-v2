@@ -29,11 +29,14 @@ class TLevel
 		//! \param pLevelName The name of the level to search for.
 		//! \param server The server the level belongs to.
 		//! \return A pointer to the level found.
-		static TLevel* findLevel(const CString& pLevelName, TServer* server);
+		static TLevel* findLevel(const CString& pLevelName, TServer* server, bool loadAbsolute = false);
+		static TLevel* createLevel(TServer* server, short fillTile = 511, const std::string& levelName = "");
 
 		//! Re-loads the level.
 		//! \return True if it succeeds in re-loading the level.
 		bool reload();
+
+		void saveLevel(const std::string& filename);
 
 		//! Returns a clone of the level.
 		TLevel* clone();
@@ -51,7 +54,7 @@ class TLevel
 		CString getSignsPacket(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
-		//! \return The action level name.
+		//! \return The actual level name.
 		CString getActualLevelName() const				{ return actualLevelName; }
 
 		//! Gets the level name.
@@ -64,7 +67,7 @@ class TLevel
 
 		//! Gets the raw level tile data.
 		//! \return A pointer to all 4096 raw level tiles.
-		short* getTiles()								{ return levelTiles[0]; }
+		short* getTiles(int layer = 0)					{ return levelTiles[layer]; }
 
 		//! Gets the level mod time.
 		//! \return The modified time of the level when it was first loaded from the disk.
@@ -236,6 +239,7 @@ class TLevel
 
 	private:
 		TLevel(TServer* pServer);
+		TLevel(short fillTile = 0xFF, TServer* pServer = nullptr);
 
 		// level-loading functions
 		bool loadLevel(const CString& pLevelName);

@@ -37,7 +37,7 @@
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
 	});
-	
+
 	/**
 	 * Event -> onPlayerEnters(npc, player)
 	 */
@@ -49,7 +49,7 @@
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
 	});
-	
+
 	/**
 	 * Event -> onPlayerLeaves(npc, player)
 	 */
@@ -61,7 +61,7 @@
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
 	});
-	
+
 	/**
 	 * Event -> onPlayerTouchsMe(npc, player)
 	 */
@@ -201,11 +201,11 @@
 				}
 			}
 		}
-		
+
 		stringList.push(currentString);
 		return stringList;
 	};
-	
+
 	// Math helper functions
 	(function() {
 		const _intVecX = [0, -1, 0, 1];
@@ -214,7 +214,7 @@
 		env.global.vecx = function(dir) {
 			return _intVecX[dir % 4];
 		};
-		
+
 		env.global.vecy = function(dir) {
 			return _intVecY[dir % 4];
 		};
@@ -274,6 +274,10 @@
 
 	// Server functions
 	(function() {
+		env.global.createlevel = function(...args) {
+			return server.createlevel(...args);
+		};
+
 		env.global.findlevel = function(...args) {
 			return server.findlevel(...args);
 		};
