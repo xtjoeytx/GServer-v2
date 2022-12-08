@@ -17,5 +17,5 @@ RUN \
         && tar xvf /tmp/mingw-w64-zlib.tar.zst \
         && tar xvf /tmp/mingw-w64-gcc-libs.tar.zst \
         && mv -fv mingw64 v8 \
-    	&& rm -rf *.zs \
+    	&& rm -rf *.zst \
     	&& apk del --purge .v8-build-dependencies
