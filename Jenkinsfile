@@ -39,86 +39,14 @@ def killall_jobs() {
 	echo "Done killing"
 }
 
-def buildStep(dockerImage, os, defines, DOCKERTAG) {
-	def split_job_name = env.JOB_NAME.split(/\/{1}/);
-	def fixed_job_name = split_job_name[1].replace('%2F',' ');
-	def fixed_os = os.replace(' ','-');
-
-	try{
-		stage("Building on \"${dockerImage}\" for \"${os}\"...") {
-			properties([pipelineTriggers([githubPush()])])
-			def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/'
-
-			def pathInContainer
-
-			def dockerImageRef = docker.image("${dockerImage}");
-			dockerImageRef.pull();
-
-			dockerImageRef.inside("") {
-				//pathInContainer = steps.sh(script: 'echo $PATH', returnStdout: true).trim()
-			}
-			checkout scm;
-
-			def tag = '';
-			def extra_ver = '';
-			if (env.BRANCH_NAME.equals('master')) {
-				tag = "latest${DOCKERTAG}";
-			} else {
-				tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
-				extra_ver = "-${tag}";
-			}
-
-			dockerImageRef.inside("") {
-
-				if (env.CHANGE_ID) {
-					echo 'Trying to build pull request'
-				}
-
-				if (!env.CHANGE_ID) {
-				//	sh "rm -rfv publishing/deploy/*"
-				//	sh "mkdir -p publishing/deploy/gs2emu"
-				}
-
-				dir("dependencies") {
-				//	sh "BUILDARCH=${arch} ./build-v8-linux"
-				}
-
-				if ("${os}" == "windows") {
-
-				} else {
-					sh "rm -rfv build/*"
-				}
-
-				if ("${os}" == "windows") {
-					bat "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
-					bat "cmake --build build/ --config Release --target package -- -j 8"
-				} else {
-					sh "cmake -S. -Bbuild/ ${defines} -DCMAKE_BUILD_TYPE=Release -DVER_EXTRA=\"${extra_ver}\" -DCMAKE_CXX_FLAGS_RELEASE=\"-O3 -ffast-math\" .."
-					sh "cmake --build build/ --config Release --target package -- -j 8"
-					//sh "cmake --build . --config Release --target package_source -- -j 8"
-				}
-
-				dir("build") {
-					archiveArtifacts artifacts: '*.zip,*.tar.gz,*.tgz'
-				}
-
-				if ("${os}" == "windows") {
-					bat "rmdir /s /q build"
-				}
-
-				discordSend description: "Target: ${os} DockerImage: ${dockerImage} successful!", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-			}
-		}
-	} catch(err) {
-		currentBuild.result = 'FAILURE'
-
-		discordSend description: "Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER} Target: ${os} DockerImage: ${dockerImage} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-		notify('Build failed')
-		throw err
-	}
-}
-
-def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT, BUILDENV) {
+def buildStepDocker(config) {
+	def DOCKER_ROOT = config.DockerRoot;
+	def DOCKERIMAGE	= config.DockerImage;
+	def DOCKERTAG	= config.Tag;
+	def DOCKERFILE	= config.Dockerfile;
+	def BUILD_NEXT	= config.BuildIfSuccessful;
+	def BUILDENV	= config.BuildEnv;
+	def RUN_TESTS	= config.RunTests;
 	def split_job_name = env.JOB_NAME.split(/\/{1}/);
 	def fixed_job_name = split_job_name[1].replace('%2F',' ');
 
@@ -136,10 +64,21 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
 		}
 
+		if(env.TAG_NAME) {
+			sh(returnStdout: true, script: "echo '```' > RELEASE_DESCRIPTION.txt");
+			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
+			sh(returnStdout: true, script: "echo '```' >> RELEASE_DESCRIPTION.txt");
+		}
+
 		if (env.BRANCH_NAME.equals('master')) {
 			tag = "latest${DOCKERTAG}";
 		} else {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
+		}
+
+		if (env.TAG_NAME || env.BRANCH_NAME.equals('master')) {
+			EXTRA_VER = "--build-arg VER_EXTRA=${DOCKERTAG}";
+		} else {
 			EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
 		}
 
@@ -165,6 +104,48 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 				stage("Pushing to docker hub registry...") {
 					customImage.push();
 					discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Image Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
+				}
+			}
+
+			if (RUN_TESTS) {
+				stage("Run tests...") {
+					customImage.inside("") {
+						try{
+							sh "cd /tmp/gserver/build && ctest -T test --no-compress-output --output-on-failure"
+						} catch(err) {
+							currentBuild.result = 'FAILURE'
+
+							discordSend description: "Testing Failed: ${fixed_job_name} #${env.BUILD_NUMBER} DockerImage: ${DOCKERIMAGE} (<${env.BUILD_URL}|Open>)", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
+							notify('Build failed')
+						}
+
+						sh "mkdir -p ./test && cp -fvr /tmp/gserver/build/Testing ./test/Testing"
+						dir("./test") {
+							archiveArtifacts (
+								artifacts: 'Testing/**/*.xml',
+								fingerprint: true
+							)
+							stage("Xunit") {
+								// Process the CTest xml output with the xUnit plugin
+								xunit (
+									testTimeMargin: '3000',
+									thresholdMode: 1,
+									thresholds: [
+										skipped(failureThreshold: '0'),
+										failed(failureThreshold: '0')
+									],
+									tools: [CTest(
+										pattern: 'Testing/**/*.xml',
+										deleteOutputFiles: true,
+										failIfNotNew: false,
+										skipNoTestFiles: true,
+										stopProcessingIfError: true
+									)],
+									skipPublishingChecks: false
+								);
+							}
+						}
+					}
 				}
 			}
 
@@ -196,13 +177,16 @@ def buildStepDocker(DOCKER_ROOT, DOCKERIMAGE, DOCKERTAG, DOCKERFILE, BUILD_NEXT,
 											release_type_tag = 'nightly';
 										}
 
+
+										if (!env.TAG_NAME) {
+											sh(returnStdout: true, script: "echo -e '${release_type_tag} releases' > ../RELEASE_DESCRIPTION.txt");
+										}
+
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
 										files = sh (script: "basename ${files}",returnStdout:true).trim()
 
-										echo "${files}"
-
 										try {
-											sh "github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" --description \"${release_type_tag} releases\" ${pre_release}"
+											sh "cat ../RELEASE_DESCRIPTION.txt | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
 										} catch(err) {
 
 										}
@@ -242,20 +226,27 @@ node('master') {
 
 	def branches = [:]
 	def project = readJSON file: "JenkinsEnv.json";
+	if (env.TAG_NAME) {
+		sh(returnStdout: true, script: "echo '```' > RELEASE_DESCRIPTION.txt");
+		env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
+		sh(returnStdout: true, script: "echo '```' >> RELEASE_DESCRIPTION.txt");
+	}
 
 	project.builds.each { v ->
 		branches["Build ${v.Title}"] = {
 			node(v.OS) {
 				if ("${v.Type}" == "docker") {
-					buildStepDocker(v.Config.DockerRoot, v.Config.DockerImage, v.Config.Tag, v.Config.Dockerfile, v.Config.BuildIfSuccessful, v.Config.BuildEnv);
-				} else {
-					buildStep(v.Config.DockerImage, v.OS, v.Config.Flags, v.Config.Tag)
+					buildStepDocker(v.Config);
 				}
 			}
 		}
 	}
 
-	sh "rm -rf ./*"
-
 	parallel branches;
+
+	if (env.TAG_NAME) {
+		def DESC = sh(returnStdout: true, script: 'cat RELEASE_DESCRIPTION.txt');
+		discordSend description: "${DESC}", customUsername: "OpenGraal", customAvatarUrl: "https://pbs.twimg.com/profile_images/1895028712/13460_106738052711614_100001262603030_51047_4149060_n_400x400.jpg", footer: "OpenGraal Team", link: "https://github.com/xtjoeytx/GServer-v2/releases/tag/${env.TAG_NAME}", result: "SUCCESS", title: "GS2Emu v${env.TAG_NAME}", webhookURL: env.GS2EMU_RELEASE_WEBHOOK;
+	}
+	sh "rm -rf ./*"
 }

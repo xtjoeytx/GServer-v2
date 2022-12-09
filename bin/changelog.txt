@@ -1,5 +1,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.8
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Added 'player.triggerclient'
++ Added 'createlevel(filltile, levelname)'
++ Added 'level.savelevel(filename)'
+* Fixed support for v1.3x clients
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.7
 
   * bug fix, + new feature, o other

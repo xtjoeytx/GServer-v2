@@ -375,6 +375,10 @@ const INTERNAL_VAR = "__internal";
 
 	// Server functions
 	(function() {
+		env.global.createlevel = function(...args) {
+			return server.createlevel(...args);
+		};
+
 		env.global.findlevel = function(...args) {
 			return server.findlevel(...args);
 		};

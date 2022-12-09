@@ -93,7 +93,7 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	// Shutdown v8
 	if (shutDown && V8ScriptEnv::s_count == 0)
 	{
-		// After this is run, you can no not reinitialize v8!
+		// After this is run, you can not reinitialize v8!
 		v8::V8::Dispose();
 		v8::V8::ShutdownPlatform();
 		_v8_initialized = false;

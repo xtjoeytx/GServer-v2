@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
-project(GS2Emu VERSION 3.0.7 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
+project(GS2Emu VERSION 3.0.9 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
@@ -164,6 +164,7 @@ configure_file(
 )
 
 if(APPLE)
+	set(MAKE_TESTS OFF)
 	# Set variables for generating the Info.plist file
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
 	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
@@ -175,6 +176,7 @@ if(APPLE)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
+	set(MAKE_TESTS OFF)
 	# Visual C++ Compiler options
 	if(MSVC)
 		# Suppress secure string function warnings
@@ -226,15 +228,14 @@ elseif(WIN32)
 		add_definitions(-D_BSD_SOURCE=1)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
+
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
 	# can use std::min/std::max (see https://support.microsoft.com/kb/143208)
 	add_definitions(-DNOMINMAX)
-
-elseif(AROS)
-elseif(AMIGA)
 else()
+	set(MAKE_TESTS ON)
 	if(STATIC)
 		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
@@ -291,9 +292,13 @@ if(STATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
+
+enable_testing()
+add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
