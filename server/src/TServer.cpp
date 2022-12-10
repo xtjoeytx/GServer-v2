@@ -1955,9 +1955,25 @@ void TServer::compileGS2Script(TWeapon *scriptObject, GS2ScriptManager::user_cal
 
 void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
 {
-	// Report the script exception
+	std::string errorMsg;
 	for (auto& err : errors)
-		reportScriptException(fmt::format("Script compiler output for {}:\nerror: {}", origin, err.msg()));
+	{
+		switch (err.level())
+		{
+			case ErrorLevel::E_INFO:
+				errorMsg += fmt::format("info: {}\n", err.msg());
+				break;
+			case ErrorLevel::E_WARNING:
+				errorMsg += fmt::format("warning: {}\n", err.msg());
+				break;
+			default:
+				errorMsg += fmt::format("error: {}\n", err.msg());
+				break;
+		}
+	}
+
+	if (!errorMsg.empty())
+		reportScriptException(fmt::format("Script compiler output for {}:\n{}", origin, errorMsg));
 }
 
 /*
