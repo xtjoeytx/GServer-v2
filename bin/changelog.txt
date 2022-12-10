@@ -1,5 +1,15 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.9
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Update gs2compiler - add support for obj.insert(idx, val)
++ Update gs2compiler - add support for obj.remove(val)
++ Update gs2compiler - add support for obj.delete(idx)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.8
 
   * bug fix, + new feature, o other
