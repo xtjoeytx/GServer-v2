@@ -1025,8 +1025,9 @@ bool TNPC::runScriptTimer()
 
 NPCEventResponse TNPC::runScriptEvents()
 {
-	// Returns true if we still have actions to run
-	bool hasActions = _scriptExecutionContext.runExecution();
+	bool hasActions = false;
+	if (!npcDeleteRequested)
+		hasActions = _scriptExecutionContext.runExecution(); // Returns true if we still have actions to run
 
 	// Send properties modified by scripts
 	if (!propModified.empty())

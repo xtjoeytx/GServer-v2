@@ -277,7 +277,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 
 	// We always want to create an object for the weapon
 	wrapScriptObject(weapon);
-	
+
 	auto weaponScript = weapon->getServerScript();
 	if (!weaponScript.empty())
 	{
@@ -299,7 +299,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon *weapon)
 			bool result = args->Invoke(compiledScript, true);
 			if (!result)
 				reportScriptException(_env->getScriptError());
-			
+
 			delete args;
 		});
 	}
@@ -340,7 +340,7 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 	if (!_updateNpcs.empty() || !_updateWeapons.empty())
 	{
 		_env->CallFunctionInScope([&]() -> void {
-			std::vector<TNPC*> deleteNpcs;
+			std::map<int,TNPC*> deleteNpcs;
 
 			// Iterate over npcs
 			for (auto it = _updateNpcs.begin(); it != _updateNpcs.end(); )
@@ -355,7 +355,7 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 				}
 
 				if (response == NPCEventResponse::Delete)
-					deleteNpcs.push_back(npc);
+					deleteNpcs.emplace(npc->getId(), npc);
 
 				it = _updateNpcs.erase(it);
 			}
@@ -367,7 +367,7 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 
 			// Delete any npcs
 			for (auto n : deleteNpcs)
-				_server->deleteNPC(n);
+				_server->deleteNPC(n.second);
 		});
 	}
 
