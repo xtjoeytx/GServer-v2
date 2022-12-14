@@ -276,6 +276,8 @@ class TNPC
 		}
 
 #ifdef V8NPCSERVER
+		bool getIsNpcDeleteRequested() const	{ return npcDeleteRequested; }
+
 		bool joinedClass(const std::string& name) {
 			auto it = classMap.find(name); // std::find(classMap.begin(), classMap.end(), name);
 			return (it != classMap.end());
