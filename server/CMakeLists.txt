@@ -360,7 +360,7 @@ if(V8NPCSERVER)
 	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
 endif()
 
-set(GSERVER_LIBRARY_NAME
+set(APP_LIBRARY_NAME
 		"${TARGET_NAME}"
 		PARENT_SCOPE)
 

@@ -206,7 +206,7 @@ bool TServerList::connectServer()
 	CString name(settings->getStr("name"));
 	CString desc(settings->getStr("description"));
 	CString language(settings->getStr("language", "English"));
-	CString version(GSERVER_VERSION);
+	CString version(APP_VERSION);
 	CString url(settings->getStr("url", "http://www.graal.in/"));
 	CString ip(settings->getStr("serverip", "AUTO"));
 	CString port(settings->getStr("serverport", "14900"));
@@ -522,8 +522,8 @@ void TServerList::msgSVI_FILEDATA(CString& pPacket)
 
 void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] :: You are running an old version of the Graal Reborn gserver.\n"
-		":: An updated version is available online.\n", _server->getName().text());
+	_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
+		":: An updated version is available online.\n", APP_VENDOR, APP_NAME, _server->getName().text());
 }
 
 void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)

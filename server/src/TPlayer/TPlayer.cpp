@@ -6,6 +6,7 @@
 
 #include "utilities/stringutils.h"
 #include "TPlayer.h"
+#include "IConfig.h"
 #include "IEnums.h"
 #include "IUtil.h"
 #include "TServer.h"
@@ -1649,7 +1650,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << pmap->getMapName());
 
 	// Tell the client if there are any ghost players in the level.
-	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
+	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	if ( !fromAdjacent || pmap != 0)
@@ -1784,10 +1785,6 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		sendPacket(CString() << pLevel->getHorsePacket());
 		sendPacket(CString() << pLevel->getBaddyPacket(versionID));
 	}
-
-	// Tell the client if there are any ghost players in the level.
-	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
-	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	if (fromAdjacent == false)
 	{
@@ -2230,7 +2227,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			break;
 		default:
 			serverlog.append("Unknown (%d)\n", type);
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the Graal Reborn staff.  Type: " << CString((int)type) << ".");
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)type) << ".");
 			return false;
 			break;
 	}
