@@ -1,9 +1,10 @@
 #include "IDebug.h"
+#include <csignal>
 #include <thread>
 #include <atomic>
 #include <functional>
-#include <signal.h>
-#include <stdlib.h>
+
+#include <cstdlib>
 #include <map>
 
 #include "main.h"
@@ -26,6 +27,54 @@
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
 
+// Home path of the gserver.
+CString homePath;
+static void getBasePath();
+std::string getBaseHomePath()
+{
+	return homePath.text();
+}
+
+void getBasePath()
+{
+#if defined(_WIN32) || defined(_WIN64)
+	// Get the path.
+	char path[ MAX_PATH ];
+	GetCurrentDirectoryA(MAX_PATH,path);
+
+	// Find the program exe and remove it from the path.
+	// Assign the path to homepath.
+	homePath = path;
+	homePath += "\\";
+	int pos = homePath.findl('\\');
+	if (pos == -1) homePath.clear();
+	else if (pos != (homePath.length() - 1))
+		homePath.removeI(++pos, homePath.length());
+#elif __APPLE__
+	char path[255];
+	if (!getcwd(path, sizeof(path)))
+		printf("Error getting CWD\n");
+
+	homePath = path;
+	if (homePath[homepath.length() - 1] != '/')
+		homePath << '/';
+#else
+	// Get the path to the program.
+	char path[260];
+	memset((void*)path, 0, 260);
+	readlink("/proc/self/exe", path, sizeof(path));
+
+	// Assign the path to homepath.
+	char* end = strrchr(path, '/');
+	if (end != 0)
+	{
+		end++;
+		if (end != 0) *end = '\0';
+		homePath = path;
+	}
+#endif
+}
+
 std::map<CString, TServer*> serverList;
 std::map<CString, std::thread*> serverThreads;
 
@@ -37,10 +86,6 @@ CString overrideLocalIp = nullptr;
 CString overrideServerInterface = nullptr;
 CString overrideName = nullptr;
 CString overrideStaff = nullptr;
-
-// Home path of the gserver.
-CString homepath;
-static void getBasePath();
 
 std::atomic_bool shutdownProgram{ false };
 
@@ -70,14 +115,14 @@ int main(int argc, char* argv[])
 		getBasePath();
 
 		// Program announcements.
-		serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-		serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
+		serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+		serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
 
 		// Load Server Settings
 		if (overrideServer.isEmpty())
 		{
 			serverlog.out(":: Loading servers.txt... ");
-			CSettings serversettings(CString(homepath) << "servers.txt");
+			CSettings serversettings(CString(homePath) << "servers.txt");
 			if (!serversettings.isOpened())
 			{
 				serverlog.append("FAILED!\n");
@@ -206,6 +251,13 @@ int main(int argc, char* argv[])
 	Extra-Cool Functions :D
 */
 
+void shutdownServer(int signal)
+{
+	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
+
+	shutdownProgram = true;
+}
+
 bool parseArgs(int argc, char* argv[])
 {
 	std::vector<CString> args;
@@ -326,8 +378,8 @@ bool parseArgs(int argc, char* argv[])
 
 void printHelp(const char* pname)
 {
-	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-	serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
+	serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+	serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
 	serverlog.out("USAGE: %s [options]\n\n", pname);
 	serverlog.out("Commands:\n\n");
 	serverlog.out(" -h, --help\t\tPrints out this help text.\n");
@@ -340,46 +392,3 @@ void printHelp(const char* pname)
 	serverlog.out("\n");
 }
 
-const CString getHomePath()
-{
-	return homepath;
-}
-
-void shutdownServer(int sig)
-{
-	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
-
-	shutdownProgram = true;
-}
-
-void getBasePath()
-{
-	#if defined(_WIN32) || defined(_WIN64)
-	// Get the path.
-	char path[MAX_PATH];
-	GetCurrentDirectoryA(MAX_PATH,path);
-
-	// Find the program exe and remove it from the path.
-	// Assign the path to homepath.
-	homepath = path;
-	homepath += "\\";
-	int pos = homepath.findl('\\');
-	if (pos == -1) homepath.clear();
-	else if (pos != (homepath.length() - 1))
-		homepath.removeI(++pos, homepath.length());
-#else
-	// Get the path to the program.
-	char path[260];
-	memset((void*)path, 0, 260);
-	readlink("/proc/self/exe", path, sizeof(path));
-
-	// Assign the path to homepath.
-	char* end = strrchr(path, '/');
-	if (end != 0)
-	{
-		end++;
-		if (end != 0) *end = '\0';
-		homepath = path;
-	}
-#endif
-}

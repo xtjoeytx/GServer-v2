@@ -74,7 +74,8 @@ set(VER_EXTRA "${VER_EXTRA} (${VER_YEAR}-${VER_MONTH}-${VER_DAY} ${VER_HOUR}:${V
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
-set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
+set(APP_CREDITS "Joey, Nalin, Codr, and Cadavre")
+set(APP_VENDOR "OpenGraal")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 STRING(REGEX REPLACE "[\(]" "" VER_CPACK ${VER_CPACK})
@@ -173,8 +174,6 @@ if(APPLE)
 	set(MACOSX_BUNDLE_ICON_FILE "carton")
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
 	set(MAKE_TESTS OFF)
 	# Visual C++ Compiler options
@@ -225,10 +224,8 @@ elseif(WIN32)
 
 	if( MINGW )
 		add_definitions(-D__STDC_FORMAT_MACROS)
-		add_definitions(-D_BSD_SOURCE=1)
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
-
+		add_definitions(-D__USE_MINGW_ANSI_STDIO=1 -D_BSD_SOURCE=1)
+		add_compile_options(-Wno-deprecated-declarations)
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
@@ -240,10 +237,8 @@ else()
 		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
-	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
-
+	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1 -DNDEBUG=1 -DENABLE_SCRIPTENV_DEBUG=1)
+	add_compile_options(-Wno-error -Wno-dev)
 endif()
 
 # Prefer static linkage

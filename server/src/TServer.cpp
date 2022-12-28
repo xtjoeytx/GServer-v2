@@ -52,11 +52,11 @@ TServer::TServer(const CString& pName)
 	calculateServerTime();
 
 	// This has the full path to the server directory.
-	serverpath = CString() << getHomePath() << "servers/" << name << "/";
+	serverpath = CString() << getBaseHomePath() << "servers/" << name << "/";
 	CFileSystem::fixPathSeparators(serverpath);
 
 	// Set up the log files.
-	CString logpath = serverpath.remove(0, getHomePath().length());
+	CString logpath = serverpath.remove(0, getBaseHomePath().length());
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
@@ -1302,7 +1302,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	bool assignedId = false;
 	for (unsigned int i = 10000; i < npcIds.size(); ++i)
 	{
-		if (npcIds[i] == 0)
+		if (npcIds[i] == nullptr)
 		{
 			npcIds[i] = newNPC;
 			newNPC->setId(i);
@@ -1531,7 +1531,7 @@ bool TServer::isStaff(const CString& accountName)
 
 void TServer::logToFile(const std::string & fileName, const std::string & message)
 {
-	CString fileNamePath = CString() << getServerPath().remove(0, getHomePath().length()) << "logs/";
+	CString fileNamePath = CString() << getServerPath().remove(0, getBaseHomePath().length()) << "logs/";
 
 	// Remove leading characters that may try to go up a directory
 	int idx = 0;
@@ -1745,7 +1745,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap
 {
 	if (!pPlayer->getLevel())
 		return;
-	
+
 	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
 	{
 		TLevel* level = pPlayer->getLevel();

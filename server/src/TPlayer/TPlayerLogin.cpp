@@ -103,7 +103,7 @@ bool TPlayer::sendLogin()
 #ifdef V8NPCSERVER
 		// If we have an NPC Server, send this to prevent clients from sending
 		// npc props it modifies.
-		// 
+		//
 		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
 		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
@@ -380,7 +380,7 @@ bool TPlayer::sendLoginClient()
 
 	// Send out RPG Window greeting.
 	if (isClient() && versionID >= CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by " << CString(GSERVER_CREDITS) << ".\"" );
+		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings->getStr("name") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"" );
 
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << *(server->getServerMessage()));
