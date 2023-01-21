@@ -7,6 +7,10 @@
 + Update gs2compiler - add support for obj.insert(idx, val)
 + Update gs2compiler - add support for obj.remove(val)
 + Update gs2compiler - add support for obj.delete(idx)
++ Update gs2compiler - add support for bitwise operations (left-shift, right-shift, or, xor, invert)
+* Update gs2compiler - Fixed modulus assignment
+* Update gs2compiler - Fixed constants with negative values
+* Update gs2compiler - Fixed precedence for power operator
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
