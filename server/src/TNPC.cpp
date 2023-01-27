@@ -1776,8 +1776,7 @@ CString doJoins(const CString& code, CFileSystem* fs)
 		c = fs->load(fileName);
 		c.removeAllI("\r");
 		c.replaceAllI("\n", "\xa7");
-		ret << c;
-		//ret << removeComments(c, "\xa7");
+		ret << removeComments(c, "\xa7");
 	}
 
 	return ret;
