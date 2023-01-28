@@ -23,6 +23,7 @@ build*/*
 cmake-build-*/
 dependencies/.cipd/
 dependencies/.gclient*
+dependencies/v8*
 lib/
 out/
 packages/
