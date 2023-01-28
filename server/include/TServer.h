@@ -161,7 +161,7 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		CScriptEngine * getScriptEngine() { return &mScriptEngine; }
 		int getNCPort() const { return mNCPort; }
-		TPlayer * getNPCServer() const { return mNpcServer; }
+		std::shared_ptr<TPlayer> getNPCServer() const { return mNpcServer; }
 #endif
 
 		CFileSystem* getFileSystemByType(CString& type);
@@ -173,15 +173,16 @@ class TServer : public CSocketStub
 		std::shared_ptr<TPlayer> getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
-		void assignNPCName(TNPC *npc, const std::string& name);
-		void removeNPCName(TNPC *npc);
+		void assignNPCName(std::shared_ptr<TNPC> npc, const std::string& name);
+		void removeNPCName(std::shared_ptr<TNPC> npc);
 		std::shared_ptr<TNPC> getNPCByName(const std::string& name) const;
-		std::shared_ptr<TNPC> addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
+		std::shared_ptr<TNPC> addServerNpc(int npcId, float pX, float pY, std::shared_ptr<TLevel> pLevel, bool sendToPlayers = false);
 
 		void handlePM(TPlayer *player, const CString& message);
-		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
+		void setPMFunction(uint32_t npcId, IScriptFunction *function = nullptr);
 #endif
 		std::shared_ptr<TNPC> addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<TLevel> pLevel, bool pLevelNPC, bool sendToPlayers = false);
+		bool deleteNPC(int id, bool eraseFromLevel = true);
 		bool deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel = true);
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
@@ -201,12 +202,12 @@ class TServer : public CSocketStub
 
 		// Packet sending.
 		using PlayerPredicate = std::function<bool(const TPlayer *)>;
-		void sendPacketToAll(CString packet, const std::set<uint16_t> &exclude = {}) const;
-		void sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-		void sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-		void sendPacketToOneLevel(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}) const;
-		void sendPacketToType(int who, CString pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
-		void sendPacketToType(int who, CString pPacket, TPlayer* pPlayer) const;
+		void sendPacketToAll(const CString& packet, const std::set<uint16_t> &exclude = {}) const;
+		void sendPacketToLevelArea(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToLevelArea(const CString& packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}) const;
+		void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
+		void sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const;
 
 		// Player Management
 		uint16_t getFreePlayerId();
@@ -301,8 +302,8 @@ class TServer : public CSocketStub
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;
 		int mNCPort;
-		TPlayer *mNpcServer;
-		TNPC *mPmHandlerNpc;
+		std::shared_ptr<TPlayer> mNpcServer;
+		std::shared_ptr<TNPC> mPmHandlerNpc;
 #endif
 
 #ifdef UPNP
@@ -336,11 +337,11 @@ inline TScriptClass * TServer::getClass(const std::string& className) const
 
 #ifdef V8NPCSERVER
 
-inline TNPC * TServer::getNPCByName(const std::string& name) const
+inline std::shared_ptr<TNPC> TServer::getNPCByName(const std::string& name) const
 {
 	auto npcIter = npcNameList.find(name);
 	if (npcIter != npcNameList.end())
-		return npcIter->second;
+		return npcIter->second.lock();
 
 	return nullptr;
 }

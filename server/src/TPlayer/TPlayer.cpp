@@ -855,6 +855,7 @@ void TPlayer::testTouch()
 	int pixelX = int(x * 16.0);
 	int pixelY = int(y * 16.0);
 
+	auto level = getLevel();
 	auto npcList = level->testTouch(pixelX + touchtestd[dir * 2], pixelY + touchtestd[dir * 2 + 1]);
 	for (const auto& npc : npcList)
 	{

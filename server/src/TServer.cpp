@@ -49,7 +49,7 @@ TServer::TServer(const CString& pName)
 	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
 	triggerActionDispatcher(methodstub(this, &TServer::createTriggerCommands))
 #ifdef V8NPCSERVER
-	, mScriptEngine(this), mPmHandlerNpc(nullptr)
+	, mScriptEngine(this)
 #endif
 #ifdef UPNP
 	, upnp(this)
@@ -168,7 +168,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
 
-	mNpcServer = new TPlayer(this, nullptr, 0);
+	mNpcServer = std::make_shared<TPlayer>(this, nullptr, 0);
 	mNpcServer->setType(PLTYPE_NPCSERVER);
 	mNpcServer->loadAccount("(npcserver)");
 	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
@@ -226,26 +226,26 @@ void TServer::cleanupDeletedPlayers()
 	if (deletedPlayers.empty()) return;
 	for (auto i = std::begin(deletedPlayers); i != std::end(deletedPlayers);)
 	{
-		const std::shared_ptr<TPlayer>& player = *i;
+		auto& player = *i;
 
 #ifdef V8NPCSERVER
 		IScriptObject<TPlayer> *playerObject = player->getScriptObject();
-		if (playerObject != 0)
+		if (playerObject != nullptr)
 		{
 			// Process last script events for this player
 			if (!player->isProcessed())
 			{
 				// Leave the level now while the player object is still alive
-				if (player->getLevel() != 0)
+				if (player->getLevel() != nullptr)
 					player->leaveLevel();
 
 				// Send event to server that player is logging out
 				if (player->isLoaded() && (player->getType() & PLTYPE_ANYPLAYER))
 				{
-					for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+					for (const auto& [npcName, npcPtr] : npcNameList)
 					{
-						TNPC *npcObject = (*it).second;
-						npcObject->queueNpcAction("npc.playerlogout", player);
+						if (auto npcObject = npcPtr.lock(); npcObject)
+							npcObject->queueNpcAction("npc.playerlogout", player.get());
 					}
 				}
 
@@ -905,45 +905,37 @@ void TServer::loadNpcs(bool print)
 {
 	CFileSystem npcFS(this);
 	npcFS.addDir("npcs", "npc*.txt");
-	const std::map<CString, CString> &npcFileList = npcFS.getFileList();
-	for (auto it = npcFileList.begin(); it != npcFileList.end(); ++it)
+
+	auto& npcFileList = npcFS.getFileList();
+	for (const auto& [npcName, fileName] : npcFileList)
 	{
 		bool loaded = false;
 
 		// Create the npc
-		TNPC *newNPC = new TNPC("", "", 30, 30.5, this, nullptr, NPCType::DBNPC);
-		if (newNPC->loadNPC((*it).second))
+		auto newNPC = std::make_shared<TNPC>("", "", 30.f, 30.5f, this, nullptr, NPCType::DBNPC);
+		if (newNPC->loadNPC(fileName))
 		{
 			int npcId = newNPC->getId();
 			if (npcId < 1000)
 			{
 				printf("Database npcs must be greater than 1000\n");
 			}
-			else if (npcId < npcIds.size() && npcIds[npcId] != 0)
+			else if (auto existing = npcList.find(npcId); existing != std::end(npcList))
 			{
 				printf("Error creating database npc: Id is in use!\n");
 			}
 			else
 			{
-				// Assign id to npc
-				if (npcIds.size() <= npcId)
-					npcIds.resize((size_t)npcId + 10);
-
-				npcIds[npcId] = newNPC;
-				npcList.push_back(newNPC);
+				npcList.insert(std::make_pair(npcId, newNPC));
 				assignNPCName(newNPC, newNPC->getName());
 
 				// Add npc to level
-				TLevel *level = newNPC->getLevel();
-				if (level)
+				if (auto level = newNPC->getLevel(); level)
 					level->addNPC(newNPC);
 
 				loaded = true;
 			}
 		}
-
-		if (!loaded)
-			delete newNPC;
 	}
 }
 #endif
@@ -992,9 +984,8 @@ void TServer::saveWeapons()
 #ifdef V8NPCSERVER
 void TServer::saveNpcs()
 {
-	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	for (const auto& [npcId, npc] : npcList)
 	{
-		TNPC *npc = *it;
 		if (npc->getType() != NPCType::LEVELNPC)
 			npc->saveNPC();
 	}
@@ -1005,9 +996,8 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	std::vector<std::pair<double, std::string>> script_profiles;
 
 	// Iterate npcs
-	for (auto it = npcList.begin(); it != npcList.end(); ++it)
+	for (const auto& [npcId, npc] : npcList)
 	{
-		TNPC *npc = *it;
 		ScriptExecutionContext& context = npc->getExecutionContext();
 		std::pair<unsigned int, double> executionData = context.getExecutionData();
 		if (executionData.second > 0.0)
@@ -1016,7 +1006,7 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 			if (npcName.empty())
 				npcName = "Level npc " + std::to_string(npc->getId());
 
-			TLevel *npcLevel = npc->getLevel();
+			auto npcLevel = npc->getLevel();
 			if (npcLevel != nullptr) {
 				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).
 					append(" at pos (").append(CString(npc->getY() / 16.0).text()).
@@ -1028,16 +1018,15 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	}
 
 	// Iterate weapons
-	for (auto it = weaponList.begin(); it != weaponList.end(); ++it)
+	for (const auto& [weaponName, weapon] : weaponList)
 	{
-		TWeapon *weapon = (*it).second;
 		ScriptExecutionContext& context = weapon->getExecutionContext();
 		std::pair<unsigned int, double> executionData = context.getExecutionData();
 
 		if (executionData.second > 0.0)
 		{
 			std::string weaponName("Weapon ");
-			weaponName.append((*it).first.text());
+			weaponName.append(weaponName);
 			script_profiles.push_back(std::make_pair(executionData.second, weaponName));
 		}
 	}
@@ -1160,7 +1149,7 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 }
 
 #ifdef V8NPCSERVER
-void TServer::assignNPCName(TNPC *npc, const std::string& name)
+void TServer::assignNPCName(std::shared_ptr<TNPC> npc, const std::string& name)
 {
 	std::string newName = name;
 	int num = 0;
@@ -1171,14 +1160,14 @@ void TServer::assignNPCName(TNPC *npc, const std::string& name)
 	npcNameList[newName] = npc;
 }
 
-void TServer::removeNPCName(TNPC *npc)
+void TServer::removeNPCName(std::shared_ptr<TNPC> npc)
 {
 	auto npcIter = npcNameList.find(npc->getName());
 	if (npcIter != npcNameList.end())
 		npcNameList.erase(npcIter);
 }
 
-TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers)
+std::shared_ptr<TNPC> TServer::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<TLevel> pLevel, bool sendToPlayers)
 {
 	// Force database npc ids to be >= 1000
 	if (npcId < 1000)
@@ -1188,34 +1177,28 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 	}
 
 	// Make sure the npc id isn't in use
-	if (npcId < npcIds.size() && npcIds[npcId] != 0)
+	auto existing = npcList.find(npcId);
+	if (existing != std::end(npcList))
 	{
 		printf("Error creating database npc: Id is in use!\n");
 		return nullptr;
 	}
 
 	// Create the npc
-	TNPC* newNPC = new TNPC("", "", pX, pY, this, pLevel, NPCType::DBNPC);
+	auto newNPC = std::make_shared<TNPC>("", "", pX, pY, this, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
-	npcList.push_back(newNPC);
-
-	if (npcIds.size() <= npcId)
-		npcIds.resize((size_t)npcId + 10);
-	npcIds[npcId] = newNPC;
+	npcList.insert(std::make_pair(npcId, newNPC));
 
 	// Add the npc to the level
 	if (pLevel)
 	{
-		pLevel->addNPC(newNPC);
+		pLevel->addNPC(npcId);
 
 		// Send the NPC's props to everybody in range.
 		if (sendToPlayers)
 		{
 			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-
-			// Send to level.
-			TMap* map = pLevel->getMap();
-			sendPacketToLevel(packet, map, pLevel, 0, true);
+			sendPacketToLevelArea(packet, pLevel);
 		}
 	}
 
@@ -1236,11 +1219,12 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
 	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
-	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc);
+	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc.get());
 }
 
-void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
+void TServer::setPMFunction(uint32_t npcId, IScriptFunction *function)
 {
+	auto npc = getNPC(npcId);
 	if (npc == nullptr || function == nullptr)
 	{
 		mPmHandlerNpc = nullptr;
@@ -1276,16 +1260,16 @@ std::shared_ptr<TNPC> TServer::addNPC(const CString& pImage, const CString& pScr
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-
-		// Send to level.
-		if (level)
-		{
-			if (auto map = level->getMap().lock(); map)
-				sendPacketToLevelArea(packet, pLevel);
-		}
+		sendPacketToLevelArea(packet, level);
 	}
 
 	return newNPC;
+}
+
+bool TServer::deleteNPC(int id, bool eraseFromLevel)
+{
+	auto npc = getNPC(id);
+	return deleteNPC(npc, eraseFromLevel);
 }
 
 bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
@@ -1302,7 +1286,7 @@ bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
 			level->removeNPC(npc);
 
 		// Tell the clients to delete the NPC.
-		auto map = level->getMap().lock();
+		auto map = level->getMap();
 		bool isOnMap = map != nullptr;
 		CString tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName());
 
@@ -1396,7 +1380,7 @@ bool TServer::addPlayer(TPlayerPtr player, uint16_t id)
 
 #ifdef V8NPCSERVER
 	// Create script object for player
-	mScriptEngine.wrapScriptObject(player);
+	mScriptEngine.wrapScriptObject(player.get());
 #endif
 
 	return true;
@@ -1424,11 +1408,11 @@ void TServer::playerLoggedIn(TPlayerPtr player)
 
 #ifdef V8NPCSERVER
 	// Send event to server that player is logging in
-	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	for (const auto& [npcName, npcPtr] : npcNameList)
 	{
 		// TODO(joey): check if they have the event before queueing for them
-		TNPC *npcObject = (*it).second;
-		npcObject->queueNpcAction("npc.playerlogin", player);
+		if (auto npcObject = npcPtr.lock(); npcObject)
+			npcObject->queueNpcAction("npc.playerlogin", player.get());
 	}
 #endif
 }
@@ -1534,7 +1518,7 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	Packet-Sending Functions
 */
 
-void TServer::sendPacketToAll(CString packet, const std::set<uint16_t>& exclude) const
+void TServer::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
 {
 	for (auto& [id, player] : playerList)
 	{
@@ -1547,13 +1531,14 @@ void TServer::sendPacketToAll(CString packet, const std::set<uint16_t>& exclude)
 	}
 }
 
-void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
+void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
 
 	// If we have no map, just send to the level players.
-	if (levelp->getMap().expired())
+	auto map = levelp->getMap();
+	if (!map)
 	{
 		for (auto id : levelp->getPlayerList())
 		{
@@ -1564,9 +1549,6 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level,
 	}
 	else
 	{
-		auto mapp = levelp->getMap().lock();
-		if (!mapp) return;
-
 		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
 
 		for (auto& [id, other] : playerList)
@@ -1576,7 +1558,7 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level,
 			if (sendIf != nullptr && !sendIf(other.get())) continue;
 
 			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != mapp) continue;
+			if (!othermap || othermap != map) continue;
 
 			// Check if they are nearby before sending the packet.
 			auto ogmap{ other->getMapPosition() };
@@ -1586,7 +1568,7 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level,
 	}
 }
 
-void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
+void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1595,7 +1577,8 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> playe
 	if (!level) return;
 
 	// If we have no map, just send to the level players.
-	if (level->getMap().expired())
+	auto map = level->getMap();
+	if (!map)
 	{
 		for (auto id : level->getPlayerList())
 		{
@@ -1606,10 +1589,7 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> playe
 	}
 	else
 	{
-		auto mapp = level->getMap().lock();
-		if (!mapp) return;
-
-		auto isGroupMap = mapp->isGroupMap();
+		auto isGroupMap = map->isGroupMap();
 		auto sgmap{ playerp->getMapPosition() };
 
 		for (auto& [id, other] : playerList)
@@ -1619,7 +1599,7 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> playe
 			if (sendIf != nullptr && !sendIf(other.get())) continue;
 
 			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != mapp) continue;
+			if (!othermap || othermap != map) continue;
 			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
 
 			// Check if they are nearby before sending the packet.
@@ -1630,12 +1610,12 @@ void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> playe
 	}
 }
 
-void TServer::sendPacketToOneLevel(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude) const
+void TServer::sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t> &exclude) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
 
-	for (auto id : levelp->getPlayerList())
+	for (auto id: levelp->getPlayerList())
 	{
 		if (exclude.contains(id)) continue;
 		if (auto player = this->getPlayer(id); player->isClient())
@@ -1643,7 +1623,7 @@ void TServer::sendPacketToOneLevel(CString packet, std::weak_ptr<TLevel> level, 
 	}
 }
 
-void TServer::sendPacketToType(int who, CString pPacket, std::weak_ptr<TPlayer> pPlayer) const
+void TServer::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer) const
 {
 	auto p = pPlayer.lock();
 	if (!p) return;
@@ -1651,7 +1631,7 @@ void TServer::sendPacketToType(int who, CString pPacket, std::weak_ptr<TPlayer> 
 	sendPacketToType(who, pPacket, p.get());
 }
 
-void TServer::sendPacketToType(int who, CString pPacket, TPlayer* pPlayer) const
+void TServer::sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const
 {
 	for (auto& [id, player] : playerList)
 	{

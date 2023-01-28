@@ -238,7 +238,7 @@ class TNPC
 
 		// set functions
 		void setId(unsigned int pId)			{ id = pId; }
-		void setLevel(std::shared_ptr<TLevel> pLevel) { level = pLevel; }
+		void setLevel(std::shared_ptr<TLevel> pLevel) { curlevel = pLevel; }
 		void setX(int val)						{ x = val; }
 		void setY(int val)						{ y = val; }
 		void setHeight(int val)					{ height = val; }
@@ -300,7 +300,7 @@ class TNPC
 		CString getFlag(const std::string& pFlagName) const;
 		void setFlag(const std::string& pFlagName, const CString& pFlagValue);
 		void deleteFlag(const std::string& pFlagName);
-		std::unordered_map<std::string, CString>* getFlagList() { return &flagList; }
+		std::unordered_map<std::string, CString>& getFlagList() { return flagList; }
 
 		bool deleteNPC();
 		void reloadNPC();
@@ -309,7 +309,7 @@ class TNPC
 		bool isWarpable() const;
 		void allowNpcWarping(NPCWarpType canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
-		void warpNPC(TLevel *pLevel, int pX, int pY);
+		void warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY);
 
 		// file
 		bool loadNPC(const CString& fileName);
@@ -348,7 +348,7 @@ class TNPC
 		CString swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage;
 		CString imagePart, weaponName;
 		unsigned char saves[10];
-		std::weak_ptr<TLevel> level;
+		std::weak_ptr<TLevel> curlevel;
 		TServer* server;
 
 		std::string chatMsg, gani, image;

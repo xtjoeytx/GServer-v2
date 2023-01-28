@@ -45,7 +45,7 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 	setX(int(pX * 16));
 	setY(int(pY * 16));
 	image = pImage.text();
-	level = pLevel;
+	curlevel = pLevel;
 #ifdef V8NPCSERVER
 	origImage = image;
 	origX = x;
@@ -54,9 +54,9 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 
 	// Keep a copy of the original level for resets
 #ifdef V8NPCSERVER
-	if (level)
+	if (!curlevel.expired())
 	{
-		origLevel = level->getLevelName();
+		origLevel = getLevel()->getLevelName();
 	}
 #endif
 
@@ -137,17 +137,17 @@ void TNPC::setScriptCode(std::string pScript)
 #endif
 
 	// See if the NPC sets the level as a sparring zone.
-	if (auto levelp = level.lock(); levelp)
+	if (auto level = getLevel(); level)
 	{
 		if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
 		{
-			levelp->setSparringZone(true);
+			level->setSparringZone(true);
 			levelModificationNPCHack = true;
 		}
 		// See if the NPC sets the level as singleplayer.
 		else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
 		{
-			levelp->setSingleplayer(true);
+			level->setSingleplayer(true);
 			levelModificationNPCHack = true;
 		}
 	}
@@ -196,6 +196,7 @@ void TNPC::setScriptCode(std::string pScript)
 
 	// Delete old npc, and send npc to level. Currently only doing this for database npcs, everything else
 	//	would need "update level" to take changes.
+	auto level = getLevel();
 	if (!firstExecution && getType() != NPCType::LEVELNPC && level)
 	{
 		// this property forces showcharacter, preventing ganis to go back to images
@@ -204,11 +205,10 @@ void TNPC::setScriptCode(std::string pScript)
 		//image = "";
 
 		// TODO(joey): refactor
-		TMap *map = level->getMap();
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), level);
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCDEL >> (int)getId(), level);
 
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
-		server->sendPacketToLevel(packet, level);
+		server->sendPacketToLevelArea(packet, level);
 	}
 #endif
 }
@@ -218,11 +218,12 @@ std::shared_ptr<TLevel> TNPC::getLevel() const
 	// TODO: Handle deleted level.
 	// Delete level NPCs.
 
-	return level.lock();
+	return curlevel.lock();
 }
 
 CString TNPC::getProp(unsigned char pId, int clientVersion) const
 {
+	auto level = getLevel();
 	switch(pId)
 	{
 		case NPCPROP_IMAGE:
@@ -343,10 +344,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-			return CString() >> (char)(!level.expired() ? level.lock()->getMapX() : 0);
+			return CString() >> (char)(level ? level->getMapX() : 0);
 
 		case NPCPROP_GMAPLEVELY:
-			return CString() >> (char)(!level.expired() ? level.lock()->getMapY() : 0);
+			return CString() >> (char)(level ? level->getMapY() : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
@@ -772,7 +773,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 	if (pForward)
 	{
 		// Send the props.
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, level);
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, curlevel);
 	}
 
 #ifdef V8NPCSERVER
@@ -786,25 +787,23 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 void TNPC::testForLinks()
 {
-	// Overworld links
-	if (level->getMap())
-	{
-		auto map = level->getMap();
+	auto level = getLevel();
+	if (level == nullptr) return;
 
+	// Overworld links
+	if (auto map = level->getMap(); map)
+	{
 		// Gmaps are treated as one large map, and so (local?) npcs can freely walk
 		// across maps without canwarp being enabled (source: post=1193766)
-		if (map->isGmap() || canWarp != NPCWarpType::None)
-		{
+		if (map->isGmap() || canWarp != NPCWarpType::None) {
 			int gmapX = x + 1024 * level->getMapX();
 			int gmapY = y + 1024 * level->getMapY();
 			int mapx = gmapX / 1024;
 			int mapy = gmapY / 1024;
 
-			if (level->getMapX() != mapx || level->getMapY() != mapy)
-			{
-				TLevel* newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
-				if (newLevel != nullptr)
-				{
+			if (level->getMapX() != mapx || level->getMapY() != mapy) {
+				auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
+				if (newLevel != nullptr) {
 					this->warpNPC(newLevel, gmapX % 1024, gmapY % 1024);
 					return;
 				}
@@ -821,7 +820,7 @@ void TNPC::testForLinks()
 		auto linkTouched = level->getLink((int)(x / 16) + touchtestd[dir * 2], (int)(y / 16) + touchtestd[dir * 2 + 1]);
 		if (linkTouched)
 		{
-			TLevel* newLevel = server->getLevel(linkTouched->getNewLevel());
+			auto newLevel = server->getLevel(linkTouched->getNewLevel().toString());
 			if (newLevel != 0)
 			{
 				int newX = (linkTouched->getNewX() == "playerx" ? x : int(16.0 * strtofloat(linkTouched->getNewX())));
@@ -834,7 +833,7 @@ void TNPC::testForLinks()
 
 void TNPC::testTouch()
 {
-	if (!level)
+	if (curlevel.expired())
 		return;
 
 	testForLinks();
@@ -1054,8 +1053,8 @@ NPCEventResponse TNPC::runScriptEvents()
 		}
 		propModified.clear();
 
-		if (level != nullptr)
-			server->sendPacketToLevel(propPacket, level);
+		if (!curlevel.expired())
+			server->sendPacketToLevelArea(propPacket, curlevel);
 	}
 
 	if (npcDeleteRequested)
@@ -1109,6 +1108,8 @@ CString TNPC::getVariableDump()
 	CString npcNameStr = npcName;
 	if (npcNameStr.isEmpty())
 		npcNameStr = CString() << "npcs[" << CString(id) << "]";
+
+	auto level = getLevel();
 
 	npcDump << "Variables dump from npc " << npcNameStr << "\n\n";
 	if (!npcScriptType.isEmpty()) npcDump << npcNameStr << ".type: " << npcScriptType << "\n";
@@ -1363,31 +1364,32 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 	setX(x + dx);
 	setY(y + dy);
 
-	if (level != nullptr)
-		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level);
+	if (!curlevel.expired())
+		server->sendPacketToLevelArea(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, curlevel);
 
 	if (isWarpable())
 		testTouch();
 }
 
-void TNPC::warpNPC(TLevel *pLevel, int pX, int pY)
+void TNPC::warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY)
 {
 	if (!pLevel)
 		return;
 
+	auto level = getLevel();
 	if (level != nullptr)
 	{
 		// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 		//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 		//  such for PLO_NPCDEL
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int) id, level);
+		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
 
 		// Remove the npc from the old level
-		level->removeNPC(this);
+		level->removeNPC(id);
 	}
 
 	// Add to the new level
-	pLevel->addNPC(this);
+	pLevel->addNPC(id);
 	level = pLevel;
 
 	// Adjust the position of the npc
@@ -1401,7 +1403,7 @@ void TNPC::warpNPC(TLevel *pLevel, int pX, int pY)
 	updatePropModTime(NPCPROP_Y2);
 
 	// Send the properties to the players in the new level
-	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level);
+	server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level);
 
 	if (!npcName.empty())
 		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
@@ -1451,6 +1453,8 @@ void TNPC::saveNPC()
 		return;
 	}
 	*/
+
+	auto level = getLevel();
 
 	static const char *NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
@@ -1729,7 +1733,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		npcLevel = origLevel;
 
 	if (!npcLevel.isEmpty())
-		level = TLevel::findLevel(npcLevel, server);
+		curlevel = TLevel::findLevel(npcLevel, server);
 
 	return true;
 }

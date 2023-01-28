@@ -94,7 +94,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Gets the gmap this level belongs to.
 		//! \return The gmap this level belongs to.
-		std::weak_ptr<TMap> getMap() const				{ return levelMap; }
+		std::shared_ptr<TMap> getMap() const			{ return levelMap.lock(); }
 
 		//! Gets the map x of this level.
 		//! \return The map x of this level on the map
@@ -206,10 +206,12 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! \param npc NPC to add to the level.
 		//! \return True if the NPC was successfully added or false if it already exists in the level.
 		bool addNPC(std::shared_ptr<TNPC> npc);
+		bool addNPC(uint32_t npcId);
 
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
 		void removeNPC(std::shared_ptr<TNPC> npc);
+		void removeNPC(uint32_t npcId);
 
 		//! Sets the map for the current level.
 		//! \param pMap Map the level is on.

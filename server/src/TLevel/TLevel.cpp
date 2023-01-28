@@ -1042,7 +1042,7 @@ std::shared_ptr<TLevel> TLevel::createLevel(TServer* server, short fillTile, con
 	level->setLevelName(levelName);
 	level->layers.push_back(0);
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(level);
+	server->getScriptEngine()->wrapScriptObject(level.get());
 #endif
 
 	// Return Level
@@ -1272,9 +1272,11 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new gralat npc for these rupees
 		if (!gralatNPC)
 		{
-			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
+			auto npc = server->addNPC("", "npc.join(\"gralats\");", pX, pY, shared_from_this(), false, true);
+			addNPC(npc);
+
+			gralatNPC = npc.get();
 			gralatNPC->setScriptType("LOCALN");
-			addNPC(gralatNPC);
 		}
 
 		// Update rupees
@@ -1310,9 +1312,11 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new darts npc for these darts
 		if (!dartNPC)
 		{
-			dartNPC = server->addNPC("", "npc.join(\"darts\");", pX, pY, this, false, true);
+			auto npc = server->addNPC("", "npc.join(\"darts\");", pX, pY, shared_from_this(), false, true);
+			addNPC(npc);
+
+			dartNPC = npc.get();
 			dartNPC->setScriptType("LOCALN");
-			addNPC(dartNPC);
 		}
 
 		// Update darts
@@ -1420,11 +1424,12 @@ int TLevel::addPlayer(std::shared_ptr<TPlayer> player)
 	levelPlayers.push_back(player->getId());
 
 #ifdef V8NPCSERVER
-	for (auto& npc : levelNPCs)
+	for (auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
 		{
-			npc->queueNpcAction("npc.playerenters", player);
+			npc->queueNpcAction("npc.playerenters", player.get());
 		}
 	}
 #endif
@@ -1437,11 +1442,12 @@ void TLevel::removePlayer(std::shared_ptr<TPlayer> player)
 	std::erase(levelPlayers, player->getId());
 
 #ifdef V8NPCSERVER
-	for (auto& npc : levelNPCs)
+	for (auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
 		{
-			npc->queueNpcAction("npc.playerleaves", player);
+			npc->queueNpcAction("npc.playerleaves", player.get());
 		}
 	}
 #endif
@@ -1460,9 +1466,20 @@ bool TLevel::addNPC(std::shared_ptr<TNPC> npc)
 	return inserted;
 }
 
+bool TLevel::addNPC(uint32_t npcId)
+{
+	[[maybe_unused]] auto [iter, inserted] = levelNPCs.insert(npcId);
+	return inserted;
+}
+
 void TLevel::removeNPC(std::shared_ptr<TNPC> npc)
 {
 	levelNPCs.erase(npc->getId());
+}
+
+void TLevel::removeNPC(uint32_t npcId)
+{
+	levelNPCs.erase(npcId);
 }
 
 void TLevel::setMap(std::weak_ptr<TMap> pMap, int pMapX, int pMapY)
@@ -1655,12 +1672,13 @@ std::vector<TNPC*> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
 	int testEndY = pY + pHeight;
 
 	std::vector<TNPC *> npcList;
-	for (const auto& npc : levelNPCs)
+	for (const auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (pX < npc->getX() + npc->getWidth() && testEndX > npc->getX() &&
 			pY < npc->getY() + npc->getHeight() && testEndY > npc->getY())
 		{
-			npcList.push_back(npc);
+			npcList.push_back(npc.get());
 		}
 	}
 
@@ -1670,14 +1688,15 @@ std::vector<TNPC*> TLevel::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
 std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 {
 	std::vector<TNPC*> npcList;
-	for (const auto& npc : levelNPCs)
+	for (const auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
 			if (npc->getX() <= pX && npc->getX() + npc->getWidth() >= pX &&
 				npc->getY() <= pY && npc->getY() + npc->getHeight() >= pY)
 			{
-				npcList.push_back(npc);
+				npcList.push_back(npc.get());
 			}
 		}
 	}
@@ -1687,8 +1706,9 @@ std::vector<TNPC*> TLevel::testTouch(int pX, int pY)
 
 TNPC * TLevel::isOnNPC(float pX, float pY, bool checkEventFlag)
 {
-	for (const auto& npc : levelNPCs)
+	for (const auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (checkEventFlag && !npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME))
 			continue;
 
@@ -1700,7 +1720,7 @@ TNPC * TLevel::isOnNPC(float pX, float pY, bool checkEventFlag)
 					(pY >= npc->getY() && pY <= npc->getY() + (float)(npc->getHeight() / 16.0f)))
 				{
 					// what if it touches multiple npcs? hm. not sure how graal did it.
-					return npc;
+					return npc.get();
 				}
 			}
 		}
@@ -1711,8 +1731,9 @@ TNPC * TLevel::isOnNPC(float pX, float pY, bool checkEventFlag)
 
 void TLevel::sendChatToLevel(const TPlayer *player, const std::string& message)
 {
-	for (const auto& npc : levelNPCs)
+	for (const auto& npcId : levelNPCs)
 	{
+		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
 			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), message);
 	}
@@ -1728,7 +1749,7 @@ void TLevel::modifyBoardDirect(uint32_t index, short tile) {
 	auto change = TLevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
 
 	levelBoardChanges.push_back(change);
-	server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), 0, this);
+	server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), shared_from_this());
 }
 
 #endif

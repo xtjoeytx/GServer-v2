@@ -480,9 +480,9 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	}
 	CString ret;
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)server->getServerFlags().size();
-	for (auto i = server->getServerFlags().begin(); i != server->getServerFlags().end(); ++i)
+	for (const auto& [flag, value] : server->getServerFlags())
 	{
-		CString flag = CString() << i->first << "=" << i->second;
+		CString flag = CString() << flag << "=" << value;
 		ret >> (char)flag.length() << flag;
 	}
 	sendPacket(ret);
@@ -1309,8 +1309,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		{
 			if (!(n_adminRights & PLPERM_NPCCONTROL))
 			{
-				TPlayer *pNC = server->getPlayer(acc, PLTYPE_ANYNC);
-				if (pNC)
+				if (auto pNC = server->getPlayer(acc, PLTYPE_ANYNC); pNC)
 					pNC->disconnect();
 			}
 			else pRC->sendNCAddr();

@@ -14,7 +14,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	{
 		if (triggerData.size() > 1)
 		{
-			TWeapon *weaponObject = this->getWeapon(triggerData[1]);
+			auto weaponObject = this->getWeapon(triggerData[1].toString());
 			if (weaponObject != nullptr)
 				weaponObject->queueWeaponAction(player, utilities::retokenizeArray(triggerData, 2));
 		}

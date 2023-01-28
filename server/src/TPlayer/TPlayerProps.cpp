@@ -866,7 +866,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			{
 				int mx = pPacket.readGUChar();
 
-				if (auto cmap = level->getMap().lock(); level && cmap)
+				if (auto cmap = level->getMap(); level && cmap)
 				{
 					auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
 					leaveLevel();
@@ -882,7 +882,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			{
 				int my = pPacket.readGUChar();
 
-				if (auto cmap = level->getMap().lock(); level && cmap)
+				if (auto cmap = level->getMap(); level && cmap)
 				{
 					auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
 					leaveLevel();
