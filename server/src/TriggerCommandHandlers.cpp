@@ -37,8 +37,8 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.serverlist", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		TServerList *listServer = getServerList();
-		const auto& serverList = listServer->getServerList();
+		auto& listServer = getServerList();
+		const auto& serverList = listServer.getServerList();
 
 		CString actionData("clientside,-Serverlist_v4,updateservers,");
 		for (auto & serverData : serverList)
@@ -51,10 +51,10 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Weapon management
 	builder.registerCommand("gr.addweapon", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_weapons", false))
+		if (getSettings().getBool("triggerhack_weapons", false))
 		{
 			for (auto i = 1; i < triggerData.size(); ++i)
-				player->addWeapon(triggerData[i].trim());
+				player->addWeapon(triggerData[i].trim().toString());
 		}
 
 		return true;
@@ -62,10 +62,10 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.deleteweapon", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_weapons", false))
+		if (getSettings().getBool("triggerhack_weapons", false))
 		{
 			for (auto i = 1; i < triggerData.size(); ++i)
-				player->deleteWeapon(triggerData[i].trim());
+				player->deleteWeapon(triggerData[i].trim().toString());
 		}
 
 		return true;
@@ -74,7 +74,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Guild management
 	builder.registerCommand("gr.addguildmember", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_guilds", false))
+		if (getSettings().getBool("triggerhack_guilds", false))
 		{
 			CString guild, account, nick;
 			if (triggerData.size() > 1) guild = triggerData[1];
@@ -104,7 +104,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.removeguildmember", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_guilds", false))
+		if (getSettings().getBool("triggerhack_guilds", false))
 		{
 			CString guild, account;
 			if (triggerData.size() > 1) guild = triggerData[1];
@@ -135,7 +135,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.removeguild", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_guilds", false))
+		if (getSettings().getBool("triggerhack_guilds", false))
 		{
 			CString guild;
 			if (triggerData.size() > 1) guild = triggerData[1];
@@ -151,15 +151,14 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				remove(path.text());
 
 				// Remove the guild from all players.
-				for (std::vector<TPlayer*>::iterator i = getPlayerList()->begin(); i != getPlayerList()->end(); ++i)
+				for (auto& [pid, p] : getPlayerList())
 				{
-					TPlayer* p = *i;
 					if (p->getGuild() == guild)
 					{
 						CString nick = p->getNickname();
 						p->setNick(nick.readString("(").trimI());
 						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
-						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
+						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), { pid });
 					}
 				}
 			}
@@ -170,7 +169,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setguild", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_guilds", false))
+		if (getSettings().getBool("triggerhack_guilds", false))
 		{
 			CString guild, account;
 			if (triggerData.size() > 1) guild = triggerData[1];
@@ -179,13 +178,13 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 			if (!guild.isEmpty())
 			{
 				TPlayer* p = player;
-				if (!account.isEmpty()) p = getPlayer(account, PLTYPE_ANYCLIENT);
+				if (!account.isEmpty()) p = getPlayer(account, PLTYPE_ANYCLIENT).get();
 				if (p)
 				{
 					CString nick = p->getNickname();
 					p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
 					p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
-					sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
+					sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), { p->getId() });
 				}
 			}
 		}
@@ -196,7 +195,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Group levels
 	builder.registerCommand("gr.setgroup", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_groups", true) && triggerData.size() == 2)
+		if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 		{
 			player->setGroup(triggerData[1]);
 		}
@@ -206,12 +205,12 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setlevelgroup", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_groups", true) && triggerData.size() == 2)
+		if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 		{
 			auto playerList = player->getLevel()->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			for (auto& id : playerList)
 			{
-				TPlayer* pl = *i;
+				auto pl = getPlayer(id);
 				pl->setGroup(triggerData[1]);
 			}
 		}
@@ -221,9 +220,9 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setplayergroup", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_groups", true) && triggerData.size() == 3)
+		if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 3)
 		{
-			TPlayer* player = getPlayer(triggerData[1], PLTYPE_ANYCLIENT);
+			auto player = getPlayer(triggerData[1], PLTYPE_ANYCLIENT);
 			player->setGroup(triggerData[2]);
 		}
 
@@ -233,12 +232,14 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// RC triggers
 	builder.registerCommand("gr.rcchat", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_rc", false))
+		if (getSettings().getBool("triggerhack_rc", false))
 		{
+			auto p = getPlayer(player->getId());
+
 			CString msg;
 			for (auto i = 1; i < triggerData.size(); ++i)
 				msg << triggerData[i] << ",";
-			sendToRC(msg, player);
+			sendToRC(msg, p);
 		}
 
 		return true;
@@ -247,7 +248,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Level triggers
 	builder.registerCommand("gr.npc.move", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_levels", false) && triggerData.size() == 6)
+		if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 6)
 		{
 			unsigned int id = strtoint(triggerData[1]);
 			int dx = strtoint(triggerData[2]);
@@ -255,7 +256,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 			float duration = (float)strtofloat(triggerData[4]);
 			int options = strtoint(triggerData[5]);
 
-			TNPC* npc = getNPC(id);
+			auto npc = getNPC(id);
 			if (npc)
 			{
 				CString packet;
@@ -263,7 +264,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 				packet >> (short)(duration / 0.05f);
 				packet >> (char)options;
-				sendPacketToLevel(CString() >> (char)PLO_MOVE >> (int)id << packet, 0, player, true);
+				sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer(player->getId()));
 
 				npc->setX(npc->getX() + dx * 16);
 				npc->setY(npc->getY() + dy * 16);
@@ -276,13 +277,13 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.npc.setpos", [&](TPlayer *player, std::vector<CString>& triggerData)
 	{
-		if (getSettings()->getBool("triggerhack_levels", false) && triggerData.size() == 4)
+		if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 4)
 		{
 			unsigned int id = strtoint(triggerData[1]);
 			float x = (float)strtofloat(triggerData[2]);
 			float y = (float)strtofloat(triggerData[3]);
 
-			TNPC* npc = getNPC(id);
+			auto npc = getNPC(id);
 			if (npc)
 			{
 				npc->setX(int(x * 16.0));
@@ -292,7 +293,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				CString packet;
 				packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
 				packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-				sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, 0, player, true);
+				sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer(player->getId()));
 			}
 		}
 

@@ -64,7 +64,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	CString accpath(accfs->findi(CString() << pAccount << ".txt"));
 	if (accpath.length() == 0)
 	{
-		accpath = CString() << server->getServerPath() << "accounts/defaultaccount.txt";
+		accpath = server->getServerPath() << "accounts/defaultaccount.txt";
 		CFileSystem::fixPathSeparators(accpath);
 		loadedFromDefault = true;
 	}
@@ -212,18 +212,18 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	// If we loaded from the default account...
 	if (loadedFromDefault)
 	{
-		CSettings* settings = server->getSettings();
+		auto& settings = server->getSettings();
 
 		// Check to see if we are overriding our start level and position.
-		if (settings->exists("startlevel"))
-			levelName = settings->getStr("startlevel", "onlinestartlocal.nw");
-		if (settings->exists("startx"))
+		if (settings.exists("startlevel"))
+			levelName = settings.getStr("startlevel", "onlinestartlocal.nw");
+		if (settings.exists("startx"))
 		{
-			x = settings->getFloat("startx", 30.0f);
+			x = settings.getFloat("startx", 30.0f);
 		}
-		if (settings->exists("starty"))
+		if (settings.exists("starty"))
 		{
-			y = settings->getFloat("starty", 30.5f);
+			y = settings.getFloat("starty", 30.5f);
 		}
 
 		// Save our account now and add it to the file system.
@@ -325,7 +325,7 @@ bool TAccount::saveAccount()
 	if (accountFileName.isEmpty()) accountFileName = CString() << accountName << ".txt";
 
 	// Save the account now.
-	CString accpath = CString() << server->getServerPath() << "accounts/" << accountFileName;
+	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
 	CFileSystem::fixPathSeparators(accpath);
 	if (!newFile.save(accpath))
 		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
@@ -567,7 +567,7 @@ void TAccount::setFlag(CString pFlag)
 
 void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
-	if (server->getSettings()->getBool("cropflags", true))
+	if (server->getSettings().getBool("cropflags", true))
 	{
 		int fixedLength = 223 - 1 - pFlagName.length();
 		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
@@ -587,7 +587,7 @@ void TAccount::setMaxPower(int newMaxPower)
 {
 	auto settings = server->getSettings();
 	
-	auto heartLimit = std::min(settings->getInt("heartlimit", 3), 20);
+	auto heartLimit = std::min(settings.getInt("heartlimit", 3), 20);
 	maxPower = clip(newMaxPower, 0, heartLimit);
 }
 
@@ -595,12 +595,12 @@ void TAccount::setShieldPower(int newPower)
 {
 	auto settings = server->getSettings();
 
-	shieldPower = clip(newPower, 0, settings->getInt("shieldlimit", 3));
+	shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
 }
 
 void TAccount::setSwordPower(int newPower)
 {
 	auto settings = server->getSettings();
 
-	swordPower = clip(newPower, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
+	swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
 }

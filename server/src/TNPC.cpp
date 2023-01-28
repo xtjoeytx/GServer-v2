@@ -39,7 +39,7 @@ std::string minifyClientCode(const CString& src)
 	return minified;
 }
 
-TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type)
+TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, std::shared_ptr<TLevel> pLevel, NPCType type)
 	: TNPC(pServer, type)
 {
 	setX(int(pX * 16));
@@ -73,7 +73,7 @@ TNPC::TNPC(TServer *pServer, NPCType type)
 	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
 	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
 	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
-	gani("idle"), level(nullptr)
+	gani("idle")
 #ifdef V8NPCSERVER
 	, _scriptExecutionContext(pServer->getScriptEngine())
 	, origX(x), origY(y), npcDeleteRequested(false), canWarp(NPCWarpType::None), width(32), height(32)
@@ -120,7 +120,7 @@ void TNPC::setScriptCode(std::string pScript)
 	if (_scriptObject)
 		freeScriptResources();
 #endif
-	bool gs2default = server->getSettings()->getBool("gs2default", false);
+	bool gs2default = server->getSettings().getBool("gs2default", false);
 
 	npcScript = SourceCode{ std::move(pScript), gs2default };
 
@@ -137,16 +137,19 @@ void TNPC::setScriptCode(std::string pScript)
 #endif
 
 	// See if the NPC sets the level as a sparring zone.
-	if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
+	if (auto levelp = level.lock(); levelp)
 	{
-		level->setSparringZone(true);
-		levelModificationNPCHack = true;
-	}
-	// See if the NPC sets the level as singleplayer.
-	else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
-	{
-		level->setSingleplayer(true);
-		levelModificationNPCHack = true;
+		if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
+		{
+			levelp->setSparringZone(true);
+			levelModificationNPCHack = true;
+		}
+		// See if the NPC sets the level as singleplayer.
+		else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
+		{
+			levelp->setSingleplayer(true);
+			levelModificationNPCHack = true;
+		}
 	}
 
 	// Remove sparringzone / singleplayer from the server script
@@ -202,12 +205,20 @@ void TNPC::setScriptCode(std::string pScript)
 
 		// TODO(joey): refactor
 		TMap *map = level->getMap();
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), map, level, 0, true);
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCDEL >> (int)getId(), level);
 
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
-		server->sendPacketToLevel(packet, map, level, 0, true);
+		server->sendPacketToLevel(packet, level);
 	}
 #endif
+}
+
+std::shared_ptr<TLevel> TNPC::getLevel() const
+{
+	// TODO: Handle deleted level.
+	// Delete level NPCs.
+
+	return level.lock();
 }
 
 CString TNPC::getProp(unsigned char pId, int clientVersion) const
@@ -332,10 +343,10 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)bodyImage.length() << bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-			return CString() >> (char)(level ? level->getMapX() : 0);
+			return CString() >> (char)(!level.expired() ? level.lock()->getMapX() : 0);
 
 		case NPCPROP_GMAPLEVELY:
-			return CString() >> (char)(level ? level->getMapY() : 0);
+			return CString() >> (char)(!level.expired() ? level.lock()->getMapY() : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
@@ -401,7 +412,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 
 CString TNPC::getProps(time_t newTime, int clientVersion) const
 {
-	bool oldcreated = server->getSettings()->getBool("oldcreated", "false");
+	bool oldcreated = server->getSettings().getBool("oldcreated", "false");
 	CString retVal;
 	int pmax = NPCPROP_COUNT;
 	if (clientVersion < CLVER_2_1) pmax = 36;
@@ -760,12 +771,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 	if (pForward)
 	{
-		// Find the level.
-		TMap* map = 0;
-		if (level != 0) map = level->getMap();
-
 		// Send the props.
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, map, level, 0, true);
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, level);
 	}
 
 #ifdef V8NPCSERVER
@@ -1048,7 +1055,7 @@ NPCEventResponse TNPC::runScriptEvents()
 		propModified.clear();
 
 		if (level != nullptr)
-			server->sendPacketToLevel(propPacket, level->getMap(), level, nullptr, true);
+			server->sendPacketToLevel(propPacket, level);
 	}
 
 	if (npcDeleteRequested)
@@ -1357,7 +1364,7 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 	setY(y + dy);
 
 	if (level != nullptr)
-		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level->getMap(), level);
+		server->sendPacketToLevel(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, level);
 
 	if (isWarpable())
 		testTouch();
@@ -1373,7 +1380,7 @@ void TNPC::warpNPC(TLevel *pLevel, int pX, int pY)
 		// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 		//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 		//  such for PLO_NPCDEL
-		server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int) id, level->getMap(), level);
+		server->sendPacketToLevel(CString() >> (char)PLO_NPCMOVED >> (int) id, level);
 
 		// Remove the npc from the old level
 		level->removeNPC(this);
@@ -1394,10 +1401,10 @@ void TNPC::warpNPC(TLevel *pLevel, int pX, int pY)
 	updatePropModTime(NPCPROP_Y2);
 
 	// Send the properties to the players in the new level
-	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level->getMap(), level, 0, true);
+	server->sendPacketToLevel(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level);
 
 	if (!npcName.empty())
-		server->sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
+		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
 
 	// Queue event
 	this->queueNpcAction("npc.warped");

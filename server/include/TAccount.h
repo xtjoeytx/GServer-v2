@@ -194,9 +194,9 @@ class TAccount
 		const CString& getEmail() const			{ return email; }
 		const CString& getIpStr() const			{ return accountIpStr; }
 		const CString& getComments() const		{ return accountComments; }
-		std::unordered_map<std::string, CString> * getFlagList()	{ return &flagList; }
-		std::vector<CString> * getFolderList()						{ return &folderList; }
-		std::vector<CString> * getWeaponList()						{ return &weaponList; }
+		std::unordered_map<std::string, CString>& getFlagList()	{ return flagList; }
+		std::vector<CString>& getFolderList()					{ return folderList; }
+		std::vector<CString>& getWeaponList()					{ return weaponList; }
 
 		// set functions
 		void setDeviceId(int64_t newDeviceId)		{ deviceId = newDeviceId;}

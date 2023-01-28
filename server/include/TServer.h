@@ -2,6 +2,7 @@
 #define TSERVER_H
 
 #include <climits>
+#include <cstdint>
 #include <chrono>
 #include <vector>
 #include <map>
@@ -124,38 +125,38 @@ class TServer : public CSocketStub
 		void reportScriptException(const std::string& error_message);
 
 		// Get functions.
-		const CString& getName()						{ return name; }
+		const CString& getName() const					{ return name; }
 		CFileSystem* getFileSystem(int c = 0)			{ return &(filesystem[c]); }
 		CFileSystem* getAccountsFileSystem()			{ return &filesystem_accounts; }
 		CLog& getNPCLog()								{ return npclog; }
 		CLog& getServerLog()							{ return serverlog; }
 		CLog& getRCLog()								{ return rclog; }
 		CLog& getScriptLog()							{ return scriptlog; }
-		CSettings* getSettings()						{ return &settings; }
-		CSettings* getAdminSettings()					{ return &adminsettings; }
-		CSocketManager* getSocketManager()				{ return &sockManager; }
-		CString getServerPath()							{ return serverpath; }
-		CString* getServerMessage()						{ return &servermessage; }
-		CString* getAllowedVersionString()				{ return &allowedVersionString; }
-		CTranslationManager* getTranslationManager()	{ return &mTranslationManager; }
-		CWordFilter* getWordFilter()					{ return &wordFilter; }
-		TServerList* getServerList()					{ return &serverlist; }
+		CSettings& getSettings()						{ return settings; }
+		CSettings& getAdminSettings()					{ return adminsettings; }
+		CSocketManager& getSocketManager()				{ return sockManager; }
+		CString getServerPath() const					{ return serverpath; }
+		const CString& getServerMessage() const			{ return servermessage; }
+		const CString& getAllowedVersionString() const	{ return allowedVersionString; }
+		CTranslationManager& getTranslationManager()	{ return mTranslationManager; }
+		CWordFilter& getWordFilter()					{ return wordFilter; }
+		TServerList& getServerList()					{ return serverlist; }
 		AnimationManager& getAnimationManager()			{ return animationManager; }
 		PackageManager& getPackageManager()				{ return packageManager; }
 		unsigned int getNWTime() const					{ return serverTime; }
 		void calculateServerTime();
 
 		std::unordered_map<std::string, std::unique_ptr<TScriptClass>>& getClassList()	{ return classList; }
-		std::unordered_map<std::string, TNPC *>* getNPCNameList()		{ return &npcNameList; }
-		std::unordered_map<std::string, CString>* getServerFlags()		{ return &mServerFlags; }
-		std::map<CString, TWeapon *>* getWeaponList()	{ return &weaponList; }
-		std::vector<TPlayer *>* getPlayerList()			{ return &playerList; }
-		std::vector<TNPC *>* getNPCList()				{ return &npcList; }
-		std::vector<TLevel *>* getLevelList()			{ return &levelList; }
-		const std::vector<std::unique_ptr<TMap>>& getMapList() const { return mapList; }
-		const std::vector<CString>& getStatusList() const		{ return statusList; }
-		const std::vector<CString>& getAllowedVersions() const	{ return allowedVersions; }
-		std::map<CString, std::map<CString, TLevel*> >* getGroupLevels()	{ return &groupLevels; }
+		std::unordered_map<std::string, std::weak_ptr<TNPC>>& getNPCNameList()			{ return npcNameList; }
+		std::unordered_map<std::string, CString>& getServerFlags()						{ return mServerFlags; }
+		std::unordered_map<std::string, std::shared_ptr<TWeapon>>& getWeaponList()		{ return weaponList; }
+		std::unordered_map<uint16_t, std::shared_ptr<TPlayer>>& getPlayerList()			{ return playerList; }
+		std::unordered_map<uint32_t, std::shared_ptr<TNPC>>& getNPCList()				{ return npcList; }
+		std::vector<std::shared_ptr<TLevel>>& getLevelList()							{ return levelList; }
+		const std::vector<std::shared_ptr<TMap>>& getMapList() const					{ return mapList; }
+		const std::vector<CString>& getStatusList() const								{ return statusList; }
+		const std::vector<CString>& getAllowedVersions() const							{ return allowedVersions; }
+		std::unordered_multimap<std::string, std::weak_ptr<TLevel>>& getGroupLevels()	{ return groupLevels; }
 
 #ifdef V8NPCSERVER
 		CScriptEngine * getScriptEngine() { return &mScriptEngine; }
@@ -165,23 +166,23 @@ class TServer : public CSocketStub
 
 		CFileSystem* getFileSystemByType(CString& type);
 		CString getFlag(const std::string& pFlagName);
-		TLevel* getLevel(const CString& pLevel);
-		TNPC* getNPC(unsigned int id) const;
-		TPlayer* getPlayer(unsigned short id) const;
-		TPlayer* getPlayer(unsigned short id, int type) const; // = PLTYPE_ANYCLIENT) const;
-		TPlayer* getPlayer(const CString& account, int type) const;
+		std::shared_ptr<TLevel> getLevel(const std::string& pLevel);
+		std::shared_ptr<TNPC> getNPC(const uint32_t id) const;
+		std::shared_ptr<TPlayer> getPlayer(const uint16_t id) const;
+		std::shared_ptr<TPlayer> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
+		std::shared_ptr<TPlayer> getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
 		void assignNPCName(TNPC *npc, const std::string& name);
 		void removeNPCName(TNPC *npc);
-		TNPC* getNPCByName(const std::string& name) const;
-		TNPC* addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
+		std::shared_ptr<TNPC> getNPCByName(const std::string& name) const;
+		std::shared_ptr<TNPC> addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool sendToPlayers = false);
 
 		void handlePM(TPlayer *player, const CString& message);
 		void setPMFunction(TNPC *npc, IScriptFunction *function = nullptr);
 #endif
-		TNPC* addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers = false);
-		bool deleteNPC(TNPC* npc, bool eraseFromLevel = true);
+		std::shared_ptr<TNPC> addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<TLevel> pLevel, bool pLevelNPC, bool sendToPlayers = false);
+		bool deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel = true);
 		bool deleteClass(const std::string& className);
 		bool hasClass(const std::string& className) const;
 		TScriptClass * getClass(const std::string& className) const;
@@ -195,24 +196,23 @@ class TServer : public CSocketStub
 		bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 
 		// Admin chat functions
-		void sendToRC(const CString& pMessage, TPlayer *pSender = nullptr) const;
-		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
+		void sendToRC(const CString& pMessage, std::weak_ptr<TPlayer> pSender = {}) const;
+		void sendToNC(const CString& pMessage, std::weak_ptr<TPlayer> pSender = {}) const;
 
 		// Packet sending.
 		using PlayerPredicate = std::function<bool(const TPlayer *)>;
-
-		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
-		void sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
-		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
+		void sendPacketToAll(CString packet, const std::set<uint16_t> &exclude = {}) const;
+		void sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToOneLevel(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}) const;
+		void sendPacketToType(int who, CString pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
+		void sendPacketToType(int who, CString pPacket, TPlayer* pPlayer) const;
 
 		// Player Management
-		unsigned int getFreePlayerId();
-		bool addPlayer(TPlayer *player, unsigned int id = UINT_MAX);
-		bool deletePlayer(TPlayer* player);
-		void playerLoggedIn(TPlayer *player);
+		uint16_t getFreePlayerId();
+		bool addPlayer(std::shared_ptr<TPlayer> player, uint16_t id = USHRT_MAX);
+		bool deletePlayer(std::shared_ptr<TPlayer> player);
+		void playerLoggedIn(std::shared_ptr<TPlayer> player);
 
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);
@@ -221,10 +221,10 @@ class TServer : public CSocketStub
 		void TS_Save();
 
 		// Weapon Management
-		TWeapon *getWeapon(const CString& name);
-		bool NC_AddWeapon(TWeapon *pWeaponObj);
-		bool NC_DelWeapon(const CString& pWeaponName);
-		void updateWeaponForPlayers(TWeapon *pWeapon);
+		std::shared_ptr<TWeapon> getWeapon(const std::string& name);
+		bool NC_AddWeapon(std::shared_ptr<TWeapon> pWeaponObj);
+		bool NC_DelWeapon(const std::string& pWeaponName);
+		void updateWeaponForPlayers(std::shared_ptr<TWeapon> pWeapon);
 		void updateClassForPlayers(TScriptClass *pClass);
 
 		/*
@@ -262,25 +262,32 @@ class TServer : public CSocketStub
 		CSettings adminsettings, settings;
 		CSocket playerSock;
 		CSocketManager sockManager;
-		CString allowedVersionString, name, servermessage, serverpath;
 		CTranslationManager mTranslationManager;
 		CWordFilter wordFilter;
-		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
 		AnimationManager animationManager;
 		PackageManager packageManager;
+		CString allowedVersionString, name, servermessage, serverpath;
+		CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
+
+		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
 
 		std::unordered_map<std::string, CString> mServerFlags;
-		std::map<CString, TWeapon *> weaponList;
-		std::map<CString, std::map<CString, TLevel*> > groupLevels;
+		std::unordered_map<std::string, std::shared_ptr<TWeapon>> weaponList;
 		std::unordered_map<std::string, std::unique_ptr<TScriptClass>> classList;
-		std::unordered_map<std::string, TNPC *> npcNameList;
-		std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
-		std::vector<TLevel *> levelList;
-		std::vector<std::unique_ptr<TMap>> mapList;
-		std::vector<TNPC *> npcIds, npcList;
-		std::vector<TPlayer *> playerIds, playerList;
 
-		std::set<TPlayer *> deletedPlayers;
+		std::unordered_map<uint32_t, std::shared_ptr<TNPC>> npcList;
+		std::unordered_map<std::string, std::weak_ptr<TNPC>> npcNameList;
+		std::set<uint32_t> freeNpcIds;
+		uint32_t nextNpcId;
+
+		std::vector<std::shared_ptr<TMap>> mapList;
+		std::vector<std::shared_ptr<TLevel>> levelList;
+		std::unordered_multimap<std::string, std::weak_ptr<TLevel>> groupLevels;
+
+		std::unordered_map<uint16_t, std::shared_ptr<TPlayer>> playerList;
+		std::set<uint16_t> freePlayerIds;
+		uint16_t nextPlayerId;
+		std::unordered_set<std::shared_ptr<TPlayer>> deletedPlayers;
 
 		TServerList serverlist;
 		std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
@@ -304,12 +311,13 @@ class TServer : public CSocketStub
 #endif
 };
 
-inline TNPC * TServer::getNPC(const unsigned int id) const
+inline std::shared_ptr<TNPC> TServer::getNPC(const uint32_t id) const
 {
-	if (id >= npcIds.size())
-		return nullptr;
+	auto iter = npcList.find(id);
+	if (iter != std::end(npcList))
+		return iter->second;
 
-	return npcIds[id];
+	return nullptr;
 }
 
 inline bool TServer::hasClass(const std::string& className) const
@@ -341,22 +349,22 @@ inline TNPC * TServer::getNPCByName(const std::string& name) const
 
 #include "IEnums.h"
 
-inline void TServer::sendToRC(const CString& pMessage, TPlayer *pSender) const
+inline void TServer::sendToRC(const CString& pMessage, std::weak_ptr<TPlayer> pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
-inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
+inline void TServer::sendToNC(const CString& pMessage, std::weak_ptr<TPlayer> pSender) const
 {
 	int len = pMessage.find("\n");
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
 }
 
 #endif

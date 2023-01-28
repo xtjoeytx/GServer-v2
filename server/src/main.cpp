@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 		{
 			TServer* server = new TServer(overrideServer);
 
-			auto *settings = server->getSettings();
+			auto& settings = server->getSettings();
 
 			serverlog.out(":: Starting server: %s.\n", overrideServer.text());
 			if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
@@ -185,14 +185,14 @@ int main(int argc, char* argv[])
 			}
 
 			if (!overrideName.isEmpty())
-				settings->addKey("name", overrideName);
+				settings.addKey("name", overrideName);
 
 			if (!overrideStaff.isEmpty())
 			{
 				if (!server->isStaff(overrideStaff))
 				{
-					auto staff = settings->getStr("staff");
-					settings->addKey("staff", staff << "," << overrideStaff);
+					auto staff = settings.getStr("staff");
+					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
 				TAccount accfs(server);
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			settings->saveFile();
+			settings.saveFile();
 			server->loadSettings();
 
 			serverList[overrideServer] = server;

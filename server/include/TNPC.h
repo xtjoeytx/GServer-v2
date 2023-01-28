@@ -2,6 +2,7 @@
 #define TNPC_H
 
 #include <algorithm>
+#include <memory>
 #include <ctime>
 #include "CString.h"
 #include "IUtil.h"
@@ -183,7 +184,7 @@ class TNPC
 {
 	public:
 		TNPC(TServer* pServer, NPCType type);
-		TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, TLevel* pLevel, NPCType type);
+		TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, std::shared_ptr<TLevel> pLevel, NPCType type);
 		~TNPC();
 
 		void setScriptCode(std::string pScript);
@@ -237,7 +238,7 @@ class TNPC
 
 		// set functions
 		void setId(unsigned int pId)			{ id = pId; }
-		void setLevel(TLevel* pLevel)			{ level = pLevel; }
+		void setLevel(std::shared_ptr<TLevel> pLevel) { level = pLevel; }
 		void setX(int val)						{ x = val; }
 		void setY(int val)						{ y = val; }
 		void setHeight(int val)					{ height = val; }
@@ -267,7 +268,7 @@ class TNPC
 		const CString& getScriptType() const	{ return npcScriptType; }
 		const CString& getScripter() const		{ return npcScripter; }
 		const CString& getWeaponName() const	{ return weaponName; }
-		TLevel * getLevel() const				{ return level; }
+		std::shared_ptr<TLevel> getLevel() const;
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getColorId(unsigned int idx) const;
 
@@ -347,7 +348,7 @@ class TNPC
 		CString swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage;
 		CString imagePart, weaponName;
 		unsigned char saves[10];
-		TLevel* level;
+		std::weak_ptr<TLevel> level;
 		TServer* server;
 
 		std::string chatMsg, gani, image;
@@ -388,6 +389,9 @@ class TNPC
 		std::vector<ScriptEventTimer> _scriptTimers;
 #endif
 };
+
+using TNPCPtr = std::shared_ptr<TNPC>;
+using TNPCWeakPtr = std::weak_ptr<TNPC>;
 
 inline
 time_t TNPC::getPropModTime(unsigned char pId)

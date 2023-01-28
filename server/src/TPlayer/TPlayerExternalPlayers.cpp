@@ -9,21 +9,22 @@ std::vector<CString> TPlayer::getPMServerList()
 
 bool TPlayer::addPMServer(CString& option)
 {
-	TServerList* list = server->getServerList();
+	auto& list = server->getServerList();
 
 	bool PMSrvExist = false;
-	for (std::vector<CString>::const_iterator ij = PMServerList.begin(); ij != PMServerList.end(); ++ij)
+	for (auto& pmServer : PMServerList)
 	{
-		if ((ij)->text() == option)
+		if (pmServer.text() == option)
 		{
 			PMSrvExist = true;
+			break;
 		}
 	}
 
 	if (!PMSrvExist)
 	{
 		PMServerList.push_back(option);
-		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
 		return true;
 	}
 	else
@@ -35,26 +36,22 @@ bool TPlayer::remPMServer(CString& option)
 	if (PMServerList.empty())
 		return true;
 
-	if (!externalPlayerList.empty())
+	if (!externalPlayers.empty())
 	{
 		// Check if a player has disconnected
-		for (auto ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		// By value to keep a hold of the shared_ptr until the next iteration.
+		for (auto [externalId, externalPlayer] : externalPlayers)
 		{
-			TPlayer* p = *ij;
-
-			if (option == p->getServerName())
+			if (option == externalPlayer->getServerName())
 			{
-				short pid = p->getId();
-				delete p;
-				ij = externalPlayerList.erase(ij);
+				// Map iterators are valid after erase.
+				externalPlayers.erase(externalId);
 
 				if (isRC())
-					sendPacket(CString() >> (char)PLO_DELPLAYER >> pid);
+					sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
 			}
-			else
-				++ij;
 		}
 	}
 
@@ -78,47 +75,40 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
 	
-	if (!externalPlayerList.empty())
+	if (!externalPlayers.empty())
 	{
 		// Check if a player has disconnected
-		for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		// By value to keep a hold of the shared_ptr until the next iteration.
+		for (auto [externalId, externalPlayer] : externalPlayers)
 		{
-			TPlayer* p = *ij;
 			bool exist2 = false;
-			for (std::vector<CString>::const_iterator i = players2.begin(); i != players2.end(); ++i)
+			for (auto& p2 : players2)
 			{
-				CString tmpPlyr = (i)->guntokenize();
+				CString tmpPlyr = p2.guntokenize();
 				CString account = tmpPlyr.readString("\n");
 				CString nick = tmpPlyr.readString("\n");
-				if (servername == p->getServerName() && account == p->getAccountName())
+				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
 				{
 					exist2 = true;
-					p->setNick(CString() << nick << " (on " << servername << ")");
-
+					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
 				}
-
 			}
-			if (servername == p->getServerName())
+			if (servername == externalPlayer->getServerName())
 			{
 				if (!exist2)
 				{
-					short pid = p->getId();
-					delete p;
-					ij = externalPlayerList.erase(ij);
+					// Map iterators are valid after erase.
+					externalPlayers.erase(externalId);
 					
 					if (isRC())
-						sendPacket(CString() >> (char)PLO_DELPLAYER >> pid);
+						sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 					else
-						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> pid >> (char)PLPROP_PCONNECTED);
+						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
 
 					//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
 					//server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 				}
-				else
-					++ij;
 			}
-			else
-				++ij;
 		}
 	}
 
@@ -129,64 +119,50 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		CString nick = tmpPlyr.readString("\n");
 
 		bool exist = false;
-		if (!externalPlayerList.empty())
+		if (!externalPlayers.empty())
 		{
-			for (std::vector<TPlayer*>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+			for (auto& [externalId, externalPlayer] : externalPlayers)
 			{
-				TPlayer* p = *ij;
-				if (servername == p->getServerName() && account == p->getAccountName())
+				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
 				{
-					p->setNick(CString() << nick << " (on " << servername << ")");
+					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
 					exist = true;
 				}
-				++ij;
 			}
 		}
 
 		if (!exist)
 		{
 			// Get a free id to be assigned to the new player.
-			unsigned int newId = 0;
-			for (unsigned int i = 16000; i < externalPlayerIds.size(); ++i)
+			unsigned int newId = nextExternalPlayerId;
+			if (!freeExternalPlayerIds.empty())
 			{
-				if (externalPlayerIds[i] == 0)
-				{
-					newId = i;
-					i = externalPlayerIds.size();
-				}
+				newId = *(freeExternalPlayerIds.begin());
+				freeExternalPlayerIds.erase(newId);
 			}
-			if (newId == 0)
-			{
-				newId = externalPlayerIds.size();
-				externalPlayerIds.push_back(nullptr);
-			}
+			else ++nextExternalPlayerId;
 
-			TPlayer* tmpPlyr2 = new TPlayer(server, 0, newId);
-			externalPlayerIds[newId] = tmpPlyr2;
+			auto tmpPlyr2 = std::make_shared<TPlayer>(server, nullptr, newId);
+			externalPlayers[newId] = tmpPlyr2;
 			tmpPlyr2->loadAccount(account);
 			tmpPlyr2->setAccountName(account);
 			tmpPlyr2->setServerName(servername);
 			tmpPlyr2->setExternal(true);
 			tmpPlyr2->setNick(CString() << nick << " (on " << servername << ")");
 			tmpPlyr2->setId(newId);
-
-			externalPlayerList.push_back(tmpPlyr2);
-
 		}
 	}
 
-	if (!externalPlayerList.empty())
+	if (!externalPlayers.empty())
 	{
-		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
+		for (auto& [externalId, externalPlayer] : externalPlayers)
 		{
 			if (isRC()) {
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(*ij)->getId() << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
+				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
 			}
 			else {
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(*ij)->getId() >> (char)PLPROP_ACCOUNTNAME << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
 			}
-
-			++ij;
 		}
 	}
 
@@ -195,32 +171,34 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 
 bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
-	TServerList* list = server->getServerList();
-	list->sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
+	auto& list = server->getServerList();
+	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
 	return true;
 }
 
-TPlayer* TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
+TPlayerPtr TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
-	if (id >= (unsigned short)externalPlayerIds.size()) return 0;
-	if (!includeRC && externalPlayerIds[id]->isControlClient()) return 0;
-	return externalPlayerIds[id];
+	auto iter = externalPlayers.find(id);
+	if (iter == std::end(externalPlayers)) return nullptr;
+
+	auto& externalPlayer = iter->second;
+	if (!includeRC && externalPlayer->isControlClient()) return nullptr;
+	return externalPlayer;
 }
 
-TPlayer* TPlayer::getExternalPlayer(const CString& account, bool includeRC) const
+TPlayerPtr TPlayer::getExternalPlayer(const CString& account, bool includeRC) const
 {
-	for (std::vector<TPlayer *>::const_iterator i = externalPlayerList.begin(); i != externalPlayerList.end(); ++i)
+	for (auto& [externalId, externalPlayer] : externalPlayers)
 	{
-		TPlayer *player = (TPlayer*)*i;
-		if (player == 0)
+		if (externalPlayer == 0)
 			continue;
 
-		if (!includeRC && player->isControlClient())
+		if (!includeRC && externalPlayer->isControlClient())
 			continue;
 
 		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
+		if (externalPlayer->getAccountName().toLower() == account.toLower())
+			return externalPlayer;
 	}
-	return 0;
+	return nullptr;
 }

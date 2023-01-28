@@ -37,6 +37,14 @@ auto methodstub(T* t, R(T::*m)(Args...)) {
 	};
 }
 
+// I don't want to deal with adding this to the gs2lib.
+CString operator<<(const CString& first, const CString& second)
+{
+	CString result{ first };
+	return result << second;
+}
+
+
 TServer::TServer(const CString& pName)
 	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
 	triggerActionDispatcher(methodstub(this, &TServer::createTriggerCommands))
@@ -50,6 +58,14 @@ TServer::TServer(const CString& pName)
 	auto time_now = std::chrono::high_resolution_clock::now();
 	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
 	calculateServerTime();
+
+	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
+	// Don't allow anything to have one of those ids.
+	// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
+	// The players from other servers should be unique lists for each player as they are fetched depending on
+	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
+	nextPlayerId = 2;
+	nextNpcId = 10001;
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getBaseHomePath() << "servers/" << name << "/";
@@ -87,14 +103,6 @@ TServer::~TServer()
 
 int TServer::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
 {
-	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
-	// Don't allow anything to have one of those ids.
-	// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
-	// The players from other servers should be unique lists for each player as they are fetched depending on
-	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-	playerIds.resize(2);
-	npcIds.resize(10001); // Starting npc ids at 10,000 from now on...
-
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
 	if (!mScriptEngine.Initialize())
@@ -216,14 +224,9 @@ void TServer::operator()()
 void TServer::cleanupDeletedPlayers()
 {
 	if (deletedPlayers.empty()) return;
-	for (auto i = deletedPlayers.begin(); i != deletedPlayers.end();)
+	for (auto i = std::begin(deletedPlayers); i != std::end(deletedPlayers);)
 	{
-		TPlayer* player = *i;
-		if (player == nullptr)
-		{
-			i = deletedPlayers.erase(i);
-			continue;
-		}
+		const std::shared_ptr<TPlayer>& player = *i;
 
 #ifdef V8NPCSERVER
 		IScriptObject<TPlayer> *playerObject = player->getScriptObject();
@@ -261,20 +264,9 @@ void TServer::cleanupDeletedPlayers()
 #endif
 
 		// Get rid of the player now.
-		playerIds[player->getId()] = nullptr;
-		for ( auto j = playerList.begin(); j != playerList.end();)
-		{
-			TPlayer* p = *j;
-			if (p == player)
-			{
-				// Unregister the player.
-				sockManager.unregisterSocket(p);
-
-				delete p;
-				j = playerList.erase(j);
-			}
-			else ++j;
-		}
+		freePlayerIds.insert(player->getId());
+		sockManager.unregisterSocket(player.get());
+		playerList.erase(player->getId());
 
 		i = deletedPlayers.erase(i);
 	}
@@ -306,30 +298,23 @@ void TServer::cleanup()
 	mNpcServer = nullptr;
 #endif
 
-	for (auto& player : playerList) {
-		delete player;
-	}
-	playerIds.clear();
 	playerList.clear();
+	deletedPlayers.clear();
+	freePlayerIds.clear();
+	nextPlayerId = 2;
 
-	for (auto& level : levelList) {
-		delete level;
-	}
 	levelList.clear();
-
 	mapList.clear();
+	groupLevels.clear();
 
-	for (auto& npc : npcList) {
-		delete npc;
-	}
     npcList.clear();
-	npcIds.clear();
 	npcNameList.clear();
+	freeNpcIds.clear();
+	//nextNpcIdLevel = 1;
+	//nextNpcIdGlobal = 10001;
+	nextNpcId = 10001;
 
 	saveWeapons();
-	for (auto& weapon : weaponList) {
-		delete weapon.second;
-	}
 	weaponList.clear();
 
 #ifdef V8NPCSERVER
@@ -338,7 +323,7 @@ void TServer::cleanup()
 #endif
 
 	playerSock.disconnect();
-	serverlist.getSocket()->disconnect();
+	serverlist.getSocket().disconnect();
 
 	// Clean up the socket manager.  Pass false so we don't cause a crash.
 	sockManager.cleanup(false);
@@ -382,7 +367,7 @@ bool TServer::doTimedEvents()
 
 	// Do player events.
 	{
-		for (auto & player : playerList)
+		for (auto& [id, player] : playerList)
 		{
 			assert(player);
             if (!player->isNPCServer())
@@ -395,22 +380,17 @@ bool TServer::doTimedEvents()
 
 	// Do level events.
 	{
-		for (auto level : levelList)
+		for (auto& level : levelList)
 		{
             assert(level);
 			level->doTimedEvents();
 		}
 
 		// Group levels.
-		for (auto & groupLevel : groupLevels)
+		for (auto& [group, levelPtr] : groupLevels)
 		{
-			for (auto & j : groupLevel.second)
-			{
-				TLevel* level = j.second;
-				assert(level);
-
+			if (auto level = levelPtr.lock(); level)
 				level->doTimedEvents();
-			}
 		}
 	}
 
@@ -421,7 +401,7 @@ bool TServer::doTimedEvents()
 		calculateServerTime();
 
 		lastNWTimer = lastTimer;
-        sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()), nullptr);
+        sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 	}
 
 	// Stuff that happens every minute.
@@ -469,32 +449,23 @@ bool TServer::doTimedEvents()
 		// Check all of the instanced maps to see if the players have left.
 		if (!groupLevels.empty())
 		{
-			for (auto i = groupLevels.begin(); i != groupLevels.end();)
-			{
-				// Check if any players are found.
-				bool playersFound = false;
-				for (auto & j : (*i).second)
-				{
-					TLevel* level = j.second;
-					if (!level->getPlayerList()->empty())
-					{
-						playersFound = true;
-						break;
-					}
-				}
+			std::unordered_set<std::string> groupKeys;
+			std::for_each(std::begin(groupLevels), std::end(groupLevels), [&groupKeys](auto& pair) { groupKeys.insert(pair.first); });
 
-				// If no players are found, delete all the levels in this instance.
+			for (auto& groupName : groupKeys)
+			{
+				bool playersFound = false;
+				auto range = groupLevels.equal_range(groupName);
+				std::for_each(range.first, range.second, [&playersFound](decltype(groupLevels)::value_type& pair)
+				{
+					if (auto level = pair.second.lock(); level && !level->getPlayerList().empty())
+						playersFound = true;
+				});
+
 				if (!playersFound)
 				{
-					for (auto & j : (*i).second)
-					{
-						TLevel* level = j.second;
-						delete level;
-					}
-					(*i).second.clear();
-					groupLevels.erase(i++);
+					groupLevels.erase(groupName);
 				}
-				else ++i;
 			}
 		}
 	}
@@ -510,17 +481,14 @@ bool TServer::onRecv()
 		return true;
 
 	// Create the new player.
-	auto *newPlayer = new TPlayer(this, newSock, 0);
+	auto newPlayer = std::make_shared<TPlayer>(this, newSock, 0);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))
-	{
-		delete newPlayer;
 		return false;
-	}
 
 	// Add them to the socket manager.
-	sockManager.registerSocket((CSocketStub*)newPlayer);
+	sockManager.registerSocket((CSocketStub*)newPlayer.get());
 
 	return true;
 }
@@ -673,7 +641,7 @@ void TServer::loadSettings()
 	staffList = settings.getStr("staff").tokenize(",");
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
-	getServerList()->sendServerHQ();
+	getServerList().sendServerHQ();
 }
 
 void TServer::loadAdminSettings()
@@ -682,7 +650,7 @@ void TServer::loadAdminSettings()
 	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
 	if (!adminsettings.isOpened())
 		serverlog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", name.text());
-	else getServerList()->sendServerHQ();
+	else getServerList().sendServerHQ();
 }
 
 void TServer::loadAllowedVersions()
@@ -769,10 +737,11 @@ void TServer::loadWeapons(bool print)
 	weaponFS.addDir("weapons", "weapon*.txt");
 	CFileSystem bcweaponFS(this);
 	bcweaponFS.addDir("weapon_bytecode", "*");
-	const std::map<CString, CString> &weaponFileList = weaponFS.getFileList();
-	for (auto & weaponFile : weaponFileList)
+
+	auto& weaponFileList = weaponFS.getFileList();
+	for (auto& weaponFile : weaponFileList)
 	{
-		TWeapon *weapon = TWeapon::loadWeapon(weaponFile.first, this);
+		auto weapon = TWeapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
 		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
@@ -788,16 +757,15 @@ void TServer::loadWeapons(bool print)
 		else
 		{
 			// If the weapon exists, and the version on disk is newer, reload it.
-			TWeapon* w = weaponList[weapon->getName()];
+			auto& w = weaponList[weapon->getName()];
 			if (w->getModTime() < weapon->getModTime())
 			{
-				delete w;
 				weaponList[weapon->getName()] = weapon;
 				updateWeaponForPlayers(weapon);
-				if (print) {
+				if (print)
+				{
 					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
-
-					TServer::sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
+					TServer::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
 			else
@@ -805,19 +773,18 @@ void TServer::loadWeapons(bool print)
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
 				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().c_str());
-				delete weapon;
 			}
 		}
 	}
 
 	// Add the default weapons.
-	if (weaponList.find("bow") == weaponList.end())	weaponList["bow"] = new TWeapon(this, TLevelItem::getItemId("bow"));
-	if (weaponList.find("bomb") == weaponList.end()) weaponList["bomb"] = new TWeapon(this, TLevelItem::getItemId("bomb"));
-	if (weaponList.find("superbomb") == weaponList.end()) weaponList["superbomb"] = new TWeapon(this, TLevelItem::getItemId("superbomb"));
-	if (weaponList.find("fireball") == weaponList.end()) weaponList["fireball"] = new TWeapon(this, TLevelItem::getItemId("fireball"));
-	if (weaponList.find("fireblast") == weaponList.end()) weaponList["fireblast"] = new TWeapon(this, TLevelItem::getItemId("fireblast"));
-	if (weaponList.find("nukeshot") == weaponList.end()) weaponList["nukeshot"] = new TWeapon(this, TLevelItem::getItemId("nukeshot"));
-	if (weaponList.find("joltbomb") == weaponList.end()) weaponList["joltbomb"] = new TWeapon(this, TLevelItem::getItemId("joltbomb"));
+	if (!weaponList.contains("bow"))	weaponList["bow"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("bow"));
+	if (!weaponList.contains("bomb")) weaponList["bomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("bomb"));
+	if (!weaponList.contains("superbomb")) weaponList["superbomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("superbomb"));
+	if (!weaponList.contains("fireball")) weaponList["fireball"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("fireball"));
+	if (!weaponList.contains("fireblast")) weaponList["fireblast"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("fireblast"));
+	if (!weaponList.contains("nukeshot")) weaponList["nukeshot"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("nukeshot"));
+	if (!weaponList.contains("joltbomb")) weaponList["joltbomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("joltbomb"));
 }
 
 void TServer::loadMapLevels()
@@ -833,11 +800,8 @@ void TServer::loadMapLevels()
 void TServer::loadMaps(bool print)
 {
 	// Remove players off all maps
-	for (auto& player : playerList)
-	{
-		if (player->getMap() != nullptr)
-			player->setMap(nullptr);
-	}
+	for (auto& [id, player] : playerList)
+		player->setMap(nullptr);
 
 	// Remove existing maps.
 	mapList.clear();
@@ -924,14 +888,14 @@ void TServer::loadMaps(bool print)
 			int mx, my;
 			if (map->isLevelOnMap(level->getLevelName().toLower().text(), mx, my))
 			{
-				level->setMap(map.get(), mx, my);
+				level->setMap(map, mx, my);
 				found = true;
 				break;
 			}
 		}
 
 		if (!found) {
-			level->setMap(nullptr);
+			level->setMap({});
 		}
 	}
 }
@@ -1008,20 +972,19 @@ void TServer::saveWeapons()
 	weaponFS.addDir("weapons", "weapon*.txt");
 	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
-	for (auto & weapon : weaponList)
+	for (auto& [weaponName, weapon] : weaponList)
 	{
-		TWeapon *weaponObject = weapon.second;
-		if (weaponObject->isDefault())
+		if (weapon->isDefault())
 			continue;
 
 		// TODO(joey): add a function to weapon to get the filename?
-		CString weaponFile = CString("weapon") << weapon.first << ".txt";
+		CString weaponFile = CString("weapon") << weaponName << ".txt";
 		time_t mod = weaponFS.getModTime(weaponFile);
-		if (weaponObject->getModTime() > mod)
+		if (weapon->getModTime() > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
-			weaponObject->saveWeapon();
-			weaponFS.setModTime(weaponFS.find(weaponFile), weaponObject->getModTime());
+			weapon->saveWeapon();
+			weaponFS.setModTime(weaponFS.find(weaponFile), weapon->getModTime());
 		}
 	}
 }
@@ -1119,32 +1082,27 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
-TPlayer * TServer::getPlayer(unsigned short id) const
+std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id) const
 {
-	if (id >= (unsigned short)playerIds.size())
+	auto iter = playerList.find(id);
+	if (iter == std::end(playerList))
 		return nullptr;
 
-	return playerIds[id];
+	return iter->second;
 }
 
-TPlayer* TServer::getPlayer(unsigned short id, int type) const
+std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id, int type) const
 {
-	if (id >= (unsigned short)playerIds.size())
+	auto player = getPlayer(id);
+	if (player == nullptr || !(player->getType() & type))
 		return nullptr;
 
-	if (playerIds[id] == nullptr)
-		return nullptr;
-
-	// Check if its the type of player we are looking for
-	if (!(playerIds[id]->getType() & type))
-		return nullptr;
-
-	return playerIds[id];
+	return player;
 }
 
-TPlayer* TServer::getPlayer(const CString& account, int type) const
+std::shared_ptr<TPlayer> TServer::getPlayer(const CString& account, int type) const
 {
-	for (auto player : playerList)
+	for (auto& [id, player] : playerList)
 	{
 		// Check if its the type of player we are looking for
 		if (!player || !(player->getType() & type))
@@ -1158,14 +1116,17 @@ TPlayer* TServer::getPlayer(const CString& account, int type) const
 	return nullptr;
 }
 
-TLevel* TServer::getLevel(const CString& pLevel)
+std::shared_ptr<TLevel> TServer::getLevel(const std::string& pLevel)
 {
 	return TLevel::findLevel(pLevel, this);
 }
 
-TWeapon* TServer::getWeapon(const CString& name)
+std::shared_ptr<TWeapon> TServer::getWeapon(const std::string& name)
 {
-	return (weaponList.find(name) != weaponList.end() ? weaponList[name] : 0);
+	auto iter = weaponList.find(name);
+	if (iter == std::end(weaponList))
+		return nullptr;
+	return iter->second;
 }
 
 CString TServer::getFlag(const std::string& pFlagName)
@@ -1292,31 +1253,24 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 }
 #endif
 
-TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
+std::shared_ptr<TNPC> TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<TLevel> pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	TNPC* newNPC = new TNPC(pImage, pScript.toString(), pX, pY, this, pLevel, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
-	npcList.push_back(newNPC);
+	auto level = pLevel.lock();
+	auto newNPC = std::make_shared<TNPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
-	// Assign NPC Id
-	bool assignedId = false;
-	for (unsigned int i = 10000; i < npcIds.size(); ++i)
+	// Get available NPC Id.
+	uint32_t newId = nextNpcId;
+	if (!freeNpcIds.empty())
 	{
-		if (npcIds[i] == nullptr)
-		{
-			npcIds[i] = newNPC;
-			newNPC->setId(i);
-			assignedId = true;
-			break;
-		}
+		newId = *freeNpcIds.begin();
+		freeNpcIds.erase(newId);
 	}
+	else ++nextNpcId;
 
-	// Assign NPC Id
-	if ( !assignedId )
-	{
-		newNPC->setId(npcIds.size());
-		npcIds.push_back(newNPC);
-	}
+	// Assign NPC Id and add to list.
+	newNPC->setId(newId);
+	npcList.insert(std::make_pair(newId, newNPC));
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
@@ -1324,41 +1278,35 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
 
 		// Send to level.
-		TMap* map = pLevel->getMap();
-		sendPacketToLevel(packet, map, pLevel, 0, true);
+		if (level)
+		{
+			if (auto map = level->getMap().lock(); map)
+				sendPacketToLevelArea(packet, pLevel);
+		}
 	}
 
 	return newNPC;
 }
 
-bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
+bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
 {
 	assert(npc);
-	assert(npc->getId() < npcIds.size());
 
-	if (npc == nullptr) return false;
-	if (npc->getId() >= npcIds.size()) return false;
+	// Erase NPC from the list.
+	npcList.erase(npc->getId());
 
-	// Remove the NPC from all the lists.
-	npcIds[npc->getId()] = nullptr;
-
-	npcList.erase(
-		std::remove(npcList.begin(), npcList.end(), npc),
-		npcList.end());
-
-	TLevel *level = npc->getLevel();
-
-	if (level)
+	if (auto level = npc->getLevel(); level)
 	{
 		// Remove the NPC from the level
 		if (eraseFromLevel)
 			level->removeNPC(npc);
 
 		// Tell the clients to delete the NPC.
-		bool isOnMap = level->getMap() != nullptr;
-		CString tmpLvlName = (isOnMap ? level->getMap()->getMapName() : level->getLevelName());
+		auto map = level->getMap().lock();
+		bool isOnMap = map != nullptr;
+		CString tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName());
 
-		for (auto p : playerList)
+		for (auto& [pid, p] : playerList)
 		{
 			if (p->isClient())
 			{
@@ -1393,9 +1341,6 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 	}
 #endif
 
-	// Delete the NPC from memory.
-	delete npc;
-
 	return true;
 }
 
@@ -1424,42 +1369,30 @@ void TServer::updateClass(const std::string& className, const std::string& class
 	fileData.save(filePath);
 }
 
-unsigned int TServer::getFreePlayerId()
+uint16_t TServer::getFreePlayerId()
 {
-	unsigned int newId = 0;
-	for (auto i = 2; i < playerIds.size(); ++i)
+	uint16_t newId = nextPlayerId;
+	if (!freePlayerIds.empty())
 	{
-		if (playerIds[i] == nullptr)
-		{
-			newId = i;
-			i = playerIds.size();
-		}
+		newId = *(freePlayerIds.begin());
+		freePlayerIds.erase(newId);
 	}
-	if (newId == 0)
-	{
-		newId = playerIds.size();
-		playerIds.push_back(nullptr);
-	}
+	else ++nextPlayerId;
 
 	return newId;
 }
 
-bool TServer::addPlayer(TPlayer *player, unsigned int id)
+bool TServer::addPlayer(TPlayerPtr player, uint16_t id)
 {
     assert(player);
 
 	// No id was passed, so we will fetch one
-	if (id == UINT_MAX)
+	if (id == USHRT_MAX)
 		id = getFreePlayerId();
-	else if (playerIds.size() <= id)
-		playerIds.resize((size_t)id + 10);
-	else if (playerIds[id] != nullptr)
-		return false;
 
 	// Add them to the player list.
 	player->setId(id);
-	playerIds[id] = player;
-	playerList.push_back(player);
+	playerList[id] = player;
 
 #ifdef V8NPCSERVER
 	// Create script object for player
@@ -1469,25 +1402,25 @@ bool TServer::addPlayer(TPlayer *player, unsigned int id)
 	return true;
 }
 
-bool TServer::deletePlayer(TPlayer* player)
+bool TServer::deletePlayer(TPlayerPtr player)
 {
 	if (player == nullptr)
 		return true;
 
 	// Add the player to the set of players to delete.
-	if ( deletedPlayers.insert(player).second )
+	if (deletedPlayers.insert(player).second)
 	{
 		// Remove the player from the serverlist.
-		getServerList()->deletePlayer(player);
+		getServerList().deletePlayer(player);
 	}
 
 	return true;
 }
 
-void TServer::playerLoggedIn(TPlayer *player)
+void TServer::playerLoggedIn(TPlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
-	getServerList()->addPlayer(player);
+	getServerList().addPlayer(player);
 
 #ifdef V8NPCSERVER
 	// Send event to server that player is logging in
@@ -1557,7 +1490,7 @@ bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	{
 		mServerFlags.erase(mServerFlag);
 		if (pSendToPlayers)
-            sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName, nullptr);
+            sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
 		return true;
 	}
 
@@ -1593,226 +1526,144 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	else mServerFlags[pFlagName] = pFlagValue;
 
 	if (pSendToPlayers)
-        sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue, nullptr);
+        sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
 	return true;
 }
 
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(CString pPacket, TPlayer *sender) const
+
+void TServer::sendPacketToAll(CString packet, const std::set<uint16_t>& exclude) const
 {
-	for (auto player : playerList)
+	for (auto& [id, player] : playerList)
 	{
-		if (player == sender || player->isNPCServer())
+		if (exclude.contains(id))
+			continue;
+		if (player->isNPCServer())
 			continue;
 
-		player->sendPacket(pPacket);
+		player->sendPacket(packet);
 	}
 }
 
-void TServer::sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer) const
+void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
 {
-	if (!pLevel)
-		return;
+	auto levelp = level.lock();
+	if (!levelp) return;
 
-	if (!pLevel->getMap())
+	// If we have no map, just send to the level players.
+	if (levelp->getMap().expired())
 	{
-		for (auto p : playerList)
+		for (auto id : levelp->getPlayerList())
 		{
-			if (p != pPlayer && p->isClient() && p->getLevel() == pLevel)
-				p->sendPacket(pPacket);
+			if (exclude.contains(id)) continue;
+			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
+				other->sendPacket(packet);
 		}
 	}
 	else
 	{
-		for (auto other : playerList)
-		{
-			if (other != pPlayer && other->isClient() && other->getMap() == pLevel->getMap())
-			{
-				int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
-				int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
+		auto mapp = levelp->getMap().lock();
+		if (!mapp) return;
 
-				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-					other->sendPacket(pPacket);
-			}
+		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
+
+		for (auto& [id, other] : playerList)
+		{
+			if (exclude.contains(id)) continue;
+			if (!other->isClient()) continue;
+			if (sendIf != nullptr && !sendIf(other.get())) continue;
+
+			auto othermap = other->getMap().lock();
+			if (!othermap || othermap != mapp) continue;
+
+			// Check if they are nearby before sending the packet.
+			auto ogmap{ other->getMapPosition() };
+			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+				other->sendPacket(packet);
 		}
 	}
 }
 
-void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
+void TServer::sendPacketToLevelArea(CString packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t> &exclude, PlayerPredicate sendIf) const
 {
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP))// || pLevel->isGroupLevel())
+	auto playerp = player.lock();
+	if (!playerp) return;
+
+	auto level = playerp->getLevel();
+	if (!level) return;
+
+	// If we have no map, just send to the level players.
+	if (level->getMap().expired())
 	{
-		for (auto p : playerList)
+		for (auto id : level->getPlayerList())
 		{
-			if ( p == pPlayer || !p->isClient()) continue;
-			if ( p->getLevel() == pLevel)
-				p->sendPacket(pPacket);
+			if (exclude.contains(id)) continue;
+			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
+				other->sendPacket(packet);
 		}
-		return;
 	}
-
-	if (pLevel == 0) return;
-	bool _groupMap = pPlayer && pPlayer->getMap()->isGroupMap();
-	for (auto other : playerList)
+	else
 	{
-			if (!other->isClient() || other == pPlayer || other->getLevel() == 0) continue;
-		if (_groupMap && pPlayer != 0 && pPlayer->getGroup() != other->getGroup()) continue;
+		auto mapp = level->getMap().lock();
+		if (!mapp) return;
 
-		if (other->getMap() == pMap)
+		auto isGroupMap = mapp->isGroupMap();
+		auto sgmap{ playerp->getMapPosition() };
+
+		for (auto& [id, other] : playerList)
 		{
-			int sgmap[2] = { pLevel->getMapX(), pLevel->getMapY() };
-			int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
-			//switch (pMap->getType())
-			//{
-			//	case MapType::GMAP:
-			//		ogmap[0] = other->getProp(PLPROP_GMAPLEVELX).readGUChar();
-			//		ogmap[1] = other->getProp(PLPROP_GMAPLEVELY).readGUChar();
-			//		break;
+			if (exclude.contains(id)) continue;
+			if (!other->isClient()) continue;
+			if (sendIf != nullptr && !sendIf(other.get())) continue;
 
-			//	default:
-			//	case MapType::BIGMAP:
-			//		ogmap[0] = other->getLevel()->getMapX(); // pMap->getLevelX(other->getLevel()->getActualLevelName().text());
-			//		ogmap[1] = other->getLevel()->getMapY(); // pMap->getLevelY(other->getLevel()->getActualLevelName().text());
-			//		break;
-			//}
+			auto othermap = other->getMap().lock();
+			if (!othermap || othermap != mapp) continue;
+			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
 
-			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				other->sendPacket(pPacket);
+			// Check if they are nearby before sending the packet.
+			auto ogmap{ other->getMapPosition() };
+			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+				other->sendPacket(packet);
 		}
 	}
 }
 
-void TServer::sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+void TServer::sendPacketToOneLevel(CString packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude) const
 {
-	if (!pPlayer->getLevel())
-		return;
+	auto levelp = level.lock();
+	if (!levelp) return;
 
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	for (auto id : levelp->getPlayerList())
 	{
-		TLevel* level = pPlayer->getLevel();
-		if (level == nullptr) return;
-		for (auto p : playerList)
-		{
-			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
-			if ( p->getLevel() == level)
-				p->sendPacket(pPacket);
-		}
-		return;
-	}
-
-	bool _groupMap = pPlayer->getMap()->isGroupMap();
-	for (auto player : playerList)
-	{
-		if (!player->isClient()) continue;
-		if ( player == pPlayer)
-		{
-			if (sendToSelf) pPlayer->sendPacket(pPacket);
-			continue;
-		}
-		if ( player->getLevel() == nullptr) continue;
-		if (_groupMap && pPlayer->getGroup() != player->getGroup()) continue;
-
-		if ( player->getMap() == pMap)
-		{
-			int ogmap[2], sgmap[2];
-			switch (pMap->getType())
-			{
-				case MapType::GMAP:
-					ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
-					ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
-					sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
-					sgmap[1] = pPlayer->getProp(PLPROP_GMAPLEVELY).readGUChar();
-					break;
-
-				default:
-				case MapType::BIGMAP:
-					ogmap[0] = player->getLevel()->getMapX();
-					ogmap[1] = player->getLevel()->getMapY();
-					sgmap[0] = pPlayer->getLevel()->getMapX();
-					sgmap[1] = pPlayer->getLevel()->getMapY();
-					break;
-			}
-
-			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				player->sendPacket(pPacket);
-		}
+		if (exclude.contains(id)) continue;
+		if (auto player = this->getPlayer(id); player->isClient())
+			player->sendPacket(packet);
 	}
 }
 
-void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+void TServer::sendPacketToType(int who, CString pPacket, std::weak_ptr<TPlayer> pPlayer) const
 {
-	if (!pPlayer->getLevel())
-		return;
+	auto p = pPlayer.lock();
+	if (!p) return;
 
-	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
-	{
-		TLevel* level = pPlayer->getLevel();
-		for (auto p : playerList)
-		{
-			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
-			if (p->getLevel() == level && predicate(p))
-				p->sendPacket(pPacket);
-		}
-		return;
-	}
-
-	bool _groupMap = pPlayer->getMap()->isGroupMap();
-	for (auto player : playerList)
-	{
-		if (!player->isClient()) continue;
-		if (player == pPlayer)
-		{
-			if (sendToSelf) pPlayer->sendPacket(pPacket);
-			continue;
-		}
-		if (player->getLevel() == nullptr) continue;
-		if (_groupMap && pPlayer->getGroup() != player->getGroup()) continue;
-
-		if (player->getMap() == pMap && predicate(player))
-		{
-			int ogmap[2], sgmap[2];
-			switch (pMap->getType())
-			{
-			case MapType::GMAP:
-				ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
-				ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
-				sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
-				sgmap[1] = pPlayer->getProp(PLPROP_GMAPLEVELY).readGUChar();
-				break;
-
-			default:
-			case MapType::BIGMAP:
-				ogmap[0] = player->getLevel()->getMapX();
-				ogmap[1] = player->getLevel()->getMapY();
-				sgmap[0] = pPlayer->getLevel()->getMapX();
-				sgmap[1] = pPlayer->getLevel()->getMapY();
-				break;
-			}
-
-			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				player->sendPacket(pPacket);
-		}
-	}
+	sendPacketToType(who, pPacket, p.get());
 }
 
-void TServer::sendPacketTo(int who, CString pPacket, TPlayer* pPlayer) const
+void TServer::sendPacketToType(int who, CString pPacket, TPlayer* pPlayer) const
 {
-	for (auto player : playerList)
+	for (auto& [id, player] : playerList)
 	{
-		if (player != pPlayer)
-		{
-			if (player->getType() & who)
-				player->sendPacket(pPacket);
-		}
+		if (id != pPlayer->getId() && (player->getType() & who))
+			player->sendPacket(pPacket);
 	}
 }
 
 /*
 	NPC-Server Functionality
 */
-bool TServer::NC_AddWeapon(TWeapon *pWeaponObj)
+bool TServer::NC_AddWeapon(std::shared_ptr<TWeapon> pWeaponObj)
 {
 	if (pWeaponObj == nullptr)
 		return false;
@@ -1821,10 +1672,10 @@ bool TServer::NC_AddWeapon(TWeapon *pWeaponObj)
 	return true;
 }
 
-bool TServer::NC_DelWeapon(const CString& pWeaponName)
+bool TServer::NC_DelWeapon(const std::string& pWeaponName)
 {
 	// Definitions
-	TWeapon *weaponObj = getWeapon(pWeaponName);
+	auto weaponObj = getWeapon(pWeaponName);
 	if (!weaponObj || weaponObj->isDefault())
 		return false;
 
@@ -1840,18 +1691,17 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	remove(filePath.text());
 
 	// Delete from Memory
-	mapRemove<CString, TWeapon *>(weaponList, weaponObj);
-	delete weaponObj;
+	weaponList.erase(pWeaponName);
 
 	// Delete from Players
-	sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
+	sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
 	return true;
 }
 
-void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
+void TServer::updateWeaponForPlayers(std::shared_ptr<TWeapon> pWeapon)
 {
 	// Update Weapons
-	for (auto player : playerList)
+	for (auto& [id, player] : playerList)
 	{
 		if (!player->isClient())
 			continue;
@@ -1867,7 +1717,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 void TServer::updateClassForPlayers(TScriptClass *pClass)
 {
 	// Update Weapons
-	for (auto player : playerList)
+	for (auto& [id, player] : playerList)
 	{
 		if (!player->isClient())
 			continue;
