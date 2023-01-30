@@ -585,7 +585,7 @@ CString TAccount::translate(const CString& pKey)
 
 void TAccount::setMaxPower(int newMaxPower)
 {
-	auto settings = server->getSettings();
+	const auto& settings = server->getSettings();
 	
 	auto heartLimit = std::min(settings.getInt("heartlimit", 3), 20);
 	maxPower = clip(newMaxPower, 0, heartLimit);
@@ -593,14 +593,14 @@ void TAccount::setMaxPower(int newMaxPower)
 
 void TAccount::setShieldPower(int newPower)
 {
-	auto settings = server->getSettings();
+	const auto& settings = server->getSettings();
 
 	shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
 }
 
 void TAccount::setSwordPower(int newPower)
 {
-	auto settings = server->getSettings();
+	const auto& settings = server->getSettings();
 
 	swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
 }
