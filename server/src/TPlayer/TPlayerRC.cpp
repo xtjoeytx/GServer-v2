@@ -482,8 +482,8 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)server->getServerFlags().size();
 	for (const auto& [flag, value] : server->getServerFlags())
 	{
-		CString flag = CString() << flag << "=" << value;
-		ret >> (char)flag.length() << flag;
+		CString flagString = CString() << flag << "=" << value;
+		ret >> (char)flagString.length() << flagString;
 	}
 	sendPacket(ret);
 	return true;
