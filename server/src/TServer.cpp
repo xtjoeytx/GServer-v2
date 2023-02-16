@@ -1417,6 +1417,19 @@ void TServer::playerLoggedIn(TPlayerPtr player)
 #endif
 }
 
+bool TServer::warpPlayerToSafePlace(uint16_t playerId) {
+	auto player = getPlayer(playerId);
+	if (player == nullptr) return false;
+
+	// Try unstick me level.
+	CString unstickLevel = settings.getStr("unstickmelevel", "onlinestartlocal.nw");
+	float unstickX = settings.getFloat("unstickmex", 30.0f);
+	float unstickY = settings.getFloat("unstickmey", 30.5f);
+	return player->warp(unstickLevel, unstickX, unstickY);
+
+	// TODO: Maybe try the default account level?
+}
+
 void TServer::calculateServerTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000

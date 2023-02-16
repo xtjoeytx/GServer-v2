@@ -18,7 +18,7 @@ extern int __attrPackets[30];
 */
 void TPlayer::getProp(CString& buffer, int pPropId) const
 {
-	auto level = getLevel();
+	auto level = curlevel.lock();
 	auto map = pmap.lock();
 
 	switch (pPropId)

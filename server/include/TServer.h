@@ -214,6 +214,7 @@ class TServer : public CSocketStub
 		bool addPlayer(std::shared_ptr<TPlayer> player, uint16_t id = USHRT_MAX);
 		bool deletePlayer(std::shared_ptr<TPlayer> player);
 		void playerLoggedIn(std::shared_ptr<TPlayer> player);
+		bool warpPlayerToSafePlace(uint16_t playerId);
 
 		// Translation Management
 		bool TS_Load(const CString& pLanguage, const CString& pFileName);

@@ -1432,7 +1432,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	CSettings& settings = server->getSettings();
 
 	// Save our current level.
-	auto currentLevel = getLevel();
+	auto currentLevel = curlevel.lock();
 
 	// Find the level.
 	auto newLevel = TLevel::findLevel(pLevelName, server);
@@ -1498,8 +1498,10 @@ std::shared_ptr<TLevel> TPlayer::getLevel() const
 	auto pLevel = curlevel.lock();
 	if (pLevel) return pLevel;
 
-	// TODO: Level was bad, warp player somewhere good!
-	assert(false);
+	if (isClient() && server->warpPlayerToSafePlace(id)) {
+		return curlevel.lock();
+	}
+
 	return {};
 }
 
@@ -1796,7 +1798,7 @@ bool TPlayer::sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool 
 bool TPlayer::leaveLevel(bool resetCache)
 {
 	// Make sure we are on a level first.
-	auto levelp = getLevel();
+	auto levelp = curlevel.lock();
 	if (!levelp) return true;
 
 	// Save the time we left the level for the client-side caching.
