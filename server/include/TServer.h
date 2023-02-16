@@ -237,12 +237,6 @@ class TServer : public CSocketStub
 		void compileGS2Script(TWeapon *weapon, GS2ScriptManager::user_callback_type cb);
 		void compileGS2Script(TScriptClass *cls, GS2ScriptManager::user_callback_type cb);
 
-		template<typename T>
-		void invalidateGS2ScriptCache(T *scriptObject) {
-			std::string script{scriptObject->getSource().getClientGS2()};
-			gs2ScriptManager.invalidateCache(script);
-		}
-
 		std::time_t getServerStartTime() const {
 			return serverStartTime;
 		}

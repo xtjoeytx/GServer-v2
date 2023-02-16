@@ -518,7 +518,6 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 			return true;
 
 		// Update Weapon
-		server->invalidateGS2ScriptCache(weaponObj.get());
 		weaponObj->updateWeapon(std::move(weaponImage), std::move(weaponCode));
 
 		// Update Player-Weapons

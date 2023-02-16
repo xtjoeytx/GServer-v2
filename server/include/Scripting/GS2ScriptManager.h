@@ -28,7 +28,6 @@ public:
 
 	void compileScript(const std::string& script, user_callback_type finishedCb);
 	void runQueue();
-	void invalidateCache(const std::string &script);
 
 private:
 	// Async Compile
