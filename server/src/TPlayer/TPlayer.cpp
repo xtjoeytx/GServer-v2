@@ -341,7 +341,7 @@ TPlayer::~TPlayer()
 	if (playerSock)
 		fileQueue.sendCompress();
 
-	if (id >= 0 && server != 0 && loaded)
+	if (id >= 0 && server != nullptr && loaded)
 	{
 		// Save account.
 		if (isClient() && !isLoadOnly)
@@ -1495,6 +1495,8 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 
 std::shared_ptr<TLevel> TPlayer::getLevel() const
 {
+	if (isHiddenClient()) return {};
+
 	auto pLevel = curlevel.lock();
 	if (pLevel) return pLevel;
 
@@ -1709,9 +1711,9 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 	}
 
 	// Send connecting player props to players in nearby levels.
-	if (auto level = getLevel(); level && !level->isSingleplayer())
+	if (auto level = curlevel.lock(); level && !level->isSingleplayer())
 	{
-		server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this());
+		server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this(), { id });
 	}
 
 	return true;
@@ -1781,7 +1783,7 @@ bool TPlayer::sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool 
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)
 	{
-		server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), this->shared_from_this());
+		server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this(), { id });
 
 		for (auto id : pLevel->getPlayerList())
 		{
@@ -1829,7 +1831,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 	// This prop isn't used at all???  Maybe it is required for 1.41?
 //	if (pmap && pmap->getType() != MAPTYPE_GMAP)
 	{
-		server->sendPacketToLevelArea(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, this->shared_from_this());
+		server->sendPacketToLevelArea(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, this->shared_from_this(), { id });
 
 		for (auto& [id, player] : server->getPlayerList())
 		{

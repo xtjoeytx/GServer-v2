@@ -1639,13 +1639,14 @@ void TServer::sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> 
 void TServer::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer) const
 {
 	auto p = pPlayer.lock();
-	if (!p) return;
+	if (!p || !running) return;
 
 	sendPacketToType(who, pPacket, p.get());
 }
 
 void TServer::sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const
 {
+	if (!running) return;
 	for (auto& [id, player] : playerList)
 	{
 		if (id != pPlayer->getId() && (player->getType() & who))

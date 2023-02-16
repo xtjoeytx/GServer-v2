@@ -774,7 +774,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						// We own this NPC now so remove it from the level and have everybody else delete it.
 						auto npc = server->getNPC(carryNpcId);
 						level->removeNPC(npc);
-                        server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId);
+						server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId, { id });
 					}
 				}
 			}
