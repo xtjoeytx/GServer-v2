@@ -91,3 +91,8 @@ void GS2ScriptManager::runQueue()
 		tmpQueue.pop();
 	}
 }
+
+void GS2ScriptManager::invalidateCache(const std::string& script)
+{
+	_bytecodeCache.erase(script);
+}
