@@ -1419,9 +1419,9 @@ TLevelBaddy* TLevel::getBaddy(uint8_t id)
 	return iter->second.get();
 }
 
-int TLevel::addPlayer(std::shared_ptr<TPlayer> player)
+int TLevel::addPlayer(uint16_t id)
 {
-	levelPlayers.push_back(player->getId());
+	levelPlayers.push_back(id);
 
 #ifdef V8NPCSERVER
 	for (auto& npcId : levelNPCs)
@@ -1429,6 +1429,7 @@ int TLevel::addPlayer(std::shared_ptr<TPlayer> player)
 		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
 		{
+			auto player = server->getPlayer(id);
 			npc->queueNpcAction("npc.playerenters", player.get());
 		}
 	}
@@ -1437,9 +1438,8 @@ int TLevel::addPlayer(std::shared_ptr<TPlayer> player)
 	return static_cast<int>(levelPlayers.size() - 1);
 }
 
-void TLevel::removePlayer(std::shared_ptr<TPlayer> player)
-{
-	std::erase(levelPlayers, player->getId());
+void TLevel::removePlayer(uint16_t id) {
+	std::erase(levelPlayers, id);
 
 #ifdef V8NPCSERVER
 	for (auto& npcId : levelNPCs)
@@ -1447,6 +1447,7 @@ void TLevel::removePlayer(std::shared_ptr<TPlayer> player)
 		auto npc = server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
 		{
+			auto player = server->getPlayer(id);
 			npc->queueNpcAction("npc.playerleaves", player.get());
 		}
 	}

@@ -264,6 +264,7 @@ void TServer::cleanupDeletedPlayers()
 #endif
 
 		// Get rid of the player now.
+		player->cleanup();
 		freePlayerIds.insert(player->getId());
 		sockManager.unregisterSocket(player.get());
 		playerList.erase(player->getId());
@@ -297,6 +298,9 @@ void TServer::cleanup()
 	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
 	mNpcServer = nullptr;
 #endif
+
+	for (auto &[id, player]: playerList)
+		player->cleanup();
 
 	playerList.clear();
 	deletedPlayers.clear();

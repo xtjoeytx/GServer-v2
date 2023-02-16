@@ -191,11 +191,11 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! Adds a player to the level.
 		//! \param player The player to add.
 		//! \return The id number of the player in the level.
-		int addPlayer(std::shared_ptr<TPlayer> player);
+		int addPlayer(uint16_t id);
 
 		//! Removes a player from the level.
 		//! \param player The player to remove.
-		void removePlayer(std::shared_ptr<TPlayer> player);
+		void removePlayer(uint16_t id);
 
 		//! Gets if the player is the current level leader.
 		//! \param id The player id to check.

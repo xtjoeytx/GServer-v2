@@ -703,8 +703,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					// ourself from the leader position and tell the new leader that they are the leader.
 					if (level->isPlayerLeader(id) && level->getPlayerList().size() > 1)
 					{
-						level->removePlayer(shared_from_this());
-						level->addPlayer(shared_from_this());
+						level->removePlayer(id);
+						level->addPlayer(id);
 
 						auto leader = server->getPlayer(level->getPlayerList().front());
 						if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);

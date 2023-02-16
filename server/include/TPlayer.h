@@ -53,6 +53,7 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		// Constructor - Deconstructor
 		TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId);
 		~TPlayer();
+		void cleanup();
 
 		// Manage Account
 		bool isLoggedIn() const;

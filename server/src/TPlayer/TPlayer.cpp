@@ -337,12 +337,18 @@ packetCount(0), firstLevel(true), invalidPackets(0)
 
 TPlayer::~TPlayer()
 {
-	// Send all unsent data (for disconnect messages and whatnot).
-	if (playerSock)
-		fileQueue.sendCompress();
+	cleanup();
+}
 
-	if (id >= 0 && server != nullptr && loaded)
-	{
+void TPlayer::cleanup()
+{
+	if (playerSock == nullptr)
+		return;
+
+	// Send all unsent data (for disconnect messages and whatnot).
+	fileQueue.sendCompress();
+
+	if (id >= 0 && server != nullptr && loaded) {
 		// Save account.
 		if (isClient() && !isLoadOnly)
 			saveAccount();
@@ -351,14 +357,12 @@ TPlayer::~TPlayer()
 		if (!curlevel.expired()) leaveLevel();
 
 		// Announce our departure to other clients.
-		if (!isNC())
-		{
+		if (!isNC()) {
 			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
 			server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 		}
 
-		if (!accountName.isEmpty())
-		{
+		if (!accountName.isEmpty()) {
 			if (isRC())
 				server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << accountName, this);
 			else if (isNC())
@@ -380,10 +384,10 @@ TPlayer::~TPlayer()
 
 	if (playerSock)
 		delete playerSock;
+	playerSock = nullptr;
 
 #ifdef V8NPCSERVER
-	if (_scriptObject)
-	{
+	if (_scriptObject) {
 		_scriptObject.reset();
 	}
 #endif
@@ -1572,7 +1576,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	}
 
 	// Add myself to the level playerlist.
-	newLevel->addPlayer(this->shared_from_this());
+	newLevel->addPlayer(id);
 	levelName = newLevel->getLevelName();
 
 	// Tell the client their new level.
@@ -1818,7 +1822,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 	if (!found) cachedLevels.push_back(std::make_unique<SCachedLevel>(curlevel, time(0)));
 
 	// Remove self from list of players in level.
-	levelp->removePlayer(this->shared_from_this());
+	levelp->removePlayer(id);
 
 	// Send PLO_ISLEADER to new level leader.
 	if (auto& levelPlayerList = levelp->getPlayerList(); !levelPlayerList.empty())
