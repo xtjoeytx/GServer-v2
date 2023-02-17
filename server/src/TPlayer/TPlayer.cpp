@@ -348,7 +348,8 @@ void TPlayer::cleanup()
 	// Send all unsent data (for disconnect messages and whatnot).
 	fileQueue.sendCompress();
 
-	if (id >= 0 && server != nullptr && loaded) {
+	if (id >= 0 && server != nullptr && loaded)
+	{
 		// Save account.
 		if (isClient() && !isLoadOnly)
 			saveAccount();

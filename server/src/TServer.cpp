@@ -264,10 +264,10 @@ void TServer::cleanupDeletedPlayers()
 #endif
 
 		// Get rid of the player now.
-		player->cleanup();
 		freePlayerIds.insert(player->getId());
 		sockManager.unregisterSocket(player.get());
 		playerList.erase(player->getId());
+		player->cleanup();
 
 		i = deletedPlayers.erase(i);
 	}
