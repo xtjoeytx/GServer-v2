@@ -1743,7 +1743,7 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPla
 	}
 }
 
-void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+void TServer::sendPacketToLevel(PlayerPredicate predicate, char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (!pPlayer->getLevel())
 		return;
@@ -1755,7 +1755,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap
 		{
 			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
 			if (p->getLevel() == level && predicate(p))
-				p->sendPacket(pPacket);
+				p->sendPacket(packetId, pPacket);
 		}
 		return;
 	}
@@ -1766,7 +1766,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap
 		if (!player->isClient()) continue;
 		if (player == pPlayer)
 		{
-			if (sendToSelf) pPlayer->sendPacket(pPacket);
+			if (sendToSelf) pPlayer->sendPacket(packetId, pPacket);
 			continue;
 		}
 		if (player->getLevel() == nullptr) continue;
@@ -1794,7 +1794,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap
 			}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				player->sendPacket(pPacket);
+				player->sendPacket(packetId, pPacket);
 		}
 	}
 }

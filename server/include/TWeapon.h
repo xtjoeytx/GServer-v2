@@ -5,7 +5,9 @@
 #include <time.h>
 #include "CString.h"
 #include "TLevelItem.h"
+#include "TPacket.h"
 #include "SourceCode.h"
+#include "IEnums.h"
 
 #ifdef V8NPCSERVER
 #include <memory>

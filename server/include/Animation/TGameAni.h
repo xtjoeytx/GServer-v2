@@ -73,7 +73,7 @@ public:
 
 	//! Get the bytecode packet to send to clients for the ani script
 	//! \return bytecode packet
-	CString getBytecodePacket() const;
+	void sendBytecodePacket(TPlayer* p) const;
 
 	//! Load a TGameAni from the filesystem
 	//! \param server Global server pointer so we can fetch the correct filesystem

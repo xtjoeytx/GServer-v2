@@ -3847,18 +3847,18 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
+	CString oldPacketBuf = CString() >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (short)id << newPacket.constructShootV2();
 
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
-	                          }, oldPacketBuf, pmap, this, false);
+	                          }, PLO_SHOOT, oldPacketBuf, pmap, this, false);
 
 	server->sendPacketToLevel([](const TPlayer* pl)
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
-	                          }, newPacketBuf, pmap, this, false);
+	                          }, PLO_SHOOT2, newPacketBuf, pmap, this, false);
 
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
@@ -3897,18 +3897,18 @@ bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
+	CString oldPacketBuf = CString() >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (short)id << newPacket.constructShootV2();
 
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() < CLVER_5_07;
-	                          }, oldPacketBuf, pmap, this, false);
+	                          }, PLO_SHOOT, oldPacketBuf, pmap, this, false);
 
 	server->sendPacketToLevel([](const TPlayer* pl) -> bool
 	                          {
 		                          return pl->getVersion() >= CLVER_5_07;
-	                          }, newPacketBuf, pmap, this, false);
+	                          }, PLO_SHOOT2, newPacketBuf, pmap, this, false);
 
 	return true;
 }

@@ -11,6 +11,7 @@
 #include "TAccount.h"
 #include "CEncryption.h"
 #include "CSocket.h"
+#include "TPacket.h"
 
 #ifdef V8NPCSERVER
 #include "ScriptBindings.h"
