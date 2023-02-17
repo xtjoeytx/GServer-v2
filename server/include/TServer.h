@@ -199,11 +199,14 @@ class TServer : public CSocketStub
 		void sendToNC(const CString& pMessage, TPlayer *pSender = nullptr) const;
 
 		// Packet sending.
-		void sendPacketToAll(char packetId, CString pPacket, TPlayer *pSender) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketTo(char packetId, int who, CString pPacket, TPlayer* pPlayer = 0) const;
+		using PlayerPredicate = std::function<bool(const TPlayer *)>;
+
+		void sendPacketToAll(CString pPacket, TPlayer *pSender) const;
+		void sendPacketToLevel(CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
+		void sendPacketToLevel(CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
+		void sendPacketToLevel(CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketTo(int who, CString pPacket, TPlayer* pPlayer = 0) const;
 
 		// Player Management
 		unsigned int getFreePlayerId();

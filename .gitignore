@@ -1,5 +1,6 @@
 *.bat
 *.swp
+*.zst
 ..gitignore.swp
 .idea/
 .svn/
@@ -11,16 +12,15 @@ bin/*.dll
 bin/*.exe
 bin/*.pdb
 bin/*.zip
+bin/*.txt
 bin/GS2Emu.*
 bin/gs2emu*
 bin/servers/*
 bin/servers/default/logs/npclog.txt
 bin/servers/default/logs/serverlog.txt
 bin/servers/default/npcs/npcControl-NPC.txt
-bin/startuplog.txt
 build*/*
 cmake-build-*/
-dependencies/
 dependencies/.cipd/
 lib/
 out/

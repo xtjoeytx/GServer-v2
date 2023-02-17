@@ -14,10 +14,15 @@ class TLevelSign
 		CString getSignStr(TPlayer *pPlayer = 0) const;
 
 		// get private variables
-		int getX() const			{ return x; }
-		int getY() const			{ return y; }
-		CString getText() const		{ return text; }
-		CString getUText() const	{ return unformattedText; }
+		int getX() const					{ return x; }
+		int getY() const					{ return y; }
+		CString getText() const				{ return text; }
+		CString getUText() const			{ return unformattedText; }
+
+		void setX(int value = 0)			{ x = value; }
+		void setY(int value = 0)			{ y = value; }
+		void setText(const CString& value)	{ text = value; }
+		void setUText(const CString& value)	{ unformattedText = value; }
 
 	private:
 		int x, y;

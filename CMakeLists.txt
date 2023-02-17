@@ -20,7 +20,7 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
-project(GS2Emu VERSION 3.0.6 DESCRIPTION "Graal Online v1.411 to v5.002 compatible server" LANGUAGES C CXX)
+project(GS2Emu VERSION 3.0.9 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
 
@@ -33,6 +33,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
+set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
+
 
 # Second, for multi-config builds (e.g. msvc)
 foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
@@ -72,7 +74,8 @@ set(VER_EXTRA "${VER_EXTRA} (${VER_YEAR}-${VER_MONTH}-${VER_DAY} ${VER_HOUR}:${V
 
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
 
-set(GSERVER_CREDITS "Joey, Nalin, Codr, and Cadavre")
+set(APP_CREDITS "Joey, Nalin, Codr, and Cadavre")
+set(APP_VENDOR "OpenGraal")
 
 STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
 STRING(REGEX REPLACE "[\(]" "" VER_CPACK ${VER_CPACK})
@@ -140,8 +143,8 @@ else()
 endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
-set(CPACK_PACKAGE_VENDOR "Graal Reborn Team")
-set(CPACK_PACKAGE_CONTACT "graal.in")
+set(CPACK_PACKAGE_VENDOR "OpenGraal Team")
+set(CPACK_PACKAGE_CONTACT "opengraal")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}")
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_Y})
@@ -155,7 +158,14 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
+# Generate version header from the above
+configure_file(
+	${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+	${PROJECT_BINARY_DIR}/server/include/IConfig.h
+)
+
 if(APPLE)
+	set(MAKE_TESTS OFF)
 	# Set variables for generating the Info.plist file
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
 	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
@@ -164,9 +174,8 @@ if(APPLE)
 	set(MACOSX_BUNDLE_ICON_FILE "carton")
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=gnu++20")
 elseif(WIN32)
+	set(MAKE_TESTS OFF)
 	# Visual C++ Compiler options
 	if(MSVC)
 		# Suppress secure string function warnings
@@ -215,26 +224,21 @@ elseif(WIN32)
 
 	if( MINGW )
 		add_definitions(-D__STDC_FORMAT_MACROS)
-		add_definitions(-D_BSD_SOURCE=1)
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
+		add_definitions(-D__USE_MINGW_ANSI_STDIO=1 -D_BSD_SOURCE=1)
+		add_compile_options(-Wno-deprecated-declarations)
 	endif()
 
 	# Prevent Windows.h from clashing with the Standard Template Library so we
 	# can use std::min/std::max (see https://support.microsoft.com/kb/143208)
 	add_definitions(-DNOMINMAX)
-
-elseif(AROS)
-elseif(AMIGA)
 else()
+	set(MAKE_TESTS ON)
 	if(STATIC)
-	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
+		#SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
-	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20")
-
+	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1 -DNDEBUG=1 -DENABLE_SCRIPTENV_DEBUG=1)
+	add_compile_options(-Wno-error -Wno-dev)
 endif()
 
 # Prefer static linkage
@@ -283,9 +287,13 @@ if(STATIC)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
 endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib)
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
+
+enable_testing()
+add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

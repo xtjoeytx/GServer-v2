@@ -383,7 +383,7 @@ bool TPlayer::sendLoginClient()
 
 	// Send out RPG Window greeting.
 	if (isClient() && versionID >= CLVER_2_1)
-		sendPacket(PLO_RPGWINDOW, CString() << "\"Welcome to " << settings->getStr("name") << ".\",\"Graal Reborn GServer programmed by " << CString(GSERVER_CREDITS) << ".\"" );
+		sendPacket(PLO_RPGWINDOW, CString() << "\"Welcome to " << settings->getStr("name") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"" );
 
 	// Send the start message to the player.
 	sendPacket(PLO_STARTMESSAGE, CString() << *(server->getServerMessage()));

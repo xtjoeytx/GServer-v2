@@ -36,6 +36,32 @@ void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void Server_Function_CreateLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	TServer *serverObject = UnwrapObject<TServer>(args.This());
+
+	// Create level from user input
+	if (args[0]->IsInt32() && args[1]->IsString())
+	{
+		short fillTile = args[0]->Uint32Value(context).ToChecked();
+		std::string levelName = *v8::String::Utf8Value(isolate, args[1]->ToString(context).ToLocalChecked());
+
+		TLevel *levelObject = TLevel::createLevel(serverObject, fillTile, levelName);
+
+		if (levelObject != nullptr)
+		{
+			V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		}
+	}
+}
+
 void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
@@ -45,7 +71,7 @@ void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 	TServer *serverObject = UnwrapObject<TServer>(args.This());
-	
+
 	// Find npc object from user input
 	TNPC *npcObject = nullptr;
 	if (args[0]->IsString())
@@ -125,10 +151,10 @@ void Server_Function_SendToNC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
-	
+
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 
-	std::string msg; 
+	std::string msg;
 	for (int i = 0; i < args.Length(); i++)
 	{
 		v8::String::Utf8Value str(isolate, args[i]->ToString(context).ToLocalChecked());
@@ -148,10 +174,10 @@ void Server_Function_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
-	
+
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
 
-	std::string msg; 
+	std::string msg;
 	for (int i = 0; i < args.Length(); i++)
 	{
 		v8::String::Utf8Value str(isolate, args[i]->ToString(context).ToLocalChecked());
@@ -169,7 +195,7 @@ void Server_Function_SendToRC(const v8::FunctionCallbackInfo<v8::Value>& args)
 void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TServer, serverObject);
-	
+
 	unsigned int timevar = serverObject->getNWTime();
 	info.GetReturnValue().Set(timevar);
 }
@@ -299,7 +325,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	auto playerList = serverObject->getPlayerList();
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate);
-	
+
 	int idx = 0;
 	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
 		TPlayer *pl = *it;
@@ -356,6 +382,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 
 	// Method functions
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));

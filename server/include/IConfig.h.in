@@ -1,7 +1,10 @@
 #ifndef ICONFIG_H
 #define ICONFIG_H
+#pragma once
 
-#define GSERVER_VERSION		"${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}"
-#define GSERVER_CREDITS		"${GSERVER_CREDITS}"
+#define APP_VERSION		"${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}"
+#define APP_CREDITS		"${APP_CREDITS}"
+#define APP_NAME		"${PROJECT_NAME}"
+#define APP_VENDOR		"${APP_VENDOR}"
 
 #endif

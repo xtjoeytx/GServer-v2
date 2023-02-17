@@ -52,11 +52,11 @@ TServer::TServer(const CString& pName)
 	calculateServerTime();
 
 	// This has the full path to the server directory.
-	serverpath = CString() << getHomePath() << "servers/" << name << "/";
+	serverpath = CString() << getBaseHomePath() << "servers/" << name << "/";
 	CFileSystem::fixPathSeparators(serverpath);
 
 	// Set up the log files.
-	CString logpath = serverpath.remove(0, getHomePath().length());
+	CString logpath = serverpath.remove(0, getBaseHomePath().length());
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
@@ -93,7 +93,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// The players from other servers should be unique lists for each player as they are fetched depending on
 	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 	playerIds.resize(2);
-	npcIds.resize(10001); // Starting npc ids at 10,000 for now on..
+	npcIds.resize(10001); // Starting npc ids at 10,000 from now on...
 
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
@@ -1028,7 +1028,6 @@ void TServer::saveWeapons()
 }
 
 #ifdef V8NPCSERVER
-
 void TServer::saveNpcs()
 {
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
@@ -1084,14 +1083,28 @@ std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
 	std::sort(script_profiles.rbegin(), script_profiles.rend());
 	return script_profiles;
 }
-
 #endif
+
+std::string transformString(const std::string& str) {
+	std::string newStr;
+	for (char ch : str)
+	{
+		if (ch == '"' || ch == '\\')
+			newStr += "\\";
+		else if (ch == '%')
+			newStr += '%';
+		newStr += ch;
+	}
+
+	return newStr;
+}
 
 void TServer::reportScriptException(const ScriptRunError& error)
 {
-	std::string error_message = error.getErrorString();
+	std::string error_message = transformString(error.getErrorString());
 	sendToNC(error_message);
-	getScriptLog().out(error_message + "\n");
+	error_message += "\n";
+	getScriptLog().out(error_message);
 }
 
 void TServer::reportScriptException(const std::string& error_message)
@@ -1104,7 +1117,6 @@ void TServer::reportScriptException(const std::string& error_message)
 		getScriptLog().out(line + "\n");
 	}
 }
-
 
 /////////////////////////////////////////////////////
 
@@ -1279,7 +1291,6 @@ void TServer::setPMFunction(TNPC *npc, IScriptFunction *function)
 	mScriptEngine.setCallBack("npcserver.playerpm", function);
 	mPmHandlerNpc = npc;
 }
-
 #endif
 
 TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, TLevel* pLevel, bool pLevelNPC, bool sendToPlayers)
@@ -1292,7 +1303,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 	bool assignedId = false;
 	for (unsigned int i = 10000; i < npcIds.size(); ++i)
 	{
-		if (npcIds[i] == 0)
+		if (npcIds[i] == nullptr)
 		{
 			npcIds[i] = newNPC;
 			newNPC->setId(i);
@@ -1521,7 +1532,7 @@ bool TServer::isStaff(const CString& accountName)
 
 void TServer::logToFile(const std::string & fileName, const std::string & message)
 {
-	CString fileNamePath = CString() << getServerPath().remove(0, getHomePath().length()) << "logs/";
+	CString fileNamePath = CString() << getServerPath().remove(0, getBaseHomePath().length()) << "logs/";
 
 	// Remove leading characters that may try to go up a directory
 	int idx = 0;
@@ -1732,6 +1743,62 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPla
 	}
 }
 
+void TServer::sendPacketToLevel(PlayerPredicate predicate, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+{
+	if (!pPlayer->getLevel())
+		return;
+
+	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP) || pPlayer->getLevel()->isSingleplayer())
+	{
+		TLevel* level = pPlayer->getLevel();
+		for (auto p : playerList)
+		{
+			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
+			if (p->getLevel() == level && predicate(p))
+				p->sendPacket(pPacket);
+		}
+		return;
+	}
+
+	bool _groupMap = pPlayer->getMap()->isGroupMap();
+	for (auto player : playerList)
+	{
+		if (!player->isClient()) continue;
+		if (player == pPlayer)
+		{
+			if (sendToSelf) pPlayer->sendPacket(pPacket);
+			continue;
+		}
+		if (player->getLevel() == nullptr) continue;
+		if (_groupMap && pPlayer->getGroup() != player->getGroup()) continue;
+
+		if (player->getMap() == pMap && predicate(player))
+		{
+			int ogmap[2], sgmap[2];
+			switch (pMap->getType())
+			{
+			case MapType::GMAP:
+				ogmap[0] = player->getProp(PLPROP_GMAPLEVELX).readGUChar();
+				ogmap[1] = player->getProp(PLPROP_GMAPLEVELY).readGUChar();
+				sgmap[0] = pPlayer->getProp(PLPROP_GMAPLEVELX).readGUChar();
+				sgmap[1] = pPlayer->getProp(PLPROP_GMAPLEVELY).readGUChar();
+				break;
+
+			default:
+			case MapType::BIGMAP:
+				ogmap[0] = player->getLevel()->getMapX();
+				ogmap[1] = player->getLevel()->getMapY();
+				sgmap[0] = pPlayer->getLevel()->getMapX();
+				sgmap[1] = pPlayer->getLevel()->getMapY();
+				break;
+			}
+
+			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
+				player->sendPacket(pPacket);
+		}
+	}
+}
+
 void TServer::sendPacketTo(char packetId, int who, CString pPacket, TPlayer* pPlayer) const
 {
 	for (auto player : playerList)
@@ -1892,9 +1959,25 @@ void TServer::compileGS2Script(TWeapon *scriptObject, GS2ScriptManager::user_cal
 
 void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
 {
-	// Report the script exception
+	std::string errorMsg;
 	for (auto& err : errors)
-		reportScriptException(fmt::format("Script compiler output for {}:\nerror: {}", origin, err.msg()));
+	{
+		switch (err.level())
+		{
+			case ErrorLevel::E_INFO:
+				errorMsg += fmt::format("info: {}\n", err.msg());
+				break;
+			case ErrorLevel::E_WARNING:
+				errorMsg += fmt::format("warning: {}\n", err.msg());
+				break;
+			default:
+				errorMsg += fmt::format("error: {}\n", err.msg());
+				break;
+		}
+	}
+
+	if (!errorMsg.empty())
+		reportScriptException(fmt::format("Script compiler output for {}:\n{}", origin, errorMsg));
 }
 
 /*

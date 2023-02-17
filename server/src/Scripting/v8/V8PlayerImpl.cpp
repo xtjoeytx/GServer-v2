@@ -1265,6 +1265,33 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 }
 
+// Player Function : player.triggerclient("gui"/"weapon", wep, args) -> onActionClientSide
+void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
+
+	if (args[0]->IsString() && args[1]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+		CString actionType = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+		if (actionType == "gui" || actionType == "weapon")
+		{
+			CString trigaction = CString("clientside");
+			for (int i = 1; i < args.Length(); i++)
+				trigaction << "," << *v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked());
+
+			// Unwrap Object
+			V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
+
+			playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+		}
+	}
+}
+
 void bindClass_Player(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
@@ -1281,11 +1308,10 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	v8::Local<v8::FunctionTemplate> player_ctor = v8::FunctionTemplate::New(isolate, nullptr, engine_ref); // , Player_Constructor);
 	v8::Local<v8::ObjectTemplate> player_proto = player_ctor->PrototypeTemplate();
 
-    player_ctor->SetClassName(className);
-    player_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	player_ctor->SetClassName(className);
+	player_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-	// TODO(joey): Implement these functions
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
@@ -1305,9 +1331,10 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "detachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
 	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggerclient"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerClient, engine_ref));
 
 	// Properties
-    player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "id"), Player_GetInt_Id);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "id"), Player_GetInt_Id);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "account"), Player_GetStr_Account);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ani"), Player_GetStr_Ani, Player_SetStr_Ani);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ap"), Player_GetInt_Alignment, Player_SetInt_Alignment);
@@ -1335,11 +1362,11 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "shieldpower"), Player_GetInt_ShieldPower, Player_SetInt_ShieldPower);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordimg"), Player_GetStr_SwordImage, Player_SetStr_SwordImage);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordpower"), Player_GetInt_SwordPower, Player_SetInt_SwordPower);
-    player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
-    player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "attr"), Player_GetObject_Attrs, nullptr, engine_ref);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "colors"), Player_GetObject_Colors, nullptr, engine_ref);
-    player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Player_GetObject_Flags, nullptr, engine_ref);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Player_GetObject_Flags, nullptr, engine_ref);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "weapons"), Player_GetArray_Weapons);
 
 	// Create the player attr template
@@ -1361,12 +1388,12 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	env->SetConstructor("player.colors", player_colors_ctor);
 
 	// Create the player flags template
-    v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
-    player_flags_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "flags"));
-    player_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
-    player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-            Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
-            v8::PropertyHandlerFlags::kHasNoSideEffect));
+	v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
+	player_flags_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "flags"));
+	player_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
+			Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kHasNoSideEffect));
 	env->SetConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor

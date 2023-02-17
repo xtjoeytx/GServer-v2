@@ -1,6 +1,8 @@
 #include <set>
 #include <tiletypes.h>
 #include <cmath>
+#include <list>
+#include <fstream>
 #include "IDebug.h"
 #include "IEnums.h"
 #include "TServer.h"
@@ -47,7 +49,24 @@ server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMa
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, 0xFF, sizeof(levelTiles));
+	memset(levelTiles, 0, sizeof(levelTiles));
+
+	// Baddy id 0 breaks the client.  Put a null pointer in id 0.
+	levelBaddyIds.resize(1, 0);
+}
+
+TLevel::TLevel(short fillTile, TServer* pServer)
+:
+server(pServer), modTime(0), levelSpar(false), levelSingleplayer(false), levelMap(nullptr), mapx(0), mapy(0)
+#ifdef V8NPCSERVER
+, _scriptObject(nullptr)
+#endif
+{
+	memset(levelTiles, 0, sizeof(levelTiles));
+
+	for (int i = 0; i < (64*64); i++) {
+		levelTiles[0][i] = fillTile;
+	}
 
 	// Baddy id 0 breaks the client.  Put a null pointer in id 0.
 	levelBaddyIds.resize(1, nullptr);
@@ -771,9 +790,9 @@ bool TLevel::loadNW(const CString& pLevelName)
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Path-To-File
-	actualLevelName = levelName = pLevelName;
-	fileName = fileSystem->find(pLevelName);
-	modTime = fileSystem->getModTime(pLevelName);
+	actualLevelName = levelName = getFilename(pLevelName);
+	fileName = fileSystem->find(actualLevelName);
+	modTime = fileSystem->getModTime(actualLevelName);
 
 	// Load File
 	std::vector<CString> fileData = CString::loadToken(fileName, "\n", true);
@@ -946,12 +965,12 @@ bool TLevel::loadNW(const CString& pLevelName)
 /*
 	TLevel: Find Level
 */
-TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
+TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server, bool loadAbsolute)
 {
 	std::vector<TLevel*>* levelList = server->getLevelList();
 
 	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
-	// 	this is still going to break on the first occurence.
+	// 	this is still going to break on the first occurrence.
 
 	// Find Appropriate Level by Name
 	CString levelName = pLevelName.toLower();
@@ -959,6 +978,17 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	{
 		if (it->getLevelName().toLower() == levelName)
 			return it;
+	}
+
+	if (loadAbsolute) {
+		CFileSystem* fileSystem = server->getFileSystem();
+		if (!server->getSettings()->getBool("nofoldersconfig", false))
+			fileSystem = server->getFileSystem(FS_LEVEL);
+
+		if (fileSystem->find(pLevelName).trim().length() == 0) {
+			fileSystem->addFile(pLevelName);
+			fileSystem->addDir(getPath(pLevelName), "*", true);
+		}
 	}
 
 	// Load New Level
@@ -983,6 +1013,115 @@ TLevel* TLevel::findLevel(const CString& pLevelName, TServer* server)
 	// Return Level
 	levelList->push_back(level);
 	return level;
+}
+
+/*
+	TLevel: Create Level
+*/
+TLevel* TLevel::createLevel(TServer* server, short fillTile, const std::string& levelName)
+{
+	std::vector<TLevel*>* levelList = server->getLevelList();
+
+	// Load New Level
+	TLevel *level = new TLevel(fillTile, server);
+	level->setLevelName(levelName);
+	level->layers.push_back(0);
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(level);
+#endif
+	// Return Level
+	levelList->push_back(level);
+	return level;
+}
+
+/*
+	TLevel: Save Level
+*/
+void TLevel::saveLevel(const std::string& filename) {
+	CFileSystem* fileSystem = server->getFileSystem();
+	if (!server->getSettings()->getBool("nofoldersconfig", false))
+		fileSystem = server->getFileSystem(FS_LEVEL);
+
+	auto actualFilename = getFilename(filename);
+
+	auto path = fileSystem->findi(actualFilename);
+
+	if (path == "") {
+		path << fileSystem->getDirByExtension(getExtension(actualFilename).text());
+		path << actualFilename;
+
+		fileSystem->addFile(path);
+	}
+
+	std::ofstream fileStream(path.text());
+
+	fileStream << "GLEVNW01" << std::endl;
+
+	// white space separator
+	std::string s = " ";
+	// write tiles
+	for (int layer = 0; layer < getLayers().size(); layer ++) {
+		auto tiles = getTiles(layer);
+		for (int y = 0; y < 64/*tiles.get_height()*/; y ++) {
+			std::string data;
+			// chunk start, chunk data pairs
+			std::list<std::pair<int, std::string>> chunks;
+			/* Separate each row into chunks of actually non-transparent tiles.
+			 * Every time we encounter a transparent tile, flush the current data
+			 * into the chunk list and clear it. If we never encounter a transparent
+			 * tile, flush the entire data after the loop */
+			int currentStart = 0;
+			for (int x = 0; x < 64/*tiles.get_width()*/; x ++) {
+				auto tile = tiles[x + y * 64];
+				if (tile == -2) {
+					if (!data.empty()) {
+						chunks.emplace_back(currentStart, data);
+						currentStart = x;
+						data.clear();
+					}
+
+					// Skip transparent tile
+					currentStart ++;
+					continue;
+				}
+
+				data += CString::formatBase64(tile);
+			}
+			if (!data.empty())
+				chunks.emplace_back(currentStart, data);
+
+			/* Draw one BOARD entry for each chunk so transparent tile-data is culled */
+			for (const auto& chunk : chunks) {
+				fileStream << "BOARD" << s << chunk.first << s << y << s << chunk.second.length() / 2 << s << layer // x, y, width, layer
+					   << s << chunk.second << std::endl;
+			}
+		}
+	}
+
+	for (const auto& link : getLevelLinks()) {
+		fileStream << "LINK" << s << link.getNewLevel().text() << s << link.getX() << s << link.getY()
+			   << s << link.getWidth() << s << link.getHeight() << s << link.getNewX().text()
+			   << s << link.getNewY().text() << std::endl;
+	}
+
+	for (const auto& sign : getLevelSigns()) {
+		fileStream << "SIGN" << s << sign.getX() << s << sign.getY() << std::endl;
+		fileStream << sign.getText().text() << std::endl;
+		fileStream << "SIGNEND" << std::endl;
+	}
+
+	for (const auto& npc : *getLevelNPCs()) {
+		if ( npc->getType() != NPCType::LEVELNPC)
+			continue; // Don't save PUTNPC's or DBNPC's in the level file
+		std::string image = npc->getImage();
+
+		if (image.empty())
+			image = "-"; // No image is represented by "-"
+
+		fileStream << "NPC" << s << image << s << npc->getX() << s << npc->getY() << std::endl;
+		fileStream << npc->getSource().getSource() << std::endl;
+		fileStream << "NPCEND" << std::endl;
+	}
 }
 
 bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, TPlayer* player)
@@ -1094,10 +1233,16 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 #ifdef GRALATNPC
 	if (TLevelItem::isRupeeType(pItem))
 	{
+		if (server->getClass("gralats") == nullptr)
+			return true;
+
 		TNPC* gralatNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
-		auto npcList = findAreaNpcs(pX - 0.5, pY - 0.5, 32, 32);
+		auto pixelX = (pX - 0.5) * 16;
+		auto pixelY = (pY - 0.5) * 16;
+
+		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
 		for (auto& npc : npcList)
 		{
 			if (npc->joinedClass("gralats"))
@@ -1110,7 +1255,7 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		// Create a new gralat npc for these rupees
 		if (!gralatNPC)
 		{
-			gralatNPC = server->addNPC("", "npc.join(\"gralats\");\n//#CLIENTSIDE\njoin(\"gralats\");", pX, pY, this, false, true);
+			gralatNPC = server->addNPC("", "npc.join(\"gralats\");", pX, pY, this, false, true);
 			gralatNPC->setScriptType("LOCALN");
 			addNPC(gralatNPC);
 		}
@@ -1119,6 +1264,44 @@ bool TLevel::addItem(float pX, float pY, LevelItemType pItem)
 		gralatNPC->setRupees(gralatNPC->getRupees() + TLevelItem::GetRupeeCount(pItem));
 		gralatNPC->updatePropModTime(NPCPROP_RUPEES);
 		gralatNPC->queueNpcTrigger("update", nullptr, "");
+
+		return false;
+	}
+
+	//TODO: Make a super-class to handle all drops?
+	if (LevelItemType::DARTS == pItem)
+	{
+		if (server->getClass("darts") == nullptr)
+			return true;
+
+		TNPC* dartNPC = nullptr;
+
+		// Find existing rupees, and add to the npc
+		auto pixelX = (pX - 0.5) * 16;
+		auto pixelY = (pY - 0.5) * 16;
+
+		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
+		for (auto& npc : npcList)
+		{
+			if (npc->joinedClass("darts"))
+			{
+				dartNPC = npc;
+				break;
+			}
+		}
+
+		// Create a new darts npc for these darts
+		if (!dartNPC)
+		{
+			dartNPC = server->addNPC("", "npc.join(\"darts\");", pX, pY, this, false, true);
+			dartNPC->setScriptType("LOCALN");
+			addNPC(dartNPC);
+		}
+
+		// Update darts
+		dartNPC->setDarts(dartNPC->getDarts() + 1);
+		dartNPC->updatePropModTime(NPCPROP_ARROWS);
+		dartNPC->queueNpcTrigger("update", nullptr, "");
 
 		return false;
 	}
@@ -1539,6 +1722,19 @@ void TLevel::sendChatToLevel(const TPlayer *player, const std::string& message)
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
 			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), message);
 	}
+}
+
+void TLevel::modifyBoardDirect(uint32_t index, short tile) {
+	int pX = index % 64;
+	int pY = index / 64;
+
+	short oldTile = levelTiles[0][index];
+	levelTiles[0][index] = tile;
+
+	auto change = TLevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
+
+	levelBoardChanges.push_back(change);
+	server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), 0, this);
 }
 
 #endif

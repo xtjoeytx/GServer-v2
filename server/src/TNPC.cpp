@@ -1025,8 +1025,9 @@ bool TNPC::runScriptTimer()
 
 NPCEventResponse TNPC::runScriptEvents()
 {
-	// Returns true if we still have actions to run
-	bool hasActions = _scriptExecutionContext.runExecution();
+	bool hasActions = false;
+	if (!npcDeleteRequested)
+		hasActions = _scriptExecutionContext.runExecution(); // Returns true if we still have actions to run
 
 	// Send properties modified by scripts
 	if (!propModified.empty())
@@ -1775,8 +1776,7 @@ CString doJoins(const CString& code, CFileSystem* fs)
 		c = fs->load(fileName);
 		c.removeAllI("\r");
 		c.replaceAllI("\n", "\xa7");
-		ret << c;
-		//ret << removeComments(c, "\xa7");
+		ret << removeComments(c, "\xa7");
 	}
 
 	return ret;

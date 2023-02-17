@@ -976,11 +976,11 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 		}
 		else if (words[0] == "/version" && words.size() == 1)
 		{
-			sendPacket(PLO_RC_CHAT, CString() << "GS2Emu version: " << GSERVER_VERSION);
+			sendPacket(PLO_RC_CHAT, CString() << APP_NAME << " version: " << APP_VERSION);
 		}
 		else if (words[0] == "/credits" && words.size() == 1)
 		{
-			sendPacket(PLO_RC_CHAT, CString() << "Programmed by " << GSERVER_CREDITS);
+			sendPacket(PLO_RC_CHAT, CString() << "Programmed by " << APP_CREDITS);
 		}
 		else if (words[0] == "/open" && words.size() != 1)
 		{

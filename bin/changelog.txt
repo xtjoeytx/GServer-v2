@@ -1,5 +1,57 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
+    v3.0.9
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Update gs2compiler - add support for obj.insert(idx, val)
++ Update gs2compiler - add support for obj.remove(val)
++ Update gs2compiler - add support for obj.delete(idx)
++ Update gs2compiler - add support for bitwise operations (left-shift, right-shift, or, xor, invert)
+* Update gs2compiler - Fixed modulus assignment
+* Update gs2compiler - Fixed constants with negative values
+* Update gs2compiler - Fixed precedence for power operator
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
+    v3.0.8
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Added 'player.triggerclient'
++ Added 'createlevel(filltile, levelname)'
++ Added 'level.savelevel(filename)'
+* Fixed support for v1.3x clients
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
+    v3.0.7
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Update gs2compiler - fix getangle and getdir
++ Update gs2compiler - added gs2 support for arraylen/sarraylen functions
++ Added `public function` for serverside scripting, to access functions on an npc from another npc
++ Added ability to get/set tiles on serverside scripting via `level.tiles[index]`
++ Added arrow drop class, so if there's a class named `darts` it will drop this npc instead of the default item. Might change in a future release
+* Fixed shoot2 for v6 clients
+* Fixed updateboard request causing illegal packet disconnection
+* Fixed so player.platform is correctly set when connecting with a v4+ client
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
+    v3.0.6
+
+  * bug fix, + new feature, o other
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++ Added npc.settimer() for setting timeout, similar to gs2
+* Fixed a bug preventing serverside joins from propagating to the client in gs2
+* Update gs2compiler - fix for assignment operators (+=, -=, *=, /=)
+* Fix for tiles[x, y]
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Changelog for:
     v3.0.5
 
   * bug fix, + new feature, o other

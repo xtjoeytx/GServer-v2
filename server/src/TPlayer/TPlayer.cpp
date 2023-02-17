@@ -6,6 +6,7 @@
 
 #include "utilities/stringutils.h"
 #include "TPlayer.h"
+#include "IConfig.h"
 #include "IEnums.h"
 #include "IUtil.h"
 #include "TServer.h"
@@ -171,6 +172,7 @@ void TPlayer::createFunctions()
 	// now set non-nulls
 	TPLFunc[PLI_LEVELWARP] = &TPlayer::msgPLI_LEVELWARP;
 	TPLFunc[PLI_BOARDMODIFY] = &TPlayer::msgPLI_BOARDMODIFY;
+	TPLFunc[PLI_REQUESTUPDATEBOARD] = &TPlayer::msgPLI_REQUESTUPDATEBOARD;
 	TPLFunc[PLI_PLAYERPROPS] = &TPlayer::msgPLI_PLAYERPROPS;
 	TPLFunc[PLI_NPCPROPS] = &TPlayer::msgPLI_NPCPROPS;
 	TPLFunc[PLI_BOMBADD] = &TPlayer::msgPLI_BOMBADD;
@@ -210,6 +212,7 @@ void TPlayer::createFunctions()
 	TPLFunc[PLI_TRIGGERACTION] = &TPlayer::msgPLI_TRIGGERACTION;
 	TPLFunc[PLI_MAPINFO] = &TPlayer::msgPLI_MAPINFO;
 	TPLFunc[PLI_SHOOT] = &TPlayer::msgPLI_SHOOT;
+	TPLFunc[PLI_SHOOT2] = &TPlayer::msgPLI_SHOOT2;
 	TPLFunc[PLI_SERVERWARP] = &TPlayer::msgPLI_SERVERWARP;
 
 	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
@@ -310,7 +313,7 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, int pId)
 : TAccount(pServer),
 playerSock(pSocket), key(0),
 os("wind"), codepage(1252), level(0),
-id(pId), type(PLTYPE_AWAIT), versionID(CLVER_2_17),
+id(pId), type(PLTYPE_AWAIT), versionID(CLVER_UNKNOWN),
 pmap(0), carryNpcId(0), carryNpcThrown(false), loaded(false),
 nextIsRaw(false), rawPacketSize(0), isFtp(false),
 grMovementUpdated(false),
@@ -1713,7 +1716,7 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		sendPacket(PLO_LEVELNAME, CString() << pmap->getMapName());
 
 	// Tell the client if there are any ghost players in the level.
-	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
+	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	sendPacket(PLO_GHOSTICON, CString() >> (char)0);
 
 	if ( !fromAdjacent || pmap != 0)
@@ -1849,10 +1852,6 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			sendPacket(packet);
 		}
 	}
-
-	// Tell the client if there are any ghost players in the level.
-	// Graal Reborn doesn't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
-	//sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	if (fromAdjacent == false)
 	{
@@ -2099,16 +2098,7 @@ bool TPlayer::addWeapon(LevelItemType defaultWeapon)
 		server->NC_AddWeapon(weapon);
 	}
 
-	// See if the player already has the weapon.
-	if (vecSearch<CString>(weaponList, weapon->getName()) == -1)
-	{
-		weaponList.emplace_back(weapon->getName());
-		for (const auto& packet : weapon->getWeaponPackets(versionID)) {
-			sendPacket(packet, true);
-		}
-	}
-
-	return true;
+	return this->addWeapon(weapon);
 }
 
 bool TPlayer::addWeapon(const CString& name)
@@ -2139,9 +2129,7 @@ bool TPlayer::addWeapon(TWeapon* weapon)
 bool TPlayer::deleteWeapon(LevelItemType defaultWeapon)
 {
 	TWeapon* weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
-	this->deleteWeapon(weapon);
-
-	return true;
+	return this->deleteWeapon(weapon);
 }
 
 bool TPlayer::deleteWeapon(const CString& name)
@@ -2277,7 +2265,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	{
 		case PLTYPE_CLIENT:
 			serverlog.append("Client\n");
-			in_codec.setGen(ENCRYPT_GEN_3);
+			in_codec.setGen(ENCRYPT_GEN_2);
 			break;
 		case PLTYPE_RC:
 			serverlog.append("RC\n");
@@ -2307,27 +2295,37 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			break;
 		default:
 			serverlog.append("Unknown (%d)\n", type);
-			sendPacket(PLO_DISCMESSAGE, CString() << "Your client type is unknown.  Please inform the Graal Reborn staff.  Type: " << CString((int)type) << ".");
+			sendPacket(PLO_DISCMESSAGE, CString() << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)type) << ".");
 			return false;
 			break;
 	}
 
-	// Get Iterator-Key
-	// 2.19+ RC and any client should get the key.
-	if (isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true)
-	{
-		key = (unsigned char)pPacket.readGChar();
-		in_codec.reset(key);
-		if (in_codec.getGen() > ENCRYPT_GEN_3)
-			fileQueue.setCodec(in_codec.getGen(), key);
+	if (type == PLTYPE_CLIENT) {
+		// Read Client-Version for v1.3 clients
+		version = pPacket.readChars(8);
+		versionID = getVersionID(version);
+
+		if (versionID == CLVER_UNKNOWN) {
+			in_codec.setGen(ENCRYPT_GEN_3);
+			pPacket.setRead(1);
+		}
 	}
 
-	// Read Client-Version
-	version = pPacket.readChars(8);
-	if (isClient()) versionID = getVersionID(version);
-	else if (isNC()) versionID = getNCVersionID(version);
-	else if (isRC()) versionID = getRCVersionID(version);
-	else versionID = CLVER_UNKNOWN;
+	if (versionID == CLVER_UNKNOWN) {
+		// Get Iterator-Key
+		// 2.19+ RC and any client should get the key.
+		if ( isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true ) {
+			key = (unsigned char)pPacket.readGChar();
+
+			in_codec.reset(key);
+			if ( in_codec.getGen() > ENCRYPT_GEN_3 )
+				fileQueue.setCodec(in_codec.getGen(), key);
+		}
+
+		// Read Client-Version
+		version = pPacket.readChars(8);
+		versionID = getVersionIDByVersion(version);
+	}
 
 	// Read Account & Password
 	accountName = pPacket.readChars(pPacket.readGUChar());
@@ -2340,8 +2338,11 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	//serverlog.out("[%s]    Key: %d\n", server->getName().text(), key);
 	serverlog.out("[%s]    Version:\t%s (%s)\n", server->getName().text(), version.text(), getVersionString(version, type));
 	serverlog.out("[%s]    Account:\t%s\n", server->getName().text(), accountName.text());
-	if (!identity.isEmpty())
+	if (!identity.isEmpty()) {
 		serverlog.out("[%s]    Identity:\t%s\n", server->getName().text(), identity.text());
+		auto identityTokens = identity.tokenize(",", true);
+		os = identityTokens[0];
+	}
 
 	// Check for available slots on the server.
 	if (server->getPlayerList()->size() >= (unsigned int)server->getSettings()->getInt("maxplayers", 128))
@@ -2402,6 +2403,13 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 
 	server->getServerList()->sendLoginPacketForPlayer(this, password, identity);
 	return true;
+}
+
+int TPlayer::getVersionIDByVersion(const CString& versionInput) const {
+	if ( isClient()) return getVersionID(versionInput);
+	else if ( isNC()) return getNCVersionID(versionInput);
+	else if ( isRC()) return getRCVersionID(versionInput);
+	else return CLVER_UNKNOWN;
 }
 
 bool TPlayer::msgPLI_LEVELWARP(CString& pPacket)
@@ -2467,9 +2475,29 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar();		// So msgPLI_ITEMADD works.
 
-		msgPLI_ITEMADD(packet2);
-		sendPacket(PLO_ITEMADD, CString() << packet);
+		spawnLevelItem(packet2, false);
+
+		if (getVersion() <= CLVER_5_12)
+			sendPacket(PLO_ITEMADD, CString() << packet);
 	}
+
+	return true;
+}
+
+bool TPlayer::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
+{
+	// {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
+	CString level = pPacket.readChars(pPacket.readGUChar());
+
+	time_t modTime = (time_t)pPacket.readGUInt5();
+
+	short x = pPacket.readGShort();
+	short y = pPacket.readGShort();
+	short w = pPacket.readGShort();
+	short h = pPacket.readGShort();
+
+	// TODO: What to return?
+	serverlog.out("[%s] :: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", server->getName().text(), level.text(), x, y, w, h, modTime);
 
 	return true;
 }
@@ -2740,6 +2768,10 @@ bool TPlayer::removeItem(LevelItemType itemType)
 
 bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 {
+	return spawnLevelItem(pPacket, true);
+}
+
+bool TPlayer::spawnLevelItem(CString& pPacket, bool playerDrop) {
 	// TODO(joey): serverside item checking
 	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
 	unsigned char item = pPacket.readGUChar();
@@ -2748,7 +2780,7 @@ bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
 	if (itemType != LevelItemType::INVALID)
 	{
 #ifdef V8NPCSERVER
-		if (removeItem(itemType))
+		if (removeItem(itemType) || !playerDrop)
 		{
 #endif
 			if (level->addItem(loc[0], loc[1], itemType))
@@ -3731,18 +3763,102 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 	return true;
 }
 
+struct ShootPacketNew {
+	int16_t pixelx;
+	int16_t pixely;
+	int16_t pixelz;
+	int8_t offsetx;
+	int8_t offsety;
+	int8_t sangle;
+	int8_t sanglez;
+	int8_t speed;
+	int8_t gravity;
+	CString gani;
+	CString shootParams;
+
+	CString constructShootV1() {
+		CString packet;
+		packet.writeGInt(0); // shoot-id?
+		packet.writeGChar(pixelx / 16);
+		packet.writeGChar(pixely / 16);
+		packet.writeGChar((pixelz / 16) + 50);
+		packet.writeGChar(sangle);
+		packet.writeGChar(sanglez);
+		packet.writeGChar(speed);
+		packet.writeGChar(gani.length());
+		packet.write(gani);
+		packet.writeGChar(shootParams.length());
+		packet.write(shootParams);
+		return packet;
+	}
+
+	CString constructShootV2() {
+		CString packet;
+		packet.writeGShort(pixelx);
+		packet.writeGShort(pixely);
+		packet.writeGShort(pixelz);
+		packet.writeChar(offsetx + 32);
+		packet.writeChar(offsety + 32);
+		packet.writeGChar(sangle);
+		packet.writeGChar(sanglez);
+		packet.writeGChar(speed);
+		packet.writeGChar(gravity);
+		packet.writeGShort(gani.length());
+		packet.write(gani);
+		packet.writeGChar(shootParams.length());
+		packet.write(shootParams);
+		return packet;
+	}
+
+	void debug() {
+		printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx/16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
+		printf("\t Offset: %d, %d\n", offsetx, offsety);
+		printf("\t Angle: %d\n", sangle);
+		printf("\t Z-Angle: %d\n", sanglez);
+		printf("\t Power: %d\n", speed);
+		printf("\t Gravity: %d\n", gravity);
+		printf("\t Gani: %s (len: %d)\n", gani.text(), gani.length());
+		printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
+	}
+};
+
 bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {
-	int unknown = pPacket.readGInt();				// May be a shoot id for the npc-server. (5/25/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-	float loc[3] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	unsigned char sangle = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sanglez = pPacket.readGUChar();	// 0-pi = 0-220
-	unsigned char sspeed = pPacket.readGUChar();	// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	CString sgani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char shootParamsLength = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-	CString shootparams = pPacket.readString("");
+	ShootPacketNew newPacket{};
+	int unknown = pPacket.readGInt();        // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
 
-	//printf("Shoot Params (%d): %s\n", shootparams.length(), shootparams.text());
+	newPacket.pixelx = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	newPacket.pixely = 16 * pPacket.readGChar(); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	// TODO: calculate offsetx from pixelx/pixely/ - level offset
+	newPacket.offsetx = 0;
+	newPacket.offsety = 0;
+	//if (newPacket.pixelx < 0) {
+	//	newPacket.offsetx = -1;
+	//}
+	//if (newPacket.pixely < 0) {
+	//	newPacket.offsety = -1;
+	//}
+	newPacket.sangle = pPacket.readGUChar();        // 0-pi = 0-220
+	newPacket.sanglez = pPacket.readGUChar();        // 0-pi = 0-220
+	newPacket.speed = pPacket.readGUChar();            // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	newPacket.gravity = 8;
+	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
+	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	newPacket.shootParams = pPacket.readString("");
+
+	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
+
+	server->sendPacketToLevel([](const TPlayer* pl)
+	                          {
+		                          return pl->getVersion() < CLVER_5_07;
+	                          }, oldPacketBuf, pmap, this, false);
+
+	server->sendPacketToLevel([](const TPlayer* pl)
+	                          {
+		                          return pl->getVersion() >= CLVER_5_07;
+	                          }, newPacketBuf, pmap, this, false);
 
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
@@ -3762,25 +3878,37 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	//	}
 	//}
 
-	/*
-	CString shootPacket;
-	shootPacket.writeGShort(id); // shooters player-id
-	shootPacket.writeGChar((unsigned char)(loc[0] * 2)); // start-x
-	shootPacket.writeGChar((unsigned char)(loc[1] * 2)); // start-y
-	shootPacket.writeGChar((unsigned char)(loc[2] * 2)); // start-z
-	shootPacket.writeGChar(sangle); // shoot angle
-	shootPacket.writeGChar(sanglez); // shoot z angle
-	shootPacket.writeGChar(sspeed); // speed = pixels per 0.05 seconds
+	return true;
+}
 
-	shootPacket.writeGChar(sgani.length()); // animation
-	shootPacket.write(sgani);
+bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
+{
+	ShootPacketNew newPacket{};
+	newPacket.pixelx = pPacket.readGUShort();
+	newPacket.pixely = pPacket.readGUShort();
+	newPacket.pixelz = pPacket.readGUShort();
+	newPacket.offsetx = pPacket.readGChar();		// level offset x
+	newPacket.offsety = pPacket.readGChar();		// level offset y
+	newPacket.sangle = pPacket.readGUChar();		// 0-pi = 0-220
+	newPacket.sanglez = pPacket.readGUChar();		// 0-pi = 0-220
+	newPacket.speed = pPacket.readGUChar();			// speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	newPacket.gravity = pPacket.readGUChar();
+	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
+	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	newPacket.shootParams = pPacket.readString("");
 
-	shootPacket.writeGChar(shootParamsLength); // params
-	shootPacket.write(shootparams);
-	*/
+	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)id << newPacket.constructShootV2();
 
-	// Send data now.
-	server->sendPacketToLevel(PLO_SHOOT, CString() >> (short)id << (pPacket.text() + 1), pmap, this, false);
+	server->sendPacketToLevel([](const TPlayer* pl) -> bool
+	                          {
+		                          return pl->getVersion() < CLVER_5_07;
+	                          }, oldPacketBuf, pmap, this, false);
+
+	server->sendPacketToLevel([](const TPlayer* pl) -> bool
+	                          {
+		                          return pl->getVersion() >= CLVER_5_07;
+	                          }, newPacketBuf, pmap, this, false);
 
 	return true;
 }

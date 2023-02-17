@@ -123,7 +123,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
 				else
 				{
-					if (level != 0 && level->isSingleplayer() == true)
+					if (level != nullptr && level->isSingleplayer())
 						buffer >> (char)(levelName.length() + 13) << levelName << ".singleplayer";
 					else
 						buffer >> (char)levelName.length() << levelName;
@@ -651,8 +651,10 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_SPRITE:
 				sprite = pPacket.readGUChar();
 
+#ifndef V8NPCSERVER
 				// Do collision testing.
 				doTouchTest = true;
+#endif
 			break;
 
 			case PLPROP_STATUS:
