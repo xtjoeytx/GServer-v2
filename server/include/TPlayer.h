@@ -307,7 +307,7 @@ class TPlayer : public TAccount, public CSocketStub
 		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
-	bool newProtocol;
+		bool newProtocol;
 private:
 		// Login functions.
 		bool sendLoginClient();
@@ -340,7 +340,7 @@ private:
 		int codepage;
 		TLevel *level;
 		int id, type, versionID;
-	time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
+		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
 		std::vector<SCachedLevel*> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
 		std::map<CString, TLevel*> spLevels;
