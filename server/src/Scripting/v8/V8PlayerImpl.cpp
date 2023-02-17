@@ -1287,7 +1287,7 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 			// Unwrap Object
 			V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 
-			playerObject->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+			playerObject->sendPacket(PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
 		}
 	}
 }

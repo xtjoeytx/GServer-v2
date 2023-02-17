@@ -1734,7 +1734,7 @@ void TLevel::modifyBoardDirect(uint32_t index, short tile) {
 	auto change = TLevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
 
 	levelBoardChanges.push_back(change);
-	server->sendPacketToLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), 0, this);
+	server->sendPacketToLevel(PLO_BOARDMODIFY, CString() << change.getBoardStr(), 0, this);
 }
 
 #endif
