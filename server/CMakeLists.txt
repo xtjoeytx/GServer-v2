@@ -219,7 +219,7 @@ elseif(WIN32)
 			# Using MSVC now looks for V8 as a nuget package first
 			# Looking in lib folders if not found
 			if(NOT V8_FOUND)
-				message("Findv8 failed, looking for v8 in supplied folders")
+				message(STATUS "FindV8 failed, looking for V8 in supplied folders")
 				target_link_libraries(${TARGET_NAME} v8.dll.lib v8_libbase.dll.lib v8_libplatform.dll.lib)
 			endif()
 		endif()
@@ -284,7 +284,7 @@ if (MINGW)
         file(CHMOD "./objdump_unix2dos.sh" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 
 	  function(install_library_with_deps LIBRARY)
-	  	  message("Getting dependencies for ${LIBRARY}")
+		message(STATUS "Getting dependencies for ${LIBRARY}")
 
 		file(INSTALL
 		  DESTINATION "${CMAKE_INSTALL_PREFIX}/"
@@ -302,14 +302,14 @@ if (MINGW)
 		  if(NOT IS_SYMLINK ${FILE})
 			install_library_with_deps(${FILE})
 		  else()
-		  	message( "Symlink ${LIBRARY}: ${FILE}")
+			message(STATUS "Symlink ${LIBRARY}: ${FILE}")
 		  endif()
 		endforeach()
 		foreach(FILE ${UNRESOLVED_DEPS})
-		  message( "Unresolved from ${LIBRARY}: ${FILE}")
+		  message(STATUS "Unresolved from ${LIBRARY}: ${FILE}")
 		endforeach()
 	  endfunction()
-	  message("Getting dependencies for ${MY_EXE}")
+	  message(STATUS "Getting dependencies for ${MY_EXE}")
 	  file(GET_RUNTIME_DEPENDENCIES
 			EXECUTABLES ${MY_EXE}
 		RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
@@ -321,7 +321,7 @@ if (MINGW)
 		install_library_with_deps(${FILE})
 	  endforeach()
 	  foreach(FILE ${UNRESOLVED_DEPS})
-		message( "Unresolved: ${FILE}")
+		message(STATUS "Unresolved: ${FILE}")
 	  endforeach()
 	]])
 endif()
@@ -340,7 +340,6 @@ if(V8NPCSERVER)
 		endif()
 	endif()
 
-	message("V8 include: ${V8_INCLUDE_DIR}")
 	include_directories(${V8_INCLUDE_DIR})
 
 	add_custom_command(
