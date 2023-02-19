@@ -23,7 +23,7 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)
 			{
-				sendPacket(PLO_FILEUPTODATE, CString() << fileName);
+				sendPacket({PLO_FILEUPTODATE, CString() << fileName});
 				return true;
 			}
 		}
@@ -41,14 +41,14 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 	// 1 -> Install, 2 -> Reinstall
 	unsigned char installType = pPacket.readGUChar();
 	CString fileChecksums = pPacket.readString("");
-	
+
 	// If this is a reinstall, we need to download everything so clear the checksum data
 	if (installType == 2)
 		fileChecksums.clear();
-	
+
 	auto totalDownloadSize = 0;
 	std::vector<std::string> missingFiles;
-	
+
 	{
 		auto updatePackage = server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
@@ -63,7 +63,7 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 					if (entry.checksum == userFileChecksum)
 						needsFile = false;
 				}
-				
+
 				if (needsFile)
 				{
 					totalDownloadSize += entry.size;
@@ -72,13 +72,12 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 			}
 		}
 	}
-	
-	sendPacket(PLO_UPDATEPACKAGESIZE, CString() >> (char)packageName.length() << packageName
-	                     >> (long long)totalDownloadSize);
-	
+
+	sendPacket({PLO_UPDATEPACKAGESIZE, CString() >> (char)packageName.length() << packageName >> (long long)totalDownloadSize});
+
 	for (const auto& wantFile : missingFiles)
-		this->sendFile(wantFile);
-	
-	sendPacket(PLO_UPDATEPACKAGEDONE, CString() << packageName);
+		sendFile(wantFile);
+
+	sendPacket({PLO_UPDATEPACKAGEDONE, CString() << packageName});
 	return true;
 }

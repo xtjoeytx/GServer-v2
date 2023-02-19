@@ -44,7 +44,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 		for (auto & serverData : serverList)
 			actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
 
-		player->sendPacket(PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
+		player->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData});
 		return true;
 	});
 
@@ -151,15 +151,14 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				remove(path.text());
 
 				// Remove the guild from all players.
-				for (std::vector<TPlayer*>::iterator i = getPlayerList()->begin(); i != getPlayerList()->end(); ++i)
+				for (auto p : *getPlayerList())
 				{
-					TPlayer* p = *i;
-					if (p->getGuild() == guild)
+						if (p->getGuild() == guild)
 					{
 						CString nick = p->getNickname();
 						p->setNick(nick.readString("(").trimI());
-						p->sendPacket(PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
-						sendPacketToAll(PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), p);
+						p->sendPacket(PlayerOutPacket{PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME)});
+						sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME)}, p);
 					}
 				}
 			}
@@ -184,8 +183,8 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				{
 					CString nick = p->getNickname();
 					p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
-					p->sendPacket(PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
-					sendPacketToAll(PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), p);
+					p->sendPacket({PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname()});
+					sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname()}, p);
 				}
 			}
 		}
@@ -209,10 +208,9 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (getSettings()->getBool("triggerhack_groups", true) && triggerData.size() == 2)
 		{
 			auto playerList = player->getLevel()->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			for (auto pl : *playerList)
 			{
-				TPlayer* pl = *i;
-				pl->setGroup(triggerData[1]);
+					pl->setGroup(triggerData[1]);
 			}
 		}
 
@@ -252,7 +250,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 			unsigned int id = strtoint(triggerData[1]);
 			int dx = strtoint(triggerData[2]);
 			int dy = strtoint(triggerData[3]);
-			float duration = (float)strtofloat(triggerData[4]);
+			auto duration = (float)strtofloat(triggerData[4]);
 			int options = strtoint(triggerData[5]);
 
 			TNPC* npc = getNPC(id);
@@ -263,7 +261,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 				packet >> (short)(duration / 0.05f);
 				packet >> (char)options;
-				sendPacketToLevel(PLO_MOVE, CString() >> (int)id << packet, 0, player, true);
+				sendPacketToLevel({PLO_MOVE, CString() >> (int)id << packet}, nullptr, player, true);
 
 				npc->setX(npc->getX() + dx * 16);
 				npc->setY(npc->getY() + dy * 16);
@@ -279,8 +277,8 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (getSettings()->getBool("triggerhack_levels", false) && triggerData.size() == 4)
 		{
 			unsigned int id = strtoint(triggerData[1]);
-			float x = (float)strtofloat(triggerData[2]);
-			float y = (float)strtofloat(triggerData[3]);
+			auto x = (float)strtofloat(triggerData[2]);
+			auto y = (float)strtofloat(triggerData[3]);
 
 			TNPC* npc = getNPC(id);
 			if (npc)
@@ -292,7 +290,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 				CString packet;
 				packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
 				packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-				sendPacketToLevel(PLO_NPCPROPS, CString() >> (int)id << packet, 0, player, true);
+				sendPacketToLevel({PLO_NPCPROPS, CString() >> (int)id << packet}, nullptr, player, true);
 			}
 		}
 

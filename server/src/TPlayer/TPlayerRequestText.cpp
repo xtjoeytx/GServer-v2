@@ -22,12 +22,12 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 			list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
 		else if (option == "subscriptions") {
 			// some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
-			sendPacket(PLO_SERVERTEXT, CString() << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI());
+			sendPacket({PLO_SERVERTEXT, CString() << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI()});
 		}
 		else if (option == "bantypes")
-			sendPacket(PLO_SERVERTEXT, CString() << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
+			sendPacket({PLO_SERVERTEXT, CString() << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\""});
 		else if (option == "getglobalitems")
-			sendPacket(PLO_SERVERTEXT, CString() << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI());
+			sendPacket({PLO_SERVERTEXT, CString() << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI()});
 		else if (option == "serverinfo") {
 			list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
 		}
@@ -52,7 +52,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 				files++;
 			}
 		}
-		sendPacket(PLO_SERVERTEXT, CString() << CString(weapon << "\n" << type << "\n" << option << "\n" << /* File count */ CString(files) << "\n" << /* Total size in bytes */ CString(totalFileSize) << "\n").gtokenizeI());
+		sendPacket({PLO_SERVERTEXT, CString() << CString(weapon << "\n" << type << "\n" << option << "\n" << /* File count */ CString(files) << "\n" << /* Total size in bytes */ CString(totalFileSize) << "\n").gtokenizeI()});
 	}
 
 
@@ -89,9 +89,9 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				if (isRC())
 				{
 					// Irc players start at 16k
-					sendPacket(PLO_ADDPLAYER, CString() >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
+					sendPacket({PLO_ADDPLAYER, CString() >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3});
 				}
-				else sendPacket(PLO_OTHERPLPROPS, CString() >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
+				else sendPacket({PLO_OTHERPLPROPS, CString() >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3});
 			}
 			else if (params.size() > 3)
 			{
@@ -165,7 +165,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 				if (option == "getban")
 				{
 					// Send param is computer id. Either 0, or the id. It is required though
-					sendPacket(PLO_SERVERTEXT, CString() << "GraalEngine,lister,ban," << params[0] << "," << "0");
+					sendPacket({PLO_SERVERTEXT, CString() << "GraalEngine,lister,ban," << params[0] << "," << "0"});
 					//msgPLI_RC_PLAYERBANGET(params[0]);
 				}
 			}

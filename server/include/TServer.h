@@ -201,12 +201,12 @@ class TServer : public CSocketStub
 		// Packet sending.
 		using PlayerPredicate = std::function<bool(const TPlayer *)>;
 
-		void sendPacketToAll(char packetId, CString pPacket, TPlayer *pSender) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
-		void sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketToLevel(PlayerPredicate predicate, char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
-		void sendPacketTo(char packetId, int who, CString pPacket, TPlayer* pPlayer = 0) const;
+		void sendPacketToAll(PlayerOutPacket pPacket, TPlayer *pSender) const;
+		void sendPacketToLevel(PlayerOutPacket pPacket, TLevel* pLevel, TPlayer* pPlayer = 0) const;
+		void sendPacketToLevel(PlayerOutPacket pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer = 0, bool onlyGmap = false) const;
+		void sendPacketToLevel(PlayerOutPacket pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketToLevel(PlayerPredicate predicate, PlayerOutPacket pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf = false, bool onlyGmap = false) const;
+		void sendPacketTo(int who, PlayerOutPacket pPacket, TPlayer* pPlayer = 0) const;
 
 		// Player Management
 		unsigned int getFreePlayerId();
@@ -347,7 +347,7 @@ inline void TServer::sendToRC(const CString& pMessage, TPlayer *pSender) const
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYRC, CString() << pMessage.subString(0, len), pSender);
+	sendPacketTo(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << pMessage.subString(0, len)}, pSender);
 }
 
 inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
@@ -356,7 +356,7 @@ inline void TServer::sendToNC(const CString& pMessage, TPlayer *pSender) const
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYNC, CString() << pMessage.subString(0, len), pSender);
+	sendPacketTo(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << pMessage.subString(0, len)}, pSender);
 }
 
 #endif

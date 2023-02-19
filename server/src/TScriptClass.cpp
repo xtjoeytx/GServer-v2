@@ -53,7 +53,6 @@ void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 // -- Function: Get Player Packet -- //
 PlayerOutPacket TScriptClass::getClassPacket() const
 {
-
 	if (!_bytecode.isEmpty())
 	{
 		CString b = _bytecode;
@@ -65,4 +64,6 @@ PlayerOutPacket TScriptClass::getClassPacket() const
 		smod.gtokenizeI();
 		return {PLO_UNKNOWN197, CString() << header << "," << smod};
 	}
+
+	return {};
 }

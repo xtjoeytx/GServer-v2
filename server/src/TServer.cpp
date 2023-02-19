@@ -294,7 +294,7 @@ void TServer::cleanup()
 #endif
 
 	// Save translations.
-	this->TS_Save();
+	TS_Save();
 
 	// Save server flags.
 	saveServerFlags();
@@ -389,7 +389,7 @@ bool TServer::doTimedEvents()
             if (!player->isNPCServer())
             {
                 if (!player->doTimedEvents())
-                    this->deletePlayer(player);
+                    deletePlayer(player);
             }
 		}
 	}
@@ -432,7 +432,7 @@ bool TServer::doTimedEvents()
 		last1mTimer = lastTimer;
 
 		// Save server flags.
-		this->saveServerFlags();
+		saveServerFlags();
 	}
 
 	// Stuff that happens every 3 minutes.
@@ -732,7 +732,7 @@ void TServer::loadServerFlags()
 {
 	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
 	for (auto & line : lines)
-		this->setFlag(line, false);
+		setFlag(line, false);
 }
 
 void TServer::loadServerMessage()
@@ -798,7 +798,7 @@ void TServer::loadWeapons(bool print)
 				if (print) {
 					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
 
-					TServer::sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYRC, CString() << "Server: Updated weapon " << weapon->getName() << " ");
+					sendPacketTo(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Server: Updated weapon " << weapon->getName() << " "});
 				}
 			}
 			else
@@ -987,7 +987,7 @@ void TServer::loadNpcs(bool print)
 
 void TServer::loadTranslations()
 {
-	this->TS_Reload();
+	TS_Reload();
 }
 
 void TServer::loadWordFilter()
@@ -1255,7 +1255,7 @@ TNPC* TServer::addServerNpc(int npcId, float pX, float pY, TLevel *pLevel, bool 
 
 			// Send to level.
 			TMap* map = pLevel->getMap();
-			sendPacketToLevel(PLO_NPCPROPS, packet, map, pLevel, 0, true);
+			sendPacketToLevel({PLO_NPCPROPS, packet}, map, pLevel, nullptr, true);
 		}
 	}
 
@@ -1268,7 +1268,7 @@ void TServer::handlePM(TPlayer * player, const CString & message)
 	{
 		CString npcServerMsg;
 		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-		player->sendPacket(PLO_PRIVATEMESSAGE, CString() >> (short)mNpcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
+		player->sendPacket({PLO_PRIVATEMESSAGE, CString() >> (short)mNpcServer->getId() << "\"\"," << npcServerMsg.gtokenize()});
 		return;
 	}
 
@@ -1326,7 +1326,7 @@ TNPC* TServer::addNPC(const CString& pImage, const CString& pScript, float pX, f
 
 		// Send to level.
 		TMap* map = pLevel->getMap();
-		sendPacketToLevel(PLO_NPCPROPS, packet, map, pLevel, 0, true);
+		sendPacketToLevel({PLO_NPCPROPS, packet}, map, pLevel, nullptr, true);
 	}
 
 	return newNPC;
@@ -1364,9 +1364,9 @@ bool TServer::deleteNPC(TNPC* npc, bool eraseFromLevel)
 			if (p->isClient())
 			{
 				if (isOnMap || p->getVersion() < CLVER_2_1)
-					p->sendPacket(PLO_NPCDEL, CString() >> (int)npc->getId());
+					p->sendPacket({PLO_NPCDEL, CString() >> (int)npc->getId()});
 				else
-					p->sendPacket(PLO_NPCDEL2, CString() >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+					p->sendPacket({PLO_NPCDEL2, CString() >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId()});
 			}
 		}
 	}
@@ -1492,10 +1492,10 @@ void TServer::playerLoggedIn(TPlayer *player)
 
 #ifdef V8NPCSERVER
 	// Send event to server that player is logging in
-	for (auto it = npcNameList.begin(); it != npcNameList.end(); ++it)
+	for (auto & it : npcNameList)
 	{
 		// TODO(joey): check if they have the event before queueing for them
-		TNPC *npcObject = (*it).second;
+		TNPC *npcObject = it.second;
 		npcObject->queueNpcAction("npc.playerlogin", player);
 	}
 #endif
@@ -1558,7 +1558,7 @@ bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	{
 		mServerFlags.erase(mServerFlag);
 		if (pSendToPlayers)
-            sendPacketToAll(PLO_FLAGDEL, CString() << pFlagName, nullptr);
+            sendPacketToAll({PLO_FLAGDEL, CString() << pFlagName}, nullptr);
 		return true;
 	}
 
@@ -1569,7 +1569,7 @@ bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
 {
 	std::string flagName = pFlag.readString("=").text();
 	CString flagValue = pFlag.readString("");
-	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
+	return setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
 bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
@@ -1594,26 +1594,25 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	else mServerFlags[pFlagName] = pFlagValue;
 
 	if (pSendToPlayers)
-        sendPacketToAll(PLO_FLAGSET, CString() << pFlagName << "=" << pFlagValue, nullptr);
+        sendPacketToAll({PLO_FLAGSET, CString() << pFlagName << "=" << pFlagValue}, nullptr);
 	return true;
 }
 
 /*
 	Packet-Sending Functions
 */
-void TServer::sendPacketToAll(char packetId, CString pPacket, TPlayer *sender) const
+void TServer::sendPacketToAll(PlayerOutPacket pPacket, TPlayer *sender) const
 {
 	for (auto player : playerList)
 	{
 		if (player == sender || player->isNPCServer())
 			continue;
 
-		player->sendPacket(packetId, pPacket);
+		player->sendPacket(pPacket);
 	}
 }
 
-
-void TServer::sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, TPlayer* pPlayer) const
+void TServer::sendPacketToLevel(PlayerOutPacket pPacket, TLevel* pLevel, TPlayer* pPlayer) const
 {
 	if (!pLevel)
 		return;
@@ -1623,7 +1622,7 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, 
 		for (auto p : playerList)
 		{
 			if (p != pPlayer && p->isClient() && p->getLevel() == pLevel)
-				p->sendPacket(packetId, pPacket);
+				p->sendPacket(pPacket);
 		}
 	}
 	else
@@ -1636,13 +1635,13 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TLevel* pLevel, 
 				int ogmap[2] = { other->getLevel()->getMapX(), other->getLevel()->getMapY() };
 
 				if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-					other->sendPacket(packetId, pPacket);
+					other->sendPacket(pPacket);
 			}
 		}
 	}
 }
 
-void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
+void TServer::sendPacketToLevel(PlayerOutPacket pPacket, TMap* pMap, TLevel* pLevel, TPlayer* pPlayer, bool onlyGmap) const
 {
 	if (pMap == nullptr || (onlyGmap && pMap->getType() == MapType::BIGMAP))// || pLevel->isGroupLevel())
 	{
@@ -1650,7 +1649,7 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLev
 		{
 			if ( p == pPlayer || !p->isClient()) continue;
 			if ( p->getLevel() == pLevel)
-				p->sendPacket(packetId, pPacket);
+				p->sendPacket(pPacket);
 		}
 		return;
 	}
@@ -1681,12 +1680,12 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TLev
 			//}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				other->sendPacket(packetId, pPacket);
+				other->sendPacket(pPacket);
 		}
 	}
 }
 
-void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+void TServer::sendPacketToLevel(PlayerOutPacket pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (!pPlayer->getLevel())
 		return;
@@ -1699,7 +1698,7 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPla
 		{
 			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
 			if ( p->getLevel() == level)
-				p->sendPacket(packetId, pPacket);
+				p->sendPacket(pPacket);
 		}
 		return;
 	}
@@ -1710,7 +1709,7 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPla
 		if (!player->isClient()) continue;
 		if ( player == pPlayer)
 		{
-			if (sendToSelf) pPlayer->sendPacket(packetId, pPacket);
+			if (sendToSelf) pPlayer->sendPacket(pPacket);
 			continue;
 		}
 		if ( player->getLevel() == nullptr) continue;
@@ -1738,12 +1737,12 @@ void TServer::sendPacketToLevel(char packetId, CString pPacket, TMap* pMap, TPla
 			}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				player->sendPacket(packetId, pPacket);
+				player->sendPacket(pPacket);
 		}
 	}
 }
 
-void TServer::sendPacketToLevel(PlayerPredicate predicate, char packetId, CString pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
+void TServer::sendPacketToLevel(PlayerPredicate predicate, PlayerOutPacket pPacket, TMap* pMap, TPlayer* pPlayer, bool sendToSelf, bool onlyGmap) const
 {
 	if (!pPlayer->getLevel())
 		return;
@@ -1755,7 +1754,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, char packetId, CStrin
 		{
 			if ((p == pPlayer && !sendToSelf) || !p->isClient()) continue;
 			if (p->getLevel() == level && predicate(p))
-				p->sendPacket(packetId, pPacket);
+				p->sendPacket(pPacket);
 		}
 		return;
 	}
@@ -1766,7 +1765,7 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, char packetId, CStrin
 		if (!player->isClient()) continue;
 		if (player == pPlayer)
 		{
-			if (sendToSelf) pPlayer->sendPacket(packetId, pPacket);
+			if (sendToSelf) pPlayer->sendPacket(pPacket);
 			continue;
 		}
 		if (player->getLevel() == nullptr) continue;
@@ -1794,19 +1793,19 @@ void TServer::sendPacketToLevel(PlayerPredicate predicate, char packetId, CStrin
 			}
 
 			if (abs(ogmap[0] - sgmap[0]) < 2 && abs(ogmap[1] - sgmap[1]) < 2)
-				player->sendPacket(packetId, pPacket);
+				player->sendPacket(pPacket);
 		}
 	}
 }
 
-void TServer::sendPacketTo(char packetId, int who, CString pPacket, TPlayer* pPlayer) const
+void TServer::sendPacketTo(int who, PlayerOutPacket pPacket, TPlayer* pPlayer) const
 {
 	for (auto player : playerList)
 	{
 		if (player != pPlayer)
 		{
 			if (player->getType() & who)
-				player->sendPacket(packetId, pPacket);
+				player->sendPacket(pPacket);
 		}
 	}
 }
@@ -1846,7 +1845,7 @@ bool TServer::NC_DelWeapon(const CString& pWeaponName)
 	delete weaponObj;
 
 	// Delete from Players
-	sendPacketTo(PLO_NPCWEAPONDEL, PLTYPE_ANYCLIENT, CString() << pWeaponName);
+	sendPacketTo(PLTYPE_ANYCLIENT, {PLO_NPCWEAPONDEL, CString() << pWeaponName});
 	return true;
 }
 
@@ -1860,7 +1859,7 @@ void TServer::updateWeaponForPlayers(TWeapon *pWeapon)
 
 		if (player->hasWeapon(pWeapon->getName()))
 		{
-			player->sendPacket(PLO_NPCWEAPONDEL, CString() << pWeapon->getName());
+			player->sendPacket({PLO_NPCWEAPONDEL, CString() << pWeapon->getName()});
 			for (const auto& packet : pWeapon->getWeaponPackets(player->getVersion())) {
 				player->sendPacket(packet, true);
 			}
@@ -1883,9 +1882,9 @@ void TServer::updateClassForPlayers(TScriptClass *pClass)
 				CString b = pClass->getByteCode();
 
 				if (!player->newProtocol)
-					player->sendPacket(PLO_RAWDATA, CString() >> (int)b.length());
+					player->sendPacket({PLO_RAWDATA, CString() >> (int)b.length()});
 
-				player->sendPacket(PLO_NPCWEAPONSCRIPT, b);
+				player->sendPacket({PLO_NPCWEAPONSCRIPT, b});
 			}
 		}
 	}
@@ -2044,7 +2043,7 @@ CString TServer::TS_Translate(const CString& pLanguage, const CString& pKey)
 void TServer::TS_Reload()
 {
 	// Save Translations
-	this->TS_Save();
+	TS_Save();
 
 	// Reset Translations
 	mTranslationManager.reset();
@@ -2056,7 +2055,7 @@ void TServer::TS_Reload()
 	// Load Each File
 	const std::map<CString, CString> &temp = translationFS.getFileList();
 	for (auto & i : temp)
-		this->TS_Load(removeExtension(i.first), i.second);
+		TS_Load(removeExtension(i.first), i.second);
 }
 
 void TServer::TS_Save()

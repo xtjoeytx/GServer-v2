@@ -49,7 +49,7 @@ bool TPlayer::sendLogin()
 	// Check to see if the player is banned or not.
 	if (isBanned && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		sendPacket(PLO_DISCMESSAGE, CString() << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r"));
+		sendPacket({PLO_DISCMESSAGE, CString() << "You have been banned.  Reason: " << banReason.guntokenize().replaceAll("\n", "\r")});
 		return false;
 	}
 
@@ -60,7 +60,7 @@ bool TPlayer::sendLogin()
 		if (!isStaff() || !isAdminIp())
 		{
 			rclog.out("[%s] Attempted RC login by %s.\n", server->getName().text(), accountName.text());
-			sendPacket(PLO_DISCMESSAGE, CString() << "You do not have RC rights.");
+			sendPacket({PLO_DISCMESSAGE, CString() << "You do not have RC rights."});
 			return false;
 		}
 	}
@@ -75,7 +75,7 @@ bool TPlayer::sendLogin()
 		// Staff only.
 		if (server->getSettings()->getBool("onlystaff", false) && !isStaff())
 		{
-			sendPacket(PLO_DISCMESSAGE, CString() << "This server is currently restricted to staff only.");
+			sendPacket({PLO_DISCMESSAGE, CString() << "This server is currently restricted to staff only."});
 			return false;
 		}
 
@@ -83,7 +83,7 @@ bool TPlayer::sendLogin()
 		std::vector<CString> adminIps = adminIp.tokenize(",");
 		if (!isAdminIp() && vecSearch<CString>(adminIps, "0.0.0.0") == -1)
 		{
-			sendPacket(PLO_DISCMESSAGE, CString() << "Your IP doesn't match one of the allowed IPs for this account.");
+			sendPacket({PLO_DISCMESSAGE, CString() << "Your IP doesn't match one of the allowed IPs for this account."});
 			return false;
 		}
 	}
@@ -91,11 +91,11 @@ bool TPlayer::sendLogin()
 	// Server Signature
 	// 0x49 (73) is used to tell the client that more than eight
 	// players will be playing.
-	sendPacket(PLO_SIGNATURE, CString() >> (char)73);
+	sendPacket({PLO_SIGNATURE, CString() >> (char)73});
 
 	//if(loginserver) {
-		sendPacket(PLO_FULLSTOP, "");
-		sendPacket(PLO_GHOSTICON, CString() >> (char)1);
+		sendPacket({PLO_FULLSTOP, ""});
+		sendPacket({PLO_GHOSTICON, CString() >> (char)1});
 	//}
 
 	if (isClient())
@@ -105,19 +105,18 @@ bool TPlayer::sendLogin()
 		// npc props it modifies.
 		//
 		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
-		sendPacket(PLO_HASNPCSERVER, CString() << "");
+		sendPacket({PLO_HASNPCSERVER, CString() << ""});
 #endif
 
-		sendPacket(PLO_UNKNOWN168, CString() << "");
+		sendPacket({PLO_UNKNOWN168, CString() << ""});
 	}
 
 	// Check if the account is already in use.
 	if (!getGuest())
 	{
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		for (auto player : *playerList)
 		{
-			TPlayer* player = *i;
 			CString oacc = player->getAccountName();
 			unsigned short oid = (unsigned short)player->getId();
 			int meClient = ((type & PLTYPE_ANYCLIENT) ? 0 : ((type & PLTYPE_ANYRC) ? 1 : 2));
@@ -126,12 +125,12 @@ bool TPlayer::sendLogin()
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{
-					player->sendPacket(PLO_DISCMESSAGE, CString() << "Someone else has logged into your account.");
+					player->sendPacket({PLO_DISCMESSAGE, CString() << "Someone else has logged into your account."});
 					player->disconnect();
 				}
 				else
 				{
-					sendPacket(PLO_DISCMESSAGE, CString() << "Account is already in use.");
+					sendPacket({PLO_DISCMESSAGE, CString() << "Account is already in use."});
 					return false;
 				}
 			}
@@ -146,7 +145,7 @@ bool TPlayer::sendLogin()
 	bool succeeded = false;
 	if (isClient()) succeeded = sendLoginClient();
 	else if (isRC()) succeeded = sendLoginRC();
-	if (succeeded == false) return false;
+	if ( !succeeded ) return false;
 
 	// Set loaded to true so our account is saved when we leave.
 	// This also lets us send data.
@@ -159,7 +158,7 @@ bool TPlayer::sendLogin()
 	CString guildPacket = CString();
 	for (auto & guild : guilds)
 		guildPacket << "\"" << ((CString)guild).trim() << "\",";
-	sendPacket(PLO_STAFFGUILDS, guildPacket.remove(guildPacket.length() - 1, 1));
+	sendPacket({PLO_STAFFGUILDS, guildPacket.remove(guildPacket.length() - 1, 1)});
 
 	// Send out the server's available status list options.
 	if ((isClient() && versionID >= CLVER_2_1) || isRC())
@@ -169,12 +168,12 @@ bool TPlayer::sendLogin()
 		for (const auto& status : server->getStatusList())
 			pliconPacket << status.trim() << ",";
 
-		sendPacket(PLO_STATUSLIST, pliconPacket.remove(pliconPacket.length() - 1, 1));
+		sendPacket({PLO_STATUSLIST, pliconPacket.remove(pliconPacket.length() - 1, 1)});
 	}
 
 	// This comes after status icons for RC
 	if (isRC())
-		sendPacket(PLO_RC_MAXUPLOADFILESIZE, CString() >> (long long)(1048576 * 20));
+		sendPacket({PLO_RC_MAXUPLOADFILESIZE, CString() >> (long long)(1048576 * 20)});
 
 	// Then during iterating the playerlist to send players to the rc client, it sends addplayer followed by rc chat per person.
 
@@ -194,9 +193,8 @@ bool TPlayer::sendLogin()
 
 		CString rcsOnline;
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		for (TPlayer* player : *playerList)
 		{
-			TPlayer* player = (TPlayer*)*i;
 			if (player == this) continue;
 
 			// Don't send npc-control players to others
@@ -204,24 +202,24 @@ bool TPlayer::sendLogin()
 
 			// Send the other player my props.
 			// Send my flags to the npcserver.
-			player->sendPacket(player->isClient() ? PLO_OTHERPLPROPS : PLO_ADDPLAYER, player->isClient() ? myClientProps : myRCProps);
+			player->sendPacket({player->isClient() ? PLO_OTHERPLPROPS : PLO_ADDPLAYER, player->isClient() ? myClientProps : myRCProps});
 
 			// Add Player / RC.
 			if (isClient())
-				sendPacket(PLO_OTHERPLPROPS, player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool)));
+				sendPacket({PLO_OTHERPLPROPS, player->isClient() ? player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)) : player->getProps(__getRCLogin, sizeof(__getRCLogin)/sizeof(bool))});
 			else
 			{
 				// Level name.  If no level, send an empty space.
 				CString levelName = (player->getLevel() ? player->getLevel()->getLevelName() : " ");
 
 				// Get the other player's RC props.
-				this->sendPacket(PLO_ADDPLAYER, CString()
+				this->sendPacket({PLO_ADDPLAYER, CString()
 					>> (short)player->getId()
 					>> (char)player->getAccountName().length() << player->getAccountName()
 					>> (char)PLPROP_CURLEVEL >> (char)levelName.length() << levelName
 					>> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG)
 					>> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME)
-					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME));
+					>> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME)});
 
 				// If the other player is an RC, add them to the list of logged in RCs.
 				if (player->isRC())
@@ -231,12 +229,12 @@ bool TPlayer::sendLogin()
 
 		// If we are an RC, announce the list of currently logged in RCs.
 		if (isRC() && !rcsOnline.isEmpty())
-			sendPacket(PLO_RC_CHAT, CString() << "Currently online: " << rcsOnline);
+			sendPacket({PLO_RC_CHAT, CString() << "Currently online: " << rcsOnline});
 	}
 
 	// Ask for processes. This causes windows v6 clients to crash
 	if (isClient() && versionID < CLVER_6_015)
-		sendPacket(PLO_LISTPROCESSES, CString() << "");
+		sendPacket({PLO_LISTPROCESSES, CString() << ""});
 
 	return true;
 }
@@ -279,23 +277,23 @@ bool TPlayer::sendLoginClient()
 	}
 
 	// Sent to rc and client, but rc ignores it so...
-    sendPacket(PLO_CLEARWEAPONS, CString() << "");
+    sendPacket({PLO_CLEARWEAPONS, CString() << ""});
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
-	if (settings->getBool("flaghack_ip", false) == true)
+	if ( settings->getBool("flaghack_ip", false))
 		this->setFlag("gr.ip", this->accountIpStr, true);
 
 	// Send the player's flags.
-	for (auto i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto & i : flagList)
 	{
-		if (i->second.isEmpty()) sendPacket(PLO_FLAGSET, CString() << i->first);
-		else sendPacket(PLO_FLAGSET, CString() << i->first << "=" << i->second);
+		if (i.second.isEmpty()) sendPacket({PLO_FLAGSET, CString() << i.first});
+		else sendPacket({PLO_FLAGSET, CString() << i.first << "=" << i.second});
 	}
 
 	// Send the server's flags to the player.
 	std::unordered_map<std::string, CString> * serverFlags = server->getServerFlags();
-	for (auto i = serverFlags->begin(); i != serverFlags->end(); ++i)
-		sendPacket(PLO_FLAGSET, CString() << i->first << "=" << i->second);
+	for (auto & serverFlag : *serverFlags)
+		sendPacket({PLO_FLAGSET, CString() << serverFlag.first << "=" << serverFlag.second});
 
 	// Delete the bomb and bow.  They get automagically added by the client for
 	// God knows which reason.  Bomb and Bow must be capitalized.
@@ -303,18 +301,18 @@ bool TPlayer::sendLoginClient()
 	//sendPacket(PLO_NPCWEAPONDEL, CString() << "Bow");
 
 	// Send the player's weapons.
-	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end(); ++i)
+	for (auto & i : weaponList)
 	{
-		TWeapon* weapon = server->getWeapon(*i);
-		if (weapon == 0)
+		TWeapon* weapon = server->getWeapon(i);
+		if (weapon == nullptr)
 		{
 			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			LevelItemType itemType = TLevelItem::getItemId(*i);
+			LevelItemType itemType = TLevelItem::getItemId(i);
 			if (itemType != LevelItemType::INVALID)
 			{
-				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
-				defWeapPacket.readGChar();
-				msgPLI_WEAPONADD(defWeapPacket);
+				CString defaultWeaponPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
+				defaultWeaponPacket.readGChar();
+				msgPLI_WEAPONADD(defaultWeaponPacket);
 				continue;
 			}
 			continue;
@@ -338,21 +336,21 @@ bool TPlayer::sendLoginClient()
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (versionID >= CLVER_2_21 && versionID <= CLVER_2_31)
 	{
-		sendPacket(PLO_NPCWEAPONADD, CString()
+		sendPacket({PLO_NPCWEAPONADD, CString()
 			>> (char)12 << "-gr_zlib_fix"
 			>> (char)0 >> (char)1 << "-"
-			>> (char)1 >> (short)_zlibFix.length() << _zlibFix);
+			>> (char)1 >> (short)_zlibFix.length() << _zlibFix});
 	}
 
 	// Was blank.  Sent before weapon list.
-	sendPacket(PLO_UNKNOWN190, CString() << "");
+	sendPacket({PLO_UNKNOWN190, CString() << ""});
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
 	bool warpSuccess = warp(levelName, x, y);
-	if (!warpSuccess && level == 0)
+	if (!warpSuccess && level == nullptr)
 	{
-		sendPacket(PLO_DISCMESSAGE, CString() << "No level available.");
+		sendPacket({PLO_DISCMESSAGE, CString() << "No level available."});
 		serverlog.out(CString() << "[" << server->getName() << "] " << "Cannot find level for " << accountName << "\n");
 		return false;
 	}
@@ -363,9 +361,9 @@ bool TPlayer::sendLoginClient()
 		CString bigmap = settings->getStr("bigmap");
 		if (!bigmap.isEmpty())
 		{
-			std::vector<CString> vbigmap = bigmap.tokenize(",");
-			if (vbigmap.size() == 4)
-				sendPacket(PLO_BIGMAP, CString() << vbigmap[0].trim() << "," << vbigmap[1].trim() << "," << vbigmap[2].trim() << "," << vbigmap[3].trim());
+			std::vector<CString> bigmapVector = bigmap.tokenize(",");
+			if ( bigmapVector.size() == 4)
+				sendPacket({PLO_BIGMAP, CString() << bigmapVector[0].trim() << "," << bigmapVector[1].trim() << "," << bigmapVector[2].trim() << "," << bigmapVector[3].trim()});
 		}
 	}
 
@@ -375,21 +373,21 @@ bool TPlayer::sendLoginClient()
 		CString minimap = settings->getStr("minimap");
 		if (!minimap.isEmpty())
 		{
-			std::vector<CString> vminimap = minimap.tokenize(",");
-			if (vminimap.size() == 4)
-				sendPacket(PLO_MINIMAP, CString() << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+			std::vector<CString> minimapVector = minimap.tokenize(",");
+			if ( minimapVector.size() == 4)
+				sendPacket({PLO_MINIMAP, CString() << minimapVector[0].trim() << "," << minimapVector[1].trim() << "," << minimapVector[2].trim() << "," << minimapVector[3].trim()});
 		}
 	}
 
 	// Send out RPG Window greeting.
 	if (isClient() && versionID >= CLVER_2_1)
-		sendPacket(PLO_RPGWINDOW, CString() << "\"Welcome to " << settings->getStr("name") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"" );
+		sendPacket({PLO_RPGWINDOW, CString() << "\"Welcome to " << settings->getStr("name") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\""});
 
 	// Send the start message to the player.
-	sendPacket(PLO_STARTMESSAGE, CString() << *(server->getServerMessage()));
+	sendPacket({PLO_STARTMESSAGE, CString() << *(server->getServerMessage())});
 
 	// This will allow serverwarp and some other things, for some reason.
-	sendPacket(PLO_SERVERTEXT, CString() << "");
+	sendPacket({PLO_SERVERTEXT, CString() << ""});
 
 	return true;
 }
@@ -398,33 +396,32 @@ bool TPlayer::sendLoginNC()
 {
 	// Send database npcs
 	std::unordered_map<std::string, TNPC *> *npcList = server->getNPCNameList();
-	for (auto it = npcList->begin(); it != npcList->end(); ++it)
+	for (auto & it : *npcList)
 	{
-		TNPC *npc = it->second;
+		TNPC *npc = it.second;
 		CString npcPacket = CString() >> (int)npc->getId()
 			>> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME)
 			>> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE)
 			>> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
-		sendPacket(PLO_NC_NPCADD, npcPacket);
+		sendPacket({PLO_NC_NPCADD, npcPacket});
 	}
 
 	// Send classes
 	CString classPacket;
 	auto& classList = server->getClassList();
-	for (auto it = classList.begin(); it != classList.end(); ++it)
-		sendPacket(PLO_NC_CLASSADD, CString() << it->first);
+	for (auto & it : classList)
+		sendPacket({PLO_NC_CLASSADD, CString() << it.first});
 
 	// Send list of currently connected NC's
 	std::vector<TPlayer*>* playerList = server->getPlayerList();
-	for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+	for (auto player : *playerList)
 	{
-		TPlayer *player = *i;
-		if (player != this && player->isNC())
-			sendPacket(PLO_RC_CHAT, CString() << "New NC: " << player->getAccountName());
+			if (player != this && player->isNC())
+			sendPacket({PLO_RC_CHAT, CString() << "New NC: " << player->getAccountName()});
 	}
 
 	// Announce to other nc's that we logged in
-	server->sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYNC, CString() << "New NC: " << accountName, this);
+	server->sendPacketTo(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << "New NC: " << accountName}, this);
 
 	loaded = true;
 	return true;
@@ -434,7 +431,7 @@ bool TPlayer::sendLoginRC()
 {
 	// This packet clears the players weapons on the client, but official
 	// also sends it to the RC's so we are maintaining the same behavior
-    sendPacket(PLO_CLEARWEAPONS, CString() << "");
+    sendPacket({PLO_CLEARWEAPONS, CString() << ""});
 
     // If no nickname was specified, set the nickname to the account name.
 	if (nickName.length() == 0)
@@ -447,10 +444,10 @@ bool TPlayer::sendLoginRC()
 	// Send the RC join message to the RC.
 	std::vector<CString> rcmessage = CString::loadToken(CString() << server->getServerPath() << "config/rcmessage.txt", "\n", true);
 	for (const auto & i : rcmessage)
-		sendPacket(PLO_RC_CHAT, CString() << i);
+		sendPacket({PLO_RC_CHAT, CString() << i});
 
-    sendPacket(PLO_UNKNOWN190, CString() << "");
+    sendPacket({PLO_UNKNOWN190, CString() << ""});
 
-    server->sendPacketTo(PLO_RC_CHAT, PLTYPE_ANYRC, CString() << "New RC: " << accountName);
+    server->sendPacketTo(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "New RC: " << accountName});
 	return true;
 }

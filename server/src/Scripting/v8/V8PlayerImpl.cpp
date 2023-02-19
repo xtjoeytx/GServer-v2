@@ -1010,7 +1010,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// PM message
 		CString pmMessage(*newValue);
-		playerObject->sendPacket(PLO_PRIVATEMESSAGE, CString() >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize());
+		playerObject->sendPacket({PLO_PRIVATEMESSAGE, CString() >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize()});
 	}
 }
 
@@ -1261,7 +1261,7 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 		// Unwrap Object
 		V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 
-		playerObject->sendPacket(PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)trigx >> (char)trigy << trigaction);
+		playerObject->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)trigx >> (char)trigy << trigaction});
 	}
 }
 
@@ -1287,7 +1287,7 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 			// Unwrap Object
 			V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
 
-			playerObject->sendPacket(PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction);
+			playerObject->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction});
 		}
 	}
 }

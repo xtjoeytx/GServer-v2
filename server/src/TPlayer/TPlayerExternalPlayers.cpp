@@ -49,9 +49,9 @@ bool TPlayer::remPMServer(CString& option)
 				ij = externalPlayerList.erase(ij);
 
 				if (isRC())
-					sendPacket(PLO_DELPLAYER, CString() >> pid);
+					sendPacket({PLO_DELPLAYER, CString() >> pid});
 				else
-					sendPacket(PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED);
+					sendPacket({PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED});
 			}
 			else
 				++ij;
@@ -107,9 +107,9 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 					ij = externalPlayerList.erase(ij);
 
 					if (isRC())
-						sendPacket(PLO_DELPLAYER, CString() >> pid);
+						sendPacket({PLO_DELPLAYER, CString() >> pid});
 					else
-						sendPacket(PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED);
+						sendPacket({PLO_OTHERPLPROPS, CString() >> pid >> (char)PLPROP_PCONNECTED});
 
 					//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
 					//server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
@@ -180,10 +180,10 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		for (std::vector<TPlayer *>::iterator ij = externalPlayerList.begin(); ij != externalPlayerList.end();)
 		{
 			if (isRC()) {
-				sendPacket(PLO_ADDPLAYER, CString() >> (short)(*ij)->getId() << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
+				sendPacket({PLO_ADDPLAYER, CString() >> (short)(*ij)->getId() << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1});
 			}
 			else {
-				sendPacket(PLO_OTHERPLPROPS, CString() >> (short)(*ij)->getId() >> (char)PLPROP_ACCOUNTNAME << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
+				sendPacket({PLO_OTHERPLPROPS, CString() >> (short)(*ij)->getId() >> (char)PLPROP_ACCOUNTNAME << (*ij)->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << (*ij)->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1)});
 			}
 
 			++ij;
