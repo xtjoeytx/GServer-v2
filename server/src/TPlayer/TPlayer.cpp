@@ -1696,16 +1696,27 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 		// Send links, signs, and mod time.
 		sendPacket(PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime());
-		pLevel->getLinksPacket(this);
-		pLevel->getSignsPacket(this);
+		for (const auto& packet : pLevel->getLinkPackets()) {
+			sendPacket(packet);
+		}
+		for (const auto& packet : pLevel->getSignPackets(this)) {
+			sendPacket(packet);
+		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if ( !fromAdjacent )
 	{
-		pLevel->getBoardChangesPacket(this, l_time);
-		pLevel->getChestPacket(this);
-		pLevel->getHorsePacket(this);
+		sendPacket(pLevel->getBoardChangesPacket(l_time));
+
+		for (const auto& packet : pLevel->getChestPackets(this)) {
+			sendPacket(packet);
+		}
+
+		for (const auto& packet : pLevel->getHorsePackets()) {
+			sendPacket(packet);
+		}
+
 		for (const auto& packet : pLevel->getBaddyPackets(versionID)) {
 			sendPacket(packet);
 		}
@@ -1735,7 +1746,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			sendPacket(PLO_SETACTIVELEVEL, CString() << pmap->getMapName());
 
-			pLevel->getNpcsPacket(this, l_time, versionID);
+			for (const auto& packet : pLevel->getNpcPackets(this, l_time, versionID)) {
+				sendPacket(packet);
+			}
 
 			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 			CString pmapLevels = pmap->getLevels();
@@ -1751,7 +1764,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		else
 		{
 			sendPacket(PLO_SETACTIVELEVEL, CString() << pLevel->getLevelName());
-			pLevel->getNpcsPacket(this, l_time, versionID);
+			for (const auto& packet : pLevel->getNpcPackets(this, l_time, versionID)) {
+				sendPacket(packet);
+			}
 		}
 	}
 
@@ -1763,9 +1778,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			server->sendPacketToLevel(PLO_OTHERPLPROPS, this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), pmap, this, false);
 			std::vector<TPlayer*>* playerList = server->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			for (auto & i : *playerList)
 			{
-				TPlayer* player = (TPlayer*)*i;
+				TPlayer* player = (TPlayer*)i;
 				if (player == 0) continue;
 				if (player == this || player->getMap() != pmap) continue;
 				if (pmap->isGroupMap() && levelGroup != player->getGroup()) continue;
@@ -1791,9 +1806,9 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 		{
 			server->sendPacketToLevel(PLO_OTHERPLPROPS, this->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)), 0, level, this);
 			std::vector<TPlayer*>* playerList = level->getPlayerList();
-			for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+			for (auto & i : *playerList)
 			{
-				TPlayer* player = (TPlayer*)*i;
+				TPlayer* player = (TPlayer*)i;
 				if (player == this) continue;
 				this->sendPacket(PLO_OTHERPLPROPS, player->getProps(__getLogin, sizeof(__getLogin)/sizeof(bool)));
 			}
@@ -1805,14 +1820,14 @@ bool TPlayer::sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 {
-	if (pLevel == 0) return false;
+	if (pLevel == nullptr) return false;
 	CSettings* settings = server->getSettings();
 
 	time_t l_time = getCachedLevelModTime(pLevel);
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time != 0)
 	{
-		pLevel->getBoardChangesPacket(this, l_time);
+		sendPacket(pLevel->getBoardChangesPacket(l_time));
 	}
 	else
 	{
@@ -1829,8 +1844,13 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 			// Send links, signs, and mod time.
 			if ( !settings->getBool("serverside", false))	// TODO: NPC server check instead.
 			{
-				pLevel->getLinksPacket(this);
-				pLevel->getSignsPacket(this);
+				for (const auto& packet : pLevel->getLinkPackets()) {
+					sendPacket(packet);
+				}
+
+				for (const auto& packet : pLevel->getSignPackets(this)) {
+					sendPacket(packet);
+				}
 			}
 			sendPacket(PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime());
 		}
@@ -1839,22 +1859,25 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 		if ( !fromAdjacent )
 		{
-			pLevel->getBoardChangesPacket2(this, l_time);
-			pLevel->getChestPacket(this);
+			sendPacket(pLevel->getBoardChangesPacket2(l_time));
+
+			for (const auto& packet : pLevel->getChestPackets(this)) {
+				sendPacket(packet);
+			}
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if ( !fromAdjacent )
 	{
-		pLevel->getHorsePacket(this);
+		for (const auto& packet : pLevel->getHorsePackets()) {
+			sendPacket(packet);
+		}
+
 		for (const auto& packet : pLevel->getBaddyPackets(versionID)) {
 			sendPacket(packet);
 		}
-	}
 
-	if (fromAdjacent == false)
-	{
 		// If we are the leader, send it now.
 		if (pLevel->getPlayer(0) == this || pLevel->isSingleplayer())
 			sendPacket(PLO_ISLEADER, CString() << "");
@@ -1865,7 +1888,8 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 
 	// Send NPCs.
 	if ( !fromAdjacent )
-		pLevel->getNpcsPacket(this, l_time, versionID);
+		for (const auto& packet : pLevel->getNpcPackets(this, l_time, versionID))
+			sendPacket(packet);
 
 	// Do props stuff.
 	// Maps send to players in adjacent levels too.
@@ -1886,11 +1910,11 @@ bool TPlayer::sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent)
 bool TPlayer::leaveLevel(bool resetCache)
 {
 	// Make sure we are on a level first.
-	if (level == 0) return true;
+	if (level == nullptr) return true;
 
 	// Save the time we left the level for the client-side caching.
 	bool found = false;
-	for (std::vector<SCachedLevel*>::iterator i = cachedLevels.begin(); i != cachedLevels.end();)
+	for (auto i = cachedLevels.begin(); i != cachedLevels.end();)
 	{
 		SCachedLevel* cl = *i;
 		if (cl->level == level)
@@ -1907,7 +1931,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 	// Send PLO_ISLEADER to new level leader.
 	TPlayer* leader = level->getPlayer(0);
-	if (leader != 0) leader->sendPacket(PLO_ISLEADER, CString() << "");
+	if (leader != nullptr) leader->sendPacket(PLO_ISLEADER, CString() << "");
 
 	// Tell everyone I left.
 	// This prop isn't used at all???  Maybe it is required for 1.41?
@@ -1916,9 +1940,9 @@ bool TPlayer::leaveLevel(bool resetCache)
 		server->sendPacketToLevel(PLO_OTHERPLPROPS, this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, 0, level, this);
 
 		std::vector<TPlayer*>* playerList = server->getPlayerList();
-		for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+		for (auto & i : *playerList)
 		{
-			TPlayer* player = (TPlayer*)*i;
+			auto* player = (TPlayer*)i;
 			if (player == this) continue;
 			if (player->getLevel() != level) continue;
 			this->sendPacket(PLO_OTHERPLPROPS, player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
@@ -1933,10 +1957,9 @@ bool TPlayer::leaveLevel(bool resetCache)
 
 time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 {
-	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (auto cl : cachedLevels)
 	{
-		SCachedLevel* cl = *i;
-		if (cl->level == level)
+			if (cl->level == level)
 			return cl->modTime;
 	}
 	return 0;
@@ -1944,10 +1967,9 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 
 void TPlayer::resetLevelCache(const TLevel* level)
 {
-	for (std::vector<SCachedLevel*>::const_iterator i = cachedLevels.begin(); i != cachedLevels.end(); ++i)
+	for (auto cl : cachedLevels)
 	{
-		SCachedLevel* cl = *i;
-		if (cl->level == level)
+			if (cl->level == level)
 		{
 			cl->modTime = 0;
 			return;

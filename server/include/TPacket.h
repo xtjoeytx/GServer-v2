@@ -14,4 +14,9 @@ struct TPacket {
 	CString	Data;
 };
 
+typedef TPacket<ServerToPlayer> PlayerOutPacket;
+typedef std::vector<PlayerOutPacket> PlayerOutPackets;
+typedef TPacket<PlayerToServer> PlayerInPacket;
+typedef std::vector<PlayerInPacket> PlayerInPackets;
+
 #endif //GS2EMU_TPACKET_H

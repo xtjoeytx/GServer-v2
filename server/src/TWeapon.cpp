@@ -176,12 +176,12 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-std::vector<TPacket<PlayerOutPacket>> TWeapon::getWeaponPackets(int clientVersion) const
+PlayerOutPackets TWeapon::getWeaponPackets(int clientVersion) const
 {
-	std::vector<TPacket<PlayerOutPacket>> packets;
+	PlayerOutPackets packets;
 	if ( this->isDefault())
 	{
-		packets.emplace_back(TPacket<PlayerOutPacket>{PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault});
+		packets.push_back({PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault});
 		return packets;
 	}
 
@@ -195,12 +195,12 @@ std::vector<TPacket<PlayerOutPacket>> TWeapon::getWeaponPackets(int clientVersio
 		if (!_bytecode.isEmpty())
 		{
 			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-			packets.emplace_back(TPacket<PlayerOutPacket>{PLO_NPCWEAPONADD, weaponPacket});
+			packets.push_back({PLO_NPCWEAPONADD, weaponPacket});
 			CString b = _bytecode;
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			packets.emplace_back(TPacket<PlayerOutPacket>{PLO_UNKNOWN197, CString() << header << "," >> (long long)time(0)});
+			packets.push_back({PLO_UNKNOWN197, CString() << header << "," >> (long long)time(nullptr)});
 			return packets;
 		}
 
@@ -209,7 +209,7 @@ std::vector<TPacket<PlayerOutPacket>> TWeapon::getWeaponPackets(int clientVersio
 			return packets;
 	}
 
-	packets.emplace_back(TPacket<PlayerOutPacket>{PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1});
+	packets.push_back({PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1});
 
 	return packets;
 }

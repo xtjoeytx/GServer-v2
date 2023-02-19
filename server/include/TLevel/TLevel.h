@@ -44,16 +44,16 @@ class TLevel
 		TLevel* clone();
 
 		// get crafted packets
-		std::vector<TPacket<PlayerOutPacket>> getBaddyPackets(int clientVersion = CLVER_2_17);
-		TPacket<PlayerOutPacket> getBoardPacket();
-		TPacket<PlayerOutPacket> getLayerPacket(int i);
-		void getBoardChangesPacket(TPlayer *pPlayer, time_t time);
-		void getBoardChangesPacket2(TPlayer *pPlayer, time_t time);
-		void getChestPacket(TPlayer *pPlayer);
-		void getHorsePacket(TPlayer *pPlayer);
-		void getLinksPacket(TPlayer *pPlayer);
-		void getNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
-		void getSignsPacket(TPlayer *pPlayer);
+		std::vector<PlayerOutPacket> getBaddyPackets(int clientVersion = CLVER_2_17);
+		PlayerOutPacket getBoardPacket();
+		PlayerOutPacket getLayerPacket(int i);
+		PlayerOutPacket getBoardChangesPacket(time_t time);
+		PlayerOutPacket getBoardChangesPacket2(time_t time);
+		PlayerOutPackets getChestPackets(TPlayer *pPlayer);
+		PlayerOutPackets getHorsePackets();
+		PlayerOutPackets getLinkPackets();
+		PlayerOutPackets getNpcPackets(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
+		PlayerOutPackets getSignPackets(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
 		//! \return The actual level name.

@@ -123,9 +123,9 @@ TLevel::~TLevel()
 /*
 	TLevel: Get Crafted Packets
 */
-std::vector<TPacket<PlayerOutPacket>> TLevel::getBaddyPackets(int clientVersion)
+std::vector<PlayerOutPacket> TLevel::getBaddyPackets(int clientVersion)
 {
-	std::vector<TPacket<PlayerOutPacket>> packets;
+	std::vector<PlayerOutPacket> packets;
 	CString retVal;
 	for (const auto& baddy : levelBaddies)
 	{
@@ -134,31 +134,31 @@ std::vector<TPacket<PlayerOutPacket>> TLevel::getBaddyPackets(int clientVersion)
 			continue;
 
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		packets.push_back(TPacket<PlayerOutPacket>{PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion)});
+		packets.push_back({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion)});
 	}
 
 	return packets;
 }
 
-TPacket<PlayerOutPacket> TLevel::getBoardPacket()
+PlayerOutPacket TLevel::getBoardPacket()
 {
 	CString retVal;
 	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
 
-	return TPacket<PlayerOutPacket>{PLO_BOARDPACKET, retVal};
+	return {PLO_BOARDPACKET, retVal};
 }
 
-TPacket<PlayerOutPacket> TLevel::getLayerPacket(int i)
+PlayerOutPacket TLevel::getLayerPacket(int i)
 {
 	CString layerPacket;
 	layerPacket << (char)i << (char)0 << (char)0 << (char)64 << (char)64;
 	layerPacket.write((char *)levelTiles[i], sizeof(levelTiles[i]));
 
 
-	return TPacket<PlayerOutPacket>{PLO_BOARDLAYER, layerPacket};
+	return {PLO_BOARDLAYER, layerPacket};
 }
 
-void TLevel::getBoardChangesPacket(TPlayer *pPlayer, time_t time)
+PlayerOutPacket TLevel::getBoardChangesPacket(time_t time)
 {
 	CString retVal;
 
@@ -168,10 +168,10 @@ void TLevel::getBoardChangesPacket(TPlayer *pPlayer, time_t time)
 			retVal << change.getBoardStr();
 	}
 
-	pPlayer->sendPacket(PLO_LEVELBOARD, retVal);
+	return {PLO_LEVELBOARD, retVal};
 }
 
-void TLevel::getBoardChangesPacket2(TPlayer *pPlayer, time_t time)
+PlayerOutPacket TLevel::getBoardChangesPacket2(time_t time)
 {
 	CString retVal;
 
@@ -181,11 +181,13 @@ void TLevel::getBoardChangesPacket2(TPlayer *pPlayer, time_t time)
 			retVal << change.getBoardStr();
 	}
 
-	pPlayer->sendPacket(PLO_BOARDMODIFY, retVal);
+	return {PLO_BOARDMODIFY, retVal};
 }
 
-void TLevel::getChestPacket(TPlayer *pPlayer)
+PlayerOutPackets TLevel::getChestPackets(TPlayer *pPlayer)
 {
+	PlayerOutPackets packets;
+
 	if (pPlayer)
 	{
 		for (auto& chest : levelChests)
@@ -194,52 +196,68 @@ void TLevel::getChestPacket(TPlayer *pPlayer)
 			CString retVal;
 			retVal >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
 			if (!hasChest) retVal >> (char)chest.getItemIndex() >> (char)chest.getSignIndex();
-			pPlayer->sendPacket(PLO_LEVELCHEST, retVal);
+			packets.push_back({PLO_LEVELCHEST, retVal});
 		}
 	}
+
+	return packets;
 }
 
-void TLevel::getHorsePacket(TPlayer *pPlayer)
+PlayerOutPackets TLevel::getHorsePackets()
 {
+	PlayerOutPackets packets;
+
 	for (auto& horse : levelHorses)
 	{
-		pPlayer->sendPacket(PLO_HORSEADD, CString() << horse.getHorseStr());
+		packets.push_back({PLO_HORSEADD, CString() << horse.getHorseStr()});
 	}
+
+	return packets;
 }
 
-void TLevel::getLinksPacket(TPlayer *pPlayer)
+PlayerOutPackets TLevel::getLinkPackets()
 {
+	PlayerOutPackets packets;
+
 	for (const auto& link : levelLinks)
 	{
-		pPlayer->sendPacket(PLO_LEVELLINK, CString() << link.getLinkStr());
+		packets.push_back({PLO_LEVELLINK, CString() << link.getLinkStr()});
 	}
 
+	return packets;
 }
 
-void TLevel::getNpcsPacket(TPlayer *pPlayer, time_t time, int clientVersion)
+PlayerOutPackets TLevel::getNpcPackets(TPlayer *pPlayer, time_t time, int clientVersion)
 {
+	PlayerOutPackets packets;
+
 	for (auto npc : levelNPCs)
 	{
-
-		pPlayer->sendPacket(PLO_NPCPROPS, CString() >> (int)npc->getId() << npc->getProps(time, clientVersion));
+		packets.push_back({PLO_NPCPROPS, CString() >> (int)npc->getId() << npc->getProps(time, clientVersion)});
 		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
 		{
 			CString byteCodePacket = CString() >> (int)npc->getId() << npc->getByteCode();
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n' && !pPlayer->newProtocol)
 				byteCodePacket << "\n";
 
-			pPlayer->sendPacket(PLO_RAWDATA, CString() >> (int)byteCodePacket.length());
-			pPlayer->sendPacket(PLO_NPCBYTECODE, byteCodePacket);
+			packets.push_back({PLO_RAWDATA, CString() >> (int)byteCodePacket.length()});
+			packets.push_back({PLO_NPCBYTECODE, byteCodePacket});
 		}
 	}
+
+	return packets;
 }
 
-void TLevel::getSignsPacket(TPlayer *pPlayer = nullptr)
+PlayerOutPackets TLevel::getSignPackets(TPlayer *pPlayer = nullptr)
 {
+	PlayerOutPackets packets;
+
 	for (const auto & sign : levelSigns)
 	{
-		pPlayer->sendPacket(PLO_LEVELSIGN, CString() << sign.getSignStr(pPlayer));
+		packets.push_back({PLO_LEVELSIGN, CString() << sign.getSignStr(pPlayer)});
 	}
+
+	return packets;
 }
 
 /*
