@@ -2,7 +2,7 @@
 #define TWEAPON_H
 
 #include <vector>
-#include <time.h>
+#include <ctime>
 #include "CString.h"
 #include "TLevelItem.h"
 #include "TPacket.h"
@@ -14,7 +14,6 @@
 #include <string>
 #include "ScriptBindings.h"
 #include "ScriptExecutionContext.h"
-#include "TPacket.h"
 
 class TPlayer;
 #endif

@@ -16,7 +16,7 @@ public:
 	~TScriptClass();
 
 	// Functions -> Inline Get-Functions
-	void sendClassPacket(TPlayer *p) const;
+	PlayerOutPacket getClassPacket() const;
 
 	const std::string& getName() const {
 		return _className;

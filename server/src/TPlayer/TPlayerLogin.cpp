@@ -331,7 +331,7 @@ bool TPlayer::sendLoginClient()
 		for (auto & i : server->getClassList())
 		{
 			if (i.second != nullptr)
-				i.second->sendClassPacket(this);
+				sendPacket(i.second->getClassPacket());
 		}
 	}
 

@@ -44,11 +44,11 @@ class TLevel
 		TLevel* clone();
 
 		// get crafted packets
-		std::vector<PlayerOutPacket> getBaddyPackets(int clientVersion = CLVER_2_17);
 		PlayerOutPacket getBoardPacket();
 		PlayerOutPacket getLayerPacket(int i);
 		PlayerOutPacket getBoardChangesPacket(time_t time);
 		PlayerOutPacket getBoardChangesPacket2(time_t time);
+		PlayerOutPackets getBaddyPackets(int clientVersion = CLVER_2_17);
 		PlayerOutPackets getChestPackets(TPlayer *pPlayer);
 		PlayerOutPackets getHorsePackets();
 		PlayerOutPackets getLinkPackets();
