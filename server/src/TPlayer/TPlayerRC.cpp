@@ -2273,7 +2273,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 
 					// Send GS2 gani scripts
 					if (findAni)
-						findAni->sendBytecodePacket(pl);
+						for (const auto& packet : findAni->getBytecodePackets(pl->newProtocol))
+							pl->sendPacket(packet);
 				}
 			}
 		}

@@ -88,8 +88,9 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 	return gameAni;
 }
 
-void TGameAni::sendBytecodePacket(TPlayer* p) const
+PlayerOutPackets TGameAni::getBytecodePackets(bool newProtocol) const
 {
+	PlayerOutPackets packets;
 	std::string_view gani = _aniName;
 	if (gani.ends_with(".gani"))
 		gani = gani.substr(0, gani.length() - 5);
@@ -97,9 +98,13 @@ void TGameAni::sendBytecodePacket(TPlayer* p) const
 	// filename ".gani" protection
 	if (!gani.empty() && !_bytecode.isEmpty())
 	{
-		if (!p->newProtocol)
-			p->sendPacket(PLO_RAWDATA, CString() >> (int)(_bytecode.length() + gani.length() + 1) << "\n" >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << _bytecode);
+		if (!newProtocol) {
+			packets.push_back({PLO_RAWDATA, CString() >> (int)(_bytecode.length() + gani.length() + 1) << "\n"});
+			packets.push_back({PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << _bytecode});
+		}
 		else
-			p->sendPacket(PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << _bytecode);
+			packets.push_back({PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << _bytecode});
 	}
+
+	return packets;
 }
