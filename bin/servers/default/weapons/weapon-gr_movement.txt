@@ -1,0 +1,13 @@
+GRAWP001
+REALNAME -gr_movement
+IMAGE wbomb1.png
+SCRIPT
+//#CLIENTSIDE
+if (playerenters || timeout) {
+  if (!gr.off) {
+    if (!gr.x.off) setstring gr.x,#v(int((playerx+0.25)*2)/2);
+    if (!gr.y.off) setstring gr.y,#v(int((playery+0.25)*2)/2);
+  }
+  timeout=0.05;
+}
+SCRIPTEND
