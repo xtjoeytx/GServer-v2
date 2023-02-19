@@ -227,28 +227,33 @@ bool TServerList::connectServer()
 
 	// Use the new protocol for communicating with the listserver
 	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
-	sendPacket(CString() >> (char)SVO_REGISTERV3 << version, true);
+	sendPacket({SVO_REGISTERV3, CString() << version}, true);
 	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
 	CSettings* adminsettings = _server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
+	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings->getStr("hq_password")});
 
 	// Send server info.
-	sendPacket(CString() >> (char)SVO_NEWSERVER
-		>> (char)name.length() << name
-		>> (char)desc.length() << desc
-		>> (char)language.length() << language
-		>> (char)version.length() << version
-		>> (char)url.length() << url
-		>> (char)ip.length() << ip
-		>> (char)port.length() << port
-		>> (char)localip.length() << localip);
+	sendPacket(
+		{
+			SVO_NEWSERVER,
+			CString()
+				>> (char)name.length() << name
+				>> (char)desc.length() << desc
+				>> (char)language.length() << language
+				>> (char)version.length() << version
+				>> (char)url.length() << url
+				>> (char)ip.length() << ip
+				>> (char)port.length() << port
+				>> (char)localip.length() << localip
+		}
+	);
 
 	// Set the level now.
 	if(_server->getSettings()->getBool("onlystaff", false))
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
-	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+		sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)0});
+	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings->getInt("hq_level", 1)});
 
 	sendVersionConfig();
 
@@ -278,18 +283,19 @@ void TServerList::sendVersionConfig()
 	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
-void TServerList::sendPacket(CString& pPacket, bool sendNow)
+void TServerList::sendPacket(const ListServerOutPacket& pPacket, bool sendNow)
 {
 	// empty buffer?
-	if (pPacket.isEmpty())
+	if (pPacket.Data.isEmpty())
 		return;
 
+	CString packet = CString() >> (char)pPacket.Id << pPacket.Data;
 	// append '\n'
-	if (pPacket[pPacket.length()-1] != '\n')
-		pPacket.writeChar('\n');
+	if (packet[packet.length()-1] != '\n')
+		packet.writeChar('\n');
 
 	// append buffer
-	_fileQueue.addPacket(pPacket);
+	_fileQueue.addPacket(packet);
 
 	// send buffer now?
 	if (sendNow)
@@ -304,7 +310,7 @@ void TServerList::addPlayer(TPlayer *player)
 	assert(player != nullptr);
 
 	CString dataPacket;
-	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
+	dataPacket >> (short)player->getId() >> (char)player->getType();
 	dataPacket >> (char)PLPROP_ACCOUNTNAME << player->getProp(PLPROP_ACCOUNTNAME);
 	dataPacket >> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME);
 	dataPacket >> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL);
@@ -312,20 +318,20 @@ void TServerList::addPlayer(TPlayer *player)
 	dataPacket >> (char)PLPROP_Y << player->getProp(PLPROP_Y);
 	dataPacket >> (char)PLPROP_ALIGNMENT << player->getProp(PLPROP_ALIGNMENT);
 	dataPacket >> (char)PLPROP_IPADDR << player->getProp(PLPROP_IPADDR);
-	sendPacket(dataPacket);
+	sendPacket({SVO_PLYRADD, dataPacket});
 }
 
 void TServerList::deletePlayer(TPlayer *player)
 {
 	assert(player != nullptr);
 
-	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
+	sendPacket({SVO_PLYRREM, CString() >> (short)player->getId()});
 }
 
 void TServerList::sendPlayers()
 {
 	// Clears the serverlist players
-	sendPacket(CString() >> (char)SVO_SETPLYR);
+	sendPacket({SVO_SETPLYR, CString()});
 
 	// Adds the players to the serverlist
 	auto playerList = _server->getPlayerList();
@@ -405,48 +411,45 @@ void TServerList::handleText(const CString& data)
 
 void TServerList::sendText(const CString& data)
 {
-	CString dataPacket;
-	dataPacket.writeGChar(SVO_SENDTEXT);
-	dataPacket << data;
-	sendPacket(dataPacket);
+	sendPacket({SVO_SENDTEXT, data});
 }
 
 void TServerList::sendText(const std::vector<CString>& stringList)
 {
 	CString dataPacket;
-	dataPacket.writeGChar(SVO_SENDTEXT);
 	for (const auto & string : stringList)
 		dataPacket << string.gtokenize();
-	sendPacket(dataPacket);
+	sendPacket({SVO_SENDTEXT, dataPacket});
 }
 
 void TServerList::sendTextForPlayer(TPlayer *player, const CString& data)
 {
 	assert(player != nullptr);
 
-	CString dataPacket;
-	dataPacket.writeGChar(SVO_REQUESTLIST);
-	dataPacket >> (short)player->getId() << data;
-	sendPacket(dataPacket);
+	sendPacket({SVO_REQUESTLIST, CString() >> (short)player->getId() << data});
 }
 
 void TServerList::sendLoginPacketForPlayer(TPlayer *player, const CString& password, const CString& identity)
 {
-	sendPacket(CString() >> (char)SVO_VERIACC2
-		>> (char)player->getAccountName().length() << player->getAccountName()
-		>> (char)password.length() << password
-		>> (short)player->getId() >> (char)player->getType()
-		>> (short)identity.length() << identity
-	);
+	sendPacket(
+		{
+			SVO_VERIACC2,
+			CString()
+				>> (char)player->getAccountName().length() << player->getAccountName()
+				>> (char)password.length() << password
+				>> (short)player->getId() >> (char)player->getType()
+				>> (short)identity.length() << identity
+		}
+   );
 }
 
 void TServerList::sendServerHQ()
 {
 	CSettings* adminsettings = _server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings->getStr("hq_password"));
+	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings->getStr("hq_password")});
 	if(_server->getSettings()->getBool("onlystaff", false))
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
-	else sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings->getInt("hq_level", 1));
+		sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)0});
+	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings->getInt("hq_level", 1)});
 }
 
 /*
@@ -728,7 +731,7 @@ void TServerList::msgSVI_FILEEND2(CString& pPacket)
 void TServerList::msgSVI_PING(CString& pPacket)
 {
 	// When server pings, we pong
-	sendPacket(CString() >> (char)SVO_PING);
+	sendPacket({SVO_PING, CString()});
 }
 
 void TServerList::msgSVI_RAWDATA(CString& pPacket)

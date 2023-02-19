@@ -1071,7 +1071,7 @@ bool TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket({SVO_GETFILE3, CString() >> (short)id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]});
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
@@ -1118,7 +1118,7 @@ bool TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket({SVO_GETFILE3, CString() >> (short)id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]});
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
@@ -1165,7 +1165,7 @@ bool TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket({SVO_GETFILE3, CString() >> (short)id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]});
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
@@ -1212,7 +1212,7 @@ bool TPlayer::processChat(CString pChat)
 		if (file.length() != 0)
 			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			server->getServerList()->sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
+			server->getServerList()->sendPacket({SVO_GETFILE3, CString() >> (short)id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]});
 	}
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2 && setcolorsallowed)
 	{
@@ -2078,11 +2078,14 @@ void TPlayer::setNick(CString pNickName, bool force)
 		if (askGlobal)
 		{
 			server->getServerList()->sendPacket(
-				CString() >> (char)SVO_VERIGUILD >> (short)id
-				>> (char)accountName.length() << accountName
-				>> (char)newNick.length() << newNick
-				>> (char)guild.length() << guild
-				);
+				{
+					SVO_VERIGUILD,
+					CString() >> (short)id
+						>> (char)accountName.length() << accountName
+						>> (char)newNick.length() << newNick
+						>> (char)guild.length() << guild
+				}
+			);
 		}
 	}
 	else
@@ -3928,7 +3931,7 @@ bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
 	server->getServerLog().out("%s is requesting serverwarp to %s", accountName.text(), servername.text());
-	server->getServerList()->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << servername);
+	server->getServerList()->sendPacket({SVO_SERVERINFO, CString() >> (short)id << servername});
 	return true;
 }
 
@@ -3959,7 +3962,7 @@ bool TPlayer::msgPLI_RAWDATA(CString& pPacket)
 bool TPlayer::msgPLI_PROFILEGET(CString& pPacket)
 {
 	// Send the packet ID for backwards compatibility.
-	server->getServerList()->sendPacket(CString() >> (char)SVO_GETPROF >> (short)id << pPacket);
+	server->getServerList()->sendPacket({SVO_GETPROF, CString() >> (short)id << pPacket});
 	return true;
 }
 
@@ -3970,7 +3973,7 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
-	server->getServerList()->sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
+	server->getServerList()->sendPacket({SVO_SETPROF, CString() << pPacket});
 	return true;
 }
 

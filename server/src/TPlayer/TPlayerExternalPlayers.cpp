@@ -12,9 +12,9 @@ bool TPlayer::addPMServer(CString& option)
 	TServerList* list = server->getServerList();
 
 	bool PMSrvExist = false;
-	for (std::vector<CString>::const_iterator ij = PMServerList.begin(); ij != PMServerList.end(); ++ij)
+	for (const auto & ij : PMServerList)
 	{
-		if ((ij)->text() == option)
+		if (ij.text() == option)
 		{
 			PMSrvExist = true;
 		}
@@ -23,7 +23,7 @@ bool TPlayer::addPMServer(CString& option)
 	if (!PMSrvExist)
 	{
 		PMServerList.push_back(option);
-		list->sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		list->sendPacket({SVO_REQUESTLIST, CString() >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI()});
 		return true;
 	}
 	else
@@ -196,7 +196,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
 	TServerList* list = server->getServerList();
-	list->sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
+	list->sendPacket(ListServerOutPacket{SVO_PMPLAYER, CString() >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI()});
 	return true;
 }
 

@@ -967,9 +967,9 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 	}
 	else
 	{
-#ifndef NDEBUG
+#ifdef NDEBUG
 		if (words[0] == "/sendtext") {
-			sendPacket(PLO_SERVERTEXT, CString() << message.subString(10) << "\n");
+			sendPacket({PLO_SERVERTEXT, CString() << message.subString(10) << "\n"});
 		}
 		else
 #endif
