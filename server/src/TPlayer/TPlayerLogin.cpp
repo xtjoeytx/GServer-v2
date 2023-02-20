@@ -115,7 +115,7 @@ bool TPlayer::sendLogin()
 	if (!getGuest())
 	{
 		auto& playerList = server->getPlayerList();
-		for (auto& [id, player] : playerList)
+		for (auto& [pid, player] : playerList)
 		{
 			CString oacc = player->getAccountName();
 			unsigned short oid = (unsigned short)player->getId();
@@ -193,7 +193,7 @@ bool TPlayer::sendLogin()
 
 		CString rcsOnline;
 		auto& playerList = server->getPlayerList();
-		for (auto& [id, player] : playerList)
+		for (auto& [pid, player] : playerList)
 		{
 			if (player.get() == this) continue;
 

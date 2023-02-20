@@ -271,7 +271,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	// Send RC Information
 	CString outPacket = CString() >> (char)PLO_RC_CHAT << accountName << " has updated the server options.";
 	auto& playerList = server->getPlayerList();
-	for (auto& [id, player] : playerList)
+	for (auto& [pid, player] : playerList)
 	{
 		if (player->getType() & PLTYPE_ANYRC)
 		{
@@ -2195,7 +2195,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 			}
 
 			// Send the update packet to any v4+ clients that have seen this file
-			for (auto& [id, pl] : playerList)
+			for (auto& [pid, pl] : playerList)
 			{
 				if (pl->isClient() && pl->getVersion() >= CLVER_4_0211)
 				{

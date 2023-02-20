@@ -1321,7 +1321,7 @@ bool TPlayer::processChat(CString pChat)
 		CString msg;
 		{
 			auto& playerList = server->getPlayerList();
-			for (auto& [id, player] : playerList)
+			for (auto& [pid, player] : playerList)
 			{
 				// If an RC was found, add it to our string.
 				if (player->getType() & PLTYPE_ANYRC)
@@ -1346,7 +1346,7 @@ bool TPlayer::processChat(CString pChat)
 			CString msg;
 			{
 				auto& playerList = server->getPlayerList();
-				for (auto& [id, player] : playerList)
+				for (auto& [pid, player] : playerList)
 				{
 					// If our guild matches, add it to our string.
 					if (player->getGuild() == g)
@@ -1394,7 +1394,7 @@ bool TPlayer::processChat(CString pChat)
 		int num = 0;
 		{
 			auto& playerList = server->getPlayerList();
-			for (auto& [id, player] : playerList)
+			for (auto& [pid, player] : playerList)
 			{
 				// If our guild matches, send the PM.
 				if (player->getGuild() == guild)
@@ -1617,9 +1617,9 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	CString minimap = this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y);
-	for (auto& [id, player] : server->getPlayerList())
+	for (auto& [pid, player] : server->getPlayerList())
 	{
-		if (id == this->getId())
+		if (pid == this->getId())
 			continue;
 		if (auto map = pmap.lock(); map && map->isGroupMap() && levelGroup != player->getGroup())
 			continue;
@@ -1838,9 +1838,9 @@ bool TPlayer::leaveLevel(bool resetCache)
 	{
 		server->sendPacketToLevelArea(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, this->shared_from_this(), { id });
 
-		for (auto& [id, player] : server->getPlayerList())
+		for (auto& [pid, player] : server->getPlayerList())
 		{
-			if (id == getId()) continue;
+			if (pid == getId()) continue;
 			if (player->getLevel() != getLevel()) continue;
 			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
 		}
@@ -2526,9 +2526,9 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 		return true;
 	}
 
-	for (auto& [id, player] : server->getPlayerList())
+	for (auto& [pid, player] : server->getPlayerList())
 	{
-		if (player.get() == this) continue;
+		if (pid == id) continue;
 
 		// See if the player is allowing toalls.
 		unsigned char flags = strtoint(player->getProp(PLPROP_ADDITFLAGS));
