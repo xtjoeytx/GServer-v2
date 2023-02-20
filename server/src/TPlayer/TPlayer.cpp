@@ -1294,7 +1294,8 @@ bool TPlayer::processChat(CString pChat)
 			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
 				if (i->trim() == levelName) return false;
 
-			if ((int)difftime(time(0), lastMovement) >= 30)
+			int unstickTime = server->getSettings().getInt("unstickmetime", 30);
+			if ((int)difftime(time(0), lastMovement) >= unstickTime)
 			{
 				lastMovement = time(0);
 				CString unstickLevel = server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -1304,7 +1305,7 @@ bool TPlayer::processChat(CString pChat)
 				setChat("Warped!");
 			}
 			else
-				setChat(CString() << "Don't move for 30 seconds before doing '" << pChat << "'!");
+				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
 		}
 	}
 	else if (pChat == "update level" && hasRight(PLPERM_UPDATELEVEL))
