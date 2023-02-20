@@ -38,8 +38,7 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 
 	CString out;
 
-	TWeapon * weaponObj = server->getWeapon(weaponName);
-
+	auto weaponObj = server->getWeapon(weaponName.toString());
 	if (weaponObj != nullptr)
 	{
 		CString b = weaponObj->getByteCode();

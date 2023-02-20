@@ -367,7 +367,7 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 
 			// Delete any npcs
 			for (auto n : deleteNpcs)
-				_server->deleteNPC(n.second);
+				_server->deleteNPC(n.first);
 		});
 	}
 

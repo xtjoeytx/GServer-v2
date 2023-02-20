@@ -15,7 +15,7 @@ TScriptClass::~TScriptClass()
 
 void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 {
-	bool gs2default = server->getSettings()->getBool("gs2default", false);
+	bool gs2default = server->getSettings().getBool("gs2default", false);
 
 	_source = { classSource, gs2default };
 

@@ -59,10 +59,10 @@ class TLevelItem
 
 		// Static functions.
 		static LevelItemType getItemId(signed char itemId);
-		static LevelItemType getItemId(const CString& pItemName);
-		static CString getItemName(LevelItemType itemId);
+		static LevelItemType getItemId(const std::string& pItemName);
+		static std::string getItemName(LevelItemType itemId);
 		static CString getItemPlayerProp(LevelItemType itemType, TPlayer* player);
-		static CString getItemPlayerProp(const CString& pItemName, TPlayer* player);
+		static CString getItemPlayerProp(const std::string& pItemName, TPlayer* player);
 		static constexpr auto getItemTypeId(LevelItemType val);
 
 		static bool isRupeeType(LevelItemType itemType);
@@ -75,7 +75,7 @@ class TLevelItem
 		time_t modTime;
 };
 
-inline CString TLevelItem::getItemPlayerProp(const CString& pItemName, TPlayer* player)
+inline CString TLevelItem::getItemPlayerProp(const std::string& pItemName, TPlayer* player)
 {
 	return getItemPlayerProp(TLevelItem::getItemId(pItemName), player);
 }
