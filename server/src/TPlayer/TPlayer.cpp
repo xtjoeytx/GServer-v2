@@ -1718,7 +1718,39 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 	// Send connecting player props to players in nearby levels.
 	if (auto level = curlevel.lock(); level && !level->isSingleplayer())
 	{
+		// Send my props.
 		server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this(), { id });
+
+		// Get other player props.
+		if (auto map = pmap.lock(); map)
+		{
+			auto sgmap{this->getMapPosition()};
+			auto isGroupMap = map->isGroupMap();
+
+			for (const auto &[otherid, other]: server->getPlayerList())
+			{
+				if (id == otherid) continue;
+				if (!other->isClient()) continue;
+
+				auto othermap = other->getMap().lock();
+				if (!othermap || othermap != map) continue;
+				if (isGroupMap && this->getGroup() != other->getGroup()) continue;
+
+				// Check if they are nearby before sending the packet.
+				auto ogmap{other->getMapPosition()};
+				if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+					this->sendPacket(other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)));
+			}
+		}
+		else
+		{
+			for (auto otherid : level->getPlayerList())
+			{
+				if (id == otherid) continue;
+				auto other = server->getPlayer(otherid);
+				this->sendPacket(other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)));
+			}
+		}
 	}
 
 	return true;
@@ -2513,8 +2545,8 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
 	std::vector<CString> jailList = server->getSettings().getStr("jaillevels").tokenize(",");
-	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
-		if (i->trim() == levelName) return true;
+	if (std::find_if(jailList.begin(), jailList.end(), [&levelName = this->levelName](CString &level) { return level.trim() == levelName; }) != jailList.end())
+		return true;
 
 	CString message = pPacket.readString(pPacket.readGUChar());
 
