@@ -125,9 +125,9 @@ TLevel::~TLevel()
 /*
 	TLevel: Get Crafted Packets
 */
-std::vector<PlayerOutPacket> TLevel::getBaddyPackets(int clientVersion)
+PlayerOutPackets TLevel::getBaddyPackets(int clientVersion)
 {
-	std::vector<PlayerOutPacket> packets;
+	PlayerOutPackets packets;
 	CString retVal;
 	for (const auto& [id, baddy] : levelBaddies)
 	{
