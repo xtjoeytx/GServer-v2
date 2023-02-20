@@ -73,8 +73,8 @@ void NPC_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	if (!npcObject->getIsNpcDeleteRequested())
 	{
-		TLevel *npcLevel = npcObject->getLevel();
-		if ( npcLevel != nullptr )
+		auto npcLevel = npcObject->getLevel();
+		if (npcLevel != nullptr)
 		{
 			auto *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(npcLevel->getScriptObject());
 			info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
@@ -90,9 +90,9 @@ void NPC_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	TLevel *npcLevel = npcObject->getLevel();
+	auto npcLevel = npcObject->getLevel();
 	CString levelName("");
-	if (npcLevel != 0)
+	if (npcLevel != nullptr)
 		levelName = npcLevel->getLevelName();
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text()).ToLocalChecked();
@@ -1063,11 +1063,11 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
 
 		// Set pm function
-		scriptEngine->getServer()->setPMFunction(npcObject, cbFuncWrapper);
+		scriptEngine->getServer()->setPMFunction(npcObject->getId(), cbFuncWrapper);
 	}
 	else
 	{
-		scriptEngine->getServer()->setPMFunction(nullptr);
+		scriptEngine->getServer()->setPMFunction(0);
 	}
 }
 
@@ -1095,7 +1095,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 			TServer *server = scriptEngine->getServer();
 
-			TLevel *level = server->getLevel(*levelName);
+			auto level = server->getLevel(*levelName);
 			if (level != nullptr)
 			{
 				npcObject->warpNPC(level, newX, newY);
@@ -1405,12 +1405,12 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get flags list
-	auto flagList = npcObject->getFlagList();
+	auto& flagList = npcObject->getFlagList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
 	int idx = 0;
-	for (auto it = flagList->begin(); it != flagList->end(); ++it)
+	for (auto it = flagList.begin(); it != flagList.end(); ++it)
 		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);

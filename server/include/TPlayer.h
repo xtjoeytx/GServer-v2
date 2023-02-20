@@ -6,6 +6,7 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 #include "IEnums.h"
 #include "CFileQueue.h"
 #include "TAccount.h"
@@ -33,12 +34,12 @@ enum
 
 struct SCachedLevel
 {
-	SCachedLevel(TLevel* pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) { }
-	TLevel* level;
+	SCachedLevel(std::weak_ptr<TLevel> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) { }
+	std::weak_ptr<TLevel> level;
 	time_t modTime;
 };
 
-class TPlayer : public TAccount, public CSocketStub
+class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_from_this<TPlayer>
 {
 	public:
 		// Required by CSocketStub.
@@ -51,8 +52,9 @@ class TPlayer : public TAccount, public CSocketStub
 		bool canSend();
 
 		// Constructor - Deconstructor
-		TPlayer(TServer* pServer, CSocket* pSocket, int pId);
+		TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId);
 		~TPlayer();
+		void cleanup();
 
 		// Manage Account
 		bool isLoggedIn() const;
@@ -60,10 +62,10 @@ class TPlayer : public TAccount, public CSocketStub
 
 		// Get Properties
 		CSocket* getSocket()			{ return playerSock; }
-		TLevel* getLevel() const		{ return level; }
-		TMap* getMap()				{ return pmap; }
-		CString getGroup()			{ return levelGroup; }
-		int getId() const;
+		std::shared_ptr<TLevel> getLevel() const;
+		std::weak_ptr<TMap> getMap()	{ return pmap; }
+		CString getGroup()				{ return levelGroup; }
+		uint16_t getId() const;
 		time_t getLastData() const		{ return lastData; }
 		CString getGuild() const		{ return guild; }
 		int getVersion() const			{ return versionID; }
@@ -71,23 +73,24 @@ class TPlayer : public TAccount, public CSocketStub
 		bool isUsingFileBrowser() const	{ return isFtp; }
 		CString getServerName()	const	{ return serverName; }
 		const CString& getPlatform() const { return os; }
+		std::pair<int, int> getMapPosition() const;
 
 		// Set Properties
 		void setChat(const CString& pChat);
 		void setNick(CString pNickName, bool force = false);
-		void setId(int pId);
+		void setId(uint16_t pId);
 		void setLoaded(bool loaded)		{ this->loaded = loaded; }
 		void setGroup(CString group)	{ levelGroup = group; }
 		void deleteFlag(const std::string& pFlagName, bool sendToPlayer = false);
 		void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false);
-		void setMap(TMap* map)			{ pmap = map; }
+		void setMap(std::shared_ptr<TMap> map)			{ pmap = map; }
 		void setServerName(CString& tmpServerName)	{ serverName = tmpServerName; }
 
 		// Level manipulation
 		bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
 		bool setLevel(const CString& pLevelName, time_t modTime = 0);
-		bool sendLevel(TLevel* pLevel, time_t modTime, bool fromAdjacent = false);
-		bool sendLevel141(TLevel* pLevel, time_t modTime, bool fromAdjacent = false);
+		bool sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent = false);
+		bool sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent = false);
 		bool leaveLevel(bool resetCache = false);
 		time_t getCachedLevelModTime(const TLevel* level) const;
 		void resetLevelCache(const TLevel* level);
@@ -136,11 +139,11 @@ class TPlayer : public TAccount, public CSocketStub
 		void disconnect();
 		bool processChat(CString pChat);
 		bool addWeapon(LevelItemType defaultWeapon);
-		bool addWeapon(const CString& name);
-		bool addWeapon(TWeapon* weapon);
+		bool addWeapon(const std::string& name);
+		bool addWeapon(std::shared_ptr<TWeapon> weapon);
 		bool deleteWeapon(LevelItemType defaultWeapon);
-		bool deleteWeapon(const CString& name);
-		bool deleteWeapon(TWeapon* weapon);
+		bool deleteWeapon(const std::string& name);
+		bool deleteWeapon(std::shared_ptr<TWeapon> weapon);
 		void disableWeapons();
 		void enableWeapons();
 		void freezePlayer();
@@ -158,8 +161,8 @@ class TPlayer : public TAccount, public CSocketStub
 		bool updatePMPlayers(CString& servername, CString& players);
 		bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 		std::vector<CString> getPMServerList();
-		TPlayer* getExternalPlayer(const unsigned short id, bool includeRC = true) const;
-		TPlayer* getExternalPlayer(const CString& account, bool includeRC = true) const;
+		std::shared_ptr<TPlayer> getExternalPlayer(const uint16_t id, bool includeRC = true) const;
+		std::shared_ptr<TPlayer> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 #ifdef V8NPCSERVER
 		bool isProcessed() const { return _processRemoval;  }
@@ -347,16 +350,21 @@ private:
 		// Variables
 		CString version, os, serverName;
 		int codepage;
-		TLevel *level;
-		int id, type, versionID;
+		std::weak_ptr<TLevel> curlevel;
+		uint16_t id;
+		int type, versionID;
 		time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
-		std::vector<SCachedLevel*> cachedLevels;
+		std::vector<std::unique_ptr<SCachedLevel>> cachedLevels;
 		std::map<CString, CString> rcLargeFiles;
-		std::map<CString, TLevel*> spLevels;
+		std::map<CString, std::shared_ptr<TLevel>> spLevels;
 		std::set<std::string> channelList;
 		std::unordered_set<std::string> knownFiles;
-		std::vector<TPlayer *> externalPlayerIds, externalPlayerList;
-		TMap* pmap;
+		std::weak_ptr<TMap> pmap;
+
+		std::unordered_map<uint16_t, std::shared_ptr<TPlayer>> externalPlayers;
+		std::set<uint16_t> freeExternalPlayerIds;
+		uint16_t nextExternalPlayerId;
+
 		unsigned int carryNpcId;
 		bool carryNpcThrown;
 		CString guild;
@@ -385,17 +393,20 @@ private:
 		int getVersionIDByVersion(const CString& versionInput) const;
 };
 
+using TPlayerPtr = std::shared_ptr<TPlayer>;
+using TPlayerWeakPtr = std::weak_ptr<TPlayer>;
+
 inline bool TPlayer::isLoggedIn() const
 {
 	return (type != PLTYPE_AWAIT && id > 0);
 }
 
-inline int TPlayer::getId() const
+inline uint16_t TPlayer::getId() const
 {
 	return id;
 }
 
-inline void TPlayer::setId(int pId)
+inline void TPlayer::setId(uint16_t pId)
 {
 	id = pId;
 }

@@ -62,7 +62,7 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 	}
 
 	// Add the directory to the directory list.
-	CString ndir = CString() << server->getServerPath() << newDir << wildcard;
+	CString ndir = server->getServerPath() << newDir << wildcard;
 	if ( vecSearch<CString>(directoryList, ndir) != -1)	// Already exists?  Resync.
 		resync();
 	else
@@ -70,7 +70,7 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 		directoryList.push_back(ndir);
 
 		// Load up the files in the directory.
-		loadAllDirectories(ndir, forceRecursive || server->getSettings()->getBool("nofoldersconfig", false));
+		loadAllDirectories(ndir, forceRecursive || server->getSettings().getBool("nofoldersconfig", false));
 	}
 }
 
@@ -88,7 +88,7 @@ void CFileSystem::addFile(CString file)
 		directory.removeI(0, server->getServerPath().length());
 
 	// Add to the map.
-	fileList[filename] = CString() << server->getServerPath() << directory << filename;
+	fileList[filename] = server->getServerPath() << directory << filename;
 }
 
 void CFileSystem::removeFile(const CString& file)
@@ -115,7 +115,7 @@ void CFileSystem::resync()
 
 	// Iterate through all the directories, reloading their file list.
 	for (const auto & directory : directoryList)
-		loadAllDirectories(directory, server->getSettings()->getBool("nofoldersconfig", false));
+		loadAllDirectories(directory, server->getSettings().getBool("nofoldersconfig", false));
 }
 
 CString CFileSystem::find(const CString& file) const

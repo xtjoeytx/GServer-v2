@@ -142,7 +142,7 @@ bool TServerList::main()
 			return false;
 	}
 
-	_server->getSocketManager()->updateSingle(this, false, true);
+	_server->getSocketManager().updateSingle(this, false, true);
 
 	return getConnected();
 }
@@ -176,7 +176,7 @@ bool TServerList::doTimedEvents()
 
 bool TServerList::connectServer()
 {
-	CSettings* settings = _server->getSettings();
+	auto& settings = _server->getSettings();
 
 	if (getConnected())
 		return true;
@@ -186,7 +186,7 @@ bool TServerList::connectServer()
 	serverLog.out("[%s] :: Initializing %s socket.\n", _server->getName().text(), sock.getDescription());
 
 	// Initialize the socket
-	if (sock.init(settings->getStr("listip").text(), settings->getStr("listport").text()) != 0)
+	if (sock.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
 	{
 		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", _server->getName().text(), sock.getDescription());
 		return false;
@@ -199,18 +199,18 @@ bool TServerList::connectServer()
 		return false;
 	}
 
-	_server->getSocketManager()->registerSocket((CSocketStub*)this);
+	_server->getSocketManager().registerSocket((CSocketStub*)this);
 	serverLog.out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
 
 	// Get Some Stuff
-	CString name(settings->getStr("name"));
-	CString desc(settings->getStr("description"));
-	CString language(settings->getStr("language", "English"));
+	CString name(settings.getStr("name"));
+	CString desc(settings.getStr("description"));
+	CString language(settings.getStr("language", "English"));
 	CString version(APP_VERSION);
-	CString url(settings->getStr("url", "http://www.graal.in/"));
-	CString ip(settings->getStr("serverip", "AUTO"));
-	CString port(settings->getStr("serverport", "14900"));
-	CString localip(settings->getStr("localip"));
+	CString url(settings.getStr("url", "http://www.graal.in/"));
+	CString ip(settings.getStr("serverip", "AUTO"));
+	CString port(settings.getStr("serverport", "14900"));
+	CString localip(settings.getStr("localip"));
 
 	// Grab the local ip.
 	if (localip.isEmpty() || localip == "AUTO")
@@ -231,8 +231,8 @@ bool TServerList::connectServer()
 	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
-	CSettings* adminsettings = _server->getAdminSettings();
-	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings->getStr("hq_password")});
+	auto& adminsettings = _server->getAdminSettings();
+	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings.getStr("hq_password")});
 
 	// Send server info.
 	sendPacket(
@@ -251,9 +251,9 @@ bool TServerList::connectServer()
 	);
 
 	// Set the level now.
-	if(_server->getSettings()->getBool("onlystaff", false))
+	if(_server->getSettings().getBool("onlystaff", false))
 		sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)0});
-	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings->getInt("hq_level", 1)});
+	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings.getInt("hq_level", 1)});
 
 	sendVersionConfig();
 
@@ -305,7 +305,7 @@ void TServerList::sendPacket(const ListServerOutPacket& pPacket, bool sendNow)
 /*
 	Altering Player Information
 */
-void TServerList::addPlayer(TPlayer *player)
+void TServerList::addPlayer(TPlayerPtr player)
 {
 	assert(player != nullptr);
 
@@ -321,7 +321,7 @@ void TServerList::addPlayer(TPlayer *player)
 	sendPacket({SVO_PLYRADD, dataPacket});
 }
 
-void TServerList::deletePlayer(TPlayer *player)
+void TServerList::deletePlayer(TPlayerPtr player)
 {
 	assert(player != nullptr);
 
@@ -334,12 +334,11 @@ void TServerList::sendPlayers()
 	sendPacket({SVO_SETPLYR, CString()});
 
 	// Adds the players to the serverlist
-	auto playerList = _server->getPlayerList();
-	for (auto & it : *playerList)
+	auto& playerList = _server->getPlayerList();
+	for (auto& [id, player] : playerList)
 	{
-		TPlayer *player = it;
 		if (!player->isNC())
-			addPlayer(it);
+			addPlayer(player);
 	}
 }
 
@@ -359,8 +358,8 @@ void TServerList::handleText(const CString& data)
 					std::string channel = params[4].guntokenize().text();
 					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
 
-					auto playerList = _server->getPlayerList();
-					for (auto pl : *playerList)
+					auto& playerList = _server->getPlayerList();
+					for (auto& [id, pl] : playerList)
 					{
 						if (pl->inChatChannel(channel))
 						{
@@ -422,14 +421,14 @@ void TServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket({SVO_SENDTEXT, dataPacket});
 }
 
-void TServerList::sendTextForPlayer(TPlayer *player, const CString& data)
+void TServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
 {
 	assert(player != nullptr);
 
 	sendPacket({SVO_REQUESTLIST, CString() >> (short)player->getId() << data});
 }
 
-void TServerList::sendLoginPacketForPlayer(TPlayer *player, const CString& password, const CString& identity)
+void TServerList::sendLoginPacketForPlayer(TPlayerPtr player, const CString& password, const CString& identity)
 {
 	sendPacket(
 		{
@@ -445,11 +444,11 @@ void TServerList::sendLoginPacketForPlayer(TPlayer *player, const CString& passw
 
 void TServerList::sendServerHQ()
 {
-	CSettings* adminsettings = _server->getAdminSettings();
-	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings->getStr("hq_password")});
-	if(_server->getSettings()->getBool("onlystaff", false))
+	auto& adminsettings = _server->getAdminSettings();
+	sendPacket({SVO_SERVERHQPASS, CString() << adminsettings.getStr("hq_password")});
+	if(_server->getSettings().getBool("onlystaff", false))
 		sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)0});
-	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings->getInt("hq_level", 1)});
+	else sendPacket({SVO_SERVERHQLEVEL, CString() >> (char)adminsettings.getInt("hq_level", 1)});
 }
 
 /*
@@ -493,7 +492,7 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 	unsigned short playerID = pPacket.readGUShort();
 	CString nickname = pPacket.readChars(pPacket.readGUChar());
 
-	TPlayer* p = _server->getPlayer(playerID, PLTYPE_ANYPLAYER);
+	auto p = _server->getPlayer(playerID, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		// Create the prop packet.
@@ -504,7 +503,7 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 		p->sendPacket({PLO_PLAYERPROPS, CString() << prop});
 
 		// Tell everybody else the new nickname.
-		_server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)playerID << prop}, p);
+		_server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)playerID << prop}, { p->getId() });
 	}
 }
 
@@ -539,12 +538,12 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	unsigned short requestPlayer = pPacket.readGUShort();
 	CString targetPlayer = pPacket.readChars(pPacket.readGUChar());
 
-	TPlayer* p1 = _server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
-	if (p1 == 0)
+	auto p1 = _server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
+	if (p1 == nullptr)
 		return;
 
-	TPlayer *p2 = _server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
-	if (p2 == 0)
+	auto p2 = _server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
+	if (p2 == nullptr)
 		return;
 
 	// Start the profile string.
@@ -592,7 +591,7 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
-		CString profileVars = _server->getSettings()->getStr("profilevars");
+		CString profileVars = _server->getSettings().getStr("profilevars");
 		if (profileVars.length() != 0)
 		{
 			std::vector<CString> vars = profileVars.tokenize(",");
@@ -689,7 +688,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	CString message = pPacket.readString("");
 
 	// Get the player.
-	TPlayer* player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
+	auto player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
@@ -787,7 +786,7 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// If we have folder config enabled, we need to add the file to the appropriate
 	// file system.
-	bool foldersconfig = !_server->getSettings()->getBool("nofoldersconfig", false);
+	bool foldersconfig = !_server->getSettings().getBool("nofoldersconfig", false);
 	CFileSystem* fileSystem = 0;
 	CString typeString;
 	switch (type)
@@ -830,7 +829,7 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
-	TPlayer* p = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	auto p = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		switch (type)
@@ -866,7 +865,7 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 	CString serverpacket = pPacket.readString("");
 
 	// A hack to allow v5 clients to serverwarp to servers
-	TPlayer *player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
+	auto player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket({PLO_SERVERWARP, CString() << serverpacket});
 }
@@ -884,7 +883,7 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	CString option = data.readString("\n");
 	CString paramsData = data.readString("");
 
-	TPlayer *player = _server->getPlayer(playerId);
+	auto player = _server->getPlayer(playerId);
 	if (player != nullptr)
 	{
 		if (params.size() > 3)
@@ -982,12 +981,12 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 
-	TPlayer *p = _server->getPlayer(account2, PLTYPE_ANYPLAYER);
+	auto p = _server->getPlayer(account2, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);
-		TPlayer* tmpPlyr = p->getExternalPlayer(account);
+		auto tmpPlyr = p->getExternalPlayer(account);
 		p->sendPacket({PLO_PRIVATEMESSAGE, CString() >> (short)tmpPlyr->getId() << pmMessageType << message3},true);
 	}
 
@@ -1001,7 +1000,7 @@ void TServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 	CString pcId = pPacket.readChars(pPacket.readGUChar());
 
 	// Get the player, this should be a player who has not been loaded with the playerid of `id`
-	TPlayer* player = _server->getPlayer(id, type);
+	auto player = _server->getPlayer(id, type);
 	if (!player || player->isLoaded())
 		return;
 

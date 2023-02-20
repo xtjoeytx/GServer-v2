@@ -32,7 +32,7 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 	{
 		unsigned int npcId = pPacket.readGUInt();
 
-		TNPC *npc = server->getNPC(npcId);
+		auto npc = server->getNPC(npcId);
 		if (npc != nullptr)
 		{
 			CString npcDump = npc->getVariableDump();
@@ -52,7 +52,7 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 
 	if (npc != nullptr && npc->getType() == NPCType::DBNPC)
 	{
@@ -60,7 +60,7 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 		bool result = server->deleteNPC(npc, true);
 		if (result)
 		{
-			server->sendPacketTo(PLTYPE_ANYNC, {PLO_NC_NPCDELETE, CString() >> (int)npcId});
+			server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCDELETE, CString() >> (int)npcId});
 
 			CString logMsg;
 			logMsg << "NPC " << npcName << " deleted by " << accountName << "\n";
@@ -82,7 +82,7 @@ bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
 
 	unsigned int npcId = pPacket.readGUInt();
 
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr && npc->getType() == NPCType::DBNPC)
 	{
 		npc->resetNPC();
@@ -106,7 +106,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 
 	// {160}{INT id}{GSTRING script}
 	unsigned int npcId = pPacket.readGUInt();
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		CString code = npc->getSource().getSource();
@@ -130,10 +130,10 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 	float npcY = (float)pPacket.readGUChar() / 2.0f;
 	CString npcLevel = pPacket.readString("");
 
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		TLevel *newLevel = server->getLevel(npcLevel);
+		auto newLevel = server->getLevel(npcLevel.toString());
 		if (newLevel != nullptr)
 			npc->warpNPC(newLevel, int(npcX * 16.0), int(npcY * 16.0));
 	}
@@ -150,14 +150,14 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		CString flagListStr;
 
-		auto flagList = npc->getFlagList();
-		for (auto & it : *flagList)
-			flagListStr << it.first << "=" << it.second << "\n";
+		auto& flagList = npc->getFlagList();
+		for (const auto& [flag, value] : flagList)
+			flagListStr << flag << "=" << value << "\n";
 
 		sendPacket({PLO_NC_NPCFLAGS, CString() >> (int)npcId << flagListStr.gtokenize()});
 	}
@@ -176,7 +176,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcScript = pPacket.readString("").guntokenize();
 
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		npc->setScriptCode(npcScript.toString());
@@ -202,30 +202,30 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcFlags = pPacket.readString("").guntokenize();
 
-	TNPC *npc = server->getNPC(npcId);
+	auto npc = server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		auto flagList = npc->getFlagList();
+		auto& flagList = npc->getFlagList();
 		auto newFlags = npcFlags.tokenize("\n");
 
 		CString addedFlagMsg, deletedFlagMsg;
 		std::unordered_map<std::string, CString> newFlagList;
 
 		// Iterate the new list of flags from the client
-		for (auto flag : newFlags)
+		for (auto& flag : newFlags)
 		{
 			std::string flagName = flag.readString("=").text();
 			CString flagValue = flag.readString("");
 
 			// Check if the flag is a new flag, or if it has been updated
-			auto oldFlag = flagList->find(flagName);
-			if (oldFlag == flagList->end())
+			auto oldFlag = flagList.find(flagName);
+			if (oldFlag == flagList.end())
 				addedFlagMsg << "flag added:\t" << flagName << "=" << flagValue << "\n";
 			else if (oldFlag->second != flagValue)
 			{
 				addedFlagMsg << "flag added:\t" << flagName << "=" << flagValue << "\n";
 				deletedFlagMsg << "flag deleted:\t" << oldFlag->first << "=" << oldFlag->second << "\n";
-				flagList->erase(oldFlag);
+				flagList.erase(oldFlag);
 			}
 
 			// Add the flag to the new list
@@ -233,15 +233,15 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		}
 
 		// Iterate the old flag list, and find any flags not present in the new flag list.
-		for (auto & it : *flagList)
+		for (const auto& [flag, value] : flagList)
 		{
-			auto newFlag = newFlagList.find(it.first);
+			auto newFlag = newFlagList.find(flag);
 			if (newFlag == newFlagList.end())
-				deletedFlagMsg << "flag deleted:\t" << it.first << "=" << it.second << "\n";
+				deletedFlagMsg << "flag deleted:\t" << flag << "=" << value << "\n";
 		}
 
 		// Update flag list, and save the changes
-		*flagList = std::move(newFlagList);
+		flagList = std::move(newFlagList);
 		npc->saveNPC();
 
 		// Logging
@@ -276,18 +276,17 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	if (npcName.isEmpty())
 		return true;
 
-	TLevel *level = server->getLevel(npcLevel);
+	auto level = server->getLevel(npcLevel.toString());
 	if (level == nullptr)
 	{
 		server->sendToNC("Error adding database npc: Level does not exist");
 		return true;
 	}
 
-	TNPC *newNpc = server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
-
+	auto newNpc = server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
 	if (newNpc != nullptr)
 	{
-		server->assignNPCName(newNpc, npcName.text());
+		server->assignNPCName(newNpc, npcName.toString());
 
 		CString npcProps = CString()
 				>> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME)
@@ -298,7 +297,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
 
 		// Send packet to npc controls about new npc
-		server->sendPacketTo(PLTYPE_ANYNC, {PLO_NC_NPCADD, CString() >> (int)newNpc->getId() << npcProps});
+		server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCADD, CString() >> (int)newNpc->getId() << npcProps});
 
 		// Persist NPC
 		newNpc->saveNPC();
@@ -361,7 +360,7 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	{
 		CString ret;
 		ret << className;
-		server->sendPacketTo(PLTYPE_ANYNC, {PLO_NC_CLASSADD, ret});
+		server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_CLASSADD, ret});
 	}
 
 	// Logging
@@ -387,7 +386,7 @@ bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	{
 		CString ret;
 		ret << className;
-		server->sendPacketTo(PLTYPE_ANYNC, {PLO_NC_CLASSDELETE, ret});
+		server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_CLASSDELETE, ret});
 		logMsg << accountName << " has deleted class " << className << "\n";
 	}
 	else
@@ -412,16 +411,18 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	if (level.isEmpty())
 		return true;
 
-	TLevel *npcLevel = server->getLevel(level);
+	auto npcLevel = server->getLevel(level.toString());
 	if (npcLevel != nullptr)
 	{
 		CString npcDump;
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->getLevelName() << "\n";
 
-		auto npcList = npcLevel->getLevelNPCs();
-		for (auto & it : *npcList)
-			npcDump << "\n" << it->getVariableDump() << "\n";
+		for (auto npcId : npcLevel->getLevelNPCs())
+		{
+			auto npc = server->getNPC(npcId);
+			npcDump << "\n" << npc->getVariableDump() << "\n";
+		}
 
 		sendPacket({PLO_NC_LEVELDUMP, CString() << npcDump.gtokenize()});
 	}
@@ -441,13 +442,11 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 	CString ret;
 
 	// Iterate weapon list and send names
-	auto weaponList = server->getWeaponList();
-	for (auto & it : *weaponList)
+	for (const auto& [weaponName, weapon] : server->getWeaponList())
 	{
-		if (it.second->isDefault())
+		if (weapon->isDefault())
 			continue;
 
-		CString weaponName = it.second->getName();
 		ret >> (char)weaponName.length() << weaponName;
 	}
 
@@ -466,8 +465,8 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 	// {116}{weapon}
 	CString weaponName = pPacket.readString("");
 
-	TWeapon *weapon = server->getWeapon(weaponName);
-	if (weapon != 0 && !weapon->isDefault())
+	auto weapon = server->getWeapon(weaponName.toString());
+	if (weapon != nullptr && !weapon->isDefault())
 	{
 		std::string script = weapon->getFullScript();
 		std::replace(script.begin(), script.end(), '\n', '\xa7');
@@ -487,7 +486,7 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 				script});
 		}
 	}
-	else server->sendPacketTo(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << accountName << " prob: weapon " << weaponName << " doesn't exist"});
+	else server->sendPacketToType(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << accountName << " prob: weapon " << weaponName << " doesn't exist"});
 
 	return true;
 }
@@ -510,7 +509,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	CString actionTaken;
 
 	// Find Weapon
-	TWeapon *weaponObj = server->getWeapon(weaponName);
+	auto weaponObj = server->getWeapon(weaponName);
 	if (weaponObj != nullptr)
 	{
 		// default weapon, don't update!
@@ -528,7 +527,8 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		bool success = server->NC_AddWeapon(new TWeapon(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true));
+		auto weapon = std::make_shared<TWeapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		bool success = server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";
 	}
@@ -557,7 +557,7 @@ bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 	CString weaponName = pPacket.readString("");
 
 	CString logMsg;
-	if (server->NC_DelWeapon(weaponName))
+	if (server->NC_DelWeapon(weaponName.toString()))
 		logMsg << "Weapon " << weaponName << " deleted by " << accountName << "\n";
 	else
 		logMsg << accountName << " prob: weapon " << weaponName << " doesn't exist\n";
@@ -579,11 +579,11 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	// Start our packet.
 	CString ret;
 
-	auto levelList = server->getLevelList();
-	if (!levelList->empty())
+	auto& levelList = server->getLevelList();
+	if (!levelList.empty())
 	{
-		for (auto it = levelList->begin(); it != levelList->end(); ++it)
-			ret << (*it)->getActualLevelName() << "\n";
+		for (auto level : levelList)
+			ret << level->getActualLevelName() << "\n";
 	}
 
 	sendPacket({PLO_NC_LEVELLIST, CString() << ret.gtokenize()});
@@ -597,13 +597,13 @@ void TPlayer::sendNCAddr()
 	if (!isRC() || !hasRight(PLPERM_NPCCONTROL))
 		return;
 
-	TPlayer *npcServer = server->getNPCServer();
+	auto npcServer = server->getNPCServer();
 	if (npcServer != nullptr)
 	{
 		// Grab NPCServer & Send
-		CString npcServerIp = server->getAdminSettings()->getStr("ns_ip", "auto").toLower();
+		CString npcServerIp = server->getAdminSettings().getStr("ns_ip", "auto").toLower();
 		if (npcServerIp == "auto") {
-			npcServerIp = server->getServerList()->getServerIP();
+			npcServerIp = server->getServerList().getServerIP();
 
 			// Fix for localhost setups
 			if (accountIpStr == playerSock->getLocalIp())

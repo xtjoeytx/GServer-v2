@@ -312,9 +312,8 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	TLevel *levelObject = playerObject->getLevel();
-
-	if (levelObject != 0)
+	auto levelObject = playerObject->getLevel();
+	if (levelObject != nullptr)
 	{
 		V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
 		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
@@ -329,10 +328,10 @@ void Player_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	TLevel *levelObject = playerObject->getLevel();
+	auto levelObject = playerObject->getLevel();
 
 	CString levelName;
-	if (levelObject != 0)
+	if (levelObject != nullptr)
 		levelName = levelObject->getLevelName();
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text()).ToLocalChecked();
@@ -801,12 +800,12 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get flags list
-	auto flagList = playerObject->getFlagList();
+	auto& flagList = playerObject->getFlagList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
 	int idx = 0;
-	for (auto it = flagList->begin(); it != flagList->end(); ++it)
+	for (auto it = flagList.begin(); it != flagList.end(); ++it)
 		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
@@ -820,14 +819,14 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get npcs list
-	auto weaponList = playerObject->getWeaponList();
+	auto& weaponList = playerObject->getWeaponList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList.size());
 
 	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
 	//	in scripts.
 	int idx = 0;
-	for (auto it = weaponList->begin(); it != weaponList->end(); ++it) {
+	for (auto it = weaponList.begin(); it != weaponList.end(); ++it) {
 		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
 		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), (*it).text()).ToLocalChecked();
 		result->Set(context, idx++, weaponName).Check();
@@ -1002,7 +1001,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		TServer *server = scriptEngine->getServer();
 
 		// Get npc-server
-		TPlayer *npcServer = server->getNPCServer();
+		auto npcServer = server->getNPCServer();
 		assert(npcServer);
 
 		// Parse argument

@@ -23,7 +23,7 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 	// Compare the bytecode checksum from the client with the one for the
 	// current script, if it doesn't match send the updated bytecode
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		for (const auto& packet : findAni->getBytecodePackets(newProtocol))
+		for (const auto& packet : findAni->getBytecodePackets())
 			sendPacket(packet);
 
 	// v4 and up needs this for some reason.
@@ -37,8 +37,9 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 
 	server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
 
-	TWeapon * weaponObj = server->getWeapon(weaponName);
+	CString out;
 
+	auto weaponObj = server->getWeapon(weaponName.toString());
 	if (weaponObj != nullptr)
 	{
 		CString b = weaponObj->getByteCode();

@@ -1,6 +1,6 @@
 #include "GS2ScriptManager.h"
 
-const uint32_t THREADPOOL_WORKERS = 4;
+const uint32_t THREADPOOL_WORKERS = 0;
 
 GS2ScriptManager::GS2ScriptManager()
 	: _compilerThreadPool(THREADPOOL_WORKERS)
@@ -46,6 +46,12 @@ void GS2ScriptManager::syncCompileJob(const std::string& script, user_callback_t
 
 void GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_type& finishedCb)
 {
+	if constexpr (THREADPOOL_WORKERS == 0)
+	{
+		syncCompileJob(script, finishedCb);
+		return;
+	}
+
 	// Worker job
 	auto threadFunction = [script, finishedCb, this](CallbackThreadJob::thread_context &context, auto &promise)
 	{

@@ -13,13 +13,13 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	CString type = data.readString("\n");
 	CString option = data.readString("\n");
 
-	TServerList* list = server->getServerList();
+	auto& list = server->getServerList();
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list->sendPacket({SVO_REQUESTLIST, CString() >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI()});
+			list.sendPacket({SVO_REQUESTLIST, CString() >> (short)id << CString(weapon << "\n" << type << "\n" << "simpleserverlist" << "\n").gtokenizeI()});
 		else if (option == "rebornlist")
-			list->sendPacket({SVO_REQUESTLIST, CString() >> (short)id << packet});
+			list.sendPacket({SVO_REQUESTLIST, CString() >> (short)id << packet});
 		else if (option == "subscriptions") {
 			// some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
 			sendPacket({PLO_SERVERTEXT, CString() << CString(CString() << weapon << "\n" << type << "\n" << "subscriptions" << "\n" << CString(CString() << "unlimited" << "\n" << "Unlimited Subscription" << "\n" << "\"\"" << "\n").gtokenizeI()).gtokenizeI()});
@@ -29,12 +29,12 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		else if (option == "getglobalitems")
 			sendPacket({PLO_SERVERTEXT, CString() << CString(weapon << "\n" << type << "\n" << "globalitems" << "\n" << accountName.text() << "\n" << CString(CString(CString() << "autobill=1"  << "\n" << "autobillmine=1"  << "\n" << "bundle=1"  << "\n" << "creationtime=1212768763"  << "\n" << "currenttime=1353248504"  << "\n" << "description=Gives" << "\n" << "duration=2629800"  << "\n" << "flags=subscription"  << "\n" << "icon=graalicon_big.png"  << "\n" << "itemid=1"  << "\n" << "lifetime=1"  << "\n" << "owner=global"  << "\n" << "ownertype=server"  << "\n" << "price=100"  << "\n" << "quantity=988506"  << "\n" << "status=available"  << "\n" << "title=Gold"  << "\n" << "tradable=1"  << "\n" << "typeid=62"  << "\n" << "world=global"  << "\n").gtokenizeI()).gtokenizeI()).gtokenizeI()});
 		else if (option == "serverinfo") {
-			list->sendPacket({SVO_REQUESTSVRINFO, CString() >> (short)id << packet});
+			list.sendPacket({SVO_REQUESTSVRINFO, CString() >> (short)id << packet});
 		}
 
 	}
 	else if (type == "pmservers" || type == "pmguilds") {
-		list->sendPacket({SVO_REQUESTLIST, CString() >> (short)id << packet});
+		list.sendPacket({SVO_REQUESTLIST, CString() >> (short)id << packet});
 	}
 	else if (type == "pmserverplayers")
 		addPMServer(option);
@@ -71,7 +71,7 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 	CString option = data.readString("\n");
 	std::vector<CString> params2 = data.readString("").tokenize("\n");
 
-	TServerList* list = server->getServerList();
+	auto& list = server->getServerList();
 
 	//if (weapon == "GraalEngine")
 	{
@@ -100,14 +100,14 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 					CString channel = params[3];
 					CString sendMsg = "GraalEngine,irc,join,";
 					sendMsg << channel.gtokenize();
-					list->sendTextForPlayer(this, sendMsg);
+					list.sendTextForPlayer(shared_from_this(), sendMsg);
 				}
 				else if (option == "part")
 				{
 					CString channel = params[3];
 					CString sendMsg = "GraalEngine,irc,part,";
 					sendMsg << channel.gtokenize();
-					list->sendTextForPlayer(this, sendMsg);
+					list.sendTextForPlayer(shared_from_this(), sendMsg);
 				}
 				else if (option == "topic")
 				{
@@ -137,8 +137,8 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 					{
 						CString sendMsg = "GraalEngine,irc,privmsg,";
 						sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
-						list->handleText(sendMsg);
-						list->sendTextForPlayer(this, sendMsg);
+						list.handleText(sendMsg);
+						list.sendTextForPlayer(shared_from_this(), sendMsg);
 					}
 				}
 			}
@@ -146,12 +146,12 @@ bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
 		else if (type == "lister")
 		{
 			if (option == "serverinfo")
-				list->sendPacket({SVO_REQUESTSVRINFO, CString() >> (short)id << packet});
+				list.sendPacket({SVO_REQUESTSVRINFO, CString() >> (short)id << packet});
 
 			if (!getGuest())
 			{
 				if (option == "verifybuddies" || option == "addbuddy" || option == "deletebuddy")
-					list->sendTextForPlayer(this, packet);
+					list.sendTextForPlayer(shared_from_this(), packet);
 			}
 
 			if (isRC())

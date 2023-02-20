@@ -18,6 +18,9 @@ extern int __attrPackets[30];
 */
 void TPlayer::getProp(CString& buffer, int pPropId) const
 {
+	auto level = curlevel.lock();
+	auto map = pmap.lock();
+
 	switch (pPropId)
 	{
 		case PLPROP_NICKNAME:
@@ -119,8 +122,8 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 		{
 			if (isClient())// || type == PLTYPE_AWAIT)
 			{
-				if (pmap && pmap->getType() == MapType::GMAP)
-					buffer >> (char)pmap->getMapName().length() << pmap->getMapName();
+				if (map && map->getType() == MapType::GMAP)
+					buffer >> (char)map->getMapName().length() << map->getMapName();
 				else
 				{
 					if (level != nullptr && level->isSingleplayer())
@@ -314,6 +317,8 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 {
+	auto level = getLevel();
+
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	bool doTouchTest = false;
 	bool sentInvalid = false;
@@ -330,7 +335,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				CString nick = pPacket.readChars(pPacket.readGUChar());
 
 				// Word filter.
-				int filter = server->getWordFilter()->apply(this, nick, FILTER_CHECK_NICK);
+				int filter = server->getWordFilter().apply(this, nick, FILTER_CHECK_NICK);
 				if (filter & FILTER_ACTION_WARN)
 				{
 					if (nickName.isEmpty())
@@ -391,7 +396,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 #endif
 					if (rc != nullptr)
 					{
-						if (server->getSettings()->getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+						if (server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
 							gralatc = newGralatCount;
 					}
 					else
@@ -439,8 +444,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 4)
 				{
-					CSettings* settings = server->getSettings();
-					sp = clip(sp, 0, settings->getInt("swordlimit", 3));
+					auto& settings = server->getSettings();
+					sp = clip(sp, 0, settings.getInt("swordlimit", 3));
 					img = CString() << "sword" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
 				else
@@ -474,8 +479,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				if (sp <= 3)
 				{
-					CSettings* settings = server->getSettings();
-					sp = clip(sp, 0, settings->getInt("shieldlimit", 3));
+					auto& settings = server->getSettings();
+					sp = clip(sp, 0, settings.getInt("shieldlimit", 3));
 					img = CString() << "shield" << CString(sp) << (versionID < CLVER_2_1 ? ".gif" : ".png");
 				}
 				else
@@ -535,10 +540,10 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					nPacket >> (short)id >> (char)swordPower;
 					char hx = (char)((x + 1.5f) * 2);
 					char hy = (char)((y + 2.0f) * 2);
-					server->sendPacketToLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy - 4)}, nullptr, level, this);
-					server->sendPacketToLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy + 4)}, nullptr, level, this);
-					server->sendPacketToLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx - 4) >> (char)(hy)}, nullptr, level, this);
-					server->sendPacketToLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx + 4) >> (char)(hy)}, nullptr, level, this);
+					server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy - 4)}, curlevel, { id });
+					server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy + 4)}, curlevel, { id });
+					server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx - 4) >> (char)(hy)}, curlevel, { id });
+					server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx + 4) >> (char)(hy)}, curlevel, { id });
 				}
 			}
 			break;
@@ -583,7 +588,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
 				if (!processChat(chatMsg))
 				{
-					int found = server->getWordFilter()->apply(this, chatMsg, FILTER_CHECK_CHAT);
+					int found = server->getWordFilter().apply(this, chatMsg, FILTER_CHECK_CHAT);
 					if (!(options & PLSETPROPS_FORWARDSELF))
 					{
 						if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
@@ -674,8 +679,9 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					selfBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 					levelBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
 
-					if (level != 0 && level->getPlayer(0) == this)
-						sendPacket({PLO_ISLEADER, CString() << ""});
+					if (level != nullptr && level->isPlayerLeader(id))
+						sendPacket({PLO_ISLEADER, CString()});
+
 					/*
 					// If we are the leader of the level, call warp().  This will fix NPCs not
 					// working again after we respawn.
@@ -695,11 +701,13 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 					// If we are the leader and there are more players on the level, we want to remove
 					// ourself from the leader position and tell the new leader that they are the leader.
-					if (level->getPlayer(0) == this && level->getPlayer(1) != 0)
+					if (level->isPlayerLeader(id) && level->getPlayerList().size() > 1)
 					{
-						level->removePlayer(this);
-						level->addPlayer(this);
-						level->getPlayer(0)->sendPacket({PLO_ISLEADER, CString() << ""});
+						level->removePlayer(id);
+						level->addPlayer(id);
+
+						auto leader = server->getPlayer(level->getPlayerList().front());
+						if (leader) leader->sendPacket({PLO_ISLEADER, CString()});
 					}
 				}
 			}
@@ -740,15 +748,14 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				carryNpcId = pPacket.readGUInt();
 
 				// TODO: Remove when an npcserver is created.
-				if (server->getSettings()->getBool("duplicatecanbecarried", false) == false)
+				if (server->getSettings().getBool("duplicatecanbecarried", false) == false)
 				{
 					bool isOwner = true;
 					{
-						std::vector<TPlayer*>* playerList = server->getPlayerList();
-						for (std::vector<TPlayer*>::iterator i = playerList->begin(); i != playerList->end(); ++i)
+						auto& playerList = server->getPlayerList();
+						for (auto& [otherId, other] : playerList)
 						{
-							TPlayer* other = *i;
-							if (other == this) continue;
+							if (other.get() == this) continue;
 							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == carryNpcId)
 							{
 								// Somebody else got this NPC first.  Force the player to throw his down
@@ -757,7 +764,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 								isOwner = false;
 								sendPacket({PLO_PLAYERPROPS, CString() >> (char)PLPROP_CARRYNPC >> (int)0});
 								sendPacket({PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId});
-								server->sendPacketToLevel({PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0}, pmap, this);
+								server->sendPacketToOneLevel({PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_CARRYNPC >> (int)0}, level, { id });
 								break;
 							}
 						}
@@ -765,9 +772,9 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					if (isOwner)
 					{
 						// We own this NPC now so remove it from the level and have everybody else delete it.
-						TNPC* npc = server->getNPC(carryNpcId);
+						auto npc = server->getNPC(carryNpcId);
 						level->removeNPC(npc);
-                        server->sendPacketToAll({PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId}, nullptr);
+						server->sendPacketToAll({PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)carryNpcId}, { id });
 					}
 				}
 			}
@@ -809,7 +816,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
 				if (id != -1 && loaded)
-					server->sendPacketTo(PLTYPE_ANYCLIENT, {PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport}, this);
+					server->sendPacketToType(PLTYPE_ANYCLIENT, {PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport}, this);
 				// TODO: udp support.
 			break;
 
@@ -859,9 +866,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			{
 				int mx = pPacket.readGUChar();
 
-				if (level && level->getMap())
+				if (auto cmap = level->getMap(); level && cmap)
 				{
-					auto cmap = level->getMap();
 					auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
 					leaveLevel();
 					setLevel(newLevelName, -1);
@@ -876,9 +882,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			{
 				int my = pPacket.readGUChar();
 
-				if (level && level->getMap())
+				if (auto cmap = level->getMap(); level && cmap)
 				{
-					auto cmap = level->getMap();
 					auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
 					leaveLevel();
 					setLevel(newLevelName, -1);
@@ -906,7 +911,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				if (id == -1 || !loaded)
 					break;
 
-				server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg}, this);
+				server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg}, { id });
 			break;
 
 			case PLPROP_GATTRIB1:  attrList[0]  = pPacket.readChars(pPacket.readGUChar()); break;
@@ -1045,7 +1050,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
-			server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)this->id << globalBuff}, this);
+			server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)this->id << globalBuff}, { id });
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending
@@ -1054,7 +1059,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			bool MOVE_PRECISE = false;
 			if (versionID >= CLVER_2_3) MOVE_PRECISE = true;
 
-			server->sendPacketToLevel({PLO_OTHERPLPROPS, CString() >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff)}, pmap, this, false);
+			server->sendPacketToLevelArea({PLO_OTHERPLPROPS, CString() >> (short)this->id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff)}, shared_from_this(), { id });
 		}
 		if (selfBuff.length() > 0)
 			sendPacket({PLO_PLAYERPROPS, CString() << selfBuff});
@@ -1083,7 +1088,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 		{
 			serverlog.out("[%s] Player %s is sending invalid packets.\n", server->getName().text(), nickName.text());
 			sendPacket({PLO_DISCMESSAGE, CString() << "Disconnected for sending invalid packets."});
-			server->deletePlayer(this);
+			server->deletePlayer(shared_from_this());
 		}
 	}
 }

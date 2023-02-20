@@ -36,12 +36,6 @@ static char toUpper(char c)
 
 CWordFilter::~CWordFilter()
 {
-	for (std::vector<SWordFilterRule*>::iterator i = rules.begin(); i != rules.end();)
-	{
-		SWordFilterRule* rule = *i;
-		delete rule;
-		i = rules.erase(i);
-	}
 	rules.clear();
 }
 
@@ -49,15 +43,7 @@ void CWordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.
 	if (rules.size() != 0)
-	{
-		for (std::vector<SWordFilterRule*>::iterator i = rules.begin(); i != rules.end();)
-		{
-			SWordFilterRule* rule = *i;
-			delete rule;
-			i = rules.erase(i);
-		}
 		rules.clear();
-	}
 
 	// Load the file.
 	std::vector<CString> f = CString::loadToken(file, "\n", true);
@@ -72,7 +58,7 @@ void CWordFilter::load(const CString& file)
 
 		if (wordParts[0] == "RULE")
 		{
-			SWordFilterRule* rule = new SWordFilterRule();
+			auto rule = std::make_unique<SWordFilterRule>();
 			++i;
 			while (i != f.end() && (*i) != "RULEEND")
 			{
@@ -143,13 +129,10 @@ void CWordFilter::load(const CString& file)
 
 			// Make sure we have a valid rule.
 			if (rule->check == 0 || rule->action == 0 || rule->wordPosition == 0)
-			{
-				delete rule;
 				continue;
-			}
 
 			// Add the rule to the list.
-			rules.push_back(rule);
+			rules.push_back(std::move(rule));
 		}
 		else if (wordParts[0] == "WARNMESSAGE")
 		{
@@ -173,10 +156,8 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (std::vector<SWordFilterRule*>::iterator i = rules.begin(); i != rules.end(); ++i)
+	for (SWordFilterRulePtr& rule : rules)
 	{
-		SWordFilterRule* rule = *i;
-
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;
 
@@ -368,7 +349,7 @@ WordFilterActions:
 	if (actionsFound & FILTER_ACTION_LOG)
 	{
 		CLog wordfilter;
-		wordfilter.setFilename(CString() << server->getServerPath() << "logs/serverlog.txt");
+		wordfilter.setFilename(server->getServerPath() << "logs/serverlog.txt");
 		wordfilter.setEnabled(true);
 		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(), badwords.text());
 	}
@@ -386,7 +367,7 @@ WordFilterActions:
 	// Tell RC what happened.
 	if (showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		server->sendPacketTo(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
+		server->sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
 	}
 
 	// If it is a warning rule, we are altering the message.

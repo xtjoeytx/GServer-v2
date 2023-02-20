@@ -1,6 +1,7 @@
 #ifndef TWEAPON_H
 #define TWEAPON_H
 
+#include <memory>
 #include <vector>
 #include <ctime>
 #include "CString.h"
@@ -10,7 +11,6 @@
 #include "IEnums.h"
 
 #ifdef V8NPCSERVER
-#include <memory>
 #include <string>
 #include "ScriptBindings.h"
 #include "ScriptExecutionContext.h"
@@ -31,7 +31,7 @@ class TWeapon
 		bool saveWeapon();
 		void updateWeapon(std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = true);
 
-		static TWeapon* loadWeapon(const CString& pWeapon, TServer* server);
+		static std::shared_ptr<TWeapon> loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
 		PlayerOutPackets getWeaponPackets(int clientVersion) const;
@@ -83,6 +83,7 @@ class TWeapon
 		ScriptExecutionContext _scriptExecutionContext;
 #endif
 };
+using TWeaponPtr = std::shared_ptr<TWeapon>;
 
 #ifdef V8NPCSERVER
 
