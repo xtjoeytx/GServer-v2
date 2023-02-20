@@ -1,8 +1,8 @@
 #include "IDebug.h"
 #include <csignal>
-#include <thread>
 #include <atomic>
 #include <functional>
+#include <filesystem>
 
 #include <cstdlib>
 #include <map>
@@ -75,9 +75,6 @@ void getBasePath()
 #endif
 }
 
-std::map<CString, TServer*> serverList;
-std::map<CString, std::thread*> serverThreads;
-
 CLog serverlog("startuplog.txt");
 CString overrideServer;
 CString overridePort;
@@ -121,68 +118,58 @@ int main(int argc, char* argv[])
 		// Load Server Settings
 		if (overrideServer.isEmpty())
 		{
-			serverlog.out(":: Loading servers.txt... ");
-			CSettings serversettings(CString(homePath) << "servers.txt");
-			if (!serversettings.isOpened())
+			serverlog.out(":: Determining the server to start... ");
+
+			auto found_server = [](const std::string& why, const std::string &server)
+			{
+				serverlog.append("success! %s\n", why.c_str());
+				overrideServer = server;
+			};
+
+			// startupserver.txt
+			{
+				CString startup;
+				startup.load(CString(homePath) << "startupserver.txt");
+				if (!startup.isEmpty())
+					found_server("(startupserver.txt)", std::string{startup.text()});
+			}
+
+			// Number of directories.
+			if (overrideServer.isEmpty())
+			{
+				std::vector<std::filesystem::path> servers;
+
+				std::filesystem::path base_dir{homePath.text()};
+				for (const auto &p: std::filesystem::directory_iterator{base_dir / "servers"})
+				{
+					if (p.is_directory())
+						servers.push_back(p.path().filename());
+				}
+
+				if (servers.size() == 1)
+					found_server("(directory search)", servers.front().string());
+			}
+
+			// Failure.
+			if (overrideServer.isEmpty())
 			{
 				serverlog.append("FAILED!\n");
 				return ERR_SETTINGS;
 			}
-			serverlog.append("success\n");
-
-			// Make sure we actually have a server.
-			if (serversettings.getInt("servercount", 0) == 0)
-			{
-				serverlog.out("** [Error] Incorrect settings.txt file.  servercount not found.\n");
-				return ERR_SETTINGS;
-			}
-
-			// Load servers.
-			for (int i = 1; i <= serversettings.getInt("servercount"); ++i)
-			{
-				CString name = serversettings.getStr(CString() << "server_" << CString(i), "default");
-				TServer* server = new TServer(name);
-
-				// Make sure doubles don't exist.
-				if (serverList.find(name) != serverList.end())
-				{
-					serverlog.out("-- [WARNING] Server %s already found, deleting old server.\n", name.text());
-					delete serverList[name];
-				}
-
-				// See if an override was specified.
-				CString serverip = serversettings.getStr(CString() << "server_" << CString(i) << "_ip");
-				CString serverport = serversettings.getStr(CString() << "server_" << CString(i) << "_port");
-				CString localip = serversettings.getStr(CString() << "server_" << CString(i) << "_localip");
-				CString serverinterface = serversettings.getStr(CString() << "server_" << CString(i) << "_interface");
-
-				// Initialize the server.
-				serverlog.out(":: Starting server: %s.\n", name.text());
-				if (server->init(serverip, serverport, localip, serverinterface) != 0)
-				{
-					serverlog.out("** [Error] Failed to start server: %s\n", name.text());
-					delete server;
-					continue;
-				}
-				serverList[name] = server;
-
-				// Put the server in its own thread.
-				serverThreads[name] = new std::thread(std::ref(*server));
-			}
 		}
-		else
+
+		// Initialize the server.
+		auto server = std::make_unique<TServer>(overrideServer);
+		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
+		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
 		{
-			TServer* server = new TServer(overrideServer);
+			serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
+			return 1;
+		}
 
-			auto& settings = server->getSettings();
-
-			serverlog.out(":: Starting server: %s.\n", overrideServer.text());
-			if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
-			{
-				serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
-				delete server;
-				return 1;
-			}
+		// Save override settings.
+		{
+			auto &settings = server->getSettings();
 
 			if (!overrideName.isEmpty())
 				settings.addKey("name", overrideName);
@@ -195,7 +182,7 @@ int main(int argc, char* argv[])
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				TAccount accfs(server);
+				TAccount accfs(server.get());
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -207,11 +194,6 @@ int main(int argc, char* argv[])
 
 			settings.saveFile();
 			server->loadSettings();
-
-			serverList[overrideServer] = server;
-
-			// Put the server in its own thread.
-			serverThreads[overrideServer] = new std::thread(std::ref(*server));
 		}
 
 		// Announce that the program is now running.
@@ -220,25 +202,8 @@ int main(int argc, char* argv[])
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
 
-		// Wait on each thread to end.
-		// Once all threads have ended, the program has terminated.
-		for (auto i = serverThreads.begin(); i != serverThreads.end();)
-		{
-			std::thread* t = i->second;
-			if (t == nullptr) serverThreads.erase(i++);
-			else
-			{
-				t->join();
-				++i;
-			}
-		}
-
-		// Delete all the servers.
-		for (auto i = serverList.begin(); i != serverList.end(); )
-		{
-			delete i->second;
-			serverList.erase(i++);
-		}
+		// Run the server.
+		(*server)();
 
 		// Destroy the sockets.
 		CSocket::socketSystemDestroy();
@@ -261,6 +226,16 @@ void shutdownServer(int signal)
 bool parseArgs(int argc, char* argv[])
 {
 	std::vector<CString> args;
+
+	auto test_for_end = [&args](auto &&iterator, auto &&end)
+	{
+		if (iterator == end) {
+			printHelp(args[0].text());
+			return true;
+		}
+		return false;
+	};
+
 	bool use_env = getenv("USE_ENV");
 
 	if (!use_env) {
@@ -270,58 +245,27 @@ bool parseArgs(int argc, char* argv[])
 		for ( auto i = args.begin(); i != args.end(); ++i ) {
 			if ((*i).find("--") == 0 ) {
 				CString key((*i).subString(2));
-				if ( key == "help" ) {
+				if (key == "help") {
 					printHelp(args[0].text());
 					return true;
-				} else if ( key == "server" ) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
+				} else {
+					if (test_for_end(++i, args.end()))
 						return true;
-					}
-					overrideServer = *i;
-				} else if ( key == "port" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overridePort = *i;
-				} else if ( key == "localip" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideLocalIp = *i;
-				} else if ( key == "serverip" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideServerIp = *i;
-				} else if ( key == "interface" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideServerInterface = *i;
-				} else if ( key == "staff" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideStaff = *i;
-				} else if ( key == "name" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideName = *i;
+
+					if (key == "server")
+						overrideServer = *i;
+					else if (key == "port" && !overrideServer.isEmpty())
+						overridePort = *i;
+					else if (key == "localip" && !overrideServer.isEmpty())
+						overrideLocalIp = *i;
+					else if (key == "serverip" && !overrideServer.isEmpty())
+						overrideServerIp = *i;
+					else if (key == "interface" && !overrideServer.isEmpty())
+						overrideServerInterface = *i;
+					else if (key == "staff" && !overrideServer.isEmpty())
+						overrideStaff = *i;
+					else if (key == "name" && !overrideServer.isEmpty())
+						overrideName = *i;
 				}
 			} else if ((*i)[0] == '-' ) {
 				for ( int j = 1; j < (*i).length(); ++j ) {
@@ -330,19 +274,13 @@ bool parseArgs(int argc, char* argv[])
 						return true;
 					}
 					if ((*i)[j] == 's' ) {
-						++i;
-						if ( i == args.end()) {
-							printHelp(args[0].text());
+						if (test_for_end(++i, args.end()))
 							return true;
-						}
 						overrideServer = *i;
 					}
 					if ((*i)[j] == 'p' && !overrideServer.isEmpty()) {
-						++i;
-						if ( i == args.end()) {
-							printHelp(args[0].text());
+						if (test_for_end(++i, args.end()))
 							return true;
-						}
 						overridePort = *i;
 					}
 				}
