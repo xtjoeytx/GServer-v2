@@ -1,4 +1,4 @@
-FROM alpine:3.16 as gn-builder
+FROM alpine:3.17 as gn-builder
 ARG GN_COMMIT=82d673acb802cee21534c796a59f8cdf26500f53
 RUN apk add --update --virtual .gn-build-dependencies \
 		alpine-sdk \
@@ -47,7 +47,7 @@ RUN set -x && \
 	rm -rf /var/lib/apt/lists/*
 
 # Google V8 Build Environment
-FROM alpine:3.16 as v8
+FROM alpine:3.17 as v8
 COPY --from=source /tmp/v8 /tmp/v8
 COPY --from=gn-builder /usr/local/bin/gn /tmp/v8/buildtools/linux64/gn
 RUN \
@@ -95,5 +95,5 @@ RUN \
 	&& rm -rf /tmp/v8/third_party /tmp/v8/test \
 	&& apk del --purge .v8-build-dependencies
 
-FROM alpine:3.16 as v8-final
+FROM alpine:3.17 as v8-final
 COPY --from=v8 /tmp/v8 /tmp/v8

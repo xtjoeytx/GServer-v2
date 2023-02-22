@@ -1,9 +1,10 @@
 #include "IDebug.h"
-#include <thread>
+#include <csignal>
 #include <atomic>
 #include <functional>
-#include <signal.h>
-#include <stdlib.h>
+#include <filesystem>
+
+#include <cstdlib>
 #include <map>
 
 #include "main.h"
@@ -26,8 +27,53 @@
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
 
-std::map<CString, TServer*> serverList;
-std::map<CString, std::thread*> serverThreads;
+// Home path of the gserver.
+CString homePath;
+static void getBasePath();
+std::string getBaseHomePath()
+{
+	return homePath.text();
+}
+
+void getBasePath()
+{
+#if defined(_WIN32) || defined(_WIN64)
+	// Get the path.
+	char path[ MAX_PATH ];
+	GetCurrentDirectoryA(MAX_PATH,path);
+
+	// Find the program exe and remove it from the path.
+	// Assign the path to homepath.
+	homePath = path;
+	homePath += "\\";
+	int pos = homePath.findl('\\');
+	if (pos == -1) homePath.clear();
+	else if (pos != (homePath.length() - 1))
+		homePath.removeI(++pos, homePath.length());
+#elif __APPLE__
+	char path[255];
+	if (!getcwd(path, sizeof(path)))
+		printf("Error getting CWD\n");
+
+	homePath = path;
+	if (homePath[homepath.length() - 1] != '/')
+		homePath << '/';
+#else
+	// Get the path to the program.
+	char path[260];
+	memset((void*)path, 0, 260);
+	readlink("/proc/self/exe", path, sizeof(path));
+
+	// Assign the path to homepath.
+	char* end = strrchr(path, '/');
+	if (end != 0)
+	{
+		end++;
+		if (end != 0) *end = '\0';
+		homePath = path;
+	}
+#endif
+}
 
 CLog serverlog("startuplog.txt");
 CString overrideServer;
@@ -37,10 +83,6 @@ CString overrideLocalIp = nullptr;
 CString overrideServerInterface = nullptr;
 CString overrideName = nullptr;
 CString overrideStaff = nullptr;
-
-// Home path of the gserver.
-CString homepath;
-static void getBasePath();
 
 std::atomic_bool shutdownProgram{ false };
 
@@ -70,87 +112,77 @@ int main(int argc, char* argv[])
 		getBasePath();
 
 		// Program announcements.
-		serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-		serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
+		serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+		serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
 
 		// Load Server Settings
 		if (overrideServer.isEmpty())
 		{
-			serverlog.out(":: Loading servers.txt... ");
-			CSettings serversettings(CString(homepath) << "servers.txt");
-			if (!serversettings.isOpened())
+			serverlog.out(":: Determining the server to start... ");
+
+			auto found_server = [](const std::string& why, const std::string &server)
+			{
+				serverlog.append("success! %s\n", why.c_str());
+				overrideServer = server;
+			};
+
+			// startupserver.txt
+			{
+				CString startup;
+				startup.load(CString(homePath) << "startupserver.txt");
+				if (!startup.isEmpty())
+					found_server("(startupserver.txt)", std::string{startup.text()});
+			}
+
+			// Number of directories.
+			if (overrideServer.isEmpty())
+			{
+				std::vector<std::filesystem::path> servers;
+
+				std::filesystem::path base_dir{homePath.text()};
+				for (const auto &p: std::filesystem::directory_iterator{base_dir / "servers"})
+				{
+					if (p.is_directory())
+						servers.push_back(p.path().filename());
+				}
+
+				if (servers.size() == 1)
+					found_server("(directory search)", servers.front().string());
+			}
+
+			// Failure.
+			if (overrideServer.isEmpty())
 			{
 				serverlog.append("FAILED!\n");
 				return ERR_SETTINGS;
 			}
-			serverlog.append("success\n");
-
-			// Make sure we actually have a server.
-			if (serversettings.getInt("servercount", 0) == 0)
-			{
-				serverlog.out("** [Error] Incorrect settings.txt file.  servercount not found.\n");
-				return ERR_SETTINGS;
-			}
-
-			// Load servers.
-			for (int i = 1; i <= serversettings.getInt("servercount"); ++i)
-			{
-				CString name = serversettings.getStr(CString() << "server_" << CString(i), "default");
-				TServer* server = new TServer(name);
-
-				// Make sure doubles don't exist.
-				if (serverList.find(name) != serverList.end())
-				{
-					serverlog.out("-- [WARNING] Server %s already found, deleting old server.\n", name.text());
-					delete serverList[name];
-				}
-
-				// See if an override was specified.
-				CString serverip = serversettings.getStr(CString() << "server_" << CString(i) << "_ip");
-				CString serverport = serversettings.getStr(CString() << "server_" << CString(i) << "_port");
-				CString localip = serversettings.getStr(CString() << "server_" << CString(i) << "_localip");
-				CString serverinterface = serversettings.getStr(CString() << "server_" << CString(i) << "_interface");
-
-				// Initialize the server.
-				serverlog.out(":: Starting server: %s.\n", name.text());
-				if (server->init(serverip, serverport, localip, serverinterface) != 0)
-				{
-					serverlog.out("** [Error] Failed to start server: %s\n", name.text());
-					delete server;
-					continue;
-				}
-				serverList[name] = server;
-
-				// Put the server in its own thread.
-				serverThreads[name] = new std::thread(std::ref(*server));
-			}
 		}
-		else
+
+		// Initialize the server.
+		auto server = std::make_unique<TServer>(overrideServer);
+		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
+		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
 		{
-			TServer* server = new TServer(overrideServer);
+			serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
+			return 1;
+		}
 
-			auto *settings = server->getSettings();
-
-			serverlog.out(":: Starting server: %s.\n", overrideServer.text());
-			if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
-			{
-				serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
-				delete server;
-				return 1;
-			}
+		// Save override settings.
+		{
+			auto &settings = server->getSettings();
 
 			if (!overrideName.isEmpty())
-				settings->addKey("name", overrideName);
+				settings.addKey("name", overrideName);
 
 			if (!overrideStaff.isEmpty())
 			{
 				if (!server->isStaff(overrideStaff))
 				{
-					auto staff = settings->getStr("staff");
-					settings->addKey("staff", staff << "," << overrideStaff);
+					auto staff = settings.getStr("staff");
+					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				TAccount accfs(server);
+				TAccount accfs(server.get());
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -160,13 +192,8 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			settings->saveFile();
+			settings.saveFile();
 			server->loadSettings();
-
-			serverList[overrideServer] = server;
-
-			// Put the server in its own thread.
-			serverThreads[overrideServer] = new std::thread(std::ref(*server));
 		}
 
 		// Announce that the program is now running.
@@ -175,25 +202,8 @@ int main(int argc, char* argv[])
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
 
-		// Wait on each thread to end.
-		// Once all threads have ended, the program has terminated.
-		for (auto i = serverThreads.begin(); i != serverThreads.end();)
-		{
-			std::thread* t = i->second;
-			if (t == nullptr) serverThreads.erase(i++);
-			else
-			{
-				t->join();
-				++i;
-			}
-		}
-
-		// Delete all the servers.
-		for (auto i = serverList.begin(); i != serverList.end(); )
-		{
-			delete i->second;
-			serverList.erase(i++);
-		}
+		// Run the server.
+		(*server)();
 
 		// Destroy the sockets.
 		CSocket::socketSystemDestroy();
@@ -206,9 +216,26 @@ int main(int argc, char* argv[])
 	Extra-Cool Functions :D
 */
 
+void shutdownServer(int signal)
+{
+	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
+
+	shutdownProgram = true;
+}
+
 bool parseArgs(int argc, char* argv[])
 {
 	std::vector<CString> args;
+
+	auto test_for_end = [&args](auto &&iterator, auto &&end)
+	{
+		if (iterator == end) {
+			printHelp(args[0].text());
+			return true;
+		}
+		return false;
+	};
+
 	bool use_env = getenv("USE_ENV");
 
 	if (!use_env) {
@@ -218,58 +245,27 @@ bool parseArgs(int argc, char* argv[])
 		for ( auto i = args.begin(); i != args.end(); ++i ) {
 			if ((*i).find("--") == 0 ) {
 				CString key((*i).subString(2));
-				if ( key == "help" ) {
+				if (key == "help") {
 					printHelp(args[0].text());
 					return true;
-				} else if ( key == "server" ) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
+				} else {
+					if (test_for_end(++i, args.end()))
 						return true;
-					}
-					overrideServer = *i;
-				} else if ( key == "port" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overridePort = *i;
-				} else if ( key == "localip" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideLocalIp = *i;
-				} else if ( key == "serverip" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideServerIp = *i;
-				} else if ( key == "interface" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideServerInterface = *i;
-				} else if ( key == "staff" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideStaff = *i;
-				} else if ( key == "name" && !overrideServer.isEmpty()) {
-					++i;
-					if ( i == args.end()) {
-						printHelp(args[0].text());
-						return true;
-					}
-					overrideName = *i;
+
+					if (key == "server")
+						overrideServer = *i;
+					else if (key == "port" && !overrideServer.isEmpty())
+						overridePort = *i;
+					else if (key == "localip" && !overrideServer.isEmpty())
+						overrideLocalIp = *i;
+					else if (key == "serverip" && !overrideServer.isEmpty())
+						overrideServerIp = *i;
+					else if (key == "interface" && !overrideServer.isEmpty())
+						overrideServerInterface = *i;
+					else if (key == "staff" && !overrideServer.isEmpty())
+						overrideStaff = *i;
+					else if (key == "name" && !overrideServer.isEmpty())
+						overrideName = *i;
 				}
 			} else if ((*i)[0] == '-' ) {
 				for ( int j = 1; j < (*i).length(); ++j ) {
@@ -278,19 +274,13 @@ bool parseArgs(int argc, char* argv[])
 						return true;
 					}
 					if ((*i)[j] == 's' ) {
-						++i;
-						if ( i == args.end()) {
-							printHelp(args[0].text());
+						if (test_for_end(++i, args.end()))
 							return true;
-						}
 						overrideServer = *i;
 					}
 					if ((*i)[j] == 'p' && !overrideServer.isEmpty()) {
-						++i;
-						if ( i == args.end()) {
-							printHelp(args[0].text());
+						if (test_for_end(++i, args.end()))
 							return true;
-						}
 						overridePort = *i;
 					}
 				}
@@ -326,8 +316,8 @@ bool parseArgs(int argc, char* argv[])
 
 void printHelp(const char* pname)
 {
-	serverlog.out("Graal Reborn GServer version %s\n", GSERVER_VERSION);
-	serverlog.out("Programmed by %s.\n\n", GSERVER_CREDITS);
+	serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+	serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
 	serverlog.out("USAGE: %s [options]\n\n", pname);
 	serverlog.out("Commands:\n\n");
 	serverlog.out(" -h, --help\t\tPrints out this help text.\n");
@@ -340,46 +330,3 @@ void printHelp(const char* pname)
 	serverlog.out("\n");
 }
 
-const CString getHomePath()
-{
-	return homepath;
-}
-
-void shutdownServer(int sig)
-{
-	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
-
-	shutdownProgram = true;
-}
-
-void getBasePath()
-{
-	#if defined(_WIN32) || defined(_WIN64)
-	// Get the path.
-	char path[MAX_PATH];
-	GetCurrentDirectoryA(MAX_PATH,path);
-
-	// Find the program exe and remove it from the path.
-	// Assign the path to homepath.
-	homepath = path;
-	homepath += "\\";
-	int pos = homepath.findl('\\');
-	if (pos == -1) homepath.clear();
-	else if (pos != (homepath.length() - 1))
-		homepath.removeI(++pos, homepath.length());
-#else
-	// Get the path to the program.
-	char path[260];
-	memset((void*)path, 0, 260);
-	readlink("/proc/self/exe", path, sizeof(path));
-
-	// Assign the path to homepath.
-	char* end = strrchr(path, '/');
-	if (end != 0)
-	{
-		end++;
-		if (end != 0) *end = '\0';
-		homepath = path;
-	}
-#endif
-}
