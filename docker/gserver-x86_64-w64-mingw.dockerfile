@@ -8,6 +8,7 @@ FROM amigadev/crosstools:x86_64-w64-mingw32 AS build-env
 ARG NPCSERVER
 ARG VER_EXTRA
 COPY --from=v8 /tmp/v8 /usr/x86_64-w64-mingw32/usr
+RUN ln -s /usr/x86_64-w64-mingw32/include/wincrypt.h /usr/x86_64-w64-mingw32/include/Wincrypt.h
 
 USER 1001
 COPY --chown=1001:1001 ./ /tmp/gserver
