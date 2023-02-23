@@ -3,6 +3,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <IConfig.h>
 
 #include "utilities/stringutils.h"
 #include "TPlayer.h"
@@ -403,8 +404,13 @@ bool TPlayer::onRecv()
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
 	char* data = playerSock->getData(&size);
-	if (size != 0)
+	if (size != 0) {
 		rBuffer.write(data, size);
+#if defined(WOLFSSL_ENABLED)
+		if (this->playerSock->webSocket)
+			if (webSocketFixIncomingPacket(rBuffer) < 0) return true;
+#endif
+	}
 	else if (playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
@@ -453,6 +459,46 @@ bool TPlayer::doMain()
 	rBuffer.setRead(0);
 	while (rBuffer.length() > 1)
 	{
+#if defined(WOLFSSL_ENABLED)
+		if (!this->playerSock->webSocket && rBuffer.findi("GET /") > -1 && rBuffer.findi("HTTP/1.1\r\n") > -1)
+		{
+
+			CString webSocketKeyHeader = "Sec-WebSocket-Key:";
+			if (rBuffer.findi(webSocketKeyHeader) < 0) {
+				CString simpleHtml = CString() << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to " << server->getSettings().getStr("name") << "!</h1>" << server->getServerMessage().replaceAll("my server", server->getSettings().getStr("name")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by " << CString(APP_CREDITS) << "</p></body></html>";
+				CString webResponse = CString() << "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: " << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n" << simpleHtml << "\r\n";
+				unsigned int dsize = webResponse.length();
+				this->playerSock->sendData(webResponse.text(), &dsize);
+				return false;
+			}
+			this->playerSock->webSocket = true;
+			// Get the WebSocket handshake key
+			rBuffer.setRead(rBuffer.findi(webSocketKeyHeader));
+			CString webSocketKey = rBuffer.readString("\r").subString(webSocketKeyHeader.length()+1).trimI();
+
+			// Append GUID
+			webSocketKey << "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+			// Calculate sha1 has of key + GUID and base64 encode it for sending back
+			webSocketKey.sha1I().base64encodeI();
+			webSocketKeyHeader.clear();
+
+			CString webSockHandshake = CString() <<"HTTP/1.1 101 Switching Protocols\r\n"
+											 << "Upgrade: websocket\r\n"
+											 << "Connection: Upgrade\r\n"
+											 << "Sec-WebSocket-Protocol: binary\r\n"
+											 << "Sec-WebSocket-Accept: "
+											 << webSocketKey
+											 << "\r\n\r\n";
+
+			unsigned int dsize = webSockHandshake.length();
+
+			this->playerSock->sendData(webSockHandshake.text(), &dsize);
+
+			rBuffer.removeI(0, rBuffer.length());
+			return true;
+		}
+#endif
 		// New data.
 		lastData = time(0);
 
@@ -2266,6 +2312,12 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 			in_codec.setGen(ENCRYPT_GEN_5);
 			getKey = true;
 			break;
+		case PLTYPE_WEB:
+			serverlog.append("Web\n");
+			in_codec.setGen(ENCRYPT_GEN_1);
+			fileQueue.setCodec(ENCRYPT_GEN_1, key);
+			getKey = false;
+			break;
 		default:
 			serverlog.append("Unknown (%d)\n", type);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)type) << ".");
@@ -2287,7 +2339,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	if (versionID == CLVER_UNKNOWN) {
 		// Get Iterator-Key
 		// 2.19+ RC and any client should get the key.
-		if ( isClient() || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true ) {
+		if ( (isClient() && type != PLTYPE_WEB) || (isRC() && in_codec.getGen() > ENCRYPT_GEN_3) || getKey == true ) {
 			key = (unsigned char)pPacket.readGChar();
 
 			in_codec.reset(key);
