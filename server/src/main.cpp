@@ -56,7 +56,7 @@ void getBasePath()
 		printf("Error getting CWD\n");
 
 	homePath = path;
-	if (homePath[homepath.length() - 1] != '/')
+	if (homePath[homePath.length() - 1] != '/')
 		homePath << '/';
 #else
 	// Get the path to the program.
