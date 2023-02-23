@@ -227,7 +227,8 @@ void TServer::cleanupDeletedPlayers()
 	if (deletedPlayers.empty()) return;
 	for (auto i = std::begin(deletedPlayers); i != std::end(deletedPlayers);)
 	{
-		auto& player = *i;
+		// Value copy so the shared_ptr exists until the end.
+		auto player = *i;
 
 #ifdef V8NPCSERVER
 		IScriptObject<TPlayer> *playerObject = player->getScriptObject();

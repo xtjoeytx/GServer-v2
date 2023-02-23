@@ -304,11 +304,10 @@ bool TPlayer::sendLoginClient()
 	for (auto& weaponName : weaponList)
 	{
 		auto weapon = server->getWeapon(weaponName.toString());
-		if (weapon == 0)
+		if (weapon == nullptr)
 		{
 			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			LevelItemType itemType = TLevelItem::getItemId(weaponName.toString());
-			if (itemType != LevelItemType::INVALID)
+			if (auto itemType = TLevelItem::getItemId(weaponName.toString()); itemType != LevelItemType::INVALID)
 			{
 				CString defaultWeaponPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
 				defaultWeaponPacket.readGChar();
@@ -322,6 +321,12 @@ bool TPlayer::sendLoginClient()
 			sendPacket(packet, true);
 		}
 	}
+
+	// Send any protected weapons we do not have.
+	auto protectedWeapons = server->getSettings().getStr("protectedweapons").gCommaStrTokens();
+	std::erase_if(protectedWeapons, [this](CString &val) { return std::find(weaponList.begin(), weaponList.end(), val) != weaponList.end(); });
+	for (auto& weaponName : protectedWeapons)
+		this->addWeapon(weaponName.toString());
 
 	if (versionID >= CLVER_4_0211)
 	{

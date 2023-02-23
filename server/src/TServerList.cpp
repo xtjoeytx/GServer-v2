@@ -698,7 +698,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (message != "SUCCESS")
 	{
 		player->sendPacket({PLO_DISCMESSAGE, CString() << message});
-		player->setId(0);	// Prevent saving of the account.
+		player->setLoadOnly(true);	// Prevent saving of the account.
 		player->disconnect();
 		return;
 	}
@@ -707,7 +707,7 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	if ( !player->sendLogin())
 	{
 		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
-		player->setId(0);	// Prevent saving of the account.
+		player->setLoadOnly(true);	// Prevent saving of the account.
 		player->disconnect();
 	}
 }
