@@ -6,6 +6,7 @@
 #include <string>
 #include <optional>
 #include "CString.h"
+#include "TPlayer.h"
 
 class TServer;
 
@@ -72,7 +73,7 @@ public:
 
 	//! Get the bytecode packet to send to clients for the ani script
 	//! \return bytecode packet
-	CString getBytecodePacket() const;
+	PlayerOutPackets getBytecodePackets(bool newProtocol = false) const;
 
 	//! Load a TGameAni from the filesystem
 	//! \param server Global server pointer so we can fetch the correct filesystem

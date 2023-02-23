@@ -62,7 +62,12 @@ TLevel::TLevel(short fillTile, TServer* pServer)
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, fillTile, sizeof(levelTiles));
+	memset(levelTiles, 0, sizeof(levelTiles));
+
+	for (int i = 0; i < (64*64); i++) {
+		levelTiles[0][i] = fillTile;
+	}
+
 }
 
 TLevel::~TLevel()
@@ -95,11 +100,11 @@ TLevel::~TLevel()
 	// Delete items.
 	for (auto& item : levelItems)
 	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
-		for (auto& player : levelPlayers)
+		CString packet = CString() >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		for (auto& playerId : levelPlayers)
 		{
-			if (auto p = server->getPlayer(player); p)
-				p->sendPacket(packet);
+			if (auto player = server->getPlayer(playerId); player)
+				player->sendPacket({PLO_ITEMDEL, packet});
 		}
 	}
 	levelItems.clear();
@@ -120,8 +125,9 @@ TLevel::~TLevel()
 /*
 	TLevel: Get Crafted Packets
 */
-CString TLevel::getBaddyPacket(int clientVersion)
+PlayerOutPackets TLevel::getBaddyPackets(int clientVersion)
 {
+	PlayerOutPackets packets;
 	CString retVal;
 	for (const auto& [id, baddy] : levelBaddies)
 	{
@@ -130,129 +136,133 @@ CString TLevel::getBaddyPacket(int clientVersion)
 			continue;
 
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(clientVersion) << "\n";
+		packets.push_back({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion)});
 	}
-	return retVal;
+
+	return packets;
 }
 
-CString TLevel::getBoardPacket()
+PlayerOutPacket TLevel::getBoardPacket()
 {
 	CString retVal;
-	retVal.writeGChar(PLO_BOARDPACKET);
 	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
-	retVal << "\n";
 
-	return retVal;
+	return {PLO_BOARDPACKET, retVal};
 }
 
-CString TLevel::getLayerPacket(int layer)
+PlayerOutPacket TLevel::getLayerPacket(int layer)
 {
-	CString retVal;
-	retVal.writeGChar(PLO_BOARDLAYER);
-	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
-	retVal << "\n";
+	CString layerPacket;
+	layerPacket << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
+	layerPacket.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
 
-	return retVal;
+
+	return {PLO_BOARDLAYER, layerPacket};
 }
 
-CString TLevel::getBoardChangesPacket(time_t time)
+PlayerOutPacket TLevel::getBoardChangesPacket(time_t time)
 {
 	CString retVal;
-	retVal >> (char)PLO_LEVELBOARD;
+
 	for (const auto& change : levelBoardChanges)
 	{
 		if (change.getModTime() >= time)
 			retVal << change.getBoardStr();
 	}
-	return retVal;
+
+	return {PLO_LEVELBOARD, retVal};
 }
 
-CString TLevel::getBoardChangesPacket2(time_t time)
+PlayerOutPacket TLevel::getBoardChangesPacket2(time_t time)
 {
 	CString retVal;
-	retVal >> (char)PLO_BOARDMODIFY;
+
 	for (const auto& change : levelBoardChanges)
 	{
 		if (change.getModTime() >= time)
 			retVal << change.getBoardStr();
 	}
-	return retVal;
+
+	return {PLO_BOARDMODIFY, retVal};
 }
 
-CString TLevel::getChestPacket(TPlayer *pPlayer)
+PlayerOutPackets TLevel::getChestPackets(TPlayer *pPlayer)
 {
-	CString retVal;
+	PlayerOutPackets packets;
 
 	if (pPlayer)
 	{
 		for (auto& chest : levelChests)
 		{
 			bool hasChest = pPlayer->hasChest(getChestStr(chest));
-
-			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
+			CString retVal;
+			retVal >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
 			if (!hasChest) retVal >> (char)chest.getItemIndex() >> (char)chest.getSignIndex();
-			retVal << "\n";
+			packets.push_back({PLO_LEVELCHEST, retVal});
 		}
 	}
 
-	return retVal;
+	return packets;
 }
 
-CString TLevel::getHorsePacket()
+PlayerOutPackets TLevel::getHorsePackets()
 {
-	CString retVal;
+	PlayerOutPackets packets;
+
 	for (auto& horse : levelHorses)
 	{
-		retVal >> (char)PLO_HORSEADD << horse.getHorseStr() << "\n";
+		packets.push_back({PLO_HORSEADD, CString() << horse.getHorseStr()});
 	}
 
-	return retVal;
+	return packets;
 }
 
-CString TLevel::getLinksPacket()
+PlayerOutPackets TLevel::getLinkPackets()
 {
-	CString retVal;
+	PlayerOutPackets packets;
+
 	for (const auto& link : levelLinks)
 	{
-		retVal >> (char)PLO_LEVELLINK << link.getLinkStr() << "\n";
+		packets.push_back({PLO_LEVELLINK, CString() << link.getLinkStr()});
 	}
 
-	return retVal;
+	return packets;
 }
 
-CString TLevel::getNpcsPacket(time_t time, int clientVersion)
+PlayerOutPackets TLevel::getNpcPackets(TPlayer *pPlayer, time_t time, int clientVersion)
 {
-	CString retVal;
+	PlayerOutPackets packets;
 	for (auto& npcId : levelNPCs)
 	{
 		auto npc = server->getNPC(npcId);
 		if (!npc) continue;
 
-		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
+		packets.push_back({PLO_NPCPROPS, CString() >> (int)npc->getId() << npc->getProps(time, clientVersion)});
 
 		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
 		{
-			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->getId() << npc->getByteCode();
-			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
+			CString byteCodePacket = CString() >> (int)npc->getId() << npc->getByteCode();
+			if (byteCodePacket[byteCodePacket.length() - 1] != '\n' && !pPlayer->newProtocol)
 				byteCodePacket << "\n";
 
-			retVal >> (char)PLO_RAWDATA >> (int)byteCodePacket.length() << "\n";
-			retVal << byteCodePacket;
+			packets.push_back({PLO_RAWDATA, CString() >> (int)byteCodePacket.length()});
+			packets.push_back({PLO_NPCBYTECODE, byteCodePacket});
 		}
 	}
 
-	return retVal;
+	return packets;
 }
 
-CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
+PlayerOutPackets TLevel::getSignPackets(TPlayer *pPlayer = nullptr)
 {
-	CString retVal;
+	PlayerOutPackets packets;
+
 	for (const auto & sign : levelSigns)
 	{
-		retVal >> (char)PLO_LEVELSIGN << sign.getSignStr(pPlayer) << "\n";
+		packets.push_back({PLO_LEVELSIGN, CString() << sign.getSignStr(pPlayer)});
 	}
-	return retVal;
+
+	return packets;
 }
 
 /*
@@ -300,11 +310,11 @@ bool TLevel::reload()
 	// Delete items.
 	for (const auto& item : levelItems)
 	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		CString packet = CString() >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
 		for (auto& playerId : levelPlayers)
 		{
 			if (auto player = server->getPlayer(playerId); player)
-				player->sendPacket(packet);
+				player->sendPacket({PLO_ITEMDEL, packet});
 		}
 	}
 	levelItems.clear();
@@ -1199,7 +1209,7 @@ bool TLevel::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHei
 			// Check if we found a full tile.  If so, don't accept the change.
 			if (foundCount == 4)
 			{
-				player->sendPacket(CString() >> (char)PLO_BOARDMODIFY >> (char)pX >> (char)pY >> (char)pWidth >> (char)pHeight << pTileData);
+				player->sendPacket({PLO_BOARDMODIFY, CString() >> (char)pX >> (char)pY >> (char)pWidth >> (char)pHeight << pTileData});
 				return false;
 			}
 		}
@@ -1503,7 +1513,7 @@ bool TLevel::doTimedEvents()
 			// change, the client won't get the new data.
 			change.swapTiles();
 			change.setModTime(time(0));
-			server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
+			server->sendPacketToOneLevel({PLO_BOARDMODIFY, CString() << change.getBoardStr()}, this->shared_from_this());
 		}
 	}
 
@@ -1528,7 +1538,7 @@ bool TLevel::doTimedEvents()
 		int deleteTimer = horse.timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2), this->shared_from_this());
+			server->sendPacketToOneLevel({PLO_HORSEDEL, CString() >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2)}, this->shared_from_this());
 			i = levelHorses.erase(i);
 		}
 		else ++i;
@@ -1560,7 +1570,7 @@ bool TLevel::doTimedEvents()
 					for (unsigned int i = 1; i < levelPlayers.size(); ++i)
 					{
 						auto player = server->getPlayer(levelPlayers[i]);
-						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+						player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props});
 					}
 				}
 			}
@@ -1575,7 +1585,7 @@ bool TLevel::doTimedEvents()
 				for (unsigned int i = 1; i < levelPlayers.size(); ++i)
 				{
 					auto player = server->getPlayer(levelPlayers[i]);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+					player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props});
 				}
 			}
 			else
@@ -1584,7 +1594,7 @@ bool TLevel::doTimedEvents()
 				for (auto p : levelPlayers)
 				{
 					auto player = server->getPlayer(p);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(player->getVersion()));
+					player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(player->getVersion())});
 				}
 			}
 		}
@@ -1750,7 +1760,7 @@ void TLevel::modifyBoardDirect(uint32_t index, short tile) {
 	auto change = TLevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
 
 	levelBoardChanges.push_back(change);
-	server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), shared_from_this());
+	server->sendPacketToOneLevel({PLO_BOARDMODIFY, CString() << change.getBoardStr()}, shared_from_this());
 }
 
 #endif

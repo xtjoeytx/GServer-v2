@@ -367,7 +367,7 @@ WordFilterActions:
 	// Tell RC what happened.
 	if (showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords);
+		server->sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
 	}
 
 	// If it is a warning rule, we are altering the message.

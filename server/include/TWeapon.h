@@ -3,10 +3,12 @@
 
 #include <memory>
 #include <vector>
-#include <time.h>
+#include <ctime>
 #include "CString.h"
 #include "TLevelItem.h"
+#include "TPacket.h"
 #include "SourceCode.h"
+#include "IEnums.h"
 
 #ifdef V8NPCSERVER
 #include <string>
@@ -32,7 +34,7 @@ class TWeapon
 		static std::shared_ptr<TWeapon> loadWeapon(const CString& pWeapon, TServer* server);
 
 		// Functions -> Inline Get-Functions
-		CString getWeaponPacket(int clientVersion) const;
+		PlayerOutPackets getWeaponPackets(int clientVersion) const;
 		bool isDefault() const						{ return (mWeaponDefault != LevelItemType::INVALID); }
 		bool hasBytecode() const					{ return (!_bytecode.isEmpty()); }
 		LevelItemType getWeaponId()					{ return mWeaponDefault; }
@@ -60,7 +62,7 @@ class TWeapon
 	protected:
 		void setClientScript(const CString& pScript);
 
-		// Varaibles -> Weapon Data
+		// Variables -> Weapon Data
 		LevelItemType mWeaponDefault;
 		time_t mModTime;
 		TServer *server;

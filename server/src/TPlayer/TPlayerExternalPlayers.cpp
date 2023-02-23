@@ -24,7 +24,7 @@ bool TPlayer::addPMServer(CString& option)
 	if (!PMSrvExist)
 	{
 		PMServerList.push_back(option);
-		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		list.sendPacket({SVO_REQUESTLIST, CString() >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI()});
 		return true;
 	}
 	else
@@ -48,9 +48,9 @@ bool TPlayer::remPMServer(CString& option)
 				externalPlayers.erase(externalId);
 
 				if (isRC())
-					sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
+					sendPacket({PLO_DELPLAYER, CString() >> externalId});
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
+					sendPacket({PLO_OTHERPLPROPS, CString() >> externalId >> (char)PLPROP_PCONNECTED});
 			}
 		}
 	}
@@ -74,7 +74,7 @@ bool TPlayer::remPMServer(CString& option)
 bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
-	
+
 	if (!externalPlayers.empty())
 	{
 		// Check if a player has disconnected
@@ -101,9 +101,9 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 					externalPlayers.erase(externalId);
 					
 					if (isRC())
-						sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
+						sendPacket({PLO_DELPLAYER, CString() >> externalId});
 					else
-						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
+						sendPacket({PLO_OTHERPLPROPS, CString() >> externalId >> (char)PLPROP_PCONNECTED});
 
 					//server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
 					//server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
@@ -158,10 +158,10 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 		for (auto& [externalId, externalPlayer] : externalPlayers)
 		{
 			if (isRC()) {
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
+				sendPacket({PLO_ADDPLAYER, CString() >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1});
 			}
 			else {
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
+				sendPacket({PLO_OTHERPLPROPS, CString() >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1)});
 			}
 		}
 	}
@@ -172,7 +172,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
 	auto& list = server->getServerList();
-	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
+	list.sendPacket({SVO_PMPLAYER, CString() >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI()});
 	return true;
 }
 

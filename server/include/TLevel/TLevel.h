@@ -9,6 +9,8 @@
 #include <optional>
 #include "IUtil.h"
 #include "CString.h"
+#include "IEnums.h"
+#include "TPacket.h"
 #include "TLevelBaddy.h"
 #include "TLevelBoardChange.h"
 #include "TLevelChest.h"
@@ -45,16 +47,16 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		std::shared_ptr<TLevel> clone();
 
 		// get crafted packets
-		CString getBaddyPacket(int clientVersion = CLVER_2_17);
-		CString getBoardPacket();
-		CString getLayerPacket(int i);
-		CString getBoardChangesPacket(time_t time);
-		CString getBoardChangesPacket2(time_t time);
-		CString getChestPacket(TPlayer *pPlayer);
-		CString getHorsePacket();
-		CString getLinksPacket();
-		CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
-		CString getSignsPacket(TPlayer *pPlayer);
+		PlayerOutPacket getBoardPacket();
+		PlayerOutPacket getLayerPacket(int i);
+		PlayerOutPacket getBoardChangesPacket(time_t time);
+		PlayerOutPacket getBoardChangesPacket2(time_t time);
+		PlayerOutPackets getBaddyPackets(int clientVersion = CLVER_2_17);
+		PlayerOutPackets getChestPackets(TPlayer *pPlayer);
+		PlayerOutPackets getHorsePackets();
+		PlayerOutPackets getLinkPackets();
+		PlayerOutPackets getNpcPackets(TPlayer *pPlayer, time_t time, int clientVersion = CLVER_2_17);
+		PlayerOutPackets getSignPackets(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
 		//! \return The actual level name.

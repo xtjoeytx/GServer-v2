@@ -51,10 +51,8 @@ void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
 }
 
 // -- Function: Get Player Packet -- //
-CString TScriptClass::getClassPacket() const
+PlayerOutPacket TScriptClass::getClassPacket() const
 {
-	CString out;
-
 	if (!_bytecode.isEmpty())
 	{
 		CString b = _bytecode;
@@ -62,11 +60,10 @@ CString TScriptClass::getClassPacket() const
 		CString header = b.readChars(b.readGUShort());
 
 		// Get the mod time and send packet 197.
-		CString smod = CString() >> (long long)time(0);
+		CString smod = CString() >> (long long)time(nullptr);
 		smod.gtokenizeI();
-		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
+		return {PLO_UNKNOWN197, CString() << header << "," << smod};
 	}
 
-	return out;
+	return {};
 }
-

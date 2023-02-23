@@ -202,12 +202,12 @@ class TServer : public CSocketStub
 
 		// Packet sending.
 		using PlayerPredicate = std::function<bool(const TPlayer *)>;
-		void sendPacketToAll(const CString& packet, const std::set<uint16_t> &exclude = {}) const;
-		void sendPacketToLevelArea(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-		void sendPacketToLevelArea(const CString& packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-		void sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}) const;
-		void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
-		void sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const;
+		void sendPacketToAll(const PlayerOutPacket& packet, const std::set<uint16_t> &exclude = {}) const;
+		void sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+		void sendPacketToOneLevel(const PlayerOutPacket& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude = {}) const;
+		void sendPacketToType(int who, const PlayerOutPacket& pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
+		void sendPacketToType(int who, const PlayerOutPacket& pPacket, TPlayer* pPlayer) const;
 
 		// Player Management
 		uint16_t getFreePlayerId();
@@ -247,7 +247,7 @@ class TServer : public CSocketStub
 
 	private:
 		GS2ScriptManager gs2ScriptManager;
-		
+
 		template<typename ScriptObjType>
 		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
 
@@ -357,7 +357,7 @@ inline void TServer::sendToRC(const CString& pMessage, std::weak_ptr<TPlayer> pS
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << pMessage.subString(0, len)}, pSender);
 }
 
 inline void TServer::sendToNC(const CString& pMessage, std::weak_ptr<TPlayer> pSender) const
@@ -366,7 +366,7 @@ inline void TServer::sendToNC(const CString& pMessage, std::weak_ptr<TPlayer> pS
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << pMessage.subString(0, len)}, pSender);
 }
 
 #endif

@@ -205,10 +205,10 @@ void TNPC::setScriptCode(std::string pScript)
 		//image = "";
 
 		// TODO(joey): refactor
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCDEL >> (int)getId(), level);
+		server->sendPacketToLevelArea({PLO_NPCDEL, CString() >> (int)getId()}, level);
 
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)getId() << getProps(0);
-		server->sendPacketToLevelArea(packet, level);
+		CString packet = CString() >> (int)getId() << getProps(0);
+		server->sendPacketToLevelArea({PLO_NPCPROPS, packet}, level);
 	}
 #endif
 }
@@ -773,7 +773,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 	if (pForward)
 	{
 		// Send the props.
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, curlevel);
+		server->sendPacketToLevelArea({PLO_NPCPROPS, CString() >> (int)id << ret}, curlevel);
 	}
 
 #ifdef V8NPCSERVER
@@ -1045,7 +1045,7 @@ NPCEventResponse TNPC::runScriptEvents()
 
 		time_t newModTime = time(0);
 
-		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
+		CString propPacket = CString() >> (int)id;
 		for (unsigned char propId : propModified)
 		{
 			modTime[propId] = newModTime;
@@ -1054,7 +1054,7 @@ NPCEventResponse TNPC::runScriptEvents()
 		propModified.clear();
 
 		if (!curlevel.expired())
-			server->sendPacketToLevelArea(propPacket, curlevel);
+			server->sendPacketToLevelArea({PLO_NPCPROPS, propPacket}, curlevel);
 	}
 
 	if (npcDeleteRequested)
@@ -1365,7 +1365,7 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 	setY(y + dy);
 
 	if (!curlevel.expired())
-		server->sendPacketToLevelArea(CString() >> (char)PLO_MOVE2 >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, curlevel);
+		server->sendPacketToLevelArea({PLO_MOVE2, CString() >> (int)id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options}, curlevel);
 
 	if (isWarpable())
 		testTouch();
@@ -1382,7 +1382,7 @@ void TNPC::warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY)
 		// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 		//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 		//  such for PLO_NPCDEL
-		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
+		server->sendPacketToType(PLTYPE_ANYPLAYER, {PLO_NPCMOVED, CString() >> (int)id});
 
 		// Remove the npc from the old level
 		level->removeNPC(id);
@@ -1403,10 +1403,10 @@ void TNPC::warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY)
 	updatePropModTime(NPCPROP_Y2);
 
 	// Send the properties to the players in the new level
-	server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getProps(0), level);
+	server->sendPacketToLevelArea({PLO_NPCPROPS, CString() >> (int)id << getProps(0)}, level);
 
 	if (!npcName.empty())
-		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL));
+		server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCADD, CString() >> (int)id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL)});
 
 	// Queue event
 	this->queueNpcAction("npc.warped");
@@ -1509,8 +1509,8 @@ void TNPC::saveNPC()
 			fileData << "ATTR" << std::to_string(i+1) << " " << gAttribs[i] << NL;
 	}
 
-	for (auto it = flagList.begin(); it != flagList.end(); ++it)
-		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
+	for (auto & it : flagList)
+		fileData << "FLAG " << it.first << "=" << it.second << NL;
 
 	fileData << "NPCSCRIPT" << NL << CString(npcScript.getSource()).replaceAll("\n", NL);
 	if (fileData[fileData.length() - 1] != '\n')

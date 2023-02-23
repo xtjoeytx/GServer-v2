@@ -1,7 +1,7 @@
 #ifndef TPLAYER_H
 #define TPLAYER_H
 
-#include <time.h>
+#include <ctime>
 #include <map>
 #include <set>
 #include <unordered_set>
@@ -12,6 +12,7 @@
 #include "TAccount.h"
 #include "CEncryption.h"
 #include "CSocket.h"
+#include "TPacket.h"
 
 #ifdef V8NPCSERVER
 #include "ScriptBindings.h"
@@ -106,7 +107,17 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 
 		// Socket-Functions
 		bool doMain();
-		void sendPacket(CString pPacket, bool appendNL = true);
+		void sendPacket(const PlayerOutPacket& packet, bool sendNow = false, bool appendNL = true) {
+			if (newProtocol)
+			{
+				sendPacketNewProtocol((unsigned char)packet.Id, packet.Data, sendNow, appendNL);
+			}
+			else
+			{
+				sendPacketOldProtocol(CString() >> (char)packet.Id << packet.Data, appendNL);
+			}
+		};
+
 		bool sendFile(const CString& pFile);
 		bool sendFile(const CString& pPath, const CString& pFile);
 
@@ -304,7 +315,12 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		bool msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
-	private:
+		bool newProtocol;
+private:
+		// SendPacket functions.
+		void sendPacketNewProtocol(unsigned char packetId, const CString& pPacket, bool sendNow = false, bool appendNL = true);
+		void sendPacketOldProtocol(CString pPacket, bool appendNL = true);
+
 		// Login functions.
 		bool sendLoginClient();
 		bool sendLoginNC();

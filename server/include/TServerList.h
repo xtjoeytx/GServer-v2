@@ -3,11 +3,12 @@
 
 #include <memory>
 #include <map>
-#include <time.h>
+#include <ctime>
+#include <cassert>
 #include "CFileQueue.h"
 #include "CString.h"
 #include "CSocket.h"
-#include <assert.h> 
+#include "TPacket.h"
 
 enum
 {
@@ -37,13 +38,13 @@ class TServerList : public CSocketStub
 		~TServerList();
 
 		bool doTimedEvents();
-		
+
 		// Socket-Control Functions
 		bool getConnected() const;
 		bool main();
 		bool connectServer();
 		CSocket& getSocket()					{ return sock; }
-		void sendPacket(CString& pPacket, bool sendNow = false);
+		void sendPacket(const ListServerOutPacket& pPacket, bool sendNow = false);
 
 		// Send players to the listserver
 		void addPlayer(std::shared_ptr<TPlayer> player);
@@ -94,7 +95,7 @@ class TServerList : public CSocketStub
 		void msgSVI_SENDTEXT(CString& pPacket);
 		void msgSVI_PMPLAYER(CString& pPacket);
 		void msgSVI_ASSIGNPCID(CString& pPacket);
-		
+
 	protected:
 		// Packet Functions
 		bool parsePacket(CString& pPacket);

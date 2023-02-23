@@ -697,8 +697,13 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
+<<<<<<< HEAD
 		player->sendPacket({PLO_DISCMESSAGE, CString() << message});
+		player->setId(0);	// Prevent saving of the account.
+=======
+		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
 		player->setLoadOnly(true);	// Prevent saving of the account.
+>>>>>>> origin/master
 		player->disconnect();
 		return;
 	}

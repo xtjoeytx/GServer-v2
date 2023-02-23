@@ -174,13 +174,17 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket(int clientVersion) const
+PlayerOutPackets TWeapon::getWeaponPackets(int clientVersion) const
 {
-	if (this->isDefault())
-		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
-	
+	PlayerOutPackets packets;
+	if ( this->isDefault())
+	{
+		packets.push_back({PLO_DEFAULTWEAPON, CString() >> (char)mWeaponDefault});
+		return packets;
+	}
+
 	CString weaponPacket;
-	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)_weaponName.length() << _weaponName
+	weaponPacket >> (char)_weaponName.length() << _weaponName
 				 >> (char)NPCPROP_IMAGE >> (char)_weaponImage.length() << _weaponImage;
 
 	// GS2 is available for v4+
@@ -189,22 +193,23 @@ CString TWeapon::getWeaponPacket(int clientVersion) const
 		if (!_bytecode.isEmpty())
 		{
 			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-
+			packets.push_back({PLO_NPCWEAPONADD, weaponPacket});
 			CString b = _bytecode;
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			weaponPacket >> (char)PLO_UNKNOWN197 << header << "," >> (long long)time(0) << "\n";
-			return weaponPacket;
+			packets.push_back({PLO_UNKNOWN197, CString() << header << "," >> (long long)time(nullptr)});
+			return packets;
 		}
 
 		// GS1 is disabled for > 5.0.0.7
 		if (clientVersion > CLVER_5_07)
-			return weaponPacket;
+			return packets;
 	}
 
-	weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1;
-	return weaponPacket;
+	packets.push_back({PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)_formattedClientGS1.length() << _formattedClientGS1});
+
+	return packets;
 }
 
 // -- Function: Update Weapon Image/Script -- //
@@ -259,11 +264,11 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 			}
 		});
 	}
-	
+
 	auto gs1Script = _source.getClientGS1();
 	if (!gs1Script.empty())
 		setClientScript(std::string{ gs1Script });
-	
+
 
 	// Save Weapon
 	if (pSaveWeapon)

@@ -72,7 +72,7 @@ void TLevelBaddy::dropItem()
 		if (auto lvl = level.lock(); lvl)
 		{
 			if (lvl->addItem(this->x, this->y, itemType))
-				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), level);
+				server->sendPacketToOneLevel({PLO_ITEMADD, CString() >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType)}, level);
 		}
 	}
 }
@@ -119,7 +119,7 @@ CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 			else return CString() >> (char)0;
 		}
 	}
-	return CString();
+	return {};
 }
 
 CString TLevelBaddy::getProps(int clientVersion) const
