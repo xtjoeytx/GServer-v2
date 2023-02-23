@@ -62,7 +62,7 @@ class TWeapon
 	protected:
 		void setClientScript(const CString& pScript);
 
-		// Varaibles -> Weapon Data
+		// Variables -> Weapon Data
 		LevelItemType mWeaponDefault;
 		time_t mModTime;
 		TServer *server;

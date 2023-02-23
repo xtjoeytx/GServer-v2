@@ -504,6 +504,7 @@ bool TPlayer::doMain()
 		lastData = time(nullptr);
 		if (packetCount == 0)
 		{
+			packetCount++;
 			if (rBuffer.bytesLeft() >= 8)
 			{
 				if (rBuffer.subString(0, 8) == "GNP1905C")
@@ -792,6 +793,8 @@ void TPlayer::sendPacketNewProtocol(unsigned char packetId, const CString& pPack
 
 	if (sendNow)
 	{
+		if (playerSock->webSocket)
+			webSocketFixOutgoingPacket(buf2);
 		unsigned int dsize = buf2.length();
 		playerSock->sendData(buf2.text(), &dsize);
 	}
@@ -2346,7 +2349,7 @@ void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 bool TPlayer::msgPLI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	printf("Unknown Player Packet: %u (%s)\n", (unsigned int)pPacket.readGUChar(), pPacket.text()+1);
+	printf("Unknown Player Packet: %u (%s) Length: %d\n", (unsigned int)pPacket.readGUChar(), pPacket.text()+1, pPacket.length());
 	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i])); printf("\n");
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
