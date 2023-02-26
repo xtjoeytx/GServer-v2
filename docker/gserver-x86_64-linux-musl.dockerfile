@@ -4,10 +4,10 @@ ARG VER_EXTRA=""
 FROM xtjoeytx/v8:9.1.269.9 as v8
 
 # GServer Build Environment
-FROM alpine:3.16 AS build-env-npcserver-on
+FROM alpine:3.17 AS build-env-npcserver-on
 ONBUILD COPY --chown=1001:1001 --from=v8 /tmp/v8 /tmp/gserver/dependencies/v8
 
-FROM alpine:3.16 AS build-env-npcserver-off
+FROM alpine:3.17 AS build-env-npcserver-off
 
 FROM build-env-npcserver-${NPCSERVER} AS build-env
 ARG NPCSERVER
@@ -27,7 +27,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 		autoconf \
 		ninja \
 	&& cd /tmp/gserver \
-	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=OFF -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --config Release --target clean \
 	&& cmake --build /tmp/gserver/build --config Release --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& chmod 777 -R /tmp/gserver/dist \
@@ -37,7 +37,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 
 USER 1001
 # GServer Run Environment
-FROM alpine:3.16
+FROM alpine:3.17
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /tmp/gserver/bin /gserver
 COPY entrypoint.sh /gserver/

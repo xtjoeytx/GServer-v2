@@ -26,8 +26,7 @@ void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (args[0]->IsString())
 	{
 		v8::String::Utf8Value levelName(isolate, args[0]->ToString(context).ToLocalChecked());
-		TLevel *levelObject = serverObject->getLevel(*levelName);
-
+		auto levelObject = serverObject->getLevel(*levelName);
 		if (levelObject != nullptr)
 		{
 			V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
@@ -52,8 +51,7 @@ void Server_Function_CreateLevel(const v8::FunctionCallbackInfo<v8::Value>& args
 		short fillTile = args[0]->Uint32Value(context).ToChecked();
 		std::string levelName = *v8::String::Utf8Value(isolate, args[1]->ToString(context).ToLocalChecked());
 
-		TLevel *levelObject = TLevel::createLevel(serverObject, fillTile, levelName);
-
+		auto levelObject = TLevel::createLevel(serverObject, fillTile, levelName);
 		if (levelObject != nullptr)
 		{
 			V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
@@ -73,7 +71,7 @@ void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	TServer *serverObject = UnwrapObject<TServer>(args.This());
 
 	// Find npc object from user input
-	TNPC *npcObject = nullptr;
+	TNPCPtr npcObject;
 	if (args[0]->IsString())
 	{
 		v8::String::Utf8Value npcName(isolate, args[0]->ToString(context).ToLocalChecked());
@@ -106,7 +104,7 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	TServer *serverObject = UnwrapObject<TServer>(args.This());
 
 	// Find player object from user input
-	TPlayer *playerObject = nullptr;
+	TPlayerPtr playerObject;
 	if (args[0]->IsString())
 	{
 		v8::String::Utf8Value accountName(isolate, args[0]->ToString(context).ToLocalChecked());
@@ -280,13 +278,13 @@ void Server_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	TServer *serverObject = UnwrapObject<TServer>(self);
 
 	// Get flags list
-	auto flagList = serverObject->getServerFlags();
+	auto& flagList = serverObject->getServerFlags();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
 	int idx = 0;
-	for (auto it = flagList->begin(); it != flagList->end(); ++it)
-		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
+	for (const auto& [flag, value] : flagList)
+		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, flag.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
 }
@@ -300,13 +298,13 @@ void Server_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	TServer *serverObject = UnwrapObject<TServer>(self);
 
 	// Get npcs list
-	auto npcList = serverObject->getNPCList();
+	auto& npcList = serverObject->getNPCList();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList.size());
 
 	int idx = 0;
-	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
-		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
+	for (auto it = npcList.begin(); it != npcList.end(); ++it) {
+		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(it->second->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -322,17 +320,17 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	TServer *serverObject = UnwrapObject<TServer>(self);
 
 	// Get npcs list
-	auto playerList = serverObject->getPlayerList();
+	auto& playerList = serverObject->getPlayerList();
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate);
 
 	int idx = 0;
-	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
-		TPlayer *pl = *it;
+	for (auto it = playerList.begin(); it != playerList.end(); ++it) {
+		TPlayer *pl = it->second.get();
 		if (pl->isHiddenClient())
 			continue;
 
-		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it)->getScriptObject());
+		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(pl->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
 
@@ -348,8 +346,8 @@ void Server_GetArray_Serverlist(v8::Local<v8::String> prop, const v8::PropertyCa
 	TServer *serverObject = UnwrapObject<TServer>(self);
 
 	// Get npcs list
-	auto listserver = serverObject->getServerList();
-	auto serverList = listserver->getServerList();
+	auto& listserver = serverObject->getServerList();
+	auto& serverList = listserver.getServerList();
 
 	v8::Local<v8::Object> result = v8::Object::New(isolate);
 

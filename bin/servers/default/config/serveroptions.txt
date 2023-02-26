@@ -9,6 +9,7 @@
 unstickmelevel = onlinestartlocal.nw
 unstickmex = 30
 unstickmey = 30.5
+unstickmetime = 30
 
 # Players in these levels can''t warp out nor can they PM other players.
 jaillevels = police2.graal,police4.graal
@@ -111,6 +112,9 @@ clientsidepushpull = true
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
 defaultweapons = true
 
+# List of weapon names (comma separated) that will be given to the player each time they connect.
+protectedweapons = 
+
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
 maps = 
@@ -199,3 +203,4 @@ language = English
 
 # Scripting
 gs2default = false
+nickname = 

@@ -76,8 +76,10 @@ def buildStepDocker(config) {
 			tag = "${env.BRANCH_NAME.replace('/','-')}${DOCKERTAG}";
 		}
 
-		if (env.TAG_NAME || env.BRANCH_NAME.equals('master')) {
+		if (env.TAG_NAME) {
 			EXTRA_VER = "--build-arg VER_EXTRA=${DOCKERTAG}";
+		} else if (env.BRANCH_NAME.equals('master')) {
+			EXTRA_VER = "--build-arg VER_EXTRA=-beta${DOCKERTAG}"
 		} else {
 			EXTRA_VER = "--build-arg VER_EXTRA=-${tag}";
 		}

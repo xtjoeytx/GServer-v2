@@ -21,7 +21,7 @@ TWeapon::TWeapon(TServer *pServer, LevelItemType pId)
 , _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
-	_weaponName = TLevelItem::getItemName(mWeaponDefault).toString();
+	_weaponName = TLevelItem::getItemName(mWeaponDefault);
 }
 
 // -- Constructor: Weapon Script -- //
@@ -43,7 +43,7 @@ TWeapon::~TWeapon()
 }
 
 // -- Function: Load Weapon -- //
-TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
+std::shared_ptr<TWeapon> TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 {
 	// File Path
 	CString fileName = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << pWeapon;
@@ -122,7 +122,7 @@ TWeapon * TWeapon::loadWeapon(const CString& pWeapon, TServer *server)
 		weaponScript.clear();
 	}
 
-	auto weapon = new TWeapon(server, weaponName, weaponImage, weaponScript, 0);
+	auto weapon = std::make_shared<TWeapon>(server, weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty())
 	{
 		weapon->_bytecode = CString(std::move(byteCodeData));
@@ -141,9 +141,7 @@ bool TWeapon::saveWeapon()
 
 	// If the bytecode filename is set, the weapon is treated as read-only so it can't be saved
 	if (!_bytecodeFile.empty())
-	{
 		return false;
-	}
 
 	// Prevent the loading/saving of filenames with illegal characters.
 	CString name = _weaponName;
@@ -218,7 +216,7 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		freeScriptResources();
 #endif
 
-	bool gs2default = server->getSettings()->getBool("gs2default", false);
+	bool gs2default = server->getSettings().getBool("gs2default", false);
 
 	_source = SourceCode{ std::move(pCode), gs2default };
 	_weaponImage = std::move(pImage);

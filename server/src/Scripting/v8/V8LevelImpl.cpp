@@ -56,14 +56,19 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
-	auto npcList = levelObject->getLevelNPCs();
+	auto& npcList = levelObject->getLevelNPCs();
+	auto server = levelObject->getServer();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)npcList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)npcList.size() : 0);
 
-	int idx = 0;
-	for (auto it = npcList->begin(); it != npcList->end(); ++it) {
-		V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>((*it)->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	if (server)
+	{
+		int idx = 0;
+		for (auto it = npcList.begin(); it != npcList.end(); ++it) {
+			auto npc = server->getNPC(*it);
+			V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
+			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		}
 	}
 
 	info.GetReturnValue().Set(result);
@@ -78,14 +83,18 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
 	// Get npcs list
-	auto playerList = levelObject->getPlayerList();
+	auto& playerList = levelObject->getPlayerList();
+	auto server = levelObject->getServer();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerList->size());
+	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)playerList.size() : 0);
 
-	int idx = 0;
-	for (auto it = playerList->begin(); it != playerList->end(); ++it) {
-		V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>((*it)->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	if (server) {
+		int idx = 0;
+		for (auto it = playerList.begin(); it != playerList.end(); ++it) {
+			auto player = server->getPlayer(*it);
+			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(player->getScriptObject());
+			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		}
 	}
 
 	info.GetReturnValue().Set(result);
@@ -248,12 +257,20 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		float targetX = (float)args[0]->NumberValue(context).ToChecked();
 		float targetY = (float)args[1]->NumberValue(context).ToChecked();
 
-		// Get distance for each player in the level, and sort it
-		std::vector<TPlayer *> *playerList = levelObject->getPlayerList();
-		std::vector<std::pair<double, TPlayer *>> playerListSorted;
+		auto &playerList = levelObject->getPlayerList();
+		auto server = levelObject->getServer();
+		if (server == nullptr) [[unlikely]] {
+			v8::Local<v8::Array> result = v8::Array::New(isolate, (int)0);
+			args.GetReturnValue().Set(result);
+			return;
+		}
 
-		for (auto pl : *playerList)
+		// Get distance for each player in the level, and sort it
+		std::vector<std::pair<double, std::shared_ptr<TPlayer>>> playerListSorted;
+
+		for (auto plId : playerList)
 		{
+			auto pl = server->getPlayer(plId);
 			double distance = sqrt(pow(pl->getY() - targetY, 2) + pow(pl->getX() - targetX, 2));
 			playerListSorted.emplace_back( distance, pl );
 		}
@@ -297,6 +314,8 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
 
 		TServer* server = levelObject->getServer();
+		if (server == nullptr) return;
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
 		unsigned char eradius = args[0]->Int32Value(context).ToChecked();
 		float loc[2] = {
@@ -308,7 +327,7 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 
 		// Send the packet out.
 		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-		server->sendPacketToLevel(packet, nullptr, levelObject);
+		server->sendPacketToOneLevel(packet, level);
 	}
 }
 
@@ -341,8 +360,9 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 		}
 
 		TServer *server = levelObject->getServer();
-		TNPC *npc = server->addNPC("", script, npcX, npcY, levelObject, false, true);
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
+		auto npc = server->addNPC("", script, npcX, npcY, level, false, true);
 		if (npc != nullptr)
 		{
 			npc->setScriptType("LOCALN");
