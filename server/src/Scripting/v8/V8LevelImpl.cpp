@@ -374,6 +374,49 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// Level Method: level.addnpc(x, y, script, options);
+void Level_Function_AddNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		float npcX = (float)args[0]->NumberValue(context).ToChecked();
+		float npcY = (float)args[1]->NumberValue(context).ToChecked();
+		CString script = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+
+		// TODO(joey): additional options parsing
+		if (args.Length() == 4)
+		{
+
+		}
+
+		TServer *server = levelObject->getServer();
+		auto level = server->getLevel(levelObject->getLevelName().toString());
+
+		auto npc = server->addNPC("", script, npcX, npcY, level, true, true);
+		if (npc != nullptr)
+		{
+			npc->setScriptType("LOCALN");
+			levelObject->addNPC(npc);
+
+			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
+			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		}
+	}
+}
+
 // Level Method: level.onwall(x, y);
 void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -462,6 +505,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 //	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addnpc"), v8::FunctionTemplate::New(isolate, Level_Function_AddNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
 
