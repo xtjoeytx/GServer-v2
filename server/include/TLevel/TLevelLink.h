@@ -2,6 +2,7 @@
 #define TLEVELLINK_H
 
 #include <vector>
+#include <memory>
 #include "CString.h"
 
 #ifdef V8NPCSERVER
