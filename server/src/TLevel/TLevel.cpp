@@ -1631,18 +1631,18 @@ bool TLevel::isOnWater(int pX, int pY) const
 	return (tiletypes[levelTiles[0][pY * 64 + pX]] == 11);
 }
 
-TLevelLink* TLevel::getLink(int pX, int pY) const
+std::optional<TLevelLink*> TLevel::getLink(int pX, int pY) const
 {
 	for (const auto& link : levelLinks)
 	{
 		if ((pX >= link->getX() && pX <= link->getX() + link->getWidth()) &&
 			(pY >= link->getY() && pY <= link->getY() + link->getHeight()))
 		{
-			return link.get();
+			return std::make_optional(link.get());
 		}
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
 std::optional<TLevelChest> TLevel::getChest(int x, int y) const
@@ -1663,6 +1663,34 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 	static char retVal[500];
 	sprintf(retVal, "%i:%i:%s", chest.getX(), chest.getY(), levelName.text());
 	return retVal;
+}
+
+
+TLevelLink *TLevel::addLevelLink() {
+	// New level link
+	auto newLevelLink = std::make_unique<TLevelLink>();
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+#endif
+	levelLinks.push_back(std::move(newLevelLink));
+
+	auto* levelLink = newLevelLink.get();
+
+	return levelLink;
+}
+
+TLevelLink *TLevel::addLevelLink(const std::vector<CString> &pLink) {
+	// New level link
+	auto newLevelLink = std::make_unique<TLevelLink>(pLink);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+#endif
+	levelLinks.push_back(std::move(newLevelLink));
+
+	auto* levelLink = newLevelLink.get();
+	return levelLink;
 }
 
 #ifdef V8NPCSERVER
@@ -1751,33 +1779,6 @@ void TLevel::modifyBoardDirect(uint32_t index, short tile) {
 
 	levelBoardChanges.push_back(change);
 	server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), shared_from_this());
-}
-
-TLevelLink *TLevel::addLevelLink() {
-	// New level link
-	auto newLevelLink = std::make_unique<TLevelLink>();
-
-#ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
-#endif
-	levelLinks.push_back(std::move(newLevelLink));
-
-	auto* levelLink = newLevelLink.get();
-
-	return levelLink;
-}
-
-TLevelLink *TLevel::addLevelLink(const std::vector<CString> &pLink) {
-	// New level link
-	auto newLevelLink = std::make_unique<TLevelLink>(pLink);
-
-#ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
-#endif
-	levelLinks.push_back(std::move(newLevelLink));
-
-	auto* levelLink = newLevelLink.get();
-	return levelLink;
 }
 
 #endif

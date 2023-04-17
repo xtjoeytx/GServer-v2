@@ -236,7 +236,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0) const;
 		bool isOnWater(int pX, int pY) const;
 		std::optional<TLevelChest> getChest(int x, int y) const;
-		TLevelLink* getLink(int pX, int pY) const;
+		std::optional<TLevelLink*> getLink(int pX, int pY) const;
 		CString getChestStr(const TLevelChest& chest) const;
 
 #ifdef V8NPCSERVER
