@@ -90,7 +90,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Gets a vector full of the level links.
 		//! \return The level links.
-		std::vector<TLevelLink>& getLevelLinks()		{ return levelLinks; }
+		std::vector<TLevelLinkPtr>& getLevelLinks()		{ return levelLinks; }
 
 		//! Gets the gmap this level belongs to.
 		//! \return The gmap this level belongs to.
@@ -208,6 +208,15 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		bool addNPC(std::shared_ptr<TNPC> npc);
 		bool addNPC(uint32_t npcId);
 
+		//! Adds an level link to the level.
+		//! \return A pointer to the new TLevelLink.
+		TLevelLink* addLevelLink();
+
+		//! Adds an level link to the level.
+		//! \param pLink link string to parse
+		//! \return A pointer to the new TLevelLink.
+		TLevelLink* addLevelLink(const std::vector<CString>& pLink);
+
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
 		void removeNPC(std::shared_ptr<TNPC> npc);
@@ -227,7 +236,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0) const;
 		bool isOnWater(int pX, int pY) const;
 		std::optional<TLevelChest> getChest(int x, int y) const;
-		std::optional<TLevelLink> getLink(int pX, int pY) const;
+		TLevelLink* getLink(int pX, int pY) const;
 		CString getChestStr(const TLevelChest& chest) const;
 
 #ifdef V8NPCSERVER
@@ -271,7 +280,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		std::vector<TLevelChest> levelChests;
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
-		std::vector<TLevelLink> levelLinks;
+		std::vector<TLevelLinkPtr> levelLinks;
 		std::vector<TLevelSign> levelSigns;
 		std::set<uint32_t> levelNPCs;
 		std::deque<uint16_t> levelPlayers;

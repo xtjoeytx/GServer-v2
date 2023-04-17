@@ -4,6 +4,10 @@
 #include <vector>
 #include "CString.h"
 
+#ifdef V8NPCSERVER
+#include "ScriptBindings.h"
+#endif
+
 class TLevelLink
 {
 	public:
@@ -33,10 +37,27 @@ class TLevelLink
 		inline void setWidth(int _width = 0);
 		inline void setHeight(int _height = 0);
 
+#ifdef V8NPCSERVER
+
+		inline IScriptObject<TLevelLink> * getScriptObject() const {
+			return _scriptObject.get();
+		}
+
+		inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelLink>> object) {
+			_scriptObject = std::move(object);
+		}
+#endif
+
 	private:
 		CString newLevel, newX, newY;
 		int x, y, width, height;
+
+#ifdef V8NPCSERVER
+		std::unique_ptr<IScriptObject<TLevelLink>> _scriptObject;
+#endif
 };
+
+using TLevelLinkPtr = std::unique_ptr<TLevelLink>;
 
 /*
 	TLevelLink: Get Private Variables

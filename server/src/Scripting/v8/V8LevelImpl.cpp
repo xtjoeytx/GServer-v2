@@ -74,6 +74,32 @@ void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set(result);
 }
 
+// PROPERTY: level.links
+void Level_GetArray_Links(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& linkList = levelObject->getLevelLinks();
+	auto server = levelObject->getServer();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)linkList.size() : 0);
+
+	if (server)
+	{
+		int idx = 0;
+		for (auto & it : linkList) {
+			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(it->getScriptObject());
+			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		}
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
 // PROPERTY: level.players
 void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -417,6 +443,47 @@ void Level_Function_AddNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+// Level Method: level.addlevellink("dest.nw", x, y, width, height, newX, newY)
+void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 7);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		CString destination = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+		int levelX = (int)args[1]->NumberValue(context).ToChecked();
+		int levelY = (int)args[2]->NumberValue(context).ToChecked();
+		int width = (int)args[3]->NumberValue(context).ToChecked();
+		int height = (int)args[4]->NumberValue(context).ToChecked();
+		CString newX = *v8::String::Utf8Value(isolate, args[5]->ToString(context).ToLocalChecked());
+		CString newY = *v8::String::Utf8Value(isolate, args[6]->ToString(context).ToLocalChecked());
+
+
+		auto newLevelLink = levelObject->addLevelLink();
+		newLevelLink->setNewLevel(destination);
+		newLevelLink->setX(levelX);
+		newLevelLink->setY(levelY);
+		newLevelLink->setWidth(width);
+		newLevelLink->setHeight(height);
+		newLevelLink->setNewX(newX);
+		newLevelLink->setNewY(newY);
+
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(newLevelLink->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
 // Level Method: level.onwall(x, y);
 void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -506,6 +573,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addnpc"), v8::FunctionTemplate::New(isolate, Level_Function_AddNPC, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addlevellink"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelLink, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
 
@@ -515,6 +583,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "name"), Level_GetStr_Name);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "links"), Level_GetArray_Links);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr, engine_ref);
 

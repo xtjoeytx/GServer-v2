@@ -215,7 +215,7 @@ CString TLevel::getLinksPacket()
 	CString retVal;
 	for (const auto& link : levelLinks)
 	{
-		retVal >> (char)PLO_LEVELLINK << link.getLinkStr() << "\n";
+		retVal >> (char)PLO_LEVELLINK << link->getLinkStr() << "\n";
 	}
 
 	return retVal;
@@ -533,7 +533,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.emplace_back(vline);
+			addLevelLink(vline);
 		}
 	}
 
@@ -715,7 +715,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(vline));
+			addLevelLink(vline);
 		}
 	}
 
@@ -890,7 +890,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(link));
+			addLevelLink(link);
 		}
 		else if (curLine[0] == "NPC")
 		{
@@ -1115,9 +1115,9 @@ void TLevel::saveLevel(const std::string& filename) {
 	}
 
 	for (const auto& link : getLevelLinks()) {
-		fileStream << "LINK" << s << link.getNewLevel().text() << s << link.getX() << s << link.getY()
-			   << s << link.getWidth() << s << link.getHeight() << s << link.getNewX().text()
-			   << s << link.getNewY().text() << std::endl;
+		fileStream << "LINK" << s << link->getNewLevel().text() << s << link->getX() << s << link->getY()
+			   << s << link->getWidth() << s << link->getHeight() << s << link->getNewX().text()
+			   << s << link->getNewY().text() << std::endl;
 	}
 
 	for (const auto& sign : getLevelSigns()) {
@@ -1631,18 +1631,18 @@ bool TLevel::isOnWater(int pX, int pY) const
 	return (tiletypes[levelTiles[0][pY * 64 + pX]] == 11);
 }
 
-std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
+TLevelLink* TLevel::getLink(int pX, int pY) const
 {
 	for (const auto& link : levelLinks)
 	{
-		if ((pX >= link.getX() && pX <= link.getX() + link.getWidth()) &&
-			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
+		if ((pX >= link->getX() && pX <= link->getX() + link->getWidth()) &&
+			(pY >= link->getY() && pY <= link->getY() + link->getHeight()))
 		{
-			return std::make_optional(link);
+			return link.get();
 		}
 	}
 
-	return std::nullopt;
+	return nullptr;
 }
 
 std::optional<TLevelChest> TLevel::getChest(int x, int y) const
@@ -1751,6 +1751,33 @@ void TLevel::modifyBoardDirect(uint32_t index, short tile) {
 
 	levelBoardChanges.push_back(change);
 	server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), shared_from_this());
+}
+
+TLevelLink *TLevel::addLevelLink() {
+	// New level link
+	auto newLevelLink = std::make_unique<TLevelLink>();
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+#endif
+	levelLinks.push_back(std::move(newLevelLink));
+
+	auto* levelLink = newLevelLink.get();
+
+	return levelLink;
+}
+
+TLevelLink *TLevel::addLevelLink(const std::vector<CString> &pLink) {
+	// New level link
+	auto newLevelLink = std::make_unique<TLevelLink>(pLink);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+#endif
+	levelLinks.push_back(std::move(newLevelLink));
+
+	auto* levelLink = newLevelLink.get();
+	return levelLink;
 }
 
 #endif
