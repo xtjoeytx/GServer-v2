@@ -91,8 +91,8 @@ void Level_GetArray_Links(v8::Local<v8::String> prop, const v8::PropertyCallback
 	if (server)
 	{
 		int idx = 0;
-		for (auto & it : linkList) {
-			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(it->getScriptObject());
+		for (auto & link : linkList) {
+			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(link->getScriptObject());
 			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 		}
 	}

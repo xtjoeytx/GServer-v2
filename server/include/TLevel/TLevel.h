@@ -208,11 +208,11 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		bool addNPC(std::shared_ptr<TNPC> npc);
 		bool addNPC(uint32_t npcId);
 
-		//! Adds an level link to the level.
+		//! Adds a level link to the level.
 		//! \return A pointer to the new TLevelLink.
 		TLevelLink* addLevelLink();
 
-		//! Adds an level link to the level.
+		//! Adds a level link to the level.
 		//! \param pLink link string to parse
 		//! \return A pointer to the new TLevelLink.
 		TLevelLink* addLevelLink(const std::vector<CString>& pLink);
