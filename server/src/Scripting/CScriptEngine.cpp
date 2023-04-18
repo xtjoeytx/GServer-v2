@@ -14,6 +14,7 @@ extern const size_t JSBOOTSTRAPSCRIPT_SIZE;
 extern void bindGlobalFunctions(CScriptEngine *scriptEngine);
 extern void bindClass_Environment(CScriptEngine *scriptEngine);
 extern void bindClass_Level(CScriptEngine *scriptEngine);
+extern void bindClass_LevelLink(CScriptEngine *scriptEngine);
 extern void bindClass_NPC(CScriptEngine *scriptEngine);
 extern void bindClass_Player(CScriptEngine *scriptEngine);
 extern void bindClass_Server(CScriptEngine *scriptEngine);
@@ -57,6 +58,7 @@ bool CScriptEngine::Initialize()
 		bindClass_Environment(engine);
 		bindClass_Server(engine);
 		bindClass_Level(engine);
+		bindClass_LevelLink(engine);
 		bindClass_NPC(engine);
 		bindClass_Player(engine);
 		bindClass_Weapon(engine);

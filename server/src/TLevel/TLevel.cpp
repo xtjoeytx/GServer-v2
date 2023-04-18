@@ -957,7 +957,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 
 			// Add the baddy.
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
-			if (baddy == 0)
+			if (baddy == nullptr)
 				continue;
 
 			// Load the verses.
@@ -1126,7 +1126,21 @@ void TLevel::saveLevel(const std::string& filename) {
 		fileStream << "SIGNEND" << std::endl;
 	}
 
-	for (const auto& npcId : getLevelNPCs()) {
+    for (const auto& chest : getLevelChests()) {
+        fileStream << "CHEST" << s << chest.getX() << s << chest.getY() << s << TLevelItem::getItemName(chest.getItemIndex()) << s << chest.getSignIndex() << std::endl;
+    }
+
+    for (const auto& baddy : levelBaddies) {
+        fileStream << "BADDY" << s << baddy.second->getX() << s << baddy.second->getY() << s << baddy.second->getType() << std::endl;
+
+        for (const auto& verse : baddy.second->getVerses()) {
+            fileStream << verse.text() << std::endl;
+        }
+
+        fileStream << "BADDYEND" << std::endl;
+    }
+
+    for (const auto& npcId : getLevelNPCs()) {
 		auto npc = server->getNPC(npcId);
 		if ( npc->getType() != NPCType::LEVELNPC)
 			continue; // Don't save PUTNPC's or DBNPC's in the level file
@@ -1668,14 +1682,15 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 
 TLevelLink *TLevel::addLevelLink() {
 	// New level link
-	auto newLevelLink = std::make_unique<TLevelLink>();
+	auto newLevelLink = std::make_shared<TLevelLink>();
 
 #ifdef V8NPCSERVER
 	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
 #endif
-	levelLinks.push_back(std::move(newLevelLink));
+    auto* levelLink = newLevelLink.get();
 
-	auto* levelLink = newLevelLink.get();
+    levelLinks.push_back(std::move(newLevelLink));
+
 
 	return levelLink;
 }

@@ -9,7 +9,7 @@
 #include "ScriptBindings.h"
 #endif
 
-class TLevelLink
+class TLevelLink : public std::enable_shared_from_this<TLevelLink>
 {
 	public:
 		// constructor - destructor
@@ -58,7 +58,7 @@ class TLevelLink
 #endif
 };
 
-using TLevelLinkPtr = std::unique_ptr<TLevelLink>;
+using TLevelLinkPtr = std::shared_ptr<TLevelLink>;
 
 /*
 	TLevelLink: Get Private Variables

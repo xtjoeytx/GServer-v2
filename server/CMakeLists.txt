@@ -123,6 +123,7 @@ if(V8NPCSERVER)
 		src/Scripting/v8/V8EnvironmentImpl.cpp
 		src/Scripting/v8/V8FunctionsImpl.cpp
 		src/Scripting/v8/V8LevelImpl.cpp
+		src/Scripting/v8/V8LevelLinkImpl.cpp
 		src/Scripting/v8/V8NPCImpl.cpp
 		src/Scripting/v8/V8PlayerImpl.cpp
 		src/Scripting/v8/V8ScriptEnv.cpp
