@@ -883,13 +883,13 @@ bool TPlayer::testSign()
 		auto level = getLevel();
 		if (level)
 		{
-			std::vector<TLevelSign>& signs = level->getLevelSigns();
-			for (const auto& sign : signs)
+			auto signs = level->getLevelSigns();
+			for (auto sign : signs)
 			{
-				float signLoc[] = { (float)sign.getX(), (float)sign.getY() };
+				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
 				if (y == signLoc[1] && inrange(x, signLoc[0] - 1.5f, signLoc[0] + 0.5f))
 				{
-					sendPacket(CString() >> (char)PLO_SAY2 << sign.getUText().replaceAll("\n", "#b"));
+					sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
 				}
 			}
 		}

@@ -974,7 +974,7 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 		if (level != nullptr) {
 			auto& signs = level->getLevelSigns();
 			if (signIndex < signs.size())
-				playerObject->sendSignMessage(signs[signIndex].getUText().replaceAll("\n", "#b"));
+				playerObject->sendSignMessage(signs[signIndex]->getUText().replaceAll("\n", "#b"));
 
 		}
 	}

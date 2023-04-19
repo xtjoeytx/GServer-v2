@@ -39,7 +39,6 @@ class TLevelLink : public std::enable_shared_from_this<TLevelLink>
 		inline void setHeight(int _height = 0);
 
 #ifdef V8NPCSERVER
-
 		inline IScriptObject<TLevelLink> * getScriptObject() const {
 			return _scriptObject.get();
 		}

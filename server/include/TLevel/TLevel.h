@@ -86,7 +86,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
-		std::vector<TLevelSign>& getLevelSigns()		{ return levelSigns; }
+		std::vector<TLevelSignPtr>& getLevelSigns()		{ return levelSigns; }
 
 		//! Gets a vector full of the level links.
 		//! \return The level links.
@@ -210,12 +210,20 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Adds a level link to the level.
 		//! \return A pointer to the new TLevelLink.
-		TLevelLink* addLevelLink();
+		TLevelLink* addLink();
 
 		//! Adds a level link to the level.
 		//! \param pLink link string to parse
 		//! \return A pointer to the new TLevelLink.
-		TLevelLink* addLevelLink(const std::vector<CString>& pLink);
+		TLevelLink* addLink(const std::vector<CString>& pLink);
+
+		//! Adds a level link to the level.
+		//! \param pX x position
+		//! \param pY y position
+		//! \param pSign sign text
+		//! \param encoded true if the sign text is encoded
+		//! \return A pointer to the new TLevelLink.
+		TLevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
@@ -281,7 +289,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
 		std::vector<TLevelLinkPtr> levelLinks;
-		std::vector<TLevelSign> levelSigns;
+		std::vector<TLevelSignPtr> levelSigns;
 		std::set<uint32_t> levelNPCs;
 		std::deque<uint16_t> levelPlayers;
 
@@ -289,6 +297,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		std::unique_ptr<IScriptObject<TLevel>> _scriptObject;
 #endif
 };
+
 using TLevelPtr = std::shared_ptr<TLevel>;
 
 #ifdef V8NPCSERVER

@@ -100,6 +100,32 @@ void Level_GetArray_Links(v8::Local<v8::String> prop, const v8::PropertyCallback
 	info.GetReturnValue().Set(result);
 }
 
+// PROPERTY: level.signs
+void Level_GetArray_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get sign list
+	auto& signList = levelObject->getLevelSigns();
+	auto server = levelObject->getServer();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)signList.size() : 0);
+
+	if (server)
+	{
+		int idx = 0;
+		for (auto & sign : signList) {
+			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(sign->getScriptObject());
+			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		}
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
 // PROPERTY: level.players
 void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -470,7 +496,7 @@ void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args
 		CString newY = *v8::String::Utf8Value(isolate, args[6]->ToString(context).ToLocalChecked());
 
 
-		auto newLevelLink = levelObject->addLevelLink();
+		auto newLevelLink = levelObject->addLink();
 		newLevelLink->setNewLevel(destination);
 		newLevelLink->setX(levelX);
 		newLevelLink->setY(levelY);
@@ -509,6 +535,67 @@ void Level_Function_RemoveLevelLink(const v8::FunctionCallbackInfo<v8::Value>& a
 
 		} else {
 			levelObject->getLevelLinks().erase(levelObject->getLevelLinks().begin() + index);
+			args.GetReturnValue().Set(true);
+		}
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// Level Method: level.addlevelsign("dest.nw", x, y, width, height, newX, newY)
+void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		int levelX = (int)args[0]->NumberValue(context).ToChecked();
+		int levelY = (int)args[1]->NumberValue(context).ToChecked();
+		CString signText = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+
+		auto newSign = levelObject->addSign(levelX, levelY, signText);
+
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(newSign->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
+// Level Method: level.removelevelsign(index)
+void Level_Function_RemoveLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		int index = (int)args[0]->NumberValue(context).ToChecked();
+
+		//auto levelLinks = levelObject->getLevelLinks();
+		if (index < 0 || index > levelObject->getLevelSigns().size()) {
+			args.GetReturnValue().Set(false);
+
+		} else {
+			levelObject->getLevelSigns().erase(levelObject->getLevelSigns().begin() + index);
 			args.GetReturnValue().Set(true);
 		}
 	}
@@ -609,6 +696,8 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addlevellink"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelLink, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removelevellink"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelLink, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addlevelsign"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelSign, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removelevelsign"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
 
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
@@ -617,6 +706,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "links"), Level_GetArray_Links);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signs"), Level_GetArray_Signs);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr, engine_ref);
 

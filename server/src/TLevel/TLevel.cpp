@@ -250,7 +250,7 @@ CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 	CString retVal;
 	for (const auto & sign : levelSigns)
 	{
-		retVal >> (char)PLO_LEVELSIGN << sign.getSignStr(pPlayer) << "\n";
+		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr(pPlayer) << "\n";
 	}
 	return retVal;
 }
@@ -533,7 +533,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			addLevelLink(vline);
+			addLink(vline);
 		}
 	}
 
@@ -581,7 +581,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(TLevelSign(x, y, text, true));
+			addSign(x, y, text, true);
 		}
 	}
 
@@ -715,7 +715,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			addLevelLink(vline);
+			addLink(vline);
 		}
 	}
 
@@ -793,7 +793,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(TLevelSign(x, y, text, true));
+			addSign(x, y, text, true);
 		}
 	}
 
@@ -890,7 +890,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			addLevelLink(link);
+			addLink(link);
 		}
 		else if (curLine[0] == "NPC")
 		{
@@ -944,7 +944,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			}
 
 			// Add the new sign.
-			levelSigns.push_back(TLevelSign(x, y, text));
+			addSign(x, y, text);
 		}
 		else if (curLine[0] == "BADDY")
 		{
@@ -1121,8 +1121,8 @@ void TLevel::saveLevel(const std::string& filename) {
 	}
 
 	for (const auto& sign : getLevelSigns()) {
-		fileStream << "SIGN" << s << sign.getX() << s << sign.getY() << std::endl;
-		fileStream << sign.getText().text() << std::endl;
+		fileStream << "SIGN" << s << sign->getX() << s << sign->getY() << std::endl;
+		fileStream << sign->getUText().text() << std::endl;
 		fileStream << "SIGNEND" << std::endl;
 	}
 
@@ -1680,32 +1680,49 @@ CString TLevel::getChestStr(const TLevelChest& chest) const
 }
 
 
-TLevelLink *TLevel::addLevelLink() {
+TLevelLink *TLevel::addLink() {
 	// New level link
-	auto newLevelLink = std::make_shared<TLevelLink>();
+	auto newLink = std::make_shared<TLevelLink>();
 
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+	server->getScriptEngine()->wrapScriptObject(newLink.get());
 #endif
-    auto* levelLink = newLevelLink.get();
 
-    levelLinks.push_back(std::move(newLevelLink));
+    auto* link = newLink.get();
 
+    levelLinks.push_back(std::move(newLink));
 
-	return levelLink;
+	return link;
 }
 
-TLevelLink *TLevel::addLevelLink(const std::vector<CString> &pLink) {
+TLevelLink *TLevel::addLink(const std::vector<CString> &pLink) {
 	// New level link
-	auto newLevelLink = std::make_unique<TLevelLink>(pLink);
+	auto newLink = std::make_unique<TLevelLink>(pLink);
 
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(newLevelLink.get());
+	server->getScriptEngine()->wrapScriptObject(newLink.get());
 #endif
-	levelLinks.push_back(std::move(newLevelLink));
 
-	auto* levelLink = newLevelLink.get();
-	return levelLink;
+	auto* link = newLink.get();
+
+	levelLinks.push_back(std::move(newLink));
+
+	return link;
+}
+
+TLevelSign *TLevel::addSign(const int pX, const int pY, const CString& pSign, bool encoded) {
+	// New level link
+	auto newSign = std::make_unique<TLevelSign>(pX, pY, pSign, encoded);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newSign.get());
+#endif
+
+	auto* sign = newSign.get();
+
+	levelSigns.push_back(std::move(newSign));
+
+	return sign;
 }
 
 #ifdef V8NPCSERVER
