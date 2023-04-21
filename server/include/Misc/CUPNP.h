@@ -5,9 +5,9 @@
 #include <set>
 #include <memory.h>
 #include "CString.h"
-#include "miniupnpc/miniwget.h"
-#include "miniupnpc/miniupnpc.h"
-#include "miniupnpc/upnpcommands.h"
+#include "miniwget.h"
+#include "miniupnpc.h"
+#include "upnpcommands.h"
 
 class TServer;
 

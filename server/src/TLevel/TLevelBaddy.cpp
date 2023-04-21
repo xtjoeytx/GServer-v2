@@ -20,7 +20,7 @@ const int baddyPower[baddytypes] = {
 };
 
 
-TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, IMain* pServer)
+TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, IMain* pServer)
 : level(pLevel), server(pServer), type(pType), id(0),
 startX(pX), startY(pY),
 respawn(true), setImage(false)
@@ -69,8 +69,11 @@ void TLevelBaddy::dropItem()
 
 	if (itemType != LevelItemType::INVALID)
 	{
-		if (level->addItem(this->x, this->y, itemType))
-			server->sendPacketToLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), 0, level);
+		if (auto lvl = level.lock(); lvl)
+		{
+			if (lvl->addItem(this->x, this->y, itemType))
+				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), level);
+		}
 	}
 }
 
@@ -190,17 +193,17 @@ void TLevelBaddy::setProps(CString &pProps)
 					timeout.setTimeout(2);
 
 					// Drop items when dead.
-					if (server->getSettings()->getBool("baddyitems", false) == true)
+					if (server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
 				}
 				else if (mode == BDMODE_DEAD)
 				{
 					if (respawn)
-						timeout.setTimeout(server->getSettings()->getInt("baddyrespawntime", 60));
+						timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
 					else
 					{
-						if (level)
-							level->removeBaddy(id);
+						if (auto lvl = level.lock(); lvl)
+							lvl->removeBaddy(id);
 						else delete this;
 						return;
 					}

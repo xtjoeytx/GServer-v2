@@ -38,7 +38,8 @@ class CFileSystem
 		bool setModTime(const CString& file, time_t modTime) const;
 		int getFileSize(const CString& file) const;
 		std::map<CString, CString>& getFileList()	{ return fileList; }
-		std::vector<CString>* getDirList()			{ return &dirList; }
+		std::vector<CString>* getDirList()			{ return &directoryList; }
+		CString getDirByExtension(const std::string& extension) const;
 
 		mutable std::recursive_mutex* m_preventChange;
 
@@ -51,7 +52,7 @@ class CFileSystem
 		IMain* server;
 		CString basedir;
 		std::map<CString, CString> fileList;
-		std::vector<CString> dirList;
+		std::vector<CString> directoryList;
 };
 
 inline void CFileSystem::fixPathSeparators(CString& pPath)

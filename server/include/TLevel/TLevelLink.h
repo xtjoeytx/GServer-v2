@@ -25,31 +25,14 @@ class TLevelLink
 		inline int getHeight() const;
 
 		// set private variables
-		inline void setNewLevel(const CString& _newLevel) {
-			newLevel = _newLevel;
-		}
+		inline void setNewLevel(const CString& _newLevel);
+		inline void setNewX(const CString& _newX);
+		inline void setNewY(const CString& _newY);
+		inline void setX(int posX = 0);
+		inline void setY(int posY = 0);
+		inline void setWidth(int _width = 0);
+		inline void setHeight(int _height = 0);
 
-		inline void setNewX(const CString& _newX) {
-			newX = _newX;
-		}
-
-		inline void setNewY(const CString& _newY) {
-			newY = _newY;
-		}
-
-		inline void setX(int posX = 0) {
-			x = posX;
-		}
-
-		inline void setY(int posY = 0) {
-			y = posY;
-		}
-		inline void setWidth(int _width = 0) {
-			width = _width;
-		}
-		inline void setHeight(int _height = 0) {
-			height = _height;
-		}
 	private:
 		CString newLevel, newX, newY;
 		int x, y, width, height;
@@ -91,6 +74,37 @@ inline int TLevelLink::getWidth() const
 inline int TLevelLink::getHeight() const
 {
 	return height;
+}
+
+/*
+	TLevelLink: Set Private Variables
+*/
+inline void TLevelLink::setNewLevel(const CString& _newLevel) {
+	newLevel = _newLevel;
+}
+
+inline void TLevelLink::setNewX(const CString& _newX) {
+	newX = _newX;
+}
+
+inline void TLevelLink::setNewY(const CString& _newY) {
+	newY = _newY;
+}
+
+inline void TLevelLink::setX(int posX) {
+	x = posX;
+}
+
+inline void TLevelLink::setY(int posY) {
+	y = posY;
+}
+
+inline void TLevelLink::setWidth(int _width) {
+	width = _width;
+}
+
+inline void TLevelLink::setHeight(int _height) {
+	height = _height;
 }
 
 #endif // TLEVELLINK_H

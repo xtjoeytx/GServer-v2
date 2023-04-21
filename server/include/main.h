@@ -5,7 +5,7 @@
 
 bool parseArgs(int argc, char* argv[]);
 void printHelp(const char* pname);
-const CString getHomePath();
-void shutdownServer(int sig);
+std::string getBaseHomePath();
+void shutdownServer(int signal);
 
 #endif // MAIN_H

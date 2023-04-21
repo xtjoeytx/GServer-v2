@@ -1,8 +1,11 @@
 #ifndef TLEVEL_H
 #define TLEVEL_H
 
+#include <memory>
 #include <vector>
 #include <map>
+#include <set>
+#include <deque>
 #include <optional>
 #include "IUtil.h"
 #include "CString.h"
@@ -20,7 +23,7 @@ class TPlayer;
 class TNPC;
 class TMap;
 
-class TLevel
+class TLevel : public std::enable_shared_from_this<TLevel>
 {
 	public:
 		//! Destructor.
@@ -30,17 +33,17 @@ class TLevel
 		//! \param pLevelName The name of the level to search for.
 		//! \param server The server the level belongs to.
 		//! \return A pointer to the level found.
-		static TLevel* findLevel(const CString& pLevelName, IMain* server, bool loadAbsolute = false);
-		static TLevel* createLevel(short fillTile, IMain* server);
+		static std::shared_ptr<TLevel> findLevel(const CString &pLevelName, IMain *server, bool loadAbsolute = false);
+		static std::shared_ptr<TLevel> createLevel(IMain* server, short fillTile = 511, const std::string& levelName = "");
 
 		//! Re-loads the level.
 		//! \return True if it succeeds in re-loading the level.
 		bool reload();
 
-		bool saveLevel(const std::string& filename);
+		void saveLevel(const std::string& filename);
 
 		//! Returns a clone of the level.
-		TLevel* clone();
+		std::shared_ptr<TLevel> clone();
 
 		// get crafted packets
 		CString getBaddyPacket(int clientVersion = CLVER_2_17);
@@ -55,7 +58,7 @@ class TLevel
 		CString getSignsPacket(TPlayer *pPlayer);
 
 		//! Gets the actual level name.
-		//! \return The action level name.
+		//! \return The actual level name.
 		CString getActualLevelName() const				{ return actualLevelName; }
 
 		//! Gets the level name.
@@ -80,7 +83,7 @@ class TLevel
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
-		std::vector<TNPC *>* getLevelNPCs()				{ return &levelNPCs; }
+		std::set<uint32_t>& getLevelNPCs()				{ return levelNPCs; }
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
@@ -92,7 +95,7 @@ class TLevel
 
 		//! Gets the gmap this level belongs to.
 		//! \return The gmap this level belongs to.
-		TMap* getMap() const							{ return levelMap; }
+		std::shared_ptr<TMap> getMap() const			{ return levelMap.lock(); }
 
 		//! Gets the map x of this level.
 		//! \return The map x of this level on the map
@@ -104,7 +107,7 @@ class TLevel
 
 		//! Gets a vector full of the players on the level.
 		//! \return The players on the level.
-		std::vector<TPlayer *>* getPlayerList()			{ return &levelPlayerList; }
+		std::deque<uint16_t>& getPlayerList()			{ return levelPlayers; }
 
 		//! Gets the server this level belongs to.
 		//! \return The server this level belongs to.
@@ -115,7 +118,7 @@ class TLevel
 
 		//! Gets the status on whether players are on the level.
 		//! \return The level has players.  If true, the level has players on it.
-		bool hasPlayers() const							{ return !levelPlayerList.empty(); }
+		bool hasPlayers() const							{ return !levelPlayers.empty(); }
 
 		//! Gets the sparring zone status of the level.
 		//! \return The sparring zone status.  If true, the level is a sparring zone.
@@ -179,41 +182,43 @@ class TLevel
 
 		//! Removes a baddy from the level.
 		//! \param pId ID of the baddy to remove.
-		void removeBaddy(char pId);
+		void removeBaddy(uint8_t pId);
 
 		//! Finds a baddy by the specified id number.
 		//! \param pId The ID number of the baddy to find.
 		//! \return A pointer to the found TLevelBaddy.
-		TLevelBaddy* getBaddy(char id);
+		TLevelBaddy* getBaddy(uint8_t id);
 
 		//! Adds a player to the level.
 		//! \param player The player to add.
 		//! \return The id number of the player in the level.
-		int addPlayer(TPlayer* player);
+		int addPlayer(uint16_t id);
 
 		//! Removes a player from the level.
 		//! \param player The player to remove.
-		void removePlayer(TPlayer* player);
+		void removePlayer(uint16_t id);
 
-		//! Gets a player from the level with the specified level id.
-		//! \param id The level id the player is at.  0 will return the level leader.
-		//! \return The player at the id location.
-		TPlayer* getPlayer(unsigned int id);
+		//! Gets if the player is the current level leader.
+		//! \param id The player id to check.
+		//! \return True if the player is the leader.
+		bool isPlayerLeader(uint16_t id);
 
 		//! Adds an NPC to the level.
 		//! \param npc NPC to add to the level.
 		//! \return True if the NPC was successfully added or false if it already exists in the level.
-		bool addNPC(TNPC* npc);
+		bool addNPC(std::shared_ptr<TNPC> npc);
+		bool addNPC(uint32_t npcId);
 
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
-		void removeNPC(TNPC* npc);
+		void removeNPC(std::shared_ptr<TNPC> npc);
+		void removeNPC(uint32_t npcId);
 
 		//! Sets the map for the current level.
 		//! \param pMap Map the level is on.
 		//! \param pMapX X location on the map.
 		//! \param pMapY Y location on the map.
-		void setMap(TMap* pMap, int pMapX = 0, int pMapY = 0);
+		void setMap(std::weak_ptr<TMap> pMap, int pMapX = 0, int pMapY = 0);
 
 		//! Does special events that should happen every second.
 		//! \return Currently, it always returns true.
@@ -256,23 +261,27 @@ class TLevel
 		short levelTiles[256][4096];
 		std::vector<int> layers;
 		int mapx, mapy;
-		TMap* levelMap;
+		std::weak_ptr<TMap> levelMap;
 		CString fileName, fileVersion, actualLevelName, levelName;
-		std::vector<TLevelBaddy *> levelBaddies;
-		std::vector<TLevelBaddy *> levelBaddyIds;
+
+		std::unordered_map<uint8_t, TLevelBaddyPtr> levelBaddies;
+		std::set<uint8_t> freeBaddyIds;
+		uint8_t nextBaddyId;
+
 		std::vector<TLevelBoardChange> levelBoardChanges;
 		std::vector<TLevelChest> levelChests;
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
 		std::vector<TLevelLink> levelLinks;
 		std::vector<TLevelSign> levelSigns;
-		std::vector<TNPC *> levelNPCs;
-		std::vector<TPlayer *> levelPlayerList;
+		std::set<uint32_t> levelNPCs;
+		std::deque<uint16_t> levelPlayers;
 
 #ifdef V8NPCSERVER
 		std::unique_ptr<IScriptObject<TLevel>> _scriptObject;
 #endif
 };
+using TLevelPtr = std::shared_ptr<TLevel>;
 
 #ifdef V8NPCSERVER
 
