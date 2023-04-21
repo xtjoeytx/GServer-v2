@@ -826,9 +826,9 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
 	//	in scripts.
 	int idx = 0;
-	for (auto it = weaponList.begin(); it != weaponList.end(); ++it) {
+	for (auto & weapon : weaponList) {
 		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
-		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), (*it).text()).ToLocalChecked();
+		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), weapon.text()).ToLocalChecked();
 		result->Set(context, idx++, weaponName).Check();
 	}
 
