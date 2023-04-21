@@ -79,7 +79,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Gets a vector full of all the level chests.
 		//! \return The level chests.
-		std::vector<TLevelChest>& getLevelChests()		{ return levelChests; }
+		std::vector<TLevelChestPtr>& getLevelChests()	{ return levelChests; }
 
 		//! Gets a vector full of the level signs.
 		//! \return The level signs.
@@ -231,10 +231,23 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! \return A pointer to the new TLevelSign.
 		TLevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
-		//! Adds a level link to the level.
+		//! Adds a level sign to the level.
 		//! \param index x position
 		//! \return true if removed, false otherwise.
 		bool removeSign(uint32_t index);
+
+		//! Adds a level chest to the level.
+		//! \param pX x position
+		//! \param pY y position
+		//! \param itemType which type of item the chest contains
+		//! \param signIndex signIndex of sign to pop when chest is opened
+		//! \return A pointer to the new TLevelChest.
+		TLevelChest* addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex);
+
+		//! Adds a level chest to the level.
+		//! \param index x position
+		//! \return true if removed, false otherwise.
+		bool removeChest(uint32_t index);
 
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
@@ -254,9 +267,9 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		bool isOnWall(int pX, int pY);
 		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
 		bool isOnWater(int pX, int pY);
-		std::optional<TLevelChest> getChest(int x, int y) const;
+		std::optional<TLevelChest*> getChest(int x, int y) const;
 		std::optional<TLevelLink*> getLink(int pX, int pY) const;
-		CString getChestStr(const TLevelChest& chest) const;
+		CString getChestStr(TLevelChest* chest) const;
 
 #ifdef V8NPCSERVER
 		std::vector<TNPC *> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
@@ -295,7 +308,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		uint8_t nextBaddyId;
 
 		std::vector<TLevelBoardChange> levelBoardChanges;
-		std::vector<TLevelChest> levelChests;
+		std::vector<TLevelChestPtr> levelChests;
 		std::vector<TLevelHorse> levelHorses;
 		std::vector<TLevelItem> levelItems;
 		std::vector<TLevelLinkPtr> levelLinks;

@@ -3113,7 +3113,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 			if (!hasChest(chestStr))
 			{
-				LevelItemType chestItem = chest->getItemIndex();
+				LevelItemType chestItem = chest.value()->getItemIndex();
 				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);

@@ -191,10 +191,10 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 	{
 		for (auto& chest : levelChests)
 		{
-			bool hasChest = pPlayer->hasChest(getChestStr(chest));
+			bool hasChest = pPlayer->hasChest(getChestStr(chest.get()));
 
-			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
-			if (!hasChest) retVal >> (char)chest.getItemIndex() >> (char)chest.getSignIndex();
+			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
+			if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
 			retVal << "\n";
 		}
 	}
@@ -781,7 +781,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			char item = line.readGChar();
 			char signindex = line.readGChar();
 
-			levelChests.push_back(TLevelChest(x, y, LevelItemType(item), signindex));
+			addChest(x, y, LevelItemType(item), signindex);
 		}
 	}
 
@@ -868,7 +868,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 				char chestx = strtoint(curLine[1]);
 				char chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
-				levelChests.push_back(TLevelChest(chestx, chesty, itemType, signidx));
+				addChest(chestx, chesty, itemType, signidx);
 			}
 		}
 		else if (curLine[0] == "LINK")
@@ -1128,7 +1128,7 @@ void TLevel::saveLevel(const std::string& filename) {
 	}
 
     for (const auto& chest : getLevelChests()) {
-        fileStream << "CHEST" << s << chest.getX() << s << chest.getY() << s << TLevelItem::getItemName(chest.getItemIndex()) << s << chest.getSignIndex() << std::endl;
+        fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s << TLevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
     }
 
     for (const auto& baddy : levelBaddies) {
@@ -1657,23 +1657,23 @@ std::optional<TLevelLink*> TLevel::getLink(int pX, int pY) const
 	return std::nullopt;
 }
 
-std::optional<TLevelChest> TLevel::getChest(int x, int y) const
+std::optional<TLevelChest*> TLevel::getChest(int x, int y) const
 {
 	for (const auto& chest : levelChests)
 	{
-		if (chest.getX() == x && chest.getY() == y)
+		if (chest->getX() == x && chest->getY() == y)
 		{
-			return std::make_optional(chest);
+			return std::make_optional(chest.get());
 		}
 	}
 
 	return std::nullopt;
 }
 
-CString TLevel::getChestStr(const TLevelChest& chest) const
+CString TLevel::getChestStr(TLevelChest* chest) const
 {
 	static char retVal[500];
-	sprintf(retVal, "%i:%i:%s", chest.getX(), chest.getY(), levelName.text());
+	sprintf(retVal, "%i:%i:%s", chest->getX(), chest->getY(), levelName.text());
 	return retVal;
 }
 
@@ -1744,6 +1744,36 @@ bool TLevel::removeSign(uint32_t index) {
 		return false;
 	} else {
 		getLevelSigns().erase(getLevelSigns().begin() + index);
+
+		return true;
+	}
+
+	return false;
+}
+
+TLevelChest *TLevel::addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex) {
+	// New level link
+	auto newChest = std::make_unique<TLevelChest>(pX, pY, itemType, signIndex);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newChest.get());
+#endif
+
+	auto* chest = newChest.get();
+
+	levelChests.push_back(std::move(newChest));
+
+	return chest;
+}
+
+bool TLevel::removeChest(uint32_t index) {
+	if (getLevelChests().empty())
+		return false;
+
+	if (index < 0 || index > getLevelChests().size()) {
+		return false;
+	} else {
+		getLevelChests().erase(getLevelChests().begin() + index);
 
 		return true;
 	}
