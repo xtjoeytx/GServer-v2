@@ -52,7 +52,7 @@ TLevel::TLevel(TServer* pServer)
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, 0x00, sizeof(levelTiles));
+	levelTiles[0] = TLevelTiles();
 }
 
 TLevel::TLevel(short fillTile, TServer* pServer)
@@ -62,7 +62,8 @@ TLevel::TLevel(short fillTile, TServer* pServer)
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, fillTile, sizeof(levelTiles));
+
+	levelTiles[0] = TLevelTiles(fillTile);
 }
 
 TLevel::~TLevel()
@@ -139,7 +140,7 @@ CString TLevel::getBoardPacket()
 {
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
-	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
+	retVal.write((char *)levelTiles[0], sizeof(short[4096]));
 	retVal << "\n";
 
 	return retVal;
@@ -149,8 +150,10 @@ CString TLevel::getLayerPacket(int layer)
 {
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDLAYER);
+
+	// TODO: Only send the tiles that has been placed on the layer
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
+	retVal.write((char *)levelTiles[layer], sizeof(short[4096]));
 	retVal << "\n";
 
 	return retVal;
@@ -840,8 +843,6 @@ bool TLevel::loadNW(const CString& pLevelName)
 			w = strtoint(curLine[3]);
 			layer = strtoint(curLine[4]);
 
-			layers.push_back(layer);
-
 			if (!inrange(x, 0, 64) || !inrange(y, 0, 64) || w <= 0 || x + w > 64)
 				continue;
 
@@ -1040,7 +1041,7 @@ std::shared_ptr<TLevel> TLevel::createLevel(TServer* server, short fillTile, con
 	// Load New Level
 	auto level = std::shared_ptr<TLevel>(new TLevel(fillTile, server));
 	level->setLevelName(levelName);
-	level->layers.push_back(0);
+
 #ifdef V8NPCSERVER
 	server->getScriptEngine()->wrapScriptObject(level.get());
 #endif
@@ -1614,18 +1615,16 @@ bool TLevel::doTimedEvents()
 	return true;
 }
 
-bool TLevel::isOnWall(int pX, int pY) const
-{
+bool TLevel::isOnWall(int pX, int pY) {
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
 	{
 		return true;
 	}
 
-	return tiletypes[levelTiles[0][pY * 64 + pX]] >= 20;
+	return tiletypes[getTiles(0)[pY * 64 + pX]] >= 20;
 }
 
-bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) const
-{
+bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) {
 	for (int cy = pY; cy < pY + pHeight; ++cy)
 	{
 		for (int cx = pX; cx < pX + pWidth; ++cx)
@@ -1640,9 +1639,8 @@ bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) c
 	return false;
 }
 
-bool TLevel::isOnWater(int pX, int pY) const
-{
-	return (tiletypes[levelTiles[0][pY * 64 + pX]] == 11);
+bool TLevel::isOnWater(int pX, int pY) {
+	return (tiletypes[getTiles(0)[pY * 64 + pX]] == 11);
 }
 
 std::optional<TLevelLink*> TLevel::getLink(int pX, int pY) const
@@ -1710,6 +1708,19 @@ TLevelLink *TLevel::addLink(const std::vector<CString> &pLink) {
 	return link;
 }
 
+bool TLevel::removeLink(uint32_t index) {
+	if (levelLinks.empty())
+		return false;
+	if (index < 0 || index > levelLinks.size()) {
+		return false;
+	} else {
+		levelLinks.erase(levelLinks.begin() + index);
+		return true;
+	}
+
+	return false;
+}
+
 TLevelSign *TLevel::addSign(const int pX, const int pY, const CString& pSign, bool encoded) {
 	// New level link
 	auto newSign = std::make_unique<TLevelSign>(pX, pY, pSign, encoded);
@@ -1723,6 +1734,21 @@ TLevelSign *TLevel::addSign(const int pX, const int pY, const CString& pSign, bo
 	levelSigns.push_back(std::move(newSign));
 
 	return sign;
+}
+
+bool TLevel::removeSign(uint32_t index) {
+	if (levelSigns.empty())
+		return false;
+
+	if (index < 0 || index > getLevelSigns().size()) {
+		return false;
+	} else {
+		getLevelSigns().erase(getLevelSigns().begin() + index);
+
+		return true;
+	}
+
+	return false;
 }
 
 #ifdef V8NPCSERVER

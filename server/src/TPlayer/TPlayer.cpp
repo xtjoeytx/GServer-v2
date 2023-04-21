@@ -1694,9 +1694,9 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1+(64*64*2)+1)));
 			sendPacket(CString() << pLevel->getBoardPacket());
 
-			for (auto layerNumber : pLevel->getLayers()) {
-				if (layerNumber == 0) continue;
-				CString layer = pLevel->getLayerPacket(layerNumber);
+			for (auto layers : pLevel->getLayers()) {
+				if (layers.first == 0) continue;
+				CString layer = pLevel->getLayerPacket(layers.first);
 				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
 				sendPacket(layer);
 			}

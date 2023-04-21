@@ -16,6 +16,7 @@
 #include "TLevelItem.h"
 #include "TLevelLink.h"
 #include "TLevelSign.h"
+#include "TLevelTiles.h"
 
 class TServer;
 class TPlayer;
@@ -70,7 +71,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 
 		//! Gets the raw level tile data.
 		//! \return A pointer to all 4096 raw level tiles.
-		short* getTiles(int layer = 0)					{ return levelTiles[layer]; }
+		TLevelTiles & getTiles(int layer = 0)			{ return levelTiles[layer]; }
 
 		//! Gets the level mod time.
 		//! \return The modified time of the level when it was first loaded from the disk.
@@ -113,7 +114,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		TServer* getServer() const						{ return server; }
 
 
-		std::vector<int> getLayers() const				{ return layers; }
+		std::map<uint8_t, TLevelTiles> getLayers() const	{ return levelTiles; }
 
 		//! Gets the status on whether players are on the level.
 		//! \return The level has players.  If true, the level has players on it.
@@ -217,13 +218,23 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! \return A pointer to the new TLevelLink.
 		TLevelLink* addLink(const std::vector<CString>& pLink);
 
-		//! Adds a level link to the level.
+		//! Removes a level link from the level.
+		//! \param index link index to remove
+		//! \return true if removed, false otherwise
+		bool removeLink(uint32_t index);
+
+		//! Adds a level sign to the level.
 		//! \param pX x position
 		//! \param pY y position
 		//! \param pSign sign text
 		//! \param encoded true if the sign text is encoded
-		//! \return A pointer to the new TLevelLink.
+		//! \return A pointer to the new TLevelSign.
 		TLevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
+
+		//! Adds a level link to the level.
+		//! \param index x position
+		//! \return true if removed, false otherwise.
+		bool removeSign(uint32_t index);
 
 		//! Removes an NPC from the level.
 		//! \param npc The NPC to remove.
@@ -240,9 +251,9 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! \return Currently, it always returns true.
 		bool doTimedEvents();
 
-		bool isOnWall(int pX, int pY) const;
-		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0) const;
-		bool isOnWater(int pX, int pY) const;
+		bool isOnWall(int pX, int pY);
+		bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
+		bool isOnWater(int pX, int pY);
 		std::optional<TLevelChest> getChest(int x, int y) const;
 		std::optional<TLevelLink*> getLink(int pX, int pY) const;
 		CString getChestStr(const TLevelChest& chest) const;
@@ -274,8 +285,7 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		time_t modTime;
 		bool levelSpar;
 		bool levelSingleplayer;
-		short levelTiles[256][4096];
-		std::vector<int> layers;
+		std::map<uint8_t, TLevelTiles> levelTiles;
 		int mapx, mapy;
 		std::weak_ptr<TMap> levelMap;
 		CString fileName, fileVersion, actualLevelName, levelName;
