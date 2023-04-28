@@ -1410,8 +1410,8 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
 	int idx = 0;
-	for (auto it = flagList.begin(); it != flagList.end(); ++it)
-		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, it->first.c_str()).ToLocalChecked()).Check();
+	for (auto & flag : flagList)
+		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, flag.first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
 }
@@ -1487,7 +1487,7 @@ void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prope
 void bindClass_NPC(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 	v8::Isolate *isolate = env->Isolate();
 
 	// External pointer

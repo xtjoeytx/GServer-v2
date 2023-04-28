@@ -52,7 +52,7 @@ TLevel::TLevel(TServer* pServer)
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, 0x00, sizeof(levelTiles));
+	levelTiles[0] = TLevelTiles();
 }
 
 TLevel::TLevel(short fillTile, TServer* pServer)
@@ -62,7 +62,8 @@ TLevel::TLevel(short fillTile, TServer* pServer)
 , _scriptObject(nullptr)
 #endif
 {
-	memset(levelTiles, fillTile, sizeof(levelTiles));
+
+	levelTiles[0] = TLevelTiles(fillTile);
 }
 
 TLevel::~TLevel()
@@ -139,7 +140,7 @@ CString TLevel::getBoardPacket()
 {
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
-	retVal.write((char *)levelTiles[0], sizeof(levelTiles[0]));
+	retVal.write((char *)levelTiles[0], sizeof(short[4096]));
 	retVal << "\n";
 
 	return retVal;
@@ -149,8 +150,10 @@ CString TLevel::getLayerPacket(int layer)
 {
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDLAYER);
+
+	// TODO: Only send the tiles that has been placed on the layer
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	retVal.write((char *)levelTiles[layer], sizeof(levelTiles[layer]));
+	retVal.write((char *)levelTiles[layer], sizeof(short[4096]));
 	retVal << "\n";
 
 	return retVal;
@@ -188,10 +191,10 @@ CString TLevel::getChestPacket(TPlayer *pPlayer)
 	{
 		for (auto& chest : levelChests)
 		{
-			bool hasChest = pPlayer->hasChest(getChestStr(chest));
+			bool hasChest = pPlayer->hasChest(getChestStr(chest.get()));
 
-			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getX() >> (char)chest.getY();
-			if (!hasChest) retVal >> (char)chest.getItemIndex() >> (char)chest.getSignIndex();
+			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
+			if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
 			retVal << "\n";
 		}
 	}
@@ -215,7 +218,7 @@ CString TLevel::getLinksPacket()
 	CString retVal;
 	for (const auto& link : levelLinks)
 	{
-		retVal >> (char)PLO_LEVELLINK << link.getLinkStr() << "\n";
+		retVal >> (char)PLO_LEVELLINK << link->getLinkStr() << "\n";
 	}
 
 	return retVal;
@@ -250,7 +253,7 @@ CString TLevel::getSignsPacket(TPlayer *pPlayer = 0)
 	CString retVal;
 	for (const auto & sign : levelSigns)
 	{
-		retVal >> (char)PLO_LEVELSIGN << sign.getSignStr(pPlayer) << "\n";
+		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr(pPlayer) << "\n";
 	}
 	return retVal;
 }
@@ -533,7 +536,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.emplace_back(vline);
+			addLink(vline);
 		}
 	}
 
@@ -581,7 +584,7 @@ bool TLevel::loadZelda(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(TLevelSign(x, y, text, true));
+			addSign(x, y, text, true);
 		}
 	}
 
@@ -715,7 +718,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(vline));
+			addLink(vline);
 		}
 	}
 
@@ -778,7 +781,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			char item = line.readGChar();
 			char signindex = line.readGChar();
 
-			levelChests.push_back(TLevelChest(x, y, LevelItemType(item), signindex));
+			addChest(x, y, LevelItemType(item), signindex);
 		}
 	}
 
@@ -793,7 +796,7 @@ bool TLevel::loadGraal(const CString& pLevelName)
 			signed char y = line.readGChar();
 			CString text = line.readString("");
 
-			levelSigns.push_back(TLevelSign(x, y, text, true));
+			addSign(x, y, text, true);
 		}
 	}
 
@@ -840,8 +843,6 @@ bool TLevel::loadNW(const CString& pLevelName)
 			w = strtoint(curLine[3]);
 			layer = strtoint(curLine[4]);
 
-			layers.push_back(layer);
-
 			if (!inrange(x, 0, 64) || !inrange(y, 0, 64) || w <= 0 || x + w > 64)
 				continue;
 
@@ -867,7 +868,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 				char chestx = strtoint(curLine[1]);
 				char chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
-				levelChests.push_back(TLevelChest(chestx, chesty, itemType, signidx));
+				addChest(chestx, chesty, itemType, signidx);
 			}
 		}
 		else if (curLine[0] == "LINK")
@@ -890,7 +891,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			if (fileSystem->find(level).isEmpty())
 				continue;
 
-			levelLinks.push_back(TLevelLink(link));
+			addLink(link);
 		}
 		else if (curLine[0] == "NPC")
 		{
@@ -944,7 +945,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 			}
 
 			// Add the new sign.
-			levelSigns.push_back(TLevelSign(x, y, text));
+			addSign(x, y, text);
 		}
 		else if (curLine[0] == "BADDY")
 		{
@@ -957,7 +958,7 @@ bool TLevel::loadNW(const CString& pLevelName)
 
 			// Add the baddy.
 			TLevelBaddy* baddy = addBaddy((float)x, (float)y, type);
-			if (baddy == 0)
+			if (baddy == nullptr)
 				continue;
 
 			// Load the verses.
@@ -1040,7 +1041,7 @@ std::shared_ptr<TLevel> TLevel::createLevel(TServer* server, short fillTile, con
 	// Load New Level
 	auto level = std::shared_ptr<TLevel>(new TLevel(fillTile, server));
 	level->setLevelName(levelName);
-	level->layers.push_back(0);
+
 #ifdef V8NPCSERVER
 	server->getScriptEngine()->wrapScriptObject(level.get());
 #endif
@@ -1115,18 +1116,32 @@ void TLevel::saveLevel(const std::string& filename) {
 	}
 
 	for (const auto& link : getLevelLinks()) {
-		fileStream << "LINK" << s << link.getNewLevel().text() << s << link.getX() << s << link.getY()
-			   << s << link.getWidth() << s << link.getHeight() << s << link.getNewX().text()
-			   << s << link.getNewY().text() << std::endl;
+		fileStream << "LINK" << s << link->getNewLevel().text() << s << link->getX() << s << link->getY()
+			   << s << link->getWidth() << s << link->getHeight() << s << link->getNewX().text()
+			   << s << link->getNewY().text() << std::endl;
 	}
 
 	for (const auto& sign : getLevelSigns()) {
-		fileStream << "SIGN" << s << sign.getX() << s << sign.getY() << std::endl;
-		fileStream << sign.getText().text() << std::endl;
+		fileStream << "SIGN" << s << sign->getX() << s << sign->getY() << std::endl;
+		fileStream << sign->getUText().text() << std::endl;
 		fileStream << "SIGNEND" << std::endl;
 	}
 
-	for (const auto& npcId : getLevelNPCs()) {
+    for (const auto& chest : getLevelChests()) {
+        fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s << TLevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
+    }
+
+    for (const auto& baddy : levelBaddies) {
+        fileStream << "BADDY" << s << baddy.second->getX() << s << baddy.second->getY() << s << baddy.second->getType() << std::endl;
+
+        for (const auto& verse : baddy.second->getVerses()) {
+            fileStream << verse.text() << std::endl;
+        }
+
+        fileStream << "BADDYEND" << std::endl;
+    }
+
+    for (const auto& npcId : getLevelNPCs()) {
 		auto npc = server->getNPC(npcId);
 		if ( npc->getType() != NPCType::LEVELNPC)
 			continue; // Don't save PUTNPC's or DBNPC's in the level file
@@ -1600,18 +1615,16 @@ bool TLevel::doTimedEvents()
 	return true;
 }
 
-bool TLevel::isOnWall(int pX, int pY) const
-{
+bool TLevel::isOnWall(int pX, int pY) {
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
 	{
 		return true;
 	}
 
-	return tiletypes[levelTiles[0][pY * 64 + pX]] >= 20;
+	return tiletypes[getTiles(0)[pY * 64 + pX]] >= 20;
 }
 
-bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) const
-{
+bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) {
 	for (int cy = pY; cy < pY + pHeight; ++cy)
 	{
 		for (int cx = pX; cx < pX + pWidth; ++cx)
@@ -1626,43 +1639,146 @@ bool TLevel::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags) c
 	return false;
 }
 
-bool TLevel::isOnWater(int pX, int pY) const
-{
-	return (tiletypes[levelTiles[0][pY * 64 + pX]] == 11);
+bool TLevel::isOnWater(int pX, int pY) {
+	return (tiletypes[getTiles(0)[pY * 64 + pX]] == 11);
 }
 
-std::optional<TLevelLink> TLevel::getLink(int pX, int pY) const
+std::optional<TLevelLink*> TLevel::getLink(int pX, int pY) const
 {
 	for (const auto& link : levelLinks)
 	{
-		if ((pX >= link.getX() && pX <= link.getX() + link.getWidth()) &&
-			(pY >= link.getY() && pY <= link.getY() + link.getHeight()))
+		if ((pX >= link->getX() && pX <= link->getX() + link->getWidth()) &&
+			(pY >= link->getY() && pY <= link->getY() + link->getHeight()))
 		{
-			return std::make_optional(link);
+			return std::make_optional(link.get());
 		}
 	}
 
 	return std::nullopt;
 }
 
-std::optional<TLevelChest> TLevel::getChest(int x, int y) const
+std::optional<TLevelChest*> TLevel::getChest(int x, int y) const
 {
 	for (const auto& chest : levelChests)
 	{
-		if (chest.getX() == x && chest.getY() == y)
+		if (chest->getX() == x && chest->getY() == y)
 		{
-			return std::make_optional(chest);
+			return std::make_optional(chest.get());
 		}
 	}
 
 	return std::nullopt;
 }
 
-CString TLevel::getChestStr(const TLevelChest& chest) const
+CString TLevel::getChestStr(TLevelChest* chest) const
 {
 	static char retVal[500];
-	sprintf(retVal, "%i:%i:%s", chest.getX(), chest.getY(), levelName.text());
+	sprintf(retVal, "%i:%i:%s", chest->getX(), chest->getY(), levelName.text());
 	return retVal;
+}
+
+
+TLevelLink *TLevel::addLink() {
+	// New level link
+	auto newLink = std::make_shared<TLevelLink>();
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLink.get());
+#endif
+
+    auto* link = newLink.get();
+
+    levelLinks.push_back(std::move(newLink));
+
+	return link;
+}
+
+TLevelLink *TLevel::addLink(const std::vector<CString> &pLink) {
+	// New level link
+	auto newLink = std::make_unique<TLevelLink>(pLink);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newLink.get());
+#endif
+
+	auto* link = newLink.get();
+
+	levelLinks.push_back(std::move(newLink));
+
+	return link;
+}
+
+bool TLevel::removeLink(uint32_t index) {
+	if (levelLinks.empty())
+		return false;
+	if (index < 0 || index > levelLinks.size()) {
+		return false;
+	} else {
+		levelLinks.erase(levelLinks.begin() + index);
+		return true;
+	}
+
+	return false;
+}
+
+TLevelSign *TLevel::addSign(const int pX, const int pY, const CString& pSign, bool encoded) {
+	// New level link
+	auto newSign = std::make_unique<TLevelSign>(pX, pY, pSign, encoded);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newSign.get());
+#endif
+
+	auto* sign = newSign.get();
+
+	levelSigns.push_back(std::move(newSign));
+
+	return sign;
+}
+
+bool TLevel::removeSign(uint32_t index) {
+	if (levelSigns.empty())
+		return false;
+
+	if (index < 0 || index > getLevelSigns().size()) {
+		return false;
+	} else {
+		getLevelSigns().erase(getLevelSigns().begin() + index);
+
+		return true;
+	}
+
+	return false;
+}
+
+TLevelChest *TLevel::addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex) {
+	// New level link
+	auto newChest = std::make_unique<TLevelChest>(pX, pY, itemType, signIndex);
+
+#ifdef V8NPCSERVER
+	server->getScriptEngine()->wrapScriptObject(newChest.get());
+#endif
+
+	auto* chest = newChest.get();
+
+	levelChests.push_back(std::move(newChest));
+
+	return chest;
+}
+
+bool TLevel::removeChest(uint32_t index) {
+	if (getLevelChests().empty())
+		return false;
+
+	if (index < 0 || index > getLevelChests().size()) {
+		return false;
+	} else {
+		getLevelChests().erase(getLevelChests().begin() + index);
+
+		return true;
+	}
+
+	return false;
 }
 
 #ifdef V8NPCSERVER

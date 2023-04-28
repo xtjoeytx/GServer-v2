@@ -883,13 +883,13 @@ bool TPlayer::testSign()
 		auto level = getLevel();
 		if (level)
 		{
-			std::vector<TLevelSign>& signs = level->getLevelSigns();
-			for (const auto& sign : signs)
+			auto signs = level->getLevelSigns();
+			for (auto sign : signs)
 			{
-				float signLoc[] = { (float)sign.getX(), (float)sign.getY() };
+				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
 				if (y == signLoc[1] && inrange(x, signLoc[0] - 1.5f, signLoc[0] + 0.5f))
 				{
-					sendPacket(CString() >> (char)PLO_SAY2 << sign.getUText().replaceAll("\n", "#b"));
+					sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
 				}
 			}
 		}
@@ -1694,9 +1694,9 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1+(64*64*2)+1)));
 			sendPacket(CString() << pLevel->getBoardPacket());
 
-			for (auto layerNumber : pLevel->getLayers()) {
-				if (layerNumber == 0) continue;
-				CString layer = pLevel->getLayerPacket(layerNumber);
+			for (auto layers : pLevel->getLayers()) {
+				if (layers.first == 0) continue;
+				CString layer = pLevel->getLayerPacket(layers.first);
 				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
 				sendPacket(layer);
 			}
@@ -3113,7 +3113,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 
 			if (!hasChest(chestStr))
 			{
-				LevelItemType chestItem = chest->getItemIndex();
+				LevelItemType chestItem = chest.value()->getItemIndex();
 				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);
