@@ -10,6 +10,7 @@
 
 #ifdef V8NPCSERVER
 #include <queue>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include "ScriptAction.h"
@@ -291,6 +292,7 @@ class TNPC
 		//
 		bool hasScriptEvent(int flag) const;
 		void setScriptEvents(int mask);
+		void setScriptEvents(const std::set<std::string>& eventList);
 
 		ScriptExecutionContext& getExecutionContext();
 		IScriptObject<TNPC> * getScriptObject() const;
