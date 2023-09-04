@@ -46,7 +46,7 @@ LevelItemType TLevelItem::getItemId(signed char itemId)
 	return LevelItemType(itemId);
 }
 
-LevelItemType TLevelItem::getItemId(const CString& pItemName)
+LevelItemType TLevelItem::getItemId(const std::string& pItemName)
 {
 	for (unsigned int i = 0; i < __itemCount; ++i)
 	{
@@ -57,11 +57,11 @@ LevelItemType TLevelItem::getItemId(const CString& pItemName)
 	return LevelItemType::INVALID;
 }
 
-CString TLevelItem::getItemName(LevelItemType itemId)
+std::string TLevelItem::getItemName(LevelItemType itemId)
 {
 	auto id = TLevelItem::getItemTypeId(itemId);
-	if (id < 0 || id >= __itemCount) return CString();
-	return CString(__itemList[id]);
+	if (id < 0 || id >= __itemCount) return {};
+	return std::string(__itemList[id]);
 }
 
 CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)

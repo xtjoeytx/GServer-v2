@@ -1,6 +1,7 @@
 #ifndef TLEVELBADDY_H
 #define TLEVELBADDY_H
 
+#include <memory>
 #include <vector>
 #include "CString.h"
 #include "CTimeout.h"
@@ -41,7 +42,7 @@ class TLevel;
 class TLevelBaddy
 {
 	public:
-		TLevelBaddy(const float pX, const float pY, const unsigned char pType, TLevel* pLevel, TServer* pServer);
+		TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, TServer* pServer);
 
 		void reset();
 		void dropItem();
@@ -68,7 +69,7 @@ class TLevelBaddy
 		CTimeout timeout;
 
 	private:
-		TLevel* level;
+		std::weak_ptr<TLevel> level;
 		TServer* server;
 		unsigned char type;
 		char id, power, mode, ani, dir;
@@ -78,5 +79,6 @@ class TLevelBaddy
 		bool respawn;
 		bool setImage;
 };
+using TLevelBaddyPtr = std::unique_ptr<TLevelBaddy>;
 
 #endif // TLEVELBADDY_H

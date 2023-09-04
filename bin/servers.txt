@@ -1,2 +1,0 @@
-servercount = 1
-server_1 = default

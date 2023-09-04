@@ -1,6 +1,7 @@
 #ifndef CWORDFILTER_H
 #define CWORDFILTER_H
 
+#include <memory>
 #include <vector>
 #include "CString.h"
 
@@ -41,6 +42,7 @@ struct SWordFilterRule
 	int precision;
 	CString warnMessage;
 };
+using SWordFilterRulePtr = std::unique_ptr<SWordFilterRule>;
 
 class TServer;
 class TPlayer;
@@ -58,7 +60,7 @@ class CWordFilter
 
 		CString defaultWarnMessage;
 		bool showWordsToRC;
-		std::vector<SWordFilterRule*> rules;
+		std::vector<SWordFilterRulePtr> rules;
 };
 
 #endif
