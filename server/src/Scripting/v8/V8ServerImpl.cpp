@@ -124,6 +124,36 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+
+// Server Method: server.setshootparams(str shootparams);
+void Server_Function_SetShootParams(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the minimum 8 arguments
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TServer, server);
+
+		if (server == nullptr) return;
+
+		CString shootParams;
+		for (int i = 0; i < args.Length(); i++) {
+			shootParams << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+		}
+		shootParams.gtokenizeI();
+
+		server->setShootParams(shootParams.text());
+	}
+}
+
 void Server_Function_SaveLog(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -201,7 +231,7 @@ void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 // PROPERTY: server.timevar2
 void Server_Get_TimeVar2(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	unsigned int timevar = (unsigned int)time(0);
+	auto timevar = (unsigned int)time(0);
 	info.GetReturnValue().Set(timevar);
 }
 
@@ -223,8 +253,8 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	auto *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("server.flags");
@@ -383,6 +413,7 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"), v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));

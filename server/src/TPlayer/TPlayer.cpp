@@ -3801,64 +3801,50 @@ bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
 	return true;
 }
 
-struct ShootPacketNew {
-	int16_t pixelx;
-	int16_t pixely;
-	int16_t pixelz;
-	int8_t offsetx;
-	int8_t offsety;
-	int8_t sangle;
-	int8_t sanglez;
-	int8_t speed;
-	int8_t gravity;
-	CString gani;
-	CString shootParams;
+void ShootPacketNew::debug() {
+	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx/16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
+	printf("\t Offset: %d, %d\n", offsetx, offsety);
+	printf("\t Angle: %d\n", sangle);
+	printf("\t Z-Angle: %d\n", sanglez);
+	printf("\t Power: %d\n", speed);
+	printf("\t Gravity: %d\n", gravity);
+	printf("\t Gani: %s (len: %d)\n", gani.text(), gani.length());
+	printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
+}
 
-	CString constructShootV1() {
-		CString packet;
-		packet.writeGInt(0); // shoot-id?
-		packet.writeGChar(pixelx / 16);
-		packet.writeGChar(pixely / 16);
-		packet.writeGChar((pixelz / 16) + 50);
-		packet.writeGChar(sangle);
-		packet.writeGChar(sanglez);
-		packet.writeGChar(speed);
-		packet.writeGChar(gani.length());
-		packet.write(gani);
-		packet.writeGChar(shootParams.length());
-		packet.write(shootParams);
-		return packet;
-	}
+CString ShootPacketNew::constructShootV1() const {
+	CString packet;
+	packet.writeGInt(0); // shoot-id?
+	packet.writeGChar(pixelx / 16);
+	packet.writeGChar(pixely / 16);
+	packet.writeGChar((pixelz / 16) + 50);
+	packet.writeGChar(sangle);
+	packet.writeGChar(sanglez);
+	packet.writeGChar(speed);
+	packet.writeGChar(gani.length());
+	packet.write(gani);
+	packet.writeGChar(shootParams.length());
+	packet.write(shootParams);
+	return packet;
+}
 
-	CString constructShootV2() {
-		CString packet;
-		packet.writeGShort(pixelx);
-		packet.writeGShort(pixely);
-		packet.writeGShort(pixelz);
-		packet.writeChar(offsetx + 32);
-		packet.writeChar(offsety + 32);
-		packet.writeGChar(sangle);
-		packet.writeGChar(sanglez);
-		packet.writeGChar(speed);
-		packet.writeGChar(gravity);
-		packet.writeGShort(gani.length());
-		packet.write(gani);
-		packet.writeGChar(shootParams.length());
-		packet.write(shootParams);
-		return packet;
-	}
-
-	void debug() {
-		printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx/16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
-		printf("\t Offset: %d, %d\n", offsetx, offsety);
-		printf("\t Angle: %d\n", sangle);
-		printf("\t Z-Angle: %d\n", sanglez);
-		printf("\t Power: %d\n", speed);
-		printf("\t Gravity: %d\n", gravity);
-		printf("\t Gani: %s (len: %d)\n", gani.text(), gani.length());
-		printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
-	}
-};
+CString ShootPacketNew::constructShootV2() const {
+	CString packet;
+	packet.writeGShort(pixelx);
+	packet.writeGShort(pixely);
+	packet.writeGShort(pixelz);
+	packet.writeChar(offsetx + 32);
+	packet.writeChar(offsety + 32);
+	packet.writeGChar(sangle);
+	packet.writeGChar(sanglez);
+	packet.writeGChar(speed);
+	packet.writeGChar(gravity);
+	packet.writeGShort(gani.length());
+	packet.write(gani);
+	packet.writeGChar(shootParams.length());
+	packet.write(shootParams);
+	return packet;
+}
 
 bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 {

@@ -31,6 +31,26 @@ enum
 	PLSETPROPS_FORWARDSELF  = 0x04, // forward data back to the player
 };
 
+struct ShootPacketNew {
+	// shoot(float x, float y, float z, float angle, float zangle, float strength, str ani, str aniparams)
+	int16_t pixelx;
+	int16_t pixely;
+	int16_t pixelz;
+	int8_t offsetx;
+	int8_t offsety;
+	int8_t sangle;
+	int8_t sanglez;
+	int8_t speed;
+	int8_t gravity;
+	CString gani;
+	CString shootParams;
+
+	CString constructShootV1() const;
+	CString constructShootV2() const;
+
+	void debug();
+};
+
 struct SCachedLevel
 {
 	SCachedLevel(std::weak_ptr<TLevel> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) { }
@@ -113,12 +133,12 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		// Type of player
 		bool isAdminIp();
 		bool isStaff();
-		bool isNC()	const				{ return (type & PLTYPE_ANYNC) ? true : false; }
-		bool isRC() const				{ return (type & PLTYPE_ANYRC) ? true : false; }
-		bool isClient() const			{ return (type & PLTYPE_ANYCLIENT) ? true : false; }
-		bool isNPCServer() const		{ return (type & PLTYPE_NPCSERVER) ? true : false; }
-		bool isControlClient() const	{ return (type & PLTYPE_ANYCONTROL) ? true : false; }
-		bool isHiddenClient() const		{ return (type & PLTYPE_NONITERABLE) ? true : false; }
+		bool isNC()	const				{ return (type & PLTYPE_ANYNC) != 0; }
+		bool isRC() const				{ return (type & PLTYPE_ANYRC) != 0; }
+		bool isClient() const			{ return (type & PLTYPE_ANYCLIENT) != 0; }
+		bool isNPCServer() const		{ return (type & PLTYPE_NPCSERVER) != 0; }
+		bool isControlClient() const	{ return (type & PLTYPE_ANYCONTROL) != 0; }
+		bool isHiddenClient() const		{ return (type & PLTYPE_NONITERABLE) != 0; }
 		bool isLoaded()	const			{ return loaded; }
 		int getType() const				{ return type; }
 		void setType(int val)			{ type = val; }
