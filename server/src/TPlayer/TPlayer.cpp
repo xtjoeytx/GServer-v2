@@ -3813,6 +3813,11 @@ void ShootPacketNew::debug() {
 }
 
 CString ShootPacketNew::constructShootV1() const {
+	CString ganiTemp{};
+	ganiTemp << gani;
+	if (!ganiArgs.isEmpty()) {
+		ganiTemp << "," << ganiArgs;
+	}
 	CString packet;
 	packet.writeGInt(0); // shoot-id?
 	packet.writeGChar(pixelx / 16);
@@ -3821,14 +3826,19 @@ CString ShootPacketNew::constructShootV1() const {
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
 	packet.writeGChar(speed);
-	packet.writeGChar(gani.length());
-	packet.write(gani);
+	packet.writeGChar(ganiTemp.length());
+	packet.write(ganiTemp);
 	packet.writeGChar(shootParams.length());
 	packet.write(shootParams);
 	return packet;
 }
 
 CString ShootPacketNew::constructShootV2() const {
+	CString ganiTemp{};
+	ganiTemp << gani;
+	if (!ganiArgs.isEmpty()) {
+		ganiTemp << "," << ganiArgs;
+	}
 	CString packet;
 	packet.writeGShort(pixelx);
 	packet.writeGShort(pixely);
@@ -3839,8 +3849,8 @@ CString ShootPacketNew::constructShootV2() const {
 	packet.writeGChar(sanglez);
 	packet.writeGChar(speed);
 	packet.writeGChar(gravity);
-	packet.writeGShort(gani.length());
-	packet.write(gani);
+	packet.writeGShort(ganiTemp.length());
+	packet.write(ganiTemp);
 	packet.writeGChar(shootParams.length());
 	packet.write(shootParams);
 	return packet;

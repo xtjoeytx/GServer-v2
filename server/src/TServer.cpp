@@ -1953,6 +1953,7 @@ void TServer::sendShootToOneLevel(const std::weak_ptr<TLevel>& level, float x, f
 	newPacket.speed = (int8_t)strength;
 	newPacket.gravity = 8;
 	newPacket.gani = ani;
+	newPacket.ganiArgs = aniArgs;
 	newPacket.shootParams = getShootParams();
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();

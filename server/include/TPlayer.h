@@ -43,6 +43,7 @@ struct ShootPacketNew {
 	int8_t speed;
 	int8_t gravity;
 	CString gani;
+	CString ganiArgs;
 	CString shootParams;
 
 	CString constructShootV1() const;
