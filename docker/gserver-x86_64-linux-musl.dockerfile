@@ -33,6 +33,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& chmod 777 -R /tmp/gserver/dist \
 	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
     && chown 1001:1001 -R /tmp/gserver \
+    && chmod 777 -R /tmp/gserver/build \
     && apk del --purge .gserver-build-dependencies
 
 USER 1001
