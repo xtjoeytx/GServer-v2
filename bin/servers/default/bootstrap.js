@@ -290,6 +290,10 @@
 			return server.findplayer(...args);
 		};
 
+		env.global.setshootparams = function(...args) {
+			return server.setshootparams(...args);
+		};
+
 		env.global.savelog = function(...args) {
 			return server.savelog(...args);
 		};

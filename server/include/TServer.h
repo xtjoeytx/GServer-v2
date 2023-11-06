@@ -209,6 +209,9 @@ class TServer : public CSocketStub
 		void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer = {}) const;
 		void sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const;
 
+		// Specific packet sending
+		void sendShootToOneLevel(const std::weak_ptr<TLevel>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
+
 		// Player Management
 		uint16_t getFreePlayerId();
 		bool addPlayer(std::shared_ptr<TPlayer> player, uint16_t id = USHRT_MAX);
@@ -245,9 +248,17 @@ class TServer : public CSocketStub
 			return triggerActionDispatcher;
 		}
 
-	private:
+		void setShootParams(const std::string& params) {
+			shootParams = params;
+		}
+
+		const std::string& getShootParams() const {
+			return shootParams;
+		}
+
+private:
 		GS2ScriptManager gs2ScriptManager;
-		
+
 		template<typename ScriptObjType>
 		void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
 
@@ -299,6 +310,8 @@ class TServer : public CSocketStub
 		// Trigger dispatcher
 		TriggerDispatcher triggerActionDispatcher;
 		void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
+
+		std::string shootParams;
 
 #ifdef V8NPCSERVER
 		CScriptEngine mScriptEngine;

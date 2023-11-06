@@ -21,6 +21,7 @@ RUN cd /tmp/gserver \
 	&& cmake --build /tmp/gserver/build --target clean \
 	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& chmod 777 -R /tmp/gserver/dist \
+    && chmod 777 -R /tmp/gserver/build \
     && rm -rf /tmp/gserver/dist/_CPack_Packages
 
 # GServer Run Environment

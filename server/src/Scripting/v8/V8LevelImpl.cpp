@@ -939,7 +939,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		int idx = 0;
 		for (auto & it : playerListSorted)
 		{
-			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(it.second->getScriptObject());
+			auto *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(it.second->getScriptObject());
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
 			object->Set(context, key_distance, v8::Number::New(isolate, it.first)).Check();
@@ -950,6 +950,47 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		args.GetReturnValue().Set(result);
 	}
 }
+
+// Level Method: level.shoot(float x, float y, float z, float angle, float zangle, float strength, str ani, str aniparams);
+void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the minimum 8 arguments
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 8);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber() && args[5]->IsNumber() && args[6]->IsString() && args[7]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		TServer* server = levelObject->getServer();
+		if (server == nullptr) return;
+		auto level = server->getLevel(levelObject->getLevelName().toString());
+
+		auto x = (float)args[0]->NumberValue(context).ToChecked();
+		auto y = (float)args[1]->NumberValue(context).ToChecked();
+		auto z = (float)args[2]->NumberValue(context).ToChecked();
+		auto angle = (float)args[3]->NumberValue(context).ToChecked();
+		auto zangle = (float)args[4]->NumberValue(context).ToChecked();
+		auto strength = (float)args[5]->NumberValue(context).ToChecked();
+		std::string ani = *v8::String::Utf8Value(isolate, args[6]->ToString(context).ToLocalChecked());
+
+		CString aniArgs;
+		for (int i = 7; i < args.Length(); i++) {
+			aniArgs << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+		}
+		aniArgs.gtokenizeI();
+
+		// Send the packet out.
+		server->sendShootToOneLevel(level, x, y, z, angle, zangle, strength, ani, aniArgs.text());
+	}
+}
+
 // Level Method: level.putexplosion(radius, x, y);
 void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -1157,6 +1198,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "shoot"), v8::FunctionTemplate::New(isolate, Level_Function_Shoot, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addnpc"), v8::FunctionTemplate::New(isolate, Level_Function_AddNPC, engine_ref));
