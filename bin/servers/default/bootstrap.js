@@ -278,6 +278,14 @@
 			return server.createlevel(...args);
 		};
 
+		env.global.httpget = function(...args) {
+			return server.httpget(...args);
+		};
+
+		env.global.httppost = function(...args) {
+			return server.httppost(...args);
+		};
+
 		env.global.findlevel = function(...args) {
 			return server.findlevel(...args);
 		};

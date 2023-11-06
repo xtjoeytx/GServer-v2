@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <v8.h>
+#include <cpr/cpr.h>
 #include <cstdio>
 #include <unordered_map>
 #include "CScriptEngine.h"
@@ -11,6 +12,92 @@
 #include "TLevel.h"
 #include "TNPC.h"
 #include "TPlayer.h"
+
+
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+	((std::string*)userp)->append((char*)contents, size * nmemb);
+	return size * nmemb;
+}
+
+void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Check the number of arguments passed.
+	if (args.Length() < 1) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsString()) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+		return;
+	}
+
+	v8::String::Utf8Value url(isolate, args[0]);
+
+	cpr::Response r = cpr::Get(cpr::Url{*url}/*,
+	                           cpr::Authentication{"user", "pass", cpr::AuthMode::BASIC},
+	                           cpr::Parameters{{"anon", "true"}, {"key", "value"}}*/
+	);
+	r.status_code;                  // 200
+	r.header["content-type"];       // application/json; charset=utf-8
+	r.text;                         // JSON text string
+
+	if (r.status_code != 200) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, r.error.message.c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r.text.c_str()).ToLocalChecked());
+}
+
+void Server_Function_HttpPost(const v8::FunctionCallbackInfo<v8::Value>& args) {
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Check the number of arguments passed.
+	if (args.Length() < 2) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsString() || !args[1]->IsString()) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+		return;
+	}
+
+	v8::String::Utf8Value url(isolate, args[0]);
+	v8::String::Utf8Value postData(isolate, args[1]);
+	cpr::Header headers{};
+	if (args.Length() >= 3) {
+		v8::String::Utf8Value contentType(isolate, args[2]);
+		headers={{"Content-Type", *contentType}};
+	} else {
+		headers={{"Content-Type", "application/json"}};
+	}
+
+	// Perform the POST request
+	cpr::Response r = cpr::Post(cpr::Url{*url},
+	                            cpr::Body{*postData},
+	                            headers);
+	r.status_code;                  // 200
+	r.header["content-type"];       // application/json; charset=utf-8
+	r.text;                         // JSON text string
+
+	if (r.status_code != 200) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, r.error.message.c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r.text.c_str()).ToLocalChecked());
+}
 
 void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -409,6 +496,8 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httpget"), v8::FunctionTemplate::New(isolate, Server_Function_HttpGet, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httppost"), v8::FunctionTemplate::New(isolate, Server_Function_HttpPost, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
