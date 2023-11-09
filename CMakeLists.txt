@@ -248,9 +248,9 @@ endif()
 if(V8NPCSERVER)
 	find_package(V8 REQUIRED)
 	include(FetchContent)
-	FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
-			GIT_TAG 0817715923c9705e68994eb52ef9df3f6845beba) # The commit hash for 1.10.x. Replace with the latest from: https://github.com/libcpr/cpr/releases
-	FetchContent_MakeAvailable(cpr)
+	FetchContent_Declare(httplib GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+			GIT_TAG a609330e4c6374f741d3b369269f7848255e1954) # The commit hash for 1.10.x. Replace with the latest from: https://github.com/libcpr/cpr/releases
+	FetchContent_MakeAvailable(httplib)
 	if(NOT V8_FOUND)
 		message("v8 not found in system")
 	endif()

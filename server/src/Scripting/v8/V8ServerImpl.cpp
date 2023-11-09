@@ -2,9 +2,7 @@
 
 #include <cassert>
 #include <v8.h>
-#include <cpr/cpr.h>
-#include <cstdio>
-#include <unordered_map>
+#include <httplib.h>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
@@ -12,12 +10,6 @@
 #include "TLevel.h"
 #include "TNPC.h"
 #include "TPlayer.h"
-
-
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-	((std::string*)userp)->append((char*)contents, size * nmemb);
-	return size * nmemb;
-}
 
 void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	v8::Isolate* isolate = args.GetIsolate();
@@ -38,21 +30,33 @@ void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 	v8::String::Utf8Value url(isolate, args[0]);
 
-	cpr::Response r = cpr::Get(cpr::Url{*url}/*,
-	                           cpr::Authentication{"user", "pass", cpr::AuthMode::BASIC},
-	                           cpr::Parameters{{"anon", "true"}, {"key", "value"}}*/
-	);
-	r.status_code;                  // 200
-	r.header["content-type"];       // application/json; charset=utf-8
-	r.text;                         // JSON text string
+	std::string urlAndQuery = *url;
+	std::regex urlRegex("(https?://[^/]+)(/?.*)");
+	std::smatch match;
+	std::string onlyPath;
+	std::string onlyUrl;
 
-	if (r.status_code != 200) {
+	if (std::regex_search(urlAndQuery, match, urlRegex) && match.size() == 3) {
+		onlyUrl = match[1].str();
+		onlyPath = match[2].str();
+	} else {
 		isolate->ThrowException(v8::Exception::Error(
-				v8::String::NewFromUtf8(isolate, r.error.message.c_str()).ToLocalChecked()));
+			v8::String::NewFromUtf8(isolate, "Invalid url").ToLocalChecked()));
 		return;
 	}
 
-	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r.text.c_str()).ToLocalChecked());
+	auto cli = httplib::Client(onlyUrl);
+	cli.enable_server_certificate_verification(false);
+
+	auto r = cli.Get(onlyPath);
+
+	if (r->status < 200 || r->status >= 300) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, to_string(r.error()).c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r->body.c_str()).ToLocalChecked());
 }
 
 void Server_Function_HttpPost(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -74,29 +78,43 @@ void Server_Function_HttpPost(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 	v8::String::Utf8Value url(isolate, args[0]);
 	v8::String::Utf8Value postData(isolate, args[1]);
-	cpr::Header headers{};
-	if (args.Length() >= 3) {
-		v8::String::Utf8Value contentType(isolate, args[2]);
-		headers={{"Content-Type", *contentType}};
+	std::string urlAndQuery = *url;
+	std::regex urlRegex("(https?://[^/]+)(/?.*)");
+	std::smatch match;
+	std::string onlyPath;
+	std::string onlyUrl;
+
+	if (std::regex_search(urlAndQuery, match, urlRegex) && match.size() == 3) {
+		onlyUrl = match[1].str();
+		onlyPath = match[2].str();
 	} else {
-		headers={{"Content-Type", "application/json"}};
-	}
-
-	// Perform the POST request
-	cpr::Response r = cpr::Post(cpr::Url{*url},
-	                            cpr::Body{*postData},
-	                            headers);
-	r.status_code;                  // 200
-	r.header["content-type"];       // application/json; charset=utf-8
-	r.text;                         // JSON text string
-
-	if (r.status_code != 200) {
 		isolate->ThrowException(v8::Exception::Error(
-				v8::String::NewFromUtf8(isolate, r.error.message.c_str()).ToLocalChecked()));
+			v8::String::NewFromUtf8(isolate, "Invalid url").ToLocalChecked()));
 		return;
 	}
 
-	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r.text.c_str()).ToLocalChecked());
+	std::string contentTypeStr;
+	if (args.Length() >= 3) {
+		v8::String::Utf8Value contentType(isolate, args[2]);
+		contentTypeStr=*contentType;
+	} else {
+		contentTypeStr="application/json";
+	}
+
+	auto cli = httplib::Client(onlyUrl);
+	cli.enable_server_certificate_verification(false);
+
+	std::string postDataStr = *postData;
+
+	auto r = cli.Post(onlyPath, postDataStr, contentTypeStr);
+
+	if (r->status != 200) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, to_string(r.error()).c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r->body.c_str()).ToLocalChecked());
 }
 
 void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
