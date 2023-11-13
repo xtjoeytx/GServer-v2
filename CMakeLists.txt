@@ -250,7 +250,7 @@ if(V8NPCSERVER)
 	include(FetchContent)
 	set(HTTPLIB_USE_BROTLI_IF_AVAILABLE FALSE CACHE BOOL "-" FORCE)
 	FetchContent_Declare(httplib GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
-			GIT_TAG a609330e4c6374f741d3b369269f7848255e1954) # The commit hash for 1.10.x. Replace with the latest from: https://github.com/libcpr/cpr/releases
+			GIT_TAG a609330e4c6374f741d3b369269f7848255e1954)
 	FetchContent_MakeAvailable(httplib)
 	find_package(OpenSSL REQUIRED)
 	if(NOT V8_FOUND)
