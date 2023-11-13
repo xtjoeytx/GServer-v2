@@ -81,8 +81,8 @@ class TLevel : public std::enable_shared_from_this<TLevel>
 		//! \return The level chests.
 		std::vector<TLevelChestPtr>& getLevelChests()	{ return levelChests; }
 
-		//! Gets a vector full of the level signs.
-		//! \return The level signs.
+		//! Gets a vector full of the level npc ids.
+		//! \return The level npcs.
 		std::set<uint32_t>& getLevelNPCs()				{ return levelNPCs; }
 
 		//! Gets a vector full of the level signs.
