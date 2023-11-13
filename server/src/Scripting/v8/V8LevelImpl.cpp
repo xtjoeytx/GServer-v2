@@ -233,7 +233,7 @@ void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
 	info.GetReturnValue().Set(new_instance);
 }
 
-// Level Method: level.signs.add("dest.nw", x, y, width, height, newX, newY)
+// Level Method: level.signs.add(x, y, signText)
 void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -445,7 +445,7 @@ void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
 	info.GetReturnValue().Set(new_instance);
 }
 
-// Level Method: level.signs.add("dest.nw", x, y, width, height, newX, newY)
+// Level Method: level.chests.add(x, y, itemType, signIndex)
 void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -468,14 +468,14 @@ void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& arg
 		LevelItemType levelItemType = (LevelItemType)args[2]->NumberValue(context).ToChecked();
 		int signId = (int)args[3]->NumberValue(context).ToChecked();
 
-		auto newSign = levelObject->addChest(levelX, levelY, levelItemType, signId);
+		auto newChest = levelObject->addChest(levelX, levelY, levelItemType, signId);
 
-		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelChest> *>(newSign->getScriptObject());
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelChest> *>(newChest->getScriptObject());
 		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
 	}
 }
 
-// Level Method: level.signs.remove(index)
+// Level Method: level.chests.remove(index)
 void Level_Function_RemoveLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -1177,7 +1177,7 @@ void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
 void bindClass_Level(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 	v8::Isolate *isolate = env->Isolate();
 
 	// External pointer
@@ -1204,8 +1204,6 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addnpc"), v8::FunctionTemplate::New(isolate, Level_Function_AddNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addlevelsign"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelSign, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removelevelsign"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
 
 	// Properties
 //	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
@@ -1219,7 +1217,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr, engine_ref);
 
-	// Create the player attr template
+	// Create the level tiles template
 	v8::Local<v8::FunctionTemplate> level_tiles_ctor = v8::FunctionTemplate::New(isolate);
 	level_tiles_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "tiles"));
 	level_tiles_ctor->InstanceTemplate()->SetInternalFieldCount(1);
@@ -1263,7 +1261,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
 	level_signs_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Sign_Length);
 
-	// Define the Symbol.iterator method on the prototype to make "level.links" iterable
+	// Define the Symbol.iterator method on the prototype to make "level.signs" iterable
 	v8::Local<v8::FunctionTemplate> level_signs_iterator = v8::FunctionTemplate::New(isolate);
 	level_signs_iterator->SetCallHandler(Level_Sign_Iterator);
 	level_signs_proto->Set(v8::Symbol::GetIterator(isolate), level_signs_iterator);
@@ -1284,7 +1282,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelChest, engine_ref));
 	level_chests_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Chest_Length);
 
-	// Define the Symbol.iterator method on the prototype to make "level.links" iterable
+	// Define the Symbol.iterator method on the prototype to make "level.chests" iterable
 	v8::Local<v8::FunctionTemplate> level_chests_iterator = v8::FunctionTemplate::New(isolate);
 	level_chests_iterator->SetCallHandler(Level_Chest_Iterator);
 	level_chests_proto->Set(v8::Symbol::GetIterator(isolate), level_chests_iterator);
