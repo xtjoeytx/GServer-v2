@@ -108,7 +108,7 @@ void Server_Function_HttpPost(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 	auto r = cli.Post(onlyPath, postDataStr, contentTypeStr);
 
-	if (r->status != 200) {
+	if (r->status < 200 || r->status >= 300) {
 		isolate->ThrowException(v8::Exception::Error(
 				v8::String::NewFromUtf8(isolate, to_string(r.error()).c_str()).ToLocalChecked()));
 		return;
