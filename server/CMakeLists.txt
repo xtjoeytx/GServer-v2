@@ -341,7 +341,7 @@ if(V8NPCSERVER)
 	message("V8 include: ${V8_INCLUDE_DIR}")
 	include_directories(${V8_INCLUDE_DIR})
 
-	target_link_libraries(${TARGET_NAME} httplib::httplib ssl crypto Brotli::common)
+	target_link_libraries(${TARGET_NAME} httplib::httplib OpenSSL::SSL OpenSSL::Crypto)
 
 	add_custom_command(
 			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
