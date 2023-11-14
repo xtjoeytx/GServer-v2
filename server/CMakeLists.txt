@@ -241,10 +241,6 @@ target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
-if(WIN32)
-	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
-endif()
-
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
@@ -318,7 +314,6 @@ if (MINGW)
 		RESOLVED_DEPENDENCIES_VAR RESOLVED_DEPS
 		UNRESOLVED_DEPENDENCIES_VAR UNRESOLVED_DEPS
 		    DIRECTORIES ${MY_DEPENDENCY_PATHS}
-
 	  )
 	  foreach(FILE ${RESOLVED_DEPS})
 		install_library_with_deps(${FILE})
@@ -346,6 +341,8 @@ if(V8NPCSERVER)
 	message("V8 include: ${V8_INCLUDE_DIR}")
 	include_directories(${V8_INCLUDE_DIR})
 
+	target_link_libraries(${TARGET_NAME} httplib::httplib OpenSSL::SSL OpenSSL::Crypto)
+
 	add_custom_command(
 			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 			COMMAND ${CMAKE_COMMAND}
@@ -361,6 +358,10 @@ if(V8NPCSERVER)
 
 	add_custom_target(bootstrap_js_to_h DEPENDS ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h)
 	add_dependencies(${TARGET_NAME} bootstrap_js_to_h)
+endif()
+
+if(WIN32)
+	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
 endif()
 
 set(APP_LIBRARY_NAME

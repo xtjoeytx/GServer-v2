@@ -503,7 +503,7 @@ bool TPlayer::doMain()
 		lastData = time(0);
 
 		// packet length
-		unsigned short len = (unsigned short)rBuffer.readShort();
+		auto len = (unsigned short)rBuffer.readShort();
 		if ((unsigned int)len > (unsigned int)rBuffer.length()-2)
 			break;
 

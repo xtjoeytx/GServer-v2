@@ -12,6 +12,12 @@ FROM amigadev/crosstools:x86_64-linux AS build-env-npcserver-off
 FROM build-env-npcserver-${NPCSERVER} AS build-env
 ARG NPCSERVER
 ARG VER_EXTRA
+
+USER 0
+
+RUN apt update && \
+	apt install -y libssl-dev
+
 USER 1001
 COPY --chown=1001:1001 ./ /tmp/gserver
 
