@@ -41,7 +41,7 @@ STAFFACCOUNT=<account-name>
 version: "3"
 services:
   gserver:
-    image: "xtjoeytx/gserver-v2:feature-npc-server"
+    image: "xtjoeytx/gserver-v2:latest"
     restart: always
     env_file: server.env
     volumes:
