@@ -1,9 +1,14 @@
+#include "Level.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
 #include "utilities/stringutils.h"
-#include "TServer.h"
-#include "TLevel.h"
-#include "TNPC.h"
-#include "TPlayer.h"
-#include "TWeapon.h"
+#include "Server.h"
+#include "Level.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Weapon.h"
 
 void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 {

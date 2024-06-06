@@ -3,13 +3,13 @@
 #include <math.h>
 
 #include "IConfig.h"
-#include "TServer.h"
-#include "TPlayer.h"
+#include "Server.h"
+#include "Player.h"
 #include "IUtil.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TWeapon.h"
+#include "Level.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Weapon.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()

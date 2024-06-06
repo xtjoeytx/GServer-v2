@@ -6,16 +6,16 @@
 #include <IConfig.h>
 
 #include "utilities/stringutils.h"
-#include "TPlayer.h"
+#include "Player.h"
 #include "IConfig.h"
 #include "IEnums.h"
 #include "IUtil.h"
-#include "TServer.h"
-#include "TAccount.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TWeapon.h"
-#include "TNPC.h"
+#include "Server.h"
+#include "Account.h"
+#include "Level.h"
+#include "Map.h"
+#include "Weapon.h"
+#include "NPC.h"
 
 /*
 	Logs

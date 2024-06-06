@@ -13,10 +13,10 @@
 #include <fmt/format.h>
 #include "utilities/timeunits.h"
 
-#include "TServer.h"
-#include "TPlayer.h"
+#include "Server.h"
+#include "Player.h"
 #include "IEnums.h"
-#include "TLevel.h"
+#include "Level.h"
 #include "IConfig.h"
 
 #define serverlog	server->getServerLog()

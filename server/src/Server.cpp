@@ -6,15 +6,22 @@
 
 #include <fmt/format.h>
 
-#include "TServer.h"
+#include "Server.h"
 #include "main.h"
-#include "TPlayer.h"
-#include "TWeapon.h"
+#include "Player.h"
+#include "Weapon.h"
 #include "IUtil.h"
-#include "TNPC.h"
-#include "TMap.h"
-#include "TLevel.h"
+#include "NPC.h"
+#include "Map.h"
+#include "Level.h"
 #include "ScriptOrigin.h"
+#include "Level.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
+#include "main.h"
 
 static const char* const filesystemTypes[] =
 {

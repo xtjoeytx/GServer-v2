@@ -1,14 +1,14 @@
 #ifdef V8NPCSERVER
 
-#include <cassert>
-#include <v8.h>
-#include <stdio.h>
-#include "IUtil.h"
-#include "CScriptEngine.h"
-#include "TLevel.h"
-#include "TNPC.h"
-#include "TPlayer.h"
-#include "TServer.h"
+	#include "CScriptEngine.h"
+	#include "IUtil.h"
+	#include "Level.h"
+	#include "NPC.h"
+	#include "Player.h"
+	#include "Server.h"
+	#include <cassert>
+	#include <stdio.h>
+	#include <v8.h>
 
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
@@ -1186,7 +1186,7 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	playerObject->setProps(propPacket, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
-#include "TScriptClass.h"
+#include "ScriptClass.h"
 #include "V8ScriptWrappers.h"
 
 // Player Function: player.join("class");

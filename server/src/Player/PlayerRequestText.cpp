@@ -1,6 +1,6 @@
-#include "TPlayer.h"
-#include "TServer.h"
-#include "CFileSystem.h"
+#include "FileSystem.h"
+#include "Player.h"
+#include "Server.h"
 
 bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 {

@@ -16,17 +16,17 @@
 #include "IEnums.h"
 #include "CString.h"
 #include "CLog.h"
-#include "CFileSystem.h"
+#include "FileSystem.h"
 #include "CSettings.h"
 #include "CSocket.h"
 #include "CTranslationManager.h"
-#include "CWordFilter.h"
-#include "TServerList.h"
+#include "WordFilter.h"
+#include "ServerList.h"
 
 #include "CommandDispatcher.h"
 
 #ifdef UPNP
-#include "CUPNP.h"
+#include "UPNP.h"
 #endif
 
 #ifdef V8NPCSERVER
@@ -34,12 +34,12 @@
 #endif
 
 #include "GS2ScriptManager.h"
-#include "TScriptClass.h"
+#include "ScriptClass.h"
 
 // Resources
 #include "ResourceManager.h"
-#include "Animation/TGameAni.h"
-#include "TUpdatePackage.h"
+#include "Animation/GameAni.h"
+#include "UpdatePackage.h"
 
 class TPlayer;
 class TLevel;

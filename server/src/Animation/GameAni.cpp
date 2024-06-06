@@ -1,7 +1,7 @@
 #include <filesystem>
 #include "GS2Context.h"
-#include "Animation/TGameAni.h"
-#include "TServer.h"
+#include "Animation/GameAni.h"
+#include "Server.h"
 
 std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string& name)
 {

@@ -1,7 +1,7 @@
 #include "IDebug.h"
-#include "TLevelItem.h"
+#include "LevelItem.h"
 #include "IEnums.h"
-#include "TPlayer.h"
+#include "Player.h"
 
 const char *__itemList[] = {
 	"greenrupee",		// 0

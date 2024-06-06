@@ -3,11 +3,11 @@
 #include <math.h>
 
 #include "IEnums.h"
-#include "TServer.h"
-#include "TPlayer.h"
-#include "TWeapon.h"
-#include "TNPC.h"
-#include "TLevel.h"
+#include "Server.h"
+#include "Player.h"
+#include "Weapon.h"
+#include "NPC.h"
+#include "Level.h"
 
 #define serverlog	server->getServerLog()
 #define npclog		server->getNPCLog()
@@ -312,7 +312,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	return true;
 }
 
-#include "TScriptClass.h"
+#include "ScriptClass.h"
 
 bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {

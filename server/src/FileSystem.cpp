@@ -8,11 +8,11 @@
 	#include <dirent.h>
 	#include <utime.h>
 #endif
-#include <map>
+#include "FileSystem.h"
 #include "IDebug.h"
 #include "IUtil.h"
-#include "TServer.h"
-#include "CFileSystem.h"
+#include "Server.h"
+#include <map>
 
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef __GNUC__ // rain

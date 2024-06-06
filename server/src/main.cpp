@@ -13,8 +13,11 @@
 #include "IUtil.h"
 #include "CLog.h"
 #include "CSocket.h"
-#include "TServer.h"
-#include "TAccount.h"
+#include "CString.h"
+#include "IConfig.h"
+#include "IUtil.h"
+#include "Server.h"
+#include "main.h"
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
