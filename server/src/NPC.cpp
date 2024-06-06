@@ -2,16 +2,16 @@
 #include <math.h>
 #include <vector>
 #include <time.h>
-#include "TServer.h"
-#include "TNPC.h"
+#include "Server.h"
+#include "NPC.h"
 #include "CFileSystem.h"
-#include "TMap.h"
-#include "TLevel.h"
+#include "Map.h"
+#include "Level.h"
 #include "IEnums.h"
 
 #ifdef V8NPCSERVER
 #include "CScriptEngine.h"
-#include "TPlayer.h"
+#include "Player.h"
 #endif
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };

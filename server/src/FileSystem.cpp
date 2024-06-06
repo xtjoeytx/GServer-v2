@@ -11,7 +11,7 @@
 #include <map>
 #include "IDebug.h"
 #include "IUtil.h"
-#include "TServer.h"
+#include "Server.h"
 #include "CFileSystem.h"
 
 #if defined(_WIN32) || defined(_WIN64)

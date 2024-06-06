@@ -6,8 +6,8 @@
 #include <v8.h>
 #include "IUtil.h"
 #include "CScriptEngine.h"
-#include "TLevel.h"
-#include "TNPC.h"
+#include "Level.h"
+#include "NPC.h"
 
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
@@ -950,7 +950,7 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 	SCRIPTENV_D("End NPC::registerAction()\n");
 }
 
-#include "TScriptClass.h"
+#include "ScriptClass.h"
 #include "V8ScriptWrappers.h"
 
 // NPC Function: NPC.join("class");

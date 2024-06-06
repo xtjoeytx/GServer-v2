@@ -9,10 +9,10 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
 
-#include "TLevel.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TPlayer.h"
+#include "Level.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Player.h"
 
 // PROPERTY: level.issparringzone
 void Level_GetBool_IsSparringZone(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

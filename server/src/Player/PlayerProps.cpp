@@ -1,12 +1,12 @@
 #include "IDebug.h"
 #include <vector>
 
-#include "TServer.h"
-#include "TPlayer.h"
+#include "Server.h"
+#include "Player.h"
 #include "IEnums.h"
 #include "IUtil.h"
-#include "TMap.h"
-#include "TLevel.h"
+#include "Map.h"
+#include "Level.h"
 
 #define serverlog	server->getServerLog()
 #define rclog		server->getRCLog()

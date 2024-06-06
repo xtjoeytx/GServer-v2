@@ -1,7 +1,7 @@
-#include "TPlayer.h"
-#include "TServer.h"
+#include "Player.h"
+#include "Server.h"
 #include "CFileSystem.h"
-#include "TUpdatePackage.h"
+#include "UpdatePackage.h"
 
 bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {

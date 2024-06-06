@@ -4,11 +4,11 @@
 #include "IConfig.h"
 
 #include "CCommon.h"
-#include "TServerList.h"
+#include "ServerList.h"
 #include "IEnums.h"
-#include "TServer.h"
+#include "Server.h"
 #include "IUtil.h"
-#include "TPlayer.h"
+#include "Player.h"
 
 /*
 	Pointer-Functions for Packets

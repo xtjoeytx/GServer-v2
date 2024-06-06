@@ -1,9 +1,9 @@
 #include "IDebug.h"
 
-#include "TWeapon.h"
-#include "TServer.h"
-#include "TLevelItem.h"
-#include "TNPC.h"
+#include "Weapon.h"
+#include "Server.h"
+#include "LevelItem.h"
+#include "NPC.h"
 #include "IEnums.h"
 #include "IUtil.h"
 
@@ -11,7 +11,7 @@
 #include "GS2Context.h"
 
 #ifdef V8NPCSERVER
-#include "TPlayer.h"
+#include "Player.h"
 #endif
 
 // -- Constructor: Default Weapons -- //

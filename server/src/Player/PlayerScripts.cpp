@@ -1,6 +1,6 @@
-#include "TPlayer.h"
-#include "TWeapon.h"
-#include "TServer.h"
+#include "Player.h"
+#include "Weapon.h"
+#include "Server.h"
 #include "CFileSystem.h"
 #include "utilities/stringutils.h"
 

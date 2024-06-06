@@ -9,11 +9,11 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
 
-#include "TLevel.h"
-#include "TLevelChest.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TPlayer.h"
+#include "Level.h"
+#include "LevelChest.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Player.h"
 
 // PROPERTY: chest.x
 void Chest_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

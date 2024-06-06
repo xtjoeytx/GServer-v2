@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <unordered_map>
 #include "CScriptEngine.h"
-#include "TWeapon.h"
+#include "Weapon.h"
 
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"

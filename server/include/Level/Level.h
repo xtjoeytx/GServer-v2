@@ -9,14 +9,14 @@
 #include <optional>
 #include "IUtil.h"
 #include "CString.h"
-#include "TLevelBaddy.h"
-#include "TLevelBoardChange.h"
-#include "TLevelChest.h"
-#include "TLevelHorse.h"
-#include "TLevelItem.h"
-#include "TLevelLink.h"
-#include "TLevelSign.h"
-#include "TLevelTiles.h"
+#include "LevelBaddy.h"
+#include "LevelBoardChange.h"
+#include "LevelChest.h"
+#include "LevelHorse.h"
+#include "LevelItem.h"
+#include "LevelLink.h"
+#include "LevelSign.h"
+#include "LevelTiles.h"
 
 class TServer;
 class TPlayer;

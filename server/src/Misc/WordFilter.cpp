@@ -1,9 +1,9 @@
 #include "IDebug.h"
 #include "CLog.h"
 #include "IEnums.h"
-#include "CWordFilter.h"
-#include "TServer.h"
-#include "TPlayer.h"
+#include "WordFilter.h"
+#include "Server.h"
+#include "Player.h"
 
 char bypass[] =
 {

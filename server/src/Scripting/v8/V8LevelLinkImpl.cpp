@@ -9,11 +9,11 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
 
-#include "TLevel.h"
-#include "TLevelLink.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TPlayer.h"
+#include "Level.h"
+#include "LevelLink.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Player.h"
 
 // PROPERTY: link.newlevel
 void Link_GetStr_NewLevel(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <unordered_map>
 #include "CScriptEngine.h"
-#include "TNPC.h"
-#include "TServer.h"
+#include "NPC.h"
+#include "Server.h"
 
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"

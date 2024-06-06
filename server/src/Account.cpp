@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <memory.h>
 #include <time.h>
-#include "TAccount.h"
-#include "TServer.h"
+#include "Account.h"
+#include "Server.h"
 #include "CFileSystem.h"
 
 /*

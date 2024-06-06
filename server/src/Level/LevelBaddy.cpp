@@ -1,9 +1,9 @@
 #include "IDebug.h"
 #include "IEnums.h"
-#include "TServer.h"
+#include "Server.h"
 #include "IUtil.h"
-#include "TLevelBaddy.h"
-#include "TLevel.h"
+#include "LevelBaddy.h"
+#include "Level.h"
 
 const int baddytypes = 10;
 const char* baddyImages[baddytypes] = {

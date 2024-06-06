@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "CFileSystem.h"
-#include "TMap.h"
-#include "TServer.h"
+#include "Map.h"
+#include "Server.h"
 
 TMap::TMap(MapType pType, bool pGroupMap)
 : type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
