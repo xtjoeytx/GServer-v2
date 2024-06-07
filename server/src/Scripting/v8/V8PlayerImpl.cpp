@@ -1008,7 +1008,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		Server* server = scriptEngine->getServer();
 
 		// Get npc-server
-		auto npcServer = m_server->getNPCServer();
+		auto npcServer = server->getNPCServer();
 		assert(npcServer);
 
 		// Parse argument
@@ -1016,7 +1016,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// PM message
 		CString pmMessage(*newValue);
-		playerObject->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)npcm_server->getId() << "\"\"," << pmMessage.gtokenize());
+		playerObject->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize());
 	}
 }
 
@@ -1213,7 +1213,7 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		Server* server = scriptEngine->getServer();
-		auto classObj = m_server->getClass(className);
+		auto classObj = server->getClass(className);
 
 		if (classObj && !classObj->getSource().empty())
 		{

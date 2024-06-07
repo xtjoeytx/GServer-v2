@@ -76,7 +76,7 @@ NPC::NPC(Server* pServer, NPCType type)
 	  m_gani("idle")
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pm_server->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_npcDeleteRequested(false), m_canWarp(NPCWarpType::None), m_width(32), m_height(32), m_timeout(0), m_scriptEventsMask(0xFF)
+	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_npcDeleteRequested(false), m_canWarp(NPCWarpType::None), m_width(32), m_height(32), m_timeout(0), m_scriptEventsMask(0xFF)
 #endif
 {
 	memset((void*)m_colors, 0, sizeof(m_colors));

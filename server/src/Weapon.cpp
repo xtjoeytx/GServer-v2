@@ -19,7 +19,7 @@ Weapon::Weapon(Server* pServer, LevelItemType pId)
 	: m_server(pServer), m_modTime(0), m_weaponDefault(pId)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pm_server->getScriptEngine())
+	  m_scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	m_weaponName = LevelItem::getItemName(m_weaponDefault);
@@ -30,7 +30,7 @@ Weapon::Weapon(Server* pServer, std::string pName, std::string pImage, std::stri
 	: m_server(pServer), m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pm_server->getScriptEngine())
+	  m_scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
 	// Update Weapon

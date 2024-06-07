@@ -995,7 +995,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		}
 
 		//Server *server = scriptEngine->getServer();
-		//auto classObj = m_server->getClass(className);
+		//auto classObj = server->getClass(className);
 
 		//if (classObj && !classObj->source().empty())
 		//{
@@ -1005,9 +1005,9 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		//	std::string serverCode = classObj->serverCode();
 		//	std::string clientCode = classObj->clientCode();
 
-		//	//auto currentClass = m_server->getClassObject(className);
+		//	//auto currentClass = server->getClassObject(className);
 		//	//if (currentClass == nullptr)
-		//	//	currentClass = m_server->addClass(className, clientCode);
+		//	//	currentClass = server->addClass(className, clientCode);
 		//	//npcObject->addClassCode(className, clientCode);
 		//	// Add class to npc
 		//	//npcObject->addClassCode(className, clientCode);
@@ -1095,7 +1095,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 			Server* server = scriptEngine->getServer();
 
-			auto level = m_server->getLevel(*levelName);
+			auto level = server->getLevel(*levelName);
 			if (level != nullptr)
 			{
 				npcObject->warpNPC(level, newX, newY);

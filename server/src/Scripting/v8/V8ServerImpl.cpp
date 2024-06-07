@@ -272,7 +272,7 @@ void Server_Function_SetShootParams(const v8::FunctionCallbackInfo<v8::Value>& a
 		}
 		shootParams.gtokenizeI();
 
-		m_server->setShootParams(shootParams.text());
+		server->setShootParams(shootParams.text());
 	}
 }
 
@@ -473,7 +473,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	Server* serverObject = UnwrapObject<Server>(self);
 
 	// Get npcs list
-	auto& playerList = serverObject->getPlayers();
+	auto& playerList = serverObject->getPlayerList();
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate);
 

@@ -905,7 +905,7 @@ void Player::testTouch()
 {
 #ifdef V8NPCSERVER
 	static const int touchtestd[] = { 24, 16, 0, 32, 24, 56, 48, 32 };
-	int dir = sprite % 4;
+	int dir = m_sprite % 4;
 
 	int pixelX = int(m_x * 16.0);
 	int pixelY = int(m_y * 16.0);

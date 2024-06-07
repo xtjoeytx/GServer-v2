@@ -2,10 +2,9 @@
 #define SCRIPTACTION_H
 
 #include "ScriptArguments.h"
+#include "ScriptFunction.h"
 #include <cassert>
 #include <string>
-
-class IScriptFunction;
 
 class ScriptAction
 {
