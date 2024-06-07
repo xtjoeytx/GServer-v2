@@ -11,7 +11,7 @@
 enum class MapType
 {
 	BIGMAP = 0,
-	GMAP   = 1,
+	GMAP = 1,
 };
 
 struct MapLevel
@@ -50,31 +50,31 @@ public:
 	//int getLevelX(const std::string& level) const;
 	//int getLevelY(const std::string& level) const;
 
-	const std::string& getMapName() const { return mapName; }
-	MapType getType() const { return type; }
-	size_t getWidth() const { return width; }
-	size_t getHeight() const { return height; }
-	bool isBigMap() const { return type == MapType::BIGMAP; }
-	bool isGmap() const { return type == MapType::GMAP; }
-	bool isGroupMap() const { return groupMap; }
+	const std::string& getMapName() const { return m_mapName; }
+	MapType getType() const { return m_type; }
+	size_t getWidth() const { return m_width; }
+	size_t getHeight() const { return m_height; }
+	bool isBigMap() const { return m_type == MapType::BIGMAP; }
+	bool isGmap() const { return m_type == MapType::GMAP; }
+	bool isGroupMap() const { return m_groupMap; }
 
 private:
 	bool loadBigMap(const CString& pFileName, Server* pServer);
 	bool loadGMap(const CString& pFileName, Server* pServer);
 
-	MapType type;
-	time_t modTime;
-	size_t width;
-	size_t height;
-	bool groupMap;
-	bool loadFullMap;
-	std::string mapName;
-	std::string mapImage;
-	std::string miniMapImage;
+	MapType m_type;
+	time_t m_modTime;
+	size_t m_width;
+	size_t m_height;
+	bool m_groupMap;
+	bool m_loadFullMap;
+	std::string m_mapName;
+	std::string m_mapImage;
+	std::string m_miniMapImage;
 
-	std::unordered_map<std::string, MapLevel> levels;
-	std::vector<std::string> _levelList;
-	std::vector<std::string> preloadLevelList;
+	std::unordered_map<std::string, MapLevel> m_levels;
+	std::vector<std::string> m_levelList;
+	std::vector<std::string> m_preloadLevelList;
 };
 
 #endif

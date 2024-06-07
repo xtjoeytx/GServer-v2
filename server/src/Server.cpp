@@ -7,11 +7,11 @@
 #include <fmt/format.h>
 
 #include "IUtil.h"
-#include "ScriptOrigin.h"
 #include "Level.h"
 #include "Map.h"
 #include "NPC.h"
 #include "Player.h"
+#include "ScriptOrigin.h"
 #include "Server.h"
 #include "Weapon.h"
 #include "main.h"
@@ -46,19 +46,19 @@ CString operator<<(const CString& first, const CString& second)
 }
 
 Server::Server(const CString& pName)
-	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
-	  triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
+	: running(false), m_doRestart(false), m_name(pName), m_serverlist(this), m_wordFilter(this), m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
+	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 #ifdef V8NPCSERVER
 	  ,
-	  mScriptEngine(this)
+	  m_scriptEngine(this)
 #endif
 #ifdef UPNP
 	  ,
-	  upnp(this)
+	  m_upnp(this)
 #endif
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
-	lastTimer = lastNWTimer = last1mTimer = last5mTimer = last3mTimer = time_now;
+	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
 	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
@@ -66,37 +66,37 @@ Server::Server(const CString& pName)
 	// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
 	// The players from other servers should be unique lists for each player as they are fetched depending on
 	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-	nextPlayerId = 2;
-	nextNpcId    = 10001;
+	m_nextPlayerId = 2;
+	m_nextNpcId = 10001;
 
 	// This has the full path to the server directory.
-	serverpath = CString() << getBaseHomePath() << "servers/" << name << "/";
-	FileSystem::fixPathSeparators(serverpath);
+	m_serverPath = CString() << getBaseHomePath() << "servers/" << m_name << "/";
+	FileSystem::fixPathSeparators(m_serverPath);
 
 	// Set up the log files.
-	CString logpath    = serverpath.remove(0, getBaseHomePath().length());
-	CString npcPath    = CString() << logpath << "logs/npclog.txt";
-	CString rcPath     = CString() << logpath << "logs/rclog.txt";
+	CString logpath = m_serverPath.remove(0, getBaseHomePath().length());
+	CString npcPath = CString() << logpath << "logs/npclog.txt";
+	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
 	FileSystem::fixPathSeparators(npcPath);
 	FileSystem::fixPathSeparators(rcPath);
 	FileSystem::fixPathSeparators(serverPath);
-	npclog.setFilename(npcPath);
-	rclog.setFilename(rcPath);
-	serverlog.setFilename(serverPath);
+	m_npcLog.setFilename(npcPath);
+	m_rcLog.setFilename(rcPath);
+	m_serverLog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
 	FileSystem::fixPathSeparators(scriptPath);
-	scriptlog.setFilename(scriptPath);
+	m_scriptLog.setFilename(scriptPath);
 #endif
 
 	// Announce ourself to other classes.
-	for (auto& fs: filesystem)
+	for (auto& fs: m_filesystem)
 	{
 		fs.setServer(this);
 	}
-	filesystem_accounts.setServer(this);
+	m_filesystemAccounts.setServer(this);
 }
 
 Server::~Server()
@@ -108,9 +108,9 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 {
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
-	if (!mScriptEngine.Initialize())
+	if (!m_scriptEngine.Initialize())
 	{
-		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", name.text());
+		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
 		// TODO(joey): new error number? log is probably enough
 		return ERR_SETTINGS;
 	}
@@ -122,77 +122,77 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// If an override serverip and serverport were specified, fix the options now.
 	if (!serverip.isEmpty())
-		settings.addKey("serverip", serverip);
+		m_settings.addKey("serverip", serverip);
 	if (!serverport.isEmpty())
-		settings.addKey("serverport", serverport);
+		m_settings.addKey("serverport", serverport);
 	if (!localip.isEmpty())
-		settings.addKey("localip", localip);
+		m_settings.addKey("localip", localip);
 	if (!serverinterface.isEmpty())
-		settings.addKey("serverinterface", serverinterface);
+		m_settings.addKey("serverinterface", serverinterface);
 
-	overrideIP        = serverip;
-	overridePort      = serverport;
-	overrideLocalIP   = localip;
-	overrideInterface = serverinterface;
+	m_overrideIp = serverip;
+	m_overridePort = serverport;
+	m_overrideLocalIp = localip;
+	m_overrideInterface = serverinterface;
 
 	// Fix up the interface to work properly with CSocket.
-	CString oInter = overrideInterface;
-	if (overrideInterface.isEmpty())
-		oInter = settings.getStr("serverinterface");
+	CString oInter = m_overrideInterface;
+	if (m_overrideInterface.isEmpty())
+		oInter = m_settings.getStr("serverinterface");
 	if (oInter == "AUTO")
 		oInter.clear();
 
 	// Initialize the player socket.
-	playerSock.setType(SOCKET_TYPE_SERVER);
-	playerSock.setProtocol(SOCKET_PROTOCOL_TCP);
-	playerSock.setDescription("playerSock");
+	m_playerSock.setType(SOCKET_TYPE_SERVER);
+	m_playerSock.setProtocol(SOCKET_PROTOCOL_TCP);
+	m_playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	serverlog.out("[%s]      Initializing player listen socket.\n", name.text());
-	if (playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), settings.getStr("serverport").text()))
+	m_serverLog.out("[%s]      Initializing player listen socket.\n", m_name.text());
+	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
 	{
-		serverlog.out("[%s] ** [Error] Could not initialize listening socket...\n", name.text());
+		m_serverLog.out("[%s] ** [Error] Could not initialize listening socket...\n", m_name.text());
 		return ERR_LISTEN;
 	}
-	if (playerSock.connect())
+	if (m_playerSock.connect())
 	{
-		serverlog.out("[%s] ** [Error] Could not connect listening socket...\n", name.text());
+		m_serverLog.out("[%s] ** [Error] Could not connect listening socket...\n", m_name.text());
 		return ERR_LISTEN;
 	}
 
 #ifdef UPNP
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
-	serverlog.out("[%s]      Starting UPnP discovery thread.\n", name.text());
-	upnp.initialize((oInter.isEmpty() ? playerSock.getLocalIp() : oInter.text()), settings.getStr("serverport").text());
-	upnp_thread = std::thread(std::ref(upnp));
+	serverlog.out("[%s]      Starting UPnP discovery thread.\n", m_name.text());
+	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
+	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
 
 #ifdef V8NPCSERVER
 	// Setup NPC Control port
-	mNCPort = strtoint(settings.getStr("serverport"));
+	m_ncPort = strtoint(m_settings.getStr("serverport"));
 
-	mNpcServer = std::make_shared<Player>(this, nullptr, 0);
-	mNpcServer->setType(PLTYPE_NPCSERVER);
-	mNpcServer->loadAccount("(npcserver)");
-	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
-	mNpcServer->setLoaded(true); // can't guarantee this, so forcing it
+	m_npcServer = std::make_shared<Player>(this, nullptr, 0);
+	mNpcm_server->setType(PLTYPE_NPCSERVER);
+	mNpcm_server->loadAccount("(npcserver)");
+	mNpcm_server->setHeadImage(m_settings.getStr("staffhead", "head25.png"));
+	mNpcm_server->setLoaded(true); // can't guarantee this, so forcing it
 
 	// TODO(joey): Update this when server options is changed?
 	// Set nickname, and append (Server) - required!
-	CString nickName = settings.getStr("nickname");
+	CString nickName = m_settings.getStr("nickname");
 	if (nickName.isEmpty())
 		nickName = "NPC-Server";
 	nickName << " (Server)";
-	mNpcServer->setNick(nickName, true);
+	mNpcm_server->setNick(nickName, true);
 
 	// Add npc-server to playerlist
-	addPlayer(mNpcServer);
+	addPlayer(m_npcServer);
 #endif
 
 	// Register ourself with the socket manager.
-	sockManager.registerSocket((CSocketStub*)this);
+	m_sockManager.registerSocket((CSocketStub*)this);
 
-	serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	m_serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	return 0;
 }
 
@@ -209,11 +209,11 @@ void Server::operator()()
 		cleanupDeletedPlayers();
 
 		// Check if we should do a restart.
-		if (doRestart)
+		if (m_doRestart)
 		{
-			doRestart = false;
+			m_doRestart = false;
 			cleanup();
-			int ret = init(overrideIP, overridePort, overrideLocalIP, overrideInterface);
+			int ret = init(m_overrideIp, m_overridePort, m_overrideLocalIp, m_overrideInterface);
 			if (ret != 0)
 				break;
 		}
@@ -226,8 +226,8 @@ void Server::operator()()
 
 void Server::cleanupDeletedPlayers()
 {
-	if (deletedPlayers.empty()) return;
-	for (auto i = std::begin(deletedPlayers); i != std::end(deletedPlayers);)
+	if (m_deletedPlayers.empty()) return;
+	for (auto i = std::begin(m_deletedPlayers); i != std::end(m_deletedPlayers);)
 	{
 		// Value copy so the shared_ptr exists until the end.
 		auto player = *i;
@@ -246,7 +246,7 @@ void Server::cleanupDeletedPlayers()
 				// Send event to server that player is logging out
 				if (player->isLoaded() && (player->getType() & PLTYPE_ANYPLAYER))
 				{
-					for (const auto& [npcName, npcPtr]: npcNameList)
+					for (const auto& [npcName, npcPtr]: m_npcNameList)
 					{
 						if (auto npcObject = npcPtr.lock(); npcObject)
 							npcObject->queueNpcAction("npc.playerlogout", player.get());
@@ -268,14 +268,14 @@ void Server::cleanupDeletedPlayers()
 #endif
 
 		// Get rid of the player now.
-		freePlayerIds.insert(player->getId());
-		sockManager.unregisterSocket(player.get());
-		playerList.erase(player->getId());
+		m_freePlayerIds.insert(player->getId());
+		m_sockManager.unregisterSocket(player.get());
+		m_playerList.erase(player->getId());
 		player->cleanup();
 
-		i = deletedPlayers.erase(i);
+		i = m_deletedPlayers.erase(i);
 	}
-	//deletedPlayers.clear();
+	//m_deletedPlayers.clear();
 }
 
 void Server::cleanup()
@@ -284,9 +284,9 @@ void Server::cleanup()
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
 #ifdef UPNP
-	if (upnp_thread.joinable())
-		upnp_thread.join();
-	upnp.remove_all_forwarded_ports();
+	if (m_upnpThread.joinable())
+		m_upnpThread.join();
+	m_upnp.remove_all_forwarded_ports();
 #endif
 
 	// Save translations.
@@ -300,68 +300,68 @@ void Server::cleanup()
 	saveNpcs();
 
 	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
-	mNpcServer = nullptr;
+	m_npcServer = nullptr;
 #endif
 
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 		player->cleanup();
 
-	playerList.clear();
-	deletedPlayers.clear();
-	freePlayerIds.clear();
-	nextPlayerId = 2;
+	m_playerList.clear();
+	m_deletedPlayers.clear();
+	m_freePlayerIds.clear();
+	m_nextPlayerId = 2;
 
-	levelList.clear();
-	mapList.clear();
-	groupLevels.clear();
+	m_levelList.clear();
+	m_mapList.clear();
+	m_groupLevels.clear();
 
-	npcList.clear();
-	npcNameList.clear();
-	freeNpcIds.clear();
+	m_npcList.clear();
+	m_npcNameList.clear();
+	m_freeNpcIds.clear();
 	//nextNpcIdLevel = 1;
 	//nextNpcIdGlobal = 10001;
-	nextNpcId = 10001;
+	m_nextNpcId = 10001;
 
 	saveWeapons();
-	weaponList.clear();
+	m_weaponList.clear();
 
 #ifdef V8NPCSERVER
 	// Clean up the script engine
-	mScriptEngine.Cleanup();
+	m_scriptEngine.Cleanup();
 #endif
 
-	playerSock.disconnect();
-	serverlist.getSocket().disconnect();
+	m_playerSock.disconnect();
+	m_serverlist.getSocket().disconnect();
 
 	// Clean up the socket manager.  Pass false so we don't cause a crash.
-	sockManager.cleanup(false);
+	m_sockManager.cleanup(false);
 }
 
 void Server::restart()
 {
-	doRestart = true;
+	m_doRestart = true;
 }
 
 bool Server::doMain()
 {
 	// Update our socket manager.
-	sockManager.update(0, 5000); // 5ms
+	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
 #ifdef V8NPCSERVER
-	mScriptEngine.RunScripts(currentTimer);
+	m_scriptEngine.RunScripts(currentTimer);
 
 	// enable when we switch to async compiling
-	//gs2ScriptManager.runQueue();
+	//m_gs2ScriptManager.runQueue();
 #endif
 
 	// Every second, do some events.
-	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - lastTimer);
+	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastTimer);
 	if (time_diff.count() >= 1000)
 	{
-		lastTimer = currentTimer;
+		m_lastTimer = currentTimer;
 		doTimedEvents();
 	}
 
@@ -371,11 +371,11 @@ bool Server::doMain()
 bool Server::doTimedEvents()
 {
 	// Do serverlist events.
-	serverlist.doTimedEvents();
+	m_serverlist.doTimedEvents();
 
 	// Do player events.
 	{
-		for (auto& [id, player]: playerList)
+		for (auto& [id, player]: m_playerList)
 		{
 			assert(player);
 			if (!player->isNPCServer())
@@ -388,14 +388,14 @@ bool Server::doTimedEvents()
 
 	// Do level events.
 	{
-		for (auto& level: levelList)
+		for (auto& level: m_levelList)
 		{
 			assert(level);
 			level->doTimedEvents();
 		}
 
 		// Group levels.
-		for (auto& [group, levelPtr]: groupLevels)
+		for (auto& [group, levelPtr]: m_groupLevels)
 		{
 			if (auto level = levelPtr.lock(); level)
 				level->doTimedEvents();
@@ -403,44 +403,44 @@ bool Server::doTimedEvents()
 	}
 
 	// Send NW time.
-	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - lastNWTimer);
+	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_lastNewWorldTimer);
 	if (time_diff.count() >= 5)
 	{
 		calculateServerTime();
 
-		lastNWTimer = lastTimer;
+		m_lastNewWorldTimer = m_lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 	}
 
 	// Stuff that happens every minute.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last1mTimer);
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last1mTimer);
 	if (time_diff.count() >= 60)
 	{
-		last1mTimer = lastTimer;
+		m_last1mTimer = m_lastTimer;
 
 		// Save server flags.
 		this->saveServerFlags();
 	}
 
 	// Stuff that happens every 3 minutes.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last3mTimer);
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last3mTimer);
 	if (time_diff.count() >= 180)
 	{
-		last3mTimer = lastTimer;
+		m_last3mTimer = m_lastTimer;
 
 		// TODO(joey): probably a better way to do this..
 
 		// Resynchronize the file systems.
-		filesystem_accounts.resync();
-		for (auto& i: filesystem)
+		m_filesystemAccounts.resync();
+		for (auto& i: m_filesystem)
 			i.resync();
 	}
 
 	// Save stuff every 5 minutes.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(lastTimer - last5mTimer);
+	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last5mTimer);
 	if (time_diff.count() >= 300)
 	{
-		last5mTimer = lastTimer;
+		m_last5mTimer = m_lastTimer;
 
 		// Reload some server settings.
 		loadAllowedVersions();
@@ -455,10 +455,10 @@ bool Server::doTimedEvents()
 #endif
 
 		// Check all of the instanced maps to see if the players have left.
-		if (!groupLevels.empty())
+		if (!m_groupLevels.empty())
 		{
 			std::unordered_set<std::string> groupKeys;
-			std::for_each(std::begin(groupLevels), std::end(groupLevels), [&groupKeys](auto& pair)
+			std::for_each(std::begin(m_groupLevels), std::end(m_groupLevels), [&groupKeys](auto& pair)
 						  {
 							  groupKeys.insert(pair.first);
 						  });
@@ -466,16 +466,16 @@ bool Server::doTimedEvents()
 			for (auto& groupName: groupKeys)
 			{
 				bool playersFound = false;
-				auto range        = groupLevels.equal_range(groupName);
-				std::for_each(range.first, range.second, [&playersFound](decltype(groupLevels)::value_type& pair)
+				auto range = m_groupLevels.equal_range(groupName);
+				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
 							  {
-								  if (auto level = pair.second.lock(); level && !level->getPlayerList().empty())
+								  if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
 									  playersFound = true;
 							  });
 
 				if (!playersFound)
 				{
-					groupLevels.erase(groupName);
+					m_groupLevels.erase(groupName);
 				}
 			}
 		}
@@ -487,7 +487,7 @@ bool Server::doTimedEvents()
 bool Server::onRecv()
 {
 	// Create socket.
-	CSocket* newSock = playerSock.accept();
+	CSocket* newSock = m_playerSock.accept();
 	if (newSock == nullptr)
 		return true;
 
@@ -499,7 +499,7 @@ bool Server::onRecv()
 		return false;
 
 	// Add them to the socket manager.
-	sockManager.registerSocket((CSocketStub*)newPlayer.get());
+	m_sockManager.registerSocket((CSocketStub*)newPlayer.get());
 
 	return true;
 }
@@ -508,25 +508,25 @@ bool Server::onRecv()
 
 void Server::loadAllFolders()
 {
-	for (auto& fs: filesystem)
+	for (auto& fs: m_filesystem)
 		fs.clear();
 
-	filesystem[0].addDir("world");
-	if (settings.getStr("sharefolder").length() > 0)
+	m_filesystem[0].addDir("world");
+	if (m_settings.getStr("sharefolder").length() > 0)
 	{
-		std::vector<CString> folders = settings.getStr("sharefolder").tokenize(",");
+		std::vector<CString> folders = m_settings.getStr("sharefolder").tokenize(",");
 		for (auto& folder: folders)
-			filesystem[0].addDir(folder.trim());
+			m_filesystem[0].addDir(folder.trim());
 	}
 }
 
 void Server::loadFolderConfig()
 {
-	for (auto& i: filesystem)
+	for (auto& i: m_filesystem)
 		i.clear();
 
-	foldersConfig = CString::loadToken(CString() << serverpath << "config/foldersconfig.txt", "\n", true);
-	for (auto& configLine: foldersConfig)
+	m_foldersConfig = CString::loadToken(CString() << m_serverPath << "config/foldersconfig.txt", "\n", true);
+	for (auto& configLine: m_foldersConfig)
 	{
 		// No comments.
 		int cLoc = -1;
@@ -536,7 +536,7 @@ void Server::loadFolderConfig()
 		if (configLine.length() == 0) continue;
 
 		// Parse the line.
-		CString type   = configLine.readString(" ");
+		CString type = configLine.readString(" ");
 		CString config = configLine.readString("");
 		type.trimI();
 		config.trimI();
@@ -547,7 +547,7 @@ void Server::loadFolderConfig()
 		int pos = -1;
 		if ((pos = config.findl(FileSystem::getPathSeparator())) != -1)
 			dirNoWild = config.remove(pos + 1);
-		CString dir      = CString("world/") << dirNoWild;
+		CString dir = CString("world/") << dirNoWild;
 		CString wildcard = config.remove(0, dirNoWild.length());
 
 		// Find out which file system to add it to.
@@ -557,9 +557,9 @@ void Server::loadFolderConfig()
 		if (fs != nullptr)
 		{
 			fs->addDir(dir, wildcard);
-			serverlog.out("[%s]        adding %s [%s] to %s\n", name.text(), dir.text(), wildcard.text(), type.text());
+			m_serverLog.out("[%s]        adding %s [%s] to %s\n", m_name.text(), dir.text(), wildcard.text(), type.text());
 		}
-		filesystem[0].addDir(dir, wildcard);
+		m_filesystem[0].addDir(dir, wildcard);
 	}
 }
 
@@ -567,58 +567,58 @@ int Server::loadConfigFiles()
 {
 	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
 	//	Move them out of here?
-	serverlog.out("[%s] :: Loading server configuration...\n", name.text());
+	m_serverLog.out("[%s] :: Loading server configuration...\n", m_name.text());
 
 	// Load Settings
-	serverlog.out("[%s]      Loading settings...\n", name.text());
+	m_serverLog.out("[%s]      Loading settings...\n", m_name.text());
 	loadSettings();
 
 	// Load Admin Settings
-	serverlog.out("[%s]      Loading admin settings...\n", name.text());
+	m_serverLog.out("[%s]      Loading admin settings...\n", m_name.text());
 	loadAdminSettings();
 
 	// Load allowed versions.
-	serverlog.out("[%s]      Loading allowed client versions...\n", name.text());
+	m_serverLog.out("[%s]      Loading allowed client versions...\n", m_name.text());
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	serverlog.out("[%s]      Folder config: ", name.text());
-	if (!settings.getBool("nofoldersconfig", false))
+	m_serverLog.out("[%s]      Folder config: ", m_name.text());
+	if (!m_settings.getBool("nofoldersconfig", false))
 	{
-		serverlog.append("ENABLED\n");
+		m_serverLog.append("ENABLED\n");
 	}
 	else
-		serverlog.append("disabled\n");
-	serverlog.out("[%s]      Loading file system...\n", name.text());
+		m_serverLog.append("disabled\n");
+	m_serverLog.out("[%s]      Loading file system...\n", m_name.text());
 	loadFileSystem();
 
 	// Load server flags.
-	serverlog.out("[%s]      Loading serverflags.txt...\n", name.text());
+	m_serverLog.out("[%s]      Loading serverflags.txt...\n", m_name.text());
 	loadServerFlags();
 
 	// Load server message.
-	serverlog.out("[%s]      Loading config/servermessage.html...\n", name.text());
+	m_serverLog.out("[%s]      Loading config/servermessage.html...\n", m_name.text());
 	loadServerMessage();
 
 	// Load IP bans.
-	serverlog.out("[%s]      Loading config/ipbans.txt...\n", name.text());
+	m_serverLog.out("[%s]      Loading config/ipbans.txt...\n", m_name.text());
 	loadIPBans();
 
 	// Load weapons.
-	serverlog.out("[%s]      Loading weapons...\n", name.text());
+	m_serverLog.out("[%s]      Loading weapons...\n", m_name.text());
 	loadWeapons(true);
 
 	// Load classes.
-	serverlog.out("[%s]      Loading classes...\n", name.text());
+	m_serverLog.out("[%s]      Loading classes...\n", m_name.text());
 	loadClasses(true);
 
 	// Load maps.
-	serverlog.out("[%s]      Loading maps...\n", name.text());
+	m_serverLog.out("[%s]      Loading maps...\n", m_name.text());
 	loadMaps(true);
 
 #ifdef V8NPCSERVER
 	// Load database npcs.
-	serverlog.out("[%s]      Loading npcs...\n", name.text());
+	serverlog.out("[%s]      Loading npcs...\n", m_name.text());
 	loadNpcs(true);
 #endif
 
@@ -627,11 +627,11 @@ int Server::loadConfigFiles()
 	loadMapLevels();
 
 	// Load translations.
-	serverlog.out("[%s]      Loading translations...\n", name.text());
+	m_serverLog.out("[%s]      Loading translations...\n", m_name.text());
 	loadTranslations();
 
 	// Load word filter.
-	serverlog.out("[%s]      Loading word filter...\n", name.text());
+	m_serverLog.out("[%s]      Loading word filter...\n", m_name.text());
 	loadWordFilter();
 
 	return 0;
@@ -639,19 +639,19 @@ int Server::loadConfigFiles()
 
 void Server::loadSettings()
 {
-	if (!settings.isOpened())
+	if (!m_settings.isOpened())
 	{
-		settings.setSeparator("=");
-		settings.loadFile(CString() << serverpath << "config/serveroptions.txt");
-		if (!settings.isOpened())
-			serverlog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", name.text());
+		m_settings.setSeparator("=");
+		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
+		if (!m_settings.isOpened())
+			m_serverLog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", m_name.text());
 	}
 
 	// Load status list.
-	statusList = settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+	m_statusList = m_settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
 
 	// Load staff list
-	staffList = settings.getStr("staff").tokenize(",");
+	m_staffList = m_settings.getStr("staff").tokenize(",");
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	getServerList().sendServerHQ();
@@ -659,10 +659,10 @@ void Server::loadSettings()
 
 void Server::loadAdminSettings()
 {
-	adminsettings.setSeparator("=");
-	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
-	if (!adminsettings.isOpened())
-		serverlog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", name.text());
+	m_adminSettings.setSeparator("=");
+	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
+	if (!m_adminSettings.isOpened())
+		m_serverLog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", m_name.text());
 	else
 		getServerList().sendServerHQ();
 }
@@ -670,40 +670,40 @@ void Server::loadAdminSettings()
 void Server::loadAllowedVersions()
 {
 	CString versions;
-	versions.load(CString() << serverpath << "config/allowedversions.txt");
+	versions.load(CString() << m_serverPath << "config/allowedversions.txt");
 	versions = removeComments(versions);
 	versions.removeAllI("\r");
 	versions.removeAllI("\t");
 	versions.removeAllI(" ");
-	allowedVersions = versions.tokenize("\n");
-	allowedVersionString.clear();
-	for (auto& allowedVersion: allowedVersions)
+	m_allowedVersions = versions.tokenize("\n");
+	m_allowedVersionString.clear();
+	for (auto& allowedVersion: m_allowedVersions)
 	{
-		if (!allowedVersionString.isEmpty())
-			allowedVersionString << ", ";
+		if (!m_allowedVersionString.isEmpty())
+			m_allowedVersionString << ", ";
 
 		int loc = allowedVersion.find(":");
 		if (loc == -1)
-			allowedVersionString << getVersionString(allowedVersion, PLTYPE_ANYCLIENT);
+			m_allowedVersionString << getVersionString(allowedVersion, PLTYPE_ANYCLIENT);
 		else
 		{
 			CString s = allowedVersion.subString(0, loc);
 			CString f = allowedVersion.subString(loc + 1);
-			int vid   = getVersionID(s);
-			int vid2  = getVersionID(f);
+			int vid = getVersionID(s);
+			int vid2 = getVersionID(f);
 			if (vid != -1 && vid2 != -1)
-				allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
+				m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
 		}
 	}
 }
 
 void Server::loadFileSystem()
 {
-	for (auto& i: filesystem)
+	for (auto& i: m_filesystem)
 		i.clear();
-	filesystem_accounts.clear();
-	filesystem_accounts.addDir("accounts", "*.txt");
-	if (settings.getBool("nofoldersconfig", false))
+	m_filesystemAccounts.clear();
+	m_filesystemAccounts.addDir("accounts", "*.txt");
+	if (m_settings.getBool("nofoldersconfig", false))
 		loadAllFolders();
 	else
 		loadFolderConfig();
@@ -711,21 +711,21 @@ void Server::loadFileSystem()
 
 void Server::loadServerFlags()
 {
-	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
+	std::vector<CString> lines = CString::loadToken(CString() << m_serverPath << "serverflags.txt", "\n", true);
 	for (auto& line: lines)
 		this->setFlag(line, false);
 }
 
 void Server::loadServerMessage()
 {
-	servermessage.load(CString() << serverpath << "config/servermessage.html");
-	servermessage.removeAllI("\r");
-	servermessage.replaceAllI("\n", " ");
+	m_serverMessage.load(CString() << m_serverPath << "config/servermessage.html");
+	m_serverMessage.removeAllI("\r");
+	m_serverMessage.replaceAllI("\n", " ");
 }
 
 void Server::loadIPBans()
 {
-	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
+	m_ipBans = CString::loadToken(CString() << m_serverPath << "config/ipbans.txt", "\n", true);
 }
 
 void Server::loadClasses(bool print)
@@ -739,7 +739,7 @@ void Server::loadClasses(bool print)
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		classList[className] = std::make_unique<ScriptClass>(this, className, scriptData.text());
+		m_classList[className] = std::make_unique<ScriptClass>(this, className, scriptData.text());
 
 		updateClassForPlayers(getClass(className));
 	}
@@ -763,22 +763,22 @@ void Server::loadWeapons(bool print)
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
 
 		// Check if the weapon exists.
-		if (weaponList.find(weapon->getName()) == weaponList.end())
+		if (m_weaponList.find(weapon->getName()) == m_weaponList.end())
 		{
-			weaponList[weapon->getName()] = weapon;
-			if (print) serverlog.out("[%s]        %s\n", name.text(), weapon->getName().c_str());
+			m_weaponList[weapon->getName()] = weapon;
+			if (print) m_serverLog.out("[%s]        %s\n", m_name.text(), weapon->getName().c_str());
 		}
 		else
 		{
 			// If the weapon exists, and the version on disk is newer, reload it.
-			auto& w = weaponList[weapon->getName()];
+			auto& w = m_weaponList[weapon->getName()];
 			if (w->getModTime() < weapon->getModTime())
 			{
-				weaponList[weapon->getName()] = weapon;
+				m_weaponList[weapon->getName()] = weapon;
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
+					m_serverLog.out("[%s]        %s [updated]\n", m_name.text(), weapon->getName().c_str());
 					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
@@ -786,25 +786,25 @@ void Server::loadWeapons(bool print)
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) serverlog.out("[%s]        %s [skipped]\n", name.text(), weapon->getName().c_str());
+				if (print) m_serverLog.out("[%s]        %s [skipped]\n", m_name.text(), weapon->getName().c_str());
 			}
 		}
 	}
 
 	// Add the default weapons.
-	if (!weaponList.contains("bow")) weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
-	if (!weaponList.contains("bomb")) weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
-	if (!weaponList.contains("superbomb")) weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
-	if (!weaponList.contains("fireball")) weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
-	if (!weaponList.contains("fireblast")) weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
-	if (!weaponList.contains("nukeshot")) weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
-	if (!weaponList.contains("joltbomb")) weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
+	if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
+	if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
+	if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
+	if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
+	if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
+	if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
+	if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
 }
 
 void Server::loadMapLevels()
 {
 	// Load gmap levels based on options provided by the gmap file
-	for (const auto& map: mapList)
+	for (const auto& map: m_mapList)
 	{
 		if (map->getType() == MapType::GMAP)
 			map->loadMapLevels(this);
@@ -814,14 +814,14 @@ void Server::loadMapLevels()
 void Server::loadMaps(bool print)
 {
 	// Remove players off all maps
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 		player->setMap(nullptr);
 
 	// Remove existing maps.
-	mapList.clear();
+	m_mapList.clear();
 
 	// Load gmaps.
-	std::vector<CString> gmaps = settings.getStr("gmaps").guntokenize().tokenize("\n");
+	std::vector<CString> gmaps = m_settings.getStr("gmaps").guntokenize().tokenize("\n");
 	for (CString& gmapName: gmaps)
 	{
 		// Check for blank lines.
@@ -837,18 +837,18 @@ void Server::loadMaps(bool print)
 		auto gmap = std::make_unique<Map>(MapType::GMAP);
 		if (!gmap->load(CString() << gmapName, this))
 		{
-			if (print) serverlog.out(CString() << "[" << name << "] "
-											   << "** [Error] Could not load " << gmapName << ".gmap"
-											   << "\n");
+			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
+												 << "** [Error] Could not load " << gmapName << ".gmap"
+												 << "\n");
 			continue;
 		}
 
-		if (print) serverlog.out("[%s]        [gmap] %s\n", name.text(), gmapName.text());
-		mapList.push_back(std::move(gmap));
+		if (print) m_serverLog.out("[%s]        [gmap] %s\n", m_name.text(), gmapName.text());
+		m_mapList.push_back(std::move(gmap));
 	}
 
 	// Load bigmaps.
-	std::vector<CString> bigmaps = settings.getStr("maps").guntokenize().tokenize("\n");
+	std::vector<CString> bigmaps = m_settings.getStr("maps").guntokenize().tokenize("\n");
 	for (auto& i: bigmaps)
 	{
 		// Check for blank lines.
@@ -858,17 +858,17 @@ void Server::loadMaps(bool print)
 		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
 		if (!bigmap->load(i.trim(), this))
 		{
-			if (print) serverlog.out(CString() << "[" << name << "] "
-											   << "** [Error] Could not load " << i << "\n");
+			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
+												 << "** [Error] Could not load " << i << "\n");
 			continue;
 		}
 
-		if (print) serverlog.out("[%s]        [bigmap] %s\n", name.text(), i.text());
-		mapList.push_back(std::move(bigmap));
+		if (print) m_serverLog.out("[%s]        [bigmap] %s\n", m_name.text(), i.text());
+		m_mapList.push_back(std::move(bigmap));
 	}
 
 	// Load group maps.
-	std::vector<CString> groupmaps = settings.getStr("groupmaps").guntokenize().tokenize("\n");
+	std::vector<CString> groupmaps = m_settings.getStr("groupmaps").guntokenize().tokenize("\n");
 	for (auto& groupmap: groupmaps)
 	{
 		// Check for blank lines.
@@ -890,20 +890,20 @@ void Server::loadMaps(bool print)
 		// Load the map.
 		if (!gmap->load(CString() << groupmap, this))
 		{
-			if (print) serverlog.out(CString() << "[" << name << "] "
-											   << "** [Error] Could not load " << groupmap << "\n");
+			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
+												 << "** [Error] Could not load " << groupmap << "\n");
 			continue;
 		}
 
-		if (print) serverlog.out("[%s]        [group map] %s\n", name.text(), groupmap.text());
-		mapList.push_back(std::move(gmap));
+		if (print) m_serverLog.out("[%s]        [group map] %s\n", m_name.text(), groupmap.text());
+		m_mapList.push_back(std::move(gmap));
 	}
 
 	// Update all map <--> level relationships
-	for (const auto& level: levelList)
+	for (const auto& level: m_levelList)
 	{
 		bool found = false;
-		for (const auto& map: mapList)
+		for (const auto& map: m_mapList)
 		{
 			int mx, my;
 			if (map->isLevelOnMap(level->getLevelName().toLower().text(), mx, my))
@@ -941,13 +941,13 @@ void Server::loadNpcs(bool print)
 			{
 				printf("Database npcs must be greater than 1000\n");
 			}
-			else if (auto existing = npcList.find(npcId); existing != std::end(npcList))
+			else if (auto existing = m_npcList.find(npcId); existing != std::end(m_npcList))
 			{
 				printf("Error creating database npc: Id is in use!\n");
 			}
 			else
 			{
-				npcList.insert(std::make_pair(npcId, newNPC));
+				m_npcList.insert(std::make_pair(npcId, newNPC));
 				assignNPCName(newNPC, newNPC->getName());
 
 				// Add npc to level
@@ -968,15 +968,15 @@ void Server::loadTranslations()
 
 void Server::loadWordFilter()
 {
-	wordFilter.load(CString() << serverpath << "config/rules.txt");
+	m_wordFilter.load(CString() << m_serverPath << "config/rules.txt");
 }
 
 void Server::saveServerFlags()
 {
 	CString out;
-	for (auto& mServerFlag: mServerFlags)
+	for (auto& mServerFlag: m_serverFlags)
 		out << mServerFlag.first << "=" << mServerFlag.second << "\r\n";
-	out.save(CString() << serverpath << "serverflags.txt");
+	out.save(CString() << m_serverPath << "serverflags.txt");
 }
 
 void Server::saveWeapons()
@@ -985,14 +985,14 @@ void Server::saveWeapons()
 	weaponFS.addDir("weapons", "weapon*.txt");
 	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
-	for (auto& [weaponName, weapon]: weaponList)
+	for (auto& [weaponName, weapon]: m_weaponList)
 	{
 		if (weapon->isDefault())
 			continue;
 
 		// TODO(joey): add a function to weapon to get the filename?
 		CString weaponFile = CString("weapon") << weaponName << ".txt";
-		time_t mod         = weaponFS.getModTime(weaponFile);
+		time_t mod = weaponFS.getModTime(weaponFile);
 		if (weapon->getModTime() > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
@@ -1005,7 +1005,7 @@ void Server::saveWeapons()
 #ifdef V8NPCSERVER
 void Server::saveNpcs()
 {
-	for (const auto& [npcId, npc]: npcList)
+	for (const auto& [npcId, npc]: m_npcList)
 	{
 		if (npc->getType() != NPCType::LEVELNPC)
 			npc->saveNPC();
@@ -1017,9 +1017,9 @@ std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
 	std::vector<std::pair<double, std::string>> script_profiles;
 
 	// Iterate npcs
-	for (const auto& [npcId, npc]: npcList)
+	for (const auto& [npcId, npc]: m_npcList)
 	{
-		ScriptExecutionContext& context               = npc->getExecutionContext();
+		ScriptExecutionContext& context = npc->getExecutionContext();
 		std::pair<unsigned int, double> executionData = context.getExecutionData();
 		if (executionData.second > 0.0)
 		{
@@ -1038,9 +1038,9 @@ std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
 	}
 
 	// Iterate weapons
-	for (const auto& [weaponName, weapon]: weaponList)
+	for (const auto& [weaponName, weapon]: m_weaponList)
 	{
-		ScriptExecutionContext& context               = weapon->getExecutionContext();
+		ScriptExecutionContext& context = weapon->getExecutionContext();
 		std::pair<unsigned int, double> executionData = context.getExecutionData();
 
 		if (executionData.second > 0.0)
@@ -1094,8 +1094,8 @@ void Server::reportScriptException(const std::string& error_message)
 
 std::shared_ptr<Player> Server::getPlayer(unsigned short id) const
 {
-	auto iter = playerList.find(id);
-	if (iter == std::end(playerList))
+	auto iter = m_playerList.find(id);
+	if (iter == std::end(m_playerList))
 		return nullptr;
 
 	return iter->second;
@@ -1112,7 +1112,7 @@ std::shared_ptr<Player> Server::getPlayer(unsigned short id, int type) const
 
 std::shared_ptr<Player> Server::getPlayer(const CString& account, int type) const
 {
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 	{
 		// Check if its the type of player we are looking for
 		if (!player || !(player->getType() & type))
@@ -1133,8 +1133,8 @@ std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
 
 std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 {
-	auto iter = weaponList.find(name);
-	if (iter == std::end(weaponList))
+	auto iter = m_weaponList.find(name);
+	if (iter == std::end(m_weaponList))
 		return nullptr;
 	return iter->second;
 }
@@ -1142,11 +1142,11 @@ std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 CString Server::getFlag(const std::string& pFlagName)
 {
 #ifdef V8NPCSERVER
-	if (mServerFlags.find(pFlagName) != mServerFlags.end())
-		return mServerFlags[pFlagName];
+	if (m_serverFlags.find(pFlagName) != m_serverFlags.end())
+		return m_serverFlags[pFlagName];
 	return "";
 #else
-	return mServerFlags[pFlagName];
+	return m_serverFlags[pFlagName];
 #endif
 }
 
@@ -1154,7 +1154,7 @@ FileSystem* Server::getFileSystemByType(CString& type)
 {
 	// Find out the filesystem.
 	int fs = -1;
-	int j  = 0;
+	int j = 0;
 	while (filesystemTypes[j] != 0)
 	{
 		if (type.comparei(CString(filesystemTypes[j])))
@@ -1166,26 +1166,26 @@ FileSystem* Server::getFileSystemByType(CString& type)
 	}
 
 	if (fs == -1) return 0;
-	return &filesystem[fs];
+	return &m_filesystem[fs];
 }
 
 #ifdef V8NPCSERVER
 void Server::assignNPCName(std::shared_ptr<NPC> npc, const std::string& name)
 {
 	std::string newName = name;
-	int num             = 0;
-	while (npcNameList.find(newName) != npcNameList.end())
+	int num = 0;
+	while (m_npcNameList.find(newName) != m_npcNameList.end())
 		newName = name + std::to_string(++num);
 
 	npc->setName(newName);
-	npcNameList[newName] = npc;
+	m_npcNameList[newName] = npc;
 }
 
 void Server::removeNPCName(std::shared_ptr<NPC> npc)
 {
-	auto npcIter = npcNameList.find(npc->getName());
-	if (npcIter != npcNameList.end())
-		npcNameList.erase(npcIter);
+	auto npcIter = m_npcNameList.find(npc->getName());
+	if (npcIter != m_npcNameList.end())
+		m_npcNameList.erase(npcIter);
 }
 
 std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers)
@@ -1198,8 +1198,8 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 	}
 
 	// Make sure the npc id isn't in use
-	auto existing = npcList.find(npcId);
-	if (existing != std::end(npcList))
+	auto existing = m_npcList.find(npcId);
+	if (existing != std::end(m_npcList))
 	{
 		printf("Error creating database npc: Id is in use!\n");
 		return nullptr;
@@ -1208,7 +1208,7 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 	// Create the npc
 	auto newNPC = std::make_shared<NPC>("", "", pX, pY, this, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
-	npcList.insert(std::make_pair(npcId, newNPC));
+	m_npcList.insert(std::make_pair(npcId, newNPC));
 
 	// Add the npc to the level
 	if (pLevel)
@@ -1228,19 +1228,19 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 
 void Server::handlePM(Player* player, const CString& message)
 {
-	if (!mPmHandlerNpc)
+	if (!m_pmHandlerNpc)
 	{
 		CString npcServerMsg;
 		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)mNpcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
+		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)mNpcm_server->getId() << "\"\"," << npcServerMsg.gtokenize());
 		return;
 	}
 
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
-	//mPmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
+	//m_pmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	mPmHandlerNpc->getExecutionContext().addAction(mScriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
-	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc.get());
+	m_pmHandlerNpc->getExecutionContext().addAction(m_scriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
+	m_scriptEngine.RegisterNpcUpdate(m_pmHandlerNpc.get());
 }
 
 void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)
@@ -1248,35 +1248,35 @@ void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)
 	auto npc = getNPC(npcId);
 	if (npc == nullptr || function == nullptr)
 	{
-		mPmHandlerNpc = nullptr;
-		mScriptEngine.removeCallBack("npcserver.playerpm");
+		m_pmHandlerNpc = nullptr;
+		m_scriptEngine.removeCallBack("npcserver.playerpm");
 		return;
 	}
 
-	mScriptEngine.setCallBack("npcserver.playerpm", function);
-	mPmHandlerNpc = npc;
+	m_scriptEngine.setCallBack("npcserver.playerpm", function);
+	m_pmHandlerNpc = npc;
 }
 #endif
 
 std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
-	auto level  = pLevel.lock();
+	auto level = pLevel.lock();
 	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
 	// Get available NPC Id.
-	uint32_t newId = nextNpcId;
-	if (!freeNpcIds.empty())
+	uint32_t newId = m_nextNpcId;
+	if (!m_freeNpcIds.empty())
 	{
-		newId = *freeNpcIds.begin();
-		freeNpcIds.erase(newId);
+		newId = *m_freeNpcIds.begin();
+		m_freeNpcIds.erase(newId);
 	}
 	else
-		++nextNpcId;
+		++m_nextNpcId;
 
 	// Assign NPC Id and add to list.
 	newNPC->setId(newId);
-	npcList.insert(std::make_pair(newId, newNPC));
+	m_npcList.insert(std::make_pair(newId, newNPC));
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
@@ -1299,7 +1299,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	assert(npc);
 
 	// Erase NPC from the list.
-	npcList.erase(npc->getId());
+	m_npcList.erase(npc->getId());
 
 	if (auto level = npc->getLevel(); level)
 	{
@@ -1308,11 +1308,11 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			level->removeNPC(npc);
 
 		// Tell the clients to delete the NPC.
-		auto map           = level->getMap();
-		bool isOnMap       = map != nullptr;
+		auto map = level->getMap();
+		bool isOnMap = map != nullptr;
 		CString tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName());
 
-		for (auto& [pid, p]: playerList)
+		for (auto& [pid, p]: m_playerList)
 		{
 			if (p->isClient())
 			{
@@ -1342,8 +1342,8 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			removeNPCName(npc);
 
 		// If this is the npc that handles pms, clear it
-		if (mPmHandlerNpc == npc)
-			mPmHandlerNpc = nullptr;
+		if (m_pmHandlerNpc == npc)
+			m_pmHandlerNpc = nullptr;
 	}
 #endif
 
@@ -1352,11 +1352,11 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 
 bool Server::deleteClass(const std::string& className)
 {
-	auto classIter = classList.find(className);
-	if (classIter == classList.end())
+	auto classIter = m_classList.find(className);
+	if (classIter == m_classList.end())
 		return false;
 
-	classList.erase(classIter);
+	m_classList.erase(classIter);
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
@@ -1366,7 +1366,7 @@ bool Server::deleteClass(const std::string& className)
 
 void Server::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = std::make_unique<ScriptClass>(this, className, classCode);
+	m_classList[className] = std::make_unique<ScriptClass>(this, className, classCode);
 
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
@@ -1377,19 +1377,19 @@ void Server::updateClass(const std::string& className, const std::string& classC
 
 uint16_t Server::getFreePlayerId()
 {
-	uint16_t newId = nextPlayerId;
-	if (!freePlayerIds.empty())
+	uint16_t newId = m_nextPlayerId;
+	if (!m_freePlayerIds.empty())
 	{
-		newId = *(freePlayerIds.begin());
-		freePlayerIds.erase(newId);
+		newId = *(m_freePlayerIds.begin());
+		m_freePlayerIds.erase(newId);
 	}
 	else
-		++nextPlayerId;
+		++m_nextPlayerId;
 
 	return newId;
 }
 
-bool Server::addPlayer(TPlayerPtr player, uint16_t id)
+bool Server::addPlayer(PlayerPtr player, uint16_t id)
 {
 	assert(player);
 
@@ -1399,23 +1399,23 @@ bool Server::addPlayer(TPlayerPtr player, uint16_t id)
 
 	// Add them to the player list.
 	player->setId(id);
-	playerList[id] = player;
+	m_playerList[id] = player;
 
 #ifdef V8NPCSERVER
 	// Create script object for player
-	mScriptEngine.wrapScriptObject(player.get());
+	m_scriptEngine.wrapScriptObject(player.get());
 #endif
 
 	return true;
 }
 
-bool Server::deletePlayer(TPlayerPtr player)
+bool Server::deletePlayer(PlayerPtr player)
 {
 	if (player == nullptr)
 		return true;
 
 	// Add the player to the set of players to delete.
-	if (deletedPlayers.insert(player).second)
+	if (m_deletedPlayers.insert(player).second)
 	{
 		// Remove the player from the serverlist.
 		getServerList().deletePlayer(player);
@@ -1424,14 +1424,14 @@ bool Server::deletePlayer(TPlayerPtr player)
 	return true;
 }
 
-void Server::playerLoggedIn(TPlayerPtr player)
+void Server::playerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
 
 #ifdef V8NPCSERVER
 	// Send event to server that player is logging in
-	for (const auto& [npcName, npcPtr]: npcNameList)
+	for (const auto& [npcName, npcPtr]: m_npcNameList)
 	{
 		// TODO(joey): check if they have the event before queueing for them
 		if (auto npcObject = npcPtr.lock(); npcObject)
@@ -1446,9 +1446,9 @@ bool Server::warpPlayerToSafePlace(uint16_t playerId)
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
-	CString unstickLevel = settings.getStr("unstickmelevel", "onlinestartlocal.nw");
-	float unstickX       = settings.getFloat("unstickmex", 30.0f);
-	float unstickY       = settings.getFloat("unstickmey", 30.5f);
+	CString unstickLevel = m_settings.getStr("unstickmelevel", "onlinestartlocal.nw");
+	float unstickX = m_settings.getFloat("unstickmex", 30.0f);
+	float unstickY = m_settings.getFloat("unstickmey", 30.5f);
 	return player->warp(unstickLevel, unstickX, unstickY);
 
 	// TODO: Maybe try the default account level?
@@ -1458,12 +1458,12 @@ void Server::calculateServerTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000
 	// this is likely the actual start time of timevar
-	serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
+	m_serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
 }
 
 bool Server::isIpBanned(const CString& ip)
 {
-	for (const auto& ipBan: ipBans)
+	for (const auto& ipBan: m_ipBans)
 	{
 		if (ip.match(ipBan))
 			return true;
@@ -1474,7 +1474,7 @@ bool Server::isIpBanned(const CString& ip)
 
 bool Server::isStaff(const CString& accountName)
 {
-	for (const auto& account: staffList)
+	for (const auto& account: m_staffList)
 	{
 		if (accountName.toLower() == account.trim().toLower())
 			return true;
@@ -1503,13 +1503,13 @@ void Server::logToFile(const std::string& fileName, const std::string& message)
 */
 bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 {
-	if (settings.getBool("dontaddserverflags", false))
+	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
 	std::unordered_map<std::string, CString>::iterator mServerFlag;
-	if ((mServerFlag = mServerFlags.find(pFlagName)) != mServerFlags.end())
+	if ((mServerFlag = m_serverFlags.find(pFlagName)) != m_serverFlags.end())
 	{
-		mServerFlags.erase(mServerFlag);
+		m_serverFlags.erase(mServerFlag);
 		if (pSendToPlayers)
 			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
 		return true;
@@ -1521,13 +1521,13 @@ bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 bool Server::setFlag(CString pFlag, bool pSendToPlayers)
 {
 	std::string flagName = pFlag.readString("=").text();
-	CString flagValue    = pFlag.readString("");
+	CString flagValue = pFlag.readString("");
 	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
 bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
-	if (settings.getBool("dontaddserverflags", false))
+	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
 	// delete flag
@@ -1535,17 +1535,17 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 		return deleteFlag(pFlagName);
 
 	// optimize
-	if (mServerFlags[pFlagName] == pFlagValue)
+	if (m_serverFlags[pFlagName] == pFlagValue)
 		return true;
 
 	// set flag
-	if (settings.getBool("cropflags", true))
+	if (m_settings.getBool("cropflags", true))
 	{
-		int fixedLength         = 223 - 1 - (int)pFlagName.length();
-		mServerFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
+		int fixedLength = 223 - 1 - (int)pFlagName.length();
+		m_serverFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
 	else
-		mServerFlags[pFlagName] = pFlagValue;
+		m_serverFlags[pFlagName] = pFlagValue;
 
 	if (pSendToPlayers)
 		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
@@ -1558,7 +1558,7 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 
 void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
 {
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 	{
 		if (exclude.contains(id))
 			continue;
@@ -1578,7 +1578,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	auto map = levelp->getMap();
 	if (!map)
 	{
-		for (auto id: levelp->getPlayerList())
+		for (auto id: levelp->getPlayers())
 		{
 			if (exclude.contains(id)) continue;
 			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
@@ -1589,7 +1589,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	{
 		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
 
-		for (auto& [id, other]: playerList)
+		for (auto& [id, other]: m_playerList)
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1618,7 +1618,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> 
 	auto map = level->getMap();
 	if (!map)
 	{
-		for (auto id: level->getPlayerList())
+		for (auto id: level->getPlayers())
 		{
 			if (exclude.contains(id)) continue;
 			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
@@ -1630,7 +1630,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> 
 		auto isGroupMap = map->isGroupMap();
 		auto sgmap{ playerp->getMapPosition() };
 
-		for (auto& [id, other]: playerList)
+		for (auto& [id, other]: m_playerList)
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1653,7 +1653,7 @@ void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> le
 	auto levelp = level.lock();
 	if (!levelp) return;
 
-	for (auto id: levelp->getPlayerList())
+	for (auto id: levelp->getPlayers())
 	{
 		if (exclude.contains(id)) continue;
 		if (auto player = this->getPlayer(id); player->isClient())
@@ -1672,7 +1672,7 @@ void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Pla
 void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const
 {
 	if (!running) return;
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 	{
 		if ((player->getType() & who) && (!pPlayer || id != pPlayer->getId()))
 			player->sendPacket(pPacket);
@@ -1687,7 +1687,7 @@ bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
 	if (pWeaponObj == nullptr)
 		return false;
 
-	weaponList[pWeaponObj->getName()] = pWeaponObj;
+	m_weaponList[pWeaponObj->getName()] = pWeaponObj;
 	return true;
 }
 
@@ -1710,7 +1710,7 @@ bool Server::NC_DelWeapon(const std::string& pWeaponName)
 	remove(filePath.text());
 
 	// Delete from Memory
-	weaponList.erase(pWeaponName);
+	m_weaponList.erase(pWeaponName);
 
 	// Delete from Players
 	sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
@@ -1720,7 +1720,7 @@ bool Server::NC_DelWeapon(const std::string& pWeaponName)
 void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 {
 	// Update Weapons
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 	{
 		if (!player->isClient())
 			continue;
@@ -1736,7 +1736,7 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 void Server::updateClassForPlayers(ScriptClass* pClass)
 {
 	// Update Weapons
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player]: m_playerList)
 	{
 		if (!player->isClient())
 			continue;
@@ -1764,37 +1764,37 @@ void Server::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_c
 {
 	std::string script{ scriptObject.getSource().getClientGS2() };
 
-	gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
-								   {
-									   if (!resp.errors.empty())
-									   {
-										   handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
-									   }
+	m_gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
+									 {
+										 if (!resp.errors.empty())
+										 {
+											 handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
+										 }
 
-									   // Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
-									   //if (resp.success)
-									   //{
-									   //	for (auto& joinedClass : resp.joinedClasses)
-									   //	{
-									   //		auto cls = getClass(joinedClass);
-									   //		if (cls && cls->getByteCode().isEmpty())
-									   //		{
-									   //			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
-									   //			compileScript(*cls, fn);
-									   //		}
-									   //	}
-									   //}
+										 // Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
+										 //if (resp.success)
+										 //{
+										 //	for (auto& joinedClass : resp.joinedClasses)
+										 //	{
+										 //		auto cls = getClass(joinedClass);
+										 //		if (cls && cls->getByteCode().isEmpty())
+										 //		{
+										 //			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
+										 //			compileScript(*cls, fn);
+										 //		}
+										 //	}
+										 //}
 
-									   if (cb)
-									   {
-										   cb(resp);
-									   }
-								   });
+										 if (cb)
+										 {
+											 cb(resp);
+										 }
+									 });
 }
 
 void Server::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
 {
-	gs2ScriptManager.compileScript(source, cb);
+	m_gs2ScriptManager.compileScript(source, cb);
 }
 
 void Server::compileGS2Script(NPC* scriptObject, GS2ScriptManager::user_callback_type cb)
@@ -1860,9 +1860,9 @@ bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
 	{
 		if (cur->find("msgid") == 0)
 		{
-			CString msgId  = cur->subString(7, cur->length() - 8);
+			CString msgId = cur->subString(7, cur->length() - 8);
 			CString msgStr = "";
-			bool isStr     = false;
+			bool isStr = false;
 
 			++cur;
 			while (cur != fileData.end())
@@ -1883,7 +1883,7 @@ bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
 				else if (cur->find("msgstr") == 0)
 				{
 					msgStr = cur->subString(8, cur->length() - 9);
-					isStr  = true;
+					isStr = true;
 				}
 				else
 				{
@@ -1894,7 +1894,7 @@ bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
 				++cur;
 			}
 
-			mTranslationManager.add(pLanguage.text(), msgId.text(), msgStr.text());
+			m_translationManager.add(pLanguage.text(), msgId.text(), msgStr.text());
 		}
 
 		if (cur == fileData.end())
@@ -1906,7 +1906,7 @@ bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
 
 CString Server::TS_Translate(const CString& pLanguage, const CString& pKey)
 {
-	return mTranslationManager.translate(pLanguage.toLower().text(), pKey.text());
+	return m_translationManager.translate(pLanguage.toLower().text(), pKey.text());
 }
 
 void Server::TS_Reload()
@@ -1915,7 +1915,7 @@ void Server::TS_Reload()
 	this->TS_Save();
 
 	// Reset Translations
-	mTranslationManager.reset();
+	m_translationManager.reset();
 
 	// Load Translation Folder
 	FileSystem translationFS(this);
@@ -1930,7 +1930,7 @@ void Server::TS_Reload()
 void Server::TS_Save()
 {
 	// Grab Translations
-	std::map<std::string, STRMAP>* languages = mTranslationManager.getTranslationList();
+	std::map<std::string, STRMAP>* languages = m_translationManager.getTranslationList();
 
 	// Iterate each Language
 	for (auto& language: *languages)
@@ -1967,17 +1967,17 @@ void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, flo
 {
 	auto levelLock = level.lock();
 	ShootPacketNew newPacket{};
-	newPacket.pixelx      = (int16_t)(x * 16);
-	newPacket.pixely      = (int16_t)(y * 16);
-	newPacket.pixelz      = (int16_t)(z * 16);
-	newPacket.offsetx     = 0;
-	newPacket.offsety     = 0;
-	newPacket.sangle      = (int8_t)angle;
-	newPacket.sanglez     = (int8_t)zangle;
-	newPacket.speed       = (int8_t)strength;
-	newPacket.gravity     = 8;
-	newPacket.gani        = ani;
-	newPacket.ganiArgs    = aniArgs;
+	newPacket.pixelx = (int16_t)(x * 16);
+	newPacket.pixely = (int16_t)(y * 16);
+	newPacket.pixelz = (int16_t)(z * 16);
+	newPacket.offsetx = 0;
+	newPacket.offsety = 0;
+	newPacket.sangle = (int8_t)angle;
+	newPacket.sanglez = (int8_t)zangle;
+	newPacket.speed = (int8_t)strength;
+	newPacket.gravity = 8;
+	newPacket.gani = ani;
+	newPacket.ganiArgs = aniArgs;
 	newPacket.shootParams = getShootParams();
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();

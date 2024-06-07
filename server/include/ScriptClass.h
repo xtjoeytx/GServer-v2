@@ -17,25 +17,25 @@ public:
 
 	const std::string& getName() const
 	{
-		return _className;
+		return m_className;
 	}
 
 	const CString& getByteCode() const
 	{
-		return _bytecode;
+		return m_bytecode;
 	}
 
 	const SourceCode& getSource() const
 	{
-		return _source;
+		return m_source;
 	}
 
 private:
 	void parseScripts(Server* server, const std::string& classSource);
 
-	std::string _className;
-	SourceCode _source;
-	CString _bytecode;
+	std::string m_className;
+	SourceCode m_source;
+	CString m_bytecode;
 };
 
 #endif

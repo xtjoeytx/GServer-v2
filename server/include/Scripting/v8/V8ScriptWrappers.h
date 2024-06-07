@@ -16,7 +16,7 @@ inline std::string getPublicFunctions(const std::string_view& code)
 	std::string s(code);
 
 	auto words_begin = std::sregex_iterator(s.begin(), s.end(), word_regex);
-	auto words_end   = std::sregex_iterator();
+	auto words_end = std::sregex_iterator();
 
 	for (std::sregex_iterator i = words_begin; i != words_end; ++i)
 	{
@@ -27,7 +27,7 @@ inline std::string getPublicFunctions(const std::string_view& code)
 			eventList.push_back(match[2]);
 	}
 
-	std::string varNames      = "";
+	std::string varNames = "";
 	std::string varNameQuotes = "";
 	for (const auto eventName: eventList)
 	{
@@ -95,7 +95,7 @@ inline std::string WrapScript<NPC>(const std::string_view& code)
 	std::string wrappedCode = std::string(prefixString);
 
 	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode       = std::regex_replace(std::string(code), word_regex, "function $2(");
+	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);
@@ -113,7 +113,7 @@ inline std::string WrapScript<Player>(const std::string_view& code)
 	std::string wrappedCode = std::string(prefixString);
 
 	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode       = std::regex_replace(std::string(code), word_regex, "function $2(");
+	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);
@@ -134,7 +134,7 @@ inline std::string WrapScript<Weapon>(const std::string_view& code)
 	std::string wrappedCode = std::string(prefixString);
 
 	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode       = std::regex_replace(std::string(code), word_regex, "function $2(");
+	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);

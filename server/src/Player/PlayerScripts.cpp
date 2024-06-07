@@ -8,12 +8,12 @@
 bool Player::msgPLI_UPDATEGANI(CString& pPacket)
 {
 	// Read packet data
-	uint32_t checksum          = pPacket.readGUInt5();
-	std::string gani           = pPacket.readString("").toString();
+	uint32_t checksum = pPacket.readGUInt5();
+	std::string gani = pPacket.readString("").toString();
 	const std::string ganiFile = gani + ".gani";
 
 	// Try to find the animation in memory or on disk
-	auto findAni = server->getAnimationManager().findOrAddResource(ganiFile);
+	auto findAni = m_server->getAnimationManager().findOrAddResource(ganiFile);
 	if (!findAni)
 	{
 		//printf("Client requested gani %s, but was not found\n", ganiFile.c_str());
@@ -34,11 +34,11 @@ bool Player::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
 	CString weaponName = pPacket.readString("");
 
-	server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
+	m_server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
 
 	CString out;
 
-	auto weaponObj = server->getWeapon(weaponName.toString());
+	auto weaponObj = m_server->getWeapon(weaponName.toString());
 	if (weaponObj != nullptr)
 	{
 		CString b = weaponObj->getByteCode();
@@ -54,12 +54,12 @@ bool Player::msgPLI_UPDATESCRIPT(CString& pPacket)
 bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 {
 	// Get the packet data and file mod time.
-	time_t modTime        = pPacket.readGInt5();
+	time_t modTime = pPacket.readGInt5();
 	std::string className = pPacket.readString("").toString();
 
-	server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
+	m_server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
 
-	ScriptClass* classObj = server->getClass(className);
+	ScriptClass* classObj = m_server->getClass(className);
 
 	if (classObj != nullptr)
 	{

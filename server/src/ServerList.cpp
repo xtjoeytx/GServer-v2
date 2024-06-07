@@ -6,9 +6,9 @@
 #include "CCommon.h"
 #include "IEnums.h"
 #include "IUtil.h"
-#include "ServerList.h"
 #include "Player.h"
 #include "Server.h"
+#include "ServerList.h"
 
 /*
 	Pointer-Functions for Packets
@@ -23,29 +23,29 @@ void ServerList::createFunctions()
 		return;
 
 	// now set non-nulls
-	TSLFunc[SVI_VERIACC]        = &ServerList::msgSVI_VERIACC;
-	TSLFunc[SVI_VERIGUILD]      = &ServerList::msgSVI_VERIGUILD;
-	TSLFunc[SVI_FILESTART]      = &ServerList::msgSVI_FILESTART;
-	TSLFunc[SVI_FILEDATA]       = &ServerList::msgSVI_FILEDATA;
-	TSLFunc[SVI_FILEEND]        = &ServerList::msgSVI_FILEEND;
-	TSLFunc[SVI_VERSIONOLD]     = &ServerList::msgSVI_VERSIONOLD;
+	TSLFunc[SVI_VERIACC] = &ServerList::msgSVI_VERIACC;
+	TSLFunc[SVI_VERIGUILD] = &ServerList::msgSVI_VERIGUILD;
+	TSLFunc[SVI_FILESTART] = &ServerList::msgSVI_FILESTART;
+	TSLFunc[SVI_FILEDATA] = &ServerList::msgSVI_FILEDATA;
+	TSLFunc[SVI_FILEEND] = &ServerList::msgSVI_FILEEND;
+	TSLFunc[SVI_VERSIONOLD] = &ServerList::msgSVI_VERSIONOLD;
 	TSLFunc[SVI_VERSIONCURRENT] = &ServerList::msgSVI_VERSIONCURRENT;
-	TSLFunc[SVI_PROFILE]        = &ServerList::msgSVI_PROFILE;
-	TSLFunc[SVI_ERRMSG]         = &ServerList::msgSVI_ERRMSG;
-	TSLFunc[SVI_VERIACC2]       = &ServerList::msgSVI_VERIACC2;
-	TSLFunc[SVI_FILESTART2]     = &ServerList::msgSVI_FILESTART2;
-	TSLFunc[SVI_FILEDATA2]      = &ServerList::msgSVI_FILEDATA2;
-	TSLFunc[SVI_FILEEND2]       = &ServerList::msgSVI_FILEEND2;
-	TSLFunc[SVI_PING]           = &ServerList::msgSVI_PING;
-	TSLFunc[SVI_RAWDATA]        = &ServerList::msgSVI_RAWDATA;
-	TSLFunc[SVI_FILESTART3]     = &ServerList::msgSVI_FILESTART3;
-	TSLFunc[SVI_FILEDATA3]      = &ServerList::msgSVI_FILEDATA3;
-	TSLFunc[SVI_FILEEND3]       = &ServerList::msgSVI_FILEEND3;
-	TSLFunc[SVI_SERVERINFO]     = &ServerList::msgSVI_SERVERINFO;
-	TSLFunc[SVI_REQUESTTEXT]    = &ServerList::msgSVI_REQUESTTEXT;
-	TSLFunc[SVI_SENDTEXT]       = &ServerList::msgSVI_SENDTEXT;
-	TSLFunc[SVI_PMPLAYER]       = &ServerList::msgSVI_PMPLAYER;
-	TSLFunc[SVI_ASSIGNPCID]     = &ServerList::msgSVI_ASSIGNPCID;
+	TSLFunc[SVI_PROFILE] = &ServerList::msgSVI_PROFILE;
+	TSLFunc[SVI_ERRMSG] = &ServerList::msgSVI_ERRMSG;
+	TSLFunc[SVI_VERIACC2] = &ServerList::msgSVI_VERIACC2;
+	TSLFunc[SVI_FILESTART2] = &ServerList::msgSVI_FILESTART2;
+	TSLFunc[SVI_FILEDATA2] = &ServerList::msgSVI_FILEDATA2;
+	TSLFunc[SVI_FILEEND2] = &ServerList::msgSVI_FILEEND2;
+	TSLFunc[SVI_PING] = &ServerList::msgSVI_PING;
+	TSLFunc[SVI_RAWDATA] = &ServerList::msgSVI_RAWDATA;
+	TSLFunc[SVI_FILESTART3] = &ServerList::msgSVI_FILESTART3;
+	TSLFunc[SVI_FILEDATA3] = &ServerList::msgSVI_FILEDATA3;
+	TSLFunc[SVI_FILEEND3] = &ServerList::msgSVI_FILEEND3;
+	TSLFunc[SVI_SERVERINFO] = &ServerList::msgSVI_SERVERINFO;
+	TSLFunc[SVI_REQUESTTEXT] = &ServerList::msgSVI_REQUESTTEXT;
+	TSLFunc[SVI_SENDTEXT] = &ServerList::msgSVI_SENDTEXT;
+	TSLFunc[SVI_PMPLAYER] = &ServerList::msgSVI_PMPLAYER;
+	TSLFunc[SVI_ASSIGNPCID] = &ServerList::msgSVI_ASSIGNPCID;
 
 	// Finished
 	ServerList::created = true;
@@ -55,13 +55,13 @@ void ServerList::createFunctions()
 	Constructor - Deconstructor
 */
 ServerList::ServerList(Server* server)
-	: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0), _serverRemoteIp("127.0.0.1"), connectionAttempts(0), nextConnectionAttempt(0)
+	: m_server(server), m_fileQueue(&m_socket), m_nextIsRaw(false), m_rawPacketSize(0), m_serverRemoteIp("127.0.0.1"), m_connectionAttempts(0), m_nextConnectionAttempt(0)
 {
-	sock.setProtocol(SOCKET_PROTOCOL_TCP);
-	sock.setType(SOCKET_TYPE_CLIENT);
-	sock.setDescription("listserver");
+	m_socket.setProtocol(SOCKET_PROTOCOL_TCP);
+	m_socket.setType(SOCKET_TYPE_CLIENT);
+	m_socket.setDescription("listserver");
 
-	lastData = lastTimer = time(0);
+	m_lastData = m_lastTimer = time(0);
 
 	// Create Functions
 	if (!ServerList::created)
@@ -77,17 +77,17 @@ ServerList::~ServerList()
 */
 bool ServerList::getConnected() const
 {
-	return (sock.getState() == SOCKET_STATE_CONNECTED);
+	return (m_socket.getState() == SOCKET_STATE_CONNECTED);
 }
 
 bool ServerList::onRecv()
 {
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
-	char* data        = sock.getData(&size);
+	char* data = m_socket.getData(&size);
 	if (size != 0)
-		readBuffer.write(data, size);
-	else if (sock.getState() == SOCKET_STATE_DISCONNECTED)
+		m_readBuffer.write(data, size);
+	else if (m_socket.getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
 	main();
@@ -97,19 +97,19 @@ bool ServerList::onRecv()
 
 bool ServerList::onSend()
 {
-	_fileQueue.sendCompress();
+	m_fileQueue.sendCompress();
 	return true;
 }
 
 bool ServerList::canRecv()
 {
-	if (sock.getState() == SOCKET_STATE_DISCONNECTED) return false;
+	if (m_socket.getState() == SOCKET_STATE_DISCONNECTED) return false;
 	return true;
 }
 
 void ServerList::onUnregister()
 {
-	_server->getServerLog().out("[%s] :: %s - Disconnected.\n", _server->getName().text(), sock.getDescription());
+	m_server->getServerLog().out("[%s] :: %s - Disconnected.\n", m_server->getName().text(), m_socket.getDescription());
 }
 
 bool ServerList::main()
@@ -121,20 +121,20 @@ bool ServerList::main()
 	CString unBuffer;
 
 	// parse data
-	readBuffer.setRead(0);
-	while (readBuffer.length() > 1)
+	m_readBuffer.setRead(0);
+	while (m_readBuffer.length() > 1)
 	{
 		// New data.
-		lastData = time(0);
+		m_lastData = time(0);
 
 		// packet length
-		unsigned short len = (unsigned short)readBuffer.readShort();
-		if ((unsigned int)len > (unsigned int)readBuffer.length() - 2)
+		unsigned short len = (unsigned short)m_readBuffer.readShort();
+		if ((unsigned int)len > (unsigned int)m_readBuffer.length() - 2)
 			break;
 
 		// decompress packet
-		unBuffer = readBuffer.readChars(len);
-		readBuffer.removeI(0, len + 2);
+		unBuffer = m_readBuffer.readChars(len);
+		m_readBuffer.removeI(0, len + 2);
 		unBuffer.zuncompressI();
 
 		// well theres your buffer
@@ -142,7 +142,7 @@ bool ServerList::main()
 			return false;
 	}
 
-	_server->getSocketManager().updateSingle(this, false, true);
+	m_server->getSocketManager().updateSingle(this, false, true);
 
 	return getConnected();
 }
@@ -150,25 +150,25 @@ bool ServerList::main()
 // Called every second by Server
 bool ServerList::doTimedEvents()
 {
-	lastTimer = time(0);
+	m_lastTimer = time(0);
 
 	bool isConnected = getConnected();
 
 	if (!isConnected)
 	{
 		// Reconnect to the listserver, with connection backoff to prevent a flood of connections
-		if (difftime(lastTimer, nextConnectionAttempt) >= 0)
+		if (difftime(m_lastTimer, m_nextConnectionAttempt) >= 0)
 		{
 			if (!connectServer())
 			{
-				if (connectionAttempts < 8)
-					connectionAttempts += 1;
+				if (m_connectionAttempts < 8)
+					m_connectionAttempts += 1;
 
-				auto waitTime         = std::min(uint32_t(std::pow(2u, connectionAttempts)), 300u);
-				nextConnectionAttempt = lastTimer + waitTime + (rand() % 5);
+				auto waitTime = std::min(uint32_t(std::pow(2u, m_connectionAttempts)), 300u);
+				m_nextConnectionAttempt = m_lastTimer + waitTime + (rand() % 5);
 			}
 			else
-				connectionAttempts = 0;
+				m_connectionAttempts = 0;
 		}
 	}
 
@@ -177,31 +177,31 @@ bool ServerList::doTimedEvents()
 
 bool ServerList::connectServer()
 {
-	auto& settings = _server->getSettings();
+	auto& settings = m_server->getSettings();
 
 	if (getConnected())
 		return true;
 
-	auto& serverLog = _server->getServerLog();
+	auto& serverLog = m_server->getServerLog();
 
-	serverLog.out("[%s] :: Initializing %s socket.\n", _server->getName().text(), sock.getDescription());
+	serverLog.out("[%s] :: Initializing %s socket.\n", m_server->getName().text(), m_socket.getDescription());
 
 	// Initialize the socket
-	if (sock.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
+	if (m_socket.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", _server->getName().text(), sock.getDescription());
+		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", m_server->getName().text(), m_socket.getDescription());
 		return false;
 	}
 
 	// Connect to Server
-	if (sock.connect() != 0)
+	if (m_socket.connect() != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", _server->getName().text(), sock.getDescription());
+		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", m_server->getName().text(), m_socket.getDescription());
 		return false;
 	}
 
-	_server->getSocketManager().registerSocket((CSocketStub*)this);
-	serverLog.out("[%s] :: %s - Connected.\n", _server->getName().text(), sock.getDescription());
+	m_server->getSocketManager().registerSocket((CSocketStub*)this);
+	serverLog.out("[%s] :: %s - Connected.\n", m_server->getName().text(), m_socket.getDescription());
 
 	// Get Some Stuff
 	CString name(settings.getStr("name"));
@@ -215,31 +215,31 @@ bool ServerList::connectServer()
 
 	// Grab the local ip.
 	if (localip.isEmpty() || localip == "AUTO")
-		localip = sock.getLocalIp();
+		localip = m_socket.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		serverLog.out(CString() << "[" << _server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		serverLog.out(CString() << "[" << m_server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 
 	// TODO(joey): Some packets were being queued up from the server before we were connected, and would spam the serverlist
 	// upon connection. Clearing the outgoing buffer upon connection
-	_fileQueue.clearBuffers();
+	m_fileQueue.clearBuffers();
 
 	// Use the new protocol for communicating with the listserver
-	_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
+	m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 	sendPacket(CString() >> (char)SVO_REGISTERV3 << version, true);
-	_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
+	m_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
-	auto& adminsettings = _server->getAdminSettings();
+	auto& adminsettings = m_server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
 
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER >> (char)name.length() << name >> (char)desc.length() << desc >> (char)language.length() << language >> (char)version.length() << version >> (char)url.length() << url >> (char)ip.length() << ip >> (char)port.length() << port >> (char)localip.length() << localip);
 
 	// Set the level now.
-	if (_server->getSettings().getBool("onlystaff", false))
+	if (m_server->getSettings().getBool("onlystaff", false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
@@ -260,7 +260,7 @@ void ServerList::sendVersionConfig()
 
 	// Send allowed versions to the listserver
 	CString versionNames;
-	auto& versionList = _server->getAllowedVersions();
+	auto& versionList = m_server->getAllowedVersions();
 	for (const auto& version: versionList)
 	{
 		if (!versionNames.isEmpty())
@@ -283,17 +283,17 @@ void ServerList::sendPacket(CString& pPacket, bool sendNow)
 		pPacket.writeChar('\n');
 
 	// append buffer
-	_fileQueue.addPacket(pPacket);
+	m_fileQueue.addPacket(pPacket);
 
 	// send buffer now?
 	if (sendNow)
-		_fileQueue.sendCompress();
+		m_fileQueue.sendCompress();
 }
 
 /*
 	Altering Player Information
 */
-void ServerList::addPlayer(TPlayerPtr player)
+void ServerList::addPlayer(PlayerPtr player)
 {
 	assert(player != nullptr);
 
@@ -309,7 +309,7 @@ void ServerList::addPlayer(TPlayerPtr player)
 	sendPacket(dataPacket);
 }
 
-void ServerList::deletePlayer(TPlayerPtr player)
+void ServerList::deletePlayer(PlayerPtr player)
 {
 	assert(player != nullptr);
 
@@ -322,7 +322,7 @@ void ServerList::sendPlayers()
 	sendPacket(CString() >> (char)SVO_SETPLYR);
 
 	// Adds the players to the serverlist
-	auto& playerList = _server->getPlayerList();
+	auto& playerList = m_server->getPlayerList();
 	for (auto& [id, player]: playerList)
 	{
 		if (!player->isNC())
@@ -332,7 +332,7 @@ void ServerList::sendPlayers()
 
 void ServerList::handleText(const CString& data)
 {
-	CString dataTokenStr        = data.guntokenize();
+	CString dataTokenStr = data.guntokenize();
 	std::vector<CString> params = data.gCommaStrTokens();
 
 	if (params.size() >= 3)
@@ -344,9 +344,9 @@ void ServerList::handleText(const CString& data)
 				if (params.size() == 6 && params[2] == "privmsg")
 				{
 					std::string channel = params[4].guntokenize().text();
-					CString tmpData     = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
+					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
 
-					auto& playerList = _server->getPlayerList();
+					auto& playerList = m_server->getPlayerList();
 					for (auto& [id, pl]: playerList)
 					{
 						if (pl->inChatChannel(channel))
@@ -362,7 +362,7 @@ void ServerList::handleText(const CString& data)
 		{
 			if (params.size() == 3 && params[1] == "SetRemoteIp")
 			{
-				_serverRemoteIp = params[2].text();
+				m_serverRemoteIp = params[2].text();
 			}
 			else if (params.size() >= 4)
 			{
@@ -382,10 +382,10 @@ void ServerList::handleText(const CString& data)
 							{
 								int pcount = strtoint(val);
 								if (pcount < 0)
-									serverListCount.erase(serverName);
+									m_serverListCount.erase(serverName);
 								else
 								{
-									serverListCount[serverName] = pcount;
+									m_serverListCount[serverName] = pcount;
 								}
 							}
 						}
@@ -413,7 +413,7 @@ void ServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
+void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
 {
 	assert(player != nullptr);
 
@@ -423,16 +423,16 @@ void ServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendLoginPacketForPlayer(TPlayerPtr player, const CString& password, const CString& identity)
+void ServerList::sendLoginPacketForPlayer(PlayerPtr player, const CString& password, const CString& identity)
 {
 	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->getAccountName().length() << player->getAccountName() >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
 }
 
 void ServerList::sendServerHQ()
 {
-	auto& adminsettings = _server->getAdminSettings();
+	auto& adminsettings = m_server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
-	if (_server->getSettings().getBool("onlystaff", false))
+	if (m_server->getSettings().getBool("onlystaff", false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
@@ -446,10 +446,10 @@ bool ServerList::parsePacket(CString& pPacket)
 	while (pPacket.bytesLeft() > 0)
 	{
 		CString curPacket;
-		if (nextIsRaw)
+		if (m_nextIsRaw)
 		{
-			nextIsRaw = false;
-			curPacket = pPacket.readChars(rawPacketSize);
+			m_nextIsRaw = false;
+			curPacket = pPacket.readChars(m_rawPacketSize);
 		}
 		else
 			curPacket = pPacket.readString("\n");
@@ -467,20 +467,20 @@ bool ServerList::parsePacket(CString& pPacket)
 void ServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", _server->getName().text(), pPacket.readGUChar(), pPacket.text() + 1);
+	m_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", m_server->getName().text(), pPacket.readGUChar(), pPacket.text() + 1);
 }
 
 void ServerList::msgSVI_VERIACC(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 {
 	unsigned short playerID = pPacket.readGUShort();
-	CString nickname        = pPacket.readChars(pPacket.readGUChar());
+	CString nickname = pPacket.readChars(pPacket.readGUChar());
 
-	auto p = _server->getPlayer(playerID, PLTYPE_ANYPLAYER);
+	auto p = m_server->getPlayer(playerID, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		// Create the prop packet.
@@ -491,30 +491,30 @@ void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
 
 		// Tell everybody else the new nickname.
-		_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, { p->getId() });
+		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, { p->getId() });
 	}
 }
 
 void ServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
-								":: An updated version is available online.\n",
-								APP_VENDOR, APP_NAME, _server->getName().text());
+	m_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
+								  ":: An updated version is available online.\n",
+								  APP_VENDOR, APP_NAME, m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -525,13 +525,13 @@ void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
 void ServerList::msgSVI_PROFILE(CString& pPacket)
 {
 	unsigned short requestPlayer = pPacket.readGUShort();
-	CString targetPlayer         = pPacket.readChars(pPacket.readGUChar());
+	CString targetPlayer = pPacket.readChars(pPacket.readGUChar());
 
-	auto p1 = _server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
+	auto p1 = m_server->getPlayer(requestPlayer, PLTYPE_ANYPLAYER);
 	if (p1 == nullptr)
 		return;
 
-	auto p2 = _server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
+	auto p2 = m_server->getPlayer(targetPlayer, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p2 == nullptr)
 		return;
 
@@ -540,7 +540,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	profile << p2->getProp(PLPROP_ACCOUNTNAME) << pPacket.readString("");
 
 	// Add the time to the profile string.
-	int time     = p2->getOnlineTime();
+	int time = p2->getOnlineTime();
 	CString line = CString() << CString((int)time / 3600) << " hrs "
 							 << CString((int)(time / 60) % 60) << " mins "
 							 << CString((int)time % 60) << " secs";
@@ -561,7 +561,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		profile >> (char)val.length() << val;
 
 		int rating = p2->getProp(PLPROP_RATING).readGUInt();
-		val        = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+		val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
 		profile >> (char)val.length() << val;
 
 		val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGUChar());
@@ -582,14 +582,14 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
-		CString profileVars = _server->getSettings().getStr("profilevars");
+		CString profileVars = m_server->getSettings().getStr("profilevars");
 		if (profileVars.length() != 0)
 		{
 			std::vector<CString> vars = profileVars.tokenize(",");
 			for (std::vector<CString>::iterator i = vars.begin(); i != vars.end(); ++i)
 			{
 				CString name = i->readString(":=").trim();
-				CString val  = i->readString("").trim();
+				CString val = i->readString("").trim();
 
 				// Built-in values.
 				if (val == "playerkills")
@@ -601,7 +601,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				else if (val == "playerrating")
 				{
 					int rating = p2->getProp(PLPROP_RATING).readGUInt();
-					val        = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+					val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
 				}
 				else if (val == "playerap")
 					val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGChar());
@@ -618,7 +618,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				else if (val == "playerhearts")
 				{
 					unsigned char power = p2->getProp(PLPROP_CURPOWER).readGUChar();
-					val                 = CString((int)(power / 2));
+					val = CString((int)(power / 2));
 					if (power % 2 == 1) val << ".5";
 				}
 				else if (val == "playerdarts")
@@ -639,13 +639,13 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				{
 					// Find if String-Array
 					int pos[3] = { 0, 0, 0 };
-					pos[0]     = val.findl('{');
-					pos[1]     = val.find('}', pos[0]);
-					pos[2]     = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
+					pos[0] = val.findl('{');
+					pos[1] = val.find('}', pos[0]);
+					pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
 
 					// Find Flag Name / Value
 					CString flagName = val.subString(0, pos[0]);
-					val              = p2->getFlag(flagName.text());
+					val = p2->getFlag(flagName.text());
 
 					// If String-Array, Get Index
 					if (pos[2] >= 0)
@@ -668,18 +668,18 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] :: %s - [Error] %s\n", _server->getName().text(), sock.getDescription(), pPacket.readString("").text());
+	m_server->getServerLog().out("[%s] :: %s - [Error] %s\n", m_server->getName().text(), m_socket.getDescription(), pPacket.readString("").text());
 }
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)
 {
-	CString account    = pPacket.readChars(pPacket.readGUChar());
-	unsigned short id  = pPacket.readGUShort();
+	CString account = pPacket.readChars(pPacket.readGUChar());
+	unsigned short id = pPacket.readGUShort();
 	unsigned char type = pPacket.readGUChar();
-	CString message    = pPacket.readString("");
+	CString message = pPacket.readString("");
 
 	// Get the player.
-	auto player = _server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
+	auto player = m_server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
@@ -705,17 +705,17 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void ServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", _server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", m_server->getName().text());
 }
 
 void ServerList::msgSVI_PING(CString& pPacket)
@@ -726,8 +726,8 @@ void ServerList::msgSVI_PING(CString& pPacket)
 
 void ServerList::msgSVI_RAWDATA(CString& pPacket)
 {
-	//nextIsRaw = true;
-	//rawPacketSize = pPacket.readGInt();
+	//m_nextIsRaw = true;
+	//m_rawPacketSize = pPacket.readGInt();
 }
 
 void ServerList::msgSVI_FILESTART3(CString& pPacket)
@@ -751,14 +751,14 @@ void ServerList::msgSVI_FILESTART3(CString& pPacket)
 	}
 	filename << pPacket.readChars(pPacket.readGUChar());
 	FileSystem::fixPathSeparators(filename);
-	blank.save(CString() << _server->getServerPath() << filename);
-	_server->getFileSystem()->addFile(filename);
+	blank.save(CString() << m_server->getServerPath() << filename);
+	m_server->getFileSystem()->addFile(filename);
 }
 
 void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
-	CString filename  = _server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
+	CString filename = m_server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
 	if (filename.length() == 0) return;
 	CString filedata;
 	filedata.load(filename);
@@ -768,38 +768,38 @@ void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 
 void ServerList::msgSVI_FILEEND3(CString& pPacket)
 {
-	unsigned short pid       = pPacket.readGUShort();
-	unsigned char type       = pPacket.readGUChar();
+	unsigned short pid = pPacket.readGUShort();
+	unsigned char type = pPacket.readGUChar();
 	unsigned char doCompress = pPacket.readGUChar();
-	time_t modTime           = pPacket.readGUInt5();
-	unsigned int fileLength  = pPacket.readGUInt5();
-	CString shortName        = pPacket.readString("");
+	time_t modTime = pPacket.readGUInt5();
+	unsigned int fileLength = pPacket.readGUInt5();
+	CString shortName = pPacket.readString("");
 
 	// If we have folder config enabled, we need to add the file to the appropriate
 	// file system.
-	bool foldersconfig      = !_server->getSettings().getBool("nofoldersconfig", false);
+	bool foldersconfig = !m_server->getSettings().getBool("nofoldersconfig", false);
 	FileSystem* fileSystem = 0;
 	CString typeString;
 	switch (type)
 	{
 		case SVF_HEAD:
 			typeString = "heads/";
-			if (foldersconfig) fileSystem = _server->getFileSystem(FS_HEAD);
+			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_HEAD);
 			break;
 		case SVF_BODY:
 			typeString = "bodies/";
-			if (foldersconfig) fileSystem = _server->getFileSystem(FS_BODY);
+			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_BODY);
 			break;
 		case SVF_SWORD:
 			typeString = "swords/";
-			if (foldersconfig) fileSystem = _server->getFileSystem(FS_SWORD);
+			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_SWORD);
 			break;
 		case SVF_SHIELD:
 			typeString = "shields/";
-			if (foldersconfig) fileSystem = _server->getFileSystem(FS_SHIELD);
+			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_SHIELD);
 			break;
 	}
-	CString fileName = _server->getFileSystem()->find(shortName);
+	CString fileName = m_server->getFileSystem()->find(shortName);
 
 	// Add the file to the filesystem.
 	if (fileSystem)
@@ -815,12 +815,12 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 	}
 
 	// Set the file mod time.
-	if (_server->getFileSystem()->setModTime(shortName, modTime) == false)
-		_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", _server->getName().text(), fileName.text());
+	if (m_server->getFileSystem()->setModTime(shortName, modTime) == false)
+		m_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", m_server->getName().text(), fileName.text());
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
-	auto p = _server->getPlayer(pid, PLTYPE_ANYPLAYER);
+	auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		switch (type)
@@ -852,11 +852,11 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 
 void ServerList::msgSVI_SERVERINFO(CString& pPacket)
 {
-	int pid              = pPacket.readGUShort();
+	int pid = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
 
 	// A hack to allow v5 clients to serverwarp to servers
-	auto player = _server->getPlayer(pid, PLTYPE_ANYCLIENT);
+	auto player = m_server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 }
@@ -864,17 +864,17 @@ void ServerList::msgSVI_SERVERINFO(CString& pPacket)
 void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 {
 	unsigned short playerId = pPacket.readGUShort();
-	CString message         = pPacket.readString("");
+	CString message = pPacket.readString("");
 
-	CString data                = message.guntokenize();
+	CString data = message.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
 
-	CString weapon     = data.readString("\n");
-	CString type       = data.readString("\n");
-	CString option     = data.readString("\n");
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString option = data.readString("\n");
 	CString paramsData = data.readString("");
 
-	auto player = _server->getPlayer(playerId);
+	auto player = m_server->getPlayer(playerId);
 	if (player != nullptr)
 	{
 		if (params.size() > 3)
@@ -922,15 +922,15 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
 		// TODO(joey): This is spamming clients non-stop!!!!!
-		_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
-		_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
+		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
+		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
 		serverIds.clear();
 		serverNames.clear();
 		serverPCount.clear();
 	}
 	*/
 
-	player = _server->getPlayer(playerId, PLTYPE_ANYPLAYER);
+	player = m_server->getPlayer(playerId, PLTYPE_ANYPLAYER);
 	if (player)
 	{
 		if (type == "pmserverplayers")
@@ -939,7 +939,7 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		}
 		else
 		{
-			//_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
+			//m_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
 				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
@@ -956,14 +956,14 @@ void ServerList::msgSVI_SENDTEXT(CString& pPacket)
 void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 {
 	CString message = pPacket.readString("");
-	CString data    = message.guntokenize();
+	CString data = message.guntokenize();
 
 	CString servername = data.readString("\n");
-	CString account    = data.readString("\n");
-	CString nick       = data.readString("\n");
-	CString weapon     = data.readString("\n");
-	CString type       = data.readString("\n");
-	CString account2   = data.readString("\n");
+	CString account = data.readString("\n");
+	CString nick = data.readString("\n");
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString account2 = data.readString("\n");
 
 	CString message2 = data.readString("");
 	CString message3 = message2.gtokenizeI();
@@ -975,7 +975,7 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 
-	auto p = _server->getPlayer(account2, PLTYPE_ANYPLAYER);
+	auto p = m_server->getPlayer(account2, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		p->addPMServer(servername);
@@ -989,12 +989,12 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 
 void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 {
-	uint16_t id  = pPacket.readGUShort();
+	uint16_t id = pPacket.readGUShort();
 	uint8_t type = pPacket.readGUChar();
 	CString pcId = pPacket.readChars(pPacket.readGUChar());
 
 	// Get the player, this should be a player who has not been loaded with the playerid of `id`
-	auto player = _server->getPlayer(id, type);
+	auto player = m_server->getPlayer(id, type);
 	if (!player || player->isLoaded())
 		return;
 

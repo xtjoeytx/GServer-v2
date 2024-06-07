@@ -15,71 +15,71 @@ class LevelChest : public std::enable_shared_from_this<LevelChest>
 {
 public:
 	LevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
-		: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny)
+		: m_itemIndex(itemIdx), m_signIndex(signIdx), m_x(nx), m_y(ny)
 	{
 	}
 
 	LevelItemType getItemIndex() const
 	{
-		return itemIndex;
+		return m_itemIndex;
 	}
 
 	int getSignIndex() const
 	{
-		return signIndex;
+		return m_signIndex;
 	}
 
 	int getX() const
 	{
-		return x;
+		return m_x;
 	}
 
 	int getY() const
 	{
-		return y;
+		return m_y;
 	}
 
 	void setItemIndex(int id)
 	{
-		itemIndex = (LevelItemType)id;
+		m_itemIndex = (LevelItemType)id;
 	}
 
 	void setSignIndex(int id)
 	{
-		signIndex = id;
+		m_signIndex = id;
 	}
 
 	void setX(int xVal = 0)
 	{
-		x = xVal;
+		m_x = xVal;
 	}
 
 	void setY(int yVal = 0)
 	{
-		y = yVal;
+		m_y = yVal;
 	}
 
 #ifdef V8NPCSERVER
 	inline IScriptObject<LevelChest>* getScriptObject() const
 	{
-		return _scriptObject.get();
+		return m_scriptObject.get();
 	}
 
 	inline void setScriptObject(std::unique_ptr<IScriptObject<LevelChest>> object)
 	{
-		_scriptObject = std::move(object);
+		m_scriptObject = std::move(object);
 	}
 #endif
 
 private:
-	LevelItemType itemIndex;
-	int signIndex, x, y;
+	LevelItemType m_itemIndex;
+	int m_signIndex, m_x, m_y;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<LevelChest>> _scriptObject;
+	std::unique_ptr<IScriptObject<LevelChest>> m_scriptObject;
 #endif
 };
 
-using TLevelChestPtr = std::shared_ptr<LevelChest>;
+using LevelChestPtr = std::shared_ptr<LevelChest>;
 
 #endif // TLEVELCHEST_H

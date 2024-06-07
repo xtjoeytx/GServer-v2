@@ -7,7 +7,7 @@
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
-	auto& dispatcher = triggerActionDispatcher;
+	auto& dispatcher = m_triggerActionDispatcher;
 
 #ifdef V8NPCSERVER
 	builder.registerCommand("serverside", [&](Player* player, std::vector<CString>& triggerData)
@@ -37,7 +37,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.serverlist", [&](Player* player, std::vector<CString>& triggerData)
 							{
-								auto& listServer       = getServerList();
+								auto& listServer = getServerList();
 								const auto& serverList = listServer.getServerList();
 
 								CString actionData("clientside,-Serverlist_v4,updateservers,");
@@ -119,7 +119,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 										if (guildList.find(account) != -1)
 										{
-											int pos    = guildList.find(account);
+											int pos = guildList.find(account);
 											int length = guildList.find("\n", pos) - pos;
 											if (length < 0) length = -1;
 											else
@@ -208,7 +208,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
-									auto playerList = player->getLevel()->getPlayerList();
+									auto playerList = player->getLevel()->getPlayers();
 									for (auto& id: playerList)
 									{
 										auto pl = getPlayer(id);
@@ -252,10 +252,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 								if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 6)
 								{
 									unsigned int id = strtoint(triggerData[1]);
-									int dx          = strtoint(triggerData[2]);
-									int dy          = strtoint(triggerData[3]);
-									float duration  = (float)strtofloat(triggerData[4]);
-									int options     = strtoint(triggerData[5]);
+									int dx = strtoint(triggerData[2]);
+									int dy = strtoint(triggerData[3]);
+									float duration = (float)strtofloat(triggerData[4]);
+									int options = strtoint(triggerData[5]);
 
 									auto npc = getNPC(id);
 									if (npc)
@@ -281,8 +281,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 								if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 4)
 								{
 									unsigned int id = strtoint(triggerData[1]);
-									float x         = (float)strtofloat(triggerData[2]);
-									float y         = (float)strtofloat(triggerData[3]);
+									float x = (float)strtofloat(triggerData[2]);
+									float y = (float)strtofloat(triggerData[3]);
 
 									auto npc = getNPC(id);
 									if (npc)

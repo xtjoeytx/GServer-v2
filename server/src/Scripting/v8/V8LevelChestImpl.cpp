@@ -86,7 +86,7 @@ void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 void bindClass_LevelChest(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	auto* env            = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
@@ -97,7 +97,7 @@ void bindClass_LevelChest(CScriptEngine* scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> chest_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> chest_proto  = chest_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> chest_proto = chest_ctor->PrototypeTemplate();
 	chest_ctor->SetClassName(chestStr);
 	chest_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

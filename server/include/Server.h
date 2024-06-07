@@ -13,12 +13,12 @@
 #include <unordered_set>
 #include <vector>
 
-#include "FileSystem.h"
 #include "CLog.h"
 #include "CSettings.h"
 #include "CSocket.h"
 #include "CString.h"
 #include "CTranslationManager.h"
+#include "FileSystem.h"
 #include "IEnums.h"
 #include "ServerList.h"
 #include "WordFilter.h"
@@ -56,18 +56,18 @@ enum // Socket Type
 
 enum
 {
-	FS_ALL    = 0,
-	FS_FILE   = 1,
-	FS_LEVEL  = 2,
-	FS_HEAD   = 3,
-	FS_BODY   = 4,
-	FS_SWORD  = 5,
+	FS_ALL = 0,
+	FS_FILE = 1,
+	FS_LEVEL = 2,
+	FS_HEAD = 3,
+	FS_BODY = 4,
+	FS_SWORD = 5,
 	FS_SHIELD = 6,
 };
 #define FS_COUNT 7
 
-using AnimationManager  = ResourceManager<GameAni, Server*>;
-using PackageManager    = ResourceManager<UpdatePackage, Server*>;
+using AnimationManager = ResourceManager<GameAni, Server*>;
+using PackageManager = ResourceManager<UpdatePackage, Server*>;
 using TriggerDispatcher = CommandDispatcher<std::string, Player*, std::vector<CString>&>;
 
 class Server : public CSocketStub
@@ -78,7 +78,7 @@ public:
 	bool onSend() { return true; }
 	bool onRegister() { return true; }
 	void onUnregister() { return; }
-	SOCKET getSocketHandle() { return playerSock.getHandle(); }
+	SOCKET getSocketHandle() { return m_playerSock.getHandle(); }
 	bool canRecv() { return true; }
 	bool canSend() { return false; }
 
@@ -125,43 +125,43 @@ public:
 	void reportScriptException(const std::string& error_message);
 
 	// Get functions.
-	const CString& getName() const { return name; }
-	FileSystem* getFileSystem(int c = 0) { return &(filesystem[c]); }
-	FileSystem* getAccountsFileSystem() { return &filesystem_accounts; }
-	CLog& getNPCLog() { return npclog; }
-	CLog& getServerLog() { return serverlog; }
-	CLog& getRCLog() { return rclog; }
-	CLog& getScriptLog() { return scriptlog; }
-	CSettings& getSettings() { return settings; }
-	CSettings& getAdminSettings() { return adminsettings; }
-	CSocketManager& getSocketManager() { return sockManager; }
-	CString getServerPath() const { return serverpath; }
-	const CString& getServerMessage() const { return servermessage; }
-	const CString& getAllowedVersionString() const { return allowedVersionString; }
-	CTranslationManager& getTranslationManager() { return mTranslationManager; }
-	WordFilter& getWordFilter() { return wordFilter; }
-	ServerList& getServerList() { return serverlist; }
-	AnimationManager& getAnimationManager() { return animationManager; }
-	PackageManager& getPackageManager() { return packageManager; }
-	unsigned int getNWTime() const { return serverTime; }
+	const CString& getName() const { return m_name; }
+	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
+	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
+	CLog& getNPCLog() { return m_npcLog; }
+	CLog& getServerLog() { return m_serverLog; }
+	CLog& getRCLog() { return m_rcLog; }
+	CLog& getScriptLog() { return m_scriptLog; }
+	CSettings& getSettings() { return m_settings; }
+	CSettings& getAdminSettings() { return m_adminSettings; }
+	CSocketManager& getSocketManager() { return m_sockManager; }
+	CString getServerPath() const { return m_serverPath; }
+	const CString& getServerMessage() const { return m_serverMessage; }
+	const CString& getAllowedVersionString() const { return m_allowedVersionString; }
+	CTranslationManager& getTranslationManager() { return m_translationManager; }
+	WordFilter& getWordFilter() { return m_wordFilter; }
+	ServerList& getServerList() { return m_serverlist; }
+	AnimationManager& getAnimationManager() { return m_animationManager; }
+	PackageManager& getPackageManager() { return m_packageManager; }
+	unsigned int getNWTime() const { return m_serverTime; }
 	void calculateServerTime();
 
-	std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return classList; }
-	std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return npcNameList; }
-	std::unordered_map<std::string, CString>& getServerFlags() { return mServerFlags; }
-	std::unordered_map<std::string, std::shared_ptr<Weapon>>& getWeaponList() { return weaponList; }
-	std::unordered_map<uint16_t, std::shared_ptr<Player>>& getPlayerList() { return playerList; }
-	std::unordered_map<uint32_t, std::shared_ptr<NPC>>& getNPCList() { return npcList; }
-	std::vector<std::shared_ptr<Level>>& getLevelList() { return levelList; }
-	const std::vector<std::shared_ptr<Map>>& getMapList() const { return mapList; }
-	const std::vector<CString>& getStatusList() const { return statusList; }
-	const std::vector<CString>& getAllowedVersions() const { return allowedVersions; }
-	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return groupLevels; }
+	std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
+	std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
+	std::unordered_map<std::string, CString>& getServerFlags() { return m_serverFlags; }
+	std::unordered_map<std::string, std::shared_ptr<Weapon>>& getWeaponList() { return m_weaponList; }
+	std::unordered_map<uint16_t, std::shared_ptr<Player>>& getPlayerList() { return m_playerList; }
+	std::unordered_map<uint32_t, std::shared_ptr<NPC>>& getNPCList() { return m_npcList; }
+	std::vector<std::shared_ptr<Level>>& getLevelList() { return m_levelList; }
+	const std::vector<std::shared_ptr<Map>>& getMapList() const { return m_mapList; }
+	const std::vector<CString>& getStatusList() const { return m_statusList; }
+	const std::vector<CString>& getAllowedVersions() const { return m_allowedVersions; }
+	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
 
 #ifdef V8NPCSERVER
-	CScriptEngine* getScriptEngine() { return &mScriptEngine; }
-	int getNCPort() const { return mNCPort; }
-	std::shared_ptr<Player> getNPCServer() const { return mNpcServer; }
+	CScriptEngine* getScriptEngine() { return &m_scriptEngine; }
+	int getNCPort() const { return m_ncPort; }
+	std::shared_ptr<Player> getNPCServer() const { return m_npcServer; }
 #endif
 
 	FileSystem* getFileSystemByType(CString& type);
@@ -233,8 +233,8 @@ public:
 	void updateClassForPlayers(ScriptClass* pClass);
 
 	/*
-		 * GS2 Functionality
-		 */
+	 * GS2 Functionality
+	 */
 	void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
 	void compileGS2Script(NPC* npc, GS2ScriptManager::user_callback_type cb);
 	void compileGS2Script(Weapon* weapon, GS2ScriptManager::user_callback_type cb);
@@ -242,26 +242,26 @@ public:
 
 	std::time_t getServerStartTime() const
 	{
-		return serverStartTime;
+		return m_serverStartTime;
 	}
 
 	TriggerDispatcher getTriggerDispatcher() const
 	{
-		return triggerActionDispatcher;
+		return m_triggerActionDispatcher;
 	}
 
 	void setShootParams(const std::string& params)
 	{
-		shootParams = params;
+		m_shootParams = params;
 	}
 
 	const std::string& getShootParams() const
 	{
-		return shootParams;
+		return m_shootParams;
 	}
 
 private:
-	GS2ScriptManager gs2ScriptManager;
+	GS2ScriptManager m_gs2ScriptManager;
 
 	template<typename ScriptObjType>
 	void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
@@ -272,68 +272,68 @@ private:
 	bool doTimedEvents();
 	void cleanupDeletedPlayers();
 
-	bool doRestart;
+	bool m_doRestart;
 
-	FileSystem filesystem[FS_COUNT], filesystem_accounts;
-	CLog npclog, rclog, serverlog, scriptlog; //("logs/npclog|rclog|serverlog|scriptlog.txt");
-	CSettings adminsettings, settings;
-	CSocket playerSock;
-	CSocketManager sockManager;
-	CTranslationManager mTranslationManager;
-	WordFilter wordFilter;
-	AnimationManager animationManager;
-	PackageManager packageManager;
-	CString allowedVersionString, name, servermessage, serverpath;
-	CString overrideIP, overrideLocalIP, overridePort, overrideInterface;
+	FileSystem m_filesystem[FS_COUNT], m_filesystemAccounts;
+	CLog m_npcLog, m_rcLog, m_serverLog, m_scriptLog; //("logs/npclog|rclog|serverlog|scriptlog.txt");
+	CSettings m_adminSettings, m_settings;
+	CSocket m_playerSock;
+	CSocketManager m_sockManager;
+	CTranslationManager m_translationManager;
+	WordFilter m_wordFilter;
+	AnimationManager m_animationManager;
+	PackageManager m_packageManager;
+	CString m_allowedVersionString, m_name, m_serverMessage, m_serverPath;
+	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
 
-	std::vector<CString> allowedVersions, foldersConfig, ipBans, statusList, staffList;
+	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
 
-	std::unordered_map<std::string, CString> mServerFlags;
-	std::unordered_map<std::string, std::shared_ptr<Weapon>> weaponList;
-	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> classList;
+	std::unordered_map<std::string, CString> m_serverFlags;
+	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
+	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
 
-	std::unordered_map<uint32_t, std::shared_ptr<NPC>> npcList;
-	std::unordered_map<std::string, std::weak_ptr<NPC>> npcNameList;
-	std::set<uint32_t> freeNpcIds;
-	uint32_t nextNpcId;
+	std::unordered_map<uint32_t, std::shared_ptr<NPC>> m_npcList;
+	std::unordered_map<std::string, std::weak_ptr<NPC>> m_npcNameList;
+	std::set<uint32_t> m_freeNpcIds;
+	uint32_t m_nextNpcId;
 
-	std::vector<std::shared_ptr<Map>> mapList;
-	std::vector<std::shared_ptr<Level>> levelList;
-	std::unordered_multimap<std::string, std::weak_ptr<Level>> groupLevels;
+	std::vector<std::shared_ptr<Map>> m_mapList;
+	std::vector<std::shared_ptr<Level>> m_levelList;
+	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
-	std::unordered_map<uint16_t, std::shared_ptr<Player>> playerList;
-	std::set<uint16_t> freePlayerIds;
-	uint16_t nextPlayerId;
-	std::unordered_set<std::shared_ptr<Player>> deletedPlayers;
+	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_playerList;
+	std::set<uint16_t> m_freePlayerIds;
+	uint16_t m_nextPlayerId;
+	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 
-	ServerList serverlist;
-	std::chrono::high_resolution_clock::time_point lastTimer, lastNWTimer, last1mTimer, last5mTimer, last3mTimer;
-	std::time_t serverStartTime;
-	unsigned int serverTime;
+	ServerList m_serverlist;
+	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
+	std::time_t m_serverStartTime;
+	unsigned int m_serverTime;
 
 	// Trigger dispatcher
-	TriggerDispatcher triggerActionDispatcher;
+	TriggerDispatcher m_triggerActionDispatcher;
 	void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
 
-	std::string shootParams;
+	std::string m_shootParams;
 
 #ifdef V8NPCSERVER
-	CScriptEngine mScriptEngine;
-	int mNCPort;
-	std::shared_ptr<Player> mNpcServer;
-	std::shared_ptr<NPC> mPmHandlerNpc;
+	CScriptEngine m_scriptEngine;
+	int m_ncPort;
+	std::shared_ptr<Player> m_npcServer;
+	std::shared_ptr<NPC> m_pmHandlerNpc;
 #endif
 
 #ifdef UPNP
-	UPNP upnp;
-	std::thread upnp_thread;
+	UPNP m_upnp;
+	std::thread m_upnpThread;
 #endif
 };
 
 inline std::shared_ptr<NPC> Server::getNPC(const uint32_t id) const
 {
-	auto iter = npcList.find(id);
-	if (iter != std::end(npcList))
+	auto iter = m_npcList.find(id);
+	if (iter != std::end(m_npcList))
 		return iter->second;
 
 	return nullptr;
@@ -341,13 +341,13 @@ inline std::shared_ptr<NPC> Server::getNPC(const uint32_t id) const
 
 inline bool Server::hasClass(const std::string& className) const
 {
-	return classList.find(className) != classList.end();
+	return m_classList.find(className) != m_classList.end();
 }
 
 inline ScriptClass* Server::getClass(const std::string& className) const
 {
-	auto classIter = classList.find(className);
-	if (classIter != classList.end())
+	auto classIter = m_classList.find(className);
+	if (classIter != m_classList.end())
 		return classIter->second.get();
 
 	return nullptr;
@@ -357,8 +357,8 @@ inline ScriptClass* Server::getClass(const std::string& className) const
 
 inline std::shared_ptr<NPC> Server::getNPCByName(const std::string& name) const
 {
-	auto npcIter = npcNameList.find(name);
-	if (npcIter != npcNameList.end())
+	auto npcIter = m_npcNameList.find(name);
+	if (npcIter != m_npcNameList.end())
 		return npcIter->second.lock();
 
 	return nullptr;

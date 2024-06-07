@@ -14,7 +14,7 @@ std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std
 
 	// Calculate the checksum for the gupd file
 	UpdatePackage updatePackage(name);
-	updatePackage.checksum = calculateCrc32Checksum(fileContents);
+	updatePackage.m_checksum = calculateCrc32Checksum(fileContents);
 
 	// Calculate the checksum and filesize for each file referenced in the package
 	auto packageLines = fileContents.tokenize("\n");
@@ -25,7 +25,7 @@ std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std
 		// Line should be in the format of FILE levels/body.png
 		if (startPos == 0)
 		{
-			std::string filePath     = line.subString(4).trim().toString();
+			std::string filePath = line.subString(4).trim().toString();
 			std::string baseFileName = std::filesystem::path(filePath).filename().string();
 
 			CString updateFileData = fileSystem->load(baseFileName);
@@ -36,11 +36,11 @@ std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std
 
 			uint32_t fileLength(updateFileData.length());
 
-			updatePackage.fileList.emplace(baseFileName, FileEntry{
-															 .size     = fileLength,
-															 .checksum = calculateCrc32Checksum(updateFileData) });
+			updatePackage.m_fileList.emplace(baseFileName, FileEntry{
+															   .size = fileLength,
+															   .checksum = calculateCrc32Checksum(updateFileData) });
 
-			updatePackage.packageSize += fileLength;
+			updatePackage.m_packageSize += fileLength;
 		}
 	}
 

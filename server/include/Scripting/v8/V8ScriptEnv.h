@@ -50,49 +50,49 @@ private:
 	static int s_count;
 	static std::unique_ptr<v8::Platform> s_platform;
 
-	bool _initialized;
-	v8::Isolate::CreateParams create_params;
-	v8::Isolate* _isolate;
-	v8::Persistent<v8::Context> _context;
-	v8::Persistent<v8::Object> _global;
-	v8::Persistent<v8::ObjectTemplate> _global_tpl;
-	std::unordered_map<std::string, v8::Global<v8::FunctionTemplate>> _constructorMap;
+	bool m_initialized;
+	v8::Isolate::CreateParams m_createParams;
+	v8::Isolate* m_isolate;
+	v8::Persistent<v8::Context> m_context;
+	v8::Persistent<v8::Object> m_global;
+	v8::Persistent<v8::ObjectTemplate> m_globalTpl;
+	std::unordered_map<std::string, v8::Global<v8::FunctionTemplate>> m_constructorMap;
 };
 
 inline v8::Isolate* V8ScriptEnv::Isolate() const
 {
-	return _isolate;
+	return m_isolate;
 }
 
 inline v8::Local<v8::Context> V8ScriptEnv::Context() const
 {
-	return PersistentToLocal(Isolate(), _context);
+	return PersistentToLocal(Isolate(), m_context);
 }
 
 inline v8::Local<v8::Object> V8ScriptEnv::Global() const
 {
-	return PersistentToLocal(Isolate(), _global);
+	return PersistentToLocal(Isolate(), m_global);
 }
 
 inline void V8ScriptEnv::SetGlobal(v8::Local<v8::Object> global)
 {
-	_global.Reset(Isolate(), global);
+	m_global.Reset(Isolate(), global);
 }
 
 inline v8::Local<v8::ObjectTemplate> V8ScriptEnv::GlobalTemplate() const
 {
-	return PersistentToLocal(Isolate(), _global_tpl);
+	return PersistentToLocal(Isolate(), m_globalTpl);
 }
 
 inline void V8ScriptEnv::SetGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl)
 {
-	_global_tpl.Reset(Isolate(), global_tpl);
+	m_globalTpl.Reset(Isolate(), global_tpl);
 }
 
 inline v8::Local<v8::FunctionTemplate> V8ScriptEnv::GetConstructor(const std::string& key) const
 {
-	auto it = _constructorMap.find(key);
-	if (it == _constructorMap.end())
+	auto it = m_constructorMap.find(key);
+	if (it == m_constructorMap.end())
 		return v8::Local<v8::FunctionTemplate>();
 
 	return GlobalPersistentToLocal(Isolate(), (*it).second);
@@ -102,7 +102,7 @@ template<class T>
 inline std::unique_ptr<IScriptObject<T>> V8ScriptEnv::Wrap(const std::string& constructor_name, T* obj)
 {
 	// Fetch the v8 isolate and context
-	v8::Isolate* isolate           = Isolate();
+	v8::Isolate* isolate = Isolate();
 	v8::Local<v8::Context> context = Context();
 	assert(!context.IsEmpty());
 
@@ -114,8 +114,8 @@ inline std::unique_ptr<IScriptObject<T>> V8ScriptEnv::Wrap(const std::string& co
 
 	// Create an instance for the wrapped object
 	v8::Local<v8::FunctionTemplate> ctor_tpl = GetConstructor(constructor_name);
-	v8::Local<v8::ObjectTemplate> obj_tpl    = ctor_tpl->InstanceTemplate();
-	v8::Local<v8::Object> new_instance       = obj_tpl->NewInstance(context).ToLocalChecked();
+	v8::Local<v8::ObjectTemplate> obj_tpl = ctor_tpl->InstanceTemplate();
+	v8::Local<v8::Object> new_instance = obj_tpl->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, obj);
 
 	return std::make_unique<V8ScriptObject<T>>(obj, isolate, new_instance);

@@ -9,9 +9,9 @@
 #include "Server.h"
 #include "Weapon.h"
 
-#define serverlog server->getServerLog()
-#define npclog server->getNPCLog()
-#define rclog server->getRCLog()
+#define serverlog m_server->getServerLog()
+#define npclog m_server->getNPCLog()
+#define rclog m_server->getRCLog()
 
 typedef bool (Player::*TPLSock)(CString&);
 extern std::vector<TPLSock> TPLFunc; // From Player.cpp
@@ -21,7 +21,7 @@ bool Player::msgPLI_NC_NPCGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to get a database npc.\n", m_accountName.text());
 		return false;
 	}
 
@@ -32,7 +32,7 @@ bool Player::msgPLI_NC_NPCGET(CString& pPacket)
 	{
 		unsigned int npcId = pPacket.readGUInt();
 
-		auto npc = server->getNPC(npcId);
+		auto npc = m_server->getNPC(npcId);
 		if (npc != nullptr)
 		{
 			CString npcDump = npc->getVariableDump();
@@ -47,25 +47,25 @@ bool Player::msgPLI_NC_NPCDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a database npc.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to delete a database npc.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	auto npc           = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 
 	if (npc != nullptr && npc->getType() == NPCType::DBNPC)
 	{
 		CString npcName = npc->getName();
-		bool result     = server->deleteNPC(npc, true);
+		bool result = m_server->deleteNPC(npc, true);
 		if (result)
 		{
-			server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
+			m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
 
 			CString logMsg;
-			logMsg << "NPC " << npcName << " deleted by " << accountName << "\n";
+			logMsg << "NPC " << npcName << " deleted by " << m_accountName << "\n";
 			npclog.out(logMsg);
-			server->sendToNC(logMsg);
+			m_server->sendToNC(logMsg);
 		}
 	}
 
@@ -76,21 +76,21 @@ bool Player::msgPLI_NC_NPCRESET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to reset a database npc.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to reset a database npc.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
 
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr && npc->getType() == NPCType::DBNPC)
 	{
 		npc->resetNPC();
 
 		CString logMsg;
-		logMsg << "NPC script of " << npc->getName() << " reset by " << accountName << "\n";
+		logMsg << "NPC script of " << npc->getName() << " reset by " << m_accountName << "\n";
 		npclog.out(logMsg);
-		server->sendToNC(logMsg);
+		m_server->sendToNC(logMsg);
 	}
 
 	return true;
@@ -100,13 +100,13 @@ bool Player::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc script.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to get a database npc script.\n", m_accountName.text());
 		return false;
 	}
 
 	// {160}{INT id}{GSTRING script}
 	unsigned int npcId = pPacket.readGUInt();
-	auto npc           = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		CString code = npc->getSource().getSource();
@@ -121,19 +121,19 @@ bool Player::msgPLI_NC_NPCWARP(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to warp a database npc.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to warp a database npc.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	float npcX         = (float)pPacket.readGUChar() / 2.0f;
-	float npcY         = (float)pPacket.readGUChar() / 2.0f;
-	CString npcLevel   = pPacket.readString("");
+	float npcX = (float)pPacket.readGUChar() / 2.0f;
+	float npcY = (float)pPacket.readGUChar() / 2.0f;
+	CString npcLevel = pPacket.readString("");
 
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		auto newLevel = server->getLevel(npcLevel.toString());
+		auto newLevel = m_server->getLevel(npcLevel.toString());
 		if (newLevel != nullptr)
 			npc->warpNPC(newLevel, int(npcX * 16.0), int(npcY * 16.0));
 	}
@@ -145,12 +145,12 @@ bool Player::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc flags.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to get a database npc flags.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	auto npc           = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		CString flagListStr;
@@ -169,23 +169,23 @@ bool Player::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to set a database npc script.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to set a database npc script.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	CString npcScript  = pPacket.readString("").guntokenize();
+	CString npcScript = pPacket.readString("").guntokenize();
 
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		npc->setScriptCode(npcScript.toString());
 		npc->saveNPC();
 
 		CString logMsg;
-		logMsg << "NPC script of " << npc->getName() << " updated by " << accountName << "\n";
+		logMsg << "NPC script of " << npc->getName() << " updated by " << m_accountName << "\n";
 		npclog.out(logMsg);
-		server->sendToNC(logMsg);
+		m_server->sendToNC(logMsg);
 	}
 
 	return true;
@@ -195,18 +195,18 @@ bool Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to set a database npc flags.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to set a database npc flags.\n", m_accountName.text());
 		return false;
 	}
 
 	unsigned int npcId = pPacket.readGUInt();
-	CString npcFlags   = pPacket.readString("").guntokenize();
+	CString npcFlags = pPacket.readString("").guntokenize();
 
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		auto& flagList = npc->getFlagList();
-		auto newFlags  = npcFlags.tokenize("\n");
+		auto newFlags = npcFlags.tokenize("\n");
 
 		CString addedFlagMsg, deletedFlagMsg;
 		std::unordered_map<std::string, CString> newFlagList;
@@ -215,7 +215,7 @@ bool Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		for (auto& flag: newFlags)
 		{
 			std::string flagName = flag.readString("=").text();
-			CString flagValue    = flag.readString("");
+			CString flagValue = flag.readString("");
 
 			// Check if the flag is a new flag, or if it has been updated
 			auto oldFlag = flagList.find(flagName);
@@ -246,11 +246,11 @@ bool Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 
 		// Logging
 		CString updateMsg, logMsg;
-		updateMsg << "NPC flags of " << npc->getName() << " updated by " << accountName;
+		updateMsg << "NPC flags of " << npc->getName() << " updated by " << m_accountName;
 		logMsg << updateMsg << "\n"
 			   << addedFlagMsg << deletedFlagMsg;
 		npclog.out(logMsg);
-		server->sendToNC(updateMsg);
+		m_server->sendToNC(updateMsg);
 	}
 
 	return true;
@@ -260,34 +260,34 @@ bool Player::msgPLI_NC_NPCADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a database npc.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to add a database npc.\n", m_accountName.text());
 		return false;
 	}
 
-	CString npcData     = pPacket.readString("").guntokenize();
-	CString npcName     = npcData.readString("\n").trim();
-	CString npcId       = npcData.readString("\n");
-	CString npcType     = npcData.readString("\n");
+	CString npcData = pPacket.readString("").guntokenize();
+	CString npcName = npcData.readString("\n").trim();
+	CString npcId = npcData.readString("\n");
+	CString npcType = npcData.readString("\n");
 	CString npcScripter = npcData.readString("\n");
-	CString npcLevel    = npcData.readString("\n");
-	CString npcX        = npcData.readString("\n");
-	CString npcY        = npcData.readString("\n");
+	CString npcLevel = npcData.readString("\n");
+	CString npcX = npcData.readString("\n");
+	CString npcY = npcData.readString("\n");
 
 	// Require a name
 	if (npcName.isEmpty())
 		return true;
 
-	auto level = server->getLevel(npcLevel.toString());
+	auto level = m_server->getLevel(npcLevel.toString());
 	if (level == nullptr)
 	{
-		server->sendToNC("Error adding database npc: Level does not exist");
+		m_server->sendToNC("Error adding database npc: Level does not exist");
 		return true;
 	}
 
-	auto newNpc = server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
+	auto newNpc = m_server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
 	if (newNpc != nullptr)
 	{
-		server->assignNPCName(newNpc, npcName.toString());
+		m_server->assignNPCName(newNpc, npcName.toString());
 
 		CString npcProps = CString() >> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType >> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
 
@@ -295,16 +295,16 @@ bool Player::msgPLI_NC_NPCADD(CString& pPacket)
 		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
 
 		// Send packet to npc controls about new npc
-		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);
+		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);
 
 		// Persist NPC
 		newNpc->saveNPC();
 
 		// Logging
 		CString logMsg;
-		logMsg << "NPC " << newNpc->getName() << " added by " << accountName << "\n";
+		logMsg << "NPC " << newNpc->getName() << " added by " << m_accountName << "\n";
 		npclog.out(logMsg);
-		server->sendToNC(logMsg);
+		m_server->sendToNC(logMsg);
 	}
 
 	return true;
@@ -316,13 +316,13 @@ bool Player::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to edit a class.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to edit a class.\n", m_accountName.text());
 		return false;
 	}
 
 	// {112}{class}
 	CString className = pPacket.readString("");
-	auto classObj     = server->getClass(className.text());
+	auto classObj = m_server->getClass(className.text());
 
 	if (classObj != nullptr)
 	{
@@ -340,32 +340,32 @@ bool Player::msgPLI_NC_CLASSADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a class.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to add a class.\n", m_accountName.text());
 		return false;
 	}
 
 	// {113}{CHAR name length}{name}{GSTRING script}
 	std::string className = pPacket.readChars(pPacket.readGUChar()).text();
-	CString classCode     = pPacket.readString("").guntokenize();
+	CString classCode = pPacket.readString("").guntokenize();
 
-	bool hasClass = server->hasClass(className);
-	server->updateClass(className, classCode.text());
+	bool hasClass = m_server->hasClass(className);
+	m_server->updateClass(className, classCode.text());
 
 	// Update Player-Weapons
-	server->updateClassForPlayers(server->getClass(className));
+	m_server->updateClassForPlayers(m_server->getClass(className));
 
 	if (!hasClass)
 	{
 		CString ret;
 		ret >> (char)PLO_NC_CLASSADD << className;
-		server->sendPacketToType(PLTYPE_ANYNC, ret);
+		m_server->sendPacketToType(PLTYPE_ANYNC, ret);
 	}
 
 	// Logging
 	CString logMsg;
-	logMsg << "Script " << className << " " << (!hasClass ? "added" : "updated") << " by " << accountName << "\n";
+	logMsg << "Script " << className << " " << (!hasClass ? "added" : "updated") << " by " << m_accountName << "\n";
 	npclog.out(logMsg);
-	server->sendToNC(logMsg);
+	m_server->sendToNC(logMsg);
 	return true;
 }
 
@@ -373,26 +373,26 @@ bool Player::msgPLI_NC_CLASSDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a class.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to delete a class.\n", m_accountName.text());
 		return false;
 	}
 
 	std::string className = pPacket.readString("").text();
 
 	CString logMsg;
-	if (server->deleteClass(className))
+	if (m_server->deleteClass(className))
 	{
 		CString ret;
 		ret >> (char)PLO_NC_CLASSDELETE << className;
-		server->sendPacketToType(PLTYPE_ANYNC, ret);
-		logMsg << accountName << " has deleted class " << className << "\n";
+		m_server->sendPacketToType(PLTYPE_ANYNC, ret);
+		logMsg << m_accountName << " has deleted class " << className << "\n";
 	}
 	else
 		logMsg << "error: " << className << " does not exist on this server!\n";
 
 	// Logging
 	npclog.out(logMsg);
-	server->sendToNC(logMsg);
+	m_server->sendToNC(logMsg);
 	return true;
 }
 
@@ -400,7 +400,7 @@ bool Player::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view level npcs.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to view level npcs.\n", m_accountName.text());
 		return false;
 	}
 
@@ -409,16 +409,16 @@ bool Player::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	if (level.isEmpty())
 		return true;
 
-	auto npcLevel = server->getLevel(level.toString());
+	auto npcLevel = m_server->getLevel(level.toString());
 	if (npcLevel != nullptr)
 	{
 		CString npcDump;
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->getLevelName() << "\n";
 
-		for (auto npcId: npcLevel->getLevelNPCs())
+		for (auto npcId: npcLevel->getNPCs())
 		{
-			auto npc = server->getNPC(npcId);
+			auto npc = m_server->getNPC(npcId);
 			npcDump << "\n"
 					<< npc->getVariableDump() << "\n";
 		}
@@ -433,7 +433,7 @@ bool Player::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view the weapon list.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to view the weapon list.\n", m_accountName.text());
 		return false;
 	}
 
@@ -442,7 +442,7 @@ bool Player::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 	ret >> (char)PLO_NC_WEAPONLISTGET;
 
 	// Iterate weapon list and send names
-	for (const auto& [weaponName, weapon]: server->getWeaponList())
+	for (const auto& [weaponName, weapon]: m_server->getWeaponList())
 	{
 		if (weapon->isDefault())
 			continue;
@@ -458,14 +458,14 @@ bool Player::msgPLI_NC_WEAPONGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view a weapon.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to view a weapon.\n", m_accountName.text());
 		return false;
 	}
 
 	// {116}{weapon}
 	CString weaponName = pPacket.readString("");
 
-	auto weapon = server->getWeapon(weaponName.toString());
+	auto weapon = m_server->getWeapon(weaponName.toString());
 	if (weapon != nullptr && !weapon->isDefault())
 	{
 		std::string script = weapon->getFullScript();
@@ -483,7 +483,7 @@ bool Player::msgPLI_NC_WEAPONGET(CString& pPacket)
 		}
 	}
 	else
-		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
+		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << m_accountName << " prob: weapon " << weaponName << " doesn't exist");
 
 	return true;
 }
@@ -492,21 +492,21 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a weapon.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to add a weapon.\n", m_accountName.text());
 		return false;
 	}
 
 	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
-	std::string weaponName  = pPacket.readChars(pPacket.readGUChar()).toString();
+	std::string weaponName = pPacket.readChars(pPacket.readGUChar()).toString();
 	std::string weaponImage = pPacket.readChars(pPacket.readGUChar()).toString();
-	std::string weaponCode  = pPacket.readString("").toString();
+	std::string weaponCode = pPacket.readString("").toString();
 
 	std::replace(weaponCode.begin(), weaponCode.end(), '\xa7', '\n');
 
 	CString actionTaken;
 
 	// Find Weapon
-	auto weaponObj = server->getWeapon(weaponName);
+	auto weaponObj = m_server->getWeapon(weaponName);
 	if (weaponObj != nullptr)
 	{
 		// default weapon, don't update!
@@ -517,15 +517,15 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 		weaponObj->updateWeapon(std::move(weaponImage), std::move(weaponCode));
 
 		// Update Player-Weapons
-		server->updateWeaponForPlayers(weaponObj);
+		m_server->updateWeaponForPlayers(weaponObj);
 
 		actionTaken = "updated";
 	}
 	else
 	{
 		// add weapon
-		auto weapon  = std::make_shared<Weapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
-		bool success = server->NC_AddWeapon(weapon);
+		auto weapon = std::make_shared<Weapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		bool success = m_server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";
 	}
@@ -534,9 +534,9 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 	if (!actionTaken.isEmpty())
 	{
 		CString logMsg;
-		logMsg << "Weapon/GUI-script " << weaponName << " " << actionTaken << " by " << accountName << "\n";
+		logMsg << "Weapon/GUI-script " << weaponName << " " << actionTaken << " by " << m_accountName << "\n";
 		npclog.out(logMsg);
-		server->sendToNC(logMsg);
+		m_server->sendToNC(logMsg);
 	}
 
 	return true;
@@ -546,7 +546,7 @@ bool Player::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a weapon.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to delete a weapon.\n", m_accountName.text());
 		return false;
 	}
 
@@ -554,14 +554,14 @@ bool Player::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 	CString weaponName = pPacket.readString("");
 
 	CString logMsg;
-	if (server->NC_DelWeapon(weaponName.toString()))
-		logMsg << "Weapon " << weaponName << " deleted by " << accountName << "\n";
+	if (m_server->NC_DelWeapon(weaponName.toString()))
+		logMsg << "Weapon " << weaponName << " deleted by " << m_accountName << "\n";
 	else
-		logMsg << accountName << " prob: weapon " << weaponName << " doesn't exist\n";
+		logMsg << m_accountName << " prob: weapon " << weaponName << " doesn't exist\n";
 
 	// Logging
 	npclog.out(logMsg);
-	server->sendToNC(logMsg);
+	m_server->sendToNC(logMsg);
 	return true;
 }
 
@@ -569,14 +569,14 @@ bool Player::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view the level list.\n", accountName.text());
+		npclog.out("[Hack] %s attempted to view the level list.\n", m_accountName.text());
 		return false;
 	}
 
 	// Start our packet.
 	CString ret;
 
-	auto& levelList = server->getLevelList();
+	auto& levelList = m_server->getLevelList();
 	if (!levelList.empty())
 	{
 		for (auto level: levelList)
@@ -594,21 +594,21 @@ void Player::sendNCAddr()
 	if (!isRC() || !hasRight(PLPERM_NPCCONTROL))
 		return;
 
-	auto npcServer = server->getNPCServer();
+	auto npcServer = m_server->getNPCServer();
 	if (npcServer != nullptr)
 	{
 		// Grab NPCServer & Send
-		CString npcServerIp = server->getAdminSettings().getStr("ns_ip", "auto").toLower();
+		CString npcServerIp = m_server->getAdminSettings().getStr("ns_ip", "auto").toLower();
 		if (npcServerIp == "auto")
 		{
-			npcServerIp = server->getServerList().getServerIP();
+			npcServerIp = m_server->getServerList().getServerIP();
 
 			// Fix for localhost setups
-			if (accountIpStr == playerSock->getLocalIp())
-				npcServerIp = accountIpStr;
+			if (m_accountIpStr == m_playerSock->getLocalIp())
+				npcServerIp = m_accountIpStr;
 		}
 
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(server->getNCPort()));
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcm_server->getId() << npcServerIp << "," << CString(m_server->getNCPort()));
 	}
 }
 

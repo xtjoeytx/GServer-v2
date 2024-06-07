@@ -3,15 +3,15 @@
 const uint32_t THREADPOOL_WORKERS = 0;
 
 GS2ScriptManager::GS2ScriptManager()
-	: _compilerThreadPool(THREADPOOL_WORKERS)
+	: m_compilerThreadPool(THREADPOOL_WORKERS)
 {
 }
 
 void GS2ScriptManager::compileScript(const std::string& script, user_callback_type finishedCb)
 {
 	// Check to see if we already compiled this code before
-	auto cacheSearch = _bytecodeCache.find(script);
-	if (cacheSearch != _bytecodeCache.end())
+	auto cacheSearch = m_bytecodeCache.find(script);
+	if (cacheSearch != m_bytecodeCache.end())
 	{
 		finishedCb(cacheSearch->second);
 		return;
@@ -37,7 +37,7 @@ void GS2ScriptManager::syncCompileJob(const std::string& script, user_callback_t
 	auto result = _context.compile(script); // , "weapon", "TestCode", true);
 
 	// Insert into bytecode cache
-	auto ret = _bytecodeCache.insert({ script, std::move(result) });
+	auto ret = m_bytecodeCache.insert({ script, std::move(result) });
 
 	// Call the user-defined callback after we insert the bytecode into the cache
 	finishedCb(ret.first->second);
@@ -60,19 +60,19 @@ void GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_
 		// Call the user-defined callback after we insert the bytecode into the cache
 		auto completedFunc = [this, script, finishedCb](CompilerResponse& response)
 		{
-			auto ret = _bytecodeCache.insert({ script, std::move(response) });
+			auto ret = m_bytecodeCache.insert({ script, std::move(response) });
 			finishedCb(ret.first->second);
 		};
 
 		// Create a tuple with the callback, and arguments
 		auto fnData = std::make_pair(std::move(completedFunc), std::move(result));
 
-		std::scoped_lock lock(_cbQueueLock);
-		_cbQueue.push(std::move(fnData));
+		std::scoped_lock lock(m_cbQueueLock);
+		m_cbQueue.push(std::move(fnData));
 	};
 
 	// Queue function into threadpool
-	_compilerThreadPool.queue(CallbackThreadJob{ std::move(threadFunction) });
+	m_compilerThreadPool.queue(CallbackThreadJob{ std::move(threadFunction) });
 }
 
 void GS2ScriptManager::runQueue()
@@ -80,9 +80,9 @@ void GS2ScriptManager::runQueue()
 	std::queue<queue_item_type> tmpQueue;
 
 	{
-		std::scoped_lock lock(_cbQueueLock);
-		if (!_cbQueue.empty())
-			tmpQueue.swap(_cbQueue);
+		std::scoped_lock lock(m_cbQueueLock);
+		if (!m_cbQueue.empty())
+			tmpQueue.swap(m_cbQueue);
 	}
 
 	while (!tmpQueue.empty())
@@ -90,7 +90,7 @@ void GS2ScriptManager::runQueue()
 		auto& queueItem = tmpQueue.front();
 
 		internal_callback_type& func = queueItem.first;
-		CompilerResponse& response   = queueItem.second;
+		CompilerResponse& response = queueItem.second;
 		func(response);
 
 		tmpQueue.pop();

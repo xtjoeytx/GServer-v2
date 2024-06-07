@@ -27,7 +27,7 @@ public:
 	UpdatePackage& operator=(UpdatePackage&& o) noexcept;
 
 	// Delete copy operations
-	UpdatePackage(const UpdatePackage&)            = delete;
+	UpdatePackage(const UpdatePackage&) = delete;
 	UpdatePackage& operator=(const UpdatePackage&) = delete;
 
 	//! Get the package filename
@@ -54,51 +54,51 @@ public:
 	static std::optional<UpdatePackage> load(Server* const server, const std::string& name);
 
 private:
-	std::string packageName;
-	std::unordered_map<std::string, FileEntry> fileList;
-	uint32_t checksum;
-	uint32_t packageSize;
+	std::string m_packageName;
+	std::unordered_map<std::string, FileEntry> m_fileList;
+	uint32_t m_checksum;
+	uint32_t m_packageSize;
 };
 
 inline UpdatePackage::UpdatePackage(std::string packageName)
-	: packageName(std::move(packageName)),
-	  checksum(0), packageSize(0)
+	: m_packageName(std::move(packageName)),
+	  m_checksum(0), m_packageSize(0)
 {
 }
 
 inline UpdatePackage::UpdatePackage(UpdatePackage&& o) noexcept
-	: packageName(std::move(o.packageName)), fileList(std::move(o.fileList)),
-	  checksum(o.checksum), packageSize(o.packageSize)
+	: m_packageName(std::move(o.m_packageName)), m_fileList(std::move(o.m_fileList)),
+	  m_checksum(o.m_checksum), m_packageSize(o.m_packageSize)
 {
 }
 
 inline UpdatePackage& UpdatePackage::operator=(UpdatePackage&& o) noexcept
 {
-	packageName = std::move(o.packageName);
-	fileList    = std::move(o.fileList);
-	checksum    = o.checksum;
-	packageSize = o.packageSize;
+	m_packageName = std::move(o.m_packageName);
+	m_fileList = std::move(o.m_fileList);
+	m_checksum = o.m_checksum;
+	m_packageSize = o.m_packageSize;
 	return *this;
 }
 
 inline const std::string& UpdatePackage::getPackageName() const
 {
-	return packageName;
+	return m_packageName;
 }
 
 inline const UpdatePackage::FileList& UpdatePackage::getFileList() const
 {
-	return fileList;
+	return m_fileList;
 }
 
 inline uint32_t UpdatePackage::getPackageSize() const
 {
-	return packageSize;
+	return m_packageSize;
 }
 
 inline bool UpdatePackage::compareChecksum(uint32_t check) const
 {
-	return checksum == check;
+	return m_checksum == check;
 }
 
 #endif //GS2EMU_UPDATEPACKAGE_H

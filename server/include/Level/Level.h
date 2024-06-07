@@ -60,81 +60,81 @@ public:
 
 	//! Gets the actual level name.
 	//! \return The actual level name.
-	CString getActualLevelName() const { return actualLevelName; }
+	CString getActualLevelName() const { return m_actualLevelName; }
 
 	//! Gets the level name.
 	//! \return The level name.
-	CString getLevelName() const { return levelName; }
+	CString getLevelName() const { return m_levelName; }
 
 	//! Sets the level name.
 	//! \param pLevelName The new name of the level.
-	void setLevelName(CString pLevelName) { levelName = pLevelName; }
+	void setLevelName(CString pLevelName) { m_levelName = pLevelName; }
 
 	//! Gets the raw level tile data.
 	//! \return A pointer to all 4096 raw level tiles.
-	LevelTiles& getTiles(int layer = 0) { return levelTiles[layer]; }
+	LevelTiles& getTiles(int layer = 0) { return m_tiles[layer]; }
 
 	//! Gets the level mod time.
 	//! \return The modified time of the level when it was first loaded from the disk.
-	time_t getModTime() const { return modTime; }
+	time_t getModTime() const { return m_modTime; }
 
 	//! Gets a vector full of all the level chests.
 	//! \return The level chests.
-	std::vector<TLevelChestPtr>& getLevelChests() { return levelChests; }
+	std::vector<LevelChestPtr>& getChests() { return m_chests; }
 
 	//! Gets a vector full of the level npc ids.
 	//! \return The level npcs.
-	std::set<uint32_t>& getLevelNPCs() { return levelNPCs; }
+	std::set<uint32_t>& getNPCs() { return m_npcs; }
 
 	//! Gets a vector full of the level signs.
 	//! \return The level signs.
-	std::vector<TLevelSignPtr>& getLevelSigns() { return levelSigns; }
+	std::vector<LevelSignPtr>& getSigns() { return m_signs; }
 
 	//! Gets a vector full of the level links.
 	//! \return The level links.
-	std::vector<TLevelLinkPtr>& getLevelLinks() { return levelLinks; }
+	std::vector<LevelLinkPtr>& getLinks() { return m_links; }
 
 	//! Gets the gmap this level belongs to.
 	//! \return The gmap this level belongs to.
-	std::shared_ptr<Map> getMap() const { return levelMap.lock(); }
+	std::shared_ptr<Map> getMap() const { return m_map.lock(); }
 
 	//! Gets the map x of this level.
 	//! \return The map x of this level on the map
-	int getMapX() const { return mapx; }
+	int getMapX() const { return m_mapX; }
 
 	//! Gets the map y of this level.
 	//! \return The map y of this level on the map
-	int getMapY() const { return mapy; }
+	int getMapY() const { return m_mapY; }
 
 	//! Gets a vector full of the players on the level.
 	//! \return The players on the level.
-	std::deque<uint16_t>& getPlayerList() { return levelPlayers; }
+	std::deque<uint16_t>& getPlayers() { return m_players; }
 
 	//! Gets the server this level belongs to.
 	//! \return The server this level belongs to.
-	Server* getServer() const { return server; }
+	Server* getServer() const { return m_server; }
 
-	std::map<uint8_t, LevelTiles> getLayers() const { return levelTiles; }
+	std::map<uint8_t, LevelTiles> getLayers() const { return m_tiles; }
 
 	//! Gets the status on whether players are on the level.
 	//! \return The level has players.  If true, the level has players on it.
-	bool hasPlayers() const { return !levelPlayers.empty(); }
+	bool hasPlayers() const { return !m_players.empty(); }
 
 	//! Gets the sparring zone status of the level.
 	//! \return The sparring zone status.  If true, the level is a sparring zone.
-	bool isSparringZone() const { return levelSpar; }
+	bool isSparringZone() const { return m_isSparringZone; }
 
 	//! Sets the sparring zone status of the level.
 	//! \param pLevelSpar If true, the level becomes a sparring zone level.
-	void setSparringZone(bool pLevelSpar) { levelSpar = pLevelSpar; }
+	void setSparringZone(bool pLevelSpar) { m_isSparringZone = pLevelSpar; }
 
 	//! Gets the singleplayer status of the level.
 	//! \return The singleplayer status.  If true, the level is singleplayer.
-	bool isSingleplayer() const { return levelSingleplayer; }
+	bool isSingleplayer() const { return m_isSingleplayer; }
 
 	//! Sets the singleplayer status of the level.
 	//! \param pLevelSingleplayer If true, the level becomes a singleplayer level.
-	void setSingleplayer(bool pLevelSingleplayer) { levelSingleplayer = pLevelSingleplayer; }
+	void setSingleplayer(bool pLevelSingleplayer) { m_isSingleplayer = pLevelSingleplayer; }
 
 	//! Adds a board change to the level.
 	//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
@@ -294,30 +294,31 @@ private:
 	bool loadZelda(const CString& pLevelName);
 	bool loadNW(const CString& pLevelName);
 
-	Server* server;
-	time_t modTime;
-	bool levelSpar;
-	bool levelSingleplayer;
-	std::map<uint8_t, LevelTiles> levelTiles;
-	int mapx, mapy;
-	std::weak_ptr<Map> levelMap;
-	CString fileName, fileVersion, actualLevelName, levelName;
+private:
+	Server* m_server;
+	time_t m_modTime;
+	bool m_isSparringZone;
+	bool m_isSingleplayer;
+	std::map<uint8_t, LevelTiles> m_tiles;
+	int m_mapX, m_mapY;
+	std::weak_ptr<Map> m_map;
+	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;
 
-	std::unordered_map<uint8_t, TLevelBaddyPtr> levelBaddies;
-	std::set<uint8_t> freeBaddyIds;
-	uint8_t nextBaddyId;
+	std::unordered_map<uint8_t, LevelBaddyPtr> m_baddies;
+	std::set<uint8_t> m_freeBaddyIds;
+	uint8_t m_nextBaddyId;
 
-	std::vector<LevelBoardChange> levelBoardChanges;
-	std::vector<TLevelChestPtr> levelChests;
-	std::vector<LevelHorse> levelHorses;
-	std::vector<LevelItem> levelItems;
-	std::vector<TLevelLinkPtr> levelLinks;
-	std::vector<TLevelSignPtr> levelSigns;
-	std::set<uint32_t> levelNPCs;
-	std::deque<uint16_t> levelPlayers;
+	std::vector<LevelBoardChange> m_boardChanges;
+	std::vector<LevelChestPtr> m_chests;
+	std::vector<LevelHorse> m_horses;
+	std::vector<LevelItem> m_items;
+	std::vector<LevelLinkPtr> m_links;
+	std::vector<LevelSignPtr> m_signs;
+	std::set<uint32_t> m_npcs;
+	std::deque<uint16_t> m_players;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<Level>> _scriptObject;
+	std::unique_ptr<IScriptObject<Level>> m_scriptObject;
 #endif
 };
 
@@ -327,12 +328,12 @@ using TLevelPtr = std::shared_ptr<Level>;
 
 inline IScriptObject<Level>* Level::getScriptObject() const
 {
-	return _scriptObject.get();
+	return m_scriptObject.get();
 }
 
 inline void Level::setScriptObject(std::unique_ptr<IScriptObject<Level>> object)
 {
-	_scriptObject = std::move(object);
+	m_scriptObject = std::move(object);
 }
 
 #endif

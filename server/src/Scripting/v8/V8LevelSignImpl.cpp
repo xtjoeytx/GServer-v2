@@ -70,7 +70,7 @@ void Sign_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 void bindClass_LevelSign(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
@@ -81,7 +81,7 @@ void bindClass_LevelSign(CScriptEngine* scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> sign_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> sign_proto  = sign_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> sign_proto = sign_ctor->PrototypeTemplate();
 	sign_ctor->SetClassName(signStr);
 	sign_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

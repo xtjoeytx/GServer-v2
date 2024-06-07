@@ -140,7 +140,7 @@ void Link_SetStr_NewY(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 void bindClass_LevelLink(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
@@ -151,7 +151,7 @@ void bindClass_LevelLink(CScriptEngine* scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> link_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> link_proto  = link_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> link_proto = link_ctor->PrototypeTemplate();
 	link_ctor->SetClassName(linkStr);
 	link_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

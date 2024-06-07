@@ -7,29 +7,29 @@
 #include "Server.h"
 
 Map::Map(MapType pType, bool pGroupMap)
-	: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
+	: m_type(pType), m_modTime(0), m_width(0), m_height(0), m_groupMap(pGroupMap), m_loadFullMap(false)
 {
 }
 
 //Map::Map(MapType pType, const CString& pFileName, Server* pServer, bool pGroupMap)
-//: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
+//: m_type(pType), m_modTime(0), m_width(0), m_height(0), m_groupMap(pGroupMap), m_loadFullMap(false)
 //{
 //	load(pFileName, pServer);
 //}
 
 bool Map::load(const CString& pFileName, Server* pServer)
 {
-	if (type == MapType::BIGMAP)
+	if (m_type == MapType::BIGMAP)
 		return loadBigMap(pFileName, pServer);
-	else if (type == MapType::GMAP)
+	else if (m_type == MapType::GMAP)
 		return loadGMap(pFileName, pServer);
 	return true;
 }
 
 bool Map::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
 {
-	auto it = levels.find(level);
-	if (it != levels.end())
+	auto it = m_levels.find(level);
+	if (it != m_levels.end())
 	{
 		mapx = it->second.mapx;
 		mapy = it->second.mapy;
@@ -43,8 +43,8 @@ const std::string& Map::getLevelAt(int mx, int my) const
 {
 	static const std::string emptyStr;
 
-	if (mx < width && my < height)
-		return _levelList[mx + my * width];
+	if (mx < m_width && my < m_height)
+		return m_levelList[mx + my * m_width];
 
 	return emptyStr;
 }
@@ -57,8 +57,8 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 		fileSystem = pServer->getFileSystem(FS_FILE);
 
 	CString fileName = fileSystem->find(pFileName);
-	modTime          = fileSystem->getModTime(pFileName);
-	mapName          = pFileName.text();
+	m_modTime = fileSystem->getModTime(pFileName);
+	m_mapName = pFileName.text();
 
 	// Make sure the file exists.
 	if (fileName.length() == 0) return false;
@@ -67,9 +67,9 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 	std::vector<CString> fileData = CString::loadToken(fileName);
 
 	// Parse it.
-	levels.clear();
-	width  = 0;
-	height = 0;
+	m_levels.clear();
+	m_width = 0;
+	m_height = 0;
 
 	std::vector<std::vector<CString>> mapData;
 
@@ -80,7 +80,7 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 			continue;
 
 		auto levelList = line.guntokenize().tokenize("\n", true);
-		int empty      = 0;
+		int empty = 0;
 		for (const auto& lvl: levelList)
 		{
 			// dont calculate the width based on any extra padding
@@ -89,33 +89,33 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 
 		// calculate width/height
 		auto currentWidth = levelList.size() - empty;
-		height++;
-		if (width < currentWidth)
-			width = currentWidth;
+		m_height++;
+		if (m_width < currentWidth)
+			m_width = currentWidth;
 
 		mapData.push_back(levelList);
 	}
 
 	{
-		std::vector<std::string> levelMap(width * height);
+		std::vector<std::string> levelMap(m_width * m_height);
 
 		for (size_t my = 0; my < mapData.size(); my++)
 		{
 			for (size_t mx = 0; mx < mapData[my].size(); mx++)
 			{
-				if (mx < width)
+				if (mx < m_width)
 				{
 					std::string lcLevelName(mapData[my][mx].toLower().text());
 					if (!lcLevelName.empty())
 					{
-						levelMap[mx + my * width] = lcLevelName;
-						levels[lcLevelName]       = MapLevel(mx, my);
+						levelMap[mx + my * m_width] = lcLevelName;
+						m_levels[lcLevelName] = MapLevel(mx, my);
 					}
 				}
 			}
 		}
 
-		_levelList = std::move(levelMap);
+		m_levelList = std::move(levelMap);
 	}
 
 	return true;
@@ -129,15 +129,15 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 		fileSystem = pServer->getFileSystem(FS_LEVEL);
 
 	CString fileName = fileSystem->find(pFileName);
-	modTime          = fileSystem->getModTime(pFileName);
-	mapName          = pFileName.text();
+	m_modTime = fileSystem->getModTime(pFileName);
+	m_mapName = pFileName.text();
 
 	// Make sure the file exists.
 	if (fileName.length() == 0) return false;
 
-	levels.clear();
-	width  = 0;
-	height = 0;
+	m_levels.clear();
+	m_width = 0;
+	m_height = 0;
 
 	// Load the gmap.
 	std::vector<CString> fileData = CString::loadToken(fileName);
@@ -156,14 +156,14 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 			if (curLine.size() != 2)
 				continue;
 
-			width = strtoint(curLine[1]);
+			m_width = strtoint(curLine[1]);
 		}
 		else if (curLine[0] == "HEIGHT")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			height = strtoint(curLine[1]);
+			m_height = strtoint(curLine[1]);
 		}
 		else if (curLine[0] == "GENERATED")
 		{
@@ -177,7 +177,7 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 			++it;
 			int gmapy = 0;
 
-			std::vector<std::string> levelMap(width * height);
+			std::vector<std::string> levelMap(m_width * m_height);
 
 			while (it != fileData.end())
 			{
@@ -189,7 +189,7 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 				}
 				if (line == "LEVELNAMESEND") break;
 
-				if (gmapy < height)
+				if (gmapy < m_height)
 				{
 					int gmapx = 0;
 
@@ -198,14 +198,14 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 					std::vector<CString> names = line.tokenize("\n");
 					for (auto& levelName: names)
 					{
-						if (gmapx < width)
+						if (gmapx < m_width)
 						{
 							// Check for blank levels.
 							if (levelName != "\r")
 							{
 								std::string lcLevelName(levelName.toLower().text());
-								levelMap[gmapx + gmapy * width] = lcLevelName;
-								levels[lcLevelName]             = MapLevel(gmapx, gmapy);
+								levelMap[gmapx + gmapy * m_width] = lcLevelName;
+								m_levels[lcLevelName] = MapLevel(gmapx, gmapy);
 							}
 
 							++gmapx;
@@ -218,21 +218,21 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 				++it;
 			}
 
-			_levelList = std::move(levelMap);
+			m_levelList = std::move(levelMap);
 		}
 		else if (curLine[0] == "MAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			mapImage = curLine[1].text();
+			m_mapImage = curLine[1].text();
 		}
 		else if (curLine[0] == "MINIMAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			miniMapImage = curLine[1].text();
+			m_miniMapImage = curLine[1].text();
 		}
 		else if (curLine[0] == "NOAUTOMAPPING")
 		{
@@ -240,11 +240,11 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 		}
 		else if (curLine[0] == "LOADFULLMAP")
 		{
-			loadFullMap = true;
+			m_loadFullMap = true;
 		}
 		else if (curLine[0] == "LOADATSTART")
 		{
-			loadFullMap = false;
+			m_loadFullMap = false;
 
 			++it;
 			while (it != fileData.end())
@@ -256,7 +256,7 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 				std::vector<CString> names = line.tokenize("\n");
 				for (auto& levelName: names)
 				{
-					preloadLevelList.push_back(levelName.toLower().text());
+					m_preloadLevelList.push_back(levelName.toLower().text());
 				}
 			}
 		}
@@ -268,9 +268,9 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 
 void Map::loadMapLevels(Server* server) const
 {
-	if (loadFullMap)
+	if (m_loadFullMap)
 	{
-		for (const auto& levelName: _levelList)
+		for (const auto& levelName: m_levelList)
 		{
 			if (!levelName.empty())
 			{
@@ -279,9 +279,9 @@ void Map::loadMapLevels(Server* server) const
 			}
 		}
 	}
-	else if (!preloadLevelList.empty())
+	else if (!m_preloadLevelList.empty())
 	{
-		for (auto& level: preloadLevelList)
+		for (auto& level: m_preloadLevelList)
 		{
 			auto lvl = server->getLevel(level);
 			assert(lvl);

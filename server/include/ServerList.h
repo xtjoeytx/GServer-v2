@@ -11,11 +11,11 @@
 
 enum
 {
-	SVF_HEAD   = 0,
-	SVF_BODY   = 1,
-	SVF_SWORD  = 2,
+	SVF_HEAD = 0,
+	SVF_BODY = 1,
+	SVF_SWORD = 2,
 	SVF_SHIELD = 3,
-	SVF_FILE   = 4,
+	SVF_FILE = 4,
 };
 
 class Player;
@@ -28,9 +28,9 @@ public:
 	bool onSend();
 	bool onRegister() { return true; }
 	void onUnregister();
-	SOCKET getSocketHandle() { return sock.getHandle(); }
+	SOCKET getSocketHandle() { return m_socket.getHandle(); }
 	bool canRecv();
-	bool canSend() { return _fileQueue.canSend(); }
+	bool canSend() { return m_fileQueue.canSend(); }
 
 	// Constructor - Deconstructor
 	ServerList(Server* server);
@@ -42,7 +42,7 @@ public:
 	bool getConnected() const;
 	bool main();
 	bool connectServer();
-	CSocket& getSocket() { return sock; }
+	CSocket& getSocket() { return m_socket; }
 	void sendPacket(CString& pPacket, bool sendNow = false);
 
 	// Send players to the listserver
@@ -56,9 +56,9 @@ public:
 
 	void sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity);
 
-	const std::map<std::string, int>& getServerList() { return serverListCount; }
-	const std::string& getLocalIP() const { return _serverLocalIp; }
-	const std::string& getServerIP() const { return _serverRemoteIp; }
+	const std::map<std::string, int>& getServerList() { return m_serverListCount; }
+	const std::string& getLocalIP() const { return m_serverLocalIp; }
+	const std::string& getServerIP() const { return m_serverRemoteIp; }
 
 	// Send New Server-Info
 	void sendServerHQ();
@@ -100,19 +100,19 @@ protected:
 	bool parsePacket(CString& pPacket);
 
 	// Socket Variables
-	bool nextIsRaw;
-	int rawPacketSize;
-	CFileQueue _fileQueue;
-	CString readBuffer;
-	CSocket sock;
-	time_t lastData, lastTimer;
-	time_t nextConnectionAttempt;
-	uint8_t connectionAttempts;
-	Server* _server;
+	bool m_nextIsRaw;
+	int m_rawPacketSize;
+	CFileQueue m_fileQueue;
+	CString m_readBuffer;
+	CSocket m_socket;
+	time_t m_lastData, m_lastTimer;
+	time_t m_nextConnectionAttempt;
+	uint8_t m_connectionAttempts;
+	Server* m_server;
 
-	std::map<std::string, int> serverListCount;
-	std::string _serverLocalIp;
-	std::string _serverRemoteIp;
+	std::map<std::string, int> m_serverListCount;
+	std::string m_serverLocalIp;
+	std::string m_serverRemoteIp;
 };
 
 #endif // TSERVERLIST_H

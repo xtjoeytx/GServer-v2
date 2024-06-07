@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include <string>
-#include <fmt/format.h>
+#include "Level.h"
 #include "NPC.h"
 #include "ScriptClass.h"
 #include "Weapon.h"
-#include "Level.h"
+#include <fmt/format.h>
+#include <string>
 
 namespace scripting
 {
@@ -51,6 +51,6 @@ namespace scripting
 	{
 		return fmt::format("Weapon {}", npc.getName());
 	}
-}
+} // namespace scripting
 
 #endif

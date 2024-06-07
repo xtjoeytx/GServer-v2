@@ -14,7 +14,7 @@
 void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::Object> self = info.This();
-	Weapon* weaponObject      = UnwrapObject<Weapon>(self);
+	Weapon* weaponObject = UnwrapObject<Weapon>(self);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getName().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -24,7 +24,7 @@ void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::Object> self = info.This();
-	Weapon* weaponObject      = UnwrapObject<Weapon>(self);
+	Weapon* weaponObject = UnwrapObject<Weapon>(self);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -33,7 +33,7 @@ void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 void bindClass_Weapon(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
@@ -44,7 +44,7 @@ void bindClass_Weapon(CScriptEngine* scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> weapon_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> weapon_proto  = weapon_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> weapon_proto = weapon_ctor->PrototypeTemplate();
 	weapon_ctor->SetClassName(weaponStr);
 	weapon_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

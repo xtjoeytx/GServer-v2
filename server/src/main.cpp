@@ -78,11 +78,11 @@ void getBasePath()
 CLog serverlog("startuplog.txt");
 CString overrideServer;
 CString overridePort;
-CString overrideServerIp        = nullptr;
-CString overrideLocalIp         = nullptr;
+CString overrideServerIp = nullptr;
+CString overrideLocalIp = nullptr;
 CString overrideServerInterface = nullptr;
-CString overrideName            = nullptr;
-CString overrideStaff           = nullptr;
+CString overrideName = nullptr;
+CString overrideStaff = nullptr;
 
 std::atomic_bool shutdownProgram{ false };
 

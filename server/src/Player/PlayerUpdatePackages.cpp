@@ -6,7 +6,7 @@
 bool Player::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
 	unsigned long fileChecksum = pPacket.readGUInt5();
-	CString fileName           = pPacket.readString("");
+	CString fileName = pPacket.readString("");
 
 	// There is a USECHECKSUM flag in the config, and im pretty
 	// certain it works similar to this: By always sending the
@@ -18,7 +18,7 @@ bool Player::msgPLI_VERIFYWANTSEND(CString& pPacket)
 
 	if (!ignoreChecksum)
 	{
-		CString fileData = server->getFileSystem()->load(fileName);
+		CString fileData = m_server->getFileSystem()->load(fileName);
 		if (!fileData.isEmpty())
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)
@@ -40,7 +40,7 @@ bool Player::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 
 	// 1 -> Install, 2 -> Reinstall
 	unsigned char installType = pPacket.readGUChar();
-	CString fileChecksums     = pPacket.readString("");
+	CString fileChecksums = pPacket.readString("");
 
 	// If this is a reinstall, we need to download everything so clear the checksum data
 	if (installType == 2)
@@ -50,7 +50,7 @@ bool Player::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 	std::vector<std::string> missingFiles;
 
 	{
-		auto updatePackage = server->getPackageManager().findOrAddResource(packageName.toString());
+		auto updatePackage = m_server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
 		{
 			for (const auto& [fileName, entry]: updatePackage->getFileList())

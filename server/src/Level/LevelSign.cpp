@@ -1,17 +1,17 @@
-#include "IDebug.h"
 #include "LevelSign.h"
+#include "IDebug.h"
 #include "Player.h"
 
 static CString encodeSignCode(CString& pText);
 static CString encodeSign(const CString& pSignText);
 static CString decodeSignCode(CString pText);
 
-const CString signText    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-							"0123456789!?-.,#>()#####\"####':/~&### <####;\n";
+const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+						 "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
 const CString signSymbols = "ABXYudlrhxyz#4.";
-const int ctablen[]       = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1 };
-const int ctabindex[]     = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17 };
-const int ctab[]          = { 91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67 };
+const int ctablen[] = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1 };
+const int ctabindex[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17 };
+const int ctab[] = { 91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67 };
 
 CString encodeSignCode(CString& pText)
 {
@@ -25,7 +25,7 @@ CString encodeSignCode(CString& pText)
 			i++;
 			if (i < txtLen)
 			{
-				letter   = pText[i];
+				letter = pText[i];
 				int code = signSymbols.find(letter);
 				if (code != -1)
 				{
@@ -68,8 +68,8 @@ CString decodeSignCode(CString pText)
 	for (int i = 0; i < txtLen; i++)
 	{
 		unsigned char letter = pText.readGUChar();
-		bool isCode          = false;
-		int codeID           = -1;
+		bool isCode = false;
+		int codeID = -1;
 		for (int j = 0; j < 16; ++j) // ctab length
 		{
 			if (letter == ctab[j])
@@ -111,15 +111,15 @@ CString encodeSign(const CString& pSignText)
 }
 
 LevelSign::LevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
-	: x(pX), y(pY), unformattedText(pSign)
+	: m_x(pX), m_y(pY), m_unformattedText(pSign)
 {
 	if (encoded)
 	{
-		text            = unformattedText;
-		unformattedText = decodeSignCode(unformattedText);
+		m_text = m_unformattedText;
+		m_unformattedText = decodeSignCode(m_unformattedText);
 	}
 	else
-		text = encodeSign(unformattedText);
+		m_text = encodeSign(m_unformattedText);
 }
 
 CString LevelSign::getSignStr(Player* pPlayer) const
@@ -127,23 +127,23 @@ CString LevelSign::getSignStr(Player* pPlayer) const
 	CString outText;
 
 	// Write the x and y location to the packet.
-	outText.writeGChar(x);
-	outText.writeGChar(y);
+	outText.writeGChar(m_x);
+	outText.writeGChar(m_y);
 
 	// Write the text to the packet.
-	outText.write(pPlayer ? encodeSign(pPlayer->translate(unformattedText)) : text);
+	outText.write(pPlayer ? encodeSign(pPlayer->translate(m_unformattedText)) : m_text);
 
 	return outText;
 }
 
 void LevelSign::setText(const CString& value)
 {
-	text            = value;
-	unformattedText = decodeSignCode(value);
+	m_text = value;
+	m_unformattedText = decodeSignCode(value);
 }
 
 void LevelSign::setUText(const CString& value)
 {
-	text            = encodeSign(value);
-	unformattedText = value;
+	m_text = encodeSign(value);
+	m_unformattedText = value;
 }

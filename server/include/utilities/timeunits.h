@@ -15,15 +15,15 @@ namespace utilities
 
 		TimeUnits(std::time_t time)
 		{
-			days    = time / 86400;
-			hours   = uint8_t((time / 3600) % 24);
+			days = time / 86400;
+			hours = uint8_t((time / 3600) % 24);
 			minutes = uint8_t((time / 60) % 60);
 			seconds = uint8_t(time % 60);
 		}
 
 		static auto calculate(std::time_t time)
 		{
-			return TimeUnits{time};
+			return TimeUnits{ time };
 		}
 	};
 } // namespace utilities

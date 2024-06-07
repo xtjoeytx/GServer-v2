@@ -15,8 +15,8 @@
 void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine  = static_cast<CScriptEngine*>(data->Value());
-	V8ScriptEnv* env             = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	info.GetReturnValue().Set(env->Global());
 }
@@ -59,14 +59,14 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 					*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine  = static_cast<CScriptEngine*>(data->Value());
-		V8ScriptEnv* env             = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 		// Callback name
 		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
 		// Persist the callback function so we can retrieve it later on
-		v8::Local<v8::Function> cbFunc  = args[1].As<v8::Function>();
+		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
 		V8ScriptFunction* cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
 
 		scriptEngine->setCallBack(eventName, cbFuncWrapper);
@@ -87,7 +87,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (args[0]->IsObject() && args[1]->IsInt32())
 	{
 		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-		v8::Local<v8::Object> obj      = args[0]->ToObject(context).ToLocalChecked();
+		v8::Local<v8::Object> obj = args[0]->ToObject(context).ToLocalChecked();
 
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
@@ -103,7 +103,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 void bindClass_Environment(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
@@ -114,7 +114,7 @@ void bindClass_Environment(CScriptEngine* scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> environment_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> environment_proto  = environment_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> environment_proto = environment_ctor->PrototypeTemplate();
 	environment_ctor->SetClassName(envStr);
 	environment_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

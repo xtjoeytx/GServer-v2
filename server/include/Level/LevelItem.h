@@ -9,38 +9,38 @@ enum class LevelItemType
 {
 	INVALID = -1,
 
-	GREENRUPEE   = 0,
-	BLUERUPEE    = 1,
-	REDRUPEE     = 2,
-	BOMBS        = 3,
-	DARTS        = 4,
-	HEART        = 5,
-	GLOVE1       = 6,
-	BOW          = 7,
-	BOMB         = 8,
-	SHIELD       = 9,
-	SWORD        = 10,
-	FULLHEART    = 11,
-	SUPERBOMB    = 12,
-	BATTLEAXE    = 13,
-	GOLDENSWORD  = 14,
+	GREENRUPEE = 0,
+	BLUERUPEE = 1,
+	REDRUPEE = 2,
+	BOMBS = 3,
+	DARTS = 4,
+	HEART = 5,
+	GLOVE1 = 6,
+	BOW = 7,
+	BOMB = 8,
+	SHIELD = 9,
+	SWORD = 10,
+	FULLHEART = 11,
+	SUPERBOMB = 12,
+	BATTLEAXE = 13,
+	GOLDENSWORD = 14,
 	MIRRORSHIELD = 15,
-	GLOVE2       = 16,
+	GLOVE2 = 16,
 	LIZARDSHIELD = 17,
-	LIZARDSWORD  = 18,
-	GOLDRUPEE    = 19,
-	FIREBALL     = 20,
-	FIREBLAST    = 21,
-	NUKESHOT     = 22,
-	JOLTBOMB     = 23,
-	SPINATTACK   = 24
+	LIZARDSWORD = 18,
+	GOLDRUPEE = 19,
+	FIREBALL = 20,
+	FIREBLAST = 21,
+	NUKESHOT = 22,
+	JOLTBOMB = 23,
+	SPINATTACK = 24
 };
 
 class Player;
 class LevelItem
 {
 public:
-	LevelItem(float pX, float pY, LevelItemType pItem) : x(pX), y(pY), item(pItem), modTime(time(0))
+	LevelItem(float pX, float pY, LevelItemType pItem) : m_x(pX), m_y(pY), m_item(pItem), m_modTime(time(0))
 	{
 		timeout.setTimeout(10);
 	}
@@ -49,10 +49,10 @@ public:
 	CString getItemStr() const;
 
 	// Get functions.
-	float getX() const { return x; }
-	float getY() const { return y; }
-	LevelItemType getItem() const { return item; }
-	time_t getModTime() const { return modTime; }
+	float getX() const { return m_x; }
+	float getY() const { return m_y; }
+	LevelItemType getItem() const { return m_item; }
+	time_t getModTime() const { return m_modTime; }
 
 	CTimeout timeout;
 
@@ -68,10 +68,10 @@ public:
 	static uint16_t GetRupeeCount(LevelItemType type);
 
 private:
-	float x;
-	float y;
-	LevelItemType item;
-	time_t modTime;
+	float m_x;
+	float m_y;
+	LevelItemType m_item;
+	time_t m_modTime;
 };
 
 inline CString LevelItem::getItemPlayerProp(const std::string& pItemName, Player* player)

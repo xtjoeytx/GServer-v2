@@ -1,6 +1,6 @@
+#include "LevelItem.h"
 #include "IDebug.h"
 #include "IEnums.h"
-#include "LevelItem.h"
 #include "Player.h"
 
 const char* __itemList[] = {
@@ -35,7 +35,7 @@ const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
 
 CString LevelItem::getItemStr() const
 {
-	return CString() >> (char)PLO_ITEMADD >> (char)x >> (char)y >> (char)item;
+	return CString() >> (char)PLO_ITEMADD >> (char)m_x >> (char)m_y >> (char)m_item;
 }
 
 LevelItemType LevelItem::getItemId(signed char itemId)
@@ -169,7 +169,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::SPINATTACK: // spinattack
 		{
 			CString playerProp = player->getProp(PLPROP_STATUS);
-			char status        = playerProp.readGChar();
+			char status = playerProp.readGChar();
 			if (status & PLSTATUS_HASSPIN) return {};
 			status |= PLSTATUS_HASSPIN;
 			return CString() >> (char)PLPROP_STATUS >> (char)status;

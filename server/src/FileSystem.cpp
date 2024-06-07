@@ -22,13 +22,13 @@
 #endif
 
 FileSystem::FileSystem()
-	: server(nullptr)
+	: m_server(nullptr)
 {
 	m_preventChange = new std::recursive_mutex();
 }
 
 FileSystem::FileSystem(Server* pServer)
-	: server(pServer)
+	: m_server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();
 }
@@ -41,15 +41,15 @@ FileSystem::~FileSystem()
 
 void FileSystem::clear()
 {
-	fileList.clear();
-	directoryList.clear();
+	m_fileList.clear();
+	m_directoryList.clear();
 }
 
 void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	if (server == nullptr) return;
+	if (m_server == nullptr) return;
 
 	// Format the directory.
 	CString newDir(dir);
@@ -62,15 +62,15 @@ void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceR
 	}
 
 	// Add the directory to the directory list.
-	CString ndir = server->getServerPath() << newDir << wildcard;
-	if (vecSearch<CString>(directoryList, ndir) != -1) // Already exists?  Resync.
+	CString ndir = m_server->getServerPath() << newDir << wildcard;
+	if (vecSearch<CString>(m_directoryList, ndir) != -1) // Already exists?  Resync.
 		resync();
 	else
 	{
-		directoryList.push_back(ndir);
+		m_directoryList.push_back(ndir);
 
 		// Load up the files in the directory.
-		loadAllDirectories(ndir, forceRecursive || server->getSettings().getBool("nofoldersconfig", false));
+		loadAllDirectories(ndir, forceRecursive || m_server->getSettings().getBool("nofoldersconfig", false));
 	}
 }
 
@@ -84,11 +84,11 @@ void FileSystem::addFile(CString file)
 	CString directory(getPath(file, fSep));
 
 	// Fix directory path separators.
-	if (directory.find(server->getServerPath()) != -1)
-		directory.removeI(0, server->getServerPath().length());
+	if (directory.find(m_server->getServerPath()) != -1)
+		directory.removeI(0, m_server->getServerPath().length());
 
 	// Add to the map.
-	fileList[filename] = server->getServerPath() << directory << filename;
+	m_fileList[filename] = m_server->getServerPath() << directory << filename;
 }
 
 void FileSystem::removeFile(const CString& file)
@@ -103,7 +103,7 @@ void FileSystem::removeFile(const CString& file)
 	FileSystem::fixPathSeparators(directory);
 
 	// Remove it from the map.
-	fileList.erase(filename);
+	m_fileList.erase(filename);
 }
 
 void FileSystem::resync()
@@ -111,19 +111,19 @@ void FileSystem::resync()
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Clear the file list.
-	fileList.clear();
+	m_fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
-	for (const auto& directory: directoryList)
-		loadAllDirectories(directory, server->getSettings().getBool("nofoldersconfig", false));
+	for (const auto& directory: m_directoryList)
+		loadAllDirectories(directory, m_server->getSettings().getBool("nofoldersconfig", false));
 }
 
 CString FileSystem::find(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	auto fileIter = fileList.find(file);
-	if (fileIter == fileList.end()) return {};
+	auto fileIter = m_fileList.find(file);
+	if (fileIter == m_fileList.end()) return {};
 	return { fileIter->second };
 }
 
@@ -131,7 +131,7 @@ CString FileSystem::findi(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& fileIter: fileList)
+	for (const auto& fileIter: m_fileList)
 		if (fileIter.first.comparei(file)) return { fileIter.second };
 	return {};
 }
@@ -140,7 +140,7 @@ CString FileSystem::fileExistsAs(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& fileIter: fileList)
+	for (const auto& fileIter: m_fileList)
 		if (fileIter.first.comparei(file)) return { fileIter.first };
 	return {};
 }
@@ -162,7 +162,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				{
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << dir << filedata.cFileName << fSep;
-					newDir.removeI(0, server->getServerPath().length());
+					newDir.removeI(0, m_server->getServerPath().length());
 					addDir(newDir, "*", true);
 				}
 			}
@@ -170,7 +170,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 			{
 				// Grab the file name.
 				CString file((char*)filedata.cFileName);
-				fileList[file] = CString(dir) << filedata.cFileName;
+				m_fileList[file] = CString(dir) << filedata.cFileName;
 			}
 		}
 		while (FindNextFileA(hFind, &filedata));
@@ -180,7 +180,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 #else
 void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
-	CString path     = CString() << directory.remove(directory.findl(fSep)) << fSep;
+	CString path = CString() << directory.remove(directory.findl(fSep)) << fSep;
 	CString wildcard = directory.subString(directory.findl(fSep) + 1);
 	DIR* dir;
 	struct stat statx
@@ -205,7 +205,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				{
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << path << ent->d_name << fSep;
-					newDir.removeI(0, server->getServerPath().length());
+					newDir.removeI(0, m_server->getServerPath().length());
 					addDir(newDir, "*", true);
 				}
 				continue;
@@ -217,7 +217,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 		// Grab the file name.
 		CString file(ent->d_name);
 		if (file.match(wildcard))
-			fileList[file] = CString(path) << file;
+			m_fileList[file] = CString(path) << file;
 	}
 	closedir(dir);
 }
@@ -266,7 +266,7 @@ bool FileSystem::setModTime(const CString& file, time_t modTime) const
 	struct utimbuf ut
 	{
 	};
-	ut.actime  = modTime;
+	ut.actime = modTime;
 	ut.modtime = modTime;
 
 	// Change the file.
@@ -293,7 +293,7 @@ CString FileSystem::getDirByExtension(const std::string& extension) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& directory: directoryList)
+	for (const auto& directory: m_directoryList)
 	{
 		if (getExtension(directory) == extension)
 		{

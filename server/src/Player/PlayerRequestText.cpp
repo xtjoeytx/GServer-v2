@@ -7,23 +7,23 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
 
 	CString packet = pPacket.readString("");
-	CString data   = packet.guntokenize();
+	CString data = packet.guntokenize();
 
 	CString weapon = data.readString("\n");
-	CString type   = data.readString("\n");
+	CString type = data.readString("\n");
 	CString option = data.readString("\n");
 
-	auto& list = server->getServerList();
+	auto& list = m_server->getServerList();
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(weapon << "\n"
-																							  << type << "\n"
-																							  << "simpleserverlist"
-																							  << "\n")
-																				   .gtokenizeI());
+			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << CString(weapon << "\n"
+																								<< type << "\n"
+																								<< "simpleserverlist"
+																								<< "\n")
+																					 .gtokenizeI());
 		else if (option == "rebornlist")
-			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << packet);
 		else if (option == "subscriptions")
 		{
 			// some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
@@ -47,7 +47,7 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 																		   << type << "\n"
 																		   << "globalitems"
 																		   << "\n"
-																		   << accountName.text() << "\n"
+																		   << m_accountName.text() << "\n"
 																		   << CString(CString(CString() << "autobill=1"
 																										<< "\n"
 																										<< "autobillmine=1"
@@ -93,12 +93,12 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 																.gtokenizeI());
 		else if (option == "serverinfo")
 		{
-			list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+			list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)m_id << packet);
 		}
 	}
 	else if (type == "pmservers" || type == "pmguilds")
 	{
-		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << packet);
+		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << packet);
 	}
 	else if (type == "pmserverplayers")
 		addPMServer(option);
@@ -109,15 +109,15 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 	}
 	else if (type == "packageinfo")
 	{
-		std::vector<CString> updatePackage = server->getFileSystem()->load(option).tokenize("\n");
-		int files                          = 0;
-		int totalFileSize                  = 0;
+		std::vector<CString> updatePackage = m_server->getFileSystem()->load(option).tokenize("\n");
+		int files = 0;
+		int totalFileSize = 0;
 		for (const auto& line: updatePackage)
 		{
 			if (line.findi("FILE") > -1)
 			{
 				CString file = line.subString(line.findi("FILE") + 5);
-				totalFileSize += server->getFileSystem()->getFileSize(file.trimI());
+				totalFileSize += m_server->getFileSystem()->getFileSize(file.trimI());
 				files++;
 			}
 		}
@@ -129,22 +129,22 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 															.gtokenizeI());
 	}
 
-	server->getServerLog().out("[ IN] [RequestText] from %s -> %s\n", accountName.gtokenize().text(), packet.text());
+	m_server->getServerLog().out("[ IN] [RequestText] from %s -> %s\n", m_accountName.gtokenize().text(), packet.text());
 	return true;
 }
 
 bool Player::msgPLI_SENDTEXT(CString& pPacket)
 {
-	CString packet              = pPacket.readString("");
-	CString data                = packet.guntokenize();
+	CString packet = pPacket.readString("");
+	CString data = packet.guntokenize();
 	std::vector<CString> params = data.tokenize("\n");
 
-	CString weapon               = data.readString("\n");
-	CString type                 = data.readString("\n");
-	CString option               = data.readString("\n");
+	CString weapon = data.readString("\n");
+	CString type = data.readString("\n");
+	CString option = data.readString("\n");
 	std::vector<CString> params2 = data.readString("").tokenize("\n");
 
-	auto& list = server->getServerList();
+	auto& list = m_server->getServerList();
 
 	//if (weapon == "GraalEngine")
 	{
@@ -154,9 +154,9 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 			{
 				// If client/rc sends "GraalEngine,irc,login,-" it should return all existing "IRC" channels as players.
 				// How should we handle that?
-				CString channel        = "#graal";
+				CString channel = "#graal";
 				CString channelAccount = CString() << "irc:" << channel;
-				CString channelNick    = channel << " (1,0)";
+				CString channelNick = channel << " (1,0)";
 
 				// RC uses addplayer/delplayer
 				if (isRC())
@@ -192,7 +192,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 				else if (option == "privmsg" && params.size() > 4)
 				{
 					CString channel = params[3];
-					CString msg     = params[4];
+					CString msg = params[4];
 
 					if (channel == "IRCBot")
 					{
@@ -200,7 +200,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-							server->getServerLog().out("[ IN] [SVO_SERVERINFO] %s,%s\n", accountName.gtokenize().text(), packet.text());
+							m_server->getServerLog().out("[ IN] [SVO_SERVERINFO] %s,%s\n", m_accountName.gtokenize().text(), packet.text());
 							//list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
 
 							// I believe the following data is what it's looking for:
@@ -210,7 +210,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 					else
 					{
 						CString sendMsg = "GraalEngine,irc,privmsg,";
-						sendMsg << accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
+						sendMsg << m_accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
 						list.handleText(sendMsg);
 						list.sendTextForPlayer(shared_from_this(), sendMsg);
 					}
@@ -220,7 +220,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 		else if (type == "lister")
 		{
 			if (option == "serverinfo")
-				list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << packet);
+				list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)m_id << packet);
 
 			if (!getGuest())
 			{
@@ -247,7 +247,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 		}
 	}
 
-	server->getServerLog().out("[ IN] [SendText] %s: %s\n", accountName.gtokenize().text(), packet.text());
+	m_server->getServerLog().out("[ IN] [SendText] %s: %s\n", m_accountName.gtokenize().text(), packet.text());
 
 	return true;
 }

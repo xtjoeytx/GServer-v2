@@ -14,19 +14,19 @@ public:
 
 	virtual int GetType() const = 0;
 
-	virtual void Initialize()                                                            = 0;
-	virtual void Cleanup(bool shutDown = false)                                          = 0;
+	virtual void Initialize() = 0;
+	virtual void Cleanup(bool shutDown = false) = 0;
 	virtual IScriptFunction* Compile(const std::string& name, const std::string& source) = 0;
-	virtual void CallFunctionInScope(std::function<void()> function)                     = 0;
-	virtual void TerminateExecution()                                                    = 0;
+	virtual void CallFunctionInScope(std::function<void()> function) = 0;
+	virtual void TerminateExecution() = 0;
 
 	const ScriptRunError& getScriptError() const
 	{
-		return _lastScriptError;
+		return m_lastScriptError;
 	}
 
 protected:
-	ScriptRunError _lastScriptError;
+	ScriptRunError m_lastScriptError;
 };
 
 #endif
