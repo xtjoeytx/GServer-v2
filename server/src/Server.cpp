@@ -8,12 +8,12 @@
 
 #include "IUtil.h"
 #include "ScriptOrigin.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TPlayer.h"
-#include "TServer.h"
-#include "TWeapon.h"
+#include "Level.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
 #include "main.h"
 
 static const char* const filesystemTypes[] = {

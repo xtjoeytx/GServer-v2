@@ -15,9 +15,9 @@
 
 #include "IConfig.h"
 #include "IEnums.h"
-#include "TLevel.h"
-#include "TPlayer.h"
-#include "TServer.h"
+#include "Level.h"
+#include "Player.h"
+#include "Server.h"
 
 #define serverlog server->getServerLog()
 #define rclog server->getRCLog()

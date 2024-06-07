@@ -3,11 +3,11 @@
 #include <vector>
 
 #include "IEnums.h"
-#include "TLevel.h"
-#include "TNPC.h"
-#include "TPlayer.h"
-#include "TServer.h"
-#include "TWeapon.h"
+#include "Level.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
 
 #define serverlog server->getServerLog()
 #define npclog server->getNPCLog()

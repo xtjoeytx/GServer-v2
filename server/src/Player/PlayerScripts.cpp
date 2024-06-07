@@ -1,7 +1,7 @@
-#include "CFileSystem.h"
-#include "TPlayer.h"
-#include "TServer.h"
-#include "TWeapon.h"
+#include "FileSystem.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
 #include "utilities/stringutils.h"
 
 // packet 157

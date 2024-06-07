@@ -1,6 +1,6 @@
-#include "CFileSystem.h"
-#include "TPlayer.h"
-#include "TServer.h"
+#include "FileSystem.h"
+#include "Player.h"
+#include "Server.h"
 
 std::vector<CString> TPlayer::getPMServerList()
 {

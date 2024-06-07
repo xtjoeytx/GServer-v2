@@ -5,10 +5,10 @@
 
 #include <string>
 #include <fmt/format.h>
-#include "TNPC.h"
+#include "NPC.h"
 #include "ScriptClass.h"
-#include "TWeapon.h"
-#include "TLevel.h"
+#include "Weapon.h"
+#include "Level.h"
 
 namespace scripting
 {

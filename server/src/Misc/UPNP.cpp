@@ -13,7 +13,7 @@
 		#include <windows.h>
 	#endif
 	#include "UPNP.h"
-	#include "TServer.h"
+	#include "Server.h"
 
 void CUPNP::discover()
 {

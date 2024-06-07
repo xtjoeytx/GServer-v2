@@ -8,10 +8,10 @@
 	#include <dirent.h>
 	#include <utime.h>
 #endif
-#include "CFileSystem.h"
+#include "FileSystem.h"
 #include "IDebug.h"
 #include "IUtil.h"
-#include "TServer.h"
+#include "Server.h"
 #include <map>
 
 #if defined(_WIN32) || defined(_WIN64)

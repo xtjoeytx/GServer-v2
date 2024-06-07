@@ -1,6 +1,6 @@
 #include "UpdatePackage.h"
-#include "CFileSystem.h"
-#include "TServer.h"
+#include "FileSystem.h"
+#include "Server.h"
 #include <filesystem>
 
 std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const std::string& name)

@@ -1,17 +1,17 @@
-#include "CFileSystem.h"
+#include "FileSystem.h"
 #include "IDebug.h"
 #include "IEnums.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TServer.h"
+#include "Level.h"
+#include "Map.h"
+#include "NPC.h"
+#include "Server.h"
 #include <math.h>
 #include <time.h>
 #include <vector>
 
 #ifdef V8NPCSERVER
 	#include "CScriptEngine.h"
-	#include "TPlayer.h"
+	#include "Player.h"
 #endif
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };

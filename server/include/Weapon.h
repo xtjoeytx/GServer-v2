@@ -5,7 +5,7 @@
 #include <vector>
 #include <time.h>
 #include "CString.h"
-#include "TLevelItem.h"
+#include "LevelItem.h"
 #include "SourceCode.h"
 
 #ifdef V8NPCSERVER

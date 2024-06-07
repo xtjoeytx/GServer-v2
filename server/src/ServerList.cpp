@@ -7,8 +7,8 @@
 #include "IEnums.h"
 #include "IUtil.h"
 #include "ServerList.h"
-#include "TPlayer.h"
-#include "TServer.h"
+#include "Player.h"
+#include "Server.h"
 
 /*
 	Pointer-Functions for Packets

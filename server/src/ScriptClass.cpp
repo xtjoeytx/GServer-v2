@@ -1,6 +1,6 @@
 #include "ScriptClass.h"
 #include "GS2Context.h"
-#include "TServer.h"
+#include "Server.h"
 
 TScriptClass::TScriptClass(TServer* server, const std::string& className, const std::string& classSource)
 	: _className(className)

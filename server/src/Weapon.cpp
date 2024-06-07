@@ -2,16 +2,16 @@
 
 #include "IEnums.h"
 #include "IUtil.h"
-#include "TLevelItem.h"
-#include "TNPC.h"
-#include "TServer.h"
-#include "TWeapon.h"
+#include "LevelItem.h"
+#include "NPC.h"
+#include "Server.h"
+#include "Weapon.h"
 
 // GS2 Compiler includes
 #include "GS2Context.h"
 
 #ifdef V8NPCSERVER
-	#include "TPlayer.h"
+	#include "Player.h"
 #endif
 
 // -- Constructor: Default Weapons -- //

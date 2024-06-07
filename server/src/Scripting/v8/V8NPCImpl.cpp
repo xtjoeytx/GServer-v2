@@ -2,8 +2,8 @@
 
 	#include "CScriptEngine.h"
 	#include "IUtil.h"
-	#include "TLevel.h"
-	#include "TNPC.h"
+	#include "Level.h"
+	#include "NPC.h"
 	#include <algorithm>
 	#include <cassert>
 	#include <unordered_map>

@@ -1,6 +1,6 @@
 #include "IDebug.h"
-#include "TLevelSign.h"
-#include "TPlayer.h"
+#include "LevelSign.h"
+#include "Player.h"
 
 static CString encodeSignCode(CString& pText);
 static CString encodeSign(const CString& pSignText);

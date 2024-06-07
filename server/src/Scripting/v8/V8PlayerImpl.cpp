@@ -2,10 +2,10 @@
 
 	#include "CScriptEngine.h"
 	#include "IUtil.h"
-	#include "TLevel.h"
-	#include "TNPC.h"
-	#include "TPlayer.h"
-	#include "TServer.h"
+	#include "Level.h"
+	#include "NPC.h"
+	#include "Player.h"
+	#include "Server.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <v8.h>

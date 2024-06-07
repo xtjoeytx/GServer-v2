@@ -1,7 +1,7 @@
 #ifdef V8NPCSERVER
 
 	#include "CScriptEngine.h"
-	#include "TWeapon.h"
+	#include "Weapon.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <unordered_map>

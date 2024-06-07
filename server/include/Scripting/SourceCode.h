@@ -74,14 +74,14 @@ private:
 		if (clientSep != std::string::npos)
 		{
 			// Separate clientside and serverside
-			_clientside = std::string_view{_src}.substr(clientSep);
-			_serverside = std::string_view{_src}.substr(0, clientSep);
+			_clientside = std::string_view{ _src }.substr(clientSep);
+			_serverside = std::string_view{ _src }.substr(0, clientSep);
 		}
 		else
-			_serverside = std::string_view{_src};
+			_serverside = std::string_view{ _src };
 #else
 		// For non-npcserver builds all code is considered clientside
-		_clientside = std::string_view{_src};
+		_clientside = std::string_view{ _src };
 #endif
 
 		if (!_clientside.empty())

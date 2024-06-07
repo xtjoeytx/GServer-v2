@@ -81,7 +81,7 @@ inline std::pair<unsigned int, double> ScriptExecutionContext::getExecutionData(
 	}
 #endif
 
-	return {calls, exectime};
+	return { calls, exectime };
 }
 
 inline void ScriptExecutionContext::addAction(ScriptAction& action)
@@ -140,7 +140,7 @@ inline bool ScriptExecutionContext::runExecution()
 #ifndef NOSCRIPTPROFILING
 	auto endTimer  = std::chrono::high_resolution_clock::now();
 	auto time_diff = std::chrono::duration<double>(endTimer - currentTimer);
-	addExecutionSample({time_diff.count(), endTimer});
+	addExecutionSample({ time_diff.count(), endTimer });
 #endif
 
 	return hasActions();

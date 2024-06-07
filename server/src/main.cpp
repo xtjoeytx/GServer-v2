@@ -13,7 +13,7 @@
 #include "CString.h"
 #include "IConfig.h"
 #include "IUtil.h"
-#include "TServer.h"
+#include "Server.h"
 #include "main.h"
 
 // Linux specific stuff.

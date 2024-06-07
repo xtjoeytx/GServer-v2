@@ -2,10 +2,10 @@
 
 	#include "CScriptEngine.h"
 	#include "EmbeddedBootstrapScript.h"
-	#include "TNPC.h"
-	#include "TPlayer.h"
-	#include "TServer.h"
-	#include "TWeapon.h"
+	#include "NPC.h"
+	#include "Player.h"
+	#include "Server.h"
+	#include "Weapon.h"
 	#include "V8ScriptWrappers.h"
 
 extern const unsigned char JSBOOTSTRAPSCRIPT[];
@@ -226,7 +226,7 @@ bool CScriptEngine::ClearCache(const std::string& code)
 	return true;
 }
 
-	#include "TLevel.h"
+	#include "Level.h"
 
 bool CScriptEngine::ExecuteNpc(TNPC* npc)
 {

@@ -2,8 +2,8 @@
 #include "CLog.h"
 #include "IDebug.h"
 #include "IEnums.h"
-#include "TPlayer.h"
-#include "TServer.h"
+#include "Player.h"
+#include "Server.h"
 
 char bypass[] = {
 	' ',

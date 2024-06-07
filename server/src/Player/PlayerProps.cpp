@@ -3,10 +3,10 @@
 
 #include "IEnums.h"
 #include "IUtil.h"
-#include "TLevel.h"
-#include "TMap.h"
-#include "TPlayer.h"
-#include "TServer.h"
+#include "Level.h"
+#include "Map.h"
+#include "Player.h"
+#include "Server.h"
 
 #define serverlog server->getServerLog()
 #define rclog server->getRCLog()

@@ -1,8 +1,8 @@
 #ifdef V8NPCSERVER
 
 	#include "CScriptEngine.h"
-	#include "TNPC.h"
-	#include "TServer.h"
+	#include "NPC.h"
+	#include "Server.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <unordered_map>

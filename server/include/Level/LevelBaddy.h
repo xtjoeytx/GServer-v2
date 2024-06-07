@@ -3,6 +3,7 @@
 
 #include "CString.h"
 #include "CTimeout.h"
+#include "IUtil.h"
 #include <memory>
 #include <vector>
 
