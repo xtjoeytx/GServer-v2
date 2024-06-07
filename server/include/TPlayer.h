@@ -13,9 +13,12 @@
 #include "CEncryption.h"
 #include "CSocket.h"
 #include "TPacket.h"
+#include "wolfssl/ssl.h"
 
 #ifdef V8NPCSERVER
 #include "ScriptBindings.h"
+#include "wolfssl/ssl.h"
+
 #endif
 
 class TLevel;
@@ -55,6 +58,7 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId);
 		~TPlayer();
 		void cleanup();
+
 
 		// Manage Account
 		bool isLoggedIn() const;
@@ -203,8 +207,8 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		bool msgPLI_ITEMADD(CString& pPacket);
 		bool msgPLI_ITEMDEL(CString& pPacket);
 		bool msgPLI_CLAIMPKER(CString& pPacket);
-		bool msgPLI_BADDYPROPS(CString& pPacket);
-		bool msgPLI_BADDYHURT(CString& pPacket);
+		bool msgPLI_BADDYPROPS(CString& pPacket) const;
+		bool msgPLI_BADDYHURT(CString& pPacket) const;
 		bool msgPLI_BADDYADD(CString& pPacket);
 		bool msgPLI_FLAGSET(CString& pPacket);
 		bool msgPLI_FLAGDEL(CString& pPacket);
@@ -316,7 +320,14 @@ class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_f
 		bool msgPLI_RC_UNKNOWN162(CString& pPacket);
 
 		bool newProtocol;
+
+		// SSL Stuff
+		static int ServerRecv(WOLFSSL* ssl, char* buf, int sz, void* ctx);
+		static int ServerSend(WOLFSSL* ssl, char* buf, int sz, void* ctx);
 private:
+		WOLFSSL* ssl = nullptr;
+		WOLFSSL_CTX* ctx = nullptr;
+
 		// SendPacket functions.
 		void sendPacketNewProtocol(unsigned char packetId, const CString& pPacket, bool sendNow = false, bool appendNL = true);
 		void sendPacketOldProtocol(CString pPacket, bool appendNL = true);
@@ -342,6 +353,8 @@ private:
 		// Socket Variables
 		CSocket *playerSock;
 		CString rBuffer;
+		// SSL Stuff
+		CString iBuffer;
 
 		// Encryption
 		unsigned char key;
