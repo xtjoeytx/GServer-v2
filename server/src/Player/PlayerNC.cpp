@@ -524,7 +524,7 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		auto weapon = std::make_shared<Weapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		auto weapon = std::make_shared<Weapon>(m_server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
 		bool success = m_server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";
@@ -608,7 +608,7 @@ void Player::sendNCAddr()
 				npcServerIp = m_accountIpStr;
 		}
 
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcm_server->getId() << npcServerIp << "," << CString(m_server->getNCPort()));
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(m_server->getNCPort()));
 	}
 }
 

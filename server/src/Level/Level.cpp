@@ -1065,7 +1065,7 @@ std::shared_ptr<Level> Level::createLevel(Server* server, short fillTile, const 
 	level->setLevelName(levelName);
 
 #ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(level.get());
+	server->getScriptEngine()->wrapScriptObject(level.get());
 #endif
 
 	// Return Level

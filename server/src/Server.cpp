@@ -110,7 +110,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Initialize the Script Engine
 	if (!m_scriptEngine.Initialize())
 	{
-		serverlog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
+		m_serverLog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
 		// TODO(joey): new error number? log is probably enough
 		return ERR_SETTINGS;
 	}
@@ -172,10 +172,10 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_ncPort = strtoint(m_settings.getStr("serverport"));
 
 	m_npcServer = std::make_shared<Player>(this, nullptr, 0);
-	mNpcm_server->setType(PLTYPE_NPCSERVER);
-	mNpcm_server->loadAccount("(npcserver)");
-	mNpcm_server->setHeadImage(m_settings.getStr("staffhead", "head25.png"));
-	mNpcm_server->setLoaded(true); // can't guarantee this, so forcing it
+	m_npcServer->setType(PLTYPE_NPCSERVER);
+	m_npcServer->loadAccount("(npcserver)");
+	m_npcServer->setHeadImage(m_settings.getStr("staffhead", "head25.png"));
+	m_npcServer->setLoaded(true); // can't guarantee this, so forcing it
 
 	// TODO(joey): Update this when server options is changed?
 	// Set nickname, and append (Server) - required!
@@ -183,7 +183,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	if (nickName.isEmpty())
 		nickName = "NPC-Server";
 	nickName << " (Server)";
-	mNpcm_server->setNick(nickName, true);
+	m_npcServer->setNick(nickName, true);
 
 	// Add npc-server to playerlist
 	addPlayer(m_npcServer);
@@ -618,7 +618,7 @@ int Server::loadConfigFiles()
 
 #ifdef V8NPCSERVER
 	// Load database npcs.
-	serverlog.out("[%s]      Loading npcs...\n", m_name.text());
+	m_serverLog.out("[%s]      Loading npcs...\n", m_name.text());
 	loadNpcs(true);
 #endif
 
@@ -1232,7 +1232,7 @@ void Server::handlePM(Player* player, const CString& message)
 	{
 		CString npcServerMsg;
 		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)mNpcm_server->getId() << "\"\"," << npcServerMsg.gtokenize());
+		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_npcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
 		return;
 	}
 

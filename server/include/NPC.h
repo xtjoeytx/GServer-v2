@@ -598,7 +598,7 @@ inline void NPC::allowNpcWarping(NPCWarpType m_canWarp)
  */
 inline bool NPC::hasTimerUpdates() const
 {
-	return (timeout > 0 || !m_scriptTimers.empty());
+	return (m_timeout > 0 || !m_scriptTimers.empty());
 }
 
 inline bool NPC::hasScriptEvent(int flag) const

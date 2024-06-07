@@ -1141,7 +1141,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			if (doTouchTest)
 			{
-				if (sprite % 4 == 0)
+				if (m_sprite % 4 == 0)
 					testSign();
 				testTouch();
 			}

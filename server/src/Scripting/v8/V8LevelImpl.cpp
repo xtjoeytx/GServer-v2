@@ -532,7 +532,7 @@ void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 	if (server && npcList.size() > index)
 	{
 		auto npcId = *std::next(npcList.begin(), index);
-		auto npc = m_server->getNPC(npcId);
+		auto npc = server->getNPC(npcId);
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
 
 		info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
@@ -642,7 +642,7 @@ void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 	int idx = 0;
 	for (auto& npcId: levelNpcs)
 	{
-		auto npc = m_server->getNPC(npcId);
+		auto npc = server->getNPC(npcId);
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
 		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 	}
@@ -680,9 +680,9 @@ void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 		}
 
 		Server* server = levelObject->getServer();
-		auto level = m_server->getLevel(levelObject->getLevelName().toString());
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
-		auto npc = m_server->addNPC("", script, npcX, npcY, level, true, true);
+		auto npc = server->addNPC("", script, npcX, npcY, level, true, true);
 		if (npc != nullptr)
 		{
 			npc->setScriptType("LOCALN");
@@ -718,7 +718,7 @@ void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& ar
 		if (server && npcList.size() > index)
 		{
 			auto npcId = *std::next(npcList.begin(), index);
-			args.GetReturnValue().Set(m_server->deleteNPC(npcId, true));
+			args.GetReturnValue().Set(server->deleteNPC(npcId, true));
 			return;
 		}
 	}
@@ -745,7 +745,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 		int idx = 0;
 		for (auto it = playerList.begin(); it != playerList.end(); ++it)
 		{
-			auto player = m_server->getPlayer(*it);
+			auto player = server->getPlayer(*it);
 			V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(player->getScriptObject());
 			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
 		}
@@ -1157,7 +1157,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 
 		for (auto plId: playerList)
 		{
-			auto pl = m_server->getPlayer(plId);
+			auto pl = server->getPlayer(plId);
 			double distance = sqrt(pow(pl->getY() - targetY, 2) + pow(pl->getX() - targetX, 2));
 			playerListSorted.emplace_back(distance, pl);
 		}
@@ -1203,7 +1203,7 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		Server* server = levelObject->getServer();
 		if (server == nullptr) return;
-		auto level = m_server->getLevel(levelObject->getLevelName().toString());
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
 		auto x = (float)args[0]->NumberValue(context).ToChecked();
 		auto y = (float)args[1]->NumberValue(context).ToChecked();
@@ -1221,7 +1221,7 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 		aniArgs.gtokenizeI();
 
 		// Send the packet out.
-		m_server->sendShootToOneLevel(level, x, y, z, angle, zangle, strength, ani, aniArgs.text());
+		server->sendShootToOneLevel(level, x, y, z, angle, zangle, strength, ani, aniArgs.text());
 	}
 }
 
@@ -1244,7 +1244,7 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 
 		Server* server = levelObject->getServer();
 		if (server == nullptr) return;
-		auto level = m_server->getLevel(levelObject->getLevelName().toString());
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
 		unsigned char eradius = args[0]->Int32Value(context).ToChecked();
 		float loc[2] = {
@@ -1256,7 +1256,7 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 
 		// Send the packet out.
 		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-		m_server->sendPacketToOneLevel(packet, level);
+		server->sendPacketToOneLevel(packet, level);
 	}
 }
 
@@ -1288,9 +1288,9 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 		}
 
 		Server* server = levelObject->getServer();
-		auto level = m_server->getLevel(levelObject->getLevelName().toString());
+		auto level = server->getLevel(levelObject->getLevelName().toString());
 
-		auto npc = m_server->addNPC("", script, npcX, npcY, level, false, true);
+		auto npc = server->addNPC("", script, npcX, npcY, level, false, true);
 		if (npc != nullptr)
 		{
 			npc->setScriptType("LOCALN");
