@@ -7,9 +7,9 @@
 #include <time.h>
 
 /*
-	TAccount: Constructor - Deconstructor
+	Account: Constructor - Deconstructor
 */
-TAccount::TAccount(TServer* pServer)
+Account::Account(Server* pServer)
 	: server(pServer),
 	  isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
 	  adminIp("0.0.0.0"),
@@ -34,12 +34,12 @@ TAccount::TAccount(TServer* pServer)
 	bowPower  = 1;
 }
 
-TAccount::~TAccount() = default;
+Account::~Account() = default;
 
 /*
-	TAccount: Load/Save Account
+	Account: Load/Save Account
 */
-void TAccount::reset()
+void Account::reset()
 {
 	if (!accountName.isEmpty())
 	{
@@ -50,13 +50,13 @@ void TAccount::reset()
 	}
 }
 
-bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
+bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 {
 	// Just in case this account was loaded offline through RC.
 	accountName = pAccount;
 
 	bool loadedFromDefault = false;
-	CFileSystem* accfs     = server->getAccountsFileSystem();
+	FileSystem* accfs     = server->getAccountsFileSystem();
 	std::vector<CString> fileData;
 
 	// Find the account in the file system.
@@ -64,7 +64,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	if (accpath.length() == 0)
 	{
 		accpath = server->getServerPath() << "accounts/defaultaccount.txt";
-		CFileSystem::fixPathSeparators(accpath);
+		FileSystem::fixPathSeparators(accpath);
 		loadedFromDefault = true;
 	}
 
@@ -321,7 +321,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	return true;
 }
 
-bool TAccount::saveAccount()
+bool Account::saveAccount()
 {
 	// Don't save 'Load Only' or RC Accounts
 	if (isLoadOnly)
@@ -410,7 +410,7 @@ bool TAccount::saveAccount()
 
 	// Save the account now.
 	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
-	CFileSystem::fixPathSeparators(accpath);
+	FileSystem::fixPathSeparators(accpath);
 	if (!newFile.save(accpath))
 		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
 
@@ -418,9 +418,9 @@ bool TAccount::saveAccount()
 }
 
 /*
-	TAccount: Account Management
+	Account: Account Management
 */
-bool TAccount::meetsConditions(CString fileName, CString conditions)
+bool Account::meetsConditions(CString fileName, CString conditions)
 {
 	const char* conditional[] = { ">=", "<=", "!=", "=", ">", "<" };
 
@@ -624,31 +624,31 @@ condAbort:
 }
 
 /*
-	TAccount: Attribute-Managing
+	Account: Attribute-Managing
 */
-bool TAccount::hasChest(const CString& pChest)
+bool Account::hasChest(const CString& pChest)
 {
 	auto it = std::find(chestList.begin(), chestList.end(), pChest);
 	return (it != chestList.end());
 }
 
-bool TAccount::hasWeapon(const CString& pWeapon)
+bool Account::hasWeapon(const CString& pWeapon)
 {
 	auto it = std::find(weaponList.begin(), weaponList.end(), pWeapon);
 	return (it != weaponList.end());
 }
 
 /*
-	TAccount: Flag Management
+	Account: Flag Management
 */
-void TAccount::setFlag(CString pFlag)
+void Account::setFlag(CString pFlag)
 {
 	CString flagName  = pFlag.readString("=");
 	CString flagValue = pFlag.readString("");
 	this->setFlag(flagName.text(), flagValue);
 }
 
-void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
+void Account::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
 	if (server->getSettings().getBool("cropflags", true))
 	{
@@ -662,12 +662,12 @@ void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 /*
 	Translation Functionality
 */
-CString TAccount::translate(const CString& pKey)
+CString Account::translate(const CString& pKey)
 {
 	return server->TS_Translate(language, pKey);
 }
 
-void TAccount::setMaxPower(int newMaxPower)
+void Account::setMaxPower(int newMaxPower)
 {
 	const auto& settings = server->getSettings();
 
@@ -675,14 +675,14 @@ void TAccount::setMaxPower(int newMaxPower)
 	maxPower        = clip(newMaxPower, 0, heartLimit);
 }
 
-void TAccount::setShieldPower(int newPower)
+void Account::setShieldPower(int newPower)
 {
 	const auto& settings = server->getSettings();
 
 	shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
 }
 
-void TAccount::setSwordPower(int newPower)
+void Account::setSwordPower(int newPower)
 {
 	const auto& settings = server->getSettings();
 

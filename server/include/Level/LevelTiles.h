@@ -3,10 +3,10 @@
 
 #include <cstring>
 
-class TLevelTiles
+class LevelTiles
 {
 public:
-	TLevelTiles(short fillTile = 0x00)
+	LevelTiles(short fillTile = 0x00)
 	{
 		memset(levelTiles, fillTile, sizeof(levelTiles));
 	}

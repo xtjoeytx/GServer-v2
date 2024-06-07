@@ -11,10 +11,10 @@
 
 enum class LevelItemType;
 
-class TLevelChest : public std::enable_shared_from_this<TLevelChest>
+class LevelChest : public std::enable_shared_from_this<LevelChest>
 {
 public:
-	TLevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
+	LevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
 		: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny)
 	{
 	}
@@ -60,12 +60,12 @@ public:
 	}
 
 #ifdef V8NPCSERVER
-	inline IScriptObject<TLevelChest>* getScriptObject() const
+	inline IScriptObject<LevelChest>* getScriptObject() const
 	{
 		return _scriptObject.get();
 	}
 
-	inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelChest>> object)
+	inline void setScriptObject(std::unique_ptr<IScriptObject<LevelChest>> object)
 	{
 		_scriptObject = std::move(object);
 	}
@@ -76,10 +76,10 @@ private:
 	int signIndex, x, y;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<TLevelChest>> _scriptObject;
+	std::unique_ptr<IScriptObject<LevelChest>> _scriptObject;
 #endif
 };
 
-using TLevelChestPtr = std::shared_ptr<TLevelChest>;
+using TLevelChestPtr = std::shared_ptr<LevelChest>;
 
 #endif // TLEVELCHEST_H

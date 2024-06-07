@@ -22,14 +22,14 @@
 class IScriptEnv;
 class IScriptFunction;
 
-class TNPC;
-class TServer;
-class TWeapon;
+class NPC;
+class Server;
+class Weapon;
 
 class CScriptEngine
 {
 public:
-	CScriptEngine(TServer* server);
+	CScriptEngine(Server* server);
 	~CScriptEngine();
 
 	bool Initialize();
@@ -40,20 +40,20 @@ public:
 	void StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
 	bool StopScriptExecution();
 
-	TServer* getServer() const;
+	Server* getServer() const;
 	IScriptEnv* getScriptEnv() const;
-	IScriptObject<TServer>* getServerObject() const;
+	IScriptObject<Server>* getServerObject() const;
 
-	bool ExecuteNpc(TNPC* npc);
-	bool ExecuteWeapon(TWeapon* weapon);
+	bool ExecuteNpc(NPC* npc);
+	bool ExecuteWeapon(Weapon* weapon);
 
-	void RegisterNpcTimer(TNPC* npc);
-	void RegisterNpcUpdate(TNPC* npc);
-	void RegisterWeaponUpdate(TWeapon* weapon);
+	void RegisterNpcTimer(NPC* npc);
+	void RegisterNpcUpdate(NPC* npc);
+	void RegisterWeaponUpdate(Weapon* weapon);
 
-	void UnregisterNpcTimer(TNPC* npc);
-	void UnregisterNpcUpdate(TNPC* npc);
-	void UnregisterWeaponUpdate(TWeapon* weapon);
+	void UnregisterNpcTimer(NPC* npc);
+	void UnregisterNpcUpdate(NPC* npc);
+	void UnregisterWeaponUpdate(Weapon* weapon);
 
 	// callbacks
 	IScriptFunction* getCallBack(const std::string& callback) const;
@@ -89,9 +89,9 @@ private:
 
 	IScriptEnv* _env;
 	IScriptFunction* _bootstrapFunction;
-	std::unique_ptr<IScriptObject<TServer>> _environmentObject;
-	std::unique_ptr<IScriptObject<TServer>> _serverObject;
-	TServer* _server;
+	std::unique_ptr<IScriptObject<Server>> _environmentObject;
+	std::unique_ptr<IScriptObject<Server>> _serverObject;
+	Server* _server;
 
 	std::chrono::high_resolution_clock::time_point lastScriptTimer;
 	std::chrono::nanoseconds accumulator;
@@ -105,9 +105,9 @@ private:
 
 	std::unordered_map<std::string, IScriptFunction*> _cachedScripts;
 	std::unordered_map<std::string, IScriptFunction*> _callbacks;
-	std::unordered_set<TNPC*> _updateNpcs;
-	std::unordered_set<TNPC*> _updateNpcsTimer;
-	std::unordered_set<TWeapon*> _updateWeapons;
+	std::unordered_set<NPC*> _updateNpcs;
+	std::unordered_set<NPC*> _updateNpcsTimer;
+	std::unordered_set<Weapon*> _updateWeapons;
 	std::unordered_set<IScriptFunction*> _deletedCallbacks;
 };
 
@@ -130,7 +130,7 @@ inline bool CScriptEngine::StopScriptExecution()
 
 // Getters
 
-inline TServer* CScriptEngine::getServer() const
+inline Server* CScriptEngine::getServer() const
 {
 	return _server;
 }
@@ -140,7 +140,7 @@ inline IScriptEnv* CScriptEngine::getScriptEnv() const
 	return _env;
 }
 
-inline IScriptObject<TServer>* CScriptEngine::getServerObject() const
+inline IScriptObject<Server>* CScriptEngine::getServerObject() const
 {
 	return _serverObject.get();
 }
@@ -161,34 +161,34 @@ inline const ScriptRunError& CScriptEngine::getScriptError() const
 
 // Register scripts for processing
 
-inline void CScriptEngine::RegisterNpcTimer(TNPC* npc)
+inline void CScriptEngine::RegisterNpcTimer(NPC* npc)
 {
 	_updateNpcsTimer.insert(npc);
 }
 
-inline void CScriptEngine::RegisterNpcUpdate(TNPC* npc)
+inline void CScriptEngine::RegisterNpcUpdate(NPC* npc)
 {
 	_updateNpcs.insert(npc);
 }
 
-inline void CScriptEngine::RegisterWeaponUpdate(TWeapon* weapon)
+inline void CScriptEngine::RegisterWeaponUpdate(Weapon* weapon)
 {
 	_updateWeapons.insert(weapon);
 }
 
 // Unregister scripts from processing
 
-inline void CScriptEngine::UnregisterWeaponUpdate(TWeapon* weapon)
+inline void CScriptEngine::UnregisterWeaponUpdate(Weapon* weapon)
 {
 	_updateWeapons.erase(weapon);
 }
 
-inline void CScriptEngine::UnregisterNpcUpdate(TNPC* npc)
+inline void CScriptEngine::UnregisterNpcUpdate(NPC* npc)
 {
 	_updateNpcs.erase(npc);
 }
 
-inline void CScriptEngine::UnregisterNpcTimer(TNPC* npc)
+inline void CScriptEngine::UnregisterNpcTimer(NPC* npc)
 {
 	_updateNpcsTimer.erase(npc);
 }

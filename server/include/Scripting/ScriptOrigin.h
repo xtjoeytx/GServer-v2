@@ -12,7 +12,7 @@
 
 namespace scripting
 {
-	std::string getErrorOrigin(const TNPC& npc)
+	std::string getErrorOrigin(const NPC& npc)
 	{
 		std::string origin;
 
@@ -42,12 +42,12 @@ namespace scripting
 		return origin;
 	}
 
-	std::string getErrorOrigin(const TScriptClass& cls)
+	std::string getErrorOrigin(const ScriptClass& cls)
 	{
 		return fmt::format("Class {}", cls.getName());
 	}
 
-	std::string getErrorOrigin(const TWeapon& npc)
+	std::string getErrorOrigin(const Weapon& npc)
 	{
 		return fmt::format("Weapon {}", npc.getName());
 	}

@@ -18,7 +18,7 @@ const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
 static CString toWeaponName(const CString& code);
-static CString doJoins(const CString& code, CFileSystem* fs);
+static CString doJoins(const CString& code, FileSystem* fs);
 
 std::string minifyClientCode(const CString& src)
 {
@@ -39,8 +39,8 @@ std::string minifyClientCode(const CString& src)
 	return minified;
 }
 
-TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, std::shared_ptr<TLevel> pLevel, NPCType type)
-	: TNPC(pServer, type)
+NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type)
+	: NPC(pServer, type)
 {
 	setX(int(pX * 16));
 	setY(int(pY * 16));
@@ -67,7 +67,7 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 	setScriptCode(std::move(pScript));
 }
 
-TNPC::TNPC(TServer* pServer, NPCType type)
+NPC::NPC(Server* pServer, NPCType type)
 	: server(pServer), npcType(type), blockPositionUpdates(false),
 	  x(int(30 * 16)), y(int(30.5 * 16)),
 	  hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
@@ -98,14 +98,14 @@ TNPC::TNPC(TServer* pServer, NPCType type)
 	setScriptCode("");
 }
 
-TNPC::~TNPC()
+NPC::~NPC()
 {
 #ifdef V8NPCSERVER
 	freeScriptResources();
 #endif
 }
 
-void TNPC::setScriptCode(std::string pScript)
+void NPC::setScriptCode(std::string pScript)
 {
 	bool firstExecution = npcScript.empty();
 
@@ -210,7 +210,7 @@ void TNPC::setScriptCode(std::string pScript)
 #endif
 }
 
-std::shared_ptr<TLevel> TNPC::getLevel() const
+std::shared_ptr<Level> NPC::getLevel() const
 {
 	// TODO: Handle deleted level.
 	// Delete level NPCs.
@@ -218,7 +218,7 @@ std::shared_ptr<TLevel> TNPC::getLevel() const
 	return curlevel.lock();
 }
 
-CString TNPC::getProp(unsigned char pId, int clientVersion) const
+CString NPC::getProp(unsigned char pId, int clientVersion) const
 {
 	auto level = getLevel();
 	switch (pId)
@@ -408,7 +408,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 	return CString();
 }
 
-CString TNPC::getProps(time_t newTime, int clientVersion) const
+CString NPC::getProps(time_t newTime, int clientVersion) const
 {
 	bool oldcreated = server->getSettings().getBool("oldcreated", "false");
 	CString retVal;
@@ -434,7 +434,7 @@ CString TNPC::getProps(time_t newTime, int clientVersion) const
 	return retVal;
 }
 
-CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
+CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 {
 	bool hasMoved = false;
 
@@ -864,7 +864,7 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 
 #ifdef V8NPCSERVER
 
-void TNPC::testForLinks()
+void NPC::testForLinks()
 {
 	auto level = getLevel();
 	if (level == nullptr) return;
@@ -913,7 +913,7 @@ void TNPC::testForLinks()
 	}
 }
 
-void TNPC::testTouch()
+void NPC::testTouch()
 {
 	if (curlevel.expired())
 		return;
@@ -921,13 +921,13 @@ void TNPC::testTouch()
 	testForLinks();
 }
 
-void TNPC::freeScriptResources()
+void NPC::freeScriptResources()
 {
 	CScriptEngine* scriptEngine = server->getScriptEngine();
 
 	// Clear cached script
 	if (!npcScript.getServerSide().empty())
-		scriptEngine->ClearCache<TNPC>(npcScript.getServerSide());
+		scriptEngine->ClearCache<NPC>(npcScript.getServerSide());
 
 	// Reset script execution
 	_scriptExecutionContext.resetExecution();
@@ -951,7 +951,7 @@ void TNPC::freeScriptResources()
 }
 
 // Set callbacks for triggeractions!
-void TNPC::registerTriggerAction(const std::string& action, IScriptFunction* cbFunc)
+void NPC::registerTriggerAction(const std::string& action, IScriptFunction* cbFunc)
 {
 	// clear old callback if it was set
 	auto triggerIter = _triggerActions.find(action);
@@ -962,7 +962,7 @@ void TNPC::registerTriggerAction(const std::string& action, IScriptFunction* cbF
 	_triggerActions[action] = cbFunc;
 }
 
-void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std::string& data)
+void NPC::queueNpcTrigger(const std::string& action, Player* player, const std::string& data)
 {
 	assert(_scriptObject);
 
@@ -973,7 +973,7 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 
 	CScriptEngine* scriptEngine = server->getScriptEngine();
 
-	IScriptObject<TPlayer>* playerObject = nullptr;
+	IScriptObject<Player>* playerObject = nullptr;
 	if (player != nullptr)
 		playerObject = player->getScriptObject();
 
@@ -989,7 +989,7 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 	scriptEngine->RegisterNpcUpdate(this);
 }
 
-TScriptClass* TNPC::joinClass(const std::string& className)
+ScriptClass* NPC::joinClass(const std::string& className)
 {
 	auto found = classMap.find(className);
 	if (found != classMap.end())
@@ -1005,7 +1005,7 @@ TScriptClass* TNPC::joinClass(const std::string& className)
 	return classObj;
 }
 
-void TNPC::updateClientCode()
+void NPC::updateClientCode()
 {
 	// Skip servercode, and read client script
 	CString tmpScript = std::string{ npcScript.getClientGS1() };
@@ -1042,7 +1042,7 @@ void TNPC::updateClientCode()
 	this->updatePropModTime(NPCPROP_SCRIPT);
 }
 
-void TNPC::setTimeout(int newTimeout)
+void NPC::setTimeout(int newTimeout)
 {
 	timeout = newTimeout;
 
@@ -1052,13 +1052,13 @@ void TNPC::setTimeout(int newTimeout)
 		server->getScriptEngine()->UnregisterNpcTimer(this);
 }
 
-void TNPC::queueNpcAction(const std::string& action, TPlayer* player, bool registerAction)
+void NPC::queueNpcAction(const std::string& action, Player* player, bool registerAction)
 {
 	assert(_scriptObject);
 
 	CScriptEngine* scriptEngine = server->getScriptEngine();
 
-	IScriptObject<TPlayer>* playerObject = nullptr;
+	IScriptObject<Player>* playerObject = nullptr;
 	if (player != nullptr)
 		playerObject = player->getScriptObject();
 
@@ -1075,7 +1075,7 @@ void TNPC::queueNpcAction(const std::string& action, TPlayer* player, bool regis
 		scriptEngine->RegisterNpcUpdate(this);
 }
 
-bool TNPC::runScriptTimer()
+bool NPC::runScriptTimer()
 {
 	// TODO(joey): Scheduled events, pass in delta, use milliseconds as an integer
 
@@ -1111,7 +1111,7 @@ bool TNPC::runScriptTimer()
 	return hasTimerUpdates();
 }
 
-NPCEventResponse TNPC::runScriptEvents()
+NPCEventResponse NPC::runScriptEvents()
 {
 	bool hasActions = false;
 	if (!npcDeleteRequested)
@@ -1148,7 +1148,7 @@ NPCEventResponse TNPC::runScriptEvents()
 	return (hasActions ? NPCEventResponse::PendingEvents : NPCEventResponse::NoEvents);
 }
 
-CString TNPC::getVariableDump()
+CString NPC::getVariableDump()
 {
 	static const char* const propNames[NPCPROP_COUNT] = {
 		"image", "script", "x", "y", "power", "rupees",
@@ -1397,7 +1397,7 @@ CString TNPC::getVariableDump()
 	return npcDump;
 }
 
-bool TNPC::deleteNPC()
+bool NPC::deleteNPC()
 {
 	if (getType() == NPCType::PUTNPC)
 	{
@@ -1408,12 +1408,12 @@ bool TNPC::deleteNPC()
 	return npcDeleteRequested;
 }
 
-void TNPC::reloadNPC()
+void NPC::reloadNPC()
 {
 	setScriptCode(npcScript.getSource());
 }
 
-void TNPC::resetNPC()
+void NPC::resetNPC()
 {
 	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
 	canWarp                = NPCWarpType::None;
@@ -1428,11 +1428,11 @@ void TNPC::resetNPC()
 
 	if (!origLevel.isEmpty())
 	{
-		warpNPC(TLevel::findLevel(origLevel, server), origX, origY);
+		warpNPC(Level::findLevel(origLevel, server), origX, origY);
 	}
 }
 
-void TNPC::moveNPC(int dx, int dy, double time, int options)
+void NPC::moveNPC(int dx, int dy, double time, int options)
 {
 	// TODO(joey): Implement options? Or does the client handle them? TBD
 	//	- If we want function callbacks we will need to handle time, can schedule an event once that is implemented
@@ -1453,7 +1453,7 @@ void TNPC::moveNPC(int dx, int dy, double time, int options)
 		testTouch();
 }
 
-void TNPC::warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY)
+void NPC::warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY)
 {
 	if (!pLevel)
 		return;
@@ -1494,7 +1494,7 @@ void TNPC::warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY)
 	this->queueNpcAction("npc.warped");
 }
 
-void TNPC::saveNPC()
+void NPC::saveNPC()
 {
 	// TODO(joey): save localnpcs aka putnpcs to a localnpcs folder, as of now
 	// we are only saving database npcs.
@@ -1601,7 +1601,7 @@ void TNPC::saveNPC()
 	fileData.save(fileName);
 }
 
-bool TNPC::loadNPC(const CString& fileName)
+bool NPC::loadNPC(const CString& fileName)
 {
 	// Load file
 	CString fileData;
@@ -1824,7 +1824,7 @@ bool TNPC::loadNPC(const CString& fileName)
 		npcLevel = origLevel;
 
 	if (!npcLevel.isEmpty())
-		curlevel = TLevel::findLevel(npcLevel, server);
+		curlevel = Level::findLevel(npcLevel, server);
 
 	return true;
 }
@@ -1848,7 +1848,7 @@ CString toWeaponName(const CString& code)
 	return code.subString(name_start, name_pos - name_start).trim();
 }
 
-CString doJoins(const CString& code, CFileSystem* fs)
+CString doJoins(const CString& code, FileSystem* fs)
 {
 	CString ret;
 	CString c(code);

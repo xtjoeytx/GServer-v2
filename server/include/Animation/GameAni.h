@@ -5,9 +5,9 @@
 #include <optional>
 #include <string>
 
-class TServer;
+class Server;
 
-class TGameAni
+class GameAni
 {
 	enum AniFlags : uint8_t
 	{
@@ -17,15 +17,15 @@ class TGameAni
 	};
 
 public:
-	explicit TGameAni(std::string aniName);
+	explicit GameAni(std::string aniName);
 
 	// Move operations
-	TGameAni(TGameAni&& o) noexcept;
-	TGameAni& operator=(TGameAni&& o) noexcept;
+	GameAni(GameAni&& o) noexcept;
+	GameAni& operator=(GameAni&& o) noexcept;
 
 	// Delete copy operations
-	TGameAni(const TGameAni&)            = delete;
-	TGameAni& operator=(const TGameAni&) = delete;
+	GameAni(const GameAni&)            = delete;
+	GameAni& operator=(const GameAni&) = delete;
 
 	//! Get the animation filename
 	//! \return animation filename
@@ -80,11 +80,11 @@ public:
 	//! \return bytecode packet
 	CString getBytecodePacket() const;
 
-	//! Load a TGameAni from the filesystem
+	//! Load a GameAni from the filesystem
 	//! \param server Global server pointer so we can fetch the correct filesystem
 	//! \param name filename of the animation (ex: idle.gani)
-	//! \return TGameAni if it was successfully loaded, otherwise a nullopt
-	static std::optional<TGameAni> load(TServer* const server, const std::string& name);
+	//! \return GameAni if it was successfully loaded, otherwise a nullopt
+	static std::optional<GameAni> load(Server* const server, const std::string& name);
 
 private:
 	std::string _aniName;
@@ -94,19 +94,19 @@ private:
 	uint8_t _aniFlags;
 };
 
-inline TGameAni::TGameAni(std::string aniName)
+inline GameAni::GameAni(std::string aniName)
 	: _aniName(aniName), _aniFlags(0)
 {
 }
 
-inline TGameAni::TGameAni(TGameAni&& o) noexcept
+inline GameAni::GameAni(GameAni&& o) noexcept
 	: _aniName(std::move(o._aniName)), _script(std::move(o._script)),
 	  _bytecode(std::move(o._bytecode)), _setBackTo(o._setBackTo),
 	  _aniFlags(o._aniFlags)
 {
 }
 
-inline TGameAni& TGameAni::operator=(TGameAni&& o) noexcept
+inline GameAni& GameAni::operator=(GameAni&& o) noexcept
 {
 	_aniName   = std::move(o._aniName);
 	_script    = std::move(o._script);

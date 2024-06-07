@@ -70,9 +70,9 @@ const int __importantFileRights[] = {
 	PLPERM_SETSERVEROPTIONS,
 };
 
-static void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file);
+static void updateFile(Player* player, Server* server, CString& dir, CString& file);
 
-void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
+void Player::setPropsRC(CString& pPacket, Player* rc)
 {
 	bool hadBomb = false, hadBow = false;
 	CString outPacket;
@@ -177,7 +177,7 @@ void TPlayer::setPropsRC(CString& pPacket, TPlayer* rc)
 	if (id != -1) warp(levelName, x, y, 0);
 }
 
-CString TPlayer::getPropsRC()
+CString Player::getPropsRC()
 {
 	CString ret, props;
 	ret >> (char)accountName.length() << accountName;
@@ -222,7 +222,7 @@ CString TPlayer::getPropsRC()
 	return ret;
 }
 
-bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
+bool Player::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -236,7 +236,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
+bool Player::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_SETSERVEROPTIONS))
 	{
@@ -301,7 +301,7 @@ bool TPlayer::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
+bool Player::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -317,7 +317,7 @@ bool TPlayer::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
+bool Player::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_SETFOLDEROPTIONS))
 	{
@@ -342,37 +342,37 @@ bool TPlayer::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_RESPAWNSET(CString& pPacket)
+bool Player::msgPLI_RC_RESPAWNSET(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_HORSELIFESET(CString& pPacket)
+bool Player::msgPLI_RC_HORSELIFESET(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_APINCREMENTSET(CString& pPacket)
+bool Player::msgPLI_RC_APINCREMENTSET(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_BADDYRESPAWNSET(CString& pPacket)
+bool Player::msgPLI_RC_BADDYRESPAWNSET(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSGET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSGET(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 {
 	// Deprecated?
 
@@ -396,7 +396,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
+bool Player::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 {
 	auto p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return true;
@@ -425,7 +425,7 @@ bool TPlayer::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_UPDATELEVELS(CString& pPacket)
+bool Player::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_UPDATELEVEL))
 	{
@@ -443,7 +443,7 @@ bool TPlayer::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
+bool Player::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_ADMINMSG))
 	{
@@ -456,7 +456,7 @@ bool TPlayer::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
+bool Player::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_ADMINMSG))
 	{
@@ -472,25 +472,25 @@ bool TPlayer::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_LISTRCS(CString& pPacket)
+bool Player::msgPLI_RC_LISTRCS(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_DISCONNECTRC(CString& pPacket)
+bool Player::msgPLI_RC_DISCONNECTRC(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_APPLYREASON(CString& pPacket)
+bool Player::msgPLI_RC_APPLYREASON(CString& pPacket)
 {
 	// Deprecated
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
+bool Player::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -508,7 +508,7 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
+bool Player::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_SETSERVERFLAGS))
 	{
@@ -569,7 +569,7 @@ bool TPlayer::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
+bool Player::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
@@ -585,7 +585,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	bool onlyLoad = (pPacket.readGUChar() != 0);
 	pPacket.readGUChar(); // Admin level, deprecated.
 
-	TAccount newAccount(server);
+	Account newAccount(server);
 	newAccount.loadAccount(acc);
 	newAccount.setBanned(banned);
 	newAccount.setLoadOnly(onlyLoad);
@@ -597,7 +597,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
+bool Player::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
@@ -635,7 +635,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
+bool Player::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -656,7 +656,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 	ret >> (char)PLO_RC_ACCOUNTLISTGET;
 
 	// Search through all the accounts.
-	CFileSystem* fs = server->getAccountsFileSystem();
+	FileSystem* fs = server->getAccountsFileSystem();
 	for (std::map<CString, CString>::iterator i = fs->getFileList().begin(); i != fs->getFileList().end(); ++i)
 	{
 		CString acc = removeExtension(i->first);
@@ -664,7 +664,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 		if (!acc.match(name)) continue;
 		if (conditions.length() != 0)
 		{
-			if (TAccount::meetsConditions(i->second, conditions))
+			if (Account::meetsConditions(i->second, conditions))
 				ret >> (char)acc.length() << acc;
 		}
 		else
@@ -675,7 +675,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 {
 	auto p = server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p == nullptr) return true;
@@ -691,7 +691,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -703,7 +703,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -719,7 +719,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -739,7 +739,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -779,7 +779,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -791,7 +791,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -820,7 +820,7 @@ bool TPlayer::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
+bool Player::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -839,7 +839,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -851,7 +851,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
+bool Player::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.length() == 0) return true;
@@ -880,7 +880,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -915,7 +915,7 @@ bool TPlayer::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
+bool Player::msgPLI_RC_CHAT(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1188,7 +1188,7 @@ bool TPlayer::msgPLI_RC_CHAT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
+bool Player::msgPLI_RC_WARPPLAYER(CString& pPacket)
 {
 	if (isClient() || !hasRight(PLPERM_WARPTOPLAYER))
 	{
@@ -1208,7 +1208,7 @@ bool TPlayer::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1231,7 +1231,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1247,7 +1247,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1267,7 +1267,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1345,7 +1345,7 @@ bool TPlayer::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1364,7 +1364,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1374,7 +1374,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1394,7 +1394,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1415,7 +1415,7 @@ bool TPlayer::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 {
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1434,7 +1434,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1444,7 +1444,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
+bool Player::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1464,7 +1464,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 		if (server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<TPlayer>(server, nullptr, 0);
+		p = std::make_shared<Player>(server, nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1495,7 +1495,7 @@ bool TPlayer::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1544,7 +1544,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		lastFolder = folderMap.begin()->first;
 
 	// Create the file system.
-	CFileSystem fs(server);
+	FileSystem fs(server);
 	fs.addDir(lastFolder);
 
 	// Construct the file list.
@@ -1579,7 +1579,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 {
 	if (isClient()) return true;
 
@@ -1618,7 +1618,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		lastFolder = newFolder;
 
 	// Create the file system.
-	CFileSystem fs(server);
+	FileSystem fs(server);
 	fs.addDir(lastFolder);
 
 	// Make sure our folder exists.
@@ -1670,7 +1670,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
 {
 	if (isClient()) return true;
 	isFtp = false;
@@ -1678,7 +1678,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_END(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1712,7 +1712,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1778,7 +1778,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1817,8 +1817,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	// Add working directory.
 	source      = CString(server->getServerPath()) << source;
 	destination = CString(server->getServerPath()) << destination;
-	CFileSystem::fixPathSeparators(source);
-	CFileSystem::fixPathSeparators(destination);
+	FileSystem::fixPathSeparators(source);
+	FileSystem::fixPathSeparators(destination);
 
 	// Save the new file now.
 	CString temp;
@@ -1856,7 +1856,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1867,7 +1867,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	CString file      = pPacket.readString("");
 	CString filePath  = server->getServerPath() << lastFolder << file;
 	CString checkFile = CString() << lastFolder << file;
-	CFileSystem::fixPathSeparators(filePath);
+	FileSystem::fixPathSeparators(filePath);
 
 	// Don't let us delete important files.
 	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
@@ -1911,7 +1911,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
+bool Player::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -1925,8 +1925,8 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f2path     = server->getServerPath() << lastFolder << f2;
 	CString checkFile1 = CString() << lastFolder << f1;
 	CString checkFile2 = CString() << lastFolder << f2;
-	CFileSystem::fixPathSeparators(f1path);
-	CFileSystem::fixPathSeparators(f2path);
+	FileSystem::fixPathSeparators(f1path);
+	FileSystem::fixPathSeparators(f2path);
 
 	// Don't let us rename/overwrite important files.
 	for (unsigned int j = 0; j < sizeof(__importantFiles) / sizeof(const char*); ++j)
@@ -2007,7 +2007,7 @@ bool TPlayer::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
+bool Player::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -2021,7 +2021,7 @@ bool TPlayer::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
+bool Player::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 {
 	if (isClient())
 	{
@@ -2054,11 +2054,11 @@ bool TPlayer::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
+bool Player::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
 	CString folder     = pPacket.readString("");
 	CString folderpath = server->getServerPath() << folder;
-	CFileSystem::fixPathSeparators(folderpath);
+	FileSystem::fixPathSeparators(folderpath);
 	folderpath.removeI(folderpath.length() - 1);
 	if (isClient())
 	{
@@ -2081,7 +2081,7 @@ bool TPlayer::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
+bool Player::msgPLI_NPCSERVERQUERY(CString& pPacket)
 {
 #ifdef V8NPCSERVER
 	// Read Packet Data
@@ -2096,7 +2096,7 @@ bool TPlayer::msgPLI_NPCSERVERQUERY(CString& pPacket)
 	return true;
 }
 
-void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
+void updateFile(Player* player, Server* server, CString& dir, CString& file)
 {
 	auto& settings = server->getSettings();
 	CString fullPath(dir);
@@ -2108,7 +2108,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	// Check and see if it is an account.
 	if (dir == "accounts/")
 	{
-		CFileSystem* fs = server->getAccountsFileSystem();
+		FileSystem* fs = server->getAccountsFileSystem();
 		if (fs->find(file).isEmpty())
 			fs->addFile(CString() << dir << file);
 		return;
@@ -2119,7 +2119,7 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	// If folder config is off, add it to the file list.
 	if (settings.getBool("nofoldersconfig", false))
 	{
-		CFileSystem* fs = server->getFileSystem();
+		FileSystem* fs = server->getFileSystem();
 		if (fs->find(file).isEmpty())
 		{
 			fs->addFile(CString() << dir << file);
@@ -2138,8 +2138,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 
 			if (fullPath.match(folder))
 			{
-				CFileSystem* fs  = server->getFileSystemByType(type);
-				CFileSystem* fs2 = server->getFileSystem();
+				FileSystem* fs  = server->getFileSystemByType(type);
+				FileSystem* fs2 = server->getFileSystem();
 
 				// See if it exists in that file system.
 				if (fs->find(file).isEmpty())
@@ -2157,10 +2157,10 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 	}
 
 	// If it is a level, see if we can update it.
-	// TODO: Should combine all server options loading/saving into one function in TServer.
+	// TODO: Should combine all server options loading/saving into one function in Server.
 	if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
 	{
-		auto l = TLevel::findLevel(file, server);
+		auto l = Level::findLevel(file, server);
 		if (l) l->reload();
 	}
 	else if (ext == ".dump" || dir.findi(CString("weapons")) > -1)

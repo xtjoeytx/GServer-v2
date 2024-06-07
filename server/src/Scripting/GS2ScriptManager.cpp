@@ -19,7 +19,7 @@ void GS2ScriptManager::compileScript(const std::string& script, user_callback_ty
 
 	// Disabling any async functionality for now, npcs should be compiled during level-loading
 	// and level should not be sent until all the npcs are finished compiling. Can't really
-	// enforce this since TLevel is loaded synchronously, but if it does turn into a problem
+	// enforce this since Level is loaded synchronously, but if it does turn into a problem
 	// we can migrate to using the threadpool for script compilations and delay sending levels
 	// until we finish loading the level. We could also switch to some eager-level-loading method,
 	// preloading any levels that are links from other levels or listed in a loaded map etc..

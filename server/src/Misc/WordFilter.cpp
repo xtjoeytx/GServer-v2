@@ -35,12 +35,12 @@ static char toUpper(char c)
 	return c;
 }
 
-CWordFilter::~CWordFilter()
+WordFilter::~WordFilter()
 {
 	rules.clear();
 }
 
-void CWordFilter::load(const CString& file)
+void WordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.
 	if (rules.size() != 0)
@@ -59,7 +59,7 @@ void CWordFilter::load(const CString& file)
 
 		if (wordParts[0] == "RULE")
 		{
-			auto rule = std::make_unique<SWordFilterRule>();
+			auto rule = std::make_unique<WordFilterRule>();
 			++i;
 			while (i != f.end() && (*i) != "RULEEND")
 			{
@@ -158,7 +158,7 @@ void CWordFilter::load(const CString& file)
 	}
 }
 
-int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
+int WordFilter::apply(const Player* player, CString& chat, int check)
 {
 	if (chat.isEmpty() || rules.size() == 0 || check == 0) return 0;
 
@@ -168,7 +168,7 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (SWordFilterRulePtr& rule: rules)
+	for (WordFilterRulePtr& rule: rules)
 	{
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;

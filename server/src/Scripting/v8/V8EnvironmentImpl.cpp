@@ -33,7 +33,7 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 	if (args[0]->IsString())
 	{
 		// Unwrap Object
-		TServer* serverObject = UnwrapObject<TServer>(args.This());
+		Server* serverObject = UnwrapObject<Server>(args.This());
 
 		// Report exception to server
 		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
@@ -92,7 +92,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
 		{
-			TNPC* npcObject = UnwrapObject<TNPC>(obj);
+			NPC* npcObject = UnwrapObject<NPC>(obj);
 			npcObject->setScriptEvents(args[1]->Int32Value(context).ToChecked());
 		}
 	}

@@ -5,7 +5,7 @@
 #include "utilities/stringutils.h"
 
 // packet 157
-bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
+bool Player::msgPLI_UPDATEGANI(CString& pPacket)
 {
 	// Read packet data
 	uint32_t checksum          = pPacket.readGUInt5();
@@ -30,7 +30,7 @@ bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
+bool Player::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
 	CString weaponName = pPacket.readString("");
 
@@ -51,7 +51,7 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
+bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 {
 	// Get the packet data and file mod time.
 	time_t modTime        = pPacket.readGInt5();
@@ -59,7 +59,7 @@ bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 
 	server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
 
-	TScriptClass* classObj = server->getClass(className);
+	ScriptClass* classObj = server->getClass(className);
 
 	if (classObj != nullptr)
 	{

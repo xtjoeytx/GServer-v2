@@ -9,12 +9,12 @@
 	#include "ScriptBindings.h"
 #endif
 
-class TLevelLink : public std::enable_shared_from_this<TLevelLink>
+class LevelLink : public std::enable_shared_from_this<LevelLink>
 {
 public:
 	// constructor - destructor
-	TLevelLink() : x(0), y(0), width(0), height(0) {}
-	TLevelLink(const std::vector<CString>& pLink);
+	LevelLink() : x(0), y(0), width(0), height(0) {}
+	LevelLink(const std::vector<CString>& pLink);
 
 	// functions
 	CString getLinkStr() const;
@@ -39,12 +39,12 @@ public:
 	inline void setHeight(int _height = 0);
 
 #ifdef V8NPCSERVER
-	inline IScriptObject<TLevelLink>* getScriptObject() const
+	inline IScriptObject<LevelLink>* getScriptObject() const
 	{
 		return _scriptObject.get();
 	}
 
-	inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelLink>> object)
+	inline void setScriptObject(std::unique_ptr<IScriptObject<LevelLink>> object)
 	{
 		_scriptObject = std::move(object);
 	}
@@ -55,84 +55,84 @@ private:
 	int x, y, width, height;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<TLevelLink>> _scriptObject;
+	std::unique_ptr<IScriptObject<LevelLink>> _scriptObject;
 #endif
 };
 
-using TLevelLinkPtr = std::shared_ptr<TLevelLink>;
+using TLevelLinkPtr = std::shared_ptr<LevelLink>;
 
 /*
-	TLevelLink: Get Private Variables
+	LevelLink: Get Private Variables
 */
-inline CString TLevelLink::getNewLevel() const
+inline CString LevelLink::getNewLevel() const
 {
 	return newLevel;
 }
 
-inline CString TLevelLink::getNewX() const
+inline CString LevelLink::getNewX() const
 {
 	return newX;
 }
 
-inline CString TLevelLink::getNewY() const
+inline CString LevelLink::getNewY() const
 {
 	return newY;
 }
 
-inline int TLevelLink::getX() const
+inline int LevelLink::getX() const
 {
 	return x;
 }
 
-inline int TLevelLink::getY() const
+inline int LevelLink::getY() const
 {
 	return y;
 }
 
-inline int TLevelLink::getWidth() const
+inline int LevelLink::getWidth() const
 {
 	return width;
 }
 
-inline int TLevelLink::getHeight() const
+inline int LevelLink::getHeight() const
 {
 	return height;
 }
 
 /*
-	TLevelLink: Set Private Variables
+	LevelLink: Set Private Variables
 */
-inline void TLevelLink::setNewLevel(const CString& _newLevel)
+inline void LevelLink::setNewLevel(const CString& _newLevel)
 {
 	newLevel = _newLevel;
 }
 
-inline void TLevelLink::setNewX(const CString& _newX)
+inline void LevelLink::setNewX(const CString& _newX)
 {
 	newX = _newX;
 }
 
-inline void TLevelLink::setNewY(const CString& _newY)
+inline void LevelLink::setNewY(const CString& _newY)
 {
 	newY = _newY;
 }
 
-inline void TLevelLink::setX(int posX)
+inline void LevelLink::setX(int posX)
 {
 	x = posX;
 }
 
-inline void TLevelLink::setY(int posY)
+inline void LevelLink::setY(int posY)
 {
 	y = posY;
 }
 
-inline void TLevelLink::setWidth(int _width)
+inline void LevelLink::setWidth(int _width)
 {
 	width = _width;
 }
 
-inline void TLevelLink::setHeight(int _height)
+inline void LevelLink::setHeight(int _height)
 {
 	height = _height;
 }

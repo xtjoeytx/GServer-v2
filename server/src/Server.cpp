@@ -45,9 +45,9 @@ CString operator<<(const CString& first, const CString& second)
 	return result << second;
 }
 
-TServer::TServer(const CString& pName)
+Server::Server(const CString& pName)
 	: running(false), doRestart(false), name(pName), serverlist(this), wordFilter(this), animationManager(this), packageManager(this), serverStartTime(0),
-	  triggerActionDispatcher(methodstub(this, &TServer::createTriggerCommands))
+	  triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 #ifdef V8NPCSERVER
 	  ,
 	  mScriptEngine(this)
@@ -71,23 +71,23 @@ TServer::TServer(const CString& pName)
 
 	// This has the full path to the server directory.
 	serverpath = CString() << getBaseHomePath() << "servers/" << name << "/";
-	CFileSystem::fixPathSeparators(serverpath);
+	FileSystem::fixPathSeparators(serverpath);
 
 	// Set up the log files.
 	CString logpath    = serverpath.remove(0, getBaseHomePath().length());
 	CString npcPath    = CString() << logpath << "logs/npclog.txt";
 	CString rcPath     = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
-	CFileSystem::fixPathSeparators(npcPath);
-	CFileSystem::fixPathSeparators(rcPath);
-	CFileSystem::fixPathSeparators(serverPath);
+	FileSystem::fixPathSeparators(npcPath);
+	FileSystem::fixPathSeparators(rcPath);
+	FileSystem::fixPathSeparators(serverPath);
 	npclog.setFilename(npcPath);
 	rclog.setFilename(rcPath);
 	serverlog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
-	CFileSystem::fixPathSeparators(scriptPath);
+	FileSystem::fixPathSeparators(scriptPath);
 	scriptlog.setFilename(scriptPath);
 #endif
 
@@ -99,12 +99,12 @@ TServer::TServer(const CString& pName)
 	filesystem_accounts.setServer(this);
 }
 
-TServer::~TServer()
+Server::~Server()
 {
 	cleanup();
 }
 
-int TServer::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
+int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
 {
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
@@ -171,7 +171,7 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	// Setup NPC Control port
 	mNCPort = strtoint(settings.getStr("serverport"));
 
-	mNpcServer = std::make_shared<TPlayer>(this, nullptr, 0);
+	mNpcServer = std::make_shared<Player>(this, nullptr, 0);
 	mNpcServer->setType(PLTYPE_NPCSERVER);
 	mNpcServer->loadAccount("(npcserver)");
 	mNpcServer->setHeadImage(settings.getStr("staffhead", "head25.png"));
@@ -196,8 +196,8 @@ int TServer::init(const CString& serverip, const CString& serverport, const CStr
 	return 0;
 }
 
-// Called when the TServer is put into its own thread.
-void TServer::operator()()
+// Called when the Server is put into its own thread.
+void Server::operator()()
 {
 	running = true;
 	while (running)
@@ -224,7 +224,7 @@ void TServer::operator()()
 	cleanup();
 }
 
-void TServer::cleanupDeletedPlayers()
+void Server::cleanupDeletedPlayers()
 {
 	if (deletedPlayers.empty()) return;
 	for (auto i = std::begin(deletedPlayers); i != std::end(deletedPlayers);)
@@ -233,7 +233,7 @@ void TServer::cleanupDeletedPlayers()
 		auto player = *i;
 
 #ifdef V8NPCSERVER
-		IScriptObject<TPlayer>* playerObject = player->getScriptObject();
+		IScriptObject<Player>* playerObject = player->getScriptObject();
 		if (playerObject != nullptr)
 		{
 			// Process last script events for this player
@@ -278,7 +278,7 @@ void TServer::cleanupDeletedPlayers()
 	//deletedPlayers.clear();
 }
 
-void TServer::cleanup()
+void Server::cleanup()
 {
 	// Close our UPNP port forward.
 	// First, make sure the thread has completed already.
@@ -337,12 +337,12 @@ void TServer::cleanup()
 	sockManager.cleanup(false);
 }
 
-void TServer::restart()
+void Server::restart()
 {
 	doRestart = true;
 }
 
-bool TServer::doMain()
+bool Server::doMain()
 {
 	// Update our socket manager.
 	sockManager.update(0, 5000); // 5ms
@@ -368,7 +368,7 @@ bool TServer::doMain()
 	return true;
 }
 
-bool TServer::doTimedEvents()
+bool Server::doTimedEvents()
 {
 	// Do serverlist events.
 	serverlist.doTimedEvents();
@@ -484,7 +484,7 @@ bool TServer::doTimedEvents()
 	return true;
 }
 
-bool TServer::onRecv()
+bool Server::onRecv()
 {
 	// Create socket.
 	CSocket* newSock = playerSock.accept();
@@ -492,7 +492,7 @@ bool TServer::onRecv()
 		return true;
 
 	// Create the new player.
-	auto newPlayer = std::make_shared<TPlayer>(this, newSock, 0);
+	auto newPlayer = std::make_shared<Player>(this, newSock, 0);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))
@@ -506,7 +506,7 @@ bool TServer::onRecv()
 
 /////////////////////////////////////////////////////
 
-void TServer::loadAllFolders()
+void Server::loadAllFolders()
 {
 	for (auto& fs: filesystem)
 		fs.clear();
@@ -520,7 +520,7 @@ void TServer::loadAllFolders()
 	}
 }
 
-void TServer::loadFolderConfig()
+void Server::loadFolderConfig()
 {
 	for (auto& i: filesystem)
 		i.clear();
@@ -540,18 +540,18 @@ void TServer::loadFolderConfig()
 		CString config = configLine.readString("");
 		type.trimI();
 		config.trimI();
-		CFileSystem::fixPathSeparators(config);
+		FileSystem::fixPathSeparators(config);
 
 		// Get the directory.
 		CString dirNoWild;
 		int pos = -1;
-		if ((pos = config.findl(CFileSystem::getPathSeparator())) != -1)
+		if ((pos = config.findl(FileSystem::getPathSeparator())) != -1)
 			dirNoWild = config.remove(pos + 1);
 		CString dir      = CString("world/") << dirNoWild;
 		CString wildcard = config.remove(0, dirNoWild.length());
 
 		// Find out which file system to add it to.
-		CFileSystem* fs = getFileSystemByType(type);
+		FileSystem* fs = getFileSystemByType(type);
 
 		// Add it to the appropriate file system.
 		if (fs != nullptr)
@@ -563,7 +563,7 @@ void TServer::loadFolderConfig()
 	}
 }
 
-int TServer::loadConfigFiles()
+int Server::loadConfigFiles()
 {
 	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
 	//	Move them out of here?
@@ -637,7 +637,7 @@ int TServer::loadConfigFiles()
 	return 0;
 }
 
-void TServer::loadSettings()
+void Server::loadSettings()
 {
 	if (!settings.isOpened())
 	{
@@ -657,7 +657,7 @@ void TServer::loadSettings()
 	getServerList().sendServerHQ();
 }
 
-void TServer::loadAdminSettings()
+void Server::loadAdminSettings()
 {
 	adminsettings.setSeparator("=");
 	adminsettings.loadFile(CString() << serverpath << "config/adminconfig.txt");
@@ -667,7 +667,7 @@ void TServer::loadAdminSettings()
 		getServerList().sendServerHQ();
 }
 
-void TServer::loadAllowedVersions()
+void Server::loadAllowedVersions()
 {
 	CString versions;
 	versions.load(CString() << serverpath << "config/allowedversions.txt");
@@ -697,7 +697,7 @@ void TServer::loadAllowedVersions()
 	}
 }
 
-void TServer::loadFileSystem()
+void Server::loadFileSystem()
 {
 	for (auto& i: filesystem)
 		i.clear();
@@ -709,28 +709,28 @@ void TServer::loadFileSystem()
 		loadFolderConfig();
 }
 
-void TServer::loadServerFlags()
+void Server::loadServerFlags()
 {
 	std::vector<CString> lines = CString::loadToken(CString() << serverpath << "serverflags.txt", "\n", true);
 	for (auto& line: lines)
 		this->setFlag(line, false);
 }
 
-void TServer::loadServerMessage()
+void Server::loadServerMessage()
 {
 	servermessage.load(CString() << serverpath << "config/servermessage.html");
 	servermessage.removeAllI("\r");
 	servermessage.replaceAllI("\n", " ");
 }
 
-void TServer::loadIPBans()
+void Server::loadIPBans()
 {
 	ipBans = CString::loadToken(CString() << serverpath << "config/ipbans.txt", "\n", true);
 }
 
-void TServer::loadClasses(bool print)
+void Server::loadClasses(bool print)
 {
-	CFileSystem scriptFS(this);
+	FileSystem scriptFS(this);
 	scriptFS.addDir("scripts", "*.txt");
 	const std::map<CString, CString>& scriptFileList = scriptFS.getFileList();
 	for (auto& scriptFile: scriptFileList)
@@ -739,23 +739,23 @@ void TServer::loadClasses(bool print)
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		classList[className] = std::make_unique<TScriptClass>(this, className, scriptData.text());
+		classList[className] = std::make_unique<ScriptClass>(this, className, scriptData.text());
 
 		updateClassForPlayers(getClass(className));
 	}
 }
 
-void TServer::loadWeapons(bool print)
+void Server::loadWeapons(bool print)
 {
-	CFileSystem weaponFS(this);
+	FileSystem weaponFS(this);
 	weaponFS.addDir("weapons", "weapon*.txt");
-	CFileSystem bcweaponFS(this);
+	FileSystem bcweaponFS(this);
 	bcweaponFS.addDir("weapon_bytecode", "*");
 
 	auto& weaponFileList = weaponFS.getFileList();
 	for (auto& weaponFile: weaponFileList)
 	{
-		auto weapon = TWeapon::loadWeapon(weaponFile.first, this);
+		auto weapon = Weapon::loadWeapon(weaponFile.first, this);
 		if (weapon == nullptr) continue;
 		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
@@ -779,7 +779,7 @@ void TServer::loadWeapons(bool print)
 				if (print)
 				{
 					serverlog.out("[%s]        %s [updated]\n", name.text(), weapon->getName().c_str());
-					TServer::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
+					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
 			else
@@ -792,16 +792,16 @@ void TServer::loadWeapons(bool print)
 	}
 
 	// Add the default weapons.
-	if (!weaponList.contains("bow")) weaponList["bow"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("bow"));
-	if (!weaponList.contains("bomb")) weaponList["bomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("bomb"));
-	if (!weaponList.contains("superbomb")) weaponList["superbomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("superbomb"));
-	if (!weaponList.contains("fireball")) weaponList["fireball"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("fireball"));
-	if (!weaponList.contains("fireblast")) weaponList["fireblast"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("fireblast"));
-	if (!weaponList.contains("nukeshot")) weaponList["nukeshot"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("nukeshot"));
-	if (!weaponList.contains("joltbomb")) weaponList["joltbomb"] = std::make_shared<TWeapon>(this, TLevelItem::getItemId("joltbomb"));
+	if (!weaponList.contains("bow")) weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
+	if (!weaponList.contains("bomb")) weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
+	if (!weaponList.contains("superbomb")) weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
+	if (!weaponList.contains("fireball")) weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
+	if (!weaponList.contains("fireblast")) weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
+	if (!weaponList.contains("nukeshot")) weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
+	if (!weaponList.contains("joltbomb")) weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
 }
 
-void TServer::loadMapLevels()
+void Server::loadMapLevels()
 {
 	// Load gmap levels based on options provided by the gmap file
 	for (const auto& map: mapList)
@@ -811,7 +811,7 @@ void TServer::loadMapLevels()
 	}
 }
 
-void TServer::loadMaps(bool print)
+void Server::loadMaps(bool print)
 {
 	// Remove players off all maps
 	for (auto& [id, player]: playerList)
@@ -834,7 +834,7 @@ void TServer::loadMaps(bool print)
 		}
 
 		// Load the gmap.
-		auto gmap = std::make_unique<TMap>(MapType::GMAP);
+		auto gmap = std::make_unique<Map>(MapType::GMAP);
 		if (!gmap->load(CString() << gmapName, this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] "
@@ -855,7 +855,7 @@ void TServer::loadMaps(bool print)
 		if (i == "\r") continue;
 
 		// Load the bigmap.
-		auto bigmap = std::make_unique<TMap>(MapType::BIGMAP);
+		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
 		if (!bigmap->load(i.trim(), this))
 		{
 			if (print) serverlog.out(CString() << "[" << name << "] "
@@ -879,11 +879,11 @@ void TServer::loadMaps(bool print)
 		ext.toLowerI();
 
 		// Create the new map based on the file extension.
-		std::unique_ptr<TMap> gmap;
+		std::unique_ptr<Map> gmap;
 		if (ext == ".txt")
-			gmap = std::make_unique<TMap>(MapType::BIGMAP, true);
+			gmap = std::make_unique<Map>(MapType::BIGMAP, true);
 		else if (ext == ".gmap")
-			gmap = std::make_unique<TMap>(MapType::GMAP, true);
+			gmap = std::make_unique<Map>(MapType::GMAP, true);
 		else
 			continue;
 
@@ -922,9 +922,9 @@ void TServer::loadMaps(bool print)
 }
 
 #ifdef V8NPCSERVER
-void TServer::loadNpcs(bool print)
+void Server::loadNpcs(bool print)
 {
-	CFileSystem npcFS(this);
+	FileSystem npcFS(this);
 	npcFS.addDir("npcs", "npc*.txt");
 
 	auto& npcFileList = npcFS.getFileList();
@@ -933,7 +933,7 @@ void TServer::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		auto newNPC = std::make_shared<TNPC>("", "", 30.f, 30.5f, this, nullptr, NPCType::DBNPC);
+		auto newNPC = std::make_shared<NPC>("", "", 30.f, 30.5f, this, nullptr, NPCType::DBNPC);
 		if (newNPC->loadNPC(fileName))
 		{
 			int npcId = newNPC->getId();
@@ -961,17 +961,17 @@ void TServer::loadNpcs(bool print)
 }
 #endif
 
-void TServer::loadTranslations()
+void Server::loadTranslations()
 {
 	this->TS_Reload();
 }
 
-void TServer::loadWordFilter()
+void Server::loadWordFilter()
 {
 	wordFilter.load(CString() << serverpath << "config/rules.txt");
 }
 
-void TServer::saveServerFlags()
+void Server::saveServerFlags()
 {
 	CString out;
 	for (auto& mServerFlag: mServerFlags)
@@ -979,9 +979,9 @@ void TServer::saveServerFlags()
 	out.save(CString() << serverpath << "serverflags.txt");
 }
 
-void TServer::saveWeapons()
+void Server::saveWeapons()
 {
-	CFileSystem weaponFS(this);
+	FileSystem weaponFS(this);
 	weaponFS.addDir("weapons", "weapon*.txt");
 	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
@@ -1003,7 +1003,7 @@ void TServer::saveWeapons()
 }
 
 #ifdef V8NPCSERVER
-void TServer::saveNpcs()
+void Server::saveNpcs()
 {
 	for (const auto& [npcId, npc]: npcList)
 	{
@@ -1012,7 +1012,7 @@ void TServer::saveNpcs()
 	}
 }
 
-std::vector<std::pair<double, std::string>> TServer::calculateNpcStats()
+std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
 {
 	std::vector<std::pair<double, std::string>> script_profiles;
 
@@ -1071,7 +1071,7 @@ std::string transformString(const std::string& str)
 	return newStr;
 }
 
-void TServer::reportScriptException(const ScriptRunError& error)
+void Server::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = transformString(error.getErrorString());
 	sendToNC(error_message);
@@ -1079,7 +1079,7 @@ void TServer::reportScriptException(const ScriptRunError& error)
 	getScriptLog().out(error_message);
 }
 
-void TServer::reportScriptException(const std::string& error_message)
+void Server::reportScriptException(const std::string& error_message)
 {
 	auto lines = CString{ error_message }.tokenize("\n");
 
@@ -1092,7 +1092,7 @@ void TServer::reportScriptException(const std::string& error_message)
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id) const
+std::shared_ptr<Player> Server::getPlayer(unsigned short id) const
 {
 	auto iter = playerList.find(id);
 	if (iter == std::end(playerList))
@@ -1101,7 +1101,7 @@ std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id) const
 	return iter->second;
 }
 
-std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id, int type) const
+std::shared_ptr<Player> Server::getPlayer(unsigned short id, int type) const
 {
 	auto player = getPlayer(id);
 	if (player == nullptr || !(player->getType() & type))
@@ -1110,7 +1110,7 @@ std::shared_ptr<TPlayer> TServer::getPlayer(unsigned short id, int type) const
 	return player;
 }
 
-std::shared_ptr<TPlayer> TServer::getPlayer(const CString& account, int type) const
+std::shared_ptr<Player> Server::getPlayer(const CString& account, int type) const
 {
 	for (auto& [id, player]: playerList)
 	{
@@ -1126,12 +1126,12 @@ std::shared_ptr<TPlayer> TServer::getPlayer(const CString& account, int type) co
 	return nullptr;
 }
 
-std::shared_ptr<TLevel> TServer::getLevel(const std::string& pLevel)
+std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
 {
-	return TLevel::findLevel(pLevel, this);
+	return Level::findLevel(pLevel, this);
 }
 
-std::shared_ptr<TWeapon> TServer::getWeapon(const std::string& name)
+std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 {
 	auto iter = weaponList.find(name);
 	if (iter == std::end(weaponList))
@@ -1139,7 +1139,7 @@ std::shared_ptr<TWeapon> TServer::getWeapon(const std::string& name)
 	return iter->second;
 }
 
-CString TServer::getFlag(const std::string& pFlagName)
+CString Server::getFlag(const std::string& pFlagName)
 {
 #ifdef V8NPCSERVER
 	if (mServerFlags.find(pFlagName) != mServerFlags.end())
@@ -1150,7 +1150,7 @@ CString TServer::getFlag(const std::string& pFlagName)
 #endif
 }
 
-CFileSystem* TServer::getFileSystemByType(CString& type)
+FileSystem* Server::getFileSystemByType(CString& type)
 {
 	// Find out the filesystem.
 	int fs = -1;
@@ -1170,7 +1170,7 @@ CFileSystem* TServer::getFileSystemByType(CString& type)
 }
 
 #ifdef V8NPCSERVER
-void TServer::assignNPCName(std::shared_ptr<TNPC> npc, const std::string& name)
+void Server::assignNPCName(std::shared_ptr<NPC> npc, const std::string& name)
 {
 	std::string newName = name;
 	int num             = 0;
@@ -1181,14 +1181,14 @@ void TServer::assignNPCName(std::shared_ptr<TNPC> npc, const std::string& name)
 	npcNameList[newName] = npc;
 }
 
-void TServer::removeNPCName(std::shared_ptr<TNPC> npc)
+void Server::removeNPCName(std::shared_ptr<NPC> npc)
 {
 	auto npcIter = npcNameList.find(npc->getName());
 	if (npcIter != npcNameList.end())
 		npcNameList.erase(npcIter);
 }
 
-std::shared_ptr<TNPC> TServer::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<TLevel> pLevel, bool sendToPlayers)
+std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers)
 {
 	// Force database npc ids to be >= 1000
 	if (npcId < 1000)
@@ -1206,7 +1206,7 @@ std::shared_ptr<TNPC> TServer::addServerNpc(int npcId, float pX, float pY, std::
 	}
 
 	// Create the npc
-	auto newNPC = std::make_shared<TNPC>("", "", pX, pY, this, pLevel, NPCType::DBNPC);
+	auto newNPC = std::make_shared<NPC>("", "", pX, pY, this, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
 	npcList.insert(std::make_pair(npcId, newNPC));
 
@@ -1226,7 +1226,7 @@ std::shared_ptr<TNPC> TServer::addServerNpc(int npcId, float pX, float pY, std::
 	return newNPC;
 }
 
-void TServer::handlePM(TPlayer* player, const CString& message)
+void Server::handlePM(Player* player, const CString& message)
 {
 	if (!mPmHandlerNpc)
 	{
@@ -1243,7 +1243,7 @@ void TServer::handlePM(TPlayer* player, const CString& message)
 	mScriptEngine.RegisterNpcUpdate(mPmHandlerNpc.get());
 }
 
-void TServer::setPMFunction(uint32_t npcId, IScriptFunction* function)
+void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)
 {
 	auto npc = getNPC(npcId);
 	if (npc == nullptr || function == nullptr)
@@ -1258,11 +1258,11 @@ void TServer::setPMFunction(uint32_t npcId, IScriptFunction* function)
 }
 #endif
 
-std::shared_ptr<TNPC> TServer::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<TLevel> pLevel, bool pLevelNPC, bool sendToPlayers)
+std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
 	auto level  = pLevel.lock();
-	auto newNPC = std::make_shared<TNPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
+	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
 	// Get available NPC Id.
 	uint32_t newId = nextNpcId;
@@ -1288,13 +1288,13 @@ std::shared_ptr<TNPC> TServer::addNPC(const CString& pImage, const CString& pScr
 	return newNPC;
 }
 
-bool TServer::deleteNPC(int id, bool eraseFromLevel)
+bool Server::deleteNPC(int id, bool eraseFromLevel)
 {
 	auto npc = getNPC(id);
 	return deleteNPC(npc, eraseFromLevel);
 }
 
-bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
+bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 {
 	assert(npc);
 
@@ -1331,7 +1331,7 @@ bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
 	if (npc->getType() == NPCType::DBNPC)
 	{
 		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
-		CFileSystem::fixPathSeparators(filePath);
+		FileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
 
@@ -1350,7 +1350,7 @@ bool TServer::deleteNPC(std::shared_ptr<TNPC> npc, bool eraseFromLevel)
 	return true;
 }
 
-bool TServer::deleteClass(const std::string& className)
+bool Server::deleteClass(const std::string& className)
 {
 	auto classIter = classList.find(className);
 	if (classIter == classList.end())
@@ -1358,24 +1358,24 @@ bool TServer::deleteClass(const std::string& className)
 
 	classList.erase(classIter);
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(filePath);
+	FileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	return true;
 }
 
-void TServer::updateClass(const std::string& className, const std::string& classCode)
+void Server::updateClass(const std::string& className, const std::string& classCode)
 {
-	classList[className] = std::make_unique<TScriptClass>(this, className, classCode);
+	classList[className] = std::make_unique<ScriptClass>(this, className, classCode);
 
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
-	CFileSystem::fixPathSeparators(filePath);
+	FileSystem::fixPathSeparators(filePath);
 
 	CString fileData(classCode);
 	fileData.save(filePath);
 }
 
-uint16_t TServer::getFreePlayerId()
+uint16_t Server::getFreePlayerId()
 {
 	uint16_t newId = nextPlayerId;
 	if (!freePlayerIds.empty())
@@ -1389,7 +1389,7 @@ uint16_t TServer::getFreePlayerId()
 	return newId;
 }
 
-bool TServer::addPlayer(TPlayerPtr player, uint16_t id)
+bool Server::addPlayer(TPlayerPtr player, uint16_t id)
 {
 	assert(player);
 
@@ -1409,7 +1409,7 @@ bool TServer::addPlayer(TPlayerPtr player, uint16_t id)
 	return true;
 }
 
-bool TServer::deletePlayer(TPlayerPtr player)
+bool Server::deletePlayer(TPlayerPtr player)
 {
 	if (player == nullptr)
 		return true;
@@ -1424,7 +1424,7 @@ bool TServer::deletePlayer(TPlayerPtr player)
 	return true;
 }
 
-void TServer::playerLoggedIn(TPlayerPtr player)
+void Server::playerLoggedIn(TPlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
@@ -1440,7 +1440,7 @@ void TServer::playerLoggedIn(TPlayerPtr player)
 #endif
 }
 
-bool TServer::warpPlayerToSafePlace(uint16_t playerId)
+bool Server::warpPlayerToSafePlace(uint16_t playerId)
 {
 	auto player = getPlayer(playerId);
 	if (player == nullptr) return false;
@@ -1454,14 +1454,14 @@ bool TServer::warpPlayerToSafePlace(uint16_t playerId)
 	// TODO: Maybe try the default account level?
 }
 
-void TServer::calculateServerTime()
+void Server::calculateServerTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000
 	// this is likely the actual start time of timevar
 	serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
 }
 
-bool TServer::isIpBanned(const CString& ip)
+bool Server::isIpBanned(const CString& ip)
 {
 	for (const auto& ipBan: ipBans)
 	{
@@ -1472,7 +1472,7 @@ bool TServer::isIpBanned(const CString& ip)
 	return false;
 }
 
-bool TServer::isStaff(const CString& accountName)
+bool Server::isStaff(const CString& accountName)
 {
 	for (const auto& account: staffList)
 	{
@@ -1483,7 +1483,7 @@ bool TServer::isStaff(const CString& accountName)
 	return false;
 }
 
-void TServer::logToFile(const std::string& fileName, const std::string& message)
+void Server::logToFile(const std::string& fileName, const std::string& message)
 {
 	CString fileNamePath = CString() << getServerPath().remove(0, getBaseHomePath().length()) << "logs/";
 
@@ -1499,9 +1499,9 @@ void TServer::logToFile(const std::string& fileName, const std::string& message)
 }
 
 /*
-	TServer: Server Flag Management
+	Server: Server Flag Management
 */
-bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
+bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false))
 		return false;
@@ -1518,14 +1518,14 @@ bool TServer::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	return false;
 }
 
-bool TServer::setFlag(CString pFlag, bool pSendToPlayers)
+bool Server::setFlag(CString pFlag, bool pSendToPlayers)
 {
 	std::string flagName = pFlag.readString("=").text();
 	CString flagValue    = pFlag.readString("");
 	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
-bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
+bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
 {
 	if (settings.getBool("dontaddserverflags", false))
 		return false;
@@ -1556,7 +1556,7 @@ bool TServer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 	Packet-Sending Functions
 */
 
-void TServer::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
 {
 	for (auto& [id, player]: playerList)
 	{
@@ -1569,7 +1569,7 @@ void TServer::sendPacketToAll(const CString& packet, const std::set<uint16_t>& e
 	}
 }
 
-void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1606,7 +1606,7 @@ void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TLevel>
 	}
 }
 
-void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TPlayer> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1648,7 +1648,7 @@ void TServer::sendPacketToLevelArea(const CString& packet, std::weak_ptr<TPlayer
 	}
 }
 
-void TServer::sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> level, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1661,7 +1661,7 @@ void TServer::sendPacketToOneLevel(const CString& packet, std::weak_ptr<TLevel> 
 	}
 }
 
-void TServer::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TPlayer> pPlayer) const
+void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer) const
 {
 	auto p = pPlayer.lock();
 	if (!running) return;
@@ -1669,7 +1669,7 @@ void TServer::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<TP
 	sendPacketToType(who, pPacket, p.get());
 }
 
-void TServer::sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer) const
+void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const
 {
 	if (!running) return;
 	for (auto& [id, player]: playerList)
@@ -1682,7 +1682,7 @@ void TServer::sendPacketToType(int who, const CString& pPacket, TPlayer* pPlayer
 /*
 	NPC-Server Functionality
 */
-bool TServer::NC_AddWeapon(std::shared_ptr<TWeapon> pWeaponObj)
+bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
 {
 	if (pWeaponObj == nullptr)
 		return false;
@@ -1691,7 +1691,7 @@ bool TServer::NC_AddWeapon(std::shared_ptr<TWeapon> pWeaponObj)
 	return true;
 }
 
-bool TServer::NC_DelWeapon(const std::string& pWeaponName)
+bool Server::NC_DelWeapon(const std::string& pWeaponName)
 {
 	// Definitions
 	auto weaponObj = getWeapon(pWeaponName);
@@ -1706,7 +1706,7 @@ bool TServer::NC_DelWeapon(const std::string& pWeaponName)
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
 	CString filePath = getServerPath() << "weapons/weapon" << name << ".txt";
-	CFileSystem::fixPathSeparators(filePath);
+	FileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
 	// Delete from Memory
@@ -1717,7 +1717,7 @@ bool TServer::NC_DelWeapon(const std::string& pWeaponName)
 	return true;
 }
 
-void TServer::updateWeaponForPlayers(std::shared_ptr<TWeapon> pWeapon)
+void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 {
 	// Update Weapons
 	for (auto& [id, player]: playerList)
@@ -1733,7 +1733,7 @@ void TServer::updateWeaponForPlayers(std::shared_ptr<TWeapon> pWeapon)
 	}
 }
 
-void TServer::updateClassForPlayers(TScriptClass* pClass)
+void Server::updateClassForPlayers(ScriptClass* pClass)
 {
 	// Update Weapons
 	for (auto& [id, player]: playerList)
@@ -1760,7 +1760,7 @@ void TServer::updateClassForPlayers(TScriptClass* pClass)
 	GS2 Functionality
 */
 template<typename ScriptObjType>
-void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
+void Server::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
 {
 	std::string script{ scriptObject.getSource().getClientGS2() };
 
@@ -1792,12 +1792,12 @@ void TServer::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_
 								   });
 }
 
-void TServer::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
+void Server::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
 {
 	gs2ScriptManager.compileScript(source, cb);
 }
 
-void TServer::compileGS2Script(TNPC* scriptObject, GS2ScriptManager::user_callback_type cb)
+void Server::compileGS2Script(NPC* scriptObject, GS2ScriptManager::user_callback_type cb)
 {
 	if (scriptObject)
 	{
@@ -1805,7 +1805,7 @@ void TServer::compileGS2Script(TNPC* scriptObject, GS2ScriptManager::user_callba
 	}
 }
 
-void TServer::compileGS2Script(TScriptClass* scriptObject, GS2ScriptManager::user_callback_type cb)
+void Server::compileGS2Script(ScriptClass* scriptObject, GS2ScriptManager::user_callback_type cb)
 {
 	if (scriptObject)
 	{
@@ -1813,7 +1813,7 @@ void TServer::compileGS2Script(TScriptClass* scriptObject, GS2ScriptManager::use
 	}
 }
 
-void TServer::compileGS2Script(TWeapon* scriptObject, GS2ScriptManager::user_callback_type cb)
+void Server::compileGS2Script(Weapon* scriptObject, GS2ScriptManager::user_callback_type cb)
 {
 	if (scriptObject)
 	{
@@ -1821,7 +1821,7 @@ void TServer::compileGS2Script(TWeapon* scriptObject, GS2ScriptManager::user_cal
 	}
 }
 
-void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
+void Server::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
 {
 	std::string errorMsg;
 	for (auto& err: errors)
@@ -1847,7 +1847,7 @@ void TServer::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const
 /*
 	Translation Functionality
 */
-bool TServer::TS_Load(const CString& pLanguage, const CString& pFileName)
+bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
 {
 	// Load File
 	std::vector<CString> fileData = CString::loadToken(pFileName, "\n", true);
@@ -1904,12 +1904,12 @@ bool TServer::TS_Load(const CString& pLanguage, const CString& pFileName)
 	return true;
 }
 
-CString TServer::TS_Translate(const CString& pLanguage, const CString& pKey)
+CString Server::TS_Translate(const CString& pLanguage, const CString& pKey)
 {
 	return mTranslationManager.translate(pLanguage.toLower().text(), pKey.text());
 }
 
-void TServer::TS_Reload()
+void Server::TS_Reload()
 {
 	// Save Translations
 	this->TS_Save();
@@ -1918,7 +1918,7 @@ void TServer::TS_Reload()
 	mTranslationManager.reset();
 
 	// Load Translation Folder
-	CFileSystem translationFS(this);
+	FileSystem translationFS(this);
 	translationFS.addDir("translations", "*.po");
 
 	// Load Each File
@@ -1927,7 +1927,7 @@ void TServer::TS_Reload()
 		this->TS_Load(removeExtension(i.first), i.second);
 }
 
-void TServer::TS_Save()
+void Server::TS_Save()
 {
 	// Grab Translations
 	std::map<std::string, STRMAP>* languages = mTranslationManager.getTranslationList();
@@ -1963,7 +1963,7 @@ void TServer::TS_Save()
 	}
 }
 
-void TServer::sendShootToOneLevel(const std::weak_ptr<TLevel>& level, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const
+void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const
 {
 	auto levelLock = level.lock();
 	ShootPacketNew newPacket{};

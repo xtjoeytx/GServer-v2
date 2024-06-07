@@ -5,8 +5,8 @@
 #include <map>
 #include <mutex>
 
-class TServer;
-class CFileSystem
+class Server;
+class FileSystem
 {
 #if defined(_WIN32) || defined(_WIN64)
 	static const char fSep   = '\\';
@@ -17,12 +17,12 @@ class CFileSystem
 #endif
 
 public:
-	CFileSystem();
-	CFileSystem(TServer* pServer);
-	~CFileSystem();
+	FileSystem();
+	FileSystem(Server* pServer);
+	~FileSystem();
 	void clear();
 
-	void setServer(TServer* pServer) { server = pServer; }
+	void setServer(Server* pServer) { server = pServer; }
 
 	void addDir(const CString& dir, const CString& wildcard = "*", bool forceRecursive = false);
 	void removeDir(const CString& dir);
@@ -49,18 +49,18 @@ public:
 private:
 	void loadAllDirectories(const CString& directory, bool recursive = false);
 
-	TServer* server;
+	Server* server;
 	CString basedir;
 	std::map<CString, CString> fileList;
 	std::vector<CString> directoryList;
 };
 
-inline void CFileSystem::fixPathSeparators(CString& pPath)
+inline void FileSystem::fixPathSeparators(CString& pPath)
 {
 	pPath.replaceAllI(fSep_O, fSep);
 }
 
-constexpr char CFileSystem::getPathSeparator()
+constexpr char FileSystem::getPathSeparator()
 {
 	return fSep;
 }

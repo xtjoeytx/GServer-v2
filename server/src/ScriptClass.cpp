@@ -2,17 +2,17 @@
 #include "GS2Context.h"
 #include "Server.h"
 
-TScriptClass::TScriptClass(TServer* server, const std::string& className, const std::string& classSource)
+ScriptClass::ScriptClass(Server* server, const std::string& className, const std::string& classSource)
 	: _className(className)
 {
 	parseScripts(server, classSource);
 }
 
-TScriptClass::~TScriptClass()
+ScriptClass::~ScriptClass()
 {
 }
 
-void TScriptClass::parseScripts(TServer* server, const std::string& classSource)
+void ScriptClass::parseScripts(Server* server, const std::string& classSource)
 {
 	bool gs2default = server->getSettings().getBool("gs2default", false);
 
@@ -50,7 +50,7 @@ void TScriptClass::parseScripts(TServer* server, const std::string& classSource)
 }
 
 // -- Function: Get Player Packet -- //
-CString TScriptClass::getClassPacket() const
+CString ScriptClass::getClassPacket() const
 {
 	CString out;
 

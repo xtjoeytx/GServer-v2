@@ -3,7 +3,7 @@
 #include "Animation/GameAni.h"
 #include "Server.h"
 
-std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string& name)
+std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
 {
 	auto fileSystem = server->getFileSystem(FS_FILE);
 
@@ -17,7 +17,7 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 	if (fileData.empty())
 		return std::nullopt;
 	
-	TGameAni gameAni(name);
+	GameAni gameAni(name);
 	
 	// Parse the animation
 	for (auto i = fileData.begin(); i != fileData.end(); ++i)
@@ -88,7 +88,7 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 	return gameAni;
 }
 
-CString TGameAni::getBytecodePacket() const
+CString GameAni::getBytecodePacket() const
 {
 	std::string_view gani = _aniName;
 	if (gani.ends_with(".gani"))

@@ -6,9 +6,9 @@
 #include <string>
 #include <unordered_map>
 
-class TServer;
+class Server;
 
-class TUpdatePackage
+class UpdatePackage
 {
 public:
 	struct FileEntry
@@ -20,15 +20,15 @@ public:
 	using FileList = std::unordered_map<std::string, FileEntry>;
 
 public:
-	explicit TUpdatePackage(std::string packageName);
+	explicit UpdatePackage(std::string packageName);
 
 	// Move operations
-	TUpdatePackage(TUpdatePackage&& o) noexcept;
-	TUpdatePackage& operator=(TUpdatePackage&& o) noexcept;
+	UpdatePackage(UpdatePackage&& o) noexcept;
+	UpdatePackage& operator=(UpdatePackage&& o) noexcept;
 
 	// Delete copy operations
-	TUpdatePackage(const TUpdatePackage&)            = delete;
-	TUpdatePackage& operator=(const TUpdatePackage&) = delete;
+	UpdatePackage(const UpdatePackage&)            = delete;
+	UpdatePackage& operator=(const UpdatePackage&) = delete;
 
 	//! Get the package filename
 	//! \return package filename
@@ -48,10 +48,10 @@ public:
 	bool compareChecksum(uint32_t check) const;
 
 	//! Load an UpdatePackage from the filesystem
-	//! \param fileSystem CFileSystem where the package file could be located
+	//! \param fileSystem FileSystem where the package file could be located
 	//! \param name filename of the package (ex: base_package.gupd)
 	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
-	static std::optional<TUpdatePackage> load(TServer* const server, const std::string& name);
+	static std::optional<UpdatePackage> load(Server* const server, const std::string& name);
 
 private:
 	std::string packageName;
@@ -60,19 +60,19 @@ private:
 	uint32_t packageSize;
 };
 
-inline TUpdatePackage::TUpdatePackage(std::string packageName)
+inline UpdatePackage::UpdatePackage(std::string packageName)
 	: packageName(std::move(packageName)),
 	  checksum(0), packageSize(0)
 {
 }
 
-inline TUpdatePackage::TUpdatePackage(TUpdatePackage&& o) noexcept
+inline UpdatePackage::UpdatePackage(UpdatePackage&& o) noexcept
 	: packageName(std::move(o.packageName)), fileList(std::move(o.fileList)),
 	  checksum(o.checksum), packageSize(o.packageSize)
 {
 }
 
-inline TUpdatePackage& TUpdatePackage::operator=(TUpdatePackage&& o) noexcept
+inline UpdatePackage& UpdatePackage::operator=(UpdatePackage&& o) noexcept
 {
 	packageName = std::move(o.packageName);
 	fileList    = std::move(o.fileList);
@@ -81,22 +81,22 @@ inline TUpdatePackage& TUpdatePackage::operator=(TUpdatePackage&& o) noexcept
 	return *this;
 }
 
-inline const std::string& TUpdatePackage::getPackageName() const
+inline const std::string& UpdatePackage::getPackageName() const
 {
 	return packageName;
 }
 
-inline const TUpdatePackage::FileList& TUpdatePackage::getFileList() const
+inline const UpdatePackage::FileList& UpdatePackage::getFileList() const
 {
 	return fileList;
 }
 
-inline uint32_t TUpdatePackage::getPackageSize() const
+inline uint32_t UpdatePackage::getPackageSize() const
 {
 	return packageSize;
 }
 
-inline bool TUpdatePackage::compareChecksum(uint32_t check) const
+inline bool UpdatePackage::compareChecksum(uint32_t check) const
 {
 	return checksum == check;
 }

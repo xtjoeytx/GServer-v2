@@ -1,12 +1,12 @@
 #include "IDebug.h"
 #include "LevelBoardChange.h"
 
-CString TLevelBoardChange::getBoardStr() const
+CString LevelBoardChange::getBoardStr() const
 {
 	return CString() >> (char)x >> (char)y >> (char)width >> (char)height << tiles;
 }
 
-void TLevelBoardChange::swapTiles()
+void LevelBoardChange::swapTiles()
 {
 	CString temp = tiles;
 	tiles        = oldTiles;

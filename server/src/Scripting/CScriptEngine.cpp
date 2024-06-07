@@ -22,7 +22,7 @@ extern void bindClass_Player(CScriptEngine* scriptEngine);
 extern void bindClass_Server(CScriptEngine* scriptEngine);
 extern void bindClass_Weapon(CScriptEngine* scriptEngine);
 
-CScriptEngine::CScriptEngine(TServer* server)
+CScriptEngine::CScriptEngine(Server* server)
 	: _server(server), _env(nullptr), _bootstrapFunction(nullptr), _environmentObject(nullptr), _serverObject(nullptr), _scriptIsRunning(false), _scriptWatcherRunning(false), _scriptWatcherThread()
 {
 	accumulator     = std::chrono::nanoseconds(0);
@@ -228,7 +228,7 @@ bool CScriptEngine::ClearCache(const std::string& code)
 
 	#include "Level.h"
 
-bool CScriptEngine::ExecuteNpc(TNPC* npc)
+bool CScriptEngine::ExecuteNpc(NPC* npc)
 {
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
@@ -241,7 +241,7 @@ bool CScriptEngine::ExecuteNpc(TNPC* npc)
 		return false;
 
 	// Wrap user code in a function-object, returning some useful symbols to call for events
-	std::string codeStr = WrapScript<TNPC>(npcScript);
+	std::string codeStr = WrapScript<NPC>(npcScript);
 
 	// Search the cache, or compile the script
 	IScriptFunction* compiledScript = CompileCache(codeStr);
@@ -288,7 +288,7 @@ bool CScriptEngine::ExecuteNpc(TNPC* npc)
 	return true;
 }
 
-bool CScriptEngine::ExecuteWeapon(TWeapon* weapon)
+bool CScriptEngine::ExecuteWeapon(Weapon* weapon)
 {
 	SCRIPTENV_D("Begin Global::ExecuteWeapon()\n\n");
 
@@ -299,7 +299,7 @@ bool CScriptEngine::ExecuteWeapon(TWeapon* weapon)
 	if (!weaponScript.empty())
 	{
 		// Wrap user code in a function-object, returning some useful symbols to call for events
-		std::string codeStr = WrapScript<TWeapon>(weaponScript);
+		std::string codeStr = WrapScript<Weapon>(weaponScript);
 
 		// Search the cache, or compile the script
 		IScriptFunction* compiledScript = CompileCache(codeStr);
@@ -340,7 +340,7 @@ void CScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_poi
 
 		for (auto it = _updateNpcsTimer.begin(); it != _updateNpcsTimer.end();)
 		{
-			TNPC* npc       = *it;
+			NPC* npc       = *it;
 			bool hasUpdates = npc->runScriptTimer();
 
 			if (!hasUpdates)
@@ -359,12 +359,12 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 	{
 		_env->CallFunctionInScope([&]() -> void
 								  {
-									  std::map<int, TNPC*> deleteNpcs;
+									  std::map<int, NPC*> deleteNpcs;
 
 									  // Iterate over npcs
 									  for (auto it = _updateNpcs.begin(); it != _updateNpcs.end();)
 									  {
-										  TNPC* npc     = *it;
+										  NPC* npc     = *it;
 										  auto response = npc->runScriptEvents();
 
 										  if (response == NPCEventResponse::PendingEvents)

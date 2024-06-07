@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Initialize the server.
-		auto server = std::make_unique<TServer>(overrideServer);
+		auto server = std::make_unique<Server>(overrideServer);
 		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				TAccount accfs(server.get());
+				Account accfs(server.get());
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{

@@ -2,12 +2,12 @@
 #include "Player.h"
 #include "Server.h"
 
-std::vector<CString> TPlayer::getPMServerList()
+std::vector<CString> Player::getPMServerList()
 {
 	return PMServerList;
 }
 
-bool TPlayer::addPMServer(CString& option)
+bool Player::addPMServer(CString& option)
 {
 	auto& list = server->getServerList();
 
@@ -36,7 +36,7 @@ bool TPlayer::addPMServer(CString& option)
 		return false;
 }
 
-bool TPlayer::remPMServer(CString& option)
+bool Player::remPMServer(CString& option)
 {
 	if (PMServerList.empty())
 		return true;
@@ -76,7 +76,7 @@ bool TPlayer::remPMServer(CString& option)
 	return true;
 }
 
-bool TPlayer::updatePMPlayers(CString& servername, CString& players)
+bool Player::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
 
@@ -148,7 +148,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 			else
 				++nextExternalPlayerId;
 
-			auto tmpPlyr2          = std::make_shared<TPlayer>(server, nullptr, newId);
+			auto tmpPlyr2          = std::make_shared<Player>(server, nullptr, newId);
 			externalPlayers[newId] = tmpPlyr2;
 			tmpPlyr2->loadAccount(account);
 			tmpPlyr2->setAccountName(account);
@@ -177,7 +177,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 	return true;
 }
 
-bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
+bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
 	auto& list = server->getServerList();
 	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n"
@@ -193,7 +193,7 @@ bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmM
 	return true;
 }
 
-TPlayerPtr TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) const
+TPlayerPtr Player::getExternalPlayer(const unsigned short id, bool includeRC) const
 {
 	auto iter = externalPlayers.find(id);
 	if (iter == std::end(externalPlayers)) return nullptr;
@@ -203,7 +203,7 @@ TPlayerPtr TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) c
 	return externalPlayer;
 }
 
-TPlayerPtr TPlayer::getExternalPlayer(const CString& account, bool includeRC) const
+TPlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) const
 {
 	for (auto& [externalId, externalPlayer]: externalPlayers)
 	{

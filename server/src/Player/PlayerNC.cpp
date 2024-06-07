@@ -13,11 +13,11 @@
 #define npclog server->getNPCLog()
 #define rclog server->getRCLog()
 
-typedef bool (TPlayer::*TPLSock)(CString&);
-extern std::vector<TPLSock> TPLFunc; // From TPlayer.cpp
+typedef bool (Player::*TPLSock)(CString&);
+extern std::vector<TPLSock> TPLFunc; // From Player.cpp
 
 #ifdef V8NPCSERVER
-bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
+bool Player::msgPLI_NC_NPCGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -43,7 +43,7 @@ bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
+bool Player::msgPLI_NC_NPCDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -72,7 +72,7 @@ bool TPlayer::msgPLI_NC_NPCDELETE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
+bool Player::msgPLI_NC_NPCRESET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -96,7 +96,7 @@ bool TPlayer::msgPLI_NC_NPCRESET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
+bool Player::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -117,7 +117,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
+bool Player::msgPLI_NC_NPCWARP(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -141,7 +141,7 @@ bool TPlayer::msgPLI_NC_NPCWARP(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
+bool Player::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -165,7 +165,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
+bool Player::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -191,7 +191,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
+bool Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -256,7 +256,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
+bool Player::msgPLI_NC_NPCADD(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -312,7 +312,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 
 	#include "ScriptClass.h"
 
-bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
+bool Player::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -336,7 +336,7 @@ bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
+bool Player::msgPLI_NC_CLASSADD(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -369,7 +369,7 @@ bool TPlayer::msgPLI_NC_CLASSADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
+bool Player::msgPLI_NC_CLASSDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -396,7 +396,7 @@ bool TPlayer::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
+bool Player::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -429,7 +429,7 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
+bool Player::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -454,7 +454,7 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
+bool Player::msgPLI_NC_WEAPONGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -488,7 +488,7 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
+bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -524,7 +524,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		auto weapon  = std::make_shared<TWeapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		auto weapon  = std::make_shared<Weapon>(server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
 		bool success = server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";
@@ -542,7 +542,7 @@ bool TPlayer::msgPLI_NC_WEAPONADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
+bool Player::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -565,7 +565,7 @@ bool TPlayer::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
+bool Player::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
@@ -588,7 +588,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 }
 
 // Send's NC Address/Port to Player (RC Only)
-void TPlayer::sendNCAddr()
+void Player::sendNCAddr()
 {
 	// RC's only!
 	if (!isRC() || !hasRight(PLPERM_NPCCONTROL))

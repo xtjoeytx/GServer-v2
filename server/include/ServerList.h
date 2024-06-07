@@ -18,9 +18,9 @@ enum
 	SVF_FILE   = 4,
 };
 
-class TPlayer;
-class TServer;
-class TServerList : public CSocketStub
+class Player;
+class Server;
+class ServerList : public CSocketStub
 {
 public:
 	// Required by CSocketStub.
@@ -33,8 +33,8 @@ public:
 	bool canSend() { return _fileQueue.canSend(); }
 
 	// Constructor - Deconstructor
-	TServerList(TServer* server);
-	~TServerList();
+	ServerList(Server* server);
+	~ServerList();
 
 	bool doTimedEvents();
 
@@ -46,15 +46,15 @@ public:
 	void sendPacket(CString& pPacket, bool sendNow = false);
 
 	// Send players to the listserver
-	void addPlayer(std::shared_ptr<TPlayer> player);
-	void deletePlayer(std::shared_ptr<TPlayer> player);
+	void addPlayer(std::shared_ptr<Player> player);
+	void deletePlayer(std::shared_ptr<Player> player);
 	void sendPlayers();
 	void handleText(const CString& data);
 	void sendText(const CString& data);
 	void sendText(const std::vector<CString>& stringList);
-	void sendTextForPlayer(std::shared_ptr<TPlayer> player, const CString& data);
+	void sendTextForPlayer(std::shared_ptr<Player> player, const CString& data);
 
-	void sendLoginPacketForPlayer(std::shared_ptr<TPlayer> player, const CString& password, const CString& identity);
+	void sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity);
 
 	const std::map<std::string, int>& getServerList() { return serverListCount; }
 	const std::string& getLocalIP() const { return _serverLocalIp; }
@@ -108,7 +108,7 @@ protected:
 	time_t lastData, lastTimer;
 	time_t nextConnectionAttempt;
 	uint8_t connectionAttempts;
-	TServer* _server;
+	Server* _server;
 
 	std::map<std::string, int> serverListCount;
 	std::string _serverLocalIp;

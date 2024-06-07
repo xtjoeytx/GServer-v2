@@ -19,23 +19,23 @@
 #include <unordered_map>
 #include <vector>
 
-class TServer;
-class TPlayer;
-class TNPC;
-class TMap;
+class Server;
+class Player;
+class NPC;
+class Map;
 
-class TLevel : public std::enable_shared_from_this<TLevel>
+class Level : public std::enable_shared_from_this<Level>
 {
 public:
 	//! Destructor.
-	~TLevel();
+	~Level();
 
 	//! Finds a level with the specified level name and returns it.  If not found, it tries to load it from the disk.
 	//! \param pLevelName The name of the level to search for.
 	//! \param server The server the level belongs to.
 	//! \return A pointer to the level found.
-	static std::shared_ptr<TLevel> findLevel(const CString& pLevelName, TServer* server, bool loadAbsolute = false);
-	static std::shared_ptr<TLevel> createLevel(TServer* server, short fillTile = 511, const std::string& levelName = "");
+	static std::shared_ptr<Level> findLevel(const CString& pLevelName, Server* server, bool loadAbsolute = false);
+	static std::shared_ptr<Level> createLevel(Server* server, short fillTile = 511, const std::string& levelName = "");
 
 	//! Re-loads the level.
 	//! \return True if it succeeds in re-loading the level.
@@ -44,7 +44,7 @@ public:
 	void saveLevel(const std::string& filename);
 
 	//! Returns a clone of the level.
-	std::shared_ptr<TLevel> clone();
+	std::shared_ptr<Level> clone();
 
 	// get crafted packets
 	CString getBaddyPacket(int clientVersion = CLVER_2_17);
@@ -52,11 +52,11 @@ public:
 	CString getLayerPacket(int i);
 	CString getBoardChangesPacket(time_t time);
 	CString getBoardChangesPacket2(time_t time);
-	CString getChestPacket(TPlayer* pPlayer);
+	CString getChestPacket(Player* pPlayer);
 	CString getHorsePacket();
 	CString getLinksPacket();
 	CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
-	CString getSignsPacket(TPlayer* pPlayer);
+	CString getSignsPacket(Player* pPlayer);
 
 	//! Gets the actual level name.
 	//! \return The actual level name.
@@ -72,7 +72,7 @@ public:
 
 	//! Gets the raw level tile data.
 	//! \return A pointer to all 4096 raw level tiles.
-	TLevelTiles& getTiles(int layer = 0) { return levelTiles[layer]; }
+	LevelTiles& getTiles(int layer = 0) { return levelTiles[layer]; }
 
 	//! Gets the level mod time.
 	//! \return The modified time of the level when it was first loaded from the disk.
@@ -96,7 +96,7 @@ public:
 
 	//! Gets the gmap this level belongs to.
 	//! \return The gmap this level belongs to.
-	std::shared_ptr<TMap> getMap() const { return levelMap.lock(); }
+	std::shared_ptr<Map> getMap() const { return levelMap.lock(); }
 
 	//! Gets the map x of this level.
 	//! \return The map x of this level on the map
@@ -112,9 +112,9 @@ public:
 
 	//! Gets the server this level belongs to.
 	//! \return The server this level belongs to.
-	TServer* getServer() const { return server; }
+	Server* getServer() const { return server; }
 
-	std::map<uint8_t, TLevelTiles> getLayers() const { return levelTiles; }
+	std::map<uint8_t, LevelTiles> getLayers() const { return levelTiles; }
 
 	//! Gets the status on whether players are on the level.
 	//! \return The level has players.  If true, the level has players on it.
@@ -144,19 +144,19 @@ public:
 	//! \param pHeight How many tiles high we are altering.
 	//! \param player The player who initiated this board change.
 	//! \return True if it succeeds, false if it doesn't.
-	bool alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, TPlayer* player);
+	bool alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, Player* player);
 
 	//! Adds an item to the level.
 	//! \param pX X location of the item to add.
 	//! \param pY Y location of the item to add.
-	//! \param pItem The item we are adding.  Use TLevelItem::getItemId() to get the item type from an item name.
+	//! \param pItem The item we are adding.  Use LevelItem::getItemId() to get the item type from an item name.
 	//! \return True if it succeeds, false if it doesn't.
 	bool addItem(float pX, float pY, LevelItemType pItem);
 
 	//! Removes an item from the level.
 	//! \param pX X location of the item to remove.
 	//! \param pY Y location of the item to remove.
-	//! \return The type of item removed.  Use TLevelItem::getItemId() to get the item type from an item name.
+	//! \return The type of item removed.  Use LevelItem::getItemId() to get the item type from an item name.
 	LevelItemType removeItem(float pX, float pY);
 
 	//! Adds a new horse to the level.
@@ -177,8 +177,8 @@ public:
 	//! \param pX X location of the baddy to add.
 	//! \param pY Y location of the baddy to add.
 	//! \param pType The type of baddy to add.
-	//! \return A pointer to the new TLevelBaddy.
-	TLevelBaddy* addBaddy(float pX, float pY, char pType);
+	//! \return A pointer to the new LevelBaddy.
+	LevelBaddy* addBaddy(float pX, float pY, char pType);
 
 	//! Removes a baddy from the level.
 	//! \param pId ID of the baddy to remove.
@@ -186,8 +186,8 @@ public:
 
 	//! Finds a baddy by the specified id number.
 	//! \param pId The ID number of the baddy to find.
-	//! \return A pointer to the found TLevelBaddy.
-	TLevelBaddy* getBaddy(uint8_t id);
+	//! \return A pointer to the found LevelBaddy.
+	LevelBaddy* getBaddy(uint8_t id);
 
 	//! Adds a player to the level.
 	//! \param player The player to add.
@@ -206,17 +206,17 @@ public:
 	//! Adds an NPC to the level.
 	//! \param npc NPC to add to the level.
 	//! \return True if the NPC was successfully added or false if it already exists in the level.
-	bool addNPC(std::shared_ptr<TNPC> npc);
+	bool addNPC(std::shared_ptr<NPC> npc);
 	bool addNPC(uint32_t npcId);
 
 	//! Adds a level link to the level.
-	//! \return A pointer to the new TLevelLink.
-	TLevelLink* addLink();
+	//! \return A pointer to the new LevelLink.
+	LevelLink* addLink();
 
 	//! Adds a level link to the level.
 	//! \param pLink link string to parse
-	//! \return A pointer to the new TLevelLink.
-	TLevelLink* addLink(const std::vector<CString>& pLink);
+	//! \return A pointer to the new LevelLink.
+	LevelLink* addLink(const std::vector<CString>& pLink);
 
 	//! Removes a level link from the level.
 	//! \param index link index to remove
@@ -228,8 +228,8 @@ public:
 	//! \param pY y position
 	//! \param pSign sign text
 	//! \param encoded true if the sign text is encoded
-	//! \return A pointer to the new TLevelSign.
-	TLevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
+	//! \return A pointer to the new LevelSign.
+	LevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 	//! Adds a level sign to the level.
 	//! \param index x position
@@ -241,8 +241,8 @@ public:
 	//! \param pY y position
 	//! \param itemType which type of item the chest contains
 	//! \param signIndex signIndex of sign to pop when chest is opened
-	//! \return A pointer to the new TLevelChest.
-	TLevelChest* addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex);
+	//! \return A pointer to the new LevelChest.
+	LevelChest* addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex);
 
 	//! Adds a level chest to the level.
 	//! \param index x position
@@ -251,14 +251,14 @@ public:
 
 	//! Removes an NPC from the level.
 	//! \param npc The NPC to remove.
-	void removeNPC(std::shared_ptr<TNPC> npc);
+	void removeNPC(std::shared_ptr<NPC> npc);
 	void removeNPC(uint32_t npcId);
 
 	//! Sets the map for the current level.
 	//! \param pMap Map the level is on.
 	//! \param pMapX X location on the map.
 	//! \param pMapY Y location on the map.
-	void setMap(std::weak_ptr<TMap> pMap, int pMapX = 0, int pMapY = 0);
+	void setMap(std::weak_ptr<Map> pMap, int pMapX = 0, int pMapY = 0);
 
 	//! Does special events that should happen every second.
 	//! \return Currently, it always returns true.
@@ -267,25 +267,25 @@ public:
 	bool isOnWall(int pX, int pY);
 	bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
 	bool isOnWater(int pX, int pY);
-	std::optional<TLevelChest*> getChest(int x, int y) const;
-	std::optional<TLevelLink*> getLink(int pX, int pY) const;
-	CString getChestStr(TLevelChest* chest) const;
+	std::optional<LevelChest*> getChest(int x, int y) const;
+	std::optional<LevelLink*> getLink(int pX, int pY) const;
+	CString getChestStr(LevelChest* chest) const;
 
 #ifdef V8NPCSERVER
-	std::vector<TNPC*> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
-	std::vector<TNPC*> testTouch(int pX, int pY);
-	TNPC* isOnNPC(float pX, float pY, bool checkEventFlag = false);
-	void sendChatToLevel(const TPlayer* player, const std::string& message);
+	std::vector<NPC*> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
+	std::vector<NPC*> testTouch(int pX, int pY);
+	NPC* isOnNPC(float pX, float pY, bool checkEventFlag = false);
+	void sendChatToLevel(const Player* player, const std::string& message);
 
-	IScriptObject<TLevel>* getScriptObject() const;
-	void setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object);
+	IScriptObject<Level>* getScriptObject() const;
+	void setScriptObject(std::unique_ptr<IScriptObject<Level>> object);
 #endif
 
 	void modifyBoardDirect(uint32_t index, short tile);
 
 private:
-	TLevel(TServer* pServer);
-	TLevel(short fillTile = 0xFF, TServer* pServer = nullptr);
+	Level(Server* pServer);
+	Level(short fillTile = 0xFF, Server* pServer = nullptr);
 
 	// level-loading functions
 	bool loadLevel(const CString& pLevelName);
@@ -294,43 +294,43 @@ private:
 	bool loadZelda(const CString& pLevelName);
 	bool loadNW(const CString& pLevelName);
 
-	TServer* server;
+	Server* server;
 	time_t modTime;
 	bool levelSpar;
 	bool levelSingleplayer;
-	std::map<uint8_t, TLevelTiles> levelTiles;
+	std::map<uint8_t, LevelTiles> levelTiles;
 	int mapx, mapy;
-	std::weak_ptr<TMap> levelMap;
+	std::weak_ptr<Map> levelMap;
 	CString fileName, fileVersion, actualLevelName, levelName;
 
 	std::unordered_map<uint8_t, TLevelBaddyPtr> levelBaddies;
 	std::set<uint8_t> freeBaddyIds;
 	uint8_t nextBaddyId;
 
-	std::vector<TLevelBoardChange> levelBoardChanges;
+	std::vector<LevelBoardChange> levelBoardChanges;
 	std::vector<TLevelChestPtr> levelChests;
-	std::vector<TLevelHorse> levelHorses;
-	std::vector<TLevelItem> levelItems;
+	std::vector<LevelHorse> levelHorses;
+	std::vector<LevelItem> levelItems;
 	std::vector<TLevelLinkPtr> levelLinks;
 	std::vector<TLevelSignPtr> levelSigns;
 	std::set<uint32_t> levelNPCs;
 	std::deque<uint16_t> levelPlayers;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<TLevel>> _scriptObject;
+	std::unique_ptr<IScriptObject<Level>> _scriptObject;
 #endif
 };
 
-using TLevelPtr = std::shared_ptr<TLevel>;
+using TLevelPtr = std::shared_ptr<Level>;
 
 #ifdef V8NPCSERVER
 
-inline IScriptObject<TLevel>* TLevel::getScriptObject() const
+inline IScriptObject<Level>* Level::getScriptObject() const
 {
 	return _scriptObject.get();
 }
 
-inline void TLevel::setScriptObject(std::unique_ptr<IScriptObject<TLevel>> object)
+inline void Level::setScriptObject(std::unique_ptr<IScriptObject<Level>> object)
 {
 	_scriptObject = std::move(object);
 }

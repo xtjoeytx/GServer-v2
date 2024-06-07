@@ -154,156 +154,156 @@ bool __playerPropsRC[propscount] = {
 /*
 	Pointer-Functions for Packets
 */
-bool TPlayer::created = false;
-typedef bool (TPlayer::*TPLSock)(CString&);
-std::vector<TPLSock> TPLFunc(256, &TPlayer::msgPLI_NULL);
+bool Player::created = false;
+typedef bool (Player::*TPLSock)(CString&);
+std::vector<TPLSock> TPLFunc(256, &Player::msgPLI_NULL);
 
-void TPlayer::createFunctions()
+void Player::createFunctions()
 {
-	if (TPlayer::created)
+	if (Player::created)
 		return;
 
 	// now set non-nulls
-	TPLFunc[PLI_LEVELWARP]          = &TPlayer::msgPLI_LEVELWARP;
-	TPLFunc[PLI_BOARDMODIFY]        = &TPlayer::msgPLI_BOARDMODIFY;
-	TPLFunc[PLI_REQUESTUPDATEBOARD] = &TPlayer::msgPLI_REQUESTUPDATEBOARD;
-	TPLFunc[PLI_PLAYERPROPS]        = &TPlayer::msgPLI_PLAYERPROPS;
-	TPLFunc[PLI_NPCPROPS]           = &TPlayer::msgPLI_NPCPROPS;
-	TPLFunc[PLI_BOMBADD]            = &TPlayer::msgPLI_BOMBADD;
-	TPLFunc[PLI_BOMBDEL]            = &TPlayer::msgPLI_BOMBDEL;
-	TPLFunc[PLI_TOALL]              = &TPlayer::msgPLI_TOALL;
-	TPLFunc[PLI_HORSEADD]           = &TPlayer::msgPLI_HORSEADD;
-	TPLFunc[PLI_HORSEDEL]           = &TPlayer::msgPLI_HORSEDEL;
-	TPLFunc[PLI_ARROWADD]           = &TPlayer::msgPLI_ARROWADD;
-	TPLFunc[PLI_FIRESPY]            = &TPlayer::msgPLI_FIRESPY;
-	TPLFunc[PLI_THROWCARRIED]       = &TPlayer::msgPLI_THROWCARRIED;
-	TPLFunc[PLI_ITEMADD]            = &TPlayer::msgPLI_ITEMADD;
-	TPLFunc[PLI_ITEMDEL]            = &TPlayer::msgPLI_ITEMDEL;
-	TPLFunc[PLI_CLAIMPKER]          = &TPlayer::msgPLI_CLAIMPKER;
-	TPLFunc[PLI_BADDYPROPS]         = &TPlayer::msgPLI_BADDYPROPS;
-	TPLFunc[PLI_BADDYHURT]          = &TPlayer::msgPLI_BADDYHURT;
-	TPLFunc[PLI_BADDYADD]           = &TPlayer::msgPLI_BADDYADD;
-	TPLFunc[PLI_FLAGSET]            = &TPlayer::msgPLI_FLAGSET;
-	TPLFunc[PLI_FLAGDEL]            = &TPlayer::msgPLI_FLAGDEL;
-	TPLFunc[PLI_OPENCHEST]          = &TPlayer::msgPLI_OPENCHEST;
-	TPLFunc[PLI_PUTNPC]             = &TPlayer::msgPLI_PUTNPC;
-	TPLFunc[PLI_NPCDEL]             = &TPlayer::msgPLI_NPCDEL;
-	TPLFunc[PLI_WANTFILE]           = &TPlayer::msgPLI_WANTFILE;
-	TPLFunc[PLI_SHOWIMG]            = &TPlayer::msgPLI_SHOWIMG;
+	TPLFunc[PLI_LEVELWARP]          = &Player::msgPLI_LEVELWARP;
+	TPLFunc[PLI_BOARDMODIFY]        = &Player::msgPLI_BOARDMODIFY;
+	TPLFunc[PLI_REQUESTUPDATEBOARD] = &Player::msgPLI_REQUESTUPDATEBOARD;
+	TPLFunc[PLI_PLAYERPROPS]        = &Player::msgPLI_PLAYERPROPS;
+	TPLFunc[PLI_NPCPROPS]           = &Player::msgPLI_NPCPROPS;
+	TPLFunc[PLI_BOMBADD]            = &Player::msgPLI_BOMBADD;
+	TPLFunc[PLI_BOMBDEL]            = &Player::msgPLI_BOMBDEL;
+	TPLFunc[PLI_TOALL]              = &Player::msgPLI_TOALL;
+	TPLFunc[PLI_HORSEADD]           = &Player::msgPLI_HORSEADD;
+	TPLFunc[PLI_HORSEDEL]           = &Player::msgPLI_HORSEDEL;
+	TPLFunc[PLI_ARROWADD]           = &Player::msgPLI_ARROWADD;
+	TPLFunc[PLI_FIRESPY]            = &Player::msgPLI_FIRESPY;
+	TPLFunc[PLI_THROWCARRIED]       = &Player::msgPLI_THROWCARRIED;
+	TPLFunc[PLI_ITEMADD]            = &Player::msgPLI_ITEMADD;
+	TPLFunc[PLI_ITEMDEL]            = &Player::msgPLI_ITEMDEL;
+	TPLFunc[PLI_CLAIMPKER]          = &Player::msgPLI_CLAIMPKER;
+	TPLFunc[PLI_BADDYPROPS]         = &Player::msgPLI_BADDYPROPS;
+	TPLFunc[PLI_BADDYHURT]          = &Player::msgPLI_BADDYHURT;
+	TPLFunc[PLI_BADDYADD]           = &Player::msgPLI_BADDYADD;
+	TPLFunc[PLI_FLAGSET]            = &Player::msgPLI_FLAGSET;
+	TPLFunc[PLI_FLAGDEL]            = &Player::msgPLI_FLAGDEL;
+	TPLFunc[PLI_OPENCHEST]          = &Player::msgPLI_OPENCHEST;
+	TPLFunc[PLI_PUTNPC]             = &Player::msgPLI_PUTNPC;
+	TPLFunc[PLI_NPCDEL]             = &Player::msgPLI_NPCDEL;
+	TPLFunc[PLI_WANTFILE]           = &Player::msgPLI_WANTFILE;
+	TPLFunc[PLI_SHOWIMG]            = &Player::msgPLI_SHOWIMG;
 
-	TPLFunc[PLI_HURTPLAYER]     = &TPlayer::msgPLI_HURTPLAYER;
-	TPLFunc[PLI_EXPLOSION]      = &TPlayer::msgPLI_EXPLOSION;
-	TPLFunc[PLI_PRIVATEMESSAGE] = &TPlayer::msgPLI_PRIVATEMESSAGE;
-	TPLFunc[PLI_NPCWEAPONDEL]   = &TPlayer::msgPLI_NPCWEAPONDEL;
-	TPLFunc[PLI_LEVELWARPMOD]   = &TPlayer::msgPLI_LEVELWARP; // Shared with PLI_LEVELWARP
-	TPLFunc[PLI_PACKETCOUNT]    = &TPlayer::msgPLI_PACKETCOUNT;
-	TPLFunc[PLI_ITEMTAKE]       = &TPlayer::msgPLI_ITEMDEL; // Shared with PLI_ITEMDEL
-	TPLFunc[PLI_WEAPONADD]      = &TPlayer::msgPLI_WEAPONADD;
-	TPLFunc[PLI_UPDATEFILE]     = &TPlayer::msgPLI_UPDATEFILE;
-	TPLFunc[PLI_ADJACENTLEVEL]  = &TPlayer::msgPLI_ADJACENTLEVEL;
-	TPLFunc[PLI_HITOBJECTS]     = &TPlayer::msgPLI_HITOBJECTS;
-	TPLFunc[PLI_LANGUAGE]       = &TPlayer::msgPLI_LANGUAGE;
-	TPLFunc[PLI_TRIGGERACTION]  = &TPlayer::msgPLI_TRIGGERACTION;
-	TPLFunc[PLI_MAPINFO]        = &TPlayer::msgPLI_MAPINFO;
-	TPLFunc[PLI_SHOOT]          = &TPlayer::msgPLI_SHOOT;
-	TPLFunc[PLI_SHOOT2]         = &TPlayer::msgPLI_SHOOT2;
-	TPLFunc[PLI_SERVERWARP]     = &TPlayer::msgPLI_SERVERWARP;
+	TPLFunc[PLI_HURTPLAYER]     = &Player::msgPLI_HURTPLAYER;
+	TPLFunc[PLI_EXPLOSION]      = &Player::msgPLI_EXPLOSION;
+	TPLFunc[PLI_PRIVATEMESSAGE] = &Player::msgPLI_PRIVATEMESSAGE;
+	TPLFunc[PLI_NPCWEAPONDEL]   = &Player::msgPLI_NPCWEAPONDEL;
+	TPLFunc[PLI_LEVELWARPMOD]   = &Player::msgPLI_LEVELWARP; // Shared with PLI_LEVELWARP
+	TPLFunc[PLI_PACKETCOUNT]    = &Player::msgPLI_PACKETCOUNT;
+	TPLFunc[PLI_ITEMTAKE]       = &Player::msgPLI_ITEMDEL; // Shared with PLI_ITEMDEL
+	TPLFunc[PLI_WEAPONADD]      = &Player::msgPLI_WEAPONADD;
+	TPLFunc[PLI_UPDATEFILE]     = &Player::msgPLI_UPDATEFILE;
+	TPLFunc[PLI_ADJACENTLEVEL]  = &Player::msgPLI_ADJACENTLEVEL;
+	TPLFunc[PLI_HITOBJECTS]     = &Player::msgPLI_HITOBJECTS;
+	TPLFunc[PLI_LANGUAGE]       = &Player::msgPLI_LANGUAGE;
+	TPLFunc[PLI_TRIGGERACTION]  = &Player::msgPLI_TRIGGERACTION;
+	TPLFunc[PLI_MAPINFO]        = &Player::msgPLI_MAPINFO;
+	TPLFunc[PLI_SHOOT]          = &Player::msgPLI_SHOOT;
+	TPLFunc[PLI_SHOOT2]         = &Player::msgPLI_SHOOT2;
+	TPLFunc[PLI_SERVERWARP]     = &Player::msgPLI_SERVERWARP;
 
-	TPLFunc[PLI_PROCESSLIST] = &TPlayer::msgPLI_PROCESSLIST;
+	TPLFunc[PLI_PROCESSLIST] = &Player::msgPLI_PROCESSLIST;
 
-	TPLFunc[PLI_UNKNOWN46]      = &TPlayer::msgPLI_UNKNOWN46;
-	TPLFunc[PLI_VERIFYWANTSEND] = &TPlayer::msgPLI_VERIFYWANTSEND;
-	TPLFunc[PLI_UPDATECLASS]    = &TPlayer::msgPLI_UPDATECLASS;
-	TPLFunc[PLI_RAWDATA]        = &TPlayer::msgPLI_RAWDATA;
+	TPLFunc[PLI_UNKNOWN46]      = &Player::msgPLI_UNKNOWN46;
+	TPLFunc[PLI_VERIFYWANTSEND] = &Player::msgPLI_VERIFYWANTSEND;
+	TPLFunc[PLI_UPDATECLASS]    = &Player::msgPLI_UPDATECLASS;
+	TPLFunc[PLI_RAWDATA]        = &Player::msgPLI_RAWDATA;
 
-	TPLFunc[PLI_RC_SERVEROPTIONSGET]      = &TPlayer::msgPLI_RC_SERVEROPTIONSGET;
-	TPLFunc[PLI_RC_SERVEROPTIONSSET]      = &TPlayer::msgPLI_RC_SERVEROPTIONSSET;
-	TPLFunc[PLI_RC_FOLDERCONFIGGET]       = &TPlayer::msgPLI_RC_FOLDERCONFIGGET;
-	TPLFunc[PLI_RC_FOLDERCONFIGSET]       = &TPlayer::msgPLI_RC_FOLDERCONFIGSET;
-	TPLFunc[PLI_RC_RESPAWNSET]            = &TPlayer::msgPLI_RC_RESPAWNSET;
-	TPLFunc[PLI_RC_HORSELIFESET]          = &TPlayer::msgPLI_RC_HORSELIFESET;
-	TPLFunc[PLI_RC_APINCREMENTSET]        = &TPlayer::msgPLI_RC_APINCREMENTSET;
-	TPLFunc[PLI_RC_BADDYRESPAWNSET]       = &TPlayer::msgPLI_RC_BADDYRESPAWNSET;
-	TPLFunc[PLI_RC_PLAYERPROPSGET]        = &TPlayer::msgPLI_RC_PLAYERPROPSGET;
-	TPLFunc[PLI_RC_PLAYERPROPSSET]        = &TPlayer::msgPLI_RC_PLAYERPROPSSET;
-	TPLFunc[PLI_RC_DISCONNECTPLAYER]      = &TPlayer::msgPLI_RC_DISCONNECTPLAYER;
-	TPLFunc[PLI_RC_UPDATELEVELS]          = &TPlayer::msgPLI_RC_UPDATELEVELS;
-	TPLFunc[PLI_RC_ADMINMESSAGE]          = &TPlayer::msgPLI_RC_ADMINMESSAGE;
-	TPLFunc[PLI_RC_PRIVADMINMESSAGE]      = &TPlayer::msgPLI_RC_PRIVADMINMESSAGE;
-	TPLFunc[PLI_RC_LISTRCS]               = &TPlayer::msgPLI_RC_LISTRCS;
-	TPLFunc[PLI_RC_DISCONNECTRC]          = &TPlayer::msgPLI_RC_DISCONNECTRC;
-	TPLFunc[PLI_RC_APPLYREASON]           = &TPlayer::msgPLI_RC_APPLYREASON;
-	TPLFunc[PLI_RC_SERVERFLAGSGET]        = &TPlayer::msgPLI_RC_SERVERFLAGSGET;
-	TPLFunc[PLI_RC_SERVERFLAGSSET]        = &TPlayer::msgPLI_RC_SERVERFLAGSSET;
-	TPLFunc[PLI_RC_ACCOUNTADD]            = &TPlayer::msgPLI_RC_ACCOUNTADD;
-	TPLFunc[PLI_RC_ACCOUNTDEL]            = &TPlayer::msgPLI_RC_ACCOUNTDEL;
-	TPLFunc[PLI_RC_ACCOUNTLISTGET]        = &TPlayer::msgPLI_RC_ACCOUNTLISTGET;
-	TPLFunc[PLI_RC_PLAYERPROPSGET2]       = &TPlayer::msgPLI_RC_PLAYERPROPSGET2;
-	TPLFunc[PLI_RC_PLAYERPROPSGET3]       = &TPlayer::msgPLI_RC_PLAYERPROPSGET3;
-	TPLFunc[PLI_RC_PLAYERPROPSRESET]      = &TPlayer::msgPLI_RC_PLAYERPROPSRESET;
-	TPLFunc[PLI_RC_PLAYERPROPSSET2]       = &TPlayer::msgPLI_RC_PLAYERPROPSSET2;
-	TPLFunc[PLI_RC_ACCOUNTGET]            = &TPlayer::msgPLI_RC_ACCOUNTGET;
-	TPLFunc[PLI_RC_ACCOUNTSET]            = &TPlayer::msgPLI_RC_ACCOUNTSET;
-	TPLFunc[PLI_RC_CHAT]                  = &TPlayer::msgPLI_RC_CHAT;
-	TPLFunc[PLI_PROFILEGET]               = &TPlayer::msgPLI_PROFILEGET;
-	TPLFunc[PLI_PROFILESET]               = &TPlayer::msgPLI_PROFILESET;
-	TPLFunc[PLI_RC_WARPPLAYER]            = &TPlayer::msgPLI_RC_WARPPLAYER;
-	TPLFunc[PLI_RC_PLAYERRIGHTSGET]       = &TPlayer::msgPLI_RC_PLAYERRIGHTSGET;
-	TPLFunc[PLI_RC_PLAYERRIGHTSSET]       = &TPlayer::msgPLI_RC_PLAYERRIGHTSSET;
-	TPLFunc[PLI_RC_PLAYERCOMMENTSGET]     = &TPlayer::msgPLI_RC_PLAYERCOMMENTSGET;
-	TPLFunc[PLI_RC_PLAYERCOMMENTSSET]     = &TPlayer::msgPLI_RC_PLAYERCOMMENTSSET;
-	TPLFunc[PLI_RC_PLAYERBANGET]          = &TPlayer::msgPLI_RC_PLAYERBANGET;
-	TPLFunc[PLI_RC_PLAYERBANSET]          = &TPlayer::msgPLI_RC_PLAYERBANSET;
-	TPLFunc[PLI_RC_FILEBROWSER_START]     = &TPlayer::msgPLI_RC_FILEBROWSER_START;
-	TPLFunc[PLI_RC_FILEBROWSER_CD]        = &TPlayer::msgPLI_RC_FILEBROWSER_CD;
-	TPLFunc[PLI_RC_FILEBROWSER_END]       = &TPlayer::msgPLI_RC_FILEBROWSER_END;
-	TPLFunc[PLI_RC_FILEBROWSER_DOWN]      = &TPlayer::msgPLI_RC_FILEBROWSER_DOWN;
-	TPLFunc[PLI_RC_FILEBROWSER_UP]        = &TPlayer::msgPLI_RC_FILEBROWSER_UP;
-	TPLFunc[PLI_NPCSERVERQUERY]           = &TPlayer::msgPLI_NPCSERVERQUERY;
-	TPLFunc[PLI_RC_FILEBROWSER_MOVE]      = &TPlayer::msgPLI_RC_FILEBROWSER_MOVE;
-	TPLFunc[PLI_RC_FILEBROWSER_DELETE]    = &TPlayer::msgPLI_RC_FILEBROWSER_DELETE;
-	TPLFunc[PLI_RC_FILEBROWSER_RENAME]    = &TPlayer::msgPLI_RC_FILEBROWSER_RENAME;
-	TPLFunc[PLI_RC_LARGEFILESTART]        = &TPlayer::msgPLI_RC_LARGEFILESTART;
-	TPLFunc[PLI_RC_LARGEFILEEND]          = &TPlayer::msgPLI_RC_LARGEFILEEND;
-	TPLFunc[PLI_RC_FOLDERDELETE]          = &TPlayer::msgPLI_RC_FOLDERDELETE;
-	TPLFunc[PLI_REQUESTTEXT]              = &TPlayer::msgPLI_REQUESTTEXT;
-	TPLFunc[PLI_SENDTEXT]                 = &TPlayer::msgPLI_SENDTEXT;
-	TPLFunc[PLI_UPDATEGANI]               = &TPlayer::msgPLI_UPDATEGANI;
-	TPLFunc[PLI_UPDATESCRIPT]             = &TPlayer::msgPLI_UPDATESCRIPT;
-	TPLFunc[PLI_UPDATEPACKAGEREQUESTFILE] = &TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE;
-	TPLFunc[PLI_RC_UNKNOWN162]            = &TPlayer::msgPLI_RC_UNKNOWN162;
+	TPLFunc[PLI_RC_SERVEROPTIONSGET]      = &Player::msgPLI_RC_SERVEROPTIONSGET;
+	TPLFunc[PLI_RC_SERVEROPTIONSSET]      = &Player::msgPLI_RC_SERVEROPTIONSSET;
+	TPLFunc[PLI_RC_FOLDERCONFIGGET]       = &Player::msgPLI_RC_FOLDERCONFIGGET;
+	TPLFunc[PLI_RC_FOLDERCONFIGSET]       = &Player::msgPLI_RC_FOLDERCONFIGSET;
+	TPLFunc[PLI_RC_RESPAWNSET]            = &Player::msgPLI_RC_RESPAWNSET;
+	TPLFunc[PLI_RC_HORSELIFESET]          = &Player::msgPLI_RC_HORSELIFESET;
+	TPLFunc[PLI_RC_APINCREMENTSET]        = &Player::msgPLI_RC_APINCREMENTSET;
+	TPLFunc[PLI_RC_BADDYRESPAWNSET]       = &Player::msgPLI_RC_BADDYRESPAWNSET;
+	TPLFunc[PLI_RC_PLAYERPROPSGET]        = &Player::msgPLI_RC_PLAYERPROPSGET;
+	TPLFunc[PLI_RC_PLAYERPROPSSET]        = &Player::msgPLI_RC_PLAYERPROPSSET;
+	TPLFunc[PLI_RC_DISCONNECTPLAYER]      = &Player::msgPLI_RC_DISCONNECTPLAYER;
+	TPLFunc[PLI_RC_UPDATELEVELS]          = &Player::msgPLI_RC_UPDATELEVELS;
+	TPLFunc[PLI_RC_ADMINMESSAGE]          = &Player::msgPLI_RC_ADMINMESSAGE;
+	TPLFunc[PLI_RC_PRIVADMINMESSAGE]      = &Player::msgPLI_RC_PRIVADMINMESSAGE;
+	TPLFunc[PLI_RC_LISTRCS]               = &Player::msgPLI_RC_LISTRCS;
+	TPLFunc[PLI_RC_DISCONNECTRC]          = &Player::msgPLI_RC_DISCONNECTRC;
+	TPLFunc[PLI_RC_APPLYREASON]           = &Player::msgPLI_RC_APPLYREASON;
+	TPLFunc[PLI_RC_SERVERFLAGSGET]        = &Player::msgPLI_RC_SERVERFLAGSGET;
+	TPLFunc[PLI_RC_SERVERFLAGSSET]        = &Player::msgPLI_RC_SERVERFLAGSSET;
+	TPLFunc[PLI_RC_ACCOUNTADD]            = &Player::msgPLI_RC_ACCOUNTADD;
+	TPLFunc[PLI_RC_ACCOUNTDEL]            = &Player::msgPLI_RC_ACCOUNTDEL;
+	TPLFunc[PLI_RC_ACCOUNTLISTGET]        = &Player::msgPLI_RC_ACCOUNTLISTGET;
+	TPLFunc[PLI_RC_PLAYERPROPSGET2]       = &Player::msgPLI_RC_PLAYERPROPSGET2;
+	TPLFunc[PLI_RC_PLAYERPROPSGET3]       = &Player::msgPLI_RC_PLAYERPROPSGET3;
+	TPLFunc[PLI_RC_PLAYERPROPSRESET]      = &Player::msgPLI_RC_PLAYERPROPSRESET;
+	TPLFunc[PLI_RC_PLAYERPROPSSET2]       = &Player::msgPLI_RC_PLAYERPROPSSET2;
+	TPLFunc[PLI_RC_ACCOUNTGET]            = &Player::msgPLI_RC_ACCOUNTGET;
+	TPLFunc[PLI_RC_ACCOUNTSET]            = &Player::msgPLI_RC_ACCOUNTSET;
+	TPLFunc[PLI_RC_CHAT]                  = &Player::msgPLI_RC_CHAT;
+	TPLFunc[PLI_PROFILEGET]               = &Player::msgPLI_PROFILEGET;
+	TPLFunc[PLI_PROFILESET]               = &Player::msgPLI_PROFILESET;
+	TPLFunc[PLI_RC_WARPPLAYER]            = &Player::msgPLI_RC_WARPPLAYER;
+	TPLFunc[PLI_RC_PLAYERRIGHTSGET]       = &Player::msgPLI_RC_PLAYERRIGHTSGET;
+	TPLFunc[PLI_RC_PLAYERRIGHTSSET]       = &Player::msgPLI_RC_PLAYERRIGHTSSET;
+	TPLFunc[PLI_RC_PLAYERCOMMENTSGET]     = &Player::msgPLI_RC_PLAYERCOMMENTSGET;
+	TPLFunc[PLI_RC_PLAYERCOMMENTSSET]     = &Player::msgPLI_RC_PLAYERCOMMENTSSET;
+	TPLFunc[PLI_RC_PLAYERBANGET]          = &Player::msgPLI_RC_PLAYERBANGET;
+	TPLFunc[PLI_RC_PLAYERBANSET]          = &Player::msgPLI_RC_PLAYERBANSET;
+	TPLFunc[PLI_RC_FILEBROWSER_START]     = &Player::msgPLI_RC_FILEBROWSER_START;
+	TPLFunc[PLI_RC_FILEBROWSER_CD]        = &Player::msgPLI_RC_FILEBROWSER_CD;
+	TPLFunc[PLI_RC_FILEBROWSER_END]       = &Player::msgPLI_RC_FILEBROWSER_END;
+	TPLFunc[PLI_RC_FILEBROWSER_DOWN]      = &Player::msgPLI_RC_FILEBROWSER_DOWN;
+	TPLFunc[PLI_RC_FILEBROWSER_UP]        = &Player::msgPLI_RC_FILEBROWSER_UP;
+	TPLFunc[PLI_NPCSERVERQUERY]           = &Player::msgPLI_NPCSERVERQUERY;
+	TPLFunc[PLI_RC_FILEBROWSER_MOVE]      = &Player::msgPLI_RC_FILEBROWSER_MOVE;
+	TPLFunc[PLI_RC_FILEBROWSER_DELETE]    = &Player::msgPLI_RC_FILEBROWSER_DELETE;
+	TPLFunc[PLI_RC_FILEBROWSER_RENAME]    = &Player::msgPLI_RC_FILEBROWSER_RENAME;
+	TPLFunc[PLI_RC_LARGEFILESTART]        = &Player::msgPLI_RC_LARGEFILESTART;
+	TPLFunc[PLI_RC_LARGEFILEEND]          = &Player::msgPLI_RC_LARGEFILEEND;
+	TPLFunc[PLI_RC_FOLDERDELETE]          = &Player::msgPLI_RC_FOLDERDELETE;
+	TPLFunc[PLI_REQUESTTEXT]              = &Player::msgPLI_REQUESTTEXT;
+	TPLFunc[PLI_SENDTEXT]                 = &Player::msgPLI_SENDTEXT;
+	TPLFunc[PLI_UPDATEGANI]               = &Player::msgPLI_UPDATEGANI;
+	TPLFunc[PLI_UPDATESCRIPT]             = &Player::msgPLI_UPDATESCRIPT;
+	TPLFunc[PLI_UPDATEPACKAGEREQUESTFILE] = &Player::msgPLI_UPDATEPACKAGEREQUESTFILE;
+	TPLFunc[PLI_RC_UNKNOWN162]            = &Player::msgPLI_RC_UNKNOWN162;
 
 	// NPC-Server Functions
 #ifdef V8NPCSERVER
-	TPLFunc[PLI_NC_NPCGET]        = &TPlayer::msgPLI_NC_NPCGET;
-	TPLFunc[PLI_NC_NPCDELETE]     = &TPlayer::msgPLI_NC_NPCDELETE;
-	TPLFunc[PLI_NC_NPCRESET]      = &TPlayer::msgPLI_NC_NPCRESET;
-	TPLFunc[PLI_NC_NPCSCRIPTGET]  = &TPlayer::msgPLI_NC_NPCSCRIPTGET;
-	TPLFunc[PLI_NC_NPCWARP]       = &TPlayer::msgPLI_NC_NPCWARP;
-	TPLFunc[PLI_NC_NPCFLAGSGET]   = &TPlayer::msgPLI_NC_NPCFLAGSGET;
-	TPLFunc[PLI_NC_NPCSCRIPTSET]  = &TPlayer::msgPLI_NC_NPCSCRIPTSET;
-	TPLFunc[PLI_NC_NPCFLAGSSET]   = &TPlayer::msgPLI_NC_NPCFLAGSSET;
-	TPLFunc[PLI_NC_NPCADD]        = &TPlayer::msgPLI_NC_NPCADD;
-	TPLFunc[PLI_NC_CLASSEDIT]     = &TPlayer::msgPLI_NC_CLASSEDIT;
-	TPLFunc[PLI_NC_CLASSADD]      = &TPlayer::msgPLI_NC_CLASSADD;
-	TPLFunc[PLI_NC_LOCALNPCSGET]  = &TPlayer::msgPLI_NC_LOCALNPCSGET;
-	TPLFunc[PLI_NC_WEAPONLISTGET] = &TPlayer::msgPLI_NC_WEAPONLISTGET;
-	TPLFunc[PLI_NC_WEAPONGET]     = &TPlayer::msgPLI_NC_WEAPONGET;
-	TPLFunc[PLI_NC_WEAPONADD]     = &TPlayer::msgPLI_NC_WEAPONADD;
-	TPLFunc[PLI_NC_WEAPONDELETE]  = &TPlayer::msgPLI_NC_WEAPONDELETE;
-	TPLFunc[PLI_NC_CLASSDELETE]   = &TPlayer::msgPLI_NC_CLASSDELETE;
-	TPLFunc[PLI_NC_LEVELLISTGET]  = &TPlayer::msgPLI_NC_LEVELLISTGET;
+	TPLFunc[PLI_NC_NPCGET]        = &Player::msgPLI_NC_NPCGET;
+	TPLFunc[PLI_NC_NPCDELETE]     = &Player::msgPLI_NC_NPCDELETE;
+	TPLFunc[PLI_NC_NPCRESET]      = &Player::msgPLI_NC_NPCRESET;
+	TPLFunc[PLI_NC_NPCSCRIPTGET]  = &Player::msgPLI_NC_NPCSCRIPTGET;
+	TPLFunc[PLI_NC_NPCWARP]       = &Player::msgPLI_NC_NPCWARP;
+	TPLFunc[PLI_NC_NPCFLAGSGET]   = &Player::msgPLI_NC_NPCFLAGSGET;
+	TPLFunc[PLI_NC_NPCSCRIPTSET]  = &Player::msgPLI_NC_NPCSCRIPTSET;
+	TPLFunc[PLI_NC_NPCFLAGSSET]   = &Player::msgPLI_NC_NPCFLAGSSET;
+	TPLFunc[PLI_NC_NPCADD]        = &Player::msgPLI_NC_NPCADD;
+	TPLFunc[PLI_NC_CLASSEDIT]     = &Player::msgPLI_NC_CLASSEDIT;
+	TPLFunc[PLI_NC_CLASSADD]      = &Player::msgPLI_NC_CLASSADD;
+	TPLFunc[PLI_NC_LOCALNPCSGET]  = &Player::msgPLI_NC_LOCALNPCSGET;
+	TPLFunc[PLI_NC_WEAPONLISTGET] = &Player::msgPLI_NC_WEAPONLISTGET;
+	TPLFunc[PLI_NC_WEAPONGET]     = &Player::msgPLI_NC_WEAPONGET;
+	TPLFunc[PLI_NC_WEAPONADD]     = &Player::msgPLI_NC_WEAPONADD;
+	TPLFunc[PLI_NC_WEAPONDELETE]  = &Player::msgPLI_NC_WEAPONDELETE;
+	TPLFunc[PLI_NC_CLASSDELETE]   = &Player::msgPLI_NC_CLASSDELETE;
+	TPLFunc[PLI_NC_LEVELLISTGET]  = &Player::msgPLI_NC_LEVELLISTGET;
 #endif
 
 	// Finished
-	TPlayer::created = true;
+	Player::created = true;
 }
 
 /*
 	Constructor - Deconstructor
 */
-TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId)
-	: TAccount(pServer),
+Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
+	: Account(pServer),
 	  playerSock(pSocket), key(0),
 	  os("wind"), codepage(1252),
 	  id(pId), type(PLTYPE_AWAIT), versionID(CLVER_UNKNOWN),
@@ -326,16 +326,16 @@ TPlayer::TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId)
 	srand((unsigned int)time(0));
 
 	// Create Functions
-	if (!TPlayer::created)
-		TPlayer::createFunctions();
+	if (!Player::created)
+		Player::createFunctions();
 }
 
-TPlayer::~TPlayer()
+Player::~Player()
 {
 	cleanup();
 }
 
-void TPlayer::cleanup()
+void Player::cleanup()
 {
 	if (playerSock == nullptr)
 		return;
@@ -392,7 +392,7 @@ void TPlayer::cleanup()
 #endif
 }
 
-bool TPlayer::onRecv()
+bool Player::onRecv()
 {
 	// If our socket is gone, delete ourself.
 	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
@@ -416,7 +416,7 @@ bool TPlayer::onRecv()
 	return doMain();
 }
 
-bool TPlayer::onSend()
+bool Player::onSend()
 {
 	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
@@ -427,19 +427,19 @@ bool TPlayer::onSend()
 	return true;
 }
 
-void TPlayer::onUnregister()
+void Player::onUnregister()
 {
 	// Called when onSend() or onRecv() returns false.
 	server->deletePlayer(shared_from_this());
 }
 
-bool TPlayer::canRecv()
+bool Player::canRecv()
 {
 	if (playerSock->getState() == SOCKET_STATE_DISCONNECTED) return false;
 	return true;
 }
 
-bool TPlayer::canSend()
+bool Player::canSend()
 {
 	return fileQueue.canSend();
 }
@@ -447,7 +447,7 @@ bool TPlayer::canSend()
 /*
 	Socket-Control Functions
 */
-bool TPlayer::doMain()
+bool Player::doMain()
 {
 	// definitions
 	CString unBuffer;
@@ -552,7 +552,7 @@ bool TPlayer::doMain()
 	return true;
 }
 
-bool TPlayer::doTimedEvents()
+bool Player::doTimedEvents()
 {
 	time_t currTime = time(0);
 
@@ -645,13 +645,13 @@ bool TPlayer::doTimedEvents()
 	return true;
 }
 
-void TPlayer::disconnect()
+void Player::disconnect()
 {
 	server->deletePlayer(shared_from_this());
 	//server->getSocketManager()->unregisterSocket(this);
 }
 
-bool TPlayer::parsePacket(CString& pPacket)
+bool Player::parsePacket(CString& pPacket)
 {
 	// First packet is always unencrypted zlib.  Read it in a special way.
 	if (type == PLTYPE_AWAIT)
@@ -710,7 +710,7 @@ bool TPlayer::parsePacket(CString& pPacket)
 	return true;
 }
 
-void TPlayer::decryptPacket(CString& pPacket)
+void Player::decryptPacket(CString& pPacket)
 {
 	// Version 1.41 - 2.18 encryption
 	// Was already decompressed so just decrypt the packet.
@@ -754,7 +754,7 @@ void TPlayer::decryptPacket(CString& pPacket)
 	}
 }
 
-void TPlayer::sendPacket(CString pPacket, bool appendNL)
+void Player::sendPacket(CString pPacket, bool appendNL)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -771,14 +771,14 @@ void TPlayer::sendPacket(CString pPacket, bool appendNL)
 	fileQueue.addPacket(pPacket);
 }
 
-bool TPlayer::sendFile(const CString& pFile)
+bool Player::sendFile(const CString& pFile)
 {
 	// Add the filename to the list of known files so we can resend the file
 	// to the client if it gets changed after it was originally sent
 	if (isClient())
 		knownFiles.insert(pFile.toString());
 
-	CFileSystem* fileSystem = server->getFileSystem();
+	FileSystem* fileSystem = server->getFileSystem();
 
 	// Find file.
 	CString path = fileSystem->find(pFile);
@@ -790,7 +790,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	}
 
 	// Strip filename from the path.
-	path.removeI(path.findl(CFileSystem::getPathSeparator()) + 1);
+	path.removeI(path.findl(FileSystem::getPathSeparator()) + 1);
 	if (path.find(server->getServerPath()) != -1)
 		path.removeI(0, server->getServerPath().length());
 
@@ -798,7 +798,7 @@ bool TPlayer::sendFile(const CString& pFile)
 	return this->sendFile(path, pFile);
 }
 
-bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
+bool Player::sendFile(const CString& pPath, const CString& pFile)
 {
 	CString filepath = server->getServerPath() << pPath << pFile;
 	CString fileData;
@@ -876,7 +876,7 @@ bool TPlayer::sendFile(const CString& pPath, const CString& pFile)
 	return true;
 }
 
-bool TPlayer::testSign()
+bool Player::testSign()
 {
 	CSettings& settings = server->getSettings();
 	if (!settings.getBool("serverside", false)) return true; // TODO: NPC server check instead
@@ -901,7 +901,7 @@ bool TPlayer::testSign()
 	return true;
 }
 
-void TPlayer::testTouch()
+void Player::testTouch()
 {
 #ifdef V8NPCSERVER
 	static const int touchtestd[] = { 24, 16, 0, 32, 24, 56, 48, 32 };
@@ -919,7 +919,7 @@ void TPlayer::testTouch()
 #endif
 }
 
-void TPlayer::dropItemsOnDeath()
+void Player::dropItemsOnDeath()
 {
 	if (!server->getSettings().getBool("dropitemsdead", true))
 		return;
@@ -1008,7 +1008,7 @@ void TPlayer::dropItemsOnDeath()
 	}
 }
 
-bool TPlayer::processChat(CString pChat)
+bool Player::processChat(CString pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
@@ -1042,7 +1042,7 @@ bool TPlayer::processChat(CString pChat)
 		processed = true;
 
 		// Get the appropriate filesystem.
-		CFileSystem* filesystem = server->getFileSystem();
+		FileSystem* filesystem = server->getFileSystem();
 		if (!server->getSettings().getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_HEAD);
 
@@ -1089,7 +1089,7 @@ bool TPlayer::processChat(CString pChat)
 		}
 
 		// Get the appropriate filesystem.
-		CFileSystem* filesystem = server->getFileSystem();
+		FileSystem* filesystem = server->getFileSystem();
 		if (!server->getSettings().getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_BODY);
 
@@ -1136,7 +1136,7 @@ bool TPlayer::processChat(CString pChat)
 		}
 
 		// Get the appropriate filesystem.
-		CFileSystem* filesystem = server->getFileSystem();
+		FileSystem* filesystem = server->getFileSystem();
 		if (!server->getSettings().getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_SWORD);
 
@@ -1183,7 +1183,7 @@ bool TPlayer::processChat(CString pChat)
 		}
 
 		// Get the appropriate filesystem.
-		CFileSystem* filesystem = server->getFileSystem();
+		FileSystem* filesystem = server->getFileSystem();
 		if (!server->getSettings().getBool("nofoldersconfig", false))
 			filesystem = server->getFileSystem(FS_SHIELD);
 
@@ -1463,7 +1463,7 @@ bool TPlayer::processChat(CString pChat)
 	return processed;
 }
 
-bool TPlayer::isAdminIp()
+bool Player::isAdminIp()
 {
 	std::vector<CString> adminIps = adminIp.tokenize(",");
 	for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
@@ -1475,15 +1475,15 @@ bool TPlayer::isAdminIp()
 	return false;
 }
 
-bool TPlayer::isStaff()
+bool Player::isStaff()
 {
 	return server->isStaff(accountName);
 }
 
 /*
-	TPlayer: Set Properties
+	Player: Set Properties
 */
-bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
+bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 {
 	CSettings& settings = server->getSettings();
 
@@ -1491,7 +1491,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	auto currentLevel = curlevel.lock();
 
 	// Find the level.
-	auto newLevel = TLevel::findLevel(pLevelName, server);
+	auto newLevel = Level::findLevel(pLevelName, server);
 
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
@@ -1501,7 +1501,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	}
 
 	// Find the unstickme level.
-	auto unstickLevel = TLevel::findLevel(settings.getStr("unstickmelevel", "onlinestartlocal.nw"), server);
+	auto unstickLevel = Level::findLevel(settings.getStr("unstickmelevel", "onlinestartlocal.nw"), server);
 	float unstickX    = settings.getFloat("unstickmex", 30.0f);
 	float unstickY    = settings.getFloat("unstickmey", 35.0f);
 
@@ -1549,7 +1549,7 @@ bool TPlayer::warp(const CString& pLevelName, float pX, float pY, time_t modTime
 	return warpSuccess;
 }
 
-std::shared_ptr<TLevel> TPlayer::getLevel() const
+std::shared_ptr<Level> Player::getLevel() const
 {
 	if (isHiddenClient()) return {};
 
@@ -1564,10 +1564,10 @@ std::shared_ptr<TLevel> TPlayer::getLevel() const
 	return {};
 }
 
-bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
+bool Player::setLevel(const CString& pLevelName, time_t modTime)
 {
 	// Open Level
-	auto newLevel = TLevel::findLevel(pLevelName, server);
+	auto newLevel = Level::findLevel(pLevelName, server);
 	if (newLevel == nullptr)
 	{
 		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
@@ -1683,7 +1683,7 @@ bool TPlayer::setLevel(const CString& pLevelName, time_t modTime)
 	return true;
 }
 
-bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent)
+bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent)
 {
 	if (pLevel == nullptr) return false;
 	CSettings& settings = server->getSettings();
@@ -1752,11 +1752,11 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 
 			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pmap->getMapName());
 			CString pmapLevels = pmap->getLevels();
-			TLevel* tmpLvl;
+			Level* tmpLvl;
 			while (pmapLevels.bytesLeft() > 0)
 			{
 				CString tmpLvlName = pmapLevels.readString("\n");
-				tmpLvl = TLevel::findLevel(tmpLvlName.guntokenizeI(), server);
+				tmpLvl = Level::findLevel(tmpLvlName.guntokenizeI(), server);
 				if (tmpLvl != NULL)
 					sendPacket(CString() << tmpLvl->getNpcsPacket(l_time, versionID));
 			}*/
@@ -1809,7 +1809,7 @@ bool TPlayer::sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fro
 	return true;
 }
 
-bool TPlayer::sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent)
+bool Player::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent)
 {
 	if (pLevel == nullptr) return false;
 	CSettings& settings = server->getSettings();
@@ -1887,7 +1887,7 @@ bool TPlayer::sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool 
 	return true;
 }
 
-bool TPlayer::leaveLevel(bool resetCache)
+bool Player::leaveLevel(bool resetCache)
 {
 	// Make sure we are on a level first.
 	auto levelp = curlevel.lock();
@@ -1937,7 +1937,7 @@ bool TPlayer::leaveLevel(bool resetCache)
 	return true;
 }
 
-time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
+time_t Player::getCachedLevelModTime(const Level* level) const
 {
 	for (auto& cl: cachedLevels)
 	{
@@ -1948,7 +1948,7 @@ time_t TPlayer::getCachedLevelModTime(const TLevel* level) const
 	return 0;
 }
 
-void TPlayer::resetLevelCache(const TLevel* level)
+void Player::resetLevelCache(const Level* level)
 {
 	for (auto& cl: cachedLevels)
 	{
@@ -1961,7 +1961,7 @@ void TPlayer::resetLevelCache(const TLevel* level)
 	}
 }
 
-std::pair<int, int> TPlayer::getMapPosition() const
+std::pair<int, int> Player::getMapPosition() const
 {
 	if (curlevel.expired()) return { 0, 0 };
 	if (pmap.expired()) return { 0, 0 };
@@ -1982,12 +1982,12 @@ std::pair<int, int> TPlayer::getMapPosition() const
 	return { 0, 0 };
 }
 
-void TPlayer::setChat(const CString& pChat)
+void Player::setChat(const CString& pChat)
 {
 	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
-void TPlayer::setNick(CString pNickName, bool force)
+void Player::setNick(CString pNickName, bool force)
 {
 	CString newNick, nick, guild;
 
@@ -2041,7 +2041,7 @@ void TPlayer::setNick(CString pNickName, bool force)
 	if (guild.length() != 0)
 	{
 		// Read the guild list.
-		CFileSystem guildFS(server);
+		FileSystem guildFS(server);
 		guildFS.addDir("guilds");
 		CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 		if (guildList.isEmpty())
@@ -2107,30 +2107,30 @@ void TPlayer::setNick(CString pNickName, bool force)
 	}
 }
 
-bool TPlayer::addWeapon(LevelItemType defaultWeapon)
+bool Player::addWeapon(LevelItemType defaultWeapon)
 {
 	// Allow Default Weapons..?
 	CSettings& settings = server->getSettings();
 	if (!settings.getBool("defaultweapons", true))
 		return false;
 
-	auto weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
+	auto weapon = server->getWeapon(LevelItem::getItemName(defaultWeapon));
 	if (!weapon)
 	{
-		weapon = std::make_shared<TWeapon>(server, defaultWeapon);
+		weapon = std::make_shared<Weapon>(server, defaultWeapon);
 		server->NC_AddWeapon(weapon);
 	}
 
 	return this->addWeapon(weapon);
 }
 
-bool TPlayer::addWeapon(const std::string& name)
+bool Player::addWeapon(const std::string& name)
 {
 	auto weapon = server->getWeapon(name);
 	return this->addWeapon(weapon);
 }
 
-bool TPlayer::addWeapon(std::shared_ptr<TWeapon> weapon)
+bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 {
 	if (weapon == nullptr) return false;
 
@@ -2147,19 +2147,19 @@ bool TPlayer::addWeapon(std::shared_ptr<TWeapon> weapon)
 	return true;
 }
 
-bool TPlayer::deleteWeapon(LevelItemType defaultWeapon)
+bool Player::deleteWeapon(LevelItemType defaultWeapon)
 {
-	auto weapon = server->getWeapon(TLevelItem::getItemName(defaultWeapon));
+	auto weapon = server->getWeapon(LevelItem::getItemName(defaultWeapon));
 	return this->deleteWeapon(weapon);
 }
 
-bool TPlayer::deleteWeapon(const std::string& name)
+bool Player::deleteWeapon(const std::string& name)
 {
 	auto weapon = server->getWeapon(name);
 	return this->deleteWeapon(weapon);
 }
 
-bool TPlayer::deleteWeapon(std::shared_ptr<TWeapon> weapon)
+bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 {
 	if (weapon == nullptr) return false;
 
@@ -2175,39 +2175,39 @@ bool TPlayer::deleteWeapon(std::shared_ptr<TWeapon> weapon)
 	return true;
 }
 
-void TPlayer::disableWeapons()
+void Player::disableWeapons()
 {
 	this->status &= ~PLSTATUS_ALLOWWEAPONS;
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
-void TPlayer::enableWeapons()
+void Player::enableWeapons()
 {
 	this->status |= PLSTATUS_ALLOWWEAPONS;
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
 }
 
-void TPlayer::freezePlayer()
+void Player::freezePlayer()
 {
 	sendPacket(CString() >> (char)PLO_FREEZEPLAYER2);
 }
 
-void TPlayer::unfreezePlayer()
+void Player::unfreezePlayer()
 {
 	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
 }
 
-void TPlayer::sendRPGMessage(const CString& message)
+void Player::sendRPGMessage(const CString& message)
 {
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
 }
 
-void TPlayer::sendSignMessage(const CString& message)
+void Player::sendSignMessage(const CString& message)
 {
 	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
 }
 
-void TPlayer::setAni(CString gani)
+void Player::setAni(CString gani)
 {
 	if (gani.length() > 223)
 		gani.remove(223);
@@ -2218,12 +2218,12 @@ void TPlayer::setAni(CString gani)
 }
 
 /*
-	TPlayer: Flag Functions
+	Player: Flag Functions
 */
 
-void TPlayer::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
+void Player::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
 {
-	TAccount::deleteFlag(pFlagName);
+	Account::deleteFlag(pFlagName);
 
 	if (sendToPlayer)
 	{
@@ -2231,10 +2231,10 @@ void TPlayer::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
 	}
 }
 
-void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
+void Player::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
 {
 	// Call Default Set Flag
-	TAccount::setFlag(pFlagName, pFlagValue);
+	Account::setFlag(pFlagName, pFlagValue);
 
 	// Send to Player
 	if (sendToPlayer)
@@ -2247,9 +2247,9 @@ void TPlayer::setFlag(const std::string& pFlagName, const CString& pFlagValue, b
 }
 
 /*
-	TPlayer: Packet functions
+	Player: Packet functions
 */
-bool TPlayer::msgPLI_NULL(CString& pPacket)
+bool Player::msgPLI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
 	printf("Unknown Player Packet: %u (%s)\n", (unsigned int)pPacket.readGUChar(), pPacket.text() + 1);
@@ -2268,7 +2268,7 @@ bool TPlayer::msgPLI_NULL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_LOGIN(CString& pPacket)
+bool Player::msgPLI_LOGIN(CString& pPacket)
 {
 	// Read Player-Ip
 	accountIpStr = playerSock->getRemoteIp();
@@ -2439,7 +2439,7 @@ bool TPlayer::msgPLI_LOGIN(CString& pPacket)
 	return true;
 }
 
-int TPlayer::getVersionIDByVersion(const CString& versionInput) const
+int Player::getVersionIDByVersion(const CString& versionInput) const
 {
 	if (isClient()) return getVersionID(versionInput);
 	else if (isNC())
@@ -2450,7 +2450,7 @@ int TPlayer::getVersionIDByVersion(const CString& versionInput) const
 		return CLVER_UNKNOWN;
 }
 
-bool TPlayer::msgPLI_LEVELWARP(CString& pPacket)
+bool Player::msgPLI_LEVELWARP(CString& pPacket)
 {
 	time_t modTime = 0;
 
@@ -2464,7 +2464,7 @@ bool TPlayer::msgPLI_LEVELWARP(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
+bool Player::msgPLI_BOARDMODIFY(CString& pPacket)
 {
 	CSettings& settings = server->getSettings();
 	signed char loc[2]  = { pPacket.readGChar(), pPacket.readGChar() };
@@ -2498,7 +2498,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 		{
 			if ((rand() % 100) < tiledroprate)
 			{
-				dropItem = TLevelItem::getItemId(rand() % 6);
+				dropItem = LevelItem::getItemId(rand() % 6);
 			}
 		}
 	}
@@ -2511,7 +2511,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 	if (dropItem != LevelItemType::INVALID)
 	{
 		// TODO: GS2 replacement of item drops. How does it work?
-		CString packet  = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)TLevelItem::getItemTypeId(dropItem);
+		CString packet  = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)LevelItem::getItemTypeId(dropItem);
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar(); // So msgPLI_ITEMADD works.
 
@@ -2524,7 +2524,7 @@ bool TPlayer::msgPLI_BOARDMODIFY(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
+bool Player::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 {
 	// {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
 	CString level = pPacket.readChars(pPacket.readGUChar());
@@ -2542,13 +2542,13 @@ bool TPlayer::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_PLAYERPROPS(CString& pPacket)
+bool Player::msgPLI_PLAYERPROPS(CString& pPacket)
 {
 	setProps(pPacket, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD);
 	return true;
 }
 
-bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
+bool Player::msgPLI_NPCPROPS(CString& pPacket)
 {
 	// Dont accept npc-properties from clients when an npc-server is present
 #ifdef V8NPCSERVER
@@ -2578,7 +2578,7 @@ bool TPlayer::msgPLI_NPCPROPS(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BOMBADD(CString& pPacket)
+bool Player::msgPLI_BOMBADD(CString& pPacket)
 {
 	// TODO(joey): gmap support
 	unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
@@ -2602,13 +2602,13 @@ bool TPlayer::msgPLI_BOMBADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BOMBDEL(CString& pPacket)
+bool Player::msgPLI_BOMBDEL(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), curlevel, { id });
 	return true;
 }
 
-bool TPlayer::msgPLI_TOALL(CString& pPacket)
+bool Player::msgPLI_TOALL(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
 	std::vector<CString> jailList = server->getSettings().getStr("jaillevels").tokenize(",");
@@ -2641,7 +2641,7 @@ bool TPlayer::msgPLI_TOALL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_HORSEADD(CString& pPacket)
+bool Player::msgPLI_HORSEADD(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), curlevel, { id });
 
@@ -2656,7 +2656,7 @@ bool TPlayer::msgPLI_HORSEADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_HORSEDEL(CString& pPacket)
+bool Player::msgPLI_HORSEDEL(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), curlevel, { id });
 
@@ -2667,19 +2667,19 @@ bool TPlayer::msgPLI_HORSEDEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_ARROWADD(CString& pPacket)
+bool Player::msgPLI_ARROWADD(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)id << (pPacket.text() + 1), curlevel, { id });
 	return true;
 }
 
-bool TPlayer::msgPLI_FIRESPY(CString& pPacket)
+bool Player::msgPLI_FIRESPY(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_FIRESPY >> (short)id << (pPacket.text() + 1), curlevel, { id });
 	return true;
 }
 
-bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
+bool Player::msgPLI_THROWCARRIED(CString& pPacket)
 {
 	// TODO: Remove when an npcserver is created.
 	if (!server->getSettings().getBool("duplicatecanbecarried", false) && carryNpcId != 0)
@@ -2699,7 +2699,7 @@ bool TPlayer::msgPLI_THROWCARRIED(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::removeItem(LevelItemType itemType)
+bool Player::removeItem(LevelItemType itemType)
 {
 	switch (itemType)
 	{
@@ -2813,18 +2813,18 @@ bool TPlayer::removeItem(LevelItemType itemType)
 	return false;
 }
 
-bool TPlayer::msgPLI_ITEMADD(CString& pPacket)
+bool Player::msgPLI_ITEMADD(CString& pPacket)
 {
 	return spawnLevelItem(pPacket, true);
 }
 
-bool TPlayer::spawnLevelItem(CString& pPacket, bool playerDrop)
+bool Player::spawnLevelItem(CString& pPacket, bool playerDrop)
 {
 	// TODO(joey): serverside item checking
 	float loc[2]       = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	unsigned char item = pPacket.readGUChar();
 
-	LevelItemType itemType = TLevelItem::getItemId(item);
+	LevelItemType itemType = LevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
 #ifdef V8NPCSERVER
@@ -2849,7 +2849,7 @@ bool TPlayer::spawnLevelItem(CString& pPacket, bool playerDrop)
 	return true;
 }
 
-bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
+bool Player::msgPLI_ITEMDEL(CString& pPacket)
 {
 	server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1), curlevel, { id });
 
@@ -2862,12 +2862,12 @@ bool TPlayer::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setProps(CString() << TLevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		this->setProps(CString() << LevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	return true;
 }
 
-bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
+bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 {
 	// Get the player who killed us.
 	unsigned int pId = pPacket.readGUShort();
@@ -2954,7 +2954,7 @@ bool TPlayer::msgPLI_CLAIMPKER(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
+bool Player::msgPLI_BADDYPROPS(CString& pPacket)
 {
 	auto level = getLevel();
 	if (level == nullptr) return true;
@@ -2963,7 +2963,7 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 	CString props    = pPacket.readString("");
 
 	// Get the baddy.
-	TLevelBaddy* baddy = level->getBaddy(id);
+	LevelBaddy* baddy = level->getBaddy(id);
 	if (baddy == 0) return true;
 
 	// Get the leader.
@@ -2976,7 +2976,7 @@ bool TPlayer::msgPLI_BADDYPROPS(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BADDYHURT(CString& pPacket)
+bool Player::msgPLI_BADDYHURT(CString& pPacket)
 {
 	auto level    = getLevel();
 	auto leaderId = level->getPlayerList().front();
@@ -2986,7 +2986,7 @@ bool TPlayer::msgPLI_BADDYHURT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
+bool Player::msgPLI_BADDYADD(CString& pPacket)
 {
 	// Don't add a baddy if we aren't in a level!
 	if (curlevel.expired())
@@ -3004,7 +3004,7 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 
 	// Add the baddy.
 	auto level         = getLevel();
-	TLevelBaddy* baddy = level->addBaddy(loc[0], loc[1], bType);
+	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], bType);
 	if (baddy == 0) return true;
 
 	// Set the baddy props.
@@ -3016,7 +3016,7 @@ bool TPlayer::msgPLI_BADDYADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
+bool Player::msgPLI_FLAGSET(CString& pPacket)
 {
 	CSettings& settings = server->getSettings();
 	CString flagPacket  = pPacket.readString("");
@@ -3093,7 +3093,7 @@ bool TPlayer::msgPLI_FLAGSET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
+bool Player::msgPLI_FLAGDEL(CString& pPacket)
 {
 	CString flagPacket = pPacket.readString("");
 	std::string flagName;
@@ -3122,7 +3122,7 @@ bool TPlayer::msgPLI_FLAGDEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
+bool Player::msgPLI_OPENCHEST(CString& pPacket)
 {
 	unsigned char cX = pPacket.readGUChar();
 	unsigned char cY = pPacket.readGUChar();
@@ -3137,7 +3137,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 			if (!hasChest(chestStr))
 			{
 				LevelItemType chestItem = chest.value()->getItemIndex();
-				setProps(CString() << TLevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				setProps(CString() << LevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				chestList.push_back(chestStr);
 			}
@@ -3147,7 +3147,7 @@ bool TPlayer::msgPLI_OPENCHEST(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
+bool Player::msgPLI_PUTNPC(CString& pPacket)
 {
 #ifdef V8NPCSERVER
 	// Disable if we have an NPC-Server.
@@ -3175,7 +3175,7 @@ bool TPlayer::msgPLI_PUTNPC(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
+bool Player::msgPLI_NPCDEL(CString& pPacket)
 {
 #ifdef V8NPCSERVER
 	// Disable if we have an NPC-Server.
@@ -3191,7 +3191,7 @@ bool TPlayer::msgPLI_NPCDEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
+bool Player::msgPLI_WANTFILE(CString& pPacket)
 {
 	// Get file.
 	CString file = pPacket.readString("");
@@ -3207,13 +3207,13 @@ bool TPlayer::msgPLI_WANTFILE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_SHOWIMG(CString& pPacket)
+bool Player::msgPLI_SHOWIMG(CString& pPacket)
 {
 	server->sendPacketToLevelArea(CString() >> (char)PLO_SHOWIMG >> (short)id << (pPacket.text() + 1), this->shared_from_this(), { id });
 	return true;
 }
 
-bool TPlayer::msgPLI_HURTPLAYER(CString& pPacket)
+bool Player::msgPLI_HURTPLAYER(CString& pPacket)
 {
 	unsigned short pId  = pPacket.readGUShort();
 	char hurtdx         = pPacket.readGChar();
@@ -3234,7 +3234,7 @@ bool TPlayer::msgPLI_HURTPLAYER(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
+bool Player::msgPLI_EXPLOSION(CString& pPacket)
 {
 	CSettings& settings = server->getSettings();
 	if (settings.getBool("noexplosions", false)) return true;
@@ -3250,7 +3250,7 @@ bool TPlayer::msgPLI_EXPLOSION(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
+bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
 	// TODO(joey): Is this needed?
 	const int sendLimit = 4;
@@ -3356,7 +3356,7 @@ bool TPlayer::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_NPCWEAPONDEL(CString& pPacket)
+bool Player::msgPLI_NPCWEAPONDEL(CString& pPacket)
 {
 	CString weapon = pPacket.readString("");
 	for (std::vector<CString>::iterator i = weaponList.begin(); i != weaponList.end();)
@@ -3371,7 +3371,7 @@ bool TPlayer::msgPLI_NPCWEAPONDEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
+bool Player::msgPLI_PACKETCOUNT(CString& pPacket)
 {
 	unsigned short count = pPacket.readGUShort();
 	if (count != packetCount || packetCount > 10000)
@@ -3383,7 +3383,7 @@ bool TPlayer::msgPLI_PACKETCOUNT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
+bool Player::msgPLI_WEAPONADD(CString& pPacket)
 {
 #ifdef V8NPCSERVER
 	// Disable if we have an NPC-Server.
@@ -3395,7 +3395,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 	// Type 0 means it is a default weapon.
 	if (type == 0)
 	{
-		this->addWeapon(TLevelItem::getItemId(pPacket.readGChar()));
+		this->addWeapon(LevelItem::getItemId(pPacket.readGChar()));
 	}
 	// NPC weapons.
 	else
@@ -3417,7 +3417,7 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<TWeapon>(server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
+			weapon = std::make_shared<Weapon>(server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
 			server->NC_AddWeapon(weapon);
 		}
 
@@ -3440,9 +3440,9 @@ bool TPlayer::msgPLI_WEAPONADD(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
+bool Player::msgPLI_UPDATEFILE(CString& pPacket)
 {
-	CFileSystem* fileSystem = server->getFileSystem();
+	FileSystem* fileSystem = server->getFileSystem();
 
 	// Get the packet data and file mod time.
 	time_t modTime  = pPacket.readGUInt5();
@@ -3481,12 +3481,12 @@ bool TPlayer::msgPLI_UPDATEFILE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
+bool Player::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
 	time_t modTime    = pPacket.readGUInt5();
 	CString levelName = pPacket.readString("");
 	CString packet;
-	auto adjacentLevel = TLevel::findLevel(levelName, server);
+	auto adjacentLevel = Level::findLevel(levelName, server);
 
 	if (!adjacentLevel)
 		return true;
@@ -3524,7 +3524,7 @@ bool TPlayer::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
+bool Player::msgPLI_HITOBJECTS(CString& pPacket)
 {
 	float power  = (float)pPacket.readGChar() / 2.0f;
 	float loc[2] = { (float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f };
@@ -3542,7 +3542,7 @@ bool TPlayer::msgPLI_HITOBJECTS(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_LANGUAGE(CString& pPacket)
+bool Player::msgPLI_LANGUAGE(CString& pPacket)
 {
 	language = pPacket.readString("");
 	if (language.isEmpty())
@@ -3550,7 +3550,7 @@ bool TPlayer::msgPLI_LANGUAGE(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
+bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 {
 	// Read packet data
 	unsigned int npcId = pPacket.readGUInt();
@@ -3614,7 +3614,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 					CString wepimage = "wbomb1.png";
 
 					// Load in all the execscripts.
-					CFileSystem execscripts(server);
+					FileSystem execscripts(server);
 					execscripts.addDir("execscripts");
 					CString wepscript = execscripts.load(actionParts[2]);
 
@@ -3823,7 +3823,7 @@ bool TPlayer::msgPLI_TRIGGERACTION(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_MAPINFO(CString& pPacket)
+bool Player::msgPLI_MAPINFO(CString& pPacket)
 {
 	// Don't know what this does exactly.  Might be gmap related.
 	pPacket.readString("");
@@ -3890,7 +3890,7 @@ CString ShootPacketNew::constructShootV2() const
 	return packet;
 }
 
-bool TPlayer::msgPLI_SHOOT(CString& pPacket)
+bool Player::msgPLI_SHOOT(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
 	int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
@@ -3948,7 +3948,7 @@ bool TPlayer::msgPLI_SHOOT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
+bool Player::msgPLI_SHOOT2(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
 	newPacket.pixelx        = pPacket.readGUShort();
@@ -3979,7 +3979,7 @@ bool TPlayer::msgPLI_SHOOT2(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
+bool Player::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
 	server->getServerLog().out("%s is requesting serverwarp to %s", accountName.text(), servername.text());
@@ -3987,16 +3987,16 @@ bool TPlayer::msgPLI_SERVERWARP(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_PROCESSLIST(CString& pPacket)
+bool Player::msgPLI_PROCESSLIST(CString& pPacket)
 {
 	std::vector<CString> processes = pPacket.readString("").guntokenize().tokenize("\n");
 	return true;
 }
 
-bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
+bool Player::msgPLI_UNKNOWN46(CString& pPacket)
 {
 #ifdef DEBUG
-	printf("TODO: TPlayer::msgPLI_UNKNOWN46: ");
+	printf("TODO: Player::msgPLI_UNKNOWN46: ");
 	CString packet = pPacket.readString("");
 	for (int i = 0; i < packet.length(); ++i) printf("%02x ", (unsigned char)packet[i]);
 	printf("\n");
@@ -4004,21 +4004,21 @@ bool TPlayer::msgPLI_UNKNOWN46(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RAWDATA(CString& pPacket)
+bool Player::msgPLI_RAWDATA(CString& pPacket)
 {
 	nextIsRaw     = true;
 	rawPacketSize = pPacket.readGUInt();
 	return true;
 }
 
-bool TPlayer::msgPLI_PROFILEGET(CString& pPacket)
+bool Player::msgPLI_PROFILEGET(CString& pPacket)
 {
 	// Send the packet ID for backwards compatibility.
 	server->getServerList().sendPacket(CString() >> (char)SVO_GETPROF >> (short)id << pPacket);
 	return true;
 }
 
-bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
+bool Player::msgPLI_PROFILESET(CString& pPacket)
 {
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc != accountName) return true;
@@ -4029,7 +4029,7 @@ bool TPlayer::msgPLI_PROFILESET(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_RC_UNKNOWN162(CString& pPacket)
+bool Player::msgPLI_RC_UNKNOWN162(CString& pPacket)
 {
 	// Stub.
 	return true;

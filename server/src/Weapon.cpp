@@ -15,18 +15,18 @@
 #endif
 
 // -- Constructor: Default Weapons -- //
-TWeapon::TWeapon(TServer* pServer, LevelItemType pId)
+Weapon::Weapon(Server* pServer, LevelItemType pId)
 	: server(pServer), mModTime(0), mWeaponDefault(pId)
 #ifdef V8NPCSERVER
 	  ,
 	  _scriptExecutionContext(pServer->getScriptEngine())
 #endif
 {
-	_weaponName = TLevelItem::getItemName(mWeaponDefault);
+	_weaponName = LevelItem::getItemName(mWeaponDefault);
 }
 
 // -- Constructor: Weapon Script -- //
-TWeapon::TWeapon(TServer* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
+Weapon::Weapon(Server* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
 	: server(pServer), _weaponName(std::move(pName)), mModTime(pModTime), mWeaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 	  ,
@@ -37,7 +37,7 @@ TWeapon::TWeapon(TServer* pServer, std::string pName, std::string pImage, std::s
 	this->updateWeapon(std::move(pImage), std::move(pScript), pModTime, pSaveWeapon);
 }
 
-TWeapon::~TWeapon()
+Weapon::~Weapon()
 {
 #ifdef V8NPCSERVER
 	freeScriptResources();
@@ -45,10 +45,10 @@ TWeapon::~TWeapon()
 }
 
 // -- Function: Load Weapon -- //
-std::shared_ptr<TWeapon> TWeapon::loadWeapon(const CString& pWeapon, TServer* server)
+std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon, Server* server)
 {
 	// File Path
-	CString fileName = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << pWeapon;
+	CString fileName = server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -125,7 +125,7 @@ std::shared_ptr<TWeapon> TWeapon::loadWeapon(const CString& pWeapon, TServer* se
 		weaponScript.clear();
 	}
 
-	auto weapon = std::make_shared<TWeapon>(server, weaponName, weaponImage, weaponScript, 0);
+	auto weapon = std::make_shared<Weapon>(server, weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty())
 	{
 		weapon->_bytecode     = CString(std::move(byteCodeData));
@@ -136,7 +136,7 @@ std::shared_ptr<TWeapon> TWeapon::loadWeapon(const CString& pWeapon, TServer* se
 }
 
 // -- Function: Save Weapon -- //
-bool TWeapon::saveWeapon()
+bool Weapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
 	if (this->isDefault() || _weaponName.empty())
@@ -153,7 +153,7 @@ bool TWeapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = server->getServerPath() << "weapons" << CFileSystem::getPathSeparator() << "weapon" << name << ".txt";
+	CString filename = server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
@@ -177,7 +177,7 @@ bool TWeapon::saveWeapon()
 }
 
 // -- Function: Get Player Packet -- //
-CString TWeapon::getWeaponPacket(int clientVersion) const
+CString Weapon::getWeaponPacket(int clientVersion) const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)mWeaponDefault;
@@ -210,7 +210,7 @@ CString TWeapon::getWeaponPacket(int clientVersion) const
 }
 
 // -- Function: Update Weapon Image/Script -- //
-void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
+void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
 {
 #ifdef V8NPCSERVER
 	// Clear script function
@@ -273,7 +273,7 @@ void TWeapon::updateWeapon(std::string pImage, std::string pCode, const time_t p
 		saveWeapon();
 }
 
-void TWeapon::setClientScript(const CString& pScript)
+void Weapon::setClientScript(const CString& pScript)
 {
 	// Remove any comments in the code
 	CString formattedScript = removeComments(pScript);
@@ -295,11 +295,11 @@ void TWeapon::setClientScript(const CString& pScript)
 
 #ifdef V8NPCSERVER
 
-void TWeapon::freeScriptResources()
+void Weapon::freeScriptResources()
 {
 	CScriptEngine* scriptEngine = server->getScriptEngine();
 
-	scriptEngine->ClearCache<TWeapon>(_source.getServerSide());
+	scriptEngine->ClearCache<Weapon>(_source.getServerSide());
 
 	// Clear any queued actions
 	if (_scriptExecutionContext.hasActions())
@@ -318,7 +318,7 @@ void TWeapon::freeScriptResources()
 	}
 }
 
-void TWeapon::queueWeaponAction(TPlayer* player, const std::string& args)
+void Weapon::queueWeaponAction(Player* player, const std::string& args)
 {
 	CScriptEngine* scriptEngine = server->getScriptEngine();
 

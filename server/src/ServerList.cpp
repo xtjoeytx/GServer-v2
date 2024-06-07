@@ -13,48 +13,48 @@
 /*
 	Pointer-Functions for Packets
 */
-bool TServerList::created = false;
-typedef void (TServerList::*TSLSock)(CString&);
-std::vector<TSLSock> TSLFunc(256, &TServerList::msgSVI_NULL);
+bool ServerList::created = false;
+typedef void (ServerList::*TSLSock)(CString&);
+std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
 
-void TServerList::createFunctions()
+void ServerList::createFunctions()
 {
-	if (TServerList::created)
+	if (ServerList::created)
 		return;
 
 	// now set non-nulls
-	TSLFunc[SVI_VERIACC]        = &TServerList::msgSVI_VERIACC;
-	TSLFunc[SVI_VERIGUILD]      = &TServerList::msgSVI_VERIGUILD;
-	TSLFunc[SVI_FILESTART]      = &TServerList::msgSVI_FILESTART;
-	TSLFunc[SVI_FILEDATA]       = &TServerList::msgSVI_FILEDATA;
-	TSLFunc[SVI_FILEEND]        = &TServerList::msgSVI_FILEEND;
-	TSLFunc[SVI_VERSIONOLD]     = &TServerList::msgSVI_VERSIONOLD;
-	TSLFunc[SVI_VERSIONCURRENT] = &TServerList::msgSVI_VERSIONCURRENT;
-	TSLFunc[SVI_PROFILE]        = &TServerList::msgSVI_PROFILE;
-	TSLFunc[SVI_ERRMSG]         = &TServerList::msgSVI_ERRMSG;
-	TSLFunc[SVI_VERIACC2]       = &TServerList::msgSVI_VERIACC2;
-	TSLFunc[SVI_FILESTART2]     = &TServerList::msgSVI_FILESTART2;
-	TSLFunc[SVI_FILEDATA2]      = &TServerList::msgSVI_FILEDATA2;
-	TSLFunc[SVI_FILEEND2]       = &TServerList::msgSVI_FILEEND2;
-	TSLFunc[SVI_PING]           = &TServerList::msgSVI_PING;
-	TSLFunc[SVI_RAWDATA]        = &TServerList::msgSVI_RAWDATA;
-	TSLFunc[SVI_FILESTART3]     = &TServerList::msgSVI_FILESTART3;
-	TSLFunc[SVI_FILEDATA3]      = &TServerList::msgSVI_FILEDATA3;
-	TSLFunc[SVI_FILEEND3]       = &TServerList::msgSVI_FILEEND3;
-	TSLFunc[SVI_SERVERINFO]     = &TServerList::msgSVI_SERVERINFO;
-	TSLFunc[SVI_REQUESTTEXT]    = &TServerList::msgSVI_REQUESTTEXT;
-	TSLFunc[SVI_SENDTEXT]       = &TServerList::msgSVI_SENDTEXT;
-	TSLFunc[SVI_PMPLAYER]       = &TServerList::msgSVI_PMPLAYER;
-	TSLFunc[SVI_ASSIGNPCID]     = &TServerList::msgSVI_ASSIGNPCID;
+	TSLFunc[SVI_VERIACC]        = &ServerList::msgSVI_VERIACC;
+	TSLFunc[SVI_VERIGUILD]      = &ServerList::msgSVI_VERIGUILD;
+	TSLFunc[SVI_FILESTART]      = &ServerList::msgSVI_FILESTART;
+	TSLFunc[SVI_FILEDATA]       = &ServerList::msgSVI_FILEDATA;
+	TSLFunc[SVI_FILEEND]        = &ServerList::msgSVI_FILEEND;
+	TSLFunc[SVI_VERSIONOLD]     = &ServerList::msgSVI_VERSIONOLD;
+	TSLFunc[SVI_VERSIONCURRENT] = &ServerList::msgSVI_VERSIONCURRENT;
+	TSLFunc[SVI_PROFILE]        = &ServerList::msgSVI_PROFILE;
+	TSLFunc[SVI_ERRMSG]         = &ServerList::msgSVI_ERRMSG;
+	TSLFunc[SVI_VERIACC2]       = &ServerList::msgSVI_VERIACC2;
+	TSLFunc[SVI_FILESTART2]     = &ServerList::msgSVI_FILESTART2;
+	TSLFunc[SVI_FILEDATA2]      = &ServerList::msgSVI_FILEDATA2;
+	TSLFunc[SVI_FILEEND2]       = &ServerList::msgSVI_FILEEND2;
+	TSLFunc[SVI_PING]           = &ServerList::msgSVI_PING;
+	TSLFunc[SVI_RAWDATA]        = &ServerList::msgSVI_RAWDATA;
+	TSLFunc[SVI_FILESTART3]     = &ServerList::msgSVI_FILESTART3;
+	TSLFunc[SVI_FILEDATA3]      = &ServerList::msgSVI_FILEDATA3;
+	TSLFunc[SVI_FILEEND3]       = &ServerList::msgSVI_FILEEND3;
+	TSLFunc[SVI_SERVERINFO]     = &ServerList::msgSVI_SERVERINFO;
+	TSLFunc[SVI_REQUESTTEXT]    = &ServerList::msgSVI_REQUESTTEXT;
+	TSLFunc[SVI_SENDTEXT]       = &ServerList::msgSVI_SENDTEXT;
+	TSLFunc[SVI_PMPLAYER]       = &ServerList::msgSVI_PMPLAYER;
+	TSLFunc[SVI_ASSIGNPCID]     = &ServerList::msgSVI_ASSIGNPCID;
 
 	// Finished
-	TServerList::created = true;
+	ServerList::created = true;
 }
 
 /*
 	Constructor - Deconstructor
 */
-TServerList::TServerList(TServer* server)
+ServerList::ServerList(Server* server)
 	: _server(server), _fileQueue(&sock), nextIsRaw(false), rawPacketSize(0), _serverRemoteIp("127.0.0.1"), connectionAttempts(0), nextConnectionAttempt(0)
 {
 	sock.setProtocol(SOCKET_PROTOCOL_TCP);
@@ -64,23 +64,23 @@ TServerList::TServerList(TServer* server)
 	lastData = lastTimer = time(0);
 
 	// Create Functions
-	if (!TServerList::created)
-		TServerList::createFunctions();
+	if (!ServerList::created)
+		ServerList::createFunctions();
 }
 
-TServerList::~TServerList()
+ServerList::~ServerList()
 {
 }
 
 /*
 	Socket-Control Functions
 */
-bool TServerList::getConnected() const
+bool ServerList::getConnected() const
 {
 	return (sock.getState() == SOCKET_STATE_CONNECTED);
 }
 
-bool TServerList::onRecv()
+bool ServerList::onRecv()
 {
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
@@ -95,24 +95,24 @@ bool TServerList::onRecv()
 	return true;
 }
 
-bool TServerList::onSend()
+bool ServerList::onSend()
 {
 	_fileQueue.sendCompress();
 	return true;
 }
 
-bool TServerList::canRecv()
+bool ServerList::canRecv()
 {
 	if (sock.getState() == SOCKET_STATE_DISCONNECTED) return false;
 	return true;
 }
 
-void TServerList::onUnregister()
+void ServerList::onUnregister()
 {
 	_server->getServerLog().out("[%s] :: %s - Disconnected.\n", _server->getName().text(), sock.getDescription());
 }
 
-bool TServerList::main()
+bool ServerList::main()
 {
 	if (!getConnected())
 		return false;
@@ -147,8 +147,8 @@ bool TServerList::main()
 	return getConnected();
 }
 
-// Called every second by TServer
-bool TServerList::doTimedEvents()
+// Called every second by Server
+bool ServerList::doTimedEvents()
 {
 	lastTimer = time(0);
 
@@ -175,7 +175,7 @@ bool TServerList::doTimedEvents()
 	return true;
 }
 
-bool TServerList::connectServer()
+bool ServerList::connectServer()
 {
 	auto& settings = _server->getSettings();
 
@@ -253,7 +253,7 @@ bool TServerList::connectServer()
 	return getConnected();
 }
 
-void TServerList::sendVersionConfig()
+void ServerList::sendVersionConfig()
 {
 	if (!getConnected())
 		return;
@@ -272,7 +272,7 @@ void TServerList::sendVersionConfig()
 	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
-void TServerList::sendPacket(CString& pPacket, bool sendNow)
+void ServerList::sendPacket(CString& pPacket, bool sendNow)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -293,7 +293,7 @@ void TServerList::sendPacket(CString& pPacket, bool sendNow)
 /*
 	Altering Player Information
 */
-void TServerList::addPlayer(TPlayerPtr player)
+void ServerList::addPlayer(TPlayerPtr player)
 {
 	assert(player != nullptr);
 
@@ -309,14 +309,14 @@ void TServerList::addPlayer(TPlayerPtr player)
 	sendPacket(dataPacket);
 }
 
-void TServerList::deletePlayer(TPlayerPtr player)
+void ServerList::deletePlayer(TPlayerPtr player)
 {
 	assert(player != nullptr);
 
 	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
 }
 
-void TServerList::sendPlayers()
+void ServerList::sendPlayers()
 {
 	// Clears the serverlist players
 	sendPacket(CString() >> (char)SVO_SETPLYR);
@@ -330,7 +330,7 @@ void TServerList::sendPlayers()
 	}
 }
 
-void TServerList::handleText(const CString& data)
+void ServerList::handleText(const CString& data)
 {
 	CString dataTokenStr        = data.guntokenize();
 	std::vector<CString> params = data.gCommaStrTokens();
@@ -396,7 +396,7 @@ void TServerList::handleText(const CString& data)
 	}
 }
 
-void TServerList::sendText(const CString& data)
+void ServerList::sendText(const CString& data)
 {
 	CString dataPacket;
 	dataPacket.writeGChar(SVO_SENDTEXT);
@@ -404,7 +404,7 @@ void TServerList::sendText(const CString& data)
 	sendPacket(dataPacket);
 }
 
-void TServerList::sendText(const std::vector<CString>& stringList)
+void ServerList::sendText(const std::vector<CString>& stringList)
 {
 	CString dataPacket;
 	dataPacket.writeGChar(SVO_SENDTEXT);
@@ -413,7 +413,7 @@ void TServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket(dataPacket);
 }
 
-void TServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
+void ServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
 {
 	assert(player != nullptr);
 
@@ -423,12 +423,12 @@ void TServerList::sendTextForPlayer(TPlayerPtr player, const CString& data)
 	sendPacket(dataPacket);
 }
 
-void TServerList::sendLoginPacketForPlayer(TPlayerPtr player, const CString& password, const CString& identity)
+void ServerList::sendLoginPacketForPlayer(TPlayerPtr player, const CString& password, const CString& identity)
 {
 	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->getAccountName().length() << player->getAccountName() >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
 }
 
-void TServerList::sendServerHQ()
+void ServerList::sendServerHQ()
 {
 	auto& adminsettings = _server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
@@ -441,7 +441,7 @@ void TServerList::sendServerHQ()
 /*
 	Packet-Functions
 */
-bool TServerList::parsePacket(CString& pPacket)
+bool ServerList::parsePacket(CString& pPacket)
 {
 	while (pPacket.bytesLeft() > 0)
 	{
@@ -464,18 +464,18 @@ bool TServerList::parsePacket(CString& pPacket)
 	return true;
 }
 
-void TServerList::msgSVI_NULL(CString& pPacket)
+void ServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
 	_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", _server->getName().text(), pPacket.readGUChar(), pPacket.text() + 1);
 }
 
-void TServerList::msgSVI_VERIACC(CString& pPacket)
+void ServerList::msgSVI_VERIACC(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_VERIGUILD(CString& pPacket)
+void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 {
 	unsigned short playerID = pPacket.readGUShort();
 	CString nickname        = pPacket.readChars(pPacket.readGUChar());
@@ -495,34 +495,34 @@ void TServerList::msgSVI_VERIGUILD(CString& pPacket)
 	}
 }
 
-void TServerList::msgSVI_FILESTART(CString& pPacket)
+void ServerList::msgSVI_FILESTART(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_FILEEND(CString& pPacket)
+void ServerList::msgSVI_FILEEND(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_FILEDATA(CString& pPacket)
+void ServerList::msgSVI_FILEDATA(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_VERSIONOLD(CString& pPacket)
+void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
 								":: An updated version is available online.\n",
 								APP_VENDOR, APP_NAME, _server->getName().text());
 }
 
-void TServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
+void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
 {
 	// Don't bother telling them they are running the latest version.
 }
 
-void TServerList::msgSVI_PROFILE(CString& pPacket)
+void ServerList::msgSVI_PROFILE(CString& pPacket)
 {
 	unsigned short requestPlayer = pPacket.readGUShort();
 	CString targetPlayer         = pPacket.readChars(pPacket.readGUChar());
@@ -666,12 +666,12 @@ void TServerList::msgSVI_PROFILE(CString& pPacket)
 	p1->sendPacket(CString() >> (char)PLO_PROFILE << profile);
 }
 
-void TServerList::msgSVI_ERRMSG(CString& pPacket)
+void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] :: %s - [Error] %s\n", _server->getName().text(), sock.getDescription(), pPacket.readString("").text());
 }
 
-void TServerList::msgSVI_VERIACC2(CString& pPacket)
+void ServerList::msgSVI_VERIACC2(CString& pPacket)
 {
 	CString account    = pPacket.readChars(pPacket.readGUChar());
 	unsigned short id  = pPacket.readGUShort();
@@ -703,34 +703,34 @@ void TServerList::msgSVI_VERIACC2(CString& pPacket)
 	}
 }
 
-void TServerList::msgSVI_FILESTART2(CString& pPacket)
+void ServerList::msgSVI_FILESTART2(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_FILEDATA2(CString& pPacket)
+void ServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_FILEEND2(CString& pPacket)
+void ServerList::msgSVI_FILEEND2(CString& pPacket)
 {
 	_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", _server->getName().text());
 }
 
-void TServerList::msgSVI_PING(CString& pPacket)
+void ServerList::msgSVI_PING(CString& pPacket)
 {
 	// When server pings, we pong
 	sendPacket(CString() >> (char)SVO_PING);
 }
 
-void TServerList::msgSVI_RAWDATA(CString& pPacket)
+void ServerList::msgSVI_RAWDATA(CString& pPacket)
 {
 	//nextIsRaw = true;
 	//rawPacketSize = pPacket.readGInt();
 }
 
-void TServerList::msgSVI_FILESTART3(CString& pPacket)
+void ServerList::msgSVI_FILESTART3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
 	CString blank, filename = CString() << "world/global/";
@@ -750,12 +750,12 @@ void TServerList::msgSVI_FILESTART3(CString& pPacket)
 			break;
 	}
 	filename << pPacket.readChars(pPacket.readGUChar());
-	CFileSystem::fixPathSeparators(filename);
+	FileSystem::fixPathSeparators(filename);
 	blank.save(CString() << _server->getServerPath() << filename);
 	_server->getFileSystem()->addFile(filename);
 }
 
-void TServerList::msgSVI_FILEDATA3(CString& pPacket)
+void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
 	CString filename  = _server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
@@ -766,7 +766,7 @@ void TServerList::msgSVI_FILEDATA3(CString& pPacket)
 	filedata.save(filename);
 }
 
-void TServerList::msgSVI_FILEEND3(CString& pPacket)
+void ServerList::msgSVI_FILEEND3(CString& pPacket)
 {
 	unsigned short pid       = pPacket.readGUShort();
 	unsigned char type       = pPacket.readGUChar();
@@ -778,7 +778,7 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 	// If we have folder config enabled, we need to add the file to the appropriate
 	// file system.
 	bool foldersconfig      = !_server->getSettings().getBool("nofoldersconfig", false);
-	CFileSystem* fileSystem = 0;
+	FileSystem* fileSystem = 0;
 	CString typeString;
 	switch (type)
 	{
@@ -850,7 +850,7 @@ void TServerList::msgSVI_FILEEND3(CString& pPacket)
 	}
 }
 
-void TServerList::msgSVI_SERVERINFO(CString& pPacket)
+void ServerList::msgSVI_SERVERINFO(CString& pPacket)
 {
 	int pid              = pPacket.readGUShort();
 	CString serverpacket = pPacket.readString("");
@@ -861,7 +861,7 @@ void TServerList::msgSVI_SERVERINFO(CString& pPacket)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 }
 
-void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
+void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 {
 	unsigned short playerId = pPacket.readGUShort();
 	CString message         = pPacket.readString("");
@@ -947,13 +947,13 @@ void TServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	}
 }
 
-void TServerList::msgSVI_SENDTEXT(CString& pPacket)
+void ServerList::msgSVI_SENDTEXT(CString& pPacket)
 {
 	CString data = pPacket.readString("");
 	handleText(data);
 }
 
-void TServerList::msgSVI_PMPLAYER(CString& pPacket)
+void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 {
 	CString message = pPacket.readString("");
 	CString data    = message.guntokenize();
@@ -987,7 +987,7 @@ void TServerList::msgSVI_PMPLAYER(CString& pPacket)
 	message2 = "";
 }
 
-void TServerList::msgSVI_ASSIGNPCID(CString& pPacket)
+void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 {
 	uint16_t id  = pPacket.readGUShort();
 	uint8_t type = pPacket.readGUChar();

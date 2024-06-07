@@ -110,7 +110,7 @@ CString encodeSign(const CString& pSignText)
 	return retVal;
 }
 
-TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
+LevelSign::LevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
 	: x(pX), y(pY), unformattedText(pSign)
 {
 	if (encoded)
@@ -122,7 +122,7 @@ TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool en
 		text = encodeSign(unformattedText);
 }
 
-CString TLevelSign::getSignStr(TPlayer* pPlayer) const
+CString LevelSign::getSignStr(Player* pPlayer) const
 {
 	CString outText;
 
@@ -136,13 +136,13 @@ CString TLevelSign::getSignStr(TPlayer* pPlayer) const
 	return outText;
 }
 
-void TLevelSign::setText(const CString& value)
+void LevelSign::setText(const CString& value)
 {
 	text            = value;
 	unformattedText = decodeSignCode(value);
 }
 
-void TLevelSign::setUText(const CString& value)
+void LevelSign::setUText(const CString& value)
 {
 	text            = encodeSign(value);
 	unformattedText = value;

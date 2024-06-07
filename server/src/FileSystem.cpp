@@ -21,31 +21,31 @@
 	#endif
 #endif
 
-CFileSystem::CFileSystem()
+FileSystem::FileSystem()
 	: server(nullptr)
 {
 	m_preventChange = new std::recursive_mutex();
 }
 
-CFileSystem::CFileSystem(TServer* pServer)
+FileSystem::FileSystem(Server* pServer)
 	: server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();
 }
 
-CFileSystem::~CFileSystem()
+FileSystem::~FileSystem()
 {
 	clear();
 	delete m_preventChange;
 }
 
-void CFileSystem::clear()
+void FileSystem::clear()
 {
 	fileList.clear();
 	directoryList.clear();
 }
 
-void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
+void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceRecursive)
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -54,11 +54,11 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 	// Format the directory.
 	CString newDir(dir);
 	if (newDir[newDir.length() - 1] == '/' || newDir[newDir.length() - 1] == '\\')
-		CFileSystem::fixPathSeparators(newDir);
+		FileSystem::fixPathSeparators(newDir);
 	else
 	{
 		newDir << fSep;
-		CFileSystem::fixPathSeparators(newDir);
+		FileSystem::fixPathSeparators(newDir);
 	}
 
 	// Add the directory to the directory list.
@@ -74,12 +74,12 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 	}
 }
 
-void CFileSystem::addFile(CString file)
+void FileSystem::addFile(CString file)
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	// Grab the file name and directory.
-	CFileSystem::fixPathSeparators(file);
+	FileSystem::fixPathSeparators(file);
 	CString filename(getFilename(file, fSep));
 	CString directory(getPath(file, fSep));
 
@@ -91,7 +91,7 @@ void CFileSystem::addFile(CString file)
 	fileList[filename] = server->getServerPath() << directory << filename;
 }
 
-void CFileSystem::removeFile(const CString& file)
+void FileSystem::removeFile(const CString& file)
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -100,13 +100,13 @@ void CFileSystem::removeFile(const CString& file)
 	CString directory(file.subString(0, file.find(filename)));
 
 	// Fix directory path separators.
-	CFileSystem::fixPathSeparators(directory);
+	FileSystem::fixPathSeparators(directory);
 
 	// Remove it from the map.
 	fileList.erase(filename);
 }
 
-void CFileSystem::resync()
+void FileSystem::resync()
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -118,7 +118,7 @@ void CFileSystem::resync()
 		loadAllDirectories(directory, server->getSettings().getBool("nofoldersconfig", false));
 }
 
-CString CFileSystem::find(const CString& file) const
+CString FileSystem::find(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -127,7 +127,7 @@ CString CFileSystem::find(const CString& file) const
 	return { fileIter->second };
 }
 
-CString CFileSystem::findi(const CString& file) const
+CString FileSystem::findi(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -136,7 +136,7 @@ CString CFileSystem::findi(const CString& file) const
 	return {};
 }
 
-CString CFileSystem::fileExistsAs(const CString& file) const
+CString FileSystem::fileExistsAs(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -146,7 +146,7 @@ CString CFileSystem::fileExistsAs(const CString& file) const
 }
 
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
-void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
+void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
 	CString dir = CString() << directory.remove(directory.findl(fSep)) << fSep;
 	WIN32_FIND_DATAA filedata;
@@ -178,7 +178,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	FindClose(hFind);
 }
 #else
-void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
+void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
 	CString path     = CString() << directory.remove(directory.findl(fSep)) << fSep;
 	CString wildcard = directory.subString(directory.findl(fSep) + 1);
@@ -223,7 +223,7 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 }
 #endif
 
-CString CFileSystem::load(const CString& file) const
+CString FileSystem::load(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -238,7 +238,7 @@ CString CFileSystem::load(const CString& file) const
 	return fileData;
 }
 
-time_t CFileSystem::getModTime(const CString& file) const
+time_t FileSystem::getModTime(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -254,7 +254,7 @@ time_t CFileSystem::getModTime(const CString& file) const
 	return 0;
 }
 
-bool CFileSystem::setModTime(const CString& file, time_t modTime) const
+bool FileSystem::setModTime(const CString& file, time_t modTime) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -273,7 +273,7 @@ bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 	return utime(fileName.text(), &ut) == 0;
 }
 
-int CFileSystem::getFileSize(const CString& file) const
+int FileSystem::getFileSize(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
@@ -289,7 +289,7 @@ int CFileSystem::getFileSize(const CString& file) const
 	return 0;
 }
 
-CString CFileSystem::getDirByExtension(const std::string& extension) const
+CString FileSystem::getDirByExtension(const std::string& extension) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 

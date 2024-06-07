@@ -176,16 +176,16 @@ struct ScriptEventTimer
 
 #endif
 
-class TServer;
-class TLevel;
-class TPlayer;
-class TScriptClass;
-class TNPC
+class Server;
+class Level;
+class Player;
+class ScriptClass;
+class NPC
 {
 	public:
-		TNPC(TServer* pServer, NPCType type);
-		TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServer* pServer, std::shared_ptr<TLevel> pLevel, NPCType type);
-		~TNPC();
+		NPC(Server* pServer, NPCType type);
+		NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type);
+		~NPC();
 
 		void setScriptCode(std::string pScript);
 
@@ -238,7 +238,7 @@ class TNPC
 
 		// set functions
 		void setId(unsigned int pId)			{ id = pId; }
-		void setLevel(std::shared_ptr<TLevel> pLevel) { curlevel = pLevel; }
+		void setLevel(std::shared_ptr<Level> pLevel) { curlevel = pLevel; }
 		void setX(int val)						{ x = val; }
 		void setY(int val)						{ y = val; }
 		void setHeight(int val)					{ height = val; }
@@ -268,7 +268,7 @@ class TNPC
 		const CString& getScriptType() const	{ return npcScriptType; }
 		const CString& getScripter() const		{ return npcScripter; }
 		const CString& getWeaponName() const	{ return weaponName; }
-		std::shared_ptr<TLevel> getLevel() const;
+		std::shared_ptr<Level> getLevel() const;
 		time_t getPropModTime(unsigned char pId);
 		unsigned char getColorId(unsigned int idx) const;
 
@@ -284,7 +284,7 @@ class TNPC
 			return (it != classMap.end());
 		}
 
-		TScriptClass * joinClass(const std::string& className);
+		ScriptClass * joinClass(const std::string& className);
 		void setTimeout(int val);
 		void updatePropModTime(unsigned char propId);
 
@@ -293,8 +293,8 @@ class TNPC
 		void setScriptEvents(int mask);
 
 		ScriptExecutionContext& getExecutionContext();
-		IScriptObject<TNPC> * getScriptObject() const;
-		void setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object);
+		IScriptObject<NPC> * getScriptObject() const;
+		void setScriptObject(std::unique_ptr<IScriptObject<NPC>> object);
 
 		// -- flags
 		CString getFlag(const std::string& pFlagName) const;
@@ -309,14 +309,14 @@ class TNPC
 		bool isWarpable() const;
 		void allowNpcWarping(NPCWarpType canWarp);
 		void moveNPC(int dx, int dy, double time, int options);
-		void warpNPC(std::shared_ptr<TLevel> pLevel, int pX, int pY);
+		void warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY);
 
 		// file
 		bool loadNPC(const CString& fileName);
 		void saveNPC();
 
-		void queueNpcAction(const std::string& action, TPlayer *player = nullptr, bool registerAction = true);
-		void queueNpcTrigger(const std::string& action, TPlayer *player = nullptr, const std::string& data = "");
+		void queueNpcAction(const std::string& action, Player *player = nullptr, bool registerAction = true);
+		void queueNpcTrigger(const std::string& action, Player *player = nullptr, const std::string& data = "");
 
 		template<class... Args>
 		void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
@@ -348,8 +348,8 @@ class TNPC
 		CString swordImage, shieldImage, headImage, bodyImage, horseImage, bowImage;
 		CString imagePart, weaponName;
 		unsigned char saves[10];
-		std::weak_ptr<TLevel> curlevel;
-		TServer* server;
+		std::weak_ptr<Level> curlevel;
+		Server* server;
 
 		std::string chatMsg, gani, image;
 		std::string nickName;
@@ -383,52 +383,52 @@ class TNPC
 		std::unordered_map<std::string, CString> flagList;
 
 		unsigned int _scriptEventsMask;
-		std::unique_ptr<IScriptObject<TNPC>> _scriptObject;
+		std::unique_ptr<IScriptObject<NPC>> _scriptObject;
 		ScriptExecutionContext _scriptExecutionContext;
 		std::unordered_map<std::string, IScriptFunction *> _triggerActions;
 		std::vector<ScriptEventTimer> _scriptTimers;
 #endif
 };
 
-using TNPCPtr = std::shared_ptr<TNPC>;
-using TNPCWeakPtr = std::weak_ptr<TNPC>;
+using TNPCPtr = std::shared_ptr<NPC>;
+using TNPCWeakPtr = std::weak_ptr<NPC>;
 
 inline
-time_t TNPC::getPropModTime(unsigned char pId)
+time_t NPC::getPropModTime(unsigned char pId)
 {
 	if (pId < NPCPROP_COUNT) return modTime[pId];
 	return 0;
 }
 
 inline
-void TNPC::setPropModTime(unsigned char pId, time_t time)
+void NPC::setPropModTime(unsigned char pId, time_t time)
 {
 	if (pId < NPCPROP_COUNT)
 		modTime[pId] = time;
 }
 
 inline
-unsigned char TNPC::getColorId(unsigned int idx) const
+unsigned char NPC::getColorId(unsigned int idx) const
 {
 	if (idx < 5) return colors[idx];
 	return 0;
 }
 
 inline
-void TNPC::setColorId(unsigned int idx, unsigned char val)
+void NPC::setColorId(unsigned int idx, unsigned char val)
 {
 	if (idx < 5) colors[idx] = val;
 }
 
 inline
-unsigned char TNPC::getSave(unsigned int idx) const
+unsigned char NPC::getSave(unsigned int idx) const
 {
 	if (idx < 10) return saves[idx];
 	return 0;
 }
 
 inline
-void TNPC::setSave(unsigned int idx, unsigned char val)
+void NPC::setSave(unsigned int idx, unsigned char val)
 {
 	if (idx < 10) saves[idx] = val;
 }
@@ -436,26 +436,26 @@ void TNPC::setSave(unsigned int idx, unsigned char val)
 //////////
 
 inline
-const std::string& TNPC::getChat() const
+const std::string& NPC::getChat() const
 {
 	return chatMsg;
 }
 
 inline
-void TNPC::setChat(const std::string& msg) {
+void NPC::setChat(const std::string& msg) {
 	chatMsg = msg.substr(0, std::min<size_t>(msg.length(), 223));
 }
 
 //////////
 
 inline
-const std::string& TNPC::getGani() const
+const std::string& NPC::getGani() const
 {
 	return gani;
 }
 
 inline
-void TNPC::setGani(const std::string& gani)
+void NPC::setGani(const std::string& gani)
 {
 	this->gani = gani.substr(0, std::min<size_t>(gani.length(), 223));
 }
@@ -463,13 +463,13 @@ void TNPC::setGani(const std::string& gani)
 //////////
 
 inline
-int TNPC::getRupees() const
+int NPC::getRupees() const
 {
 	return rupees;
 }
 
 inline
-void TNPC::setRupees(int val)
+void NPC::setRupees(int val)
 {
 	rupees = val;
 }
@@ -477,13 +477,13 @@ void TNPC::setRupees(int val)
 //////////
 
 inline
-int TNPC::getDarts() const
+int NPC::getDarts() const
 {
 	return darts;
 }
 
 inline
-void TNPC::setDarts(int val)
+void NPC::setDarts(int val)
 {
 	setProps(CString() >> (char)NPCPROP_ARROWS >> (char)clip(val, 0, 99), CLVER_2_17, true);
 }
@@ -491,19 +491,19 @@ void TNPC::setDarts(int val)
 /////////
 
 inline
-const std::string& TNPC::getImage() const
+const std::string& NPC::getImage() const
 {
 	return image;
 }
 
 inline
-void TNPC::setImage(const std::string& pImage)
+void NPC::setImage(const std::string& pImage)
 {
 	image = pImage.substr(0, std::min<size_t>(pImage.length(), 223));
 }
 
 inline
-void TNPC::setImage(const std::string& pImage, int offsetx, int offsety, int pwidth, int pheight)
+void NPC::setImage(const std::string& pImage, int offsetx, int offsety, int pwidth, int pheight)
 {
 	setImage(pImage);
 	imagePart.clear();
@@ -516,13 +516,13 @@ void TNPC::setImage(const std::string& pImage, int offsetx, int offsety, int pwi
 //////////
 
 inline
-const std::string& TNPC::getNickname() const
+const std::string& NPC::getNickname() const
 {
 	return nickName;
 }
 
 inline
-void TNPC::setNickname(const std::string& pNick)
+void NPC::setNickname(const std::string& pNick)
 {
 	nickName = pNick.substr(0, std::min<size_t>(pNick.length(), 223));
 }
@@ -530,13 +530,13 @@ void TNPC::setNickname(const std::string& pNick)
 //////////
 
 inline
-const CString& TNPC::getBodyImage() const
+const CString& NPC::getBodyImage() const
 {
 	return bodyImage;
 }
 
 inline
-void TNPC::setBodyImage(const std::string& pBodyImage)
+void NPC::setBodyImage(const std::string& pBodyImage)
 {
 	bodyImage = pBodyImage.substr(0, 200);
 }
@@ -544,13 +544,13 @@ void TNPC::setBodyImage(const std::string& pBodyImage)
 //////////
 
 inline
-const CString& TNPC::getHeadImage() const
+const CString& NPC::getHeadImage() const
 {
 	return headImage;
 }
 
 inline
-void TNPC::setHeadImage(const std::string& pHeadImage)
+void NPC::setHeadImage(const std::string& pHeadImage)
 {
 	headImage = pHeadImage.substr(0, 123);
 }
@@ -558,13 +558,13 @@ void TNPC::setHeadImage(const std::string& pHeadImage)
 //////////
 
 inline
-const CString& TNPC::getHorseImage() const
+const CString& NPC::getHorseImage() const
 {
 	return horseImage;
 }
 
 inline
-void TNPC::setHorseImage(const std::string& pHorseImage)
+void NPC::setHorseImage(const std::string& pHorseImage)
 {
 	horseImage = pHorseImage.substr(0, 200);
 }
@@ -572,13 +572,13 @@ void TNPC::setHorseImage(const std::string& pHorseImage)
 //////////
 
 inline
-const CString& TNPC::getShieldImage() const
+const CString& NPC::getShieldImage() const
 {
 	return shieldImage;
 }
 
 inline
-void TNPC::setShieldImage(const std::string& pShieldImage)
+void NPC::setShieldImage(const std::string& pShieldImage)
 {
 	shieldImage = pShieldImage.substr(0, 200);
 }
@@ -586,20 +586,20 @@ void TNPC::setShieldImage(const std::string& pShieldImage)
 //////////
 
 inline
-const CString& TNPC::getSwordImage() const
+const CString& NPC::getSwordImage() const
 {
 	return swordImage;
 }
 
 inline
-void TNPC::setSwordImage(const std::string& pSwordImage)
+void NPC::setSwordImage(const std::string& pSwordImage)
 {
 	swordImage = pSwordImage.substr(0, 120);
 }
 
 #ifdef V8NPCSERVER
 
-inline void TNPC::updatePropModTime(unsigned char propId)
+inline void NPC::updatePropModTime(unsigned char propId)
 {
 	if (propId < NPCPROP_COUNT)
 	{
@@ -608,12 +608,12 @@ inline void TNPC::updatePropModTime(unsigned char propId)
 	}
 }
 
-inline bool TNPC::isWarpable() const
+inline bool NPC::isWarpable() const
 {
 	return canWarp != NPCWarpType::None;
 }
 
-inline void TNPC::allowNpcWarping(NPCWarpType canWarp)
+inline void NPC::allowNpcWarping(NPCWarpType canWarp)
 {
 	if (npcType != NPCType::LEVELNPC)
 		this->canWarp = canWarp;
@@ -622,31 +622,31 @@ inline void TNPC::allowNpcWarping(NPCWarpType canWarp)
 /**
  * Script Engine
  */
-inline bool TNPC::hasTimerUpdates() const {
+inline bool NPC::hasTimerUpdates() const {
 	return (timeout > 0 || !_scriptTimers.empty());
 }
 
-inline bool TNPC::hasScriptEvent(int flag) const {
+inline bool NPC::hasScriptEvent(int flag) const {
 	return ((_scriptEventsMask & flag) == flag);
 }
 
-inline void TNPC::setScriptEvents(int mask) {
+inline void NPC::setScriptEvents(int mask) {
 	_scriptEventsMask = mask;
 }
 
-inline ScriptExecutionContext& TNPC::getExecutionContext() {
+inline ScriptExecutionContext& NPC::getExecutionContext() {
 	return _scriptExecutionContext;
 }
 
-inline IScriptObject<TNPC> * TNPC::getScriptObject() const {
+inline IScriptObject<NPC> * NPC::getScriptObject() const {
 	return _scriptObject.get();
 }
 
-inline void TNPC::setScriptObject(std::unique_ptr<IScriptObject<TNPC>> object) {
+inline void NPC::setScriptObject(std::unique_ptr<IScriptObject<NPC>> object) {
 	_scriptObject = std::move(object);
 }
 
-inline CString TNPC::getFlag(const std::string& pFlagName) const
+inline CString NPC::getFlag(const std::string& pFlagName) const
 {
 	auto it = flagList.find(pFlagName);
 	if (it != flagList.end())
@@ -654,12 +654,12 @@ inline CString TNPC::getFlag(const std::string& pFlagName) const
 	return "";
 }
 
-inline void TNPC::setFlag(const std::string & pFlagName, const CString & pFlagValue)
+inline void NPC::setFlag(const std::string & pFlagName, const CString & pFlagValue)
 {
 	flagList[pFlagName] = pFlagValue;
 }
 
-inline void TNPC::deleteFlag(const std::string& pFlagName)
+inline void NPC::deleteFlag(const std::string& pFlagName)
 {
 	flagList.erase(pFlagName);
 }
@@ -668,7 +668,7 @@ inline void TNPC::deleteFlag(const std::string& pFlagName)
 #include "Server.h"
 
 template<class... Args>
-inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
+inline void NPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	ScriptAction scriptAction = scriptEngine->CreateAction(action, getScriptObject(), std::forward<Args>(An)...);
@@ -678,13 +678,13 @@ inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, 
 		scriptEngine->RegisterNpcUpdate(this);
 }
 
-inline void TNPC::registerNpcUpdates()
+inline void NPC::registerNpcUpdates()
 {
 	CScriptEngine *scriptEngine = server->getScriptEngine();
 	scriptEngine->RegisterNpcUpdate(this);
 }
 
-inline void TNPC::scheduleEvent(unsigned int timeout, ScriptAction& action) {
+inline void NPC::scheduleEvent(unsigned int timeout, ScriptAction& action) {
 	_scriptTimers.push_back({ timeout, std::move(action) });
 }
 

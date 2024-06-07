@@ -4,11 +4,11 @@
 #include "CString.h"
 #include "CTimeout.h"
 
-class TServer;
-class TLevelHorse
+class Server;
+class LevelHorse
 {
 public:
-	TLevelHorse(int horselife, const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0)
+	LevelHorse(int horselife, const CString& pImage, float pX, float pY, char pDir = 0, char pBushes = 0)
 		: horselifetime(horselife), image(pImage), x(pX), y(pY), dir(pDir), bushes(pBushes)
 	{
 		timeout.setTimeout(horselifetime);
@@ -33,7 +33,7 @@ private:
 	int horselifetime;
 };
 
-inline CString TLevelHorse::getHorseStr()
+inline CString LevelHorse::getHorseStr()
 {
 	if (horsePacket.isEmpty())
 	{

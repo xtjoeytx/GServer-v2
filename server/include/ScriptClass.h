@@ -5,12 +5,12 @@
 #include "SourceCode.h"
 #include <string>
 
-class TServer;
-class TScriptClass
+class Server;
+class ScriptClass
 {
 public:
-	TScriptClass(TServer* server, const std::string& className, const std::string& classSource);
-	~TScriptClass();
+	ScriptClass(Server* server, const std::string& className, const std::string& classSource);
+	~ScriptClass();
 
 	// Functions -> Inline Get-Functions
 	CString getClassPacket() const;
@@ -31,7 +31,7 @@ public:
 	}
 
 private:
-	void parseScripts(TServer* server, const std::string& classSource);
+	void parseScripts(Server* server, const std::string& classSource);
 
 	std::string _className;
 	SourceCode _source;

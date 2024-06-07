@@ -14,9 +14,9 @@ extern bool __sendLocal[propscount];
 extern int __attrPackets[30];
 
 /*
-	TPlayer: Prop-Manipulation
+	Player: Prop-Manipulation
 */
-void TPlayer::getProp(CString& buffer, int pPropId) const
+void Player::getProp(CString& buffer, int pPropId) const
 {
 	auto level = curlevel.lock();
 	auto map   = pmap.lock();
@@ -315,7 +315,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 	}
 }
 
-void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
+void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 {
 	auto level = getLevel();
 
@@ -1162,7 +1162,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	}
 }
 
-void TPlayer::sendProps(const bool* pProps, int pCount)
+void Player::sendProps(const bool* pProps, int pCount)
 {
 	// Definition
 	CString propPacket;
@@ -1179,7 +1179,7 @@ void TPlayer::sendProps(const bool* pProps, int pCount)
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString TPlayer::getProps(const bool* pProps, int pCount)
+CString Player::getProps(const bool* pProps, int pCount)
 {
 	CString propPacket;
 

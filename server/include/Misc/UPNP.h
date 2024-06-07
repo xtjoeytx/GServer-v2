@@ -10,12 +10,12 @@
 	#include <memory.h>
 	#include <set>
 
-class TServer;
+class Server;
 
-class CUPNP
+class UPNP
 {
 public:
-	CUPNP(TServer* server)
+	UPNP(Server* server)
 	{
 		this->server = server;
 	}
@@ -57,7 +57,7 @@ public:
 	}
 
 private:
-	TServer* server;
+	Server* server;
 	std::set<CString> ports_forwarded;
 	CString local_ip;
 	CString port;

@@ -3,7 +3,7 @@
 #include "Server.h"
 #include "UpdatePackage.h"
 
-bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
+bool Player::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
 	unsigned long fileChecksum = pPacket.readGUInt5();
 	CString fileName           = pPacket.readString("");
@@ -34,7 +34,7 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
+bool Player::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 {
 	CString packageName = pPacket.readChars(pPacket.readGUChar());
 

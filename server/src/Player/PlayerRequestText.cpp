@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Server.h"
 
-bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
+bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 {
 	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
 
@@ -133,7 +133,7 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 	return true;
 }
 
-bool TPlayer::msgPLI_SENDTEXT(CString& pPacket)
+bool Player::msgPLI_SENDTEXT(CString& pPacket)
 {
 	CString packet              = pPacket.readString("");
 	CString data                = packet.guntokenize();

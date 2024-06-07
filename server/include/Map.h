@@ -14,17 +14,17 @@ enum class MapType
 	GMAP   = 1,
 };
 
-struct SMapLevel
+struct MapLevel
 {
-	SMapLevel() : mapx(-1), mapy(-1) {}
-	SMapLevel(int x, int y) : mapx(x), mapy(y) {}
-	SMapLevel(const SMapLevel& level)
+	MapLevel() : mapx(-1), mapy(-1) {}
+	MapLevel(int x, int y) : mapx(x), mapy(y) {}
+	MapLevel(const MapLevel& level)
 	{
 		mapx = level.mapx;
 		mapy = level.mapy;
 	}
 
-	SMapLevel& operator=(const SMapLevel& level)
+	MapLevel& operator=(const MapLevel& level)
 	{
 		mapx = level.mapx;
 		mapy = level.mapy;
@@ -35,15 +35,15 @@ struct SMapLevel
 	int mapy;
 };
 
-class TServer;
+class Server;
 
-class TMap
+class Map
 {
 public:
-	TMap(MapType pType, bool pGroupMap = false);
+	Map(MapType pType, bool pGroupMap = false);
 
-	bool load(const CString& filename, TServer* pServer);
-	void loadMapLevels(TServer* server) const;
+	bool load(const CString& filename, Server* pServer);
+	void loadMapLevels(Server* server) const;
 
 	bool isLevelOnMap(const std::string& level, int& mx, int& my) const;
 	const std::string& getLevelAt(int mx, int my) const;
@@ -59,8 +59,8 @@ public:
 	bool isGroupMap() const { return groupMap; }
 
 private:
-	bool loadBigMap(const CString& pFileName, TServer* pServer);
-	bool loadGMap(const CString& pFileName, TServer* pServer);
+	bool loadBigMap(const CString& pFileName, Server* pServer);
+	bool loadGMap(const CString& pFileName, Server* pServer);
 
 	MapType type;
 	time_t modTime;
@@ -72,7 +72,7 @@ private:
 	std::string mapImage;
 	std::string miniMapImage;
 
-	std::unordered_map<std::string, SMapLevel> levels;
+	std::unordered_map<std::string, MapLevel> levels;
 	std::vector<std::string> _levelList;
 	std::vector<std::string> preloadLevelList;
 };

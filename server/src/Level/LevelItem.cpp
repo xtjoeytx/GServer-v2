@@ -33,12 +33,12 @@ const char* __itemList[] = {
 
 const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
 
-CString TLevelItem::getItemStr() const
+CString LevelItem::getItemStr() const
 {
 	return CString() >> (char)PLO_ITEMADD >> (char)x >> (char)y >> (char)item;
 }
 
-LevelItemType TLevelItem::getItemId(signed char itemId)
+LevelItemType LevelItem::getItemId(signed char itemId)
 {
 	if (itemId < 0 || itemId >= __itemCount)
 		return LevelItemType::INVALID;
@@ -46,7 +46,7 @@ LevelItemType TLevelItem::getItemId(signed char itemId)
 	return LevelItemType(itemId);
 }
 
-LevelItemType TLevelItem::getItemId(const std::string& pItemName)
+LevelItemType LevelItem::getItemId(const std::string& pItemName)
 {
 	for (unsigned int i = 0; i < __itemCount; ++i)
 	{
@@ -57,14 +57,14 @@ LevelItemType TLevelItem::getItemId(const std::string& pItemName)
 	return LevelItemType::INVALID;
 }
 
-std::string TLevelItem::getItemName(LevelItemType itemId)
+std::string LevelItem::getItemName(LevelItemType itemId)
 {
-	auto id = TLevelItem::getItemTypeId(itemId);
+	auto id = LevelItem::getItemTypeId(itemId);
 	if (id < 0 || id >= __itemCount) return {};
 	return std::string(__itemList[id]);
 }
 
-CString TLevelItem::getItemPlayerProp(LevelItemType itemType, TPlayer* player)
+CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 {
 	switch (itemType)
 	{

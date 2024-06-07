@@ -2,25 +2,25 @@
 #include "LevelLink.h"
 
 /*
-	TLevelLink: Constructor - Deconstructor
+	LevelLink: Constructor - Deconstructor
 */
-TLevelLink::TLevelLink(const std::vector<CString>& pLink)
+LevelLink::LevelLink(const std::vector<CString>& pLink)
 {
 	parseLinkStr(pLink);
 }
 
 /*
-	TLevelLink: Functions
+	LevelLink: Functions
 */
 
-CString TLevelLink::getLinkStr() const
+CString LevelLink::getLinkStr() const
 {
 	static char retVal[500];
 	sprintf(retVal, "%s %i %i %i %i %s %s", newLevel.text(), x, y, width, height, newX.text(), newY.text());
 	return retVal;
 }
 
-void TLevelLink::parseLinkStr(const std::vector<CString>& pLink)
+void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
 {
 	size_t offset = 0;
 

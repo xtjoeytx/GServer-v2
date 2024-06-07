@@ -38,9 +38,9 @@ CString _zlibFix(
 	"}\xa7");
 
 /*
-	TPlayer: Manage Account
+	Player: Manage Account
 */
-bool TPlayer::sendLogin()
+bool Player::sendLogin()
 {
 	// We don't need to check if this fails.. because the defaults have already been loaded :)
 	loadAccount(accountName, (isRC() || isNC() ? true : false));
@@ -228,7 +228,7 @@ bool TPlayer::sendLogin()
 	return true;
 }
 
-bool TPlayer::sendLoginClient()
+bool Player::sendLoginClient()
 {
 	auto& settings = server->getSettings();
 
@@ -297,9 +297,9 @@ bool TPlayer::sendLoginClient()
 		if (weapon == nullptr)
 		{
 			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			if (auto itemType = TLevelItem::getItemId(weaponName.toString()); itemType != LevelItemType::INVALID)
+			if (auto itemType = LevelItem::getItemId(weaponName.toString()); itemType != LevelItemType::INVALID)
 			{
-				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)TLevelItem::getItemTypeId(itemType);
+				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)LevelItem::getItemTypeId(itemType);
 				defWeapPacket.readGChar();
 				msgPLI_WEAPONADD(defWeapPacket);
 				continue;
@@ -385,7 +385,7 @@ bool TPlayer::sendLoginClient()
 	return true;
 }
 
-bool TPlayer::sendLoginNC()
+bool Player::sendLoginNC()
 {
 	// Send database npcs
 	auto& npcList = server->getNPCNameList();
@@ -420,7 +420,7 @@ bool TPlayer::sendLoginNC()
 	return true;
 }
 
-bool TPlayer::sendLoginRC()
+bool Player::sendLoginRC()
 {
 	// This packet clears the players weapons on the client, but official
 	// also sends it to the RC's so we are maintaining the same behavior

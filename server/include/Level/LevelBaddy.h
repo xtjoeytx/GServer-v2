@@ -40,12 +40,12 @@ enum
 	BDMODE_COUNT
 };
 
-class TServer;
-class TLevel;
-class TLevelBaddy
+class Server;
+class Level;
+class LevelBaddy
 {
 public:
-	TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, TServer* pServer);
+	LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer);
 
 	void reset();
 	void dropItem();
@@ -73,8 +73,8 @@ public:
 	CTimeout timeout;
 
 private:
-	std::weak_ptr<TLevel> level;
-	TServer* server;
+	std::weak_ptr<Level> level;
+	Server* server;
 	unsigned char type;
 	char id, power, mode, ani, dir;
 	float x, y, startX, startY;
@@ -84,6 +84,6 @@ private:
 	bool setImage;
 };
 
-using TLevelBaddyPtr = std::unique_ptr<TLevelBaddy>;
+using TLevelBaddyPtr = std::unique_ptr<LevelBaddy>;
 
 #endif // TLEVELBADDY_H

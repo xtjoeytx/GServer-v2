@@ -15,7 +15,7 @@
 	#include "UPNP.h"
 	#include "Server.h"
 
-void CUPNP::discover()
+void UPNP::discover()
 {
 	struct UPNPDev* device_list;
 	struct UPNPDev* device;
@@ -63,7 +63,7 @@ void CUPNP::discover()
 	}
 }
 
-void CUPNP::add_port_forward(const CString& addr, const CString& port)
+void UPNP::add_port_forward(const CString& addr, const CString& port)
 {
 	if (urls.controlURL == 0 || urls.controlURL[0] == '\0')
 		return;
@@ -97,7 +97,7 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 	}
 }
 
-void CUPNP::remove_port_forward(const CString& port)
+void UPNP::remove_port_forward(const CString& port)
 {
 	if (urls.controlURL == 0 || urls.controlURL[0] == '\0')
 		return;

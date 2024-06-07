@@ -6,12 +6,12 @@
 #include <time.h>
 #include <vector>
 
-class TLevelBoardChange
+class LevelBoardChange
 {
 public:
 	// constructor - destructor
-	TLevelBoardChange(const int pX, const int pY, const int pWidth, const int pHeight,
-					  const CString& pTiles, const CString& pOldTiles, const int respawn = 15)
+	LevelBoardChange(const int pX, const int pY, const int pWidth, const int pHeight,
+					 const CString& pTiles, const CString& pOldTiles, const int respawn = 15)
 		: x(pX), y(pY), width(pWidth), height(pHeight),
 		  tiles(pTiles), oldTiles(pOldTiles), modTime(time(0)) { timeout.setTimeout(respawn); }
 

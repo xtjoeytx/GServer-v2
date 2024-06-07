@@ -36,11 +36,11 @@ enum class LevelItemType
 	SPINATTACK   = 24
 };
 
-class TPlayer;
-class TLevelItem
+class Player;
+class LevelItem
 {
 public:
-	TLevelItem(float pX, float pY, LevelItemType pItem) : x(pX), y(pY), item(pItem), modTime(time(0))
+	LevelItem(float pX, float pY, LevelItemType pItem) : x(pX), y(pY), item(pItem), modTime(time(0))
 	{
 		timeout.setTimeout(10);
 	}
@@ -60,8 +60,8 @@ public:
 	static LevelItemType getItemId(signed char itemId);
 	static LevelItemType getItemId(const std::string& pItemName);
 	static std::string getItemName(LevelItemType itemId);
-	static CString getItemPlayerProp(LevelItemType itemType, TPlayer* player);
-	static CString getItemPlayerProp(const std::string& pItemName, TPlayer* player);
+	static CString getItemPlayerProp(LevelItemType itemType, Player* player);
+	static CString getItemPlayerProp(const std::string& pItemName, Player* player);
 	static constexpr auto getItemTypeId(LevelItemType val);
 
 	static bool isRupeeType(LevelItemType itemType);
@@ -74,17 +74,17 @@ private:
 	time_t modTime;
 };
 
-inline CString TLevelItem::getItemPlayerProp(const std::string& pItemName, TPlayer* player)
+inline CString LevelItem::getItemPlayerProp(const std::string& pItemName, Player* player)
 {
-	return getItemPlayerProp(TLevelItem::getItemId(pItemName), player);
+	return getItemPlayerProp(LevelItem::getItemId(pItemName), player);
 }
 
-constexpr auto TLevelItem::getItemTypeId(LevelItemType val)
+constexpr auto LevelItem::getItemTypeId(LevelItemType val)
 {
 	return static_cast<std::underlying_type<LevelItemType>::type>(val);
 }
 
-inline uint16_t TLevelItem::GetRupeeCount(LevelItemType type)
+inline uint16_t LevelItem::GetRupeeCount(LevelItemType type)
 {
 	switch (type)
 	{
@@ -101,7 +101,7 @@ inline uint16_t TLevelItem::GetRupeeCount(LevelItemType type)
 	}
 }
 
-inline bool TLevelItem::isRupeeType(LevelItemType itemType)
+inline bool LevelItem::isRupeeType(LevelItemType itemType)
 {
 	return GetRupeeCount(itemType) > 0;
 }

@@ -5,12 +5,12 @@
 #include "Weapon.h"
 #include "utilities/stringutils.h"
 
-void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
+void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
 	auto& dispatcher = triggerActionDispatcher;
 
 #ifdef V8NPCSERVER
-	builder.registerCommand("serverside", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("serverside", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (triggerData.size() > 1)
 								{
@@ -22,7 +22,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("servernpc", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("servernpc", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (triggerData.size() > 2)
 								{
@@ -35,7 +35,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 #endif
 
-	builder.registerCommand("gr.serverlist", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.serverlist", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								auto& listServer       = getServerList();
 								const auto& serverList = listServer.getServerList();
@@ -49,7 +49,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 
 	// Weapon management
-	builder.registerCommand("gr.addweapon", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.addweapon", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_weapons", false))
 								{
@@ -60,7 +60,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.deleteweapon", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.deleteweapon", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_weapons", false))
 								{
@@ -72,7 +72,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 
 	// Guild management
-	builder.registerCommand("gr.addguildmember", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.addguildmember", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_guilds", false))
 								{
@@ -84,7 +84,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										CFileSystem guildFS(this);
+										FileSystem guildFS(this);
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -102,7 +102,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.removeguildmember", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.removeguildmember", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_guilds", false))
 								{
@@ -113,7 +113,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										CFileSystem guildFS(this);
+										FileSystem guildFS(this);
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -134,7 +134,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.removeguild", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.removeguild", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_guilds", false))
 								{
@@ -144,7 +144,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty())
 									{
 										// Read the guild list.
-										CFileSystem guildFS(this);
+										FileSystem guildFS(this);
 										guildFS.addDir("guilds");
 										CString path = guildFS.find(CString() << "guild" << guild << ".txt");
 
@@ -168,7 +168,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.setguild", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.setguild", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_guilds", false))
 								{
@@ -178,7 +178,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 									if (!guild.isEmpty())
 									{
-										TPlayer* p = player;
+										Player* p = player;
 										if (!account.isEmpty()) p = getPlayer(account, PLTYPE_ANYCLIENT).get();
 										if (p)
 										{
@@ -194,7 +194,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 
 	// Group levels
-	builder.registerCommand("gr.setgroup", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.setgroup", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
@@ -204,7 +204,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.setlevelgroup", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.setlevelgroup", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
@@ -219,7 +219,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.setplayergroup", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.setplayergroup", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 3)
 								{
@@ -231,7 +231,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 
 	// RC triggers
-	builder.registerCommand("gr.rcchat", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.rcchat", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_rc", false))
 								{
@@ -247,7 +247,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							});
 
 	// Level triggers
-	builder.registerCommand("gr.npc.move", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.npc.move", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 6)
 								{
@@ -276,7 +276,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 								return true;
 							});
 
-	builder.registerCommand("gr.npc.setpos", [&](TPlayer* player, std::vector<CString>& triggerData)
+	builder.registerCommand("gr.npc.setpos", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 4)
 								{

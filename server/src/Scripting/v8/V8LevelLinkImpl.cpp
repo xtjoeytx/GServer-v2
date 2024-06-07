@@ -18,7 +18,7 @@
 // PROPERTY: link.newlevel
 void Link_GetStr_NewLevel(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewLevel().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -26,7 +26,7 @@ void Link_GetStr_NewLevel(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 void Link_SetStr_NewLevel(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 
@@ -36,14 +36,14 @@ void Link_SetStr_NewLevel(v8::Local<v8::String> props, v8::Local<v8::Value> valu
 // PROPERTY: link.x
 void Link_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	info.GetReturnValue().Set(linkObject->getX());
 }
 
 void Link_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -53,14 +53,14 @@ void Link_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 // PROPERTY: link.y
 void Link_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	info.GetReturnValue().Set(linkObject->getY());
 }
 
 void Link_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -70,14 +70,14 @@ void Link_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 // PROPERTY: link.width
 void Link_GetNum_Width(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	info.GetReturnValue().Set(linkObject->getWidth());
 }
 
 void Link_SetNum_Width(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -87,14 +87,14 @@ void Link_SetNum_Width(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 // PROPERTY: link.height
 void Link_GetNum_Height(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	info.GetReturnValue().Set(linkObject->getHeight());
 }
 
 void Link_SetNum_Height(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -104,7 +104,7 @@ void Link_SetNum_Height(v8::Local<v8::String> prop, v8::Local<v8::Value> value, 
 // PROPERTY: link.newx
 void Link_GetStr_NewX(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewX().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -112,7 +112,7 @@ void Link_GetStr_NewX(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 
 void Link_SetStr_NewX(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 
@@ -122,7 +122,7 @@ void Link_SetStr_NewX(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 // PROPERTY: link.newx
 void Link_GetStr_NewY(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewY().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -130,7 +130,7 @@ void Link_GetStr_NewY(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 
 void Link_SetStr_NewY(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelLink, linkObject);
+	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 
@@ -168,7 +168,7 @@ void bindClass_LevelLink(CScriptEngine* scriptEngine)
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newy"), Link_GetStr_NewY, Link_SetStr_NewY);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<TLevelLink>::result, link_ctor);
+	env->SetConstructor(ScriptConstructorId<LevelLink>::result, link_ctor);
 }
 
 #endif

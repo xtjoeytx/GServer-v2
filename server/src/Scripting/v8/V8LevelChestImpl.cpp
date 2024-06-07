@@ -18,14 +18,14 @@
 // PROPERTY: chest.x
 void Chest_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	info.GetReturnValue().Set(chestObject->getX());
 }
 
 void Chest_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -35,14 +35,14 @@ void Chest_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, cons
 // PROPERTY: chest.y
 void Chest_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	info.GetReturnValue().Set(chestObject->getY());
 }
 
 void Chest_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -52,14 +52,14 @@ void Chest_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, cons
 // PROPERTY: chest.itemtype
 void Chest_GetNum_ItemType(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	info.GetReturnValue().Set((int)chestObject->getItemIndex());
 }
 
 void Chest_SetNum_ItemType(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -69,14 +69,14 @@ void Chest_SetNum_ItemType(v8::Local<v8::String> prop, v8::Local<v8::Value> valu
 // PROPERTY: chest.signid
 void Chest_GetNum_SignId(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	info.GetReturnValue().Set((int)chestObject->getSignIndex());
 }
 
 void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelChest, chestObject);
+	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -111,7 +111,7 @@ void bindClass_LevelChest(CScriptEngine* scriptEngine)
 	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signid"), Chest_GetNum_SignId, Chest_SetNum_SignId);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<TLevelChest>::result, chest_ctor);
+	env->SetConstructor(ScriptConstructorId<LevelChest>::result, chest_ctor);
 }
 
 #endif

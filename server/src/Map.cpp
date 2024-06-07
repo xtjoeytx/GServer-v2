@@ -6,18 +6,18 @@
 #include "Map.h"
 #include "Server.h"
 
-TMap::TMap(MapType pType, bool pGroupMap)
+Map::Map(MapType pType, bool pGroupMap)
 	: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
 {
 }
 
-//TMap::TMap(MapType pType, const CString& pFileName, TServer* pServer, bool pGroupMap)
+//Map::Map(MapType pType, const CString& pFileName, Server* pServer, bool pGroupMap)
 //: type(pType), modTime(0), width(0), height(0), groupMap(pGroupMap), loadFullMap(false)
 //{
 //	load(pFileName, pServer);
 //}
 
-bool TMap::load(const CString& pFileName, TServer* pServer)
+bool Map::load(const CString& pFileName, Server* pServer)
 {
 	if (type == MapType::BIGMAP)
 		return loadBigMap(pFileName, pServer);
@@ -26,7 +26,7 @@ bool TMap::load(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-bool TMap::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
+bool Map::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
 {
 	auto it = levels.find(level);
 	if (it != levels.end())
@@ -39,7 +39,7 @@ bool TMap::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
 	return false;
 }
 
-const std::string& TMap::getLevelAt(int mx, int my) const
+const std::string& Map::getLevelAt(int mx, int my) const
 {
 	static const std::string emptyStr;
 
@@ -49,10 +49,10 @@ const std::string& TMap::getLevelAt(int mx, int my) const
 	return emptyStr;
 }
 
-bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
+bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 {
 	// Get the appropriate filesystem.
-	CFileSystem* fileSystem = pServer->getFileSystem();
+	FileSystem* fileSystem = pServer->getFileSystem();
 	if (!pServer->getSettings().getBool("nofoldersconfig", false))
 		fileSystem = pServer->getFileSystem(FS_FILE);
 
@@ -109,7 +109,7 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 					if (!lcLevelName.empty())
 					{
 						levelMap[mx + my * width] = lcLevelName;
-						levels[lcLevelName]       = SMapLevel(mx, my);
+						levels[lcLevelName]       = MapLevel(mx, my);
 					}
 				}
 			}
@@ -121,10 +121,10 @@ bool TMap::loadBigMap(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
+bool Map::loadGMap(const CString& pFileName, Server* pServer)
 {
 	// Get the appropriate filesystem.
-	CFileSystem* fileSystem = pServer->getFileSystem();
+	FileSystem* fileSystem = pServer->getFileSystem();
 	if (!pServer->getSettings().getBool("nofoldersconfig", false))
 		fileSystem = pServer->getFileSystem(FS_LEVEL);
 
@@ -205,7 +205,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 							{
 								std::string lcLevelName(levelName.toLower().text());
 								levelMap[gmapx + gmapy * width] = lcLevelName;
-								levels[lcLevelName]             = SMapLevel(gmapx, gmapy);
+								levels[lcLevelName]             = MapLevel(gmapx, gmapy);
 							}
 
 							++gmapx;
@@ -266,7 +266,7 @@ bool TMap::loadGMap(const CString& pFileName, TServer* pServer)
 	return true;
 }
 
-void TMap::loadMapLevels(TServer* server) const
+void Map::loadMapLevels(Server* server) const
 {
 	if (loadFullMap)
 	{

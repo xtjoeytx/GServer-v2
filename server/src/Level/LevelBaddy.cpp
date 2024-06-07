@@ -19,7 +19,7 @@ const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, TServer* pServer)
+LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer)
 	: level(pLevel), server(pServer), type(pType), id(0),
 	  startX(pX), startY(pY),
 	  respawn(true), setImage(false)
@@ -29,7 +29,7 @@ TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pTy
 	reset();
 }
 
-void TLevelBaddy::reset()
+void LevelBaddy::reset()
 {
 	mode     = baddyStartMode[(int)type];
 	x        = startX;
@@ -41,7 +41,7 @@ void TLevelBaddy::reset()
 	setImage = false;
 }
 
-void TLevelBaddy::dropItem()
+void LevelBaddy::dropItem()
 {
 	// 41.66...% chance of a green gralat.
 	// 41.66...% chance of something else.
@@ -57,7 +57,7 @@ void TLevelBaddy::dropItem()
 		case 3: //BOMBS
 		case 4: //DARTS
 		case 5: //HEART
-			itemType = TLevelItem::getItemId(itemId);
+			itemType = LevelItem::getItemId(itemId);
 			break;
 
 		default:
@@ -71,12 +71,12 @@ void TLevelBaddy::dropItem()
 		if (auto lvl = level.lock(); lvl)
 		{
 			if (lvl->addItem(this->x, this->y, itemType))
-				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType), level);
+				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)LevelItem::getItemTypeId(itemType), level);
 		}
 	}
 }
 
-CString TLevelBaddy::getProp(const int propId, int clientVersion) const
+CString LevelBaddy::getProp(const int propId, int clientVersion) const
 {
 	switch (propId)
 	{
@@ -123,7 +123,7 @@ CString TLevelBaddy::getProp(const int propId, int clientVersion) const
 	return CString();
 }
 
-CString TLevelBaddy::getProps(int clientVersion) const
+CString LevelBaddy::getProps(int clientVersion) const
 {
 	CString retVal;
 	for (int i = 1; i < BDPROP_COUNT; i++)
@@ -131,7 +131,7 @@ CString TLevelBaddy::getProps(int clientVersion) const
 	return retVal;
 }
 
-void TLevelBaddy::setProps(CString& pProps)
+void LevelBaddy::setProps(CString& pProps)
 {
 	int len = 0;
 	while (pProps.bytesLeft())
@@ -185,12 +185,12 @@ void TLevelBaddy::setProps(CString& pProps)
 				if (type == 4 && mode == BDMODE_HURT)
 				{
 					// Workaround for buggy client.  In 2 seconds, set us back to BDMODE_SWAMPSHOT from
-					// inside TLevel.cpp.
+					// inside Level.cpp.
 					timeout.setTimeout(2);
 				}
 				else if (mode == BDMODE_DIE)
 				{
-					// In 2 seconds, set our mode to BDMODE_DEAD inside TLevel.cpp.
+					// In 2 seconds, set our mode to BDMODE_DEAD inside Level.cpp.
 					timeout.setTimeout(2);
 
 					// Drop items when dead.
