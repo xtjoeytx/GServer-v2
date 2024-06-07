@@ -8,38 +8,42 @@
 template<typename key_type, typename... Ts>
 class CommandDispatcher
 {
-	using fn_type = std::function<bool(Ts...)>;
+	using fn_type      = std::function<bool(Ts...)>;
 	using cmd_map_type = std::unordered_map<key_type, fn_type>;
 
+public:
+	class Builder
+	{
+		cmd_map_type& _commands;
+
 	public:
-		class Builder
+		Builder(cmd_map_type& cmds) : _commands(cmds) {}
+
+		void registerCommand(key_type key, fn_type fn)
 		{
-			cmd_map_type& _commands;
+			_commands[key] = fn;
+		}
+	};
 
-			public:
-				Builder(cmd_map_type& cmds) : _commands(cmds) {}
+	CommandDispatcher() {}
+	CommandDispatcher(std::function<void(Builder)> initfn)
+	{
+		initfn(Builder(commands));
+	}
 
-				void registerCommand(key_type key, fn_type fn) {
-					_commands[key] = fn;
-				}
-		};
-
-		CommandDispatcher() {}
-		CommandDispatcher(std::function<void(Builder)> initfn) {
-			initfn(Builder(commands));
+	bool execute(key_type key, Ts... args)
+	{
+		auto cmd_iter = commands.find(key);
+		if (cmd_iter == commands.end())
+		{
+			return false;
 		}
 
-		bool execute(key_type key, Ts... args) {
-			auto cmd_iter = commands.find(key);
-			if (cmd_iter == commands.end()) {
-				return false;
-			}
+		return cmd_iter->second(args...);
+	}
 
-			return cmd_iter->second(args...);
-		}
-
-	private:
-		cmd_map_type commands;
+private:
+	cmd_map_type commands;
 };
 
 #endif

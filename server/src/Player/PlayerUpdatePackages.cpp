@@ -1,12 +1,12 @@
-#include "Player.h"
-#include "Server.h"
 #include "CFileSystem.h"
+#include "TPlayer.h"
+#include "TServer.h"
 #include "UpdatePackage.h"
 
 bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
 	unsigned long fileChecksum = pPacket.readGUInt5();
-	CString fileName = pPacket.readString("");
+	CString fileName           = pPacket.readString("");
 
 	// There is a USECHECKSUM flag in the config, and im pretty
 	// certain it works similar to this: By always sending the
@@ -37,23 +37,23 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 {
 	CString packageName = pPacket.readChars(pPacket.readGUChar());
-	
+
 	// 1 -> Install, 2 -> Reinstall
 	unsigned char installType = pPacket.readGUChar();
-	CString fileChecksums = pPacket.readString("");
-	
+	CString fileChecksums     = pPacket.readString("");
+
 	// If this is a reinstall, we need to download everything so clear the checksum data
 	if (installType == 2)
 		fileChecksums.clear();
-	
+
 	auto totalDownloadSize = 0;
 	std::vector<std::string> missingFiles;
-	
+
 	{
 		auto updatePackage = server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
 		{
-			for (const auto& [fileName, entry] : updatePackage->getFileList())
+			for (const auto& [fileName, entry]: updatePackage->getFileList())
 			{
 				// Compare the checksum for each file entry if the checksum is provided
 				bool needsFile = true;
@@ -63,7 +63,7 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 					if (entry.checksum == userFileChecksum)
 						needsFile = false;
 				}
-				
+
 				if (needsFile)
 				{
 					totalDownloadSize += entry.size;
@@ -72,13 +72,12 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 			}
 		}
 	}
-	
-	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE >> (char)packageName.length() << packageName
-	                     >> (long long)totalDownloadSize);
-	
-	for (const auto& wantFile : missingFiles)
+
+	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE >> (char)packageName.length() << packageName >> (long long)totalDownloadSize);
+
+	for (const auto& wantFile: missingFiles)
 		this->sendFile(wantFile);
-	
+
 	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << packageName);
 	return true;
 }

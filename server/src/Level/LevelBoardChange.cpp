@@ -1,5 +1,5 @@
 #include "IDebug.h"
-#include "LevelBoardChange.h"
+#include "TLevelBoardChange.h"
 
 CString TLevelBoardChange::getBoardStr() const
 {
@@ -9,6 +9,6 @@ CString TLevelBoardChange::getBoardStr() const
 void TLevelBoardChange::swapTiles()
 {
 	CString temp = tiles;
-	tiles = oldTiles;
-	oldTiles = temp;
+	tiles        = oldTiles;
+	oldTiles     = temp;
 }

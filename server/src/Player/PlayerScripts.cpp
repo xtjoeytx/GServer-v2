@@ -1,15 +1,15 @@
-#include "Player.h"
-#include "Weapon.h"
-#include "Server.h"
 #include "CFileSystem.h"
+#include "TPlayer.h"
+#include "TServer.h"
+#include "TWeapon.h"
 #include "utilities/stringutils.h"
 
 // packet 157
 bool TPlayer::msgPLI_UPDATEGANI(CString& pPacket)
 {
 	// Read packet data
-	uint32_t checksum = pPacket.readGUInt5();
-	std::string gani = pPacket.readString("").toString();
+	uint32_t checksum          = pPacket.readGUInt5();
+	std::string gani           = pPacket.readString("").toString();
 	const std::string ganiFile = gani + ".gani";
 
 	// Try to find the animation in memory or on disk
@@ -54,7 +54,7 @@ bool TPlayer::msgPLI_UPDATESCRIPT(CString& pPacket)
 bool TPlayer::msgPLI_UPDATECLASS(CString& pPacket)
 {
 	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGInt5();
+	time_t modTime        = pPacket.readGInt5();
 	std::string className = pPacket.readString("").toString();
 
 	server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());

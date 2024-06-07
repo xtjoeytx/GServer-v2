@@ -1,20 +1,19 @@
 #ifndef TGAMEANI_H
 #define TGAMEANI_H
 
-#pragma once
-
-#include <string>
-#include <optional>
 #include "CString.h"
+#include <optional>
+#include <string>
 
 class TServer;
 
 class TGameAni
 {
-	enum AniFlags : uint8_t {
-		Continous       = 0x1,
-		LoopAnimation   = 0x2,
-		SingleDirOnly   = 0x4
+	enum AniFlags : uint8_t
+	{
+		Continous     = 0x1,
+		LoopAnimation = 0x2,
+		SingleDirOnly = 0x4
 	};
 
 public:
@@ -25,48 +24,55 @@ public:
 	TGameAni& operator=(TGameAni&& o) noexcept;
 
 	// Delete copy operations
-	TGameAni(const TGameAni&) = delete;
+	TGameAni(const TGameAni&)            = delete;
 	TGameAni& operator=(const TGameAni&) = delete;
 
 	//! Get the animation filename
 	//! \return animation filename
-	const std::string& getName() const {
+	const std::string& getName() const
+	{
 		return _aniName;
 	}
 
 	//! Get the script's bytecode
 	//! \return bytecode
-	const CString& getByteCode() const {
+	const CString& getByteCode() const
+	{
 		return _bytecode;
 	}
 
 	//! Get the animation script
 	//! \return gs1/gs2 script
-	const std::string& getSource() const {
+	const std::string& getSource() const
+	{
 		return _script;
 	}
 
 	//! Get the animation's setbackto gani
 	//! \return setbackto gani
-	const std::string& getSetBackTo() const {
+	const std::string& getSetBackTo() const
+	{
 		return _setBackTo;
 	}
 
 	//! Is the animation continuous (doesn't restart the animation on subsequent calls)
 	//! \return true/false
-	bool isContinuous() const {
+	bool isContinuous() const
+	{
 		return _aniFlags & AniFlags::Continous;
 	}
 
 	//! Does the animation loop (restart after each last frame)
 	//! \return true/false
-	bool isLoop() const {
+	bool isLoop() const
+	{
 		return _aniFlags & AniFlags::LoopAnimation;
 	}
 
 	//! Does the animation have only one direction (all directions use the same animation)
 	//! \return true/false
-	bool isSingleDir() const {
+	bool isSingleDir() const
+	{
 		return _aniFlags & AniFlags::SingleDirOnly;
 	}
 
@@ -102,11 +108,11 @@ inline TGameAni::TGameAni(TGameAni&& o) noexcept
 
 inline TGameAni& TGameAni::operator=(TGameAni&& o) noexcept
 {
-	_aniName = std::move(o._aniName);
-	_script = std::move(o._script);
-	_bytecode = std::move(o._bytecode);
+	_aniName   = std::move(o._aniName);
+	_script    = std::move(o._script);
+	_bytecode  = std::move(o._bytecode);
 	_setBackTo = std::move(o._setBackTo);
-	_aniFlags = o._aniFlags;
+	_aniFlags  = o._aniFlags;
 	return *this;
 }
 

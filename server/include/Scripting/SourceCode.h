@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SOURCECODE_H
 #define SOURCECODE_H
 
@@ -9,46 +7,55 @@
 class SourceCode
 {
 public:
-	SourceCode() : _gs2default(false) { }
+	SourceCode() : _gs2default(false) {}
 	SourceCode(std::string src, bool gs2default = false) : _src(std::move(src)), _gs2default(gs2default) { init(); }
 	SourceCode(SourceCode&& o) noexcept : _src(std::move(o._src)), _gs2default(o._gs2default) { init(); }
 
-	SourceCode& operator=(SourceCode&& o) noexcept {
+	SourceCode& operator=(SourceCode&& o) noexcept
+	{
 		_gs2default = o._gs2default;
-		_src = std::move(o._src);
+		_src        = std::move(o._src);
 		init();
 		return *this;
 	}
 
-	explicit operator bool() const {
+	explicit operator bool() const
+	{
 		return !empty();
 	}
 
-	bool empty() const {
+	bool empty() const
+	{
 		return _src.empty();
 	}
 
-	const std::string& getSource() const {
+	const std::string& getSource() const
+	{
 		return _src;
 	}
 
-	std::string_view getServerSide() const {
+	std::string_view getServerSide() const
+	{
 		return _serverside;
 	}
 
-	std::string_view getClientSide() const {
+	std::string_view getClientSide() const
+	{
 		return _clientside;
 	}
 
-	std::string_view getClientGS1() const {
+	std::string_view getClientGS1() const
+	{
 		return _clientGS1;
 	}
 
-	std::string_view getClientGS2() const {
+	std::string_view getClientGS2() const
+	{
 		return _clientGS2;
 	}
 
-	void clearServerSide() {
+	void clearServerSide()
+	{
 		_serverside = {};
 	}
 
@@ -67,13 +74,14 @@ private:
 		if (clientSep != std::string::npos)
 		{
 			// Separate clientside and serverside
-			_clientside = std::string_view{ _src }.substr(clientSep);
-			_serverside = std::string_view{ _src }.substr(0, clientSep);
+			_clientside = std::string_view{_src}.substr(clientSep);
+			_serverside = std::string_view{_src}.substr(0, clientSep);
 		}
-		else _serverside = std::string_view{ _src };
+		else
+			_serverside = std::string_view{_src};
 #else
 		// For non-npcserver builds all code is considered clientside
-		_clientside = std::string_view{ _src };
+		_clientside = std::string_view{_src};
 #endif
 
 		if (!_clientside.empty())
@@ -89,10 +97,10 @@ private:
 			size_t codeSeparatorLoc = _clientside.find(gs2sep_char);
 			if (codeSeparatorLoc != std::string::npos)
 			{
-				auto origCode = _clientside.substr(0, codeSeparatorLoc);
+				auto origCode  = _clientside.substr(0, codeSeparatorLoc);
 				auto otherCode = _clientside.substr(codeSeparatorLoc);
-				_clientGS2 = _gs2default ? origCode : otherCode;
-				_clientGS1 = _gs2default ? otherCode : origCode;
+				_clientGS2     = _gs2default ? origCode : otherCode;
+				_clientGS1     = _gs2default ? otherCode : origCode;
 			}
 			else
 			{
@@ -104,6 +112,5 @@ private:
 		}
 	}
 };
-
 
 #endif

@@ -1,5 +1,5 @@
 #include "IDebug.h"
-#include "LevelLink.h"
+#include "TLevelLink.h"
 
 /*
 	TLevelLink: Constructor - Deconstructor
@@ -33,10 +33,10 @@ void TLevelLink::parseLinkStr(const std::vector<CString>& pLink)
 			newLevel << " " << pLink[1 + i];
 	}
 
-	x = strtoint(pLink[1 + offset]);
-	y = strtoint(pLink[2 + offset]);
-	width = strtoint(pLink[3 + offset]);
+	x      = strtoint(pLink[1 + offset]);
+	y      = strtoint(pLink[2 + offset]);
+	width  = strtoint(pLink[3 + offset]);
 	height = strtoint(pLink[4 + offset]);
-	newX = pLink[5 + offset];
-	newY = pLink[6 + offset];
+	newX   = pLink[5 + offset];
+	newY   = pLink[6 + offset];
 }

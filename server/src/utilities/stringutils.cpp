@@ -29,4 +29,4 @@ namespace utilities
 
 		return ret;
 	}
-}
+} // namespace utilities

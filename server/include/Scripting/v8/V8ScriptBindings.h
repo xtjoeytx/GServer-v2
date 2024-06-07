@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef V8SCRIPTBINDINGS_H
 #define V8SCRIPTBINDINGS_H
 

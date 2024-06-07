@@ -1,6 +1,6 @@
-#include "Player.h"
-#include "Server.h"
 #include "CFileSystem.h"
+#include "TPlayer.h"
+#include "TServer.h"
 
 std::vector<CString> TPlayer::getPMServerList()
 {
@@ -12,7 +12,7 @@ bool TPlayer::addPMServer(CString& option)
 	auto& list = server->getServerList();
 
 	bool PMSrvExist = false;
-	for (auto& pmServer : PMServerList)
+	for (auto& pmServer: PMServerList)
 	{
 		if (pmServer.text() == option)
 		{
@@ -24,7 +24,12 @@ bool TPlayer::addPMServer(CString& option)
 	if (!PMSrvExist)
 	{
 		PMServerList.push_back(option);
-		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine" << "\n" << "pmserverplayers" << "\n" << option << "\n").gtokenizeI());
+		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)id << CString(CString() << "GraalEngine"
+																							 << "\n"
+																							 << "pmserverplayers"
+																							 << "\n"
+																							 << option << "\n")
+																			   .gtokenizeI());
 		return true;
 	}
 	else
@@ -40,7 +45,7 @@ bool TPlayer::remPMServer(CString& option)
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (auto [externalId, externalPlayer] : externalPlayers)
+		for (auto [externalId, externalPlayer]: externalPlayers)
 		{
 			if (option == externalPlayer->getServerName())
 			{
@@ -56,7 +61,7 @@ bool TPlayer::remPMServer(CString& option)
 	}
 
 	// Find the player and remove him.
-	for (auto ip = PMServerList.begin(); ip != PMServerList.end(); )
+	for (auto ip = PMServerList.begin(); ip != PMServerList.end();)
 	{
 		//CString pl = i;
 		if ((ip)->text() == option)
@@ -74,19 +79,19 @@ bool TPlayer::remPMServer(CString& option)
 bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 {
 	std::vector<CString> players2 = players.tokenize("\n");
-	
+
 	if (!externalPlayers.empty())
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (auto [externalId, externalPlayer] : externalPlayers)
+		for (auto [externalId, externalPlayer]: externalPlayers)
 		{
 			bool exist2 = false;
-			for (auto& p2 : players2)
+			for (auto& p2: players2)
 			{
 				CString tmpPlyr = p2.guntokenize();
 				CString account = tmpPlyr.readString("\n");
-				CString nick = tmpPlyr.readString("\n");
+				CString nick    = tmpPlyr.readString("\n");
 				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
 				{
 					exist2 = true;
@@ -99,7 +104,7 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 				{
 					// Map iterators are valid after erase.
 					externalPlayers.erase(externalId);
-					
+
 					if (isRC())
 						sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 					else
@@ -116,12 +121,12 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 	{
 		CString tmpPlyr = (i)->guntokenize();
 		CString account = tmpPlyr.readString("\n");
-		CString nick = tmpPlyr.readString("\n");
+		CString nick    = tmpPlyr.readString("\n");
 
 		bool exist = false;
 		if (!externalPlayers.empty())
 		{
-			for (auto& [externalId, externalPlayer] : externalPlayers)
+			for (auto& [externalId, externalPlayer]: externalPlayers)
 			{
 				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
 				{
@@ -140,9 +145,10 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 				newId = *(freeExternalPlayerIds.begin());
 				freeExternalPlayerIds.erase(newId);
 			}
-			else ++nextExternalPlayerId;
+			else
+				++nextExternalPlayerId;
 
-			auto tmpPlyr2 = std::make_shared<TPlayer>(server, nullptr, newId);
+			auto tmpPlyr2          = std::make_shared<TPlayer>(server, nullptr, newId);
 			externalPlayers[newId] = tmpPlyr2;
 			tmpPlyr2->loadAccount(account);
 			tmpPlyr2->setAccountName(account);
@@ -155,12 +161,14 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 
 	if (!externalPlayers.empty())
 	{
-		for (auto& [externalId, externalPlayer] : externalPlayers)
+		for (auto& [externalId, externalPlayer]: externalPlayers)
 		{
-			if (isRC()) {
+			if (isRC())
+			{
 				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
 			}
-			else {
+			else
+			{
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
 			}
 		}
@@ -172,7 +180,16 @@ bool TPlayer::updatePMPlayers(CString& servername, CString& players)
 bool TPlayer::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
 {
 	auto& list = server->getServerList();
-	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n" << accountName << "\n" << nickName << "\n" << "GraalEngine" << "\n" << "pmplayer" << "\n" << account << "\n" << pmMessage).gtokenizeI());
+	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)id << CString(CString() << servername << "\n"
+																					  << accountName << "\n"
+																					  << nickName << "\n"
+																					  << "GraalEngine"
+																					  << "\n"
+																					  << "pmplayer"
+																					  << "\n"
+																					  << account << "\n"
+																					  << pmMessage)
+																		.gtokenizeI());
 	return true;
 }
 
@@ -188,7 +205,7 @@ TPlayerPtr TPlayer::getExternalPlayer(const unsigned short id, bool includeRC) c
 
 TPlayerPtr TPlayer::getExternalPlayer(const CString& account, bool includeRC) const
 {
-	for (auto& [externalId, externalPlayer] : externalPlayers)
+	for (auto& [externalId, externalPlayer]: externalPlayers)
 	{
 		if (externalPlayer == 0)
 			continue;

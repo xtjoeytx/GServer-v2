@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch_all.hpp"
-#include <Player.h>
-#include <Server.h>
+#include <TPlayer.h>
+#include <TServer.h>
 
 SCENARIO( "TPlayer", "[object]" ) {
 

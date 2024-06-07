@@ -5,11 +5,11 @@
 #include <fstream>
 #include "IDebug.h"
 #include "IEnums.h"
-#include "Server.h"
-#include "Level.h"
-#include "Map.h"
-#include "Player.h"
-#include "NPC.h"
+#include "TServer.h"
+#include "TLevel.h"
+#include "TMap.h"
+#include "TPlayer.h"
+#include "TNPC.h"
 
 /*
 	Global Variables

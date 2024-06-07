@@ -1,19 +1,19 @@
 #ifdef V8NPCSERVER
 
-#include <cassert>
-#include <v8.h>
-#include <math.h>
-#include <algorithm>
-#include <unordered_map>
-#include "CScriptEngine.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "CScriptEngine.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
+	#include <algorithm>
+	#include <cassert>
+	#include <math.h>
+	#include <unordered_map>
+	#include <v8.h>
 
-#include "Level.h"
-#include "LevelLink.h"
-#include "Map.h"
-#include "NPC.h"
-#include "Player.h"
+	#include "TLevel.h"
+	#include "TLevelLink.h"
+	#include "TMap.h"
+	#include "TNPC.h"
+	#include "TPlayer.h"
 
 // PROPERTY: sign.text
 void Sign_GetStr_Text(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -67,11 +67,11 @@ void Sign_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 	signObject->setY(newValue);
 }
 
-void bindClass_LevelSign(CScriptEngine *scriptEngine)
+void bindClass_LevelSign(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -81,7 +81,7 @@ void bindClass_LevelSign(CScriptEngine *scriptEngine)
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> sign_ctor = v8::FunctionTemplate::New(isolate);
-	v8::Local<v8::ObjectTemplate> sign_proto = sign_ctor->PrototypeTemplate();
+	v8::Local<v8::ObjectTemplate> sign_proto  = sign_ctor->PrototypeTemplate();
 	sign_ctor->SetClassName(signStr);
 	sign_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 

@@ -1,19 +1,19 @@
 #ifdef UPNP
-#define UPNPCOMMAND_CONFLICTING_MAPPING 718
+	#define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
-#if defined(_WIN32) || defined(_WIN64)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
+	#if defined(_WIN32) || defined(_WIN64)
+		#ifndef WIN32_LEAN_AND_MEAN
+			#define WIN32_LEAN_AND_MEAN
+		#endif
+
+		#ifndef __GNUC__ // rain
+			#pragma comment(lib, "ws2_32.lib")
+		#endif
+
+		#include <windows.h>
 	#endif
-
-	#ifndef __GNUC__ // rain
-	#pragma comment(lib, "ws2_32.lib")
-	#endif
-
-	#include <windows.h>
-#endif
-#include "UPNP.h"
-#include "Server.h"
+	#include "UPNP.h"
+	#include "TServer.h"
 
 void CUPNP::discover()
 {
@@ -40,7 +40,7 @@ void CUPNP::discover()
 		// If no valid device was found, default to the first device.
 		if (!device)
 			device = device_list;
-		
+
 		//server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", server->getName().text(), device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
@@ -69,7 +69,7 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 		return;
 
 	CLog& serverlog = server->getServerLog();
-	int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
+	int r           = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
 	if (r != 0)
 	{
 		serverlog.out("[%s] ** [UPnP] Failed to forward port %s to %s: ", server->getName().text(), port.text(), addr.text());
@@ -81,9 +81,9 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 			case UPNPCOMMAND_HTTP_ERROR:
 				serverlog.out("HTTP error.\n");
 				break;
-		    case UPNPCOMMAND_CONFLICTING_MAPPING:
-		        serverlog.out("Port mapping already exists.\n");
-		        break;
+			case UPNPCOMMAND_CONFLICTING_MAPPING:
+				serverlog.out("Port mapping already exists.\n");
+				break;
 			default:
 			case UPNPCOMMAND_UNKNOWN_ERROR:
 				serverlog.out("Unknown error.\n");

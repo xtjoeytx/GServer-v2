@@ -1,23 +1,21 @@
-#pragma once
-
 #ifndef V8SCRIPTWRAPPED_H
 #define V8SCRIPTWRAPPED_H
 
-#include <v8.h>
-#include <unordered_map>
 #include "ScriptBindings.h"
 #include "V8ScriptUtils.h"
+#include <unordered_map>
+#include <v8.h>
 
 template<class T>
 class V8ScriptObject : public IScriptObject<T>
 {
 public:
-	V8ScriptObject(T *object, v8::Isolate *isolate, v8::Local<v8::Object> handle)
+	V8ScriptObject(T* object, v8::Isolate* isolate, v8::Local<v8::Object> handle)
 		: IScriptObject<T>(object), _isolate(isolate)
 	{
 		_handle.Reset(isolate, handle);
 	}
-	
+
 	~V8ScriptObject()
 	{
 		// clear handle for children
@@ -57,11 +55,13 @@ public:
 		}
 	}
 
-	v8::Local<v8::Object> Handle(v8::Isolate *isolate) const {
+	v8::Local<v8::Object> Handle(v8::Isolate* isolate) const
+	{
 		return PersistentToLocal(isolate, _handle);
 	}
-	
-	v8::Persistent<v8::Object>& Persistent() {
+
+	v8::Persistent<v8::Object>& Persistent()
+	{
 		return _handle;
 	}
 
@@ -80,7 +80,7 @@ public:
 	//}
 
 private:
-	v8::Isolate *_isolate;
+	v8::Isolate* _isolate;
 	v8::Persistent<v8::Object> _handle;
 	std::unordered_map<std::string, v8::Global<v8::Object>> _children;
 };

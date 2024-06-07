@@ -1,41 +1,40 @@
+#include "Account.h"
+#include "CFileSystem.h"
 #include "IDebug.h"
+#include "TServer.h"
 #include <algorithm>
 #include <memory.h>
 #include <time.h>
-#include "Account.h"
-#include "Server.h"
-#include "CFileSystem.h"
 
 /*
 	TAccount: Constructor - Deconstructor
 */
 TAccount::TAccount(TServer* pServer)
-: server(pServer),
-isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
-adminIp("0.0.0.0"),
-accountIp(0), adminRights(0),
-bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
-nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
-deviation(350.0f), power(3.0), rating(1500.0f),
-x(0), y(0), z(0),
-additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
-deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
-onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
-attachNPC(0),
-lastSparTime(0),
-statusMsg(0), deviceId(0)
+	: server(pServer),
+	  isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
+	  adminIp("0.0.0.0"),
+	  accountIp(0), adminRights(0),
+	  bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
+	  nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
+	  deviation(350.0f), power(3.0), rating(1500.0f),
+	  x(0), y(0), z(0),
+	  additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
+	  deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
+	  onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
+	  attachNPC(0),
+	  lastSparTime(0),
+	  statusMsg(0), deviceId(0)
 {
 	// Other Defaults
-	colors[0] = 2;	// c
-	colors[1] = 0;	// a
-	colors[2] = 10;	// k
-	colors[3] = 4;	// e
-	colors[4] = 18;	// s
-	bowPower = 1;
+	colors[0] = 2;  // c
+	colors[1] = 0;  // a
+	colors[2] = 10; // k
+	colors[3] = 4;  // e
+	colors[4] = 18; // s
+	bowPower  = 1;
 }
 
-TAccount::~TAccount()
-= default;
+TAccount::~TAccount() = default;
 
 /*
 	TAccount: Load/Save Account
@@ -57,7 +56,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	accountName = pAccount;
 
 	bool loadedFromDefault = false;
-	CFileSystem* accfs = server->getAccountsFileSystem();
+	CFileSystem* accfs     = server->getAccountsFileSystem();
 	std::vector<CString> fileData;
 
 	// Find the account in the file system.
@@ -75,7 +74,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		return false;
 
 	// Clear Lists
-	for (auto & i : attrList) i.clear();
+	for (auto& i: attrList) i.clear();
 	chestList.clear();
 	flagList.clear();
 	folderList.clear();
@@ -83,7 +82,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	PMServerList.clear();
 
 	// Parse File
-	for (auto & i : fileData)
+	for (auto& i: fileData)
 	{
 		// Trim Line
 		i.trimI();
@@ -93,106 +92,191 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		int sep;
 
 		// Seperate Section & Value
-		sep = i.find(' ');
+		sep     = i.find(' ');
 		section = i.subString(0, sep);
 		if (sep != -1)
 			val = i.subString(sep + 1);
 
 		if (section == "NAME") continue;
-		else if (section == "NICK") { if (!ignoreNickname) nickName = val.subString(0, 223); }
-		else if (section == "COMMUNITYNAME") communityName = val;
-		else if (section == "LEVEL") levelName = val;
+		else if (section == "NICK")
+		{
+			if (!ignoreNickname) nickName = val.subString(0, 223);
+		}
+		else if (section == "COMMUNITYNAME")
+			communityName = val;
+		else if (section == "LEVEL")
+			levelName = val;
 		else if (section == "X") { x = (float)strtofloat(val); }
 		else if (section == "Y") { y = (float)strtofloat(val); }
 		else if (section == "Z") { z = (float)strtofloat(val); }
-		else if (section == "MAXHP") setMaxPower(strtoint(val));
-		else if (section == "HP") setPower((float)strtofloat(val));
-		else if (section == "RUPEES") gralatc = strtoint(val);
-		else if (section == "ANI") setGani(val);
-		else if (section == "ARROWS") arrowc = strtoint(val);
-		else if (section == "BOMBS") bombc = strtoint(val);
-		else if (section == "GLOVEP") glovePower = strtoint(val);
-		else if (section == "SHIELDP") setShieldPower(strtoint(val));
-		else if (section == "SWORDP") setSwordPower(strtoint(val));
-		else if (section == "BOWP") bowPower = strtoint(val);
-		else if (section == "BOW") bowImage = val;
-		else if (section == "HEAD") setHeadImage(val);
-		else if (section == "BODY") setBodyImage(val);
-		else if (section == "SWORD") setSwordImage(val);
-		else if (section == "SHIELD") setShieldImage(val);
-		else if (section == "COLORS") { std::vector<CString> t = val.tokenize(","); for (int i = 0; i < (int)t.size() && i < 5; i++) colors[i] = (unsigned char)strtoint(t[i]); }
-		else if (section == "SPRITE") sprite = strtoint(val);
-		else if (section == "STATUS") status = strtoint(val);
-		else if (section == "MP") mp = strtoint(val);
-		else if (section == "AP") ap = strtoint(val);
-		else if (section == "APCOUNTER") apCounter = strtoint(val);
-		else if (section == "ONSECS") onlineTime = strtoint(val);
-		else if (section == "IP") { if (accountIp == 0) accountIp = strtolong(val); }
-		else if (section == "LANGUAGE") { language = val; if (language.isEmpty()) language = "English"; }
-		else if (section == "KILLS") kills = strtoint(val);
-		else if (section == "DEATHS") deaths = strtoint(val);
-		else if (section == "RATING") rating = (float)strtofloat(val);
-		else if (section == "DEVIATION") deviation = (float)strtofloat(val);
-		else if (section == "LASTSPARTIME") lastSparTime = strtolong(val);
-		else if (section == "FLAG") setFlag(val);
-		else if (section == "ATTR1") attrList[0] = val;
-		else if (section == "ATTR2") attrList[1] = val;
-		else if (section == "ATTR3") attrList[2] = val;
-		else if (section == "ATTR4") attrList[3] = val;
-		else if (section == "ATTR5") attrList[4] = val;
-		else if (section == "ATTR6") attrList[5] = val;
-		else if (section == "ATTR7") attrList[6] = val;
-		else if (section == "ATTR8") attrList[7] = val;
-		else if (section == "ATTR9") attrList[8] = val;
-		else if (section == "ATTR10") attrList[9] = val;
-		else if (section == "ATTR11") attrList[10] = val;
-		else if (section == "ATTR12") attrList[11] = val;
-		else if (section == "ATTR13") attrList[12] = val;
-		else if (section == "ATTR14") attrList[13] = val;
-		else if (section == "ATTR15") attrList[14] = val;
-		else if (section == "ATTR16") attrList[15] = val;
-		else if (section == "ATTR17") attrList[16] = val;
-		else if (section == "ATTR18") attrList[17] = val;
-		else if (section == "ATTR19") attrList[18] = val;
-		else if (section == "ATTR20") attrList[19] = val;
-		else if (section == "ATTR21") attrList[20] = val;
-		else if (section == "ATTR22") attrList[21] = val;
-		else if (section == "ATTR23") attrList[22] = val;
-		else if (section == "ATTR24") attrList[23] = val;
-		else if (section == "ATTR25") attrList[24] = val;
-		else if (section == "ATTR26") attrList[25] = val;
-		else if (section == "ATTR27") attrList[26] = val;
-		else if (section == "ATTR28") attrList[27] = val;
-		else if (section == "ATTR29") attrList[28] = val;
-		else if (section == "ATTR30") attrList[29] = val;
-		else if (section == "WEAPON") weaponList.push_back(val);
-		else if (section == "CHEST") chestList.push_back(val);
-		else if (section == "BANNED") isBanned = (strtoint(val) == 0 ? false : true);
-		else if (section == "BANREASON") banReason = val;
-		else if (section == "BANLENGTH") banLength = val;
-		else if (section == "COMMENTS") accountComments = val;
-		else if (section == "EMAIL") email = val;
-		else if (section == "LOCALRIGHTS") adminRights = strtoint(val);
-		else if (section == "IPRANGE") adminIp = val;
-		else if (section == "LOADONLY") isLoadOnly = (strtoint(val) == 0 ? false : true);
-		else if (section == "FOLDERRIGHT") folderList.push_back(val);
-		else if (section == "LASTFOLDER") lastFolder = val;
+		else if (section == "MAXHP")
+			setMaxPower(strtoint(val));
+		else if (section == "HP")
+			setPower((float)strtofloat(val));
+		else if (section == "RUPEES")
+			gralatc = strtoint(val);
+		else if (section == "ANI")
+			setGani(val);
+		else if (section == "ARROWS")
+			arrowc = strtoint(val);
+		else if (section == "BOMBS")
+			bombc = strtoint(val);
+		else if (section == "GLOVEP")
+			glovePower = strtoint(val);
+		else if (section == "SHIELDP")
+			setShieldPower(strtoint(val));
+		else if (section == "SWORDP")
+			setSwordPower(strtoint(val));
+		else if (section == "BOWP")
+			bowPower = strtoint(val);
+		else if (section == "BOW")
+			bowImage = val;
+		else if (section == "HEAD")
+			setHeadImage(val);
+		else if (section == "BODY")
+			setBodyImage(val);
+		else if (section == "SWORD")
+			setSwordImage(val);
+		else if (section == "SHIELD")
+			setShieldImage(val);
+		else if (section == "COLORS")
+		{
+			std::vector<CString> t = val.tokenize(",");
+			for (int i = 0; i < (int)t.size() && i < 5; i++) colors[i] = (unsigned char)strtoint(t[i]);
+		}
+		else if (section == "SPRITE")
+			sprite = strtoint(val);
+		else if (section == "STATUS")
+			status = strtoint(val);
+		else if (section == "MP")
+			mp = strtoint(val);
+		else if (section == "AP")
+			ap = strtoint(val);
+		else if (section == "APCOUNTER")
+			apCounter = strtoint(val);
+		else if (section == "ONSECS")
+			onlineTime = strtoint(val);
+		else if (section == "IP")
+		{
+			if (accountIp == 0) accountIp = strtolong(val);
+		}
+		else if (section == "LANGUAGE")
+		{
+			language = val;
+			if (language.isEmpty()) language = "English";
+		}
+		else if (section == "KILLS")
+			kills = strtoint(val);
+		else if (section == "DEATHS")
+			deaths = strtoint(val);
+		else if (section == "RATING")
+			rating = (float)strtofloat(val);
+		else if (section == "DEVIATION")
+			deviation = (float)strtofloat(val);
+		else if (section == "LASTSPARTIME")
+			lastSparTime = strtolong(val);
+		else if (section == "FLAG")
+			setFlag(val);
+		else if (section == "ATTR1")
+			attrList[0] = val;
+		else if (section == "ATTR2")
+			attrList[1] = val;
+		else if (section == "ATTR3")
+			attrList[2] = val;
+		else if (section == "ATTR4")
+			attrList[3] = val;
+		else if (section == "ATTR5")
+			attrList[4] = val;
+		else if (section == "ATTR6")
+			attrList[5] = val;
+		else if (section == "ATTR7")
+			attrList[6] = val;
+		else if (section == "ATTR8")
+			attrList[7] = val;
+		else if (section == "ATTR9")
+			attrList[8] = val;
+		else if (section == "ATTR10")
+			attrList[9] = val;
+		else if (section == "ATTR11")
+			attrList[10] = val;
+		else if (section == "ATTR12")
+			attrList[11] = val;
+		else if (section == "ATTR13")
+			attrList[12] = val;
+		else if (section == "ATTR14")
+			attrList[13] = val;
+		else if (section == "ATTR15")
+			attrList[14] = val;
+		else if (section == "ATTR16")
+			attrList[15] = val;
+		else if (section == "ATTR17")
+			attrList[16] = val;
+		else if (section == "ATTR18")
+			attrList[17] = val;
+		else if (section == "ATTR19")
+			attrList[18] = val;
+		else if (section == "ATTR20")
+			attrList[19] = val;
+		else if (section == "ATTR21")
+			attrList[20] = val;
+		else if (section == "ATTR22")
+			attrList[21] = val;
+		else if (section == "ATTR23")
+			attrList[22] = val;
+		else if (section == "ATTR24")
+			attrList[23] = val;
+		else if (section == "ATTR25")
+			attrList[24] = val;
+		else if (section == "ATTR26")
+			attrList[25] = val;
+		else if (section == "ATTR27")
+			attrList[26] = val;
+		else if (section == "ATTR28")
+			attrList[27] = val;
+		else if (section == "ATTR29")
+			attrList[28] = val;
+		else if (section == "ATTR30")
+			attrList[29] = val;
+		else if (section == "WEAPON")
+			weaponList.push_back(val);
+		else if (section == "CHEST")
+			chestList.push_back(val);
+		else if (section == "BANNED")
+			isBanned = (strtoint(val) == 0 ? false : true);
+		else if (section == "BANREASON")
+			banReason = val;
+		else if (section == "BANLENGTH")
+			banLength = val;
+		else if (section == "COMMENTS")
+			accountComments = val;
+		else if (section == "EMAIL")
+			email = val;
+		else if (section == "LOCALRIGHTS")
+			adminRights = strtoint(val);
+		else if (section == "IPRANGE")
+			adminIp = val;
+		else if (section == "LOADONLY")
+			isLoadOnly = (strtoint(val) == 0 ? false : true);
+		else if (section == "FOLDERRIGHT")
+			folderList.push_back(val);
+		else if (section == "LASTFOLDER")
+			lastFolder = val;
 	}
 
 	// If this is a guest account, loadonly is set to true.
 	if (pAccount.toLower() == "guest")
 	{
 		isLoadOnly = true;
-		isGuest = true;
+		isGuest    = true;
 		srand((unsigned int)time(0));
 
 		// Try to create a unique account number.
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v).subString(0,6), PLTYPE_ANYPLAYER) == 0)
+			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
 			{
-				communityName = "pc:" + CString(v).subString(0,6);
+				communityName = "pc:" + CString(v).subString(0, 6);
 				break;
 			}
 		}
@@ -203,7 +287,7 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	{
 		// The PC:123123123 should only be sent to other players, the logged in player should see it as guest.
 		// Setting it back to only show as guest to everyone until that's fixed.
-		accountName = communityName;
+		accountName   = communityName;
 		communityName = "guest";
 	}
 	else
@@ -285,7 +369,7 @@ bool TAccount::saveAccount()
 	for (unsigned int i = 0; i < 30; i++)
 	{
 		if (attrList[i].length() > 0)
-			newFile << "ATTR" << CString(i+1) << " " << attrList[i] << "\r\n";
+			newFile << "ATTR" << CString(i + 1) << " " << attrList[i] << "\r\n";
 	}
 
 	// Chests
@@ -336,7 +420,7 @@ bool TAccount::saveAccount()
 /*
 	TAccount: Account Management
 */
-bool TAccount::meetsConditions( CString fileName, CString conditions )
+bool TAccount::meetsConditions(CString fileName, CString conditions)
 {
 	const char* conditional[] = { ">=", "<=", "!=", "=", ">", "<" };
 
@@ -350,16 +434,16 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 	std::vector<CString> cond;
 	conditions.removeAllI("'");
 	conditions.replaceAllI("%", "*");
-	cond = conditions.tokenize(",");
+	cond                = conditions.tokenize(",");
 	bool* conditionsMet = new bool[cond.size()];
 	memset((void*)conditionsMet, 0, sizeof(bool) * cond.size());
 
 	// Go through each line of the loaded file.
 	for (std::vector<CString>::iterator i = file.begin(); i != file.end(); ++i)
 	{
-		int sep = (*i).find(' ');
+		int sep         = (*i).find(' ');
 		CString section = (*i).subString(0, sep);
-		CString val = (*i).subString(sep + 1).removeAll("\r");
+		CString val     = (*i).subString(sep + 1).removeAll("\r");
 		section.trimI();
 		val.trimI();
 
@@ -377,12 +461,12 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 				if (cond[j].find(conditional[k]) != -1)
 				{
 					cond_num = k;
-					k = 6;
+					k        = 6;
 				}
 			}
 			if (cond_num == -1) continue;
 
-			CString cname = cond[j].readString(conditional[cond_num]);
+			CString cname  = cond[j].readString(conditional[cond_num]);
 			CString cvalue = cond[j].readString("");
 			cname.trimI();
 			cvalue.trimI();
@@ -410,7 +494,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (((cond_num == 1) ? (vNum[0] <= vNum[1]) : (vNum[0] >= vNum[1])))
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 						else
@@ -420,7 +504,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (((cond_num == 1) ? (ret <= 0) : (ret >= 0)))
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 
@@ -429,7 +513,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 						{
 							CString cnameUp = cname.toUpper();
 							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
+								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
 								goto condAbort;
 						}
 						break;
@@ -447,7 +531,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (((cond_num == 5) ? (vNum[0] < vNum[1]) : (vNum[0] > vNum[1])))
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 						else
@@ -456,7 +540,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (((cond_num == 5) ? (ret < 0) : (ret > 0)))
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 
@@ -464,7 +548,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 						{
 							CString cnameUp = cname.toUpper();
 							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
+								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
 								goto condAbort;
 						}
 						break;
@@ -500,7 +584,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (vNum[0] == vNum[1])
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 						else
@@ -508,7 +592,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 							if (val.match(cvalue.text()) == true)
 							{
 								conditionsMet[j] = true;
-								condmet = true;
+								condmet          = true;
 							}
 						}
 
@@ -516,7 +600,7 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 						{
 							CString cnameUp = cname.toUpper();
 							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
+								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
 								goto condAbort;
 						}
 						break;
@@ -531,14 +615,13 @@ bool TAccount::meetsConditions( CString fileName, CString conditions )
 		if (conditionsMet[i] == false) goto condAbort;
 
 	// Clean up.
-	delete [] conditionsMet;
+	delete[] conditionsMet;
 	return true;
 
 condAbort:
-	delete [] conditionsMet;
+	delete[] conditionsMet;
 	return false;
 }
-
 
 /*
 	TAccount: Attribute-Managing
@@ -560,7 +643,7 @@ bool TAccount::hasWeapon(const CString& pWeapon)
 */
 void TAccount::setFlag(CString pFlag)
 {
-	CString flagName = pFlag.readString("=");
+	CString flagName  = pFlag.readString("=");
 	CString flagValue = pFlag.readString("");
 	this->setFlag(flagName.text(), flagValue);
 }
@@ -569,10 +652,11 @@ void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
 	if (server->getSettings().getBool("cropflags", true))
 	{
-		int fixedLength = 223 - 1 - pFlagName.length();
+		int fixedLength     = 223 - 1 - pFlagName.length();
 		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
-	else flagList[pFlagName] = pFlagValue;
+	else
+		flagList[pFlagName] = pFlagValue;
 }
 
 /*
@@ -586,9 +670,9 @@ CString TAccount::translate(const CString& pKey)
 void TAccount::setMaxPower(int newMaxPower)
 {
 	const auto& settings = server->getSettings();
-	
+
 	auto heartLimit = std::min(settings.getInt("heartlimit", 3), 20);
-	maxPower = clip(newMaxPower, 0, heartLimit);
+	maxPower        = clip(newMaxPower, 0, heartLimit);
 }
 
 void TAccount::setShieldPower(int newPower)

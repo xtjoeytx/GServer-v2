@@ -7,9 +7,9 @@
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
 
-#include "Level.h"
-#include "NPC.h"
-#include "Player.h"
+#include "TLevel.h"
+#include "TNPC.h"
+#include "TPlayer.h"
 
 void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	v8::Isolate* isolate = args.GetIsolate();

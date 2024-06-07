@@ -665,7 +665,7 @@ inline void TNPC::deleteFlag(const std::string& pFlagName)
 }
 
 // TODO(joey): hm
-#include "Server.h"
+#include "TServer.h"
 
 template<class... Args>
 inline void TNPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)

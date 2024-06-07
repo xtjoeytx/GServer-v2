@@ -1,15 +1,15 @@
 #ifdef V8NPCSERVER
 
-#include <string>
-#include <unordered_map>
-#include "CScriptEngine.h"
-#include "V8ScriptEnv.h"
-#include "V8ScriptFunction.h"
+	#include "CScriptEngine.h"
+	#include "V8ScriptEnv.h"
+	#include "V8ScriptFunction.h"
+	#include <string>
+	#include <unordered_map>
 
 // Global Method: print(arg0, arg1, arg2, arg3) [no format atm];
 void Global_Function_Print(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -30,22 +30,22 @@ void Global_Function_Print(const v8::FunctionCallbackInfo<v8::Value>& args)
 // PROPERTY: server object
 void Global_GetObject_Server(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-    v8::Local<v8::External> data = info.Data().As<v8::External>();
-    CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	CScriptEngine* scriptEngine  = static_cast<CScriptEngine*>(data->Value());
 
-    V8ScriptObject<TServer> *v8_serverObject = static_cast<V8ScriptObject<TServer> *>(scriptEngine->getServerObject());
-    info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
+	V8ScriptObject<TServer>* v8_serverObject = static_cast<V8ScriptObject<TServer>*>(scriptEngine->getServerObject());
+	info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
 }
 
-void bindGlobalFunctions(CScriptEngine *scriptEngine)
+void bindGlobalFunctions(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	V8ScriptEnv* env     = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
-	
+
 	// Fetch global template
 	v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
 

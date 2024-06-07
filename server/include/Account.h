@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include "CString.h"
-#include "LevelChest.h"
+#include "TLevelChest.h"
 
 enum
 {
