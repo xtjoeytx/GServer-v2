@@ -9,49 +9,49 @@
 	#include "ScriptBindings.h"
 #endif
 
-class TPlayer;
+class Player;
 
-class TLevelSign : public std::enable_shared_from_this<TLevelSign>
+class LevelSign : public std::enable_shared_from_this<LevelSign>
 {
 public:
-	TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
+	LevelSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
 
 	// functions
-	CString getSignStr(TPlayer* pPlayer = 0) const;
+	CString getSignStr(Player* pPlayer = 0) const;
 
 	// get private variables
-	int getX() const { return x; }
-	int getY() const { return y; }
-	CString getText() const { return text; }
-	CString getUText() const { return unformattedText; }
+	int getX() const { return m_x; }
+	int getY() const { return m_y; }
+	CString getText() const { return m_text; }
+	CString getUText() const { return m_unformattedText; }
 
-	void setX(int value = 0) { x = value; }
-	void setY(int value = 0) { y = value; }
+	void setX(int value = 0) { m_x = value; }
+	void setY(int value = 0) { m_y = value; }
 	void setText(const CString& value);
 	void setUText(const CString& value);
 
 #ifdef V8NPCSERVER
-	inline IScriptObject<TLevelSign>* getScriptObject() const
+	inline IScriptObject<LevelSign>* getScriptObject() const
 	{
-		return _scriptObject.get();
+		return m_scriptObject.get();
 	}
 
-	inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelSign>> object)
+	inline void setScriptObject(std::unique_ptr<IScriptObject<LevelSign>> object)
 	{
-		_scriptObject = std::move(object);
+		m_scriptObject = std::move(object);
 	}
 #endif
 
 private:
-	int x, y;
-	CString text;
-	CString unformattedText;
+	int m_x, m_y;
+	CString m_text;
+	CString m_unformattedText;
 
 #ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<TLevelSign>> _scriptObject;
+	std::unique_ptr<IScriptObject<LevelSign>> m_scriptObject;
 #endif
 };
 
-using TLevelSignPtr = std::shared_ptr<TLevelSign>;
+using LevelSignPtr = std::shared_ptr<LevelSign>;
 
 #endif // TLEVELSIGN_H

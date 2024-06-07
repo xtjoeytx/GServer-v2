@@ -7,7 +7,7 @@
 
 void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
-	auto& dispatcher = triggerActionDispatcher;
+	auto& dispatcher = m_triggerActionDispatcher;
 
 #ifdef V8NPCSERVER
 	builder.registerCommand("serverside", [&](TPlayer* player, std::vector<CString>& triggerData)
@@ -208,7 +208,7 @@ void TServer::createTriggerCommands(TriggerDispatcher::Builder builder)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
-									auto playerList = player->getLevel()->getPlayerList();
+									auto playerList = player->getLevel()->getPlayers();
 									for (auto& id: playerList)
 									{
 										auto pl = getPlayer(id);

@@ -36,11 +36,11 @@ private:
 	void syncCompileJob(const std::string& script, user_callback_type& finishedCb);
 
 	//
-	BytecodeCache _bytecodeCache;
-	CompilerThreadPool _compilerThreadPool;
+	BytecodeCache m_bytecodeCache;
+	CompilerThreadPool m_compilerThreadPool;
 
-	std::queue<queue_item_type> _cbQueue;
-	std::mutex _cbQueueLock;
+	std::queue<queue_item_type> m_cbQueue;
+	std::mutex m_cbQueueLock;
 };
 
 #endif

@@ -13,7 +13,7 @@ class ResourceManager
 	using ResourceMap = std::unordered_map<std::string, ResourcePtr>;
 
 public:
-	explicit ResourceManager(PassArgs&&... An) : _tuple(std::forward<PassArgs>(An)...) {}
+	explicit ResourceManager(PassArgs&&... An) : m_tuple(std::forward<PassArgs>(An)...) {}
 
 	// Delete move operations
 	ResourceManager(ResourceManager&& o) = delete;
@@ -28,8 +28,8 @@ public:
 	//! \return Shared pointer to a Resource class
 	ResourcePtr findResource(const std::string& resourceName)
 	{
-		auto it = _resourceMap.find(resourceName);
-		if (it != _resourceMap.end())
+		auto it = m_resourceMap.find(resourceName);
+		if (it != m_resourceMap.end())
 			return it->second;
 
 		return {};
@@ -41,8 +41,8 @@ public:
 	//! \return Shared pointer to a Resource class
 	ResourcePtr findOrAddResource(const std::string& resourceName)
 	{
-		auto it = _resourceMap.find(resourceName);
-		if (it != _resourceMap.end())
+		auto it = m_resourceMap.find(resourceName);
+		if (it != m_resourceMap.end())
 			return it->second;
 
 		return addResource(resourceName);
@@ -57,11 +57,11 @@ public:
 		// so successive calls to findOrAddResource() do not keep trying to load the file
 		ResourcePtr resourcePtr;
 
-		auto newResource = std::apply(ResourceCls::load, std::tuple_cat(_tuple, std::make_tuple(resourceName)));
+		auto newResource = std::apply(ResourceCls::load, std::tuple_cat(m_tuple, std::make_tuple(resourceName)));
 		if (newResource)
 			resourcePtr = std::make_shared<ResourceCls>(std::move(newResource.value()));
 
-		_resourceMap.emplace(resourceName, resourcePtr);
+		m_resourceMap.emplace(resourceName, resourcePtr);
 		return resourcePtr;
 	}
 
@@ -70,22 +70,22 @@ public:
 	//! \return true if the resource was deleted
 	bool deleteResource(const std::string& resourceName)
 	{
-		auto it = _resourceMap.find(resourceName);
-		if (it == _resourceMap.end())
+		auto it = m_resourceMap.find(resourceName);
+		if (it == m_resourceMap.end())
 			return false;
 
-		_resourceMap.erase(it);
+		m_resourceMap.erase(it);
 		return true;
 	}
 
 	const ResourceMap& getResources() const
 	{
-		return _resourceMap;
+		return m_resourceMap;
 	}
 
 private:
-	std::tuple<PassArgs...> _tuple;
-	ResourceMap _resourceMap;
+	std::tuple<PassArgs...> m_tuple;
+	ResourceMap m_resourceMap;
 };
 
 #endif

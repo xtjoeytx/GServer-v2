@@ -22,11 +22,11 @@ public:
 
 	const ScriptRunError& getScriptError() const
 	{
-		return _lastScriptError;
+		return m_lastScriptError;
 	}
 
 protected:
-	ScriptRunError _lastScriptError;
+	ScriptRunError m_lastScriptError;
 };
 
 #endif

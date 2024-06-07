@@ -50,14 +50,14 @@ class ScriptArguments : public IScriptArguments
 public:
 	template<typename... Args>
 	ScriptArguments(Args&&... An)
-		: IScriptArguments(), _resolved(false), _tuple(std::forward<Args>(An)...)
+		: IScriptArguments(), m_resolved(false), m_tuple(std::forward<Args>(An)...)
 	{
 		validate_args(std::index_sequence_for<Ts...>{});
 	}
 
 	virtual ~ScriptArguments()
 	{
-		if (!_resolved)
+		if (!m_resolved)
 		{
 			invalidate_args(std::index_sequence_for<Ts...>{});
 		}
@@ -72,14 +72,14 @@ public:
 
 	inline const std::tuple<Ts...>& Args() const
 	{
-		return _tuple;
+		return m_tuple;
 	}
 
 protected:
 	static constexpr int Argc = (sizeof...(Ts));
 
-	bool _resolved;
-	std::tuple<Ts...> _tuple;
+	bool m_resolved;
+	std::tuple<Ts...> m_tuple;
 
 private:
 	template<std::size_t... Is>
@@ -87,7 +87,7 @@ private:
 	{
 		if constexpr (sizeof...(Is) > 0)
 		{
-			int unused[] = { ((detail::InvalidateBinding(std::get<Is>(_tuple))), void(), 0)... };
+			int unused[] = { ((detail::InvalidateBinding(std::get<Is>(m_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}
@@ -97,7 +97,7 @@ private:
 	{
 		if constexpr (sizeof...(Is) > 0)
 		{
-			int unused[] = { ((detail::ValidateBinding(std::get<Is>(_tuple))), void(), 0)... };
+			int unused[] = { ((detail::ValidateBinding(std::get<Is>(m_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}

@@ -17,10 +17,10 @@
 	#include "ScriptBindings.h"
 #endif
 
-class TLevel;
-class TServer;
-class TMap;
-class TWeapon;
+class Level;
+class Server;
+class Map;
+class Weapon;
 
 enum class LevelItemType;
 
@@ -55,12 +55,12 @@ struct ShootPacketNew
 
 struct SCachedLevel
 {
-	SCachedLevel(std::weak_ptr<TLevel> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) {}
-	std::weak_ptr<TLevel> level;
+	SCachedLevel(std::weak_ptr<Level> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) {}
+	std::weak_ptr<Level> level;
 	time_t modTime;
 };
 
-class TPlayer : public TAccount, public CSocketStub, public std::enable_shared_from_this<TPlayer>
+class Player : public Account, public CSocketStub, public std::enable_shared_from_this<Player>
 {
 public:
 	// Required by CSocketStub.
@@ -68,13 +68,13 @@ public:
 	bool onSend();
 	bool onRegister() { return true; }
 	void onUnregister();
-	SOCKET getSocketHandle() { return playerSock->getHandle(); }
+	SOCKET getSocketHandle() { return m_playerSock->getHandle(); }
 	bool canRecv();
 	bool canSend();
 
 	// Constructor - Deconstructor
-	TPlayer(TServer* pServer, CSocket* pSocket, uint16_t pId);
-	~TPlayer();
+	Player(Server* pServer, CSocket* pSocket, uint16_t pId);
+	~Player();
 	void cleanup();
 
 	// Manage Account
@@ -82,39 +82,39 @@ public:
 	bool sendLogin();
 
 	// Get Properties
-	CSocket* getSocket() { return playerSock; }
-	std::shared_ptr<TLevel> getLevel() const;
-	std::weak_ptr<TMap> getMap() { return pmap; }
-	CString getGroup() { return levelGroup; }
+	CSocket* getSocket() { return m_playerSock; }
+	std::shared_ptr<Level> getLevel() const;
+	std::weak_ptr<Map> getMap() { return m_pmap; }
+	CString getGroup() { return m_levelGroup; }
 	uint16_t getId() const;
-	time_t getLastData() const { return lastData; }
-	CString getGuild() const { return guild; }
-	int getVersion() const { return versionID; }
-	CString getVersionStr() const { return version; }
-	bool isUsingFileBrowser() const { return isFtp; }
-	CString getServerName() const { return serverName; }
-	const CString& getPlatform() const { return os; }
+	time_t getLastData() const { return m_lastData; }
+	CString getGuild() const { return m_guild; }
+	int getVersion() const { return m_versionId; }
+	CString getVersionStr() const { return m_version; }
+	bool isUsingFileBrowser() const { return m_isFtp; }
+	CString getServerName() const { return m_serverName; }
+	const CString& getPlatform() const { return m_os; }
 	std::pair<int, int> getMapPosition() const;
 
 	// Set Properties
 	void setChat(const CString& pChat);
 	void setNick(CString pNickName, bool force = false);
 	void setId(uint16_t pId);
-	void setLoaded(bool loaded) { this->loaded = loaded; }
-	void setGroup(CString group) { levelGroup = group; }
+	void setLoaded(bool loaded) { this->m_loaded = loaded; }
+	void setGroup(CString group) { m_levelGroup = group; }
 	void deleteFlag(const std::string& pFlagName, bool sendToPlayer = false);
 	void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false);
-	void setMap(std::shared_ptr<TMap> map) { pmap = map; }
-	void setServerName(CString& tmpServerName) { serverName = tmpServerName; }
+	void setMap(std::shared_ptr<Map> map) { m_pmap = map; }
+	void setServerName(CString& tmpServerName) { m_serverName = tmpServerName; }
 
 	// Level manipulation
 	bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
 	bool setLevel(const CString& pLevelName, time_t modTime = 0);
-	bool sendLevel(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent = false);
-	bool sendLevel141(std::shared_ptr<TLevel> pLevel, time_t modTime, bool fromAdjacent = false);
+	bool sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
+	bool sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
 	bool leaveLevel(bool resetCache = false);
-	time_t getCachedLevelModTime(const TLevel* level) const;
-	void resetLevelCache(const TLevel* level);
+	time_t getCachedLevelModTime(const Level* level) const;
+	void resetLevelCache(const Level* level);
 
 	// Prop-Manipulation
 	inline CString getProp(int pPropId) const;
@@ -122,9 +122,9 @@ public:
 
 	CString getProps(const bool* pProps, int pCount);
 	CString getPropsRC();
-	void setProps(CString& pPacket, uint8_t options, TPlayer* rc = 0);
+	void setProps(CString& pPacket, uint8_t options, Player* rc = 0);
 	void sendProps(const bool* pProps, int pCount);
-	void setPropsRC(CString& pPacket, TPlayer* rc);
+	void setPropsRC(CString& pPacket, Player* rc);
 
 	// Socket-Functions
 	bool doMain();
@@ -135,15 +135,15 @@ public:
 	// Type of player
 	bool isAdminIp();
 	bool isStaff();
-	bool isNC() const { return (type & PLTYPE_ANYNC) != 0; }
-	bool isRC() const { return (type & PLTYPE_ANYRC) != 0; }
-	bool isClient() const { return (type & PLTYPE_ANYCLIENT) != 0; }
-	bool isNPCServer() const { return (type & PLTYPE_NPCSERVER) != 0; }
-	bool isControlClient() const { return (type & PLTYPE_ANYCONTROL) != 0; }
-	bool isHiddenClient() const { return (type & PLTYPE_NONITERABLE) != 0; }
-	bool isLoaded() const { return loaded; }
-	int getType() const { return type; }
-	void setType(int val) { type = val; }
+	bool isNC() const { return (m_type & PLTYPE_ANYNC) != 0; }
+	bool isRC() const { return (m_type & PLTYPE_ANYRC) != 0; }
+	bool isClient() const { return (m_type & PLTYPE_ANYCLIENT) != 0; }
+	bool isNPCServer() const { return (m_type & PLTYPE_NPCSERVER) != 0; }
+	bool isControlClient() const { return (m_type & PLTYPE_ANYCONTROL) != 0; }
+	bool isHiddenClient() const { return (m_type & PLTYPE_NONITERABLE) != 0; }
+	bool isLoaded() const { return m_loaded; }
+	int getType() const { return m_type; }
+	void setType(int val) { m_type = val; }
 
 	// Misc functions.
 	bool doTimedEvents();
@@ -151,10 +151,10 @@ public:
 	bool processChat(CString pChat);
 	bool addWeapon(LevelItemType defaultWeapon);
 	bool addWeapon(const std::string& name);
-	bool addWeapon(std::shared_ptr<TWeapon> weapon);
+	bool addWeapon(std::shared_ptr<Weapon> weapon);
 	bool deleteWeapon(LevelItemType defaultWeapon);
 	bool deleteWeapon(const std::string& name);
-	bool deleteWeapon(std::shared_ptr<TWeapon> weapon);
+	bool deleteWeapon(std::shared_ptr<Weapon> weapon);
 	void disableWeapons();
 	void enableWeapons();
 	void freezePlayer();
@@ -172,24 +172,24 @@ public:
 	bool updatePMPlayers(CString& servername, CString& players);
 	bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 	std::vector<CString> getPMServerList();
-	std::shared_ptr<TPlayer> getExternalPlayer(const uint16_t id, bool includeRC = true) const;
-	std::shared_ptr<TPlayer> getExternalPlayer(const CString& account, bool includeRC = true) const;
+	std::shared_ptr<Player> getExternalPlayer(const uint16_t id, bool includeRC = true) const;
+	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 #ifdef V8NPCSERVER
-	bool isProcessed() const { return _processRemoval; }
-	void setProcessed() { _processRemoval = true; }
+	bool isProcessed() const { return m_processRemoval; }
+	void setProcessed() { m_processRemoval = true; }
 
 	// NPC-Server Functionality
 	void sendNCAddr();
 
-	inline IScriptObject<TPlayer>* getScriptObject() const
+	inline IScriptObject<Player>* getScriptObject() const
 	{
-		return _scriptObject.get();
+		return m_scriptObject.get();
 	}
 
-	inline void setScriptObject(std::unique_ptr<IScriptObject<TPlayer>> object)
+	inline void setScriptObject(std::unique_ptr<IScriptObject<Player>> object)
 	{
-		_scriptObject = std::move(object);
+		m_scriptObject = std::move(object);
 	}
 #endif
 
@@ -348,100 +348,100 @@ private:
 	bool removeItem(LevelItemType itemType);
 
 	// Socket Variables
-	CSocket* playerSock;
-	CString rBuffer;
+	CSocket* m_playerSock;
+	CString m_recvBuffer;
 
 	// Encryption
-	unsigned char key;
-	CEncryption in_codec;
+	unsigned char m_encryptionKey;
+	CEncryption m_encryptionCodecIn;
 
 	// Variables
-	CString version, os, serverName;
-	int codepage;
-	std::weak_ptr<TLevel> curlevel;
-	uint16_t id;
-	int type, versionID;
-	time_t lastData, lastMovement, lastChat, lastNick, lastMessage, lastSave, last1m;
-	std::vector<std::unique_ptr<SCachedLevel>> cachedLevels;
-	std::map<CString, CString> rcLargeFiles;
-	std::map<CString, std::shared_ptr<TLevel>> spLevels;
-	std::set<std::string> channelList;
-	std::unordered_set<std::string> knownFiles;
-	std::weak_ptr<TMap> pmap;
+	CString m_version, m_os, m_serverName;
+	int m_envCodePage;
+	std::weak_ptr<Level> m_currentLevel;
+	uint16_t m_id;
+	int m_type, m_versionId;
+	time_t m_lastData, m_lastMovement, m_lastChat, m_lastNick, m_lastMessage, m_lastSave, m_last1m;
+	std::vector<std::unique_ptr<SCachedLevel>> m_cachedLevels;
+	std::map<CString, CString> m_rcLargeFiles;
+	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
+	std::set<std::string> m_channelList;
+	std::unordered_set<std::string> m_knownFiles;
+	std::weak_ptr<Map> m_pmap;
 
-	std::unordered_map<uint16_t, std::shared_ptr<TPlayer>> externalPlayers;
-	std::set<uint16_t> freeExternalPlayerIds;
-	uint16_t nextExternalPlayerId;
+	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_externalPlayers;
+	std::set<uint16_t> m_freeExternalPlayerIds;
+	uint16_t m_nextExternalPlayerId;
 
-	unsigned int carryNpcId;
-	bool carryNpcThrown;
-	CString guild;
-	bool loaded;
-	bool nextIsRaw;
-	int rawPacketSize;
-	bool isFtp;
-	bool grMovementUpdated;
-	CString grMovementPackets;
-	CString npcserverPort;
-	int packetCount;
-	bool firstLevel;
-	CString levelGroup;
-	int invalidPackets;
+	unsigned int m_carryNpcId;
+	bool m_carryNpcThrown;
+	CString m_guild;
+	bool m_loaded;
+	bool m_nextIsRaw;
+	int m_rawPacketSize;
+	bool m_isFtp;
+	bool m_grMovementUpdated;
+	CString m_grMovementPackets;
+	CString m_npcserverPort;
+	int m_packetCount;
+	bool m_firstLevel;
+	CString m_levelGroup;
+	int m_invalidPackets;
 
-	CString grExecParameterList;
+	CString m_grExecParameterList;
 
 	// File queue.
-	CFileQueue fileQueue;
+	CFileQueue m_fileQueue;
 
 #ifdef V8NPCSERVER
-	bool _processRemoval;
-	std::unique_ptr<IScriptObject<TPlayer>> _scriptObject;
+	bool m_processRemoval;
+	std::unique_ptr<IScriptObject<Player>> m_scriptObject;
 #endif
 
 	int getVersionIDByVersion(const CString& versionInput) const;
 };
 
-using TPlayerPtr = std::shared_ptr<TPlayer>;
-using TPlayerWeakPtr = std::weak_ptr<TPlayer>;
+using PlayerPtr = std::shared_ptr<Player>;
+using PlayerWeakPtr = std::weak_ptr<Player>;
 
-inline bool TPlayer::isLoggedIn() const
+inline bool Player::isLoggedIn() const
 {
-	return (type != PLTYPE_AWAIT && id > 0);
+	return (m_type != PLTYPE_AWAIT && m_id > 0);
 }
 
-inline uint16_t TPlayer::getId() const
+inline uint16_t Player::getId() const
 {
-	return id;
+	return m_id;
 }
 
-inline void TPlayer::setId(uint16_t pId)
+inline void Player::setId(uint16_t pId)
 {
-	id = pId;
+	m_id = pId;
 }
 
-inline bool TPlayer::hasSeenFile(const std::string& file) const
+inline bool Player::hasSeenFile(const std::string& file) const
 {
-	return knownFiles.find(file) != knownFiles.end();
+	return m_knownFiles.find(file) != m_knownFiles.end();
 }
 
-inline bool TPlayer::inChatChannel(const std::string& channel) const
+inline bool Player::inChatChannel(const std::string& channel) const
 {
-	return channelList.find(channel) != channelList.end();
+	return m_channelList.find(channel) != m_channelList.end();
 }
 
-inline bool TPlayer::addChatChannel(const std::string& channel)
+inline bool Player::addChatChannel(const std::string& channel)
 {
-	auto res = channelList.insert(channel);
+	auto res = m_channelList.insert(channel);
 	return res.second;
 }
 
-inline bool TPlayer::removeChatChannel(const std::string& channel)
+inline bool Player::removeChatChannel(const std::string& channel)
 {
-	channelList.erase(channel);
+	m_channelList.erase(channel);
 	return false;
 }
 
-inline CString TPlayer::getProp(int pPropId) const
+inline CString Player::getProp(int pPropId) const
 {
 	CString packet;
 	getProp(packet, pPropId);

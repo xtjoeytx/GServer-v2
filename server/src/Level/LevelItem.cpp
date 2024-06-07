@@ -35,7 +35,7 @@ const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
 
 CString TLevelItem::getItemStr() const
 {
-	return CString() >> (char)PLO_ITEMADD >> (char)x >> (char)y >> (char)item;
+	return CString() >> (char)PLO_ITEMADD >> (char)m_x >> (char)m_y >> (char)m_item;
 }
 
 LevelItemType TLevelItem::getItemId(signed char itemId)

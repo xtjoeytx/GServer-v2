@@ -3,7 +3,7 @@
 #include "Server.h"
 #include <filesystem>
 
-std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const std::string& name)
+std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
 {
 	auto fileSystem = server->getFileSystem();
 
@@ -13,8 +13,8 @@ std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const 
 		return std::nullopt;
 
 	// Calculate the checksum for the gupd file
-	TUpdatePackage updatePackage(name);
-	updatePackage.checksum = calculateCrc32Checksum(fileContents);
+	UpdatePackage updatePackage(name);
+	updatePackage.m_checksum = calculateCrc32Checksum(fileContents);
 
 	// Calculate the checksum and filesize for each file referenced in the package
 	auto packageLines = fileContents.tokenize("\n");
@@ -36,11 +36,11 @@ std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const 
 
 			uint32_t fileLength(updateFileData.length());
 
-			updatePackage.fileList.emplace(baseFileName, FileEntry{
-															 .size = fileLength,
-															 .checksum = calculateCrc32Checksum(updateFileData) });
+			updatePackage.m_fileList.emplace(baseFileName, FileEntry{
+															   .size = fileLength,
+															   .checksum = calculateCrc32Checksum(updateFileData) });
 
-			updatePackage.packageSize += fileLength;
+			updatePackage.m_packageSize += fileLength;
 		}
 	}
 

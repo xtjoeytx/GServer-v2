@@ -1,5 +1,5 @@
 #include "Account.h"
-#include "CFileSystem.h"
+#include "FileSystem.h"
 #include "IDebug.h"
 #include "Server.h"
 #include <algorithm>
@@ -7,64 +7,64 @@
 #include <time.h>
 
 /*
-	TAccount: Constructor - Deconstructor
+	Account: Constructor - Deconstructor
 */
-TAccount::TAccount(TServer* pServer)
-	: server(pServer),
-	  isBanned(false), isLoadOnly(false), isGuest(false), isExternal(false),
-	  adminIp("0.0.0.0"),
-	  accountIp(0), adminRights(0),
-	  bodyImg("body.png"), headImg("head0.png"), gani("idle"), language("English"),
-	  nickName("default"), shieldImg("shield1.png"), swordImg("sword1.png"),
-	  deviation(350.0f), power(3.0), rating(1500.0f),
-	  x(0), y(0), z(0),
-	  additionalFlags(0), ap(50), apCounter(0), arrowc(10), bombc(5), bombPower(1), carrySprite(-1),
-	  deaths(0), glovePower(1), bowPower(1), gralatc(0), horsec(0), kills(0), mp(0), maxPower(3),
-	  onlineTime(0), shieldPower(1), sprite(2), status(20), swordPower(1), udpport(0),
-	  attachNPC(0),
-	  lastSparTime(0),
-	  statusMsg(0), deviceId(0)
+Account::Account(Server* pServer)
+	: m_server(pServer),
+	  m_isBanned(false), m_isLoadOnly(false), m_isGuest(false), m_isExternal(false),
+	  m_adminIp("0.0.0.0"),
+	  m_accountIp(0), m_adminRights(0),
+	  m_bodyImage("body.png"), m_headImage("head0.png"), m_gani("idle"), m_language("English"),
+	  m_nickName("default"), m_shieldImage("shield1.png"), m_swordImage("sword1.png"),
+	  m_eloDeviation(350.0f), m_hitpoints(3.0), m_eloRating(1500.0f),
+	  m_x(0), m_y(0), m_z(0),
+	  m_additionalFlags(0), m_ap(50), m_apCounter(0), m_arrowCount(10), m_bombCount(5), m_bombPower(1), m_carrySprite(-1),
+	  m_deaths(0), m_glovePower(1), m_bowPower(1), m_gralatCount(0), m_horseBombCount(0), m_kills(0), m_mp(0), m_maxHitpoints(3),
+	  m_onlineTime(0), m_shieldPower(1), m_sprite(2), m_status(20), m_swordPower(1), m_udpport(0),
+	  m_attachNPC(0),
+	  m_lastSparTime(0),
+	  m_statusMsg(0), m_deviceId(0)
 {
 	// Other Defaults
-	colors[0] = 2;  // c
-	colors[1] = 0;  // a
-	colors[2] = 10; // k
-	colors[3] = 4;  // e
-	colors[4] = 18; // s
-	bowPower = 1;
+	m_colors[0] = 2;  // c
+	m_colors[1] = 0;  // a
+	m_colors[2] = 10; // k
+	m_colors[3] = 4;  // e
+	m_colors[4] = 18; // s
+	m_bowPower = 1;
 }
 
-TAccount::~TAccount() = default;
+Account::~Account() = default;
 
 /*
-	TAccount: Load/Save Account
+	Account: Load/Save Account
 */
-void TAccount::reset()
+void Account::reset()
 {
-	if (!accountName.isEmpty())
+	if (!m_accountName.isEmpty())
 	{
-		CString acc(accountName);
+		CString acc(m_accountName);
 		loadAccount("defaultaccount");
-		accountName = acc;
+		m_accountName = acc;
 		saveAccount();
 	}
 }
 
-bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
+bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 {
 	// Just in case this account was loaded offline through RC.
-	accountName = pAccount;
+	m_accountName = pAccount;
 
 	bool loadedFromDefault = false;
-	CFileSystem* accfs = server->getAccountsFileSystem();
+	FileSystem* accfs = m_server->getAccountsFileSystem();
 	std::vector<CString> fileData;
 
 	// Find the account in the file system.
 	CString accpath(accfs->findi(CString() << pAccount << ".txt"));
 	if (accpath.length() == 0)
 	{
-		accpath = server->getServerPath() << "accounts/defaultaccount.txt";
-		CFileSystem::fixPathSeparators(accpath);
+		accpath = m_server->getServerPath() << "accounts/defaultaccount.txt";
+		FileSystem::fixPathSeparators(accpath);
 		loadedFromDefault = true;
 	}
 
@@ -74,12 +74,12 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		return false;
 
 	// Clear Lists
-	for (auto& i: attrList) i.clear();
-	chestList.clear();
-	flagList.clear();
-	folderList.clear();
-	weaponList.clear();
-	PMServerList.clear();
+	for (auto& i: m_attrList) i.clear();
+	m_chestList.clear();
+	m_flagList.clear();
+	m_folderList.clear();
+	m_weaponList.clear();
+	m_privateMessageServerList.clear();
 
 	// Parse File
 	for (auto& i: fileData)
@@ -100,37 +100,37 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		if (section == "NAME") continue;
 		else if (section == "NICK")
 		{
-			if (!ignoreNickname) nickName = val.subString(0, 223);
+			if (!ignoreNickname) m_nickName = val.subString(0, 223);
 		}
 		else if (section == "COMMUNITYNAME")
-			communityName = val;
+			m_communityName = val;
 		else if (section == "LEVEL")
-			levelName = val;
-		else if (section == "X") { x = (float)strtofloat(val); }
-		else if (section == "Y") { y = (float)strtofloat(val); }
-		else if (section == "Z") { z = (float)strtofloat(val); }
+			m_levelName = val;
+		else if (section == "X") { m_x = (float)strtofloat(val); }
+		else if (section == "Y") { m_y = (float)strtofloat(val); }
+		else if (section == "Z") { m_z = (float)strtofloat(val); }
 		else if (section == "MAXHP")
 			setMaxPower(strtoint(val));
 		else if (section == "HP")
 			setPower((float)strtofloat(val));
 		else if (section == "RUPEES")
-			gralatc = strtoint(val);
+			m_gralatCount = strtoint(val);
 		else if (section == "ANI")
 			setGani(val);
 		else if (section == "ARROWS")
-			arrowc = strtoint(val);
+			m_arrowCount = strtoint(val);
 		else if (section == "BOMBS")
-			bombc = strtoint(val);
+			m_bombCount = strtoint(val);
 		else if (section == "GLOVEP")
-			glovePower = strtoint(val);
+			m_glovePower = strtoint(val);
 		else if (section == "SHIELDP")
 			setShieldPower(strtoint(val));
 		else if (section == "SWORDP")
 			setSwordPower(strtoint(val));
 		else if (section == "BOWP")
-			bowPower = strtoint(val);
+			m_bowPower = strtoint(val);
 		else if (section == "BOW")
-			bowImage = val;
+			m_bowImage = val;
 		else if (section == "HEAD")
 			setHeadImage(val);
 		else if (section == "BODY")
@@ -142,141 +142,141 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "COLORS")
 		{
 			std::vector<CString> t = val.tokenize(",");
-			for (int i = 0; i < (int)t.size() && i < 5; i++) colors[i] = (unsigned char)strtoint(t[i]);
+			for (int i = 0; i < (int)t.size() && i < 5; i++) m_colors[i] = (unsigned char)strtoint(t[i]);
 		}
 		else if (section == "SPRITE")
-			sprite = strtoint(val);
+			m_sprite = strtoint(val);
 		else if (section == "STATUS")
-			status = strtoint(val);
+			m_status = strtoint(val);
 		else if (section == "MP")
-			mp = strtoint(val);
+			m_mp = strtoint(val);
 		else if (section == "AP")
-			ap = strtoint(val);
+			m_ap = strtoint(val);
 		else if (section == "APCOUNTER")
-			apCounter = strtoint(val);
+			m_apCounter = strtoint(val);
 		else if (section == "ONSECS")
-			onlineTime = strtoint(val);
+			m_onlineTime = strtoint(val);
 		else if (section == "IP")
 		{
-			if (accountIp == 0) accountIp = strtolong(val);
+			if (m_accountIp == 0) m_accountIp = strtolong(val);
 		}
 		else if (section == "LANGUAGE")
 		{
-			language = val;
-			if (language.isEmpty()) language = "English";
+			m_language = val;
+			if (m_language.isEmpty()) m_language = "English";
 		}
 		else if (section == "KILLS")
-			kills = strtoint(val);
+			m_kills = strtoint(val);
 		else if (section == "DEATHS")
-			deaths = strtoint(val);
+			m_deaths = strtoint(val);
 		else if (section == "RATING")
-			rating = (float)strtofloat(val);
+			m_eloRating = (float)strtofloat(val);
 		else if (section == "DEVIATION")
-			deviation = (float)strtofloat(val);
+			m_eloDeviation = (float)strtofloat(val);
 		else if (section == "LASTSPARTIME")
-			lastSparTime = strtolong(val);
+			m_lastSparTime = strtolong(val);
 		else if (section == "FLAG")
 			setFlag(val);
 		else if (section == "ATTR1")
-			attrList[0] = val;
+			m_attrList[0] = val;
 		else if (section == "ATTR2")
-			attrList[1] = val;
+			m_attrList[1] = val;
 		else if (section == "ATTR3")
-			attrList[2] = val;
+			m_attrList[2] = val;
 		else if (section == "ATTR4")
-			attrList[3] = val;
+			m_attrList[3] = val;
 		else if (section == "ATTR5")
-			attrList[4] = val;
+			m_attrList[4] = val;
 		else if (section == "ATTR6")
-			attrList[5] = val;
+			m_attrList[5] = val;
 		else if (section == "ATTR7")
-			attrList[6] = val;
+			m_attrList[6] = val;
 		else if (section == "ATTR8")
-			attrList[7] = val;
+			m_attrList[7] = val;
 		else if (section == "ATTR9")
-			attrList[8] = val;
+			m_attrList[8] = val;
 		else if (section == "ATTR10")
-			attrList[9] = val;
+			m_attrList[9] = val;
 		else if (section == "ATTR11")
-			attrList[10] = val;
+			m_attrList[10] = val;
 		else if (section == "ATTR12")
-			attrList[11] = val;
+			m_attrList[11] = val;
 		else if (section == "ATTR13")
-			attrList[12] = val;
+			m_attrList[12] = val;
 		else if (section == "ATTR14")
-			attrList[13] = val;
+			m_attrList[13] = val;
 		else if (section == "ATTR15")
-			attrList[14] = val;
+			m_attrList[14] = val;
 		else if (section == "ATTR16")
-			attrList[15] = val;
+			m_attrList[15] = val;
 		else if (section == "ATTR17")
-			attrList[16] = val;
+			m_attrList[16] = val;
 		else if (section == "ATTR18")
-			attrList[17] = val;
+			m_attrList[17] = val;
 		else if (section == "ATTR19")
-			attrList[18] = val;
+			m_attrList[18] = val;
 		else if (section == "ATTR20")
-			attrList[19] = val;
+			m_attrList[19] = val;
 		else if (section == "ATTR21")
-			attrList[20] = val;
+			m_attrList[20] = val;
 		else if (section == "ATTR22")
-			attrList[21] = val;
+			m_attrList[21] = val;
 		else if (section == "ATTR23")
-			attrList[22] = val;
+			m_attrList[22] = val;
 		else if (section == "ATTR24")
-			attrList[23] = val;
+			m_attrList[23] = val;
 		else if (section == "ATTR25")
-			attrList[24] = val;
+			m_attrList[24] = val;
 		else if (section == "ATTR26")
-			attrList[25] = val;
+			m_attrList[25] = val;
 		else if (section == "ATTR27")
-			attrList[26] = val;
+			m_attrList[26] = val;
 		else if (section == "ATTR28")
-			attrList[27] = val;
+			m_attrList[27] = val;
 		else if (section == "ATTR29")
-			attrList[28] = val;
+			m_attrList[28] = val;
 		else if (section == "ATTR30")
-			attrList[29] = val;
+			m_attrList[29] = val;
 		else if (section == "WEAPON")
-			weaponList.push_back(val);
+			m_weaponList.push_back(val);
 		else if (section == "CHEST")
-			chestList.push_back(val);
+			m_chestList.push_back(val);
 		else if (section == "BANNED")
-			isBanned = (strtoint(val) == 0 ? false : true);
+			m_isBanned = (strtoint(val) == 0 ? false : true);
 		else if (section == "BANREASON")
-			banReason = val;
+			m_banReason = val;
 		else if (section == "BANLENGTH")
-			banLength = val;
+			m_banLength = val;
 		else if (section == "COMMENTS")
-			accountComments = val;
+			m_accountComments = val;
 		else if (section == "EMAIL")
-			email = val;
+			m_email = val;
 		else if (section == "LOCALRIGHTS")
-			adminRights = strtoint(val);
+			m_adminRights = strtoint(val);
 		else if (section == "IPRANGE")
-			adminIp = val;
+			m_adminIp = val;
 		else if (section == "LOADONLY")
-			isLoadOnly = (strtoint(val) == 0 ? false : true);
+			m_isLoadOnly = (strtoint(val) == 0 ? false : true);
 		else if (section == "FOLDERRIGHT")
-			folderList.push_back(val);
+			m_folderList.push_back(val);
 		else if (section == "LASTFOLDER")
-			lastFolder = val;
+			m_lastFolder = val;
 	}
 
 	// If this is a guest account, loadonly is set to true.
 	if (pAccount.toLower() == "guest")
 	{
-		isLoadOnly = true;
-		isGuest = true;
+		m_isLoadOnly = true;
+		m_isGuest = true;
 		srand((unsigned int)time(0));
 
 		// Try to create a unique account number.
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
+			if (m_server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
 			{
-				communityName = "pc:" + CString(v).subString(0, 6);
+				m_communityName = "pc:" + CString(v).subString(0, 6);
 				break;
 			}
 		}
@@ -287,31 +287,31 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	{
 		// The PC:123123123 should only be sent to other players, the logged in player should see it as guest.
 		// Setting it back to only show as guest to everyone until that's fixed.
-		accountName = communityName;
-		communityName = "guest";
+		m_accountName = m_communityName;
+		m_communityName = "guest";
 	}
 	else
-		communityName = accountName;
+		m_communityName = m_accountName;
 
 	// If we loaded from the default account...
 	if (loadedFromDefault)
 	{
-		auto& settings = server->getSettings();
+		auto& settings = m_server->getSettings();
 
 		// Check to see if we are overriding our start level and position.
 		if (settings.exists("startlevel"))
-			levelName = settings.getStr("startlevel", "onlinestartlocal.nw");
+			m_levelName = settings.getStr("startlevel", "onlinestartlocal.nw");
 		if (settings.exists("startx"))
 		{
-			x = settings.getFloat("startx", 30.0f);
+			m_x = settings.getFloat("startx", 30.0f);
 		}
 		if (settings.exists("starty"))
 		{
-			y = settings.getFloat("starty", 30.5f);
+			m_y = settings.getFloat("starty", 30.5f);
 		}
 
 		// Save our account now and add it to the file system.
-		if (!isLoadOnly)
+		if (!m_isLoadOnly)
 		{
 			saveAccount();
 			accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
@@ -321,67 +321,67 @@ bool TAccount::loadAccount(const CString& pAccount, bool ignoreNickname)
 	return true;
 }
 
-bool TAccount::saveAccount()
+bool Account::saveAccount()
 {
 	// Don't save 'Load Only' or RC Accounts
-	if (isLoadOnly)
+	if (m_isLoadOnly)
 		return false;
 
 	CString newFile = "GRACC001\r\n";
-	newFile << "NAME " << accountName << "\r\n";
-	newFile << "NICK " << nickName << "\r\n";
-	newFile << "COMMUNITYNAME " << accountName /*communityName*/ << "\r\n";
-	newFile << "LEVEL " << levelName << "\r\n";
-	newFile << "X " << CString(x) << "\r\n";
-	newFile << "Y " << CString(y) << "\r\n";
-	newFile << "Z " << CString(z) << "\r\n";
-	newFile << "MAXHP " << CString(maxPower) << "\r\n";
-	newFile << "HP " << CString(power) << "\r\n";
-	newFile << "RUPEES " << CString(gralatc) << "\r\n";
-	newFile << "ANI " << gani << "\r\n";
-	newFile << "ARROWS " << CString(arrowc) << "\r\n";
-	newFile << "BOMBS " << CString(bombc) << "\r\n";
-	newFile << "GLOVEP " << CString(glovePower) << "\r\n";
-	newFile << "SHIELDP " << CString(shieldPower) << "\r\n";
-	newFile << "SWORDP " << CString(swordPower) << "\r\n";
-	newFile << "BOWP " << CString(bowPower) << "\r\n";
-	newFile << "BOW " << bowImage << "\r\n";
-	newFile << "HEAD " << headImg << "\r\n";
-	newFile << "BODY " << bodyImg << "\r\n";
-	newFile << "SWORD " << swordImg << "\r\n";
-	newFile << "SHIELD " << shieldImg << "\r\n";
-	newFile << "COLORS " << CString(colors[0]) << "," << CString(colors[1]) << "," << CString(colors[2]) << "," << CString(colors[3]) << "," << CString(colors[4]) << "\r\n";
-	newFile << "SPRITE " << CString(sprite) << "\r\n";
-	newFile << "STATUS " << CString(status) << "\r\n";
-	newFile << "MP " << CString(mp) << "\r\n";
-	newFile << "AP " << CString(ap) << "\r\n";
-	newFile << "APCOUNTER " << CString(apCounter) << "\r\n";
-	newFile << "ONSECS " << CString(onlineTime) << "\r\n";
-	newFile << "IP " << CString(accountIp) << "\r\n";
-	newFile << "LANGUAGE " << language << "\r\n";
-	newFile << "KILLS " << CString(kills) << "\r\n";
-	newFile << "DEATHS " << CString(deaths) << "\r\n";
-	newFile << "RATING " << CString(rating) << "\r\n";
-	newFile << "DEVIATION " << CString(deviation) << "\r\n";
-	newFile << "LASTSPARTIME " << CString((unsigned long)lastSparTime) << "\r\n";
+	newFile << "NAME " << m_accountName << "\r\n";
+	newFile << "NICK " << m_nickName << "\r\n";
+	newFile << "COMMUNITYNAME " << m_accountName /*m_communityName*/ << "\r\n";
+	newFile << "LEVEL " << m_levelName << "\r\n";
+	newFile << "X " << CString(m_x) << "\r\n";
+	newFile << "Y " << CString(m_y) << "\r\n";
+	newFile << "Z " << CString(m_z) << "\r\n";
+	newFile << "MAXHP " << CString(m_maxHitpoints) << "\r\n";
+	newFile << "HP " << CString(m_hitpoints) << "\r\n";
+	newFile << "RUPEES " << CString(m_gralatCount) << "\r\n";
+	newFile << "ANI " << m_gani << "\r\n";
+	newFile << "ARROWS " << CString(m_arrowCount) << "\r\n";
+	newFile << "BOMBS " << CString(m_bombCount) << "\r\n";
+	newFile << "GLOVEP " << CString(m_glovePower) << "\r\n";
+	newFile << "SHIELDP " << CString(m_shieldPower) << "\r\n";
+	newFile << "SWORDP " << CString(m_swordPower) << "\r\n";
+	newFile << "BOWP " << CString(m_bowPower) << "\r\n";
+	newFile << "BOW " << m_bowImage << "\r\n";
+	newFile << "HEAD " << m_headImage << "\r\n";
+	newFile << "BODY " << m_bodyImage << "\r\n";
+	newFile << "SWORD " << m_swordImage << "\r\n";
+	newFile << "SHIELD " << m_shieldImage << "\r\n";
+	newFile << "COLORS " << CString(m_colors[0]) << "," << CString(m_colors[1]) << "," << CString(m_colors[2]) << "," << CString(m_colors[3]) << "," << CString(m_colors[4]) << "\r\n";
+	newFile << "SPRITE " << CString(m_sprite) << "\r\n";
+	newFile << "STATUS " << CString(m_status) << "\r\n";
+	newFile << "MP " << CString(m_mp) << "\r\n";
+	newFile << "AP " << CString(m_ap) << "\r\n";
+	newFile << "APCOUNTER " << CString(m_apCounter) << "\r\n";
+	newFile << "ONSECS " << CString(m_onlineTime) << "\r\n";
+	newFile << "IP " << CString(m_accountIp) << "\r\n";
+	newFile << "LANGUAGE " << m_language << "\r\n";
+	newFile << "KILLS " << CString(m_kills) << "\r\n";
+	newFile << "DEATHS " << CString(m_deaths) << "\r\n";
+	newFile << "RATING " << CString(m_eloRating) << "\r\n";
+	newFile << "DEVIATION " << CString(m_eloDeviation) << "\r\n";
+	newFile << "LASTSPARTIME " << CString((unsigned long)m_lastSparTime) << "\r\n";
 
 	// Attributes
 	for (unsigned int i = 0; i < 30; i++)
 	{
-		if (attrList[i].length() > 0)
-			newFile << "ATTR" << CString(i + 1) << " " << attrList[i] << "\r\n";
+		if (m_attrList[i].length() > 0)
+			newFile << "ATTR" << CString(i + 1) << " " << m_attrList[i] << "\r\n";
 	}
 
 	// Chests
-	for (unsigned int i = 0; i < chestList.size(); i++)
-		newFile << "CHEST " << chestList[i] << "\r\n";
+	for (unsigned int i = 0; i < m_chestList.size(); i++)
+		newFile << "CHEST " << m_chestList[i] << "\r\n";
 
 	// Weapons
-	for (unsigned int i = 0; i < weaponList.size(); i++)
-		newFile << "WEAPON " << weaponList[i] << "\r\n";
+	for (unsigned int i = 0; i < m_weaponList.size(); i++)
+		newFile << "WEAPON " << m_weaponList[i] << "\r\n";
 
 	// Flags
-	for (auto i = flagList.begin(); i != flagList.end(); ++i)
+	for (auto i = m_flagList.begin(); i != m_flagList.end(); ++i)
 	{
 		newFile << "FLAG " << i->first.c_str();
 		if (!i->second.isEmpty()) newFile << "=" << i->second;
@@ -390,37 +390,37 @@ bool TAccount::saveAccount()
 
 	// Account Settings
 	newFile << "\r\n";
-	newFile << "BANNED " << CString((int)(isBanned == true ? 1 : 0)) << "\r\n";
-	newFile << "BANREASON " << banReason << "\r\n";
-	newFile << "BANLENGTH " << banLength << "\r\n";
-	newFile << "COMMENTS " << accountComments << "\r\n";
-	newFile << "EMAIL " << email << "\r\n";
-	newFile << "LOCALRIGHTS " << CString(adminRights) << "\r\n";
-	newFile << "IPRANGE " << adminIp << "\r\n";
-	newFile << "LOADONLY " << CString((int)(isLoadOnly == true ? 1 : 0)) << "\r\n";
+	newFile << "BANNED " << CString((int)(m_isBanned == true ? 1 : 0)) << "\r\n";
+	newFile << "BANREASON " << m_banReason << "\r\n";
+	newFile << "BANLENGTH " << m_banLength << "\r\n";
+	newFile << "COMMENTS " << m_accountComments << "\r\n";
+	newFile << "EMAIL " << m_email << "\r\n";
+	newFile << "LOCALRIGHTS " << CString(m_adminRights) << "\r\n";
+	newFile << "IPRANGE " << m_adminIp << "\r\n";
+	newFile << "LOADONLY " << CString((int)(m_isLoadOnly == true ? 1 : 0)) << "\r\n";
 
 	// Folder Rights
-	for (unsigned int i = 0; i < folderList.size(); i++)
-		newFile << "FOLDERRIGHT " << folderList[i] << "\r\n";
-	newFile << "LASTFOLDER " << lastFolder << "\r\n";
+	for (unsigned int i = 0; i < m_folderList.size(); i++)
+		newFile << "FOLDERRIGHT " << m_folderList[i] << "\r\n";
+	newFile << "LASTFOLDER " << m_lastFolder << "\r\n";
 
 	// Get the file name for the account.
-	CString accountFileName = server->getAccountsFileSystem()->fileExistsAs(CString() << accountName << ".txt");
-	if (accountFileName.isEmpty()) accountFileName = CString() << accountName << ".txt";
+	CString accountFileName = m_server->getAccountsFileSystem()->fileExistsAs(CString() << m_accountName << ".txt");
+	if (accountFileName.isEmpty()) accountFileName = CString() << m_accountName << ".txt";
 
 	// Save the account now.
-	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
-	CFileSystem::fixPathSeparators(accpath);
+	CString accpath = m_server->getServerPath() << "accounts/" << accountFileName;
+	FileSystem::fixPathSeparators(accpath);
 	if (!newFile.save(accpath))
-		server->getRCLog().out("** Error saving account: %s\n", accountName.text());
+		m_server->getRCLog().out("** Error saving account: %s\n", m_accountName.text());
 
 	return true;
 }
 
 /*
-	TAccount: Account Management
+	Account: Account Management
 */
-bool TAccount::meetsConditions(CString fileName, CString conditions)
+bool Account::meetsConditions(CString fileName, CString conditions)
 {
 	const char* conditional[] = { ">=", "<=", "!=", "=", ">", "<" };
 
@@ -624,67 +624,67 @@ condAbort:
 }
 
 /*
-	TAccount: Attribute-Managing
+	Account: Attribute-Managing
 */
-bool TAccount::hasChest(const CString& pChest)
+bool Account::hasChest(const CString& pChest)
 {
-	auto it = std::find(chestList.begin(), chestList.end(), pChest);
-	return (it != chestList.end());
+	auto it = std::find(m_chestList.begin(), m_chestList.end(), pChest);
+	return (it != m_chestList.end());
 }
 
-bool TAccount::hasWeapon(const CString& pWeapon)
+bool Account::hasWeapon(const CString& pWeapon)
 {
-	auto it = std::find(weaponList.begin(), weaponList.end(), pWeapon);
-	return (it != weaponList.end());
+	auto it = std::find(m_weaponList.begin(), m_weaponList.end(), pWeapon);
+	return (it != m_weaponList.end());
 }
 
 /*
-	TAccount: Flag Management
+	Account: Flag Management
 */
-void TAccount::setFlag(CString pFlag)
+void Account::setFlag(CString pFlag)
 {
 	CString flagName = pFlag.readString("=");
 	CString flagValue = pFlag.readString("");
 	this->setFlag(flagName.text(), flagValue);
 }
 
-void TAccount::setFlag(const std::string& pFlagName, const CString& pFlagValue)
+void Account::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 {
-	if (server->getSettings().getBool("cropflags", true))
+	if (m_server->getSettings().getBool("cropflags", true))
 	{
 		int fixedLength = 223 - 1 - pFlagName.length();
-		flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
+		m_flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
 	}
 	else
-		flagList[pFlagName] = pFlagValue;
+		m_flagList[pFlagName] = pFlagValue;
 }
 
 /*
 	Translation Functionality
 */
-CString TAccount::translate(const CString& pKey)
+CString Account::translate(const CString& pKey)
 {
-	return server->TS_Translate(language, pKey);
+	return m_server->TS_Translate(m_language, pKey);
 }
 
-void TAccount::setMaxPower(int newMaxPower)
+void Account::setMaxPower(int newMaxPower)
 {
-	const auto& settings = server->getSettings();
+	const auto& settings = m_server->getSettings();
 
 	auto heartLimit = std::min(settings.getInt("heartlimit", 3), 20);
-	maxPower = clip(newMaxPower, 0, heartLimit);
+	m_maxHitpoints = clip(newMaxPower, 0, heartLimit);
 }
 
-void TAccount::setShieldPower(int newPower)
+void Account::setShieldPower(int newPower)
 {
-	const auto& settings = server->getSettings();
+	const auto& settings = m_server->getSettings();
 
-	shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
+	m_shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
 }
 
-void TAccount::setSwordPower(int newPower)
+void Account::setSwordPower(int newPower)
 {
-	const auto& settings = server->getSettings();
+	const auto& settings = m_server->getSettings();
 
-	swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
+	m_swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
 }

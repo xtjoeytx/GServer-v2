@@ -14,7 +14,7 @@
 void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::Object> self = info.This();
-	TWeapon* weaponObject = UnwrapObject<TWeapon>(self);
+	Weapon* weaponObject = UnwrapObject<Weapon>(self);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getName().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -24,7 +24,7 @@ void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::Object> self = info.This();
-	TWeapon* weaponObject = UnwrapObject<TWeapon>(self);
+	Weapon* weaponObject = UnwrapObject<Weapon>(self);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -56,7 +56,7 @@ void bindClass_Weapon(CScriptEngine* scriptEngine)
 	weapon_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "image"), Weapon_GetStr_Image);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<TWeapon>::result, weapon_ctor);
+	env->SetConstructor(ScriptConstructorId<Weapon>::result, weapon_ctor);
 }
 
 #endif

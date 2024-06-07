@@ -18,7 +18,7 @@ bool TPlayer::msgPLI_VERIFYWANTSEND(CString& pPacket)
 
 	if (!ignoreChecksum)
 	{
-		CString fileData = server->getFileSystem()->load(fileName);
+		CString fileData = m_server->getFileSystem()->load(fileName);
 		if (!fileData.isEmpty())
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)
@@ -50,7 +50,7 @@ bool TPlayer::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 	std::vector<std::string> missingFiles;
 
 	{
-		auto updatePackage = server->getPackageManager().findOrAddResource(packageName.toString());
+		auto updatePackage = m_server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
 		{
 			for (const auto& [fileName, entry]: updatePackage->getFileList())

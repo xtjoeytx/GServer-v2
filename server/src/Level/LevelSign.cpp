@@ -110,40 +110,40 @@ CString encodeSign(const CString& pSignText)
 	return retVal;
 }
 
-TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
-	: x(pX), y(pY), unformattedText(pSign)
+LevelSign::LevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
+	: m_x(pX), m_y(pY), m_unformattedText(pSign)
 {
 	if (encoded)
 	{
-		text = unformattedText;
-		unformattedText = decodeSignCode(unformattedText);
+		m_text = m_unformattedText;
+		m_unformattedText = decodeSignCode(m_unformattedText);
 	}
 	else
-		text = encodeSign(unformattedText);
+		m_text = encodeSign(m_unformattedText);
 }
 
-CString TLevelSign::getSignStr(TPlayer* pPlayer) const
+CString LevelSign::getSignStr(Player* pPlayer) const
 {
 	CString outText;
 
 	// Write the x and y location to the packet.
-	outText.writeGChar(x);
-	outText.writeGChar(y);
+	outText.writeGChar(m_x);
+	outText.writeGChar(m_y);
 
 	// Write the text to the packet.
-	outText.write(pPlayer ? encodeSign(pPlayer->translate(unformattedText)) : text);
+	outText.write(pPlayer ? encodeSign(pPlayer->translate(m_unformattedText)) : m_text);
 
 	return outText;
 }
 
-void TLevelSign::setText(const CString& value)
+void LevelSign::setText(const CString& value)
 {
-	text = value;
-	unformattedText = decodeSignCode(value);
+	m_text = value;
+	m_unformattedText = decodeSignCode(value);
 }
 
-void TLevelSign::setUText(const CString& value)
+void LevelSign::setUText(const CString& value)
 {
-	text = encodeSign(value);
-	unformattedText = value;
+	m_text = encodeSign(value);
+	m_unformattedText = value;
 }

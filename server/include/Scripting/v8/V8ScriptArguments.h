@@ -70,7 +70,7 @@ public:
 		assert(base::Argc > 0);
 		SCRIPTENV_D("Invoke Script Argument: %d args\n", base::Argc);
 
-		if (!base::_resolved)
+		if (!base::m_resolved)
 		{
 			V8ScriptFunction* v8_func = static_cast<V8ScriptFunction*>(func);
 			V8ScriptEnv* v8_env = static_cast<V8ScriptEnv*>(v8_func->Env());
@@ -84,7 +84,7 @@ public:
 
 			// sort arguments into array
 			resolve_args(v8_env, std::index_sequence_for<Ts...>{});
-			base::_resolved = true;
+			base::m_resolved = true;
 
 			// TODO(joey): This will probably not stay like this. Needed the trycatch for executing
 			//	new objects for the first time only. Will figure something out.
@@ -93,7 +93,7 @@ public:
 			if (catchExceptions)
 			{
 				v8::TryCatch try_catch(isolate);
-				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::Argc, m_args);
 				static_cast<void>(ret);
 
 				if (try_catch.HasCaught())
@@ -104,7 +104,7 @@ public:
 			}
 			else
 			{
-				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, _args[0], base::Argc, _args); // base::Argc - 1, _args + 1);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::Argc, m_args); // base::Argc - 1, m_args + 1);
 				static_cast<void>(ret);
 				//ret.IsEmpty();
 			}
@@ -115,14 +115,14 @@ public:
 	}
 
 private:
-	v8::Local<v8::Value> _args[base::Argc];
+	v8::Local<v8::Value> m_args[base::Argc];
 
 	template<std::size_t... Is>
 	inline void resolve_args(V8ScriptEnv* env, std::index_sequence<Is...>)
 	{
 		if constexpr (sizeof...(Is) > 0)
 		{
-			int unused[] = { ((_args[Is] = detail::ToBinding(env, std::get<Is>(base::_tuple))), void(), 0)... };
+			int unused[] = { ((m_args[Is] = detail::ToBinding(env, std::get<Is>(base::m_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}

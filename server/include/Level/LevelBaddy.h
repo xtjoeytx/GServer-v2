@@ -40,49 +40,50 @@ enum
 	BDMODE_COUNT
 };
 
-class TServer;
-class TLevel;
-class TLevelBaddy
+class Server;
+class Level;
+class LevelBaddy
 {
 public:
-	TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, TServer* pServer);
+	LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer);
 
 	void reset();
 	void dropItem();
 
 	// get functions
-	unsigned char getType() const { return type; }
-	char getId() const { return id; }
-	char getPower() const { return power; }
-	char getMode() const { return mode; }
-	char getAni() const { return ani; }
-	char getDir() const { return dir; }
-	float getX() const { return x; }
-	float getY() const { return y; }
-	float getStartX() const { return startX; }
-	float getStartY() const { return startY; }
+	unsigned char getType() const { return m_type; }
+	char getId() const { return m_id; }
+	char getPower() const { return m_power; }
+	char getMode() const { return m_mode; }
+	char getAni() const { return m_ani; }
+	char getDir() const { return m_dir; }
+	float getX() const { return m_x; }
+	float getY() const { return m_y; }
+	float getStartX() const { return m_startX; }
+	float getStartY() const { return m_startY; }
 	CString getProp(const int propId, int clientVersion = CLVER_2_17) const;
 	CString getProps(int clientVersion = CLVER_2_17) const;
-	std::vector<CString> getVerses() const { return verses; };
+	std::vector<CString> getVerses() const { return m_verses; };
 
 	// set functions
 	void setProps(CString& pProps);
-	void setRespawn(const bool pRespawn) { respawn = pRespawn; }
-	void setId(const char pId) { id = pId; }
+	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
+	void setId(const char pId) { m_id = pId; }
 
 	CTimeout timeout;
 
 private:
-	std::weak_ptr<TLevel> level;
-	TServer* server;
-	unsigned char type;
-	char id, power, mode, ani, dir;
-	float x, y, startX, startY;
-	CString image;
-	std::vector<CString> verses;
-	bool respawn;
-	bool setImage;
+	std::weak_ptr<Level> m_level;
+	Server* m_server;
+	unsigned char m_type;
+	char m_id, m_power, m_mode, m_ani, m_dir;
+	float m_x, m_y, m_startX, m_startY;
+	CString m_image;
+	std::vector<CString> m_verses;
+	bool m_canRespawn;
+	bool m_hasCustomImage;
 };
-using TLevelBaddyPtr = std::unique_ptr<TLevelBaddy>;
+
+using LevelBaddyPtr = std::unique_ptr<LevelBaddy>;
 
 #endif // TLEVELBADDY_H

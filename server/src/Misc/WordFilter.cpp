@@ -35,16 +35,16 @@ static char toUpper(char c)
 	return c;
 }
 
-CWordFilter::~CWordFilter()
+WordFilter::~WordFilter()
 {
-	rules.clear();
+	m_rules.clear();
 }
 
-void CWordFilter::load(const CString& file)
+void WordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.
-	if (rules.size() != 0)
-		rules.clear();
+	if (m_rules.size() != 0)
+		m_rules.clear();
 
 	// Load the file.
 	std::vector<CString> f = CString::loadToken(file, "\n", true);
@@ -59,7 +59,7 @@ void CWordFilter::load(const CString& file)
 
 		if (wordParts[0] == "RULE")
 		{
-			auto rule = std::make_unique<SWordFilterRule>();
+			auto rule = std::make_unique<WordFilterRule>();
 			++i;
 			while (i != f.end() && (*i) != "RULEEND")
 			{
@@ -144,23 +144,23 @@ void CWordFilter::load(const CString& file)
 				continue;
 
 			// Add the rule to the list.
-			rules.push_back(std::move(rule));
+			m_rules.push_back(std::move(rule));
 		}
 		else if (wordParts[0] == "WARNMESSAGE")
 		{
-			defaultWarnMessage = word.remove(0, 12).trim();
+			m_defaultWarnMessage = word.remove(0, 12).trim();
 		}
 		else if (wordParts[0] == "SHOWWORDSTORC")
 		{
 			if (wordParts.size() == 2 && wordParts[1] == "true")
-				showWordsToRC = true;
+				m_showWordsToRC = true;
 		}
 	}
 }
 
-int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
+int WordFilter::apply(const Player* player, CString& chat, int check)
 {
-	if (chat.isEmpty() || rules.size() == 0 || check == 0) return 0;
+	if (chat.isEmpty() || m_rules.size() == 0 || check == 0) return 0;
 
 	CString out = chat;
 	CString warnmessage;
@@ -168,7 +168,7 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (SWordFilterRulePtr& rule: rules)
+	for (WordFilterRulePtr& rule: m_rules)
 	{
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;
@@ -361,7 +361,7 @@ WordFilterActions:
 	if (actionsFound & FILTER_ACTION_LOG)
 	{
 		CLog wordfilter;
-		wordfilter.setFilename(server->getServerPath() << "logs/serverlog.txt");
+		wordfilter.setFilename(m_server->getServerPath() << "logs/serverlog.txt");
 		wordfilter.setEnabled(true);
 		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(), badwords.text());
 	}
@@ -377,16 +377,16 @@ WordFilterActions:
 	}
 
 	// Tell RC what happened.
-	if (showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
+	if (m_showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords);
+		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords);
 	}
 
 	// If it is a warning rule, we are altering the message.
 	// If not, set the message to the filtered message.
 	if (actionsFound & FILTER_ACTION_WARN)
 	{
-		if (warnmessage.isEmpty()) chat = defaultWarnMessage;
+		if (warnmessage.isEmpty()) chat = m_defaultWarnMessage;
 		else
 			chat = warnmessage;
 	}
