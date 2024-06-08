@@ -13,3 +13,6 @@
 [submodule "cmake/nuget"]
 	path = cmake/nuget
 	url = https://github.com/katusk/CMakeNuGetTools
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git
