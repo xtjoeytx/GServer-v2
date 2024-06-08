@@ -14,7 +14,7 @@ function(add_test_og TARGET_NAME TARGET_PATH)
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/TLevel)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Level)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting/v8)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting/interface)
