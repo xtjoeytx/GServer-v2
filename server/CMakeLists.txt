@@ -344,6 +344,10 @@ if(V8NPCSERVER)
 
 	target_link_libraries(${TARGET_NAME} httplib::httplib OpenSSL::SSL OpenSSL::Crypto)
 
+	if(zstd_FOUND)
+		target_link_libraries(${TARGET_NAME} zstd)
+	endif()
+
 	add_custom_command(
 			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
 			COMMAND ${CMAKE_COMMAND}

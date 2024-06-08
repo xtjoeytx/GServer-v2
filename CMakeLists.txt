@@ -258,6 +258,9 @@ if(STATIC)
 endif()
 
 if(V8NPCSERVER)
+	if(NOT WIN32 AND NOT APPLE)
+		find_package(zstd)
+	endif()
 	find_package(V8 REQUIRED)
 	include(FetchContent)
 	set(HTTPLIB_USE_BROTLI_IF_AVAILABLE FALSE CACHE BOOL "-" FORCE)
@@ -265,6 +268,8 @@ if(V8NPCSERVER)
 			GIT_TAG a609330e4c6374f741d3b369269f7848255e1954)
 	FetchContent_MakeAvailable(httplib)
 	find_package(OpenSSL REQUIRED)
+
+
 	if(NOT V8_FOUND)
 		message("v8 not found in system")
 	endif()
