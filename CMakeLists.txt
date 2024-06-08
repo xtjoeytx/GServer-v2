@@ -20,6 +20,17 @@
 #
 
 cmake_minimum_required(VERSION 3.0.0)
+
+# Make it easier for Windows users to get the required packages.
+# This needs to go before the project() call.
+if(WIN32)
+	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+	set(VCPKG_TARGET_TRIPLET "x64-windows-static")
+	if(V8NPCSERVER)
+		set(VCPKG_MANIFEST_FEATURES "npcserver")
+	endif()
+endif()
+
 project(GS2Emu VERSION 3.0.9 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
 set(CMAKE_DEBUG_POSTFIX _d)
@@ -182,7 +193,8 @@ elseif(WIN32)
 		include(CheckCXXCompilerFlag)
 		CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
 		if (_cpp_latest_flag_supported)
-			add_compile_options("/std:c++latest")
+			set(CMAKE_CXX_STANDARD 23)
+			#add_compile_options("/std:c++latest")
 			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")
 		endif()
 
@@ -205,7 +217,7 @@ elseif(WIN32)
 		cmake_policy(SET CMP0043 NEW)
 
 		# hack to fix clion + msvc together
-		if (CLIONHAX)
+		#if (CLIONHAX)
 			set(CompilerFlags
 					CMAKE_CXX_FLAGS
 					CMAKE_CXX_FLAGS_DEBUG
@@ -217,7 +229,7 @@ elseif(WIN32)
 			foreach(CompilerFlag ${CompilerFlags})
 				string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 			endforeach()
-		endif()
+		#endif()
 	endif()
 
 	if( MINGW )
