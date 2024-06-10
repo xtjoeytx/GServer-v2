@@ -1,20 +1,18 @@
 #ifndef GS2SCRIPTMANAGER_H
 #define GS2SCRIPTMANAGER_H
 
-#pragma once
-
 #include <mutex>
 #include <queue>
 
-#include "utils/ContextThreadPool.h"
 #include "CompilerThreadJob.h"
 #include "GS2Context.h"
 #include "interface/ScriptUtils.h"
+#include "utils/ContextThreadPool.h"
 
 class GS2ScriptManager
 {
 	using BytecodeCache = std::unordered_map<std::string, CompilerResponse>;
-	
+
 	// used for threadpool job queue
 	using CompilerThreadPool = CustomThreadPool<CallbackThreadJob>;
 	using internal_callback_type = std::function<void(CompilerResponse&)>;
@@ -31,12 +29,12 @@ public:
 
 private:
 	// Async Compile
-	void queueCompileJob(const std::string &script, user_callback_type& finishedCb);
+	void queueCompileJob(const std::string& script, user_callback_type& finishedCb);
 
 	// Sync Compile
 	GS2Context _context;
 	void syncCompileJob(const std::string& script, user_callback_type& finishedCb);
-	
+
 	//
 	BytecodeCache _bytecodeCache;
 	CompilerThreadPool _compilerThreadPool;

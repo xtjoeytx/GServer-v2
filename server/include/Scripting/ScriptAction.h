@@ -1,24 +1,20 @@
-#pragma once
-
 #ifndef SCRIPTACTION_H
 #define SCRIPTACTION_H
 
+#include "ScriptArguments.h"
 #include <cassert>
 #include <string>
-#include "ScriptArguments.h"
 
 class IScriptFunction;
 
 class ScriptAction
 {
 public:
-	ScriptAction() :
-		_function(nullptr), _args(nullptr)
+	ScriptAction() : _function(nullptr), _args(nullptr)
 	{
-
 	}
 
-	explicit ScriptAction(IScriptFunction *function, IScriptArguments *args, const std::string& action = "")
+	explicit ScriptAction(IScriptFunction* function, IScriptArguments* args, const std::string& action = "")
 		: _function(function), _args(args), _action(action)
 	{
 		_function->increaseReference();
@@ -77,20 +73,20 @@ public:
 		return _action;
 	}
 
-	IScriptArguments * getArguments() const
+	IScriptArguments* getArguments() const
 	{
 		return _args;
 	}
 
-	IScriptFunction * getFunction() const
+	IScriptFunction* getFunction() const
 	{
 		return _function;
 	}
 
 protected:
 	std::string _action;
-	IScriptArguments *_args;
-	IScriptFunction *_function;
+	IScriptArguments* _args;
+	IScriptFunction* _function;
 };
 
 #endif

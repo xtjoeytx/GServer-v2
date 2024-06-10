@@ -1,13 +1,14 @@
-#include "IDebug.h"
-#include "CLog.h"
-#include "IEnums.h"
 #include "WordFilter.h"
-#include "Server.h"
+#include "CLog.h"
+#include "IDebug.h"
+#include "IEnums.h"
 #include "Player.h"
+#include "Server.h"
 
-char bypass[] =
-{
-	' ', '\r', '\n',
+char bypass[] = {
+	' ',
+	'\r',
+	'\n',
 };
 
 static bool isUpper(char c)
@@ -75,9 +76,12 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "chat") rule->check |= FILTER_CHECK_CHAT;
-						else if (wordParts2[j] == "pm") rule->check |= FILTER_CHECK_PM;
-						else if (wordParts2[j] == "nick") rule->check |= FILTER_CHECK_NICK;
-						else if (wordParts2[j] == "toall") rule->check |= FILTER_CHECK_TOALL;
+						else if (wordParts2[j] == "pm")
+							rule->check |= FILTER_CHECK_PM;
+						else if (wordParts2[j] == "nick")
+							rule->check |= FILTER_CHECK_NICK;
+						else if (wordParts2[j] == "toall")
+							rule->check |= FILTER_CHECK_TOALL;
 					}
 				}
 				else if (wordParts2[0] == "MATCH")
@@ -94,7 +98,8 @@ void CWordFilter::load(const CString& file)
 							rule->precisionPercentage = true;
 							wordParts2[1].removeAll("%");
 						}
-						else rule->precisionPercentage = false;
+						else
+							rule->precisionPercentage = false;
 						rule->precision = strtoint(wordParts2[1]);
 					}
 				}
@@ -103,8 +108,10 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "full") rule->wordPosition |= FILTER_POSITION_FULL;
-						else if (wordParts2[j] == "start") rule->wordPosition |= FILTER_POSITION_START;
-						else if (wordParts2[j] == "part") rule->wordPosition |= FILTER_POSITION_PART;
+						else if (wordParts2[j] == "start")
+							rule->wordPosition |= FILTER_POSITION_START;
+						else if (wordParts2[j] == "part")
+							rule->wordPosition |= FILTER_POSITION_PART;
 					}
 				}
 				else if (wordParts2[0] == "ACTION")
@@ -112,11 +119,16 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "log") rule->action |= FILTER_ACTION_LOG;
-						else if (wordParts2[j] == "tellrc") rule->action |= FILTER_ACTION_TELLRC;
-						else if (wordParts2[j] == "replace") rule->action |= FILTER_ACTION_REPLACE;
-						else if (wordParts2[j] == "warn") rule->action |= FILTER_ACTION_WARN;
-						else if (wordParts2[j] == "jail") rule->action |= FILTER_ACTION_JAIL;
-						else if (wordParts2[j] == "ban") rule->action |= FILTER_ACTION_BAN;
+						else if (wordParts2[j] == "tellrc")
+							rule->action |= FILTER_ACTION_TELLRC;
+						else if (wordParts2[j] == "replace")
+							rule->action |= FILTER_ACTION_REPLACE;
+						else if (wordParts2[j] == "warn")
+							rule->action |= FILTER_ACTION_WARN;
+						else if (wordParts2[j] == "jail")
+							rule->action |= FILTER_ACTION_JAIL;
+						else if (wordParts2[j] == "ban")
+							rule->action |= FILTER_ACTION_BAN;
 					}
 				}
 				else if (wordParts2[0] == "WARNMESSAGE")
@@ -156,7 +168,7 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (SWordFilterRulePtr& rule : rules)
+	for (SWordFilterRulePtr& rule: rules)
 	{
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;
@@ -375,9 +387,11 @@ WordFilterActions:
 	if (actionsFound & FILTER_ACTION_WARN)
 	{
 		if (warnmessage.isEmpty()) chat = defaultWarnMessage;
-		else chat = warnmessage;
+		else
+			chat = warnmessage;
 	}
-	else chat = out;
+	else
+		chat = out;
 
 	return actionsFound;
 }

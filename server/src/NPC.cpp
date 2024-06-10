@@ -1,9 +1,9 @@
+#include "NPC.h"
 #include "FileSystem.h"
 #include "IDebug.h"
 #include "IEnums.h"
 #include "Level.h"
 #include "Map.h"
-#include "NPC.h"
 #include "Server.h"
 #include <math.h>
 #include <time.h>
@@ -31,7 +31,7 @@ std::string minifyClientCode(const CString& src)
 			minified.append("//#CLIENTSIDE").append("\xa7");
 
 		std::vector<CString> codeLines = tmp.tokenize("\n");
-		for (const auto& line : codeLines)
+		for (const auto& line: codeLines)
 			minified.append(line.trim().toString()).append("\xa7");
 	}
 
@@ -63,20 +63,19 @@ TNPC::TNPC(const CString& pImage, std::string pScript, float pX, float pY, TServ
 
 	// Needs to be called so it creates a script-object
 	//if (!pScript.isEmpty())
-		setScriptCode(std::move(pScript));
+	setScriptCode(std::move(pScript));
 }
 
-TNPC::TNPC(TServer *pServer, NPCType type)
+TNPC::TNPC(TServer* pServer, NPCType type)
 	: server(pServer), npcType(type), blockPositionUpdates(false),
-	x(int(30 * 16)), y(int(30.5 * 16)),
-	hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
-	darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
-	visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
-	gani("idle")
+	  x(int(30 * 16)), y(int(30.5 * 16)),
+	  hurtX(32.0f), hurtY(32.0f), id(0), rupees(0),
+	  darts(0), bombs(0), glovePower(0), bombPower(0), swordPower(0), shieldPower(0),
+	  visFlags(1), blockFlags(0), sprite(2), power(0), ap(50),
+	  gani("idle")
 #ifdef V8NPCSERVER
-	, _scriptExecutionContext(pServer->getScriptEngine())
-	, origX(x), origY(y), npcDeleteRequested(false), canWarp(NPCWarpType::None), width(32), height(32)
-	, timeout(0), _scriptEventsMask(0xFF)
+	  ,
+	  _scriptExecutionContext(pServer->getScriptEngine()), origX(x), origY(y), npcDeleteRequested(false), canWarp(NPCWarpType::None), width(32), height(32), timeout(0), _scriptEventsMask(0xFF)
 #endif
 {
 	memset((void*)colors, 0, sizeof(colors));
@@ -92,10 +91,7 @@ TNPC::TNPC(TServer *pServer, NPCType type)
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y]
-		= modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE]
-		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
-		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
+	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y] = modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE] = modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY] = modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 
 	// Needs to be called so it creates a script-object
 	setScriptCode("");
@@ -186,7 +182,8 @@ void TNPC::setScriptCode(std::string pScript)
 #ifdef V8NPCSERVER
 	// Compile and execute the script.
 	bool executed = server->getScriptEngine()->ExecuteNpc(this);
-	if (executed) {
+	if (executed)
+	{
 		SCRIPTENV_D("SCRIPT COMPILED\n");
 		this->queueNpcAction("npc.created");
 	}
@@ -223,7 +220,7 @@ std::shared_ptr<TLevel> TNPC::getLevel() const
 CString TNPC::getProp(unsigned char pId, int clientVersion) const
 {
 	auto level = getLevel();
-	switch(pId)
+	switch (pId)
 	{
 		case NPCPROP_IMAGE:
 			return CString() >> (char)image.length() << image;
@@ -294,7 +291,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)chatMsg.length() << chatMsg;
 
 		case NPCPROP_HURTDXDY:
-			return CString() >> (char)((hurtX*32)+32) >> (char)((hurtY*32)+32);
+			return CString() >> (char)((hurtX * 32) + 32) >> (char)((hurtY * 32) + 32);
 
 		case NPCPROP_ID:
 			return CString() >> (int)id;
@@ -370,7 +367,7 @@ CString TNPC::getProp(unsigned char pId, int clientVersion) const
 			CString classList;
 
 #ifdef V8NPCSERVER
-			for (const auto& it : classMap)
+			for (const auto& it: classMap)
 				classList << it.first << ",";
 #endif
 
@@ -524,7 +521,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 						if (!swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(swordImage).isEmpty())
 							swordImage << ".gif";
 					}
-					else swordImage = "";
+					else
+						swordImage = "";
 					//swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
 				swordPower = sp;
@@ -546,7 +544,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 						if (!shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(shieldImage).isEmpty())
 							shieldImage << ".gif";
 					}
-					else shieldImage = "";
+					else
+						shieldImage = "";
 				}
 				shieldPower = sp;
 				break;
@@ -588,8 +587,8 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_HURTDXDY:
-				hurtX = ((float)(pProps.readGUChar()-32))/32;
-				hurtY = ((float)(pProps.readGUChar()-32))/32;
+				hurtX = ((float)(pProps.readGUChar() - 32)) / 32;
+				hurtY = ((float)(pProps.readGUChar() - 32)) / 32;
 				break;
 
 			case NPCPROP_ID:
@@ -705,47 +704,127 @@ CString TNPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				hasMoved = true;
 				break;
 
-			case NPCPROP_SAVE0: saves[0] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE1: saves[1] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE2: saves[2] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE3: saves[3] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE4: saves[4] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE5: saves[5] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE6: saves[6] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE7: saves[7] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE8: saves[8] = pProps.readGUChar(); break;
-			case NPCPROP_SAVE9: saves[9] = pProps.readGUChar(); break;
+			case NPCPROP_SAVE0:
+				saves[0] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE1:
+				saves[1] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE2:
+				saves[2] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE3:
+				saves[3] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE4:
+				saves[4] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE5:
+				saves[5] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE6:
+				saves[6] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE7:
+				saves[7] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE8:
+				saves[8] = pProps.readGUChar();
+				break;
+			case NPCPROP_SAVE9:
+				saves[9] = pProps.readGUChar();
+				break;
 
-			case NPCPROP_GATTRIB1:  gAttribs[0]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB2:  gAttribs[1]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB3:  gAttribs[2]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB4:  gAttribs[3]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB5:  gAttribs[4]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB6:  gAttribs[5]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB7:  gAttribs[6]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB8:  gAttribs[7]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB9:  gAttribs[8]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB10: gAttribs[9]  = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB11: gAttribs[10] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB12: gAttribs[11] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB13: gAttribs[12] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB14: gAttribs[13] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB15: gAttribs[14] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB16: gAttribs[15] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB17: gAttribs[16] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB18: gAttribs[17] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB19: gAttribs[18] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB20: gAttribs[19] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB21: gAttribs[20] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB22: gAttribs[21] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB23: gAttribs[22] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB24: gAttribs[23] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB25: gAttribs[24] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB26: gAttribs[25] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB27: gAttribs[26] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB28: gAttribs[27] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB29: gAttribs[28] = pProps.readChars(pProps.readGUChar()); break;
-			case NPCPROP_GATTRIB30: gAttribs[29] = pProps.readChars(pProps.readGUChar()); break;
+			case NPCPROP_GATTRIB1:
+				gAttribs[0] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB2:
+				gAttribs[1] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB3:
+				gAttribs[2] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB4:
+				gAttribs[3] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB5:
+				gAttribs[4] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB6:
+				gAttribs[5] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB7:
+				gAttribs[6] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB8:
+				gAttribs[7] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB9:
+				gAttribs[8] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB10:
+				gAttribs[9] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB11:
+				gAttribs[10] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB12:
+				gAttribs[11] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB13:
+				gAttribs[12] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB14:
+				gAttribs[13] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB15:
+				gAttribs[14] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB16:
+				gAttribs[15] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB17:
+				gAttribs[16] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB18:
+				gAttribs[17] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB19:
+				gAttribs[18] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB20:
+				gAttribs[19] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB21:
+				gAttribs[20] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB22:
+				gAttribs[21] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB23:
+				gAttribs[22] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB24:
+				gAttribs[23] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB25:
+				gAttribs[24] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB26:
+				gAttribs[25] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB27:
+				gAttribs[26] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB28:
+				gAttribs[27] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB29:
+				gAttribs[28] = pProps.readChars(pProps.readGUChar());
+				break;
+			case NPCPROP_GATTRIB30:
+				gAttribs[29] = pProps.readChars(pProps.readGUChar());
+				break;
 
 			default:
 			{
@@ -794,15 +873,18 @@ void TNPC::testForLinks()
 	{
 		// Gmaps are treated as one large map, and so (local?) npcs can freely walk
 		// across maps without canwarp being enabled (source: post=1193766)
-		if (map->isGmap() || canWarp != NPCWarpType::None) {
+		if (map->isGmap() || canWarp != NPCWarpType::None)
+		{
 			int gmapX = x + 1024 * level->getMapX();
 			int gmapY = y + 1024 * level->getMapY();
 			int mapx = gmapX / 1024;
 			int mapy = gmapY / 1024;
 
-			if (level->getMapX() != mapx || level->getMapY() != mapy) {
+			if (level->getMapX() != mapx || level->getMapY() != mapy)
+			{
 				auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy));
-				if (newLevel != nullptr) {
+				if (newLevel != nullptr)
+				{
 					this->warpNPC(newLevel, gmapX % 1024, gmapY % 1024);
 					return;
 				}
@@ -812,7 +894,7 @@ void TNPC::testForLinks()
 
 	if (canWarp == NPCWarpType::AllLinks)
 	{
-		static const int touchtestd[] = { 2,1, 0,2, 2,4, 3,2 };
+		static const int touchtestd[] = { 2, 1, 0, 2, 2, 4, 3, 2 };
 
 		int dir = sprite % 4;
 
@@ -840,7 +922,7 @@ void TNPC::testTouch()
 
 void TNPC::freeScriptResources()
 {
-	CScriptEngine *scriptEngine = server->getScriptEngine();
+	CScriptEngine* scriptEngine = server->getScriptEngine();
 
 	// Clear cached script
 	if (!npcScript.getServerSide().empty())
@@ -858,7 +940,7 @@ void TNPC::freeScriptResources()
 	timeout = 0;
 
 	// Clear triggeraction functions
-	for (auto & _triggerAction : _triggerActions)
+	for (auto& _triggerAction: _triggerActions)
 		delete _triggerAction.second;
 	_triggerActions.clear();
 
@@ -868,7 +950,7 @@ void TNPC::freeScriptResources()
 }
 
 // Set callbacks for triggeractions!
-void TNPC::registerTriggerAction(const std::string& action, IScriptFunction *cbFunc)
+void TNPC::registerTriggerAction(const std::string& action, IScriptFunction* cbFunc)
 {
 	// clear old callback if it was set
 	auto triggerIter = _triggerActions.find(action);
@@ -906,7 +988,7 @@ void TNPC::queueNpcTrigger(const std::string& action, TPlayer* player, const std
 	scriptEngine->RegisterNpcUpdate(this);
 }
 
-TScriptClass * TNPC::joinClass(const std::string& className)
+TScriptClass* TNPC::joinClass(const std::string& className)
 {
 	auto found = classMap.find(className);
 	if (found != classMap.end())
@@ -928,8 +1010,9 @@ void TNPC::updateClientCode()
 	CString tmpScript = std::string{ npcScript.getClientGS1() };
 
 	// Iterate current classes, and add to end of code
-	for (auto& it : classMap)
-		tmpScript << "\n" << it.second;
+	for (auto& it: classMap)
+		tmpScript << "\n"
+				  << it.second;
 
 	// Remove comments and trim the code if specified.
 	clientScriptFormatted = minifyClientCode(tmpScript);
@@ -943,16 +1026,15 @@ void TNPC::updateClientCode()
 	{
 		// Compile gs2 code
 		server->compileGS2Script(this,
-			[this](const CompilerResponse& response)
-			{
-				if (response.success)
-				{
-					auto& byteCode = response.bytecode;
-					npcBytecode.clear(byteCode.length());
-					npcBytecode.write((const char*)byteCode.buffer(), (int)byteCode.length());
-				}
-			}
-		);
+								 [this](const CompilerResponse& response)
+								 {
+									 if (response.success)
+									 {
+										 auto& byteCode = response.bytecode;
+										 npcBytecode.clear(byteCode.length());
+										 npcBytecode.write((const char*)byteCode.buffer(), (int)byteCode.length());
+									 }
+								 });
 	}
 
 	// Update prop for players
@@ -969,15 +1051,15 @@ void TNPC::setTimeout(int newTimeout)
 		server->getScriptEngine()->UnregisterNpcTimer(this);
 }
 
-void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
+void TNPC::queueNpcAction(const std::string& action, TPlayer* player, bool registerAction)
 {
 	assert(_scriptObject);
 
-	CScriptEngine *scriptEngine = server->getScriptEngine();
+	CScriptEngine* scriptEngine = server->getScriptEngine();
 
-	IScriptObject<TPlayer> *playerObject = nullptr;
+	IScriptObject<TPlayer>* playerObject = nullptr;
 	if (player != nullptr)
-	    playerObject = player->getScriptObject();
+		playerObject = player->getScriptObject();
 
 	if (playerObject)
 	{
@@ -1045,7 +1127,7 @@ NPCEventResponse TNPC::runScriptEvents()
 		time_t newModTime = time(0);
 
 		CString propPacket = CString() >> (char)PLO_NPCPROPS >> (int)id;
-		for (unsigned char propId : propModified)
+		for (unsigned char propId: propModified)
 		{
 			modTime[propId] = newModTime;
 			propPacket >> (char)propId << getProp(propId);
@@ -1067,7 +1149,7 @@ NPCEventResponse TNPC::runScriptEvents()
 
 CString TNPC::getVariableDump()
 {
-	static const char * const propNames[NPCPROP_COUNT] = {
+	static const char* const propNames[NPCPROP_COUNT] = {
 		"image", "script", "x", "y", "power", "rupees",
 		"arrows", "bombs", "glovepower", "bombpower", "sword", "shield",
 		"animation", "visibility flags", "blocking flags", "message", "hurtdxdy",
@@ -1116,7 +1198,7 @@ CString TNPC::getVariableDump()
 	if (level) npcDump << npcNameStr << ".level: " << level->getLevelName() << "\n";
 
 	npcDump << "\nAttributes:\n";
-	for (int propId : propList)
+	for (int propId: propList)
 	{
 		CString prop = getProp(propId);
 
@@ -1134,14 +1216,15 @@ CString TNPC::getVariableDump()
 				int len = prop.readGUShort();
 				if (len > 0)
 					npcDump << npcNameStr << "." << propNames[propId] << ": size: " << CString(len) << "\n";
-					break;
+				break;
 			}
 
 			case NPCPROP_SWORDIMAGE:
 			{
 				int power = prop.readGUChar();
 				CString image;
-				if (power > 30) {
+				if (power > 30)
+				{
 					image = prop.readChars(prop.readGUChar());
 					power -= 30;
 				}
@@ -1190,7 +1273,9 @@ CString TNPC::getVariableDump()
 			{
 				char value = prop.readGUChar();
 				if (value & NPCBLOCKFLAG_NOBLOCK)
-					npcDump << npcNameStr << "." << propNames[propId] << ": " << "dontblock" << "\n";
+					npcDump << npcNameStr << "." << propNames[propId] << ": "
+							<< "dontblock"
+							<< "\n";
 				break;
 			}
 
@@ -1331,10 +1416,7 @@ void TNPC::resetNPC()
 {
 	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
 	canWarp = NPCWarpType::None;
-	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y]
-		= modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE]
-		= modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY]
-		= modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
+	modTime[NPCPROP_IMAGE] = modTime[NPCPROP_SCRIPT] = modTime[NPCPROP_X] = modTime[NPCPROP_Y] = modTime[NPCPROP_VISFLAGS] = modTime[NPCPROP_ID] = modTime[NPCPROP_SPRITE] = modTime[NPCPROP_MESSAGE] = modTime[NPCPROP_GMAPLEVELX] = modTime[NPCPROP_GMAPLEVELY] = modTime[NPCPROP_X2] = modTime[NPCPROP_Y2] = time(0);
 	headImage = "";
 	bodyImage = "";
 	image = "";
@@ -1455,7 +1537,7 @@ void TNPC::saveNPC()
 
 	auto level = getLevel();
 
-	static const char *NL = "\r\n";
+	static const char* NL = "\r\n";
 	CString fileName = server->getServerPath() << "npcs/npc" << npcName << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
 	fileData << "NAME " << npcName << NL;
@@ -1505,7 +1587,7 @@ void TNPC::saveNPC()
 	for (int i = 0; i < 30; i++)
 	{
 		if (!gAttribs[i].isEmpty())
-			fileData << "ATTR" << std::to_string(i+1) << " " << gAttribs[i] << NL;
+			fileData << "ATTR" << std::to_string(i + 1) << " " << gAttribs[i] << NL;
 	}
 
 	for (auto it = flagList.begin(); it != flagList.end(); ++it)
@@ -1565,7 +1647,8 @@ bool TNPC::loadNPC(const CString& fileName)
 			npcScripter = curLine.readString("");
 			modTime[NPCPROP_SCRIPTER] = updateTime;
 		}
-		else if (curCommand == "IMAGE") {
+		else if (curCommand == "IMAGE")
+		{
 			image = curLine.readString("").text();
 			modTime[NPCPROP_IMAGE] = updateTime;
 		}
@@ -1606,23 +1689,28 @@ bool TNPC::loadNPC(const CString& fileName)
 			power = (int)(strtofloat(curLine.readString("")) * 2);
 			modTime[NPCPROP_POWER] = updateTime;
 		}
-		else if (curCommand == "GRALATS") {
+		else if (curCommand == "GRALATS")
+		{
 			rupees = strtoint(curLine.readString(""));
 			modTime[NPCPROP_RUPEES] = updateTime;
 		}
-		else if (curCommand == "ARROWS") {
+		else if (curCommand == "ARROWS")
+		{
 			darts = strtoint(curLine.readString(""));
 			modTime[NPCPROP_ARROWS] = updateTime;
 		}
-		else if (curCommand == "BOMBS") {
+		else if (curCommand == "BOMBS")
+		{
 			bombs = strtoint(curLine.readString(""));
 			modTime[NPCPROP_BOMBS] = updateTime;
 		}
-		else if (curCommand == "GLOVEP") {
+		else if (curCommand == "GLOVEP")
+		{
 			glovePower = strtoint(curLine.readString(""));
 			modTime[NPCPROP_GLOVEPOWER] = updateTime;
 		}
-		else if (curCommand == "SWORDP") {
+		else if (curCommand == "SWORDP")
+		{
 			swordPower = strtoint(curLine.readString(""));
 			modTime[NPCPROP_SWORDIMAGE] = updateTime;
 		}
@@ -1669,14 +1757,15 @@ bool TNPC::loadNPC(const CString& fileName)
 		else if (curCommand == "COLORS")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (int idx = 0; idx < std::min((int) tokens.size(), 5); idx++)
+			for (int idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
 				colors[idx] = strtoint(tokens[idx]);
 			modTime[NPCPROP_COLORS] = updateTime;
 		}
 		else if (curCommand == "SAVEARR")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (int idx = 0; idx < std::min(tokens.size(), sizeof(saves) / sizeof(unsigned char)); idx++) {
+			for (int idx = 0; idx < std::min(tokens.size(), sizeof(saves) / sizeof(unsigned char)); idx++)
+			{
 				saves[idx] = (unsigned char)strtoint(tokens[idx]);
 				modTime[NPCPROP_SAVE0 + idx] = updateTime;
 			}
@@ -1706,7 +1795,8 @@ bool TNPC::loadNPC(const CString& fileName)
 		{
 			CString attrIdStr = curCommand.subString(5);
 			int attrId = strtoint(attrIdStr);
-			if (attrId > 0 && attrId < 30) {
+			if (attrId > 0 && attrId < 30)
+			{
 				int idx = attrId - 1;
 				gAttribs[idx] = curLine.readString("");
 				modTime[__nAttrPackets[idx]] = updateTime;
@@ -1720,7 +1810,8 @@ bool TNPC::loadNPC(const CString& fileName)
 					break;
 
 				script.append(curLine.text(), curLine.length()).append(1, '\n');
-			} while (fileData.bytesLeft());
+			}
+			while (fileData.bytesLeft());
 
 			modTime[NPCPROP_SCRIPT] = updateTime;
 		}
@@ -1743,7 +1834,7 @@ CString toWeaponName(const CString& code)
 {
 	int name_start = code.find("toweapons ");
 	if (name_start == -1) return CString();
-	name_start += 10;	// 10 = strlen("toweapons ")
+	name_start += 10; // 10 = strlen("toweapons ")
 
 	int name_end[2] = { code.find(";", name_start), code.find("}", name_start) };
 	if (name_end[0] == -1 && name_end[1] == -1) return CString();
@@ -1781,7 +1872,7 @@ CString doJoins(const CString& code, CFileSystem* fs)
 	}
 
 	// Add the files now.
-	for (auto& fileName : joinList)
+	for (auto& fileName: joinList)
 	{
 		c = fs->load(fileName);
 		c.removeAllI("\r");

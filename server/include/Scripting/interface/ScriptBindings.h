@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SCRIPTBINDINGS_H
 #define SCRIPTBINDINGS_H
 
@@ -10,9 +8,12 @@
 #endif
 
 #ifdef _SCRIPTENV_DEBUG
-#define SCRIPTENV_D(...) printf(__VA_ARGS__)
+	#define SCRIPTENV_D(...) printf(__VA_ARGS__)
 #else
-#define SCRIPTENV_D(...) do {} while(0)
+	#define SCRIPTENV_D(...) \
+		do {                 \
+		}                    \
+		while (0)
 #endif
 
 #include "ScriptArguments.h"

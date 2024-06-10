@@ -1,20 +1,18 @@
-#pragma once
-
 #ifndef SCRIPTEXECUTION_H
 #define SCRIPTEXECUTION_H
 
+#include "ScriptEngine.h"
+#include "ScriptAction.h"
+#include "ScriptUtils.h"
 #include <algorithm>
 #include <chrono>
 #include <vector>
-#include "ScriptAction.h"
-#include "ScriptUtils.h"
-#include "CScriptEngine.h"
 
 class ScriptExecutionContext
 {
 public:
-	ScriptExecutionContext(CScriptEngine *scriptEngine)
-		: _scriptEngine(scriptEngine) { }
+	ScriptExecutionContext(CScriptEngine* scriptEngine)
+		: _scriptEngine(scriptEngine) {}
 
 	~ScriptExecutionContext() { resetExecution(); }
 
@@ -28,7 +26,7 @@ public:
 	bool runExecution();
 
 private:
-	CScriptEngine *_scriptEngine;
+	CScriptEngine* _scriptEngine;
 	std::vector<ScriptAction> _actions;
 	std::vector<ScriptTimeSample> _scriptTimeSamples;
 };
@@ -88,14 +86,16 @@ inline std::pair<unsigned int, double> ScriptExecutionContext::getExecutionData(
 
 inline void ScriptExecutionContext::addAction(ScriptAction& action)
 {
-	if (action.getFunction()) {
+	if (action.getFunction())
+	{
 		_actions.push_back(std::move(action));
 	}
 }
 
 inline void ScriptExecutionContext::addAction(ScriptAction&& action)
 {
-	if (action.getFunction()) {
+	if (action.getFunction())
+	{
 		_actions.push_back(std::move(action));
 	}
 }
@@ -105,7 +105,7 @@ inline void ScriptExecutionContext::resetExecution()
 	_actions.clear();
 
 #ifndef NOSCRIPTPROFILING
-	//_scriptTimeSamples.clear();
+		//_scriptTimeSamples.clear();
 #endif
 }
 
@@ -121,11 +121,12 @@ inline bool ScriptExecutionContext::runExecution()
 
 	// iterate over queued actions
 	SCRIPTENV_D("Running %zd actions:\n", iterateActions.size());
-	for (auto & action : iterateActions)
+	for (auto& action: iterateActions)
 	{
 		SCRIPTENV_D("Running action: %s\n", action.getAction().c_str());
 		auto res = action.Invoke();
-		if (!res) {
+		if (!res)
+		{
 			_scriptEngine->reportScriptException(_scriptEngine->getScriptError());
 		}
 	}

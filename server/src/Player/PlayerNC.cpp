@@ -1,20 +1,20 @@
 #include "IDebug.h"
-#include <vector>
 #include <math.h>
+#include <vector>
 
 #include "IEnums.h"
-#include "Server.h"
-#include "Player.h"
-#include "Weapon.h"
-#include "NPC.h"
 #include "Level.h"
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "Weapon.h"
 
-#define serverlog	server->getServerLog()
-#define npclog		server->getNPCLog()
-#define rclog		server->getRCLog()
+#define serverlog server->getServerLog()
+#define npclog server->getNPCLog()
+#define rclog server->getRCLog()
 
 typedef bool (TPlayer::*TPLSock)(CString&);
-extern std::vector<TPLSock> TPLFunc;		// From TPlayer.cpp
+extern std::vector<TPLSock> TPLFunc; // From TPlayer.cpp
 
 #ifdef V8NPCSERVER
 bool TPlayer::msgPLI_NC_NPCGET(CString& pPacket)
@@ -112,7 +112,7 @@ bool TPlayer::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 		CString code = npc->getSource().getSource();
 		sendPacket(CString() >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << code.gtokenize());
 	}
-//	else printf("npc doesn't exist\n");
+	//	else printf("npc doesn't exist\n");
 
 	return true;
 }
@@ -156,7 +156,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		CString flagListStr;
 
 		auto& flagList = npc->getFlagList();
-		for (const auto& [flag, value] : flagList)
+		for (const auto& [flag, value]: flagList)
 			flagListStr << flag << "=" << value << "\n";
 
 		sendPacket(CString() >> (char)PLO_NC_NPCFLAGS >> (int)npcId << flagListStr.gtokenize());
@@ -212,7 +212,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		std::unordered_map<std::string, CString> newFlagList;
 
 		// Iterate the new list of flags from the client
-		for (auto& flag : newFlags)
+		for (auto& flag: newFlags)
 		{
 			std::string flagName = flag.readString("=").text();
 			CString flagValue = flag.readString("");
@@ -233,7 +233,7 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		}
 
 		// Iterate the old flag list, and find any flags not present in the new flag list.
-		for (const auto& [flag, value] : flagList)
+		for (const auto& [flag, value]: flagList)
 		{
 			auto newFlag = newFlagList.find(flag);
 			if (newFlag == newFlagList.end())
@@ -247,7 +247,8 @@ bool TPlayer::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		// Logging
 		CString updateMsg, logMsg;
 		updateMsg << "NPC flags of " << npc->getName() << " updated by " << accountName;
-		logMsg << updateMsg << "\n" << addedFlagMsg << deletedFlagMsg;
+		logMsg << updateMsg << "\n"
+			   << addedFlagMsg << deletedFlagMsg;
 		npclog.out(logMsg);
 		server->sendToNC(updateMsg);
 	}
@@ -288,10 +289,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	{
 		server->assignNPCName(newNpc, npcName.toString());
 
-		CString npcProps = CString()
-				>> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME)
-				>> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType
-				>> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
+		CString npcProps = CString() >> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType >> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
 
 		// NOTE: This can't be sent to other clients, so rather than assemble the same packet twice just set the scripter separately.
 		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
@@ -312,7 +310,7 @@ bool TPlayer::msgPLI_NC_NPCADD(CString& pPacket)
 	return true;
 }
 
-#include "ScriptClass.h"
+	#include "ScriptClass.h"
 
 bool TPlayer::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
@@ -418,10 +416,11 @@ bool TPlayer::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->getLevelName() << "\n";
 
-		for (auto npcId : npcLevel->getLevelNPCs())
+		for (auto npcId: npcLevel->getLevelNPCs())
 		{
 			auto npc = server->getNPC(npcId);
-			npcDump << "\n" << npc->getVariableDump() << "\n";
+			npcDump << "\n"
+					<< npc->getVariableDump() << "\n";
 		}
 
 		sendPacket(CString() >> (char)PLO_NC_LEVELDUMP << npcDump.gtokenize());
@@ -443,7 +442,7 @@ bool TPlayer::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 	ret >> (char)PLO_NC_WEAPONLISTGET;
 
 	// Iterate weapon list and send names
-	for (const auto& [weaponName, weapon] : server->getWeaponList())
+	for (const auto& [weaponName, weapon]: server->getWeaponList())
 	{
 		if (weapon->isDefault())
 			continue;
@@ -474,20 +473,17 @@ bool TPlayer::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 		if (getVersion() < NCVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_NPCWEAPONADD
-				>> (char)weaponName.length() << weaponName
-				>> (char)0 >> (char)weapon->getImage().length() << weapon->getImage()
-				>> (char)1 >> (short)script.length() << script);
+			sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)weaponName.length() << weaponName >> (char)0 >> (char)weapon->getImage().length() << weapon->getImage() >> (char)1 >> (short)script.length() << script);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_NC_WEAPONGET >>
-				(char)weaponName.length() << weaponName >>
-				(char)weapon->getImage().length() << weapon->getImage() <<
-				script);
+					   (char)weaponName.length() << weaponName >>
+					   (char)weapon->getImage().length() << weapon->getImage() << script);
 		}
 	}
-	else server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
+	else
+		server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << accountName << " prob: weapon " << weaponName << " doesn't exist");
 
 	return true;
 }
@@ -583,7 +579,7 @@ bool TPlayer::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	auto& levelList = server->getLevelList();
 	if (!levelList.empty())
 	{
-		for (auto level : levelList)
+		for (auto level: levelList)
 			ret << level->getActualLevelName() << "\n";
 	}
 
@@ -603,7 +599,8 @@ void TPlayer::sendNCAddr()
 	{
 		// Grab NPCServer & Send
 		CString npcServerIp = server->getAdminSettings().getStr("ns_ip", "auto").toLower();
-		if (npcServerIp == "auto") {
+		if (npcServerIp == "auto")
+		{
 			npcServerIp = server->getServerList().getServerIP();
 
 			// Fix for localhost setups

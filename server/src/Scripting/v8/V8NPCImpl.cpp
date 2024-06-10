@@ -9,8 +9,8 @@
 	#include <unordered_map>
 	#include <v8.h>
 
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
 
 // Property: npc.id
 void NPC_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -76,7 +76,7 @@ void NPC_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 		auto npcLevel = npcObject->getLevel();
 		if (npcLevel != nullptr)
 		{
-			auto *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(npcLevel->getScriptObject());
+			auto* v8_wrapped = static_cast<V8ScriptObject<TLevel>*>(npcLevel->getScriptObject());
 			info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
 			return;
 		}
@@ -431,7 +431,7 @@ void NPC_SetStr_Ani(v8::Local<v8::String> props, v8::Local<v8::Value> value, con
 // NPC Method: npc.canwarp();
 void NPC_Function_CanWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -455,7 +455,7 @@ void NPC_Function_CanWarp2(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.cannotwarp();
 void NPC_Function_CannotWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -467,7 +467,7 @@ void NPC_Function_CannotWarp(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.destroy();
 void NPC_Function_Destroy(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -480,7 +480,7 @@ void NPC_Function_Destroy(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.blockagain();
 void NPC_Function_BlockAgain(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -493,7 +493,7 @@ void NPC_Function_BlockAgain(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.dontblock();
 void NPC_Function_DontBlock(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -506,7 +506,7 @@ void NPC_Function_DontBlock(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.drawoverplayer();
 void NPC_Function_DrawOverPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -523,7 +523,7 @@ void NPC_Function_DrawOverPlayer(const v8::FunctionCallbackInfo<v8::Value>& args
 // NPC Method: npc.drawunderplayer();
 void NPC_Function_DrawUnderPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -540,7 +540,7 @@ void NPC_Function_DrawUnderPlayer(const v8::FunctionCallbackInfo<v8::Value>& arg
 // NPC Method: npc.hide();
 void NPC_Function_Hide(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -555,7 +555,7 @@ void NPC_Function_Hide(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.show();
 void NPC_Function_Show(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -570,7 +570,7 @@ void NPC_Function_Show(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.message();
 void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -597,7 +597,7 @@ void NPC_Function_Message(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.move(x, y, time, options);
 void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -622,7 +622,7 @@ void NPC_Function_Move(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.setimg(image);
 void NPC_Function_SetImg(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -647,7 +647,7 @@ void NPC_Function_SetImg(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.setimgpart(filename,offsetx,offsety,width,height)
 void NPC_Function_SetImgPart(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -678,7 +678,7 @@ void NPC_Function_SetImgPart(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.showcharacter();
 void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -691,11 +691,11 @@ void NPC_Function_ShowCharacter(const v8::FunctionCallbackInfo<v8::Value>& args)
 	npcObject->setBodyImage("body.png");
 	npcObject->setShieldImage("shield1.png");
 	npcObject->setSwordImage("sword1.png");
-	npcObject->setColorId(0, 2);   // orange
-	npcObject->setColorId(1, 5);   // dark red
-	npcObject->setColorId(2, 21);  // black
-	npcObject->setColorId(3, 5);   // dark red
-	npcObject->setColorId(4, 21);  // black
+	npcObject->setColorId(0, 2);  // orange
+	npcObject->setColorId(1, 5);  // dark red
+	npcObject->setColorId(2, 21); // black
+	npcObject->setColorId(3, 5);  // dark red
+	npcObject->setColorId(4, 21); // black
 	npcObject->setWidth(32);
 	npcObject->setHeight(48);
 
@@ -740,7 +740,7 @@ void NPC_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.setcharprop(code, value);
 void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -819,7 +819,7 @@ void NPC_Function_SetCharProp(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.settimer(time);
 void NPC_Function_SetTimer(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -839,7 +839,7 @@ void NPC_Function_SetTimer(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.setshape(type, pixelWidth, pixelHeight);
 void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	// Throw an exception on constructor calls for method functions
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
@@ -852,7 +852,7 @@ void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 		// Unwrap Object
-		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+		TNPC* npcObject = UnwrapObject<TNPC>(args.This());
 
 		int width = args[1]->Int32Value(context).ToChecked();
 		int height = args[2]->Int32Value(context).ToChecked();
@@ -864,7 +864,7 @@ void NPC_Function_SetShape(const v8::FunctionCallbackInfo<v8::Value>& args)
 // NPC Method: npc.registerAction(string, function);
 void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
@@ -874,13 +874,13 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 	if (args[0]->IsString() && args[1]->IsFunction())
 	{
 		SCRIPTENV_D(" - Register npc action %s with: %s\n",
-			*v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked()),
-			*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
+					*v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked()),
+					*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
-		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 		// Callback name
 		std::string eventName = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
@@ -888,10 +888,10 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
-		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
+		V8ScriptFunction* cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
 
 		// Unwrap Object
-		TNPC *npcObject = UnwrapObject<TNPC>(args.This());
+		TNPC* npcObject = UnwrapObject<TNPC>(args.This());
 		npcObject->registerTriggerAction(eventName, cbFuncWrapper);
 	}
 
@@ -901,7 +901,7 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 // NPC Method: npc.scheduleevent(time, function);
 void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
@@ -919,9 +919,9 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
-		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 		// Callback name
 		double time_til = args[0]->NumberValue(context).ToChecked();
@@ -929,9 +929,9 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[1].As<v8::Function>();
-		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
+		V8ScriptFunction* cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
 
-		IScriptArguments *v8args;
+		IScriptArguments* v8args;
 		if (args.Length() > 2)
 		{
 			v8::Local<v8::Object> paramData = args[2]->ToObject(context).ToLocalChecked();
@@ -950,8 +950,8 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 	SCRIPTENV_D("End NPC::registerAction()\n");
 }
 
-#include "ScriptClass.h"
-#include "V8ScriptWrappers.h"
+	#include "ScriptClass.h"
+	#include "V8ScriptWrappers.h"
 
 // NPC Function: NPC.join("class");
 void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -965,13 +965,13 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
 		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		TScriptClass *classObject = npcObject->joinClass(className);
+		TScriptClass* classObject = npcObject->joinClass(className);
 		if (classObject != nullptr)
 		{
 			auto classCodeWrap = WrapScript<TNPC>(classObject->getSource().getServerSide());
@@ -1041,7 +1041,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -1052,15 +1052,15 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		return;
 
 	v8::Local<v8::External> data = args.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
 	if (args[0]->IsFunction())
 	{
-		V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 		// Persist the callback function so we can retrieve it later on
 		v8::Local<v8::Function> cbFunc = args[0].As<v8::Function>();
-		V8ScriptFunction *cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
+		V8ScriptFunction* cbFuncWrapper = new V8ScriptFunction(env, cbFunc);
 
 		// Set pm function
 		scriptEngine->getServer()->setPMFunction(npcObject->getId(), cbFuncWrapper);
@@ -1073,7 +1073,7 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
@@ -1092,8 +1092,8 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			int newY = int(16.0 * args[2]->NumberValue(context).ToChecked());
 
 			v8::Local<v8::External> data = args.Data().As<v8::External>();
-			CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-			TServer *server = scriptEngine->getServer();
+			CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+			TServer* server = scriptEngine->getServer();
 
 			auto level = server->getLevel(*levelName);
 			if (level != nullptr)
@@ -1164,7 +1164,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -1179,8 +1179,8 @@ void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.attr");
@@ -1191,7 +1191,7 @@ void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC>* v8_wrapped = static_cast<V8ScriptObject<TNPC>*>(npcObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1209,7 +1209,7 @@ void NPC_Attrs_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// TODO(joey): Object is not getting unset here.
 
@@ -1229,7 +1229,7 @@ void NPC_Attrs_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prop
 
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// Get new value
 	v8::String::Utf8Value newValue(isolate, value);
@@ -1246,7 +1246,7 @@ void NPC_Attrs_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prop
 // PROPERTY: npc.colors
 void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -1261,8 +1261,8 @@ void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.colors");
@@ -1273,7 +1273,7 @@ void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallback
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC>* v8_wrapped = static_cast<V8ScriptObject<TNPC>*>(npcObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
 	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1328,7 +1328,7 @@ void NPC_Colors_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 // PROPERTY: npc.flags
 void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -1343,8 +1343,8 @@ void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.flags");
@@ -1355,7 +1355,7 @@ void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC>* v8_wrapped = static_cast<V8ScriptObject<TNPC>*>(npcObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1367,7 +1367,7 @@ void NPC_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbackIn
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
@@ -1383,7 +1383,7 @@ void NPC_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, 
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
@@ -1401,7 +1401,7 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TNPC, npcObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get flags list
@@ -1410,7 +1410,7 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
 	int idx = 0;
-	for (auto & flag : flagList)
+	for (auto& flag: flagList)
 		result->Set(context, idx++, v8::String::NewFromUtf8(isolate, flag.first.c_str()).ToLocalChecked()).Check();
 
 	info.GetReturnValue().Set(result);
@@ -1419,7 +1419,7 @@ void NPC_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 // PROPERTY: npc.save
 void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -1434,8 +1434,8 @@ void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("npc.save");
@@ -1446,7 +1446,7 @@ void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	new_instance->SetAlignedPointerInInternalField(0, npcObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npcObject->getScriptObject());
+	V8ScriptObject<TNPC>* v8_wrapped = static_cast<V8ScriptObject<TNPC>*>(npcObject->getScriptObject());
 	v8_wrapped->addChild("save", new_instance);
 
 	v8::PropertyAttribute propSave = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -1484,11 +1484,11 @@ void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prope
 	info.GetReturnValue().Set(value);
 }
 
-void bindClass_NPC(CScriptEngine *scriptEngine)
+void bindClass_NPC(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -1519,8 +1519,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "hide"), v8::FunctionTemplate::New(isolate, NPC_Function_Hide, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "message"), v8::FunctionTemplate::New(isolate, NPC_Function_Message, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "move"), v8::FunctionTemplate::New(isolate, NPC_Function_Move, engine_ref));
-//	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
-	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref)); // setimg(filename);
+	//	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "noplayeronwall"), v8::FunctionTemplate::New(isolate, NPC_Function_NoPlayerOnWall, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setimg"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImg, engine_ref));         // setimg(filename);
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setimgpart"), v8::FunctionTemplate::New(isolate, NPC_Function_SetImgPart, engine_ref)); // setimgpart(filename,offsetx,offsety,width,height);
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "showcharacter"), v8::FunctionTemplate::New(isolate, NPC_Function_ShowCharacter, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"), v8::FunctionTemplate::New(isolate, NPC_Function_SetAni, engine_ref));
@@ -1601,8 +1601,8 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 	npc_save_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "save"));
 	npc_save_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	npc_save_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
-			NPC_Save_Getter, NPC_Save_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
-			v8::PropertyHandlerFlags::kNone));
+		NPC_Save_Getter, NPC_Save_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
+		v8::PropertyHandlerFlags::kNone));
 	env->SetConstructor("npc.save", npc_save_ctor);
 
 	// Persist the npc constructor
@@ -1615,4 +1615,3 @@ void bindClass_NPC(CScriptEngine *scriptEngine)
 }
 
 #endif
-

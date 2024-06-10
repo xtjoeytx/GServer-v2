@@ -1,15 +1,15 @@
 #include "IDebug.h"
 #include <vector>
 
-#include "Server.h"
-#include "Player.h"
 #include "IEnums.h"
 #include "IUtil.h"
-#include "Map.h"
 #include "Level.h"
+#include "Map.h"
+#include "Player.h"
+#include "Server.h"
 
-#define serverlog	server->getServerLog()
-#define rclog		server->getRCLog()
+#define serverlog server->getServerLog()
+#define rclog server->getRCLog()
 extern bool __sendLocal[propscount];
 extern int __attrPackets[30];
 
@@ -120,7 +120,7 @@ void TPlayer::getProp(CString& buffer, int pPropId) const
 
 		case PLPROP_CURLEVEL:
 		{
-			if (isClient())// || type == PLTYPE_AWAIT)
+			if (isClient()) // || type == PLTYPE_AWAIT)
 			{
 				if (map && map->getType() == MapType::GMAP)
 					buffer >> (char)map->getMapName().length() << map->getMapName();
@@ -341,7 +341,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					if (nickName.isEmpty())
 						setNick("unknown");
 				}
-				else setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
+				else
+					setNick(nick, !(options & PLSETPROPS_SETBYPLAYER));
 
 				if (options & PLSETPROPS_FORWARD)
 					globalBuff >> (char)propId << getProp(propId);
@@ -359,7 +360,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				uint8_t newMaxPower = pPacket.readGUChar();
 
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					setMaxPower(newMaxPower);
 					setPower((float)maxPower);
@@ -392,7 +394,8 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				unsigned int newGralatCount = std::min(pPacket.readGUInt(), 9999999u);
 
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					if (rc != nullptr)
 					{
@@ -412,18 +415,19 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_ARROWSCOUNT:
 				arrowc = pPacket.readGUChar();
 				arrowc = clip(arrowc, 0, 99);
-			break;
+				break;
 
 			case PLPROP_BOMBSCOUNT:
 				bombc = pPacket.readGUChar();
 				bombc = clip(bombc, 0, 99);
-			break;
+				break;
 
 			case PLPROP_GLOVEPOWER:
 			{
 				uint8_t newGlovePower = pPacket.readGUChar();
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					glovePower = std::min<uint8_t>(newGlovePower, 3);
 #ifdef V8NPCSERVER
@@ -435,7 +439,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			case PLPROP_BOMBPOWER:
 				bombPower = pPacket.readGUChar();
 				bombPower = clip(bombPower, 0, 3);
-			break;
+				break;
 
 			case PLPROP_SWORDPOWER:
 			{
@@ -458,11 +462,13 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						if (!img.isEmpty() && versionID < CLVER_2_1 && getExtension(img).isEmpty())
 							img << ".gif";
 					}
-					else img = "";
+					else
+						img = "";
 				}
 
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					setSwordPower(sp);
 #ifdef V8NPCSERVER
@@ -497,11 +503,13 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 						if (!img.isEmpty() && versionID < CLVER_2_1 && getExtension(img).isEmpty())
 							img << ".gif";
 					}
-					else img = "";
+					else
+						img = "";
 				}
 
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					setShieldPower(sp);
 #ifdef V8NPCSERVER
@@ -608,13 +616,13 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 			break;
 
 			case PLPROP_COLORS:
-				for (unsigned char & color : colors)
+				for (unsigned char& color: colors)
 					color = pPacket.readGUChar();
-			break;
+				break;
 
 			case PLPROP_ID:
 				pPacket.readGUShort();
-			break;
+				break;
 
 			case PLPROP_X:
 				x = (float)(pPacket.readGUChar() / 2.0f);
@@ -627,7 +635,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				levelBuff2 >> (char)PLPROP_X2 << getProp(PLPROP_X2);
-			break;
+				break;
 
 			case PLPROP_Y:
 				y = (float)(pPacket.readGUChar() / 2.0f);
@@ -640,7 +648,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				levelBuff2 >> (char)PLPROP_Y2 << getProp(PLPROP_Y2);
-			break;
+				break;
 
 			case PLPROP_Z:
 				z = (float)pPacket.readGUChar() - 50.0f;
@@ -651,7 +659,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 				// Let 2.30+ clients see pre-2.30 movement.
 				levelBuff2 >> (char)PLPROP_Z2 << getProp(PLPROP_Z2);
-			break;
+				break;
 
 			case PLPROP_SPRITE:
 				sprite = pPacket.readGUChar();
@@ -660,7 +668,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				// Do collision testing.
 				doTouchTest = true;
 #endif
-			break;
+				break;
 
 			case PLPROP_STATUS:
 			{
@@ -715,7 +723,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 			case PLPROP_CARRYSPRITE:
 				carrySprite = pPacket.readGUChar();
-			break;
+				break;
 
 			case PLPROP_CURLEVEL:
 				len = pPacket.readGUChar();
@@ -724,24 +732,24 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 #else
 				levelName = pPacket.readChars(len);
 #endif
-			break;
+				break;
 
 			case PLPROP_HORSEGIF:
 				len = pPacket.readGUChar();
 				horseImg = pPacket.readChars(std::min(len, 219)); // limit is 219 in case it appends .gif
 				if (!horseImg.isEmpty() && versionID < CLVER_2_1 && getExtension(horseImg).isEmpty())
 					horseImg << ".gif";
-			break;
+				break;
 
 			case PLPROP_HORSEBUSHES:
 				horsec = pPacket.readGUChar();
-			break;
+				break;
 
 			case PLPROP_EFFECTCOLORS:
 				len = pPacket.readGUChar();
 				if (len > 0)
 					pPacket.readGInt4();
-			break;
+				break;
 
 			case PLPROP_CARRYNPC:
 			{
@@ -753,7 +761,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					bool isOwner = true;
 					{
 						auto& playerList = server->getPlayerList();
-						for (auto& [otherId, other] : playerList)
+						for (auto& [otherId, other]: playerList)
 						{
 							if (other.get() == this) continue;
 							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == carryNpcId)
@@ -782,13 +790,14 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 			case PLPROP_APCOUNTER:
 				apCounter = pPacket.readGUShort();
-			break;
+				break;
 
 			case PLPROP_MAGICPOINTS:
 			{
 				uint8_t newMP = pPacket.readGUChar();
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					mp = std::min<uint8_t>(newMP, 100);
 #ifdef V8NPCSERVER
@@ -799,32 +808,33 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 			case PLPROP_KILLSCOUNT:
 				pPacket.readGInt();
-			break;
+				break;
 
 			case PLPROP_DEATHSCOUNT:
 				pPacket.readGInt();
-			break;
+				break;
 
 			case PLPROP_ONLINESECS:
 				pPacket.readGInt();
-			break;
+				break;
 
 			case PLPROP_IPADDR:
 				pPacket.readGInt5();
-			break;
+				break;
 
 			case PLPROP_UDPPORT:
 				udpport = pPacket.readGInt();
 				if (id != -1 && loaded)
 					server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_UDPPORT >> (int)udpport, this);
 				// TODO: udp support.
-			break;
+				break;
 
 			case PLPROP_ALIGNMENT:
 			{
 				uint8_t newAlignment = pPacket.readGUChar();
 #ifdef V8NPCSERVER
-				if (!(options & PLSETPROPS_SETBYPLAYER)) {
+				if (!(options & PLSETPROPS_SETBYPLAYER))
+				{
 #endif
 					ap = std::min<uint8_t>(newAlignment, 100);
 #ifdef V8NPCSERVER
@@ -835,22 +845,22 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 
 			case PLPROP_ADDITFLAGS:
 				additionalFlags = pPacket.readGUChar();
-			break;
+				break;
 
 			case PLPROP_ACCOUNTNAME:
 				len = pPacket.readGUChar();
 				pPacket.readChars(len);
-			break;
+				break;
 
 			case PLPROP_BODYIMG:
 				len = pPacket.readGUChar();
 				setBodyImage(pPacket.readChars(len));
-			break;
+				break;
 
 			case PLPROP_RATING:
 				len = pPacket.readGInt();
 				//rating = (float)((len >> 9) & 0xFFF);
-			break;
+				break;
 
 			case PLPROP_ATTACHNPC:
 			{
@@ -894,17 +904,17 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				break;
 			}
 
-/*
+				/*
 			case PLPROP_UNKNOWN50:
 				break;
 */
 			case PLPROP_PCONNECTED:
-			break;
+				break;
 
 			case PLPROP_PLANGUAGE:
 				len = pPacket.readGUChar();
 				language = pPacket.readChars(len);
-			break;
+				break;
 
 			case PLPROP_PSTATUSMSG:
 				statusMsg = pPacket.readGUChar();
@@ -912,38 +922,98 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					break;
 
 				server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PSTATUSMSG >> (char)statusMsg, { id });
-			break;
+				break;
 
-			case PLPROP_GATTRIB1:  attrList[0]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB2:  attrList[1]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB3:  attrList[2]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB4:  attrList[3]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB5:  attrList[4]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB6:  attrList[5]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB7:  attrList[6]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB8:  attrList[7]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB9:  attrList[8]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB10: attrList[9]  = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB11: attrList[10] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB12: attrList[11] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB13: attrList[12] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB14: attrList[13] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB15: attrList[14] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB16: attrList[15] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB17: attrList[16] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB18: attrList[17] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB19: attrList[18] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB20: attrList[19] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB21: attrList[20] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB22: attrList[21] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB23: attrList[22] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB24: attrList[23] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB25: attrList[24] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB26: attrList[25] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB27: attrList[26] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB28: attrList[27] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB29: attrList[28] = pPacket.readChars(pPacket.readGUChar()); break;
-			case PLPROP_GATTRIB30: attrList[29] = pPacket.readChars(pPacket.readGUChar()); break;
+			case PLPROP_GATTRIB1:
+				attrList[0] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB2:
+				attrList[1] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB3:
+				attrList[2] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB4:
+				attrList[3] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB5:
+				attrList[4] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB6:
+				attrList[5] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB7:
+				attrList[6] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB8:
+				attrList[7] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB9:
+				attrList[8] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB10:
+				attrList[9] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB11:
+				attrList[10] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB12:
+				attrList[11] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB13:
+				attrList[12] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB14:
+				attrList[13] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB15:
+				attrList[14] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB16:
+				attrList[15] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB17:
+				attrList[16] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB18:
+				attrList[17] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB19:
+				attrList[18] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB20:
+				attrList[19] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB21:
+				attrList[20] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB22:
+				attrList[21] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB23:
+				attrList[22] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB24:
+				attrList[23] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB25:
+				attrList[24] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB26:
+				attrList[25] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB27:
+				attrList[26] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB28:
+				attrList[27] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB29:
+				attrList[28] = pPacket.readChars(pPacket.readGUChar());
+				break;
+			case PLPROP_GATTRIB30:
+				attrList[29] = pPacket.readChars(pPacket.readGUChar());
+				break;
 
 			// OS type.
 			// Windows: wind
@@ -1036,7 +1106,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 				printf("\n");
 				sentInvalid = true;
 			}
-			return;
+				return;
 		}
 
 		if ((options & PLSETPROPS_FORWARD) && __sendLocal[propId])
@@ -1075,7 +1145,6 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 					testSign();
 				testTouch();
 			}
-
 		}
 #endif
 	}
@@ -1093,7 +1162,7 @@ void TPlayer::setProps(CString& pPacket, uint8_t options, TPlayer* rc)
 	}
 }
 
-void TPlayer::sendProps(const bool *pProps, int pCount)
+void TPlayer::sendProps(const bool* pProps, int pCount)
 {
 	// Definition
 	CString propPacket;
@@ -1110,7 +1179,7 @@ void TPlayer::sendProps(const bool *pProps, int pCount)
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString TPlayer::getProps(const bool *pProps, int pCount)
+CString TPlayer::getProps(const bool* pProps, int pCount)
 {
 	CString propPacket;
 
@@ -1141,7 +1210,6 @@ CString TPlayer::getProps(const bool *pProps, int pCount)
 				getProp(propPacket, i);
 			}
 		}
-
 	}
 
 	if (isExternal)

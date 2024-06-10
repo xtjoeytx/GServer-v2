@@ -1,13 +1,13 @@
 #ifdef V8NPCSERVER
 
-#include <cassert>
-#include <v8.h>
-#include <math.h>
-#include <algorithm>
-#include <unordered_map>
-#include "CScriptEngine.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "CScriptEngine.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
+	#include <algorithm>
+	#include <cassert>
+	#include <math.h>
+	#include <unordered_map>
+	#include <v8.h>
 
 	#include "Level.h"
 	#include "LevelChest.h"
@@ -83,11 +83,11 @@ void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 	chestObject->setSignIndex(newValue);
 }
 
-void bindClass_LevelChest(CScriptEngine *scriptEngine)
+void bindClass_LevelChest(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);

@@ -10,8 +10,8 @@
 	#include <stdio.h>
 	#include <v8.h>
 
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
 
 // PROPERTY: player.id
 void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -174,7 +174,6 @@ void Player_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
-
 // PROPERTY: player.fullhearts
 void Player_GetInt_Fullhearts(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -315,7 +314,7 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 	auto levelObject = playerObject->getLevel();
 	if (levelObject != nullptr)
 	{
-		V8ScriptObject<TLevel> *v8_wrapped = static_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+		V8ScriptObject<TLevel>* v8_wrapped = static_cast<V8ScriptObject<TLevel>*>(levelObject->getScriptObject());
 		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
 		return;
 	}
@@ -515,10 +514,12 @@ void Player_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 	int newValueInt = (int)(16 * newValue);
-	if (newValueInt < 0) {
+	if (newValueInt < 0)
+	{
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
-	else newValueInt <<= 1;
+	else
+		newValueInt <<= 1;
 
 	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
@@ -537,10 +538,12 @@ void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 
 	double newValue = value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 	int newValueInt = (int)(16 * newValue);
-	if (newValueInt < 0) {
+	if (newValueInt < 0)
+	{
 		newValueInt = (-newValueInt << 1) | 0x0001;
 	}
-	else newValueInt <<= 1;
+	else
+		newValueInt <<= 1;
 
 	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
@@ -575,7 +578,7 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer>* v8_wrapped = static_cast<V8ScriptObject<TPlayer>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -631,7 +634,7 @@ void Player_Attr_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pr
 // PROPERTY: player.colors
 void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -646,8 +649,8 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.colors");
@@ -658,7 +661,7 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer>* v8_wrapped = static_cast<V8ScriptObject<TPlayer>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
 	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -717,7 +720,7 @@ void Player_Colors_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::
 // PROPERTY: Player Flags
 void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
@@ -732,8 +735,8 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.flags");
@@ -744,7 +747,7 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	new_instance->SetAlignedPointerInInternalField(0, playerObject);
 
 	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
-	V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(playerObject->getScriptObject());
+	V8ScriptObject<TPlayer>* v8_wrapped = static_cast<V8ScriptObject<TPlayer>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
 	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
@@ -756,7 +759,7 @@ void Player_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// TODO(joey): playerObject is not getting unset here.
 
@@ -774,7 +777,7 @@ void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
@@ -782,9 +785,12 @@ void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 
 	// Get new value
 	v8::String::Utf8Value newValue(isolate, value);
-	if (newValue.length() == 0) {
+	if (newValue.length() == 0)
+	{
 		playerObject->deleteFlag(*utf8, true);
-	} else {
+	}
+	else
+	{
 		playerObject->setFlag(*utf8, *newValue, true);
 	}
 
@@ -796,7 +802,7 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get flags list
@@ -815,7 +821,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, TPlayer, playerObject);
 
-	v8::Isolate *isolate = info.GetIsolate();
+	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get npcs list
@@ -826,7 +832,8 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	// TODO(joey): We don't store the weapon objects on the player, maybe we should so we can use the object directly
 	//	in scripts.
 	int idx = 0;
-	for (auto & weapon : weaponList) {
+	for (auto& weapon: weaponList)
+	{
 		//V8ScriptObject<TWeapon> *v8_wrapped = static_cast<V8ScriptObject<TWeapon> *>((*it)->getScriptObject());
 		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), weapon.text()).ToLocalChecked();
 		result->Set(context, idx++, weaponName).Check();
@@ -838,7 +845,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 // Player Function: player.addweapon("weaponName");
 void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -861,7 +868,7 @@ void Player_Function_AddWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.hasweapon("weaponName");
 void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -884,7 +891,7 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.removeweapon("weaponName");
 void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -907,7 +914,7 @@ void Player_Function_RemoveWeapon(const v8::FunctionCallbackInfo<v8::Value>& arg
 // Player Function: player.disableweapons();
 void Player_Function_DisableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
@@ -918,7 +925,7 @@ void Player_Function_DisableWeapons(const v8::FunctionCallbackInfo<v8::Value>& a
 // Player Function: player.enableweapons();
 void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, TPlayer, playerObject);
@@ -951,7 +958,7 @@ void Player_Function_UnfreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& a
 // Player Function: player.say("message"); or player.say(index) for signs in a level
 void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -971,11 +978,11 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 		int signIndex = args[0]->Int32Value(isolate->GetCurrentContext()).ToChecked();
 
 		auto level = playerObject->getLevel();
-		if (level != nullptr) {
+		if (level != nullptr)
+		{
 			auto& signs = level->getLevelSigns();
 			if (signIndex < signs.size())
 				playerObject->sendSignMessage(signs[signIndex]->getUText().replaceAll("\n", "#b"));
-
 		}
 	}
 }
@@ -983,7 +990,7 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.sendpm("message");
 void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -997,8 +1004,8 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// Get server
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-		TServer *server = scriptEngine->getServer();
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		TServer* server = scriptEngine->getServer();
 
 		// Get npc-server
 		auto npcServer = server->getNPCServer();
@@ -1016,7 +1023,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.sendrpgmessage("message");
 void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -1034,7 +1041,7 @@ void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& a
 // Player Function: player.setani("walk", "ani", "params");
 void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
@@ -1063,7 +1070,7 @@ void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.setlevel2("levelname", x, y);
 void Player_Function_SetLevel2(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
@@ -1131,7 +1138,7 @@ void Player_Function_Attached(const v8::FunctionCallbackInfo<v8::Value>& args)
 // Player Function: player.attachnpc(npcid);
 void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
@@ -1152,7 +1159,7 @@ void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
 		{
-			TNPC *npcObject = UnwrapObject<TNPC>(obj);
+			TNPC* npcObject = UnwrapObject<TNPC>(obj);
 			if (npcObject)
 				npcId = npcObject->getId();
 		}
@@ -1175,7 +1182,7 @@ void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 
@@ -1186,8 +1193,8 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	playerObject->setProps(propPacket, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
-#include "ScriptClass.h"
-#include "V8ScriptWrappers.h"
+	#include "ScriptClass.h"
+	#include "V8ScriptWrappers.h"
 
 // Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -1201,24 +1208,25 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
-		TServer *server = scriptEngine->getServer();
+		TServer* server = scriptEngine->getServer();
 		auto classObj = server->getClass(className);
 
 		if (classObj && !classObj->getSource().empty())
 		{
-			auto &classCode = classObj->getSource();
+			auto& classCode = classObj->getSource();
 
 			// Wrap code
 			std::string classCodeWrap = WrapScript<TPlayer>(classCode.getServerSide());
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.
-			IScriptFunction *function = scriptEngine->CompileCache(classCodeWrap, false);
-			if (function != nullptr) {
+			IScriptFunction* function = scriptEngine->CompileCache(classCodeWrap, false);
+			if (function != nullptr)
+			{
 				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(function);
 
 				v8::Local<v8::Value> newArgs[] = { args.This() };
@@ -1235,14 +1243,13 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 			}
 
 			// TODO(joey): error handling
-
 		}
 	}
 }
 
 void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 4);
@@ -1267,7 +1274,7 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 // Player Function : player.triggerclient("gui"/"weapon", wep, args) -> onActionClientSide
 void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-	v8::Isolate *isolate = args.GetIsolate();
+	v8::Isolate* isolate = args.GetIsolate();
 
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
@@ -1291,11 +1298,11 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 }
 
-void bindClass_Player(CScriptEngine *scriptEngine)
+void bindClass_Player(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -1391,8 +1398,8 @@ void bindClass_Player(CScriptEngine *scriptEngine)
 	player_flags_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "flags"));
 	player_flags_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 	player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
-			Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
-			v8::PropertyHandlerFlags::kHasNoSideEffect));
+		Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
+		v8::PropertyHandlerFlags::kHasNoSideEffect));
 	env->SetConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor

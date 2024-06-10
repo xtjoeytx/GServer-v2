@@ -1,9 +1,9 @@
+#include "V8ScriptEnv.h"
+#include "ScriptBindings.h"
+#include "V8ScriptArguments.h"
+#include "V8ScriptFunction.h"
 #include <cstring>
 #include <libplatform/libplatform.h>
-#include "ScriptBindings.h"
-#include "V8ScriptEnv.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptArguments.h"
 
 bool _v8_initialized = false;
 int V8ScriptEnv::s_count = 0;
@@ -46,7 +46,7 @@ void V8ScriptEnv::Initialize()
 	//	most-likely figure out what the default stack size is per thread and set the constraints through that.
 	//	Fix from https://fw.hardijzer.nl/?p=97
 	v8::ResourceConstraints rc;
-	rc.set_stack_limit((uint32_t *)(((uint64_t)&rc)/2));
+	rc.set_stack_limit((uint32_t*)(((uint64_t)&rc) / 2));
 	create_params.constraints = rc;
 
 	// Create v8 isolate
@@ -67,12 +67,13 @@ void V8ScriptEnv::Initialize()
 
 void V8ScriptEnv::Cleanup(bool shutDown)
 {
-	if (!_initialized) {
+	if (!_initialized)
+	{
 		return;
 	}
 
 	// Clear persistent handles to function-constructors
-	for (auto & it : _constructorMap)
+	for (auto& it: _constructorMap)
 		it.second.Reset();
 	_constructorMap.clear();
 
@@ -100,12 +101,12 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	}
 }
 
-bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
+bool V8ScriptEnv::ParseErrors(v8::TryCatch* tryCatch)
 {
 	if (tryCatch->HasCaught())
 	{
 		// Fetch the v8 isolate and context
-		v8::Isolate *isolate = this->Isolate();
+		v8::Isolate* isolate = this->Isolate();
 		v8::Local<v8::Context> context = this->Context();
 
 		v8::Handle<v8::Message> message = tryCatch->Message();
@@ -125,10 +126,10 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 	return false;
 }
 
-IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::string& source)
+IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string& source)
 {
 	// Fetch the v8 isolate and context
-	v8::Isolate *isolate = this->Isolate();
+	v8::Isolate* isolate = this->Isolate();
 	v8::Local<v8::Context> context = this->Context();
 
 	// Create a stack-allocated scope for v8 calls
@@ -155,7 +156,8 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	v8::TryCatch try_catch(isolate);
 	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
 	v8::Local<v8::Script> script;
-	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script)) {
+	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script))
+	{
 		ParseErrors(&try_catch);
 		return nullptr;
 	}
@@ -163,7 +165,8 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 	// Run the script to get the result.
 	v8::Local<v8::Value> result;
 
-	if (!script->Run(context).ToLocal(&result)) {
+	if (!script->Run(context).ToLocal(&result))
+	{
 		ParseErrors(&try_catch);
 		return nullptr;
 	}

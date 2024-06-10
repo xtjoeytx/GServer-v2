@@ -1,68 +1,79 @@
 #ifndef TLEVELCHEST_H
 #define TLEVELCHEST_H
 
-#include <vector>
-#include <memory>
 #include "CString.h"
+#include <memory>
+#include <vector>
 
 #ifdef V8NPCSERVER
-#include "ScriptBindings.h"
+	#include "ScriptBindings.h"
 #endif
 
 enum class LevelItemType;
 
 class TLevelChest : public std::enable_shared_from_this<TLevelChest>
 {
-	public:
-		TLevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
-			: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny) {
-		}
+public:
+	TLevelChest(char nx, char ny, LevelItemType itemIdx, char signIdx)
+		: itemIndex(itemIdx), signIndex(signIdx), x(nx), y(ny)
+	{
+	}
 
-		LevelItemType getItemIndex() const {
-			return itemIndex;
-		}
+	LevelItemType getItemIndex() const
+	{
+		return itemIndex;
+	}
 
-		int getSignIndex() const {
-			return signIndex;
-		}
+	int getSignIndex() const
+	{
+		return signIndex;
+	}
 
-		int getX() const {
-			return x;
-		}
+	int getX() const
+	{
+		return x;
+	}
 
-		int getY() const {
-			return y;
-		}
+	int getY() const
+	{
+		return y;
+	}
 
-		void setItemIndex(int id) {
-			itemIndex = (LevelItemType)id;
-		}
+	void setItemIndex(int id)
+	{
+		itemIndex = (LevelItemType)id;
+	}
 
-		void setSignIndex(int id) {
-			signIndex = id;
-		}
+	void setSignIndex(int id)
+	{
+		signIndex = id;
+	}
 
-		void setX(int xVal = 0) {
-			x = xVal;
-		}
+	void setX(int xVal = 0)
+	{
+		x = xVal;
+	}
 
-		void setY(int yVal = 0) {
-			y = yVal;
-		}
+	void setY(int yVal = 0)
+	{
+		y = yVal;
+	}
 
 #ifdef V8NPCSERVER
-	inline IScriptObject<TLevelChest> * getScriptObject() const {
+	inline IScriptObject<TLevelChest>* getScriptObject() const
+	{
 		return _scriptObject.get();
 	}
 
-	inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelChest>> object) {
+	inline void setScriptObject(std::unique_ptr<IScriptObject<TLevelChest>> object)
+	{
 		_scriptObject = std::move(object);
 	}
 #endif
 
-	private:
-		LevelItemType itemIndex;
-		int signIndex, x, y;
+private:
+	LevelItemType itemIndex;
+	int signIndex, x, y;
 
 #ifdef V8NPCSERVER
 	std::unique_ptr<IScriptObject<TLevelChest>> _scriptObject;

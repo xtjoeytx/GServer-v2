@@ -5,7 +5,6 @@ const uint32_t THREADPOOL_WORKERS = 0;
 GS2ScriptManager::GS2ScriptManager()
 	: _compilerThreadPool(THREADPOOL_WORKERS)
 {
-
 }
 
 void GS2ScriptManager::compileScript(const std::string& script, user_callback_type finishedCb)
@@ -53,13 +52,13 @@ void GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_
 	}
 
 	// Worker job
-	auto threadFunction = [script, finishedCb, this](CallbackThreadJob::thread_context &context, auto &promise)
+	auto threadFunction = [script, finishedCb, this](CallbackThreadJob::thread_context& context, auto& promise)
 	{
 		// Compile code
 		auto result = context.gs2context.compile(script); // , "weapon", "TestCode", true);
 
 		// Call the user-defined callback after we insert the bytecode into the cache
-		auto completedFunc = [this, script, finishedCb](CompilerResponse &response)
+		auto completedFunc = [this, script, finishedCb](CompilerResponse& response)
 		{
 			auto ret = _bytecodeCache.insert({ script, std::move(response) });
 			finishedCb(ret.first->second);

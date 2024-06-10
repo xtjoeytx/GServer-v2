@@ -1,13 +1,13 @@
 #ifdef V8NPCSERVER
 
-#include <cassert>
-#include <v8.h>
-#include <math.h>
-#include <algorithm>
-#include <unordered_map>
-#include "CScriptEngine.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "CScriptEngine.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
+	#include <algorithm>
+	#include <cassert>
+	#include <math.h>
+	#include <unordered_map>
+	#include <v8.h>
 
 	#include "Level.h"
 	#include "LevelLink.h"
@@ -137,11 +137,11 @@ void Link_SetStr_NewY(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 	linkObject->setNewY(*newValue);
 }
 
-void bindClass_LevelLink(CScriptEngine *scriptEngine)
+void bindClass_LevelLink(CScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->Isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -166,7 +166,6 @@ void bindClass_LevelLink(CScriptEngine *scriptEngine)
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "height"), Link_GetNum_Height, Link_SetNum_Height);
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newx"), Link_GetStr_NewX, Link_SetStr_NewX);
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newy"), Link_GetStr_NewY, Link_SetStr_NewY);
-
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevelLink>::result, link_ctor);

@@ -1,5 +1,5 @@
-#include "IDebug.h"
 #include "LevelSign.h"
+#include "IDebug.h"
 #include "Player.h"
 
 static CString encodeSignCode(CString& pText);
@@ -7,11 +7,11 @@ static CString encodeSign(const CString& pSignText);
 static CString decodeSignCode(CString pText);
 
 const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-				"0123456789!?-.,#>()#####\"####':/~&### <####;\n";
+						 "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
 const CString signSymbols = "ABXYudlrhxyz#4.";
-const int ctablen[] = {1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1};
-const int ctabindex[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17};
-const int ctab[] = {91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67};
+const int ctablen[] = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1 };
+const int ctabindex[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17 };
+const int ctab[] = { 91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67 };
 
 CString encodeSignCode(CString& pText)
 {
@@ -33,7 +33,8 @@ CString encodeSignCode(CString& pText)
 						retVal.writeGChar((char)ctab[ctabindex[code] + ii]);
 					continue;
 				}
-				else letter = pText[--i];
+				else
+					letter = pText[--i];
 			}
 		}
 
@@ -46,14 +47,14 @@ CString encodeSignCode(CString& pText)
 			if (letter != '\r')
 			{
 				// Write the character code directly into the sign.
-				retVal >> (char)86 >> (char)10 >> (char)69;		// #K(
+				retVal >> (char)86 >> (char)10 >> (char)69; // #K(
 				CString scode((int)letter);
 				for (int i = 0; i < scode.length(); ++i)
 				{
 					int c = signText.find(scode[i]);
 					if (scode != -1) retVal.writeGChar((char)c);
 				}
-				retVal >> (char)70;								// )
+				retVal >> (char)70; // )
 			}
 		}
 	}
@@ -69,7 +70,7 @@ CString decodeSignCode(CString pText)
 		unsigned char letter = pText.readGUChar();
 		bool isCode = false;
 		int codeID = -1;
-		for (int j = 0; j < 16; ++j)	// ctab length
+		for (int j = 0; j < 16; ++j) // ctab length
 		{
 			if (letter == ctab[j])
 			{
@@ -82,7 +83,7 @@ CString decodeSignCode(CString pText)
 		if (isCode)
 		{
 			int codeIndex = -1;
-			for (int j = 0; j < 14; ++j)	// ctabindex
+			for (int j = 0; j < 14; ++j) // ctabindex
 			{
 				if (ctabindex[j] == codeID)
 				{
@@ -110,7 +111,7 @@ CString encodeSign(const CString& pSignText)
 }
 
 TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
- : x(pX), y(pY), unformattedText(pSign)
+	: x(pX), y(pY), unformattedText(pSign)
 {
 	if (encoded)
 	{
@@ -121,7 +122,7 @@ TLevelSign::TLevelSign(const int pX, const int pY, const CString& pSign, bool en
 		text = encodeSign(unformattedText);
 }
 
-CString TLevelSign::getSignStr(TPlayer *pPlayer) const
+CString TLevelSign::getSignStr(TPlayer* pPlayer) const
 {
 	CString outText;
 

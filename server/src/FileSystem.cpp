@@ -16,19 +16,19 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef __GNUC__ // rain
-	#include <mutex>
-    #include <condition_variable>
+		#include <mutex>
+		#include <condition_variable>
 	#endif
 #endif
 
 CFileSystem::CFileSystem()
-: server(nullptr)
+	: server(nullptr)
 {
 	m_preventChange = new std::recursive_mutex();
 }
 
 CFileSystem::CFileSystem(TServer* pServer)
-: server(pServer)
+	: server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();
 }
@@ -63,7 +63,7 @@ void CFileSystem::addDir(const CString& dir, const CString& wildcard, bool force
 
 	// Add the directory to the directory list.
 	CString ndir = server->getServerPath() << newDir << wildcard;
-	if ( vecSearch<CString>(directoryList, ndir) != -1)	// Already exists?  Resync.
+	if (vecSearch<CString>(directoryList, ndir) != -1) // Already exists?  Resync.
 		resync();
 	else
 	{
@@ -114,7 +114,7 @@ void CFileSystem::resync()
 	fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
-	for (const auto & directory : directoryList)
+	for (const auto& directory: directoryList)
 		loadAllDirectories(directory, server->getSettings().getBool("nofoldersconfig", false));
 }
 
@@ -123,16 +123,16 @@ CString CFileSystem::find(const CString& file) const
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
 	auto fileIter = fileList.find(file);
-	if ( fileIter == fileList.end()) return {};
-	return {fileIter->second};
+	if (fileIter == fileList.end()) return {};
+	return { fileIter->second };
 }
 
 CString CFileSystem::findi(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto & fileIter : fileList)
-		if (fileIter.first.comparei(file)) return {fileIter.second};
+	for (const auto& fileIter: fileList)
+		if (fileIter.first.comparei(file)) return { fileIter.second };
 	return {};
 }
 
@@ -140,8 +140,8 @@ CString CFileSystem::fileExistsAs(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto & fileIter : fileList)
-		if (fileIter.first.comparei(file)) return {fileIter.first};
+	for (const auto& fileIter: fileList)
+		if (fileIter.first.comparei(file)) return { fileIter.first };
 	return {};
 }
 
@@ -169,10 +169,11 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 			else
 			{
 				// Grab the file name.
-				CString file((char *)filedata.cFileName);
+				CString file((char*)filedata.cFileName);
 				fileList[file] = CString(dir) << filedata.cFileName;
 			}
-		} while (FindNextFileA(hFind, &filedata));
+		}
+		while (FindNextFileA(hFind, &filedata));
 	}
 	FindClose(hFind);
 }
@@ -181,9 +182,11 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
 	CString path = CString() << directory.remove(directory.findl(fSep)) << fSep;
 	CString wildcard = directory.subString(directory.findl(fSep) + 1);
-	DIR *dir;
-	struct stat statx{};
-	struct dirent *ent;
+	DIR* dir;
+	struct stat statx
+	{
+	};
+	struct dirent* ent;
 
 	// Try to open the directory.
 	if ((dir = opendir(path.text())) == nullptr)
@@ -208,7 +211,8 @@ void CFileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				continue;
 			}
 		}
-		else continue;
+		else
+			continue;
 
 		// Grab the file name.
 		CString file(ent->d_name);
@@ -242,7 +246,9 @@ time_t CFileSystem::getModTime(const CString& file) const
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
 
-	struct stat fileStat{};
+	struct stat fileStat
+	{
+	};
 	if (stat(fileName.text(), &fileStat) != -1)
 		return (time_t)fileStat.st_mtime;
 	return 0;
@@ -257,7 +263,9 @@ bool CFileSystem::setModTime(const CString& file, time_t modTime) const
 	if (fileName.length() == 0) return false;
 
 	// Set the times.
-	struct utimbuf ut{};
+	struct utimbuf ut
+	{
+	};
 	ut.actime = modTime;
 	ut.modtime = modTime;
 
@@ -273,22 +281,25 @@ int CFileSystem::getFileSize(const CString& file) const
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
 
-	struct stat fileStat{};
+	struct stat fileStat
+	{
+	};
 	if (stat(fileName.text(), &fileStat) != -1)
 		return fileStat.st_size;
 	return 0;
 }
 
-CString CFileSystem::getDirByExtension(const std::string &extension) const
+CString CFileSystem::getDirByExtension(const std::string& extension) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& directory : directoryList) {
-		if (getExtension(directory) == extension) {
+	for (const auto& directory: directoryList)
+	{
+		if (getExtension(directory) == extension)
+		{
 			return { getPath(directory) };
 		}
 	}
 
 	return {};
 }
-

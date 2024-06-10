@@ -1,7 +1,7 @@
-#include <filesystem>
-#include "GS2Context.h"
 #include "Animation/GameAni.h"
+#include "GS2Context.h"
 #include "Server.h"
+#include <filesystem>
 
 std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string& name)
 {
@@ -11,14 +11,14 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 	auto filePath = fileSystem->find(name);
 	if (filePath.isEmpty())
 		return std::nullopt;
-	
+
 	// Load the animation file for parsing
 	std::vector<CString> fileData = CString::loadToken(filePath, "\n", true);
 	if (fileData.empty())
 		return std::nullopt;
-	
+
 	TGameAni gameAni(name);
-	
+
 	// Parse the animation
 	for (auto i = fileData.begin(); i != fileData.end(); ++i)
 	{
@@ -26,7 +26,7 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 		std::vector<CString> curLine = i->tokenize();
 		if (curLine.empty())
 			continue;
-		
+
 		if (curLine[0] == "CONTINUOUS")
 		{
 			if (curLine.size() == 1 || strtoint(curLine[1]) != 0)
@@ -69,22 +69,23 @@ std::optional<TGameAni> TGameAni::load(TServer* const server, const std::string&
 		if (i == fileData.end())
 			break;
 	}
-	
+
 	// Attempt to compile the script in GS2
 	if (!gameAni._script.empty())
 	{
 		// Synchronous callback
-		server->compileGS2Script(gameAni._script, [&gameAni](const CompilerResponse &response)
-		{
-			if (response.success)
-			{
-				gameAni._bytecode.clear(response.bytecode.length());
-				gameAni._bytecode.write((const char *)response.bytecode.buffer(), response.bytecode.length());
-			}
-			else gameAni._bytecode.clear();
-		});
+		server->compileGS2Script(gameAni._script, [&gameAni](const CompilerResponse& response)
+								 {
+									 if (response.success)
+									 {
+										 gameAni._bytecode.clear(response.bytecode.length());
+										 gameAni._bytecode.write((const char*)response.bytecode.buffer(), response.bytecode.length());
+									 }
+									 else
+										 gameAni._bytecode.clear();
+								 });
 	}
-	
+
 	return gameAni;
 }
 
