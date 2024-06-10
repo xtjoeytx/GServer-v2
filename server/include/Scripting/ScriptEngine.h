@@ -32,28 +32,28 @@ public:
 	ScriptEngine(Server* server);
 	~ScriptEngine();
 
-	bool Initialize();
-	void Cleanup(bool shutDown = false);
-	void RunScripts(const std::chrono::high_resolution_clock::time_point& time);
+	bool initialize();
+	void cleanup(bool shutDown = false);
+	void runScripts(const std::chrono::high_resolution_clock::time_point& time);
 
-	void ScriptWatcher();
-	void StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
-	bool StopScriptExecution();
+	void scriptWatcher();
+	void startScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
+	bool stopScriptExecution();
 
 	Server* getServer() const;
 	IScriptEnv* getScriptEnv() const;
 	IScriptObject<Server>* getServerObject() const;
 
-	bool ExecuteNpc(NPC* npc);
-	bool ExecuteWeapon(Weapon* weapon);
+	bool executeNpc(NPC* npc);
+	bool executeWeapon(Weapon* weapon);
 
-	void RegisterNpcTimer(NPC* npc);
-	void RegisterNpcUpdate(NPC* npc);
-	void RegisterWeaponUpdate(Weapon* weapon);
+	void registerNpcTimer(NPC* npc);
+	void registerNpcUpdate(NPC* npc);
+	void registerWeaponUpdate(Weapon* weapon);
 
-	void UnregisterNpcTimer(NPC* npc);
-	void UnregisterNpcUpdate(NPC* npc);
-	void UnregisterWeaponUpdate(Weapon* weapon);
+	void unregisterNpcTimer(NPC* npc);
+	void unregisterNpcUpdate(NPC* npc);
+	void unregisterWeaponUpdate(Weapon* weapon);
 
 	// callbacks
 	IScriptFunction* getCallBack(const std::string& callback) const;
@@ -61,20 +61,20 @@ public:
 	void setCallBack(const std::string& callback, IScriptFunction* cbFunc);
 
 	// Compile script into a ScriptFunction
-	IScriptFunction* CompileCache(const std::string& code, bool referenceCount = true);
+	IScriptFunction* compileCache(const std::string& code, bool referenceCount = true);
 
 	// Clear cache for code
-	bool ClearCache(const std::string& code);
+	bool clearCache(const std::string& code);
 
 	// Clear cache for code, with a WrapperScript of Type T
 	template<typename T>
-	bool ClearCache(const std::string& code);
+	bool clearCache(const std::string& code);
 
 	template<typename T>
-	bool ClearCache(const std::string_view& code);
+	bool clearCache(const std::string_view& code);
 
 	template<class... Args>
-	ScriptAction CreateAction(const std::string& action, Args... An);
+	ScriptAction createAction(const std::string& action, Args... An);
 
 	template<class T>
 	void wrapScriptObject(T* obj) const;
@@ -111,7 +111,7 @@ private:
 	std::unordered_set<IScriptFunction*> m_deletedCallbacks;
 };
 
-inline void ScriptEngine::StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
+inline void ScriptEngine::startScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
 {
 	{
 		std::lock_guard<std::mutex> guard(m_scriptWatcherLock);
@@ -120,7 +120,7 @@ inline void ScriptEngine::StartScriptExecution(const std::chrono::high_resolutio
 	m_scriptIsRunning.store(true);
 }
 
-inline bool ScriptEngine::StopScriptExecution()
+inline bool ScriptEngine::stopScriptExecution()
 {
 	bool res = m_scriptIsRunning.load();
 	if (res)
@@ -161,34 +161,34 @@ inline const ScriptRunError& ScriptEngine::getScriptError() const
 
 // Register scripts for processing
 
-inline void ScriptEngine::RegisterNpcTimer(NPC* npc)
+inline void ScriptEngine::registerNpcTimer(NPC* npc)
 {
 	m_updateNpcsTimer.insert(npc);
 }
 
-inline void ScriptEngine::RegisterNpcUpdate(NPC* npc)
+inline void ScriptEngine::registerNpcUpdate(NPC* npc)
 {
 	m_updateNpcs.insert(npc);
 }
 
-inline void ScriptEngine::RegisterWeaponUpdate(Weapon* weapon)
+inline void ScriptEngine::registerWeaponUpdate(Weapon* weapon)
 {
 	m_updateWeapons.insert(weapon);
 }
 
 // Unregister scripts from processing
 
-inline void ScriptEngine::UnregisterWeaponUpdate(Weapon* weapon)
+inline void ScriptEngine::unregisterWeaponUpdate(Weapon* weapon)
 {
 	m_updateWeapons.erase(weapon);
 }
 
-inline void ScriptEngine::UnregisterNpcUpdate(NPC* npc)
+inline void ScriptEngine::unregisterNpcUpdate(NPC* npc)
 {
 	m_updateNpcs.erase(npc);
 }
 
-inline void ScriptEngine::UnregisterNpcTimer(NPC* npc)
+inline void ScriptEngine::unregisterNpcTimer(NPC* npc)
 {
 	m_updateNpcsTimer.erase(npc);
 }
@@ -196,7 +196,7 @@ inline void ScriptEngine::UnregisterNpcTimer(NPC* npc)
 //
 
 template<class... Args>
-ScriptAction ScriptEngine::CreateAction(const std::string& action, Args... An)
+ScriptAction ScriptEngine::createAction(const std::string& action, Args... An)
 {
 	constexpr size_t Argc = (sizeof...(Args));
 	assert(Argc > 0);
@@ -213,7 +213,7 @@ ScriptAction ScriptEngine::CreateAction(const std::string& action, Args... An)
 	}
 
 	// Create an arguments object, and pass it to ScriptAction
-	IScriptArguments* args = ScriptFactory::CreateArguments(m_env, std::forward<Args>(An)...);
+	IScriptArguments* args = ScriptFactory::createArguments(m_env, std::forward<Args>(An)...);
 	assert(args);
 
 	return ScriptAction(funcIt->second, args, action);
@@ -225,22 +225,22 @@ inline void ScriptEngine::wrapScriptObject(T* obj) const
 	SCRIPTENV_D("Begin Global::wrapScriptObject()\n");
 
 	// Wrap the object, and set the new script object on the original object
-	auto wrappedObject = ScriptFactory::WrapObject(m_env, ScriptConstructorId<T>::result, obj);
+	auto wrappedObject = ScriptFactory::wrapObject(m_env, ScriptConstructorId<T>::result, obj);
 	obj->setScriptObject(std::move(wrappedObject));
 
 	SCRIPTENV_D("End Global::wrapScriptObject()\n\n");
 }
 
 template<typename T>
-inline bool ScriptEngine::ClearCache(const std::string& code)
+inline bool ScriptEngine::clearCache(const std::string& code)
 {
-	return ClearCache(WrapScript<T>(code));
+	return clearCache(wrapScript<T>(code));
 }
 
 template<typename T>
-inline bool ScriptEngine::ClearCache(const std::string_view& code)
+inline bool ScriptEngine::clearCache(const std::string_view& code)
 {
-	return ClearCache(WrapScript<T>(code));
+	return clearCache(wrapScript<T>(code));
 }
 
 #endif

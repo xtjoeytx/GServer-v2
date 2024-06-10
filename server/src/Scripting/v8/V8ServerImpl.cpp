@@ -142,7 +142,7 @@ void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-	Server* serverObject = UnwrapObject<Server>(args.This());
+	Server* serverObject = unwrapObject<Server>(args.This());
 
 	// Find level from user input
 	if (args[0]->IsString())
@@ -152,7 +152,7 @@ void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 		if (levelObject != nullptr)
 		{
 			V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
-			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+			args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 		}
 	}
 }
@@ -165,7 +165,7 @@ void Server_Function_CreateLevel(const v8::FunctionCallbackInfo<v8::Value>& args
 	V8ENV_THROW_ARGCOUNT(args, isolate, 2);
 
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-	Server* serverObject = UnwrapObject<Server>(args.This());
+	Server* serverObject = unwrapObject<Server>(args.This());
 
 	// Create level from user input
 	if (args[0]->IsInt32() && args[1]->IsString())
@@ -177,7 +177,7 @@ void Server_Function_CreateLevel(const v8::FunctionCallbackInfo<v8::Value>& args
 		if (levelObject != nullptr)
 		{
 			V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
-			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+			args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 		}
 	}
 }
@@ -190,7 +190,7 @@ void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-	Server* serverObject = UnwrapObject<Server>(args.This());
+	Server* serverObject = unwrapObject<Server>(args.This());
 
 	// Find npc object from user input
 	NPCPtr npcObject;
@@ -209,7 +209,7 @@ void Server_Function_FindNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (npcObject != nullptr)
 	{
 		V8ScriptObject<NPC>* v8_wrapped = static_cast<V8ScriptObject<NPC>*>(npcObject->getScriptObject());
-		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -223,7 +223,7 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	// TODO(joey): second parameter could indicticate if it should skip rcs?
 
 	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
-	Server* serverObject = UnwrapObject<Server>(args.This());
+	Server* serverObject = unwrapObject<Server>(args.This());
 
 	// Find player object from user input
 	PlayerPtr playerObject;
@@ -242,7 +242,7 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (playerObject != nullptr)
 	{
 		V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(playerObject->getScriptObject());
-		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -379,7 +379,7 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("server.flags");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("server.flags");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -395,7 +395,7 @@ void Server_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
@@ -411,7 +411,7 @@ void Server_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> valu
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get property name
 	v8::Local<v8::String> name = v8::Local<v8::String>::Cast(property);
@@ -427,7 +427,7 @@ void Server_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get flags list
 	auto& flagList = serverObject->getServerFlags();
@@ -447,7 +447,7 @@ void Server_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get npcs list
 	auto& npcList = serverObject->getNPCList();
@@ -458,7 +458,7 @@ void Server_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	for (auto it = npcList.begin(); it != npcList.end(); ++it)
 	{
 		V8ScriptObject<NPC>* v8_wrapped = static_cast<V8ScriptObject<NPC>*>(it->second->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	info.GetReturnValue().Set(result);
@@ -470,7 +470,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get npcs list
 	auto& playerList = serverObject->getPlayerList();
@@ -485,7 +485,7 @@ void Server_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallb
 			continue;
 
 		V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(pl->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	info.GetReturnValue().Set(result);
@@ -497,7 +497,7 @@ void Server_GetArray_Serverlist(v8::Local<v8::String> prop, const v8::PropertyCa
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
-	Server* serverObject = UnwrapObject<Server>(self);
+	Server* serverObject = unwrapObject<Server>(self);
 
 	// Get npcs list
 	auto& listserver = serverObject->getServerList();
@@ -518,7 +518,7 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -560,10 +560,10 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 	server_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 		Server_Flags_Getter, Server_Flags_Setter, nullptr, nullptr, Server_Flags_Enumerator, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kOnlyInterceptStrings));
-	env->SetConstructor("server.flags", server_flags_ctor);
+	env->setConstructor("server.flags", server_flags_ctor);
 
 	// Persist the constructor
-	env->SetConstructor("server", server_ctor);
+	env->setConstructor("server", server_ctor);
 }
 
 #endif

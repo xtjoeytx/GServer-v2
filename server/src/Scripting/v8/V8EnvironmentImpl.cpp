@@ -18,7 +18,7 @@ void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::Property
 	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
-	info.GetReturnValue().Set(env->Global());
+	info.GetReturnValue().Set(env->global());
 }
 
 void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -33,7 +33,7 @@ void Environment_ReportException(const v8::FunctionCallbackInfo<v8::Value>& args
 	if (args[0]->IsString())
 	{
 		// Unwrap Object
-		Server* serverObject = UnwrapObject<Server>(args.This());
+		Server* serverObject = unwrapObject<Server>(args.This());
 
 		// Report exception to server
 		std::string message = *v8::String::Utf8Value(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
@@ -92,7 +92,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
 		{
-			NPC* npcObject = UnwrapObject<NPC>(obj);
+			NPC* npcObject = unwrapObject<NPC>(obj);
 			npcObject->setScriptEvents(args[1]->Int32Value(context).ToChecked());
 		}
 	}
@@ -104,7 +104,7 @@ void bindClass_Environment(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -127,7 +127,7 @@ void bindClass_Environment(ScriptEngine* scriptEngine)
 	environment_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setNpcEvents"), v8::FunctionTemplate::New(isolate, Environment_SetNpcEvents, engine_ref));
 
 	// Persist the constructor
-	env->SetConstructor("environment", environment_ctor);
+	env->setConstructor("environment", environment_ctor);
 }
 
 #endif

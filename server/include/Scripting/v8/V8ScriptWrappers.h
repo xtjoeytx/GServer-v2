@@ -61,20 +61,20 @@ inline std::string getPublicFunctions(const std::string_view& code)
 }
 
 template<typename T>
-inline std::string WrapScript(const std::string& code)
+inline std::string wrapScript(const std::string& code)
 {
 	return code;
 }
 
 template<typename T>
-inline std::string WrapScript(const std::string_view& code)
+inline std::string wrapScript(const std::string_view& code)
 {
 	return code.data();
 }
 
 class NPC;
 template<>
-inline std::string WrapScript<NPC>(const std::string_view& code)
+inline std::string wrapScript<NPC>(const std::string_view& code)
 {
 	// self.onCreated || onCreated, for first declared to take precedence
 	// if (onCreated) for latest function to override
@@ -105,7 +105,7 @@ inline std::string WrapScript<NPC>(const std::string_view& code)
 
 class Player;
 template<>
-inline std::string WrapScript<Player>(const std::string_view& code)
+inline std::string wrapScript<Player>(const std::string_view& code)
 {
 	static const char* prefixString = "(function(player) {"
 									  "const self = player;\n";
@@ -123,7 +123,7 @@ inline std::string WrapScript<Player>(const std::string_view& code)
 
 class Weapon;
 template<>
-inline std::string WrapScript<Weapon>(const std::string_view& code)
+inline std::string wrapScript<Weapon>(const std::string_view& code)
 {
 	static const char* prefixString = "(function(weapon) {"
 									  "var onCreated, onActionServerSide;"

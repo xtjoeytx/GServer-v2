@@ -182,7 +182,7 @@ void NPC::setScriptCode(std::string pScript)
 
 #ifdef V8NPCSERVER
 	// Compile and execute the script.
-	bool executed = m_server->getScriptEngine()->ExecuteNpc(this);
+	bool executed = m_server->getScriptEngine()->executeNpc(this);
 	if (executed)
 	{
 		SCRIPTENV_D("SCRIPT COMPILED\n");
@@ -927,16 +927,16 @@ void NPC::freeScriptResources()
 
 	// Clear cached script
 	if (!m_npcScript.getServerSide().empty())
-		scriptEngine->ClearCache<NPC>(m_npcScript.getServerSide());
+		scriptEngine->clearCache<NPC>(m_npcScript.getServerSide());
 
 	// Reset script execution
 	m_scriptExecutionContext.resetExecution();
 
 	// Clear any queued actions
-	scriptEngine->UnregisterNpcUpdate(this);
+	scriptEngine->unregisterNpcUpdate(this);
 
 	// Clear timeouts & scheduled events
-	scriptEngine->UnregisterNpcTimer(this);
+	scriptEngine->unregisterNpcTimer(this);
 	m_scriptTimers.clear();
 	m_timeout = 0;
 
@@ -979,14 +979,14 @@ void NPC::queueNpcTrigger(const std::string& action, Player* player, const std::
 
 	if (playerObject)
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
+		m_scriptExecutionContext.addAction(scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
 	}
 	else
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->CreateAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
+		m_scriptExecutionContext.addAction(scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
 	}
 
-	scriptEngine->RegisterNpcUpdate(this);
+	scriptEngine->registerNpcUpdate(this);
 }
 
 ScriptClass* NPC::joinClass(const std::string& className)
@@ -1047,9 +1047,9 @@ void NPC::setTimeout(int newTimeout)
 	m_timeout = newTimeout;
 
 	if (hasTimerUpdates())
-		m_server->getScriptEngine()->RegisterNpcTimer(this);
+		m_server->getScriptEngine()->registerNpcTimer(this);
 	else
-		m_server->getScriptEngine()->UnregisterNpcTimer(this);
+		m_server->getScriptEngine()->unregisterNpcTimer(this);
 }
 
 void NPC::queueNpcAction(const std::string& action, Player* player, bool registerAction)
@@ -1064,15 +1064,15 @@ void NPC::queueNpcAction(const std::string& action, Player* player, bool registe
 
 	if (playerObject)
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject(), playerObject));
+		m_scriptExecutionContext.addAction(scriptEngine->createAction(action, getScriptObject(), playerObject));
 	}
 	else
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->CreateAction(action, getScriptObject()));
+		m_scriptExecutionContext.addAction(scriptEngine->createAction(action, getScriptObject()));
 	}
 
 	if (registerAction)
-		scriptEngine->RegisterNpcUpdate(this);
+		scriptEngine->registerNpcUpdate(this);
 }
 
 bool NPC::runScriptTimer()
@@ -1105,7 +1105,7 @@ bool NPC::runScriptTimer()
 
 	// Register for npc updates
 	if (queued)
-		m_server->getScriptEngine()->RegisterNpcUpdate(this);
+		m_server->getScriptEngine()->registerNpcUpdate(this);
 
 	// return value dictates if this gets unregistered from timer updates
 	return hasTimerUpdates();

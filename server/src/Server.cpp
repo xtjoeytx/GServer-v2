@@ -108,7 +108,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 {
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
-	if (!m_scriptEngine.Initialize())
+	if (!m_scriptEngine.initialize())
 	{
 		m_serverLog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
 		// TODO(joey): new error number? log is probably enough
@@ -286,7 +286,7 @@ void Server::cleanup()
 #ifdef UPNP
 	if (m_upnpThread.joinable())
 		m_upnpThread.join();
-	m_upnp.remove_all_forwarded_ports();
+	m_upnremoveAllForwardedPortsts();
 #endif
 
 	// Save translations.
@@ -327,7 +327,7 @@ void Server::cleanup()
 
 #ifdef V8NPCSERVER
 	// Clean up the script engine
-	m_scriptEngine.Cleanup();
+	m_scriptEngine.cleanup();
 #endif
 
 	m_playerSock.disconnect();
@@ -351,7 +351,7 @@ bool Server::doMain()
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
 #ifdef V8NPCSERVER
-	m_scriptEngine.RunScripts(currentTimer);
+	m_scriptEngine.runScripts(currentTimer);
 
 	// enable when we switch to async compiling
 	//m_gs2ScriptManager.runQueue();
@@ -1239,8 +1239,8 @@ void Server::handlePM(Player* player, const CString& message)
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
 	//m_pmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	m_pmHandlerNpc->getExecutionContext().addAction(m_scriptEngine.CreateAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
-	m_scriptEngine.RegisterNpcUpdate(m_pmHandlerNpc.get());
+	m_pmHandlerNpc->getExecutionContext().addAction(m_scriptEngine.createAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
+	m_scriptEngine.registerNpcUpdate(m_pmHandlerNpc.get());
 }
 
 void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)

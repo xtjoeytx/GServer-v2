@@ -22,7 +22,7 @@ public:
 		assert(m_referenceCount == 0);
 	}
 
-	T* Object() const
+	T* object() const
 	{
 		return m_object;
 	}

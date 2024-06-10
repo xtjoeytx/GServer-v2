@@ -31,10 +31,10 @@ ScriptEngine::ScriptEngine(Server* server)
 
 ScriptEngine::~ScriptEngine()
 {
-	this->Cleanup();
+	this->cleanup();
 }
 
-bool ScriptEngine::Initialize()
+bool ScriptEngine::initialize()
 {
 	if (m_env)
 		return true;
@@ -47,9 +47,9 @@ bool ScriptEngine::Initialize()
 
 	// TODO(joey): Clean this the fuck up
 	m_env = new V8ScriptEnv();
-	m_env->Initialize();
+	m_env->initialize();
 
-	m_env->CallFunctionInScope([&]() -> void
+	m_env->callFunctionInScope([&]() -> void
 							   {
 								   ScriptEngine* engine = this;
 
@@ -69,28 +69,28 @@ bool ScriptEngine::Initialize()
 							   });
 
 	// Create a new context (occurs on initial compile)
-	m_bootstrapFunction = m_env->Compile("bootstrap", bootstrapScript.text());
+	m_bootstrapFunction = m_env->compile("bootstrap", bootstrapScript.text());
 	assert(m_bootstrapFunction);
 
 	// Bind the server into two separate objects
-	m_environmentObject = ScriptFactory::WrapObject(m_env, "environment", m_server);
-	m_serverObject = ScriptFactory::WrapObject(m_env, "server", m_server);
+	m_environmentObject = ScriptFactory::wrapObject(m_env, "environment", m_server);
+	m_serverObject = ScriptFactory::wrapObject(m_env, "server", m_server);
 
 	// Execute the bootstrap function
-	m_env->CallFunctionInScope([&]() -> void
+	m_env->callFunctionInScope([&]() -> void
 							   {
-								   IScriptArguments* args = ScriptFactory::CreateArguments(m_env, m_environmentObject.get());
-								   args->Invoke(m_bootstrapFunction);
+								   IScriptArguments* args = ScriptFactory::createArguments(m_env, m_environmentObject.get());
+								   args->invoke(m_bootstrapFunction);
 								   delete args;
 							   });
 
 	m_scriptWatcherRunning.store(true);
-	m_scriptWatcherThread = std::thread(&ScriptEngine::ScriptWatcher, this);
+	m_scriptWatcherThread = std::thread(&ScriptEngine::scriptWatcher, this);
 
 	return true;
 }
 
-void ScriptEngine::ScriptWatcher()
+void ScriptEngine::scriptWatcher()
 {
 	const std::chrono::milliseconds sleepTime(50);
 
@@ -107,7 +107,7 @@ void ScriptEngine::ScriptWatcher()
 
 			if (time_diff.count() >= 500)
 			{
-				m_env->TerminateExecution();
+				m_env->terminateExecution();
 				m_scriptIsRunning.store(false);
 				//printf("Killed execution for running too long!\n");
 			}
@@ -119,7 +119,7 @@ void ScriptEngine::ScriptWatcher()
 	}
 }
 
-void ScriptEngine::Cleanup(bool shutDown)
+void ScriptEngine::cleanup(bool shutDown)
 {
 	if (!m_env)
 	{
@@ -169,14 +169,14 @@ void ScriptEngine::Cleanup(bool shutDown)
 	}
 
 	// Cleanup the Script Environment
-	m_env->Cleanup(shutDown);
+	m_env->cleanup(shutDown);
 
 	// Destroy the environment
 	delete m_env;
 	m_env = nullptr;
 }
 
-IScriptFunction* ScriptEngine::CompileCache(const std::string& code, bool referenceCount)
+IScriptFunction* ScriptEngine::compileCache(const std::string& code, bool referenceCount)
 {
 	// TODO(joey): Temporary naming conventions, maybe pass an optional reference to an object which holds info for the compiler (name, ignore wrap code based off spaces/lines, and execution results?)
 	static int SCRIPT_ID = 1;
@@ -192,7 +192,7 @@ IScriptFunction* ScriptEngine::CompileCache(const std::string& code, bool refere
 	// Compile script, send errors to server
 	SCRIPTENV_D("Compiling script:\n---\n%s\n---\n", code.c_str());
 
-	IScriptFunction* compiledScript = m_env->Compile(std::to_string(SCRIPT_ID++), code);
+	IScriptFunction* compiledScript = m_env->compile(std::to_string(SCRIPT_ID++), code);
 	if (compiledScript == nullptr)
 	{
 		reportScriptException(m_env->getScriptError());
@@ -209,7 +209,7 @@ IScriptFunction* ScriptEngine::CompileCache(const std::string& code, bool refere
 	return compiledScript;
 }
 
-bool ScriptEngine::ClearCache(const std::string& code)
+bool ScriptEngine::clearCache(const std::string& code)
 {
 	auto scriptFunctionIter = m_cachedScripts.find(code);
 	if (scriptFunctionIter == m_cachedScripts.end())
@@ -228,7 +228,7 @@ bool ScriptEngine::ClearCache(const std::string& code)
 
 	#include "Level.h"
 
-bool ScriptEngine::ExecuteNpc(NPC* npc)
+bool ScriptEngine::executeNpc(NPC* npc)
 {
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
@@ -241,10 +241,10 @@ bool ScriptEngine::ExecuteNpc(NPC* npc)
 		return false;
 
 	// Wrap user code in a function-object, returning some useful symbols to call for events
-	std::string codeStr = WrapScript<NPC>(npcScript);
+	std::string codeStr = wrapScript<NPC>(npcScript);
 
 	// Search the cache, or compile the script
-	IScriptFunction* compiledScript = CompileCache(codeStr);
+	IScriptFunction* compiledScript = compileCache(codeStr);
 
 	// Script failed to compile
 	if (compiledScript == nullptr)
@@ -253,10 +253,10 @@ bool ScriptEngine::ExecuteNpc(NPC* npc)
 	//
 	// Execute the compiled script
 	//
-	m_env->CallFunctionInScope([&]() -> void
+	m_env->callFunctionInScope([&]() -> void
 							   {
-								   IScriptArguments* args = ScriptFactory::CreateArguments(m_env, npc->getScriptObject());
-								   bool result = args->Invoke(compiledScript, true);
+								   IScriptArguments* args = ScriptFactory::createArguments(m_env, npc->getScriptObject());
+								   bool result = args->invoke(compiledScript, true);
 								   if (!result)
 								   {
 									   auto level = npc->getLevel();
@@ -288,7 +288,7 @@ bool ScriptEngine::ExecuteNpc(NPC* npc)
 	return true;
 }
 
-bool ScriptEngine::ExecuteWeapon(Weapon* weapon)
+bool ScriptEngine::executeWeapon(Weapon* weapon)
 {
 	SCRIPTENV_D("Begin Global::ExecuteWeapon()\n\n");
 
@@ -299,10 +299,10 @@ bool ScriptEngine::ExecuteWeapon(Weapon* weapon)
 	if (!weaponScript.empty())
 	{
 		// Wrap user code in a function-object, returning some useful symbols to call for events
-		std::string codeStr = WrapScript<Weapon>(weaponScript);
+		std::string codeStr = wrapScript<Weapon>(weaponScript);
 
 		// Search the cache, or compile the script
-		IScriptFunction* compiledScript = CompileCache(codeStr);
+		IScriptFunction* compiledScript = compileCache(codeStr);
 
 		// Script failed to compile
 		if (compiledScript == nullptr)
@@ -311,10 +311,10 @@ bool ScriptEngine::ExecuteWeapon(Weapon* weapon)
 		//
 		// Execute the compiled script
 		//
-		m_env->CallFunctionInScope([&]() -> void
+		m_env->callFunctionInScope([&]() -> void
 								   {
-									   IScriptArguments* args = ScriptFactory::CreateArguments(m_env, weapon->getScriptObject());
-									   bool result = args->Invoke(compiledScript, true);
+									   IScriptArguments* args = ScriptFactory::createArguments(m_env, weapon->getScriptObject());
+									   bool result = args->invoke(compiledScript, true);
 									   if (!result)
 										   reportScriptException(m_env->getScriptError());
 
@@ -351,13 +351,13 @@ void ScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_poin
 	}
 }
 
-void ScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
+void ScriptEngine::runScripts(const std::chrono::high_resolution_clock::time_point& time)
 {
 	runTimers(time);
 
 	if (!m_updateNpcs.empty() || !m_updateWeapons.empty())
 	{
-		m_env->CallFunctionInScope([&]() -> void
+		m_env->callFunctionInScope([&]() -> void
 								   {
 									   std::map<int, NPC*> deleteNpcs;
 

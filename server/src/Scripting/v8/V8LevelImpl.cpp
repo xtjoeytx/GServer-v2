@@ -69,7 +69,7 @@ void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.signs");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("level.signs");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -96,7 +96,7 @@ void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(sign->getScriptObject());
 
-	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
 void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -202,7 +202,7 @@ void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 	for (auto& sign: levelSigns)
 	{
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(sign->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	new_instance->SetInternalField(1, result);
@@ -235,7 +235,7 @@ void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args
 		auto newSign = levelObject->addSign(levelX, levelY, signText);
 
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(newSign->getScriptObject());
-		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -286,7 +286,7 @@ void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallba
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.chests");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("level.chests");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -313,7 +313,7 @@ void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(chest->getScriptObject());
 
-	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
 void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -419,7 +419,7 @@ void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 	for (auto& chest: levelChests)
 	{
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelChest>*>(chest->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	new_instance->SetInternalField(1, result);
@@ -453,7 +453,7 @@ void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& arg
 		auto newChest = levelObject->addChest(levelX, levelY, levelItemType, signId);
 
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelChest>*>(newChest->getScriptObject());
-		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -504,7 +504,7 @@ void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.npcs");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("level.npcs");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -535,7 +535,7 @@ void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 		auto npc = server->getNPC(npcId);
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
 
-		info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -644,7 +644,7 @@ void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 	{
 		auto npc = server->getNPC(npcId);
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	new_instance->SetInternalField(1, result);
@@ -689,7 +689,7 @@ void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 			levelObject->addNPC(npc);
 
 			auto* v8_wrapped = dynamic_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
-			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+			args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 		}
 	}
 }
@@ -747,7 +747,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 		{
 			auto player = server->getPlayer(*it);
 			V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(player->getScriptObject());
-			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+			result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 		}
 	}
 
@@ -776,7 +776,7 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.tiles");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("level.tiles");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -851,7 +851,7 @@ void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.links");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("level.links");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -883,7 +883,7 @@ void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelLink>*>(link->getScriptObject());
 
-	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
 void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -989,7 +989,7 @@ void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 	for (auto& link: levelLinks)
 	{
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelLink>*>(link->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	new_instance->SetInternalField(1, result);
@@ -1033,7 +1033,7 @@ void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args
 		newLevelLink->setNewY(newY);
 
 		auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelLink>*>(newLevelLink->getScriptObject());
-		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 	}
 }
 
@@ -1116,7 +1116,7 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 	for (auto npc: npcList)
 	{
 		V8ScriptObject<NPC>* v8_wrapped = static_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
-		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+		result->Set(context, idx++, v8_wrapped->handle(isolate)).Check();
 	}
 
 	args.GetReturnValue().Set(result);
@@ -1176,7 +1176,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
 			object->Set(context, key_distance, v8::Number::New(isolate, it.first)).Check();
-			object->Set(context, key_player, v8_wrapped->Handle(isolate)).Check();
+			object->Set(context, key_player, v8_wrapped->handle(isolate)).Check();
 			result->Set(context, idx++, object).Check();
 		}
 
@@ -1297,7 +1297,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 			levelObject->addNPC(npc);
 
 			V8ScriptObject<NPC>* v8_wrapped = static_cast<V8ScriptObject<NPC>*>(npc->getScriptObject());
-			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+			args.GetReturnValue().Set(v8_wrapped->handle(isolate));
 		}
 	}
 }
@@ -1378,7 +1378,7 @@ void Setup_LevelTiles(V8ScriptEnv* env, v8::Isolate* isolate)
 			nullptr,
 			v8::Local<v8::Value>(),
 			v8::PropertyHandlerFlags::kNone));
-	env->SetConstructor("level.tiles", level_tiles_ctor);
+	env->setConstructor("level.tiles", level_tiles_ctor);
 }
 
 void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
@@ -1407,7 +1407,7 @@ void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	level_links_iterator->SetCallHandler(Level_Link_Iterator);
 	level_links_proto->Set(v8::Symbol::GetIterator(isolate), level_links_iterator);
 
-	env->SetConstructor("level.links", level_links_ctor);
+	env->setConstructor("level.links", level_links_ctor);
 }
 
 void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
@@ -1436,7 +1436,7 @@ void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	level_signs_iterator->SetCallHandler(Level_Sign_Iterator);
 	level_signs_proto->Set(v8::Symbol::GetIterator(isolate), level_signs_iterator);
 
-	env->SetConstructor("level.signs", level_signs_ctor);
+	env->setConstructor("level.signs", level_signs_ctor);
 }
 
 void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
@@ -1465,7 +1465,7 @@ void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Ext
 	level_chests_iterator->SetCallHandler(Level_Chest_Iterator);
 	level_chests_proto->Set(v8::Symbol::GetIterator(isolate), level_chests_iterator);
 
-	env->SetConstructor("level.chests", level_chests_ctor);
+	env->setConstructor("level.chests", level_chests_ctor);
 }
 
 void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
@@ -1494,14 +1494,14 @@ void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exter
 	level_npcs_iterator->SetCallHandler(Level_Npc_Iterator);
 	level_npcs_proto->Set(v8::Symbol::GetIterator(isolate), level_npcs_iterator);
 
-	env->SetConstructor("level.npcs", level_npcs_ctor);
+	env->setConstructor("level.npcs", level_npcs_ctor);
 }
 
 void bindClass_Level(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -1546,7 +1546,7 @@ void bindClass_Level(ScriptEngine* scriptEngine)
 	Setup_LevelNpcs(env, isolate, engine_ref);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<Level>::result, level_ctor);
+	env->setConstructor(ScriptConstructorId<Level>::result, level_ctor);
 }
 
 #endif

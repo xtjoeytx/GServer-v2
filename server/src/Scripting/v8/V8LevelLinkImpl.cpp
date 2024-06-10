@@ -141,7 +141,7 @@ void bindClass_LevelLink(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -168,7 +168,7 @@ void bindClass_LevelLink(ScriptEngine* scriptEngine)
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newy"), Link_GetStr_NewY, Link_SetStr_NewY);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<LevelLink>::result, link_ctor);
+	env->setConstructor(ScriptConstructorId<LevelLink>::result, link_ctor);
 }
 
 #endif

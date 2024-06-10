@@ -34,20 +34,20 @@ void Global_GetObject_Server(v8::Local<v8::String> prop, const v8::PropertyCallb
 	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 	V8ScriptObject<Server>* v8_serverObject = static_cast<V8ScriptObject<Server>*>(scriptEngine->getServerObject());
-	info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
+	info.GetReturnValue().Set(v8_serverObject->handle(info.GetIsolate()));
 }
 
 void bindGlobalFunctions(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Fetch global template
-	v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
+	v8::Local<v8::ObjectTemplate> global = env->globalTemplate();
 
 	// Global functions
 	global->Set(v8::String::NewFromUtf8Literal(isolate, "print"), v8::FunctionTemplate::New(isolate, Global_Function_Print));

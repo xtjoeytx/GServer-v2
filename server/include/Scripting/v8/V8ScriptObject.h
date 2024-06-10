@@ -21,14 +21,14 @@ public:
 		// clear handle for children
 		for (auto it = m_children.begin(); it != m_children.end(); ++it)
 		{
-			v8::Local<v8::Object> child = GlobalPersistentToLocal(m_isolate, it->second);
+			v8::Local<v8::Object> child = globalPersistentToLocal(m_isolate, it->second);
 
 			child->SetAlignedPointerInInternalField(0, nullptr);
 			it->second.Reset();
 		}
 
 		// clear handle
-		v8::Local<v8::Object> obj = Handle(m_isolate);
+		v8::Local<v8::Object> obj = handle(m_isolate);
 		obj->SetAlignedPointerInInternalField(0, nullptr);
 		m_handle.Reset();
 	}
@@ -47,7 +47,7 @@ public:
 		auto it = m_children.find(prop);
 		if (it != m_children.end())
 		{
-			v8::Local<v8::Object> child = GlobalPersistentToLocal(m_isolate, it->second);
+			v8::Local<v8::Object> child = globalPersistentToLocal(m_isolate, it->second);
 			child->SetAlignedPointerInInternalField(0, nullptr);
 			it->second.Reset();
 
@@ -55,28 +55,28 @@ public:
 		}
 	}
 
-	v8::Local<v8::Object> Handle(v8::Isolate* isolate) const
+	v8::Local<v8::Object> handle(v8::Isolate* isolate) const
 	{
-		return PersistentToLocal(isolate, m_handle);
+		return persistentToLocal(isolate, m_handle);
 	}
 
-	v8::Persistent<v8::Object>& Persistent()
+	v8::Persistent<v8::Object>& persistent()
 	{
 		return m_handle;
 	}
 
 	// TODO(joey): This is not implemented just yet. Protect / Unprotect objects from being garbage collected.
 	// May not be used because as of now there is no objects you can create in script so..
-	//inline void Protect() {
+	//inline void protect() {
 	//	m_object.ClearWeak();
 	//}
 
-	//inline void Unprotect() {
+	//inline void unprotect() {
 	//	m_object.SetWeak(this, _V8WeakObjectCallback, v8::WeakCallbackType::kParameter);
 	//	m_object.MarkIndependent();
 	//}
 
-	//inline static void _V8WeakObjectCallback(const v8::WeakCallbackInfo<BaseObject>& data) {
+	//inline static void v8WeakObjectCallback(const v8::WeakCallbackInfo<BaseObject>& data) {
 	//}
 
 private:

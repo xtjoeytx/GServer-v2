@@ -63,7 +63,7 @@ void UPNP::discover()
 	}
 }
 
-void UPNP::add_port_forward(const CString& addr, const CString& port)
+void UPNP::addPortForward(const CString& addr, const CString& port)
 {
 	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;
@@ -97,7 +97,7 @@ void UPNP::add_port_forward(const CString& addr, const CString& port)
 	}
 }
 
-void UPNP::remove_port_forward(const CString& port)
+void UPNP::removePortForward(const CString& port)
 {
 	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;

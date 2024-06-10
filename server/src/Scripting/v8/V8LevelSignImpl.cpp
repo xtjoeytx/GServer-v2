@@ -71,7 +71,7 @@ void bindClass_LevelSign(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -94,7 +94,7 @@ void bindClass_LevelSign(ScriptEngine* scriptEngine)
 	sign_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Sign_GetNum_Y, Sign_SetNum_Y);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<LevelSign>::result, sign_ctor);
+	env->setConstructor(ScriptConstructorId<LevelSign>::result, sign_ctor);
 }
 
 #endif

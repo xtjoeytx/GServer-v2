@@ -315,7 +315,7 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 	if (levelObject != nullptr)
 	{
 		V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
-		info.GetReturnValue().Set(v8_wrapped->Handle(info.GetIsolate()));
+		info.GetReturnValue().Set(v8_wrapped->handle(info.GetIsolate()));
 		return;
 	}
 
@@ -570,7 +570,7 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.attr");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("player.attr");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -653,7 +653,7 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.colors");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("player.colors");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -739,7 +739,7 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
-	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("player.flags");
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->getConstructor("player.flags");
 	assert(!ctor_tpl.IsEmpty());
 
 	// Create new instance
@@ -1118,7 +1118,7 @@ void Player_Function_Attached(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
 		{
-			NPC* npcObject = UnwrapObject<NPC>(obj);
+			NPC* npcObject = unwrapObject<NPC>(obj);
 			if (npcObject)
 				npcId = npcObject->getId();
 		}
@@ -1159,7 +1159,7 @@ void Player_Function_AttachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
 		if (npcConstructor == "npc")
 		{
-			NPC* npcObject = UnwrapObject<NPC>(obj);
+			NPC* npcObject = unwrapObject<NPC>(obj);
 			if (npcObject)
 				npcId = npcObject->getId();
 		}
@@ -1220,11 +1220,11 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 			auto& classCode = classObj->getSource();
 
 			// Wrap code
-			std::string classCodeWrap = WrapScript<Player>(classCode.getServerSide());
+			std::string classCodeWrap = wrapScript<Player>(classCode.getServerSide());
 
 			// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 			// multiple wrappers.
-			IScriptFunction* function = scriptEngine->CompileCache(classCodeWrap, false);
+			IScriptFunction* function = scriptEngine->compileCache(classCodeWrap, false);
 			if (function != nullptr)
 			{
 				V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(function);
@@ -1233,7 +1233,7 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 				// Execute
 				v8::TryCatch try_catch(isolate);
-				v8::Local<v8::Function> scriptFunction = v8_function->Function();
+				v8::Local<v8::Function> scriptFunction = v8_function->function();
 				v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
 				if (!scriptTableRet.IsEmpty())
 				{
@@ -1302,7 +1302,7 @@ void bindClass_Player(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -1382,7 +1382,7 @@ void bindClass_Player(ScriptEngine* scriptEngine)
 	player_attr_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 		Player_Attr_Getter, Player_Attr_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kNone));
-	env->SetConstructor("player.attr", player_attr_ctor);
+	env->setConstructor("player.attr", player_attr_ctor);
 
 	// Create the player colors template
 	v8::Local<v8::FunctionTemplate> player_colors_ctor = v8::FunctionTemplate::New(isolate);
@@ -1391,7 +1391,7 @@ void bindClass_Player(ScriptEngine* scriptEngine)
 	player_colors_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
 		Player_Colors_Getter, Player_Colors_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kNone));
-	env->SetConstructor("player.colors", player_colors_ctor);
+	env->setConstructor("player.colors", player_colors_ctor);
 
 	// Create the player flags template
 	v8::Local<v8::FunctionTemplate> player_flags_ctor = v8::FunctionTemplate::New(isolate);
@@ -1400,13 +1400,13 @@ void bindClass_Player(ScriptEngine* scriptEngine)
 	player_flags_ctor->InstanceTemplate()->SetHandler(v8::NamedPropertyHandlerConfiguration(
 		Player_Flags_Getter, Player_Flags_Setter, nullptr, nullptr, Player_Flags_Enumerator, v8::Local<v8::Value>(),
 		v8::PropertyHandlerFlags::kHasNoSideEffect));
-	env->SetConstructor("player.flags", player_flags_ctor);
+	env->setConstructor("player.flags", player_flags_ctor);
 
 	// Persist the player constructor
-	env->SetConstructor(ScriptConstructorId<Player>::result, player_ctor);
+	env->setConstructor(ScriptConstructorId<Player>::result, player_ctor);
 
 	// Set the player constructor on the global object
-	//v8::Local<v8::ObjectTemplate> global = env->GlobalTemplate();
+	//v8::Local<v8::ObjectTemplate> global = env->globalTemplate();
 	//global->Set(className, player_ctor);
 }
 

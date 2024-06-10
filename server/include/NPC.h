@@ -651,17 +651,17 @@ template<class... Args>
 inline void NPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	ScriptAction scriptAction = scriptEngine->CreateAction(action, getScriptObject(), std::forward<Args>(An)...);
+	ScriptAction scriptAction = scriptEngine->createAction(action, getScriptObject(), std::forward<Args>(An)...);
 
 	m_scriptExecutionContext.addAction(scriptAction);
 	if (registerAction)
-		scriptEngine->RegisterNpcUpdate(this);
+		scriptEngine->registerNpcUpdate(this);
 }
 
 inline void NPC::registerNpcUpdates()
 {
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	scriptEngine->RegisterNpcUpdate(this);
+	scriptEngine->registerNpcUpdate(this);
 }
 
 inline void NPC::scheduleEvent(unsigned int timeout, ScriptAction& action)

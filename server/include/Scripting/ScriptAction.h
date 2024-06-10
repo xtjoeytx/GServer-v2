@@ -60,11 +60,11 @@ public:
 		}
 	}
 
-	bool Invoke() const
+	bool invoke() const
 	{
 		assert(m_args);
 
-		return m_args->Invoke(m_function, true);
+		return m_args->invoke(m_function, true);
 	}
 
 	const std::string& getAction() const

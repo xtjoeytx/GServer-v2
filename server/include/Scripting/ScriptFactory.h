@@ -40,19 +40,19 @@ struct ScriptFactory
 	*/
 
 	template<typename T, typename... Args>
-	static inline ScriptArguments<Args...>* CreateArguments(T* env, Args&&... An)
+	static inline ScriptArguments<Args...>* createArguments(T* env, Args&&... An)
 	{
 		return nullptr;
 	}
 
 	template<typename... Args>
-	static inline ScriptArguments<Args...>* CreateArguments(IScriptEnv* env, Args&&... An)
+	static inline ScriptArguments<Args...>* createArguments(IScriptEnv* env, Args&&... An)
 	{
-		switch (env->GetType())
+		switch (env->getType())
 		{
 #ifdef SCRIPTSYS_HASV8
 			case 1: // v8
-				return CreateArguments(static_cast<V8ScriptEnv*>(env), std::forward<Args>(An)...);
+				return createArguments(static_cast<V8ScriptEnv*>(env), std::forward<Args>(An)...);
 #endif
 
 			default: // couldn't deduce type
@@ -62,7 +62,7 @@ struct ScriptFactory
 
 #ifdef SCRIPTSYS_HASV8
 	template<typename... Args>
-	static inline ScriptArguments<Args...>* CreateArguments(V8ScriptEnv* env, Args&&... An)
+	static inline ScriptArguments<Args...>* createArguments(V8ScriptEnv* env, Args&&... An)
 	{
 		return new V8ScriptArguments<Args...>(std::forward<Args>(An)...);
 	}
@@ -73,19 +73,19 @@ struct ScriptFactory
 	*/
 
 	template<typename T, typename Cls>
-	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(T* env, const std::string& ctor_name, Cls* obj)
+	static inline std::unique_ptr<IScriptObject<Cls>> wrapObject(T* env, const std::string& ctor_name, Cls* obj)
 	{
 		return {};
 	}
 
 	template<typename Cls>
-	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(IScriptEnv* env, const std::string& ctor_name, Cls* obj)
+	static inline std::unique_ptr<IScriptObject<Cls>> wrapObject(IScriptEnv* env, const std::string& ctor_name, Cls* obj)
 	{
-		switch (env->GetType())
+		switch (env->getType())
 		{
 #ifdef SCRIPTSYS_HASV8
 			case 1: // v8
-				return WrapObject(static_cast<V8ScriptEnv*>(env), ctor_name, obj);
+				return wrapObject(static_cast<V8ScriptEnv*>(env), ctor_name, obj);
 #endif
 
 			default: // couldn't deduce type
@@ -95,9 +95,9 @@ struct ScriptFactory
 
 #ifdef SCRIPTSYS_HASV8
 	template<typename Cls>
-	static inline std::unique_ptr<IScriptObject<Cls>> WrapObject(V8ScriptEnv* env, const std::string& ctor_name, Cls* obj)
+	static inline std::unique_ptr<IScriptObject<Cls>> wrapObject(V8ScriptEnv* env, const std::string& ctor_name, Cls* obj)
 	{
-		return env->Wrap(ctor_name, obj);
+		return env->wrap(ctor_name, obj);
 	}
 #endif
 };

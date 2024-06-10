@@ -14,7 +14,7 @@ public:
 	{
 		assert(env != nullptr);
 		assert(object->IsObject());
-		m_object.Reset(env->Isolate(), object);
+		m_object.Reset(env->isolate(), object);
 	}
 
 	~V8ScriptData()
@@ -22,9 +22,9 @@ public:
 		m_object.Reset();
 	}
 
-	v8::Local<v8::Object> Object() const
+	v8::Local<v8::Object> object() const
 	{
-		return PersistentToLocal(m_env->Isolate(), m_object);
+		return persistentToLocal(m_env->isolate(), m_object);
 	}
 
 private:
@@ -40,7 +40,7 @@ public:
 	{
 		assert(env != nullptr);
 		assert(function->IsFunction());
-		m_function.Reset(env->Isolate(), function);
+		m_function.Reset(env->isolate(), function);
 	}
 
 	virtual ~V8ScriptFunction()
@@ -48,12 +48,12 @@ public:
 		m_function.Reset();
 	}
 
-	inline v8::Local<v8::Function> Function() const
+	inline v8::Local<v8::Function> function() const
 	{
-		return PersistentToLocal(m_env->Isolate(), m_function);
+		return persistentToLocal(m_env->isolate(), m_function);
 	}
 
-	inline V8ScriptEnv* Env() const
+	inline V8ScriptEnv* env() const
 	{
 		return m_env;
 	}

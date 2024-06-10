@@ -117,21 +117,21 @@ inline bool ScriptExecutionContext::runExecution()
 
 	// Send start timer to engine
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-	m_scriptEngine->StartScriptExecution(currentTimer);
+	m_scriptEngine->startScriptExecution(currentTimer);
 
 	// iterate over queued actions
 	SCRIPTENV_D("Running %zd actions:\n", iterateActions.size());
 	for (auto& action: iterateActions)
 	{
 		SCRIPTENV_D("Running action: %s\n", action.getAction().c_str());
-		auto res = action.Invoke();
+		auto res = action.invoke();
 		if (!res)
 		{
 			m_scriptEngine->reportScriptException(m_scriptEngine->getScriptError());
 		}
 	}
 
-	if (!m_scriptEngine->StopScriptExecution())
+	if (!m_scriptEngine->stopScriptExecution())
 	{
 		// TODO(joey): Report to server? What should we do, hm.
 		printf("Oh no we were killed!!\n");

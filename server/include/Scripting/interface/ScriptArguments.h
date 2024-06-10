@@ -11,24 +11,24 @@ class IScriptFunction;
 namespace detail
 {
 	template<typename T>
-	inline void InvalidateBinding(T val)
+	inline void invalidateBinding(T val)
 	{
 	}
 
 	template<typename T>
-	inline void InvalidateBinding(IScriptObject<T>* val)
+	inline void invalidateBinding(IScriptObject<T>* val)
 	{
 		// Decrease reference for wrapped objects
 		val->decreaseReference();
 	}
 
 	template<typename T>
-	inline void ValidateBinding(T val)
+	inline void validateBinding(T val)
 	{
 	}
 
 	template<typename T>
-	inline void ValidateBinding(IScriptObject<T>* val)
+	inline void validateBinding(IScriptObject<T>* val)
 	{
 		// Increase reference for wrapped objects
 		val->increaseReference();
@@ -41,7 +41,7 @@ public:
 	IScriptArguments() = default;
 	virtual ~IScriptArguments() = default;
 
-	virtual bool Invoke(IScriptFunction* func, bool catchExceptions = false) = 0;
+	virtual bool invoke(IScriptFunction* func, bool catchExceptions = false) = 0;
 };
 
 template<typename... Ts>
@@ -52,52 +52,52 @@ public:
 	ScriptArguments(Args&&... An)
 		: IScriptArguments(), m_resolved(false), m_tuple(std::forward<Args>(An)...)
 	{
-		validate_args(std::index_sequence_for<Ts...>{});
+		validateArgs(std::index_sequence_for<Ts...>{});
 	}
 
 	virtual ~ScriptArguments()
 	{
 		if (!m_resolved)
 		{
-			invalidate_args(std::index_sequence_for<Ts...>{});
+			invalidateArgs(std::index_sequence_for<Ts...>{});
 		}
 	}
 
-	virtual bool Invoke(IScriptFunction* func, bool catchExceptions = false) = 0;
+	virtual bool invoke(IScriptFunction* func, bool catchExceptions = false) = 0;
 
-	inline size_t Count() const
+	inline size_t count() const
 	{
-		return Argc;
+		return m_argc;
 	}
 
-	inline const std::tuple<Ts...>& Args() const
+	inline const std::tuple<Ts...>& args() const
 	{
 		return m_tuple;
 	}
 
 protected:
-	static constexpr int Argc = (sizeof...(Ts));
+	static constexpr int m_argc = (sizeof...(Ts));
 
 	bool m_resolved;
 	std::tuple<Ts...> m_tuple;
 
 private:
 	template<std::size_t... Is>
-	inline void invalidate_args(std::index_sequence<Is...>)
+	inline void invalidateArgs(std::index_sequence<Is...>)
 	{
 		if constexpr (sizeof...(Is) > 0)
 		{
-			int unused[] = { ((detail::InvalidateBinding(std::get<Is>(m_tuple))), void(), 0)... };
+			int unused[] = { ((detail::invalidateBinding(std::get<Is>(m_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}
 
 	template<std::size_t... Is>
-	inline void validate_args(std::index_sequence<Is...>)
+	inline void validateArgs(std::index_sequence<Is...>)
 	{
 		if constexpr (sizeof...(Is) > 0)
 		{
-			int unused[] = { ((detail::ValidateBinding(std::get<Is>(m_tuple))), void(), 0)... };
+			int unused[] = { ((detail::validateBinding(std::get<Is>(m_tuple))), void(), 0)... };
 			static_cast<void>(unused); // Avoid warning for unused variable
 		}
 	}

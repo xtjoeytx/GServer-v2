@@ -6,8 +6,8 @@
 #include <libplatform/libplatform.h>
 
 bool _v8_initialized = false;
-int V8ScriptEnv::s_count = 0;
-std::unique_ptr<v8::Platform> V8ScriptEnv::s_platform;
+int V8ScriptEnv::m_count = 0;
+std::unique_ptr<v8::Platform> V8ScriptEnv::m_platform;
 
 V8ScriptEnv::V8ScriptEnv()
 	: m_initialized(false), m_isolate(nullptr)
@@ -16,10 +16,10 @@ V8ScriptEnv::V8ScriptEnv()
 
 V8ScriptEnv::~V8ScriptEnv()
 {
-	this->Cleanup();
+	this->cleanup();
 }
 
-void V8ScriptEnv::Initialize()
+void V8ScriptEnv::initialize()
 {
 	if (m_initialized)
 		return;
@@ -35,8 +35,8 @@ void V8ScriptEnv::Initialize()
 	// Initialize v8 if this is the first vm
 	if (!_v8_initialized)
 	{
-		s_platform = v8::platform::NewDefaultPlatform();
-		v8::V8::InitializePlatform(s_platform.get());
+		m_platform = v8::platform::NewDefaultPlatform();
+		v8::V8::InitializePlatform(m_platform.get());
 		v8::V8::Initialize();
 		_v8_initialized = true;
 	}
@@ -59,13 +59,13 @@ void V8ScriptEnv::Initialize()
 	m_globalTpl.Reset(m_isolate, global_tpl);
 
 	// Increment v8 environment counter
-	V8ScriptEnv::s_count++;
+	V8ScriptEnv::m_count++;
 
 	// Initialized
 	m_initialized = true;
 }
 
-void V8ScriptEnv::Cleanup(bool shutDown)
+void V8ScriptEnv::cleanup(bool shutDown)
 {
 	if (!m_initialized)
 	{
@@ -88,11 +88,11 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	delete m_createParams.array_buffer_allocator;
 
 	// Decrease v8 environment counter
-	V8ScriptEnv::s_count--;
+	V8ScriptEnv::m_count--;
 	m_initialized = false;
 
 	// Shutdown v8
-	if (shutDown && V8ScriptEnv::s_count == 0)
+	if (shutDown && V8ScriptEnv::m_count == 0)
 	{
 		// After this is run, you can not reinitialize v8!
 		v8::V8::Dispose();
@@ -101,13 +101,13 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	}
 }
 
-bool V8ScriptEnv::ParseErrors(v8::TryCatch* tryCatch)
+bool V8ScriptEnv::parseErrors(v8::TryCatch* tryCatch)
 {
 	if (tryCatch->HasCaught())
 	{
 		// Fetch the v8 isolate and context
-		v8::Isolate* isolate = this->Isolate();
-		v8::Local<v8::Context> context = this->Context();
+		v8::Isolate* isolate = this->isolate();
+		v8::Local<v8::Context> context = this->context();
 
 		v8::Handle<v8::Message> message = tryCatch->Message();
 		if (!message.IsEmpty())
@@ -126,11 +126,11 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch* tryCatch)
 	return false;
 }
 
-IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string& source)
+IScriptFunction* V8ScriptEnv::compile(const std::string& name, const std::string& source)
 {
 	// Fetch the v8 isolate and context
-	v8::Isolate* isolate = this->Isolate();
-	v8::Local<v8::Context> context = this->Context();
+	v8::Isolate* isolate = this->isolate();
+	v8::Local<v8::Context> context = this->context();
 
 	// Create a stack-allocated scope for v8 calls
 	v8::Locker lock(isolate);
@@ -140,7 +140,7 @@ IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string
 	// Create context with global template
 	if (context.IsEmpty())
 	{
-		v8::Local<v8::ObjectTemplate> global_tpl = PersistentToLocal(isolate, m_globalTpl);
+		v8::Local<v8::ObjectTemplate> global_tpl = persistentToLocal(isolate, m_globalTpl);
 		context = v8::Context::New(isolate, 0, global_tpl);
 		m_context.Reset(isolate, context);
 		m_global.Reset(isolate, context->Global());
@@ -158,7 +158,7 @@ IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string
 	v8::Local<v8::Script> script;
 	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script))
 	{
-		ParseErrors(&try_catch);
+		parseErrors(&try_catch);
 		return nullptr;
 	}
 
@@ -167,7 +167,7 @@ IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string
 
 	if (!script->Run(context).ToLocal(&result))
 	{
-		ParseErrors(&try_catch);
+		parseErrors(&try_catch);
 		return nullptr;
 	}
 
@@ -175,35 +175,35 @@ IScriptFunction* V8ScriptEnv::Compile(const std::string& name, const std::string
 	return new V8ScriptFunction(this, result.As<v8::Function>());
 }
 
-void V8ScriptEnv::CallFunctionInScope(std::function<void()> function)
+void V8ScriptEnv::callFunctionInScope(std::function<void()> function)
 {
 	// Fetch the v8 isolate, and create a stack-allocated scope for v8 calls
-	v8::Locker lock(Isolate());
-	v8::Isolate::Scope isolate_scope(Isolate());
-	v8::HandleScope handle_scope(Isolate());
+	v8::Locker lock(isolate());
+	v8::Isolate::Scope isolate_scope(isolate());
+	v8::HandleScope handle_scope(isolate());
 
 	// Call function in context if we have one
 	if (m_context.IsEmpty())
 		function();
 	else
 	{
-		v8::Context::Scope context_scope(Context());
+		v8::Context::Scope context_scope(context());
 		function();
 	}
 }
 
-void V8ScriptEnv::TerminateExecution()
+void V8ScriptEnv::terminateExecution()
 {
 	assert(m_isolate);
 	m_isolate->TerminateExecution();
 }
 
-bool V8ScriptEnv::SetConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl)
+bool V8ScriptEnv::setConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl)
 {
 	auto it = m_constructorMap.find(key);
 	if (it != m_constructorMap.end())
 		return false;
 
-	m_constructorMap[key] = v8::Global<v8::FunctionTemplate>(Isolate(), func_tpl);
+	m_constructorMap[key] = v8::Global<v8::FunctionTemplate>(isolate(), func_tpl);
 	return true;
 }

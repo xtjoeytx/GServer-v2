@@ -49,14 +49,14 @@
 
 // Unwrap an object, and validate the pointer
 #define V8ENV_SAFE_UNWRAP(ARGS, TYPE, VAR_NAME)       \
-	TYPE* VAR_NAME = UnwrapObject<TYPE>(ARGS.This()); \
+	TYPE* VAR_NAME = unwrapObject<TYPE>(ARGS.This()); \
 	if (!VAR_NAME)                                    \
 	{                                                 \
 		return;                                       \
 	}
 
 template<class TypeName>
-inline v8::Local<TypeName> PersistentToLocal(v8::Isolate* isolate, const v8::Persistent<TypeName>& persistent)
+inline v8::Local<TypeName> persistentToLocal(v8::Isolate* isolate, const v8::Persistent<TypeName>& persistent)
 {
 	if (persistent.IsWeak())
 	{
@@ -69,7 +69,7 @@ inline v8::Local<TypeName> PersistentToLocal(v8::Isolate* isolate, const v8::Per
 }
 
 template<class TypeName>
-inline v8::Local<TypeName> GlobalPersistentToLocal(v8::Isolate* isolate, const v8::Global<TypeName>& persistent)
+inline v8::Local<TypeName> globalPersistentToLocal(v8::Isolate* isolate, const v8::Global<TypeName>& persistent)
 {
 	if (persistent.IsWeak())
 	{
@@ -82,7 +82,7 @@ inline v8::Local<TypeName> GlobalPersistentToLocal(v8::Isolate* isolate, const v
 }
 
 template<class Type>
-inline Type* UnwrapObject(v8::Local<v8::Object> self)
+inline Type* unwrapObject(v8::Local<v8::Object> self)
 {
 	return static_cast<Type*>(self->GetAlignedPointerFromInternalField(0));
 }

@@ -24,7 +24,7 @@ public:
 	void operator()()
 	{
 		discover();
-		add_port_forward(m_localIp, port);
+		addPortForward(m_localIp, port);
 	}
 
 	void initialize(const char* m_localIp, const char* port)
@@ -37,21 +37,21 @@ public:
 	void discover();
 
 	// Adds a port forward.
-	void add_port_forward(const CString& addr, const CString& port);
+	void addPortForward(const CString& addr, const CString& port);
 
 	// Removes a port forward.
-	void remove_port_forward(const CString& port);
+	void removePortForward(const CString& port);
 
-	// Removes all the port forwards created by the add_port_forward command.
-	void remove_all_forwarded_ports()
+	// Removes all the port forwards created by the addPortForward command.
+	void removeAllForwardedPorts()
 	{
 		while (!m_portsForwarded.empty())
-			remove_port_forward(*m_portsForwarded.rbegin());
+			removePortForward(*m_portsForwarded.rbegin());
 		m_portsForwarded.clear();
 	}
 
 	// Returns true if the port was successfully forwarded.
-	bool port_was_forwarded(const CString& port)
+	bool wasPortForwarded(const CString& port)
 	{
 		return m_portsForwarded.find(port) != m_portsForwarded.end();
 	}

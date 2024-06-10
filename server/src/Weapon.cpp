@@ -227,15 +227,15 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 #ifdef V8NPCSERVER
 	// Compile and execute the script.
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	bool executed = scriptEngine->ExecuteWeapon(this);
+	bool executed = scriptEngine->executeWeapon(this);
 	if (executed)
 	{
 		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
 
 		if (!m_source.getServerSide().empty())
 		{
-			m_scriptExecutionContext.addAction(scriptEngine->CreateAction("weapon.created", getScriptObject()));
-			scriptEngine->RegisterWeaponUpdate(this);
+			m_scriptExecutionContext.addAction(scriptEngine->createAction("weapon.created", getScriptObject()));
+			scriptEngine->registerWeaponUpdate(this);
 		}
 	}
 	else
@@ -299,13 +299,13 @@ void Weapon::freeScriptResources()
 {
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
-	scriptEngine->ClearCache<Weapon>(m_source.getServerSide());
+	scriptEngine->clearCache<Weapon>(m_source.getServerSide());
 
 	// Clear any queued actions
 	if (m_scriptExecutionContext.hasActions())
 	{
 		// Unregister npc from any queued event calls
-		scriptEngine->UnregisterWeaponUpdate(this);
+		scriptEngine->unregisterWeaponUpdate(this);
 
 		// Reset execution
 		m_scriptExecutionContext.resetExecution();
@@ -322,9 +322,9 @@ void Weapon::queueWeaponAction(Player* player, const std::string& args)
 {
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
-	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->createAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
 	m_scriptExecutionContext.addAction(scriptAction);
-	scriptEngine->RegisterWeaponUpdate(this);
+	scriptEngine->registerWeaponUpdate(this);
 }
 
 #endif

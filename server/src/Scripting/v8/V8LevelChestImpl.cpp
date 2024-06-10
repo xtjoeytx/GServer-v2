@@ -87,7 +87,7 @@ void bindClass_LevelChest(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
-	v8::Isolate* isolate = env->Isolate();
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -111,7 +111,7 @@ void bindClass_LevelChest(ScriptEngine* scriptEngine)
 	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signid"), Chest_GetNum_SignId, Chest_SetNum_SignId);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<LevelChest>::result, chest_ctor);
+	env->setConstructor(ScriptConstructorId<LevelChest>::result, chest_ctor);
 }
 
 #endif
