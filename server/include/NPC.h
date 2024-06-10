@@ -650,7 +650,7 @@ inline void NPC::deleteFlag(const std::string& pFlagName)
 template<class... Args>
 inline void NPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
 {
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 	ScriptAction scriptAction = scriptEngine->CreateAction(action, getScriptObject(), std::forward<Args>(An)...);
 
 	m_scriptExecutionContext.addAction(scriptAction);
@@ -660,7 +660,7 @@ inline void NPC::queueNpcEvent(const std::string& action, bool registerAction, A
 
 inline void NPC::registerNpcUpdates()
 {
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 	scriptEngine->RegisterNpcUpdate(this);
 }
 

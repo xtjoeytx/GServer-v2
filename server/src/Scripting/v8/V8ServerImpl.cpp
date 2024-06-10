@@ -375,7 +375,7 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -514,7 +514,7 @@ void Server_GetArray_Serverlist(v8::Local<v8::String> prop, const v8::PropertyCa
 	info.GetReturnValue().Set(result);
 }
 
-void bindClass_Server(CScriptEngine* scriptEngine)
+void bindClass_Server(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

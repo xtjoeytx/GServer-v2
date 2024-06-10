@@ -26,11 +26,11 @@ class NPC;
 class Server;
 class Weapon;
 
-class CScriptEngine
+class ScriptEngine
 {
 public:
-	CScriptEngine(Server* server);
-	~CScriptEngine();
+	ScriptEngine(Server* server);
+	~ScriptEngine();
 
 	bool Initialize();
 	void Cleanup(bool shutDown = false);
@@ -111,7 +111,7 @@ private:
 	std::unordered_set<IScriptFunction*> m_deletedCallbacks;
 };
 
-inline void CScriptEngine::StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
+inline void ScriptEngine::StartScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime)
 {
 	{
 		std::lock_guard<std::mutex> guard(m_scriptWatcherLock);
@@ -120,7 +120,7 @@ inline void CScriptEngine::StartScriptExecution(const std::chrono::high_resoluti
 	m_scriptIsRunning.store(true);
 }
 
-inline bool CScriptEngine::StopScriptExecution()
+inline bool ScriptEngine::StopScriptExecution()
 {
 	bool res = m_scriptIsRunning.load();
 	if (res)
@@ -130,22 +130,22 @@ inline bool CScriptEngine::StopScriptExecution()
 
 // Getters
 
-inline Server* CScriptEngine::getServer() const
+inline Server* ScriptEngine::getServer() const
 {
 	return m_server;
 }
 
-inline IScriptEnv* CScriptEngine::getScriptEnv() const
+inline IScriptEnv* ScriptEngine::getScriptEnv() const
 {
 	return m_env;
 }
 
-inline IScriptObject<Server>* CScriptEngine::getServerObject() const
+inline IScriptObject<Server>* ScriptEngine::getServerObject() const
 {
 	return m_serverObject.get();
 }
 
-inline IScriptFunction* CScriptEngine::getCallBack(const std::string& callback) const
+inline IScriptFunction* ScriptEngine::getCallBack(const std::string& callback) const
 {
 	auto it = m_callbacks.find(callback);
 	if (it != m_callbacks.end())
@@ -154,41 +154,41 @@ inline IScriptFunction* CScriptEngine::getCallBack(const std::string& callback) 
 	return nullptr;
 }
 
-inline const ScriptRunError& CScriptEngine::getScriptError() const
+inline const ScriptRunError& ScriptEngine::getScriptError() const
 {
 	return m_env->getScriptError();
 }
 
 // Register scripts for processing
 
-inline void CScriptEngine::RegisterNpcTimer(NPC* npc)
+inline void ScriptEngine::RegisterNpcTimer(NPC* npc)
 {
 	m_updateNpcsTimer.insert(npc);
 }
 
-inline void CScriptEngine::RegisterNpcUpdate(NPC* npc)
+inline void ScriptEngine::RegisterNpcUpdate(NPC* npc)
 {
 	m_updateNpcs.insert(npc);
 }
 
-inline void CScriptEngine::RegisterWeaponUpdate(Weapon* weapon)
+inline void ScriptEngine::RegisterWeaponUpdate(Weapon* weapon)
 {
 	m_updateWeapons.insert(weapon);
 }
 
 // Unregister scripts from processing
 
-inline void CScriptEngine::UnregisterWeaponUpdate(Weapon* weapon)
+inline void ScriptEngine::UnregisterWeaponUpdate(Weapon* weapon)
 {
 	m_updateWeapons.erase(weapon);
 }
 
-inline void CScriptEngine::UnregisterNpcUpdate(NPC* npc)
+inline void ScriptEngine::UnregisterNpcUpdate(NPC* npc)
 {
 	m_updateNpcs.erase(npc);
 }
 
-inline void CScriptEngine::UnregisterNpcTimer(NPC* npc)
+inline void ScriptEngine::UnregisterNpcTimer(NPC* npc)
 {
 	m_updateNpcsTimer.erase(npc);
 }
@@ -196,7 +196,7 @@ inline void CScriptEngine::UnregisterNpcTimer(NPC* npc)
 //
 
 template<class... Args>
-ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
+ScriptAction ScriptEngine::CreateAction(const std::string& action, Args... An)
 {
 	constexpr size_t Argc = (sizeof...(Args));
 	assert(Argc > 0);
@@ -220,7 +220,7 @@ ScriptAction CScriptEngine::CreateAction(const std::string& action, Args... An)
 }
 
 template<class T>
-inline void CScriptEngine::wrapScriptObject(T* obj) const
+inline void ScriptEngine::wrapScriptObject(T* obj) const
 {
 	SCRIPTENV_D("Begin Global::wrapScriptObject()\n");
 
@@ -232,13 +232,13 @@ inline void CScriptEngine::wrapScriptObject(T* obj) const
 }
 
 template<typename T>
-inline bool CScriptEngine::ClearCache(const std::string& code)
+inline bool ScriptEngine::ClearCache(const std::string& code)
 {
 	return ClearCache(WrapScript<T>(code));
 }
 
 template<typename T>
-inline bool CScriptEngine::ClearCache(const std::string_view& code)
+inline bool ScriptEngine::ClearCache(const std::string_view& code)
 {
 	return ClearCache(WrapScript<T>(code));
 }

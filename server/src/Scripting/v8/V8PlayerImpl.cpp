@@ -566,7 +566,7 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -649,7 +649,7 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -735,7 +735,7 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1004,7 +1004,7 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// Get server
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 		Server* server = scriptEngine->getServer();
 
 		// Get npc-server
@@ -1208,7 +1208,7 @@ void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
@@ -1298,7 +1298,7 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 	}
 }
 
-void bindClass_Player(CScriptEngine* scriptEngine)
+void bindClass_Player(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

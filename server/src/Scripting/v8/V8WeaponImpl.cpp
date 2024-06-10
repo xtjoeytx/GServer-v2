@@ -30,7 +30,7 @@ void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set(strText);
 }
 
-void bindClass_Weapon(CScriptEngine* scriptEngine)
+void bindClass_Weapon(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

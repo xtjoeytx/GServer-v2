@@ -11,7 +11,7 @@
 class ScriptExecutionContext
 {
 public:
-	ScriptExecutionContext(CScriptEngine* scriptEngine)
+	ScriptExecutionContext(ScriptEngine* scriptEngine)
 		: m_scriptEngine(scriptEngine) {}
 
 	~ScriptExecutionContext() { resetExecution(); }
@@ -26,7 +26,7 @@ public:
 	bool runExecution();
 
 private:
-	CScriptEngine* m_scriptEngine;
+	ScriptEngine* m_scriptEngine;
 	std::vector<ScriptAction> m_actions;
 	std::vector<ScriptTimeSample> m_scriptTimeSamples;
 };

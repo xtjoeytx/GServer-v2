@@ -31,13 +31,13 @@ void Global_Function_Print(const v8::FunctionCallbackInfo<v8::Value>& args)
 void Global_GetObject_Server(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 	V8ScriptObject<Server>* v8_serverObject = static_cast<V8ScriptObject<Server>*>(scriptEngine->getServerObject());
 	info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
 }
 
-void bindGlobalFunctions(CScriptEngine* scriptEngine)
+void bindGlobalFunctions(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

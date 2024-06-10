@@ -226,7 +226,7 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 
 #ifdef V8NPCSERVER
 	// Compile and execute the script.
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 	bool executed = scriptEngine->ExecuteWeapon(this);
 	if (executed)
 	{
@@ -297,7 +297,7 @@ void Weapon::setClientScript(const CString& pScript)
 
 void Weapon::freeScriptResources()
 {
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
 	scriptEngine->ClearCache<Weapon>(m_source.getServerSide());
 
@@ -320,7 +320,7 @@ void Weapon::freeScriptResources()
 
 void Weapon::queueWeaponAction(Player* player, const std::string& args)
 {
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
 	ScriptAction scriptAction = scriptEngine->CreateAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
 	m_scriptExecutionContext.addAction(scriptAction);

@@ -11,30 +11,30 @@
 extern const unsigned char JSBOOTSTRAPSCRIPT[];
 extern const size_t JSBOOTSTRAPSCRIPT_SIZE;
 
-extern void bindGlobalFunctions(CScriptEngine* scriptEngine);
-extern void bindClass_Environment(CScriptEngine* scriptEngine);
-extern void bindClass_Level(CScriptEngine* scriptEngine);
-extern void bindClass_LevelLink(CScriptEngine* scriptEngine);
-extern void bindClass_LevelSign(CScriptEngine* scriptEngine);
-extern void bindClass_LevelChest(CScriptEngine* scriptEngine);
-extern void bindClass_NPC(CScriptEngine* scriptEngine);
-extern void bindClass_Player(CScriptEngine* scriptEngine);
-extern void bindClass_Server(CScriptEngine* scriptEngine);
-extern void bindClass_Weapon(CScriptEngine* scriptEngine);
+extern void bindGlobalFunctions(ScriptEngine* scriptEngine);
+extern void bindClass_Environment(ScriptEngine* scriptEngine);
+extern void bindClass_Level(ScriptEngine* scriptEngine);
+extern void bindClass_LevelLink(ScriptEngine* scriptEngine);
+extern void bindClass_LevelSign(ScriptEngine* scriptEngine);
+extern void bindClass_LevelChest(ScriptEngine* scriptEngine);
+extern void bindClass_NPC(ScriptEngine* scriptEngine);
+extern void bindClass_Player(ScriptEngine* scriptEngine);
+extern void bindClass_Server(ScriptEngine* scriptEngine);
+extern void bindClass_Weapon(ScriptEngine* scriptEngine);
 
-CScriptEngine::CScriptEngine(Server* server)
+ScriptEngine::ScriptEngine(Server* server)
 	: m_server(server), m_env(nullptr), m_bootstrapFunction(nullptr), m_environmentObject(nullptr), m_serverObject(nullptr), m_scriptIsRunning(false), m_scriptWatcherRunning(false), m_scriptWatcherThread()
 {
 	m_accumulator = std::chrono::nanoseconds(0);
 	m_lastScriptTimer = std::chrono::high_resolution_clock::now();
 }
 
-CScriptEngine::~CScriptEngine()
+ScriptEngine::~ScriptEngine()
 {
 	this->Cleanup();
 }
 
-bool CScriptEngine::Initialize()
+bool ScriptEngine::Initialize()
 {
 	if (m_env)
 		return true;
@@ -51,7 +51,7 @@ bool CScriptEngine::Initialize()
 
 	m_env->CallFunctionInScope([&]() -> void
 							   {
-								   CScriptEngine* engine = this;
+								   ScriptEngine* engine = this;
 
 								   // Bind global functions
 								   bindGlobalFunctions(engine);
@@ -85,12 +85,12 @@ bool CScriptEngine::Initialize()
 							   });
 
 	m_scriptWatcherRunning.store(true);
-	m_scriptWatcherThread = std::thread(&CScriptEngine::ScriptWatcher, this);
+	m_scriptWatcherThread = std::thread(&ScriptEngine::ScriptWatcher, this);
 
 	return true;
 }
 
-void CScriptEngine::ScriptWatcher()
+void ScriptEngine::ScriptWatcher()
 {
 	const std::chrono::milliseconds sleepTime(50);
 
@@ -119,7 +119,7 @@ void CScriptEngine::ScriptWatcher()
 	}
 }
 
-void CScriptEngine::Cleanup(bool shutDown)
+void ScriptEngine::Cleanup(bool shutDown)
 {
 	if (!m_env)
 	{
@@ -176,7 +176,7 @@ void CScriptEngine::Cleanup(bool shutDown)
 	m_env = nullptr;
 }
 
-IScriptFunction* CScriptEngine::CompileCache(const std::string& code, bool referenceCount)
+IScriptFunction* ScriptEngine::CompileCache(const std::string& code, bool referenceCount)
 {
 	// TODO(joey): Temporary naming conventions, maybe pass an optional reference to an object which holds info for the compiler (name, ignore wrap code based off spaces/lines, and execution results?)
 	static int SCRIPT_ID = 1;
@@ -209,7 +209,7 @@ IScriptFunction* CScriptEngine::CompileCache(const std::string& code, bool refer
 	return compiledScript;
 }
 
-bool CScriptEngine::ClearCache(const std::string& code)
+bool ScriptEngine::ClearCache(const std::string& code)
 {
 	auto scriptFunctionIter = m_cachedScripts.find(code);
 	if (scriptFunctionIter == m_cachedScripts.end())
@@ -228,7 +228,7 @@ bool CScriptEngine::ClearCache(const std::string& code)
 
 	#include "Level.h"
 
-bool CScriptEngine::ExecuteNpc(NPC* npc)
+bool ScriptEngine::ExecuteNpc(NPC* npc)
 {
 	SCRIPTENV_D("Begin Global::ExecuteNPC()\n\n");
 
@@ -288,7 +288,7 @@ bool CScriptEngine::ExecuteNpc(NPC* npc)
 	return true;
 }
 
-bool CScriptEngine::ExecuteWeapon(Weapon* weapon)
+bool ScriptEngine::ExecuteWeapon(Weapon* weapon)
 {
 	SCRIPTENV_D("Begin Global::ExecuteWeapon()\n\n");
 
@@ -326,7 +326,7 @@ bool CScriptEngine::ExecuteWeapon(Weapon* weapon)
 	return true;
 }
 
-void CScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_point& time)
+void ScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_point& time)
 {
 	auto delta_time = time - m_lastScriptTimer;
 	m_lastScriptTimer = time;
@@ -351,7 +351,7 @@ void CScriptEngine::runTimers(const std::chrono::high_resolution_clock::time_poi
 	}
 }
 
-void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
+void ScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_point& time)
 {
 	runTimers(time);
 
@@ -407,7 +407,7 @@ void CScriptEngine::RunScripts(const std::chrono::high_resolution_clock::time_po
 	}
 }
 
-void CScriptEngine::removeCallBack(const std::string& callback)
+void ScriptEngine::removeCallBack(const std::string& callback)
 {
 	auto it = m_callbacks.find(callback);
 	if (it != m_callbacks.end())
@@ -418,7 +418,7 @@ void CScriptEngine::removeCallBack(const std::string& callback)
 	}
 }
 
-void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction* cbFunc)
+void ScriptEngine::setCallBack(const std::string& callback, IScriptFunction* cbFunc)
 {
 	removeCallBack(callback);
 
@@ -426,12 +426,12 @@ void CScriptEngine::setCallBack(const std::string& callback, IScriptFunction* cb
 	cbFunc->increaseReference();
 }
 
-void CScriptEngine::reportScriptException(const ScriptRunError& error)
+void ScriptEngine::reportScriptException(const ScriptRunError& error)
 {
 	m_server->reportScriptException(error);
 }
 
-void CScriptEngine::reportScriptException(const std::string& error_message)
+void ScriptEngine::reportScriptException(const std::string& error_message)
 {
 	m_server->reportScriptException(error_message);
 }

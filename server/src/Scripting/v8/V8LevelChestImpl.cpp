@@ -83,7 +83,7 @@ void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
 	chestObject->setSignIndex(newValue);
 }
 
-void bindClass_LevelChest(CScriptEngine* scriptEngine)
+void bindClass_LevelChest(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

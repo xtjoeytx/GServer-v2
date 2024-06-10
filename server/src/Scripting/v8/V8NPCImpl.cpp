@@ -878,7 +878,7 @@ void NPC_Function_RegisterTrigger(const v8::FunctionCallbackInfo<v8::Value>& arg
 					*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
@@ -919,7 +919,7 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
@@ -965,7 +965,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
 
@@ -1013,7 +1013,7 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 		//	//npcObject->addClassCode(className, clientCode);
 		//
 		//	// Wrap code
-		//	std::string classCodeWrap = CScriptEngine::WrapScript<NPC>(serverCode);
+		//	std::string classCodeWrap = ScriptEngine::WrapScript<NPC>(serverCode);
 
 		//	// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
 		//	// multiple wrappers.
@@ -1052,7 +1052,7 @@ void NPC_Function_SetPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 		return;
 
 	v8::Local<v8::External> data = args.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 
 	if (args[0]->IsFunction())
 	{
@@ -1092,7 +1092,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 			int newY = int(16.0 * args[2]->NumberValue(context).ToChecked());
 
 			v8::Local<v8::External> data = args.Data().As<v8::External>();
-			CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+			ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 			Server* server = scriptEngine->getServer();
 
 			auto level = server->getLevel(*levelName);
@@ -1125,7 +1125,7 @@ void NPC_Function_Warpto(const v8::FunctionCallbackInfo<v8::Value>& args)
 //
 //	// Retrieve external data for this call
 //	v8::Local<v8::External> data = args.Data().As<v8::External>();
-//	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+//	ScriptEngine *scriptEngine = static_cast<ScriptEngine *>(data->Value());
 //
 //	NPC *newNpc = new NPC(scriptEngine->getServer());
 //
@@ -1179,7 +1179,7 @@ void NPC_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1261,7 +1261,7 @@ void NPC_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1343,7 +1343,7 @@ void NPC_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1434,7 +1434,7 @@ void NPC_GetObject_Save(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1484,7 +1484,7 @@ void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prope
 	info.GetReturnValue().Set(value);
 }
 
-void bindClass_NPC(CScriptEngine* scriptEngine)
+void bindClass_NPC(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

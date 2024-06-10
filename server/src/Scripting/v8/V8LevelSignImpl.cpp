@@ -67,7 +67,7 @@ void Sign_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 	signObject->setY(newValue);
 }
 
-void bindClass_LevelSign(CScriptEngine* scriptEngine)
+void bindClass_LevelSign(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

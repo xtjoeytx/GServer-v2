@@ -159,7 +159,7 @@ public:
 	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
 
 #ifdef V8NPCSERVER
-	CScriptEngine* getScriptEngine() { return &m_scriptEngine; }
+	ScriptEngine* getScriptEngine() { return &m_scriptEngine; }
 	int getNCPort() const { return m_ncPort; }
 	std::shared_ptr<Player> getNPCServer() const { return m_npcServer; }
 #endif
@@ -318,7 +318,7 @@ private:
 	std::string m_shootParams;
 
 #ifdef V8NPCSERVER
-	CScriptEngine m_scriptEngine;
+	ScriptEngine m_scriptEngine;
 	int m_ncPort;
 	std::shared_ptr<Player> m_npcServer;
 	std::shared_ptr<NPC> m_pmHandlerNpc;

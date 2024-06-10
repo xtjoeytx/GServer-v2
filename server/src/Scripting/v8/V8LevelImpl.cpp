@@ -65,7 +65,7 @@ void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbac
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -282,7 +282,7 @@ void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -500,7 +500,7 @@ void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -772,7 +772,7 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -847,7 +847,7 @@ void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbac
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	// Find constructor
@@ -1497,7 +1497,7 @@ void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exter
 	env->SetConstructor("level.npcs", level_npcs_ctor);
 }
 
-void bindClass_Level(CScriptEngine* scriptEngine)
+void bindClass_Level(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

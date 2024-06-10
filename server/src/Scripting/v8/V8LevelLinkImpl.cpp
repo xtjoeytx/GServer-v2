@@ -137,7 +137,7 @@ void Link_SetStr_NewY(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 	linkObject->setNewY(*newValue);
 }
 
-void bindClass_LevelLink(CScriptEngine* scriptEngine)
+void bindClass_LevelLink(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

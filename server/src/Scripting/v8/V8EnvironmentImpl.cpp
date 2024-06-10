@@ -15,7 +15,7 @@
 void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 	info.GetReturnValue().Set(env->Global());
@@ -59,7 +59,7 @@ void Environment_SetCallBack(const v8::FunctionCallbackInfo<v8::Value>& args)
 					*v8::String::Utf8Value(isolate, args[1]->ToString(isolate->GetCurrentContext()).ToLocalChecked()));
 
 		v8::Local<v8::External> data = args.Data().As<v8::External>();
-		CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+		ScriptEngine* scriptEngine = static_cast<ScriptEngine*>(data->Value());
 		V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
 
 		// Callback name
@@ -100,7 +100,7 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 	SCRIPTENV_D("End Environment::setNpcEvents()\n\n");
 }
 
-void bindClass_Environment(CScriptEngine* scriptEngine)
+void bindClass_Environment(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
 	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());

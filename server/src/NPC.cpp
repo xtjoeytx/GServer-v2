@@ -923,7 +923,7 @@ void NPC::testTouch()
 
 void NPC::freeScriptResources()
 {
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
 	// Clear cached script
 	if (!m_npcScript.getServerSide().empty())
@@ -971,7 +971,7 @@ void NPC::queueNpcTrigger(const std::string& action, Player* player, const std::
 	if (triggerIter == m_triggerActions.end())
 		return;
 
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
 	IScriptObject<Player>* playerObject = nullptr;
 	if (player != nullptr)
@@ -1056,7 +1056,7 @@ void NPC::queueNpcAction(const std::string& action, Player* player, bool registe
 {
 	assert(m_scriptObject);
 
-	CScriptEngine* scriptEngine = m_server->getScriptEngine();
+	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
 	IScriptObject<Player>* playerObject = nullptr;
 	if (player != nullptr)
