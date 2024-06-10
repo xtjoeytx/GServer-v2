@@ -322,7 +322,7 @@ private:
 #endif
 };
 
-using TLevelPtr = std::shared_ptr<Level>;
+using LevelPtr = std::shared_ptr<Level>;
 
 #ifdef V8NPCSERVER
 
