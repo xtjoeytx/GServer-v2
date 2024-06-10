@@ -1,6 +1,6 @@
 #ifdef V8NPCSERVER
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "EmbeddedBootstrapScript.h"
 	#include "NPC.h"
 	#include "Player.h"

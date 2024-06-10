@@ -30,7 +30,7 @@
 #endif
 
 #ifdef V8NPCSERVER
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 #endif
 
 #include "GS2ScriptManager.h"

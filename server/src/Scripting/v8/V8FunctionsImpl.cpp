@@ -1,6 +1,6 @@
 #ifdef V8NPCSERVER
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "V8ScriptEnv.h"
 	#include "V8ScriptFunction.h"
 	#include <string>
@@ -33,7 +33,7 @@ void Global_GetObject_Server(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
 	CScriptEngine* scriptEngine = static_cast<CScriptEngine*>(data->Value());
 
-	V8ScriptObject<TServer>* v8_serverObject = static_cast<V8ScriptObject<TServer>*>(scriptEngine->getServerObject());
+	V8ScriptObject<Server>* v8_serverObject = static_cast<V8ScriptObject<Server>*>(scriptEngine->getServerObject());
 	info.GetReturnValue().Set(v8_serverObject->Handle(info.GetIsolate()));
 }
 

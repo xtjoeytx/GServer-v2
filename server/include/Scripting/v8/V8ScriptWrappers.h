@@ -72,9 +72,9 @@ inline std::string WrapScript(const std::string_view& code)
 	return code.data();
 }
 
-class TNPC;
+class NPC;
 template<>
-inline std::string WrapScript<TNPC>(const std::string_view& code)
+inline std::string WrapScript<NPC>(const std::string_view& code)
 {
 	// self.onCreated || onCreated, for first declared to take precedence
 	// if (onCreated) for latest function to override
@@ -103,9 +103,9 @@ inline std::string WrapScript<TNPC>(const std::string_view& code)
 	return wrappedCode;
 }
 
-class TPlayer;
+class Player;
 template<>
-inline std::string WrapScript<TPlayer>(const std::string_view& code)
+inline std::string WrapScript<Player>(const std::string_view& code)
 {
 	static const char* prefixString = "(function(player) {"
 									  "const self = player;\n";
@@ -121,9 +121,9 @@ inline std::string WrapScript<TPlayer>(const std::string_view& code)
 	return wrappedCode;
 }
 
-class TWeapon;
+class Weapon;
 template<>
-inline std::string WrapScript<TWeapon>(const std::string_view& code)
+inline std::string WrapScript<Weapon>(const std::string_view& code)
 {
 	static const char* prefixString = "(function(weapon) {"
 									  "var onCreated, onActionServerSide;"

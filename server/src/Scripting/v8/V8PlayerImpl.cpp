@@ -1,6 +1,6 @@
 #ifdef V8NPCSERVER
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "IUtil.h"
 	#include "Level.h"
 	#include "NPC.h"

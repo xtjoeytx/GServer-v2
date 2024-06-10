@@ -1,6 +1,6 @@
 #ifdef V8NPCSERVER
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "V8ScriptFunction.h"
 	#include "V8ScriptObject.h"
 	#include <cassert>

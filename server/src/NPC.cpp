@@ -10,7 +10,7 @@
 #include <vector>
 
 #ifdef V8NPCSERVER
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "Player.h"
 #endif
 

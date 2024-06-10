@@ -5,7 +5,7 @@
 	#include <cmath>
 	#include <v8.h>
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "V8ScriptFunction.h"
 	#include "V8ScriptObject.h"
 

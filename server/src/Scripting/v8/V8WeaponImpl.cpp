@@ -1,6 +1,6 @@
 #ifdef V8NPCSERVER
 
-	#include "CScriptEngine.h"
+	#include "ScriptEngine.h"
 	#include "Weapon.h"
 	#include <cassert>
 	#include <stdio.h>
