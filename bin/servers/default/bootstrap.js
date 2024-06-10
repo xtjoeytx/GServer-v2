@@ -278,6 +278,14 @@
 			return server.createlevel(...args);
 		};
 
+		env.global.httpget = function(...args) {
+			return server.httpget(...args);
+		};
+
+		env.global.httppost = function(...args) {
+			return server.httppost(...args);
+		};
+
 		env.global.findlevel = function(...args) {
 			return server.findlevel(...args);
 		};
@@ -288,6 +296,10 @@
 
 		env.global.findplayer = function(...args) {
 			return server.findplayer(...args);
+		};
+
+		env.global.setshootparams = function(...args) {
+			return server.setshootparams(...args);
 		};
 
 		env.global.savelog = function(...args) {

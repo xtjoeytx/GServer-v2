@@ -60,6 +60,7 @@ class TLevelBaddy
 		float getStartY() const					{ return startY; }
 		CString getProp(const int propId, int clientVersion = CLVER_2_17) const;
 		CString getProps(int clientVersion = CLVER_2_17) const;
+        std::vector<CString> getVerses() const  { return verses; };
 
 		// set functions
 		void setProps(CString& pProps);

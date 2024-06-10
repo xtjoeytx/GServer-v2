@@ -1941,3 +1941,27 @@ void TServer::TS_Save()
 		output.trimRight().save(getServerPath() << "translations/" << language.first.c_str() << ".po");
 	}
 }
+
+void TServer::sendShootToOneLevel(const std::weak_ptr<TLevel>& level, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const
+{
+	auto levelLock = level.lock();
+	ShootPacketNew newPacket{};
+	newPacket.pixelx = (int16_t)(x*16);
+	newPacket.pixely = (int16_t)(y*16);
+	newPacket.pixelz = (int16_t)(z*16);
+	newPacket.offsetx = 0;
+	newPacket.offsety = 0;
+	newPacket.sangle = (int8_t)angle;
+	newPacket.sanglez = (int8_t)zangle;
+	newPacket.speed = (int8_t)strength;
+	newPacket.gravity = 8;
+	newPacket.gani = ani;
+	newPacket.ganiArgs = aniArgs;
+	newPacket.shootParams = getShootParams();
+
+	PlayerOutPacket oldPacketBuf = { PLO_SHOOT, CString() >> (short)0 << newPacket.constructShootV1() };
+	PlayerOutPacket newPacketBuf = { PLO_SHOOT2, CString() >> (short)0 << newPacket.constructShootV2() };
+
+	sendPacketToLevelArea(oldPacketBuf, levelLock, {0}, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	sendPacketToLevelArea(newPacketBuf, levelLock, {0}, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+}

@@ -820,11 +820,11 @@ void TNPC::testForLinks()
 		auto linkTouched = level->getLink((int)(x / 16) + touchtestd[dir * 2], (int)(y / 16) + touchtestd[dir * 2 + 1]);
 		if (linkTouched)
 		{
-			auto newLevel = server->getLevel(linkTouched->getNewLevel().toString());
+			auto newLevel = server->getLevel(linkTouched.value()->getNewLevel().toString());
 			if (newLevel != 0)
 			{
-				int newX = (linkTouched->getNewX() == "playerx" ? x : int(16.0 * strtofloat(linkTouched->getNewX())));
-				int newY = (linkTouched->getNewY() == "playery" ? y : int(16.0 * strtofloat(linkTouched->getNewY())));
+				int newX = (linkTouched.value()->getNewX() == "playerx" ? x : int(16.0 * strtofloat(linkTouched.value()->getNewX())));
+				int newY = (linkTouched.value()->getNewY() == "playery" ? y : int(16.0 * strtofloat(linkTouched.value()->getNewY())));
 				this->warpNPC(newLevel, newX, newY);
 			}
 		}

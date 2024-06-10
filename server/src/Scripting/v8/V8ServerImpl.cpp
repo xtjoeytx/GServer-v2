@@ -2,8 +2,7 @@
 
 #include <cassert>
 #include <v8.h>
-#include <cstdio>
-#include <unordered_map>
+#include <httplib.h>
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
@@ -11,6 +10,112 @@
 #include "TLevel.h"
 #include "TNPC.h"
 #include "TPlayer.h"
+
+void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Check the number of arguments passed.
+	if (args.Length() < 1) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsString()) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+		return;
+	}
+
+	v8::String::Utf8Value url(isolate, args[0]);
+
+	std::string urlAndQuery = *url;
+	std::regex urlRegex("(https?://[^/]+)(/?.*)");
+	std::smatch match;
+	std::string onlyPath;
+	std::string onlyUrl;
+
+	if (std::regex_search(urlAndQuery, match, urlRegex) && match.size() == 3) {
+		onlyUrl = match[1].str();
+		onlyPath = match[2].str();
+	} else {
+		isolate->ThrowException(v8::Exception::Error(
+			v8::String::NewFromUtf8(isolate, "Invalid url").ToLocalChecked()));
+		return;
+	}
+
+	auto cli = httplib::Client(onlyUrl);
+	cli.enable_server_certificate_verification(false);
+
+	auto r = cli.Get(onlyPath);
+
+	if (r->status < 200 || r->status >= 300) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, to_string(r.error()).c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r->body.c_str()).ToLocalChecked());
+}
+
+void Server_Function_HttpPost(const v8::FunctionCallbackInfo<v8::Value>& args) {
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Check the number of arguments passed.
+	if (args.Length() < 2) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
+		return;
+	}
+
+	// Check the argument types.
+	if (!args[0]->IsString() || !args[1]->IsString()) {
+		isolate->ThrowException(v8::Exception::TypeError(
+				v8::String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+		return;
+	}
+
+	v8::String::Utf8Value url(isolate, args[0]);
+	v8::String::Utf8Value postData(isolate, args[1]);
+	std::string urlAndQuery = *url;
+	std::regex urlRegex("(https?://[^/]+)(/?.*)");
+	std::smatch match;
+	std::string onlyPath;
+	std::string onlyUrl;
+
+	if (std::regex_search(urlAndQuery, match, urlRegex) && match.size() == 3) {
+		onlyUrl = match[1].str();
+		onlyPath = match[2].str();
+	} else {
+		isolate->ThrowException(v8::Exception::Error(
+			v8::String::NewFromUtf8(isolate, "Invalid url").ToLocalChecked()));
+		return;
+	}
+
+	std::string contentTypeStr;
+	if (args.Length() >= 3) {
+		v8::String::Utf8Value contentType(isolate, args[2]);
+		contentTypeStr=*contentType;
+	} else {
+		contentTypeStr="application/json";
+	}
+
+	auto cli = httplib::Client(onlyUrl);
+	cli.enable_server_certificate_verification(false);
+
+	std::string postDataStr = *postData;
+
+	auto r = cli.Post(onlyPath, postDataStr, contentTypeStr);
+
+	if (r->status < 200 || r->status >= 300) {
+		isolate->ThrowException(v8::Exception::Error(
+				v8::String::NewFromUtf8(isolate, to_string(r.error()).c_str()).ToLocalChecked()));
+		return;
+	}
+
+	args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, r->body.c_str()).ToLocalChecked());
+}
 
 void Server_Function_FindLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -124,6 +229,36 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+
+// Server Method: server.setshootparams(str shootparams);
+void Server_Function_SetShootParams(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the minimum 8 arguments
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TServer, server);
+
+		if (server == nullptr) return;
+
+		CString shootParams;
+		for (int i = 0; i < args.Length(); i++) {
+			shootParams << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+		}
+		shootParams.gtokenizeI();
+
+		server->setShootParams(shootParams.text());
+	}
+}
+
 void Server_Function_SaveLog(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate *isolate = args.GetIsolate();
@@ -201,7 +336,7 @@ void Server_Get_TimeVar(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 // PROPERTY: server.timevar2
 void Server_Get_TimeVar2(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	unsigned int timevar = (unsigned int)time(0);
+	auto timevar = (unsigned int)time(0);
 	info.GetReturnValue().Set(timevar);
 }
 
@@ -223,8 +358,8 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Grab external data
 	v8::Local<v8::External> data = info.Data().As<v8::External>();
-	CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	auto *scriptEngine = static_cast<CScriptEngine *>(data->Value());
+	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 
 	// Find constructor
 	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("server.flags");
@@ -379,10 +514,13 @@ void bindClass_Server(CScriptEngine *scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httpget"), v8::FunctionTemplate::New(isolate, Server_Function_HttpGet, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httppost"), v8::FunctionTemplate::New(isolate, Server_Function_HttpPost, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"), v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));

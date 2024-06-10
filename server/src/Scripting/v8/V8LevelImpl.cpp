@@ -2,9 +2,9 @@
 
 #include <cassert>
 #include <v8.h>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
-#include <unordered_map>
+
 #include "CScriptEngine.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptObject.h"
@@ -47,32 +47,669 @@ void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallback
 	info.GetReturnValue().SetNull();
 }
 
-// PROPERTY: level.npcs
-void Level_GetArray_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+// PROPERTY: level.signs
+void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalSigns = v8::String::NewFromUtf8(isolate, "_internalSigns", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalSigns).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalSigns).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.signs");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, levelObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+	v8_wrapped->addChild("signs", new_instance);
+
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalSigns, new_instance, propLinks).FromJust();
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto sign = levelObject->getLevelSigns()[index];
+
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(sign->getScriptObject());
+
+	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+}
+
+void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto signSize = levelObject->getLevelSigns().size();
+
+	info.GetReturnValue().Set(v8::Number::New(isolate, signSize));
+}
+
+void Level_Sign_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
 
-	// Get npcs list
-	auto& npcList = levelObject->getLevelNPCs();
-	auto server = levelObject->getServer();
+	// Get link list
+	auto& levelSigns = levelObject->getLevelSigns();
 
-	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)npcList.size() : 0);
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelSigns.size());
 
-	if (server)
-	{
-		int idx = 0;
-		for (auto it = npcList.begin(); it != npcList.end(); ++it) {
-			auto npc = server->getNPC(*it);
-			V8ScriptObject<TNPC> *v8_wrapped = static_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
-			result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
-		}
+	int idx = 0;
+	for (auto & sign : levelSigns) {
+		result->Set(context, idx, v8::Number::New(isolate, idx)).Check();
+		idx++;
 	}
 
 	info.GetReturnValue().Set(result);
 }
+
+void Level_Sign_Next(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	// Get a reference to the instance of "level.links".
+	v8::Local<v8::Object> obj = info.This();
+
+	// Get the current index from the iterator object.
+	v8::Local<v8::Number> currentIndex = obj->GetInternalField(0).As<v8::Number>();
+	v8::Local<v8::Array> items = obj->GetInternalField(1).As<v8::Array>();
+
+	// Get the length of the array.
+	uint32_t len = items->Length();
+
+	// Check if we have reached the end of the iteration sequence.
+	if (currentIndex->Value() >= len) {
+		auto newObj = v8::Object::New(isolate);
+		newObj->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::True(isolate)).Check();
+		info.GetReturnValue().Set(newObj);
+
+		return;
+	}
+
+	// Get the value at the current index.
+	v8::Local<v8::Value> value = items->Get(context, (uint32_t)currentIndex->Value()).ToLocalChecked();
+
+	// Update the iterator's index.
+	obj->SetInternalField(0, v8::Integer::New(isolate, (int32_t)currentIndex->Value() + 1));
+
+	// Create the next() result object.
+	v8::Local<v8::Object> result = v8::Object::New(isolate);
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "value"), value).Check();
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::False(isolate)).Check();
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelSigns = levelObject->getLevelSigns();
+
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	v8::Local<v8::Object> obj = info.This();
+
+	int current_index = 0;
+
+	v8::Local<v8::FunctionTemplate> test_ctor = v8::FunctionTemplate::New(isolate);
+	test_ctor->InstanceTemplate()->SetInternalFieldCount(2);
+
+	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
+
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Sign_Next, obj));
+
+	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
+
+	// Adds child property to the wrapped object, so it can clear the pointer when
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelSigns.size());
+
+	int idx = 0;
+	for (auto & sign : levelSigns) {
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(sign->getScriptObject());
+		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	}
+
+	new_instance->SetInternalField(1, result);
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+// Level Method: level.signs.add(x, y, signText)
+void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		int levelX = (int)args[0]->NumberValue(context).ToChecked();
+		int levelY = (int)args[1]->NumberValue(context).ToChecked();
+		CString signText = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+
+		auto newSign = levelObject->addSign(levelX, levelY, signText);
+
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(newSign->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
+// Level Method: level.signs.remove(index)
+void Level_Function_RemoveLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		int index = (int)args[0]->NumberValue(context).ToChecked();
+
+		args.GetReturnValue().Set(levelObject->removeSign(index));
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// PROPERTY: level.chests
+void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalChests = v8::String::NewFromUtf8(isolate, "_internalChests", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalChests).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalChests).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.chests");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, levelObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+	v8_wrapped->addChild("chests", new_instance);
+
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalChests, new_instance, propLinks).FromJust();
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto chest = levelObject->getLevelChests()[index];
+
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelSign> *>(chest->getScriptObject());
+
+	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+}
+
+void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto chestSize = levelObject->getLevelChests().size();
+
+	info.GetReturnValue().Set(v8::Number::New(isolate, chestSize));
+}
+
+void Level_Chest_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelChests = levelObject->getLevelChests();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelChests.size());
+
+	int idx = 0;
+	for (auto & sign : levelChests) {
+		result->Set(context, idx, v8::Number::New(isolate, idx)).Check();
+		idx++;
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Chest_Next(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	// Get a reference to the instance of "level.links".
+	v8::Local<v8::Object> obj = info.This();
+
+	// Get the current index from the iterator object.
+	v8::Local<v8::Number> currentIndex = obj->GetInternalField(0).As<v8::Number>();
+	v8::Local<v8::Array> items = obj->GetInternalField(1).As<v8::Array>();
+
+	// Get the length of the array.
+	uint32_t len = items->Length();
+
+	// Check if we have reached the end of the iteration sequence.
+	if (currentIndex->Value() >= len) {
+		auto newObj = v8::Object::New(isolate);
+		newObj->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::True(isolate)).Check();
+		info.GetReturnValue().Set(newObj);
+
+		return;
+	}
+
+	// Get the value at the current index.
+	v8::Local<v8::Value> value = items->Get(context, (uint32_t)currentIndex->Value()).ToLocalChecked();
+
+	// Update the iterator's index.
+	obj->SetInternalField(0, v8::Integer::New(isolate, (int32_t)currentIndex->Value() + 1));
+
+	// Create the next() result object.
+	v8::Local<v8::Object> result = v8::Object::New(isolate);
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "value"), value).Check();
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::False(isolate)).Check();
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelChests = levelObject->getLevelChests();
+
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	v8::Local<v8::Object> obj = info.This();
+
+	int current_index = 0;
+
+	v8::Local<v8::FunctionTemplate> test_ctor = v8::FunctionTemplate::New(isolate);
+	test_ctor->InstanceTemplate()->SetInternalFieldCount(2);
+
+	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
+
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Chest_Next, obj));
+
+	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
+
+	// Adds child property to the wrapped object, so it can clear the pointer when
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelChests.size());
+
+	int idx = 0;
+	for (auto & chest : levelChests) {
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelChest> *>(chest->getScriptObject());
+		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	}
+
+	new_instance->SetInternalField(1, result);
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+// Level Method: level.chests.add(x, y, itemType, signIndex)
+void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 4);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		int levelX = (int)args[0]->NumberValue(context).ToChecked();
+		int levelY = (int)args[1]->NumberValue(context).ToChecked();
+		LevelItemType levelItemType = (LevelItemType)args[2]->NumberValue(context).ToChecked();
+		int signId = (int)args[3]->NumberValue(context).ToChecked();
+
+		auto newChest = levelObject->addChest(levelX, levelY, levelItemType, signId);
+
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelChest> *>(newChest->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
+// Level Method: level.chests.remove(index)
+void Level_Function_RemoveLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		int index = (int)args[0]->NumberValue(context).ToChecked();
+
+		args.GetReturnValue().Set(levelObject->removeChest(index));
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
+// PROPERTY: level.npcs
+void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalNpcs = v8::String::NewFromUtf8(isolate, "_internalNpcs", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalNpcs).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalNpcs).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.npcs");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, levelObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+	v8_wrapped->addChild("npcs", new_instance);
+
+	auto propNpcs = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalNpcs, new_instance, propNpcs).FromJust();
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+	auto& npcList = levelObject->getLevelNPCs();
+	auto server = levelObject->getServer();
+
+	if (server && npcList.size() > index) {
+		auto npcId = *std::next(npcList.begin(), index);
+		auto npc = server->getNPC(npcId);
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
+
+		info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
+void Level_Npc_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto npcSize = levelObject->getLevelNPCs().size();
+
+	info.GetReturnValue().Set(v8::Number::New(isolate, npcSize));
+}
+
+void Level_Npc_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelNpcs = levelObject->getLevelNPCs();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelNpcs.size());
+
+	int idx = 0;
+	for (auto &npc: levelNpcs) {
+		result->Set(context, idx, v8::Number::New(isolate, idx)).Check();
+		idx++;
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Npc_Next(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	// Get a reference to the instance of "level.links".
+	v8::Local<v8::Object> obj = info.This();
+
+	// Get the current index from the iterator object.
+	v8::Local<v8::Number> currentIndex = obj->GetInternalField(0).As<v8::Number>();
+	v8::Local<v8::Array> items = obj->GetInternalField(1).As<v8::Array>();
+
+	// Get the length of the array.
+	uint32_t len = items->Length();
+
+	// Check if we have reached the end of the iteration sequence.
+	if (currentIndex->Value() >= len) {
+		auto newObj = v8::Object::New(isolate);
+		newObj->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::True(isolate)).Check();
+		info.GetReturnValue().Set(newObj);
+
+		return;
+	}
+
+	// Get the value at the current index.
+	v8::Local<v8::Value> value = items->Get(context, (uint32_t)currentIndex->Value()).ToLocalChecked();
+
+	// Update the iterator's index.
+	obj->SetInternalField(0, v8::Integer::New(isolate, (int32_t)currentIndex->Value() + 1));
+
+	// Create the next() result object.
+	v8::Local<v8::Object> result = v8::Object::New(isolate);
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "value"), value).Check();
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::False(isolate)).Check();
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelNpcs = levelObject->getLevelNPCs();
+	auto server = levelObject->getServer();
+
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	v8::Local<v8::Object> obj = info.This();
+
+	int current_index = 0;
+
+	v8::Local<v8::FunctionTemplate> test_ctor = v8::FunctionTemplate::New(isolate);
+	test_ctor->InstanceTemplate()->SetInternalFieldCount(2);
+
+	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
+
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Npc_Next, obj));
+
+	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
+
+	// Adds child property to the wrapped object, so it can clear the pointer when
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelNpcs.size());
+
+	int idx = 0;
+	for (auto & npcId : levelNpcs) {
+		auto npc = server->getNPC(npcId);
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
+		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	}
+
+	new_instance->SetInternalField(1, result);
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+// Level Method: level.npcs.add(x, y, script, options);
+void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 3);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		float npcX = (float)args[0]->NumberValue(context).ToChecked();
+		float npcY = (float)args[1]->NumberValue(context).ToChecked();
+		CString script = *v8::String::Utf8Value(isolate, args[2]->ToString(context).ToLocalChecked());
+
+		// TODO(joey): additional options parsing
+		if (args.Length() == 4)
+		{
+
+		}
+
+		TServer *server = levelObject->getServer();
+		auto level = server->getLevel(levelObject->getLevelName().toString());
+
+		auto npc = server->addNPC("", script, npcX, npcY, level, true, true);
+		if (npc != nullptr)
+		{
+			npc->setScriptType("LOCALN");
+			levelObject->addNPC(npc);
+
+			auto *v8_wrapped = dynamic_cast<V8ScriptObject<TNPC> *>(npc->getScriptObject());
+			args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+		}
+	}
+}
+
+// Level Method: level.npcs.remove(index)
+void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		int index = (int)args[0]->NumberValue(context).ToChecked();
+		auto& npcList = levelObject->getLevelNPCs();
+		auto server = levelObject->getServer();
+
+		if (server && npcList.size() > index) {
+			auto npcId = *std::next(npcList.begin(), index);
+			args.GetReturnValue().Set(server->deleteNPC(npcId, true));
+			return;
+		}
+	}
+
+	args.GetReturnValue().Set(false);
+}
+
 
 // PROPERTY: level.players
 void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
@@ -138,7 +775,6 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set(new_instance);
 }
 
-
 void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
@@ -174,6 +810,235 @@ void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 
 	// Needed to indicate we handled the request
 	info.GetReturnValue().Set(value);
+}
+
+// PROPERTY: level.links
+void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+	v8::Local<v8::Object> self = info.This();
+
+	v8::Local<v8::String> internalLinks = v8::String::NewFromUtf8(isolate, "_internalLinks", v8::NewStringType::kInternalized).ToLocalChecked();
+	if (self->HasRealNamedProperty(context, internalLinks).ToChecked())
+	{
+		info.GetReturnValue().Set(self->Get(context, internalLinks).ToLocalChecked());
+		return;
+	}
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Grab external data
+	v8::Local<v8::External> data = info.Data().As<v8::External>();
+	auto* scriptEngine = static_cast<CScriptEngine*>(data->Value());
+	auto* env = dynamic_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+
+	// Find constructor
+	v8::Local<v8::FunctionTemplate> ctor_tpl = env->GetConstructor("level.links");
+	assert(!ctor_tpl.IsEmpty());
+
+	// Create new instance
+	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetAlignedPointerInInternalField(0, levelObject);
+
+	// Adds child property to the wrapped object, so it can clear the pointer when the parent is destroyed
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevel> *>(levelObject->getScriptObject());
+	v8_wrapped->addChild("links", new_instance);
+
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	self->DefineOwnProperty(context, internalLinks, new_instance, propLinks).FromJust();
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	if (levelObject->getLevelLinks().empty()) {
+		return;
+	}
+
+	auto link = levelObject->getLevelLinks()[index];
+
+	auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(link->getScriptObject());
+
+	info.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+}
+
+void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+{
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	v8::Isolate* isolate = info.GetIsolate();
+
+	auto linkSize = levelObject->getLevelLinks().size();
+
+	info.GetReturnValue().Set(v8::Number::New(isolate, linkSize));
+}
+
+void Level_Link_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelLinks = levelObject->getLevelLinks();
+
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelLinks.size());
+
+	int idx = 0;
+	for (auto & link : levelLinks) {
+		result->Set(context, idx, v8::Number::New(isolate, idx)).Check();
+		idx++;
+	}
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Link_Next(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	// Get a reference to the instance of "level.links".
+	v8::Local<v8::Object> obj = info.This();
+
+	// Get the current index from the iterator object.
+	v8::Local<v8::Number> currentIndex = obj->GetInternalField(0).As<v8::Number>();
+	v8::Local<v8::Array> items = obj->GetInternalField(1).As<v8::Array>();
+
+	// Get the length of the array.
+	uint32_t len = items->Length();
+
+	// Check if we have reached the end of the iteration sequence.
+	if (currentIndex->Value() >= len) {
+		auto newObj = v8::Object::New(isolate);
+		newObj->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::True(isolate)).Check();
+		info.GetReturnValue().Set(newObj);
+
+		return;
+	}
+
+	// Get the value at the current index.
+	v8::Local<v8::Value> value = items->Get(context, (uint32_t)currentIndex->Value()).ToLocalChecked();
+
+	// Update the iterator's index.
+	obj->SetInternalField(0, v8::Integer::New(isolate, (int32_t)currentIndex->Value() + 1));
+
+	// Create the next() result object.
+	v8::Local<v8::Object> result = v8::Object::New(isolate);
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "value"), value).Check();
+	result->Set(context, v8::String::NewFromUtf8Literal(isolate, "done"), v8::False(isolate)).Check();
+
+	info.GetReturnValue().Set(result);
+}
+
+void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info) {
+	V8ENV_SAFE_UNWRAP(info, TLevel, levelObject);
+
+	// Get link list
+	auto& levelLinks = levelObject->getLevelLinks();
+
+	v8::Isolate* isolate = info.GetIsolate();
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	v8::Local<v8::Object> obj = info.This();
+
+	int current_index = 0;
+
+	v8::Local<v8::FunctionTemplate> test_ctor = v8::FunctionTemplate::New(isolate);
+	test_ctor->InstanceTemplate()->SetInternalFieldCount(2);
+
+	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
+
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Link_Next, obj));
+
+	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
+	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
+
+	// Adds child property to the wrapped object, so it can clear the pointer when
+	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)levelLinks.size());
+
+	int idx = 0;
+	for (auto & link : levelLinks) {
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(link->getScriptObject());
+		result->Set(context, idx++, v8_wrapped->Handle(isolate)).Check();
+	}
+
+	new_instance->SetInternalField(1, result);
+
+	info.GetReturnValue().Set(new_instance);
+}
+
+
+// Level Method: level.links.add("dest.nw", x, y, width, height, newX, newY)
+void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 7);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		// Argument parsing
+		CString destination = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+		int levelX = (int)args[1]->NumberValue(context).ToChecked();
+		int levelY = (int)args[2]->NumberValue(context).ToChecked();
+		int width = (int)args[3]->NumberValue(context).ToChecked();
+		int height = (int)args[4]->NumberValue(context).ToChecked();
+		CString newX = *v8::String::Utf8Value(isolate, args[5]->ToString(context).ToLocalChecked());
+		CString newY = *v8::String::Utf8Value(isolate, args[6]->ToString(context).ToLocalChecked());
+
+
+		auto newLevelLink = levelObject->addLink();
+		newLevelLink->setNewLevel(destination);
+		newLevelLink->setX(levelX);
+		newLevelLink->setY(levelY);
+		newLevelLink->setWidth(width);
+		newLevelLink->setHeight(height);
+		newLevelLink->setNewX(newX);
+		newLevelLink->setNewY(newY);
+
+		auto *v8_wrapped = dynamic_cast<V8ScriptObject<TLevelLink> *>(newLevelLink->getScriptObject());
+		args.GetReturnValue().Set(v8_wrapped->Handle(isolate));
+	}
+}
+
+// Level Method: level.links.remove(index)
+void Level_Function_RemoveLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate *isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the specified arguments
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		int index = (int)args[0]->NumberValue(context).ToChecked();
+
+		args.GetReturnValue().Set(levelObject->removeLink(index));
+	}
+
+	args.GetReturnValue().Set(false);
 }
 
 // Level Method: level.savelevel(levelname);
@@ -285,7 +1150,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		int idx = 0;
 		for (auto & it : playerListSorted)
 		{
-			V8ScriptObject<TPlayer> *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(it.second->getScriptObject());
+			auto *v8_wrapped = static_cast<V8ScriptObject<TPlayer> *>(it.second->getScriptObject());
 
 			v8::Local<v8::Object> object = v8::Object::New(isolate);
 			object->Set(context, key_distance, v8::Number::New(isolate, it.first)).Check();
@@ -296,6 +1161,47 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		args.GetReturnValue().Set(result);
 	}
 }
+
+// Level Method: level.shoot(float x, float y, float z, float angle, float zangle, float strength, str ani, str aniparams);
+void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	// Throw an exception on constructor calls for method functions
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+
+	// Throw an exception if we don't receive the minimum 8 arguments
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 8);
+
+	v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber() && args[5]->IsNumber() && args[6]->IsString() && args[7]->IsString())
+	{
+		V8ENV_SAFE_UNWRAP(args, TLevel, levelObject);
+
+		TServer* server = levelObject->getServer();
+		if (server == nullptr) return;
+		auto level = server->getLevel(levelObject->getLevelName().toString());
+
+		auto x = (float)args[0]->NumberValue(context).ToChecked();
+		auto y = (float)args[1]->NumberValue(context).ToChecked();
+		auto z = (float)args[2]->NumberValue(context).ToChecked();
+		auto angle = (float)args[3]->NumberValue(context).ToChecked();
+		auto zangle = (float)args[4]->NumberValue(context).ToChecked();
+		auto strength = (float)args[5]->NumberValue(context).ToChecked();
+		std::string ani = *v8::String::Utf8Value(isolate, args[6]->ToString(context).ToLocalChecked());
+
+		CString aniArgs;
+		for (int i = 7; i < args.Length(); i++) {
+			aniArgs << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+		}
+		aniArgs.gtokenizeI();
+
+		// Send the packet out.
+		server->sendShootToOneLevel(level, x, y, z, angle, zangle, strength, ani, aniArgs.text());
+	}
+}
+
 // Level Method: level.putexplosion(radius, x, y);
 void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -436,10 +1342,148 @@ void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+void Setup_LevelTiles(V8ScriptEnv *env, v8::Isolate *isolate) {// Create the level tiles template
+	v8::Local<v8::FunctionTemplate> level_tiles_ctor = v8::FunctionTemplate::New(isolate);
+	level_tiles_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "tiles"));
+	level_tiles_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+	level_tiles_ctor->InstanceTemplate()->SetHandler(
+		v8::IndexedPropertyHandlerConfiguration(
+			Level_Tile_Getter,
+			Level_Tile_Setter,
+			nullptr,
+			nullptr,
+			nullptr,
+			v8::Local<v8::Value>(),
+		    v8::PropertyHandlerFlags::kNone
+		)
+	);
+	env->SetConstructor("level.tiles", level_tiles_ctor);
+}
+
+void Setup_LevelLinks(V8ScriptEnv *env, v8::Isolate *isolate, v8::Local<v8::External> &engine_ref) {// Create the level link template
+	v8::Local<v8::FunctionTemplate> level_links_ctor = v8::FunctionTemplate::New(isolate);
+	level_links_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "links"));
+	level_links_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+	level_links_ctor->InstanceTemplate()->SetHandler(
+		v8::IndexedPropertyHandlerConfiguration(
+			Level_Link_Getter,
+			nullptr,
+			nullptr,
+			nullptr,
+			Level_Link_Enumerator,
+			v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kNone
+		)
+	);
+	v8::Local<v8::ObjectTemplate> level_links_proto = level_links_ctor->PrototypeTemplate();
+
+	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelLink, engine_ref));
+	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelLink, engine_ref));
+	level_links_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Link_Length);
+
+	// Define the Symbol.iterator method on the prototype to make "level.links" iterable
+	v8::Local<v8::FunctionTemplate> level_links_iterator = v8::FunctionTemplate::New(isolate);
+	level_links_iterator->SetCallHandler(Level_Link_Iterator);
+	level_links_proto->Set(v8::Symbol::GetIterator(isolate), level_links_iterator);
+
+	env->SetConstructor("level.links", level_links_ctor);
+}
+
+void Setup_LevelSigns(V8ScriptEnv *env, v8::Isolate *isolate, v8::Local<v8::External> &engine_ref) {// Create the level signs template
+	v8::Local<v8::FunctionTemplate> level_signs_ctor = v8::FunctionTemplate::New(isolate);
+	level_signs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "signs"));
+	level_signs_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+	level_signs_ctor->InstanceTemplate()->SetHandler(
+		v8::IndexedPropertyHandlerConfiguration(
+			Level_Sign_Getter,
+			nullptr,
+			nullptr,
+			nullptr,
+			Level_Sign_Enumerator,
+			v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kNone
+		)
+	);
+	v8::Local<v8::ObjectTemplate> level_signs_proto = level_signs_ctor->PrototypeTemplate();
+
+	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelSign, engine_ref));
+	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
+	level_signs_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Sign_Length);
+
+	// Define the Symbol.iterator method on the prototype to make "level.signs" iterable
+	v8::Local<v8::FunctionTemplate> level_signs_iterator = v8::FunctionTemplate::New(isolate);
+	level_signs_iterator->SetCallHandler(Level_Sign_Iterator);
+	level_signs_proto->Set(v8::Symbol::GetIterator(isolate), level_signs_iterator);
+
+	env->SetConstructor("level.signs", level_signs_ctor);
+}
+
+void Setup_LevelChests(V8ScriptEnv *env, v8::Isolate *isolate, v8::Local<v8::External> &engine_ref) {// Create the level chests template
+	v8::Local<v8::FunctionTemplate> level_chests_ctor = v8::FunctionTemplate::New(isolate);
+	level_chests_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "chests"));
+	level_chests_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+	level_chests_ctor->InstanceTemplate()->SetHandler(
+		v8::IndexedPropertyHandlerConfiguration(
+			Level_Chest_Getter,
+			nullptr,
+			nullptr,
+			nullptr,
+			Level_Chest_Enumerator,
+			v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kNone
+		)
+	);
+	v8::Local<v8::ObjectTemplate> level_chests_proto = level_chests_ctor->PrototypeTemplate();
+
+	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelChest, engine_ref));
+	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelChest, engine_ref));
+	level_chests_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Chest_Length);
+
+	// Define the Symbol.iterator method on the prototype to make "level.chests" iterable
+	v8::Local<v8::FunctionTemplate> level_chests_iterator = v8::FunctionTemplate::New(isolate);
+	level_chests_iterator->SetCallHandler(Level_Chest_Iterator);
+	level_chests_proto->Set(v8::Symbol::GetIterator(isolate), level_chests_iterator);
+
+	env->SetConstructor("level.chests", level_chests_ctor);
+}
+
+void Setup_LevelNpcs(V8ScriptEnv *env, v8::Isolate *isolate, v8::Local<v8::External> &engine_ref) {// Create the level chests template
+	v8::Local<v8::FunctionTemplate> level_npcs_ctor = v8::FunctionTemplate::New(isolate);
+	level_npcs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "npcs"));
+	level_npcs_ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+	level_npcs_ctor->InstanceTemplate()->SetHandler(
+		v8::IndexedPropertyHandlerConfiguration(
+			Level_Npc_Getter,
+			nullptr,
+			nullptr,
+			nullptr,
+			Level_Npc_Enumerator,
+			v8::Local<v8::Value>(),
+			v8::PropertyHandlerFlags::kNone
+		)
+	);
+	v8::Local<v8::ObjectTemplate> level_npcs_proto = level_npcs_ctor->PrototypeTemplate();
+
+	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelNpc, engine_ref));
+	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelNpc, engine_ref));
+	level_npcs_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Npc_Length);
+
+	// Define the Symbol.iterator method on the prototype to make "level.chests" iterable
+	v8::Local<v8::FunctionTemplate> level_npcs_iterator = v8::FunctionTemplate::New(isolate);
+	level_npcs_iterator->SetCallHandler(Level_Npc_Iterator);
+	level_npcs_proto->Set(v8::Symbol::GetIterator(isolate), level_npcs_iterator);
+
+	env->SetConstructor("level.npcs", level_npcs_ctor);
+}
+
 void bindClass_Level(CScriptEngine *scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
+	auto *env = dynamic_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
 	v8::Isolate *isolate = env->Isolate();
 
 	// External pointer
@@ -460,6 +1504,7 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 //	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "shoot"), v8::FunctionTemplate::New(isolate, Level_Function_Shoot, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
 	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
@@ -470,19 +1515,18 @@ void bindClass_Level(CScriptEngine *scriptEngine)
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "name"), Level_GetStr_Name);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetArray_Npcs);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetObject_Npcs, nullptr, engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "links"), Level_GetObject_Links, nullptr, engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signs"), Level_GetObject_Signs, nullptr, engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "chests"), Level_GetObject_Chests, nullptr, engine_ref);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr, engine_ref);
 
-	// Create the player attr template
-	v8::Local<v8::FunctionTemplate> level_tiles_ctor = v8::FunctionTemplate::New(isolate);
-	level_tiles_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "tiles"));
-	level_tiles_ctor->InstanceTemplate()->SetInternalFieldCount(1);
-	level_tiles_ctor->InstanceTemplate()->SetHandler(v8::IndexedPropertyHandlerConfiguration(
-			Level_Tile_Getter, Level_Tile_Setter, nullptr, nullptr, nullptr, v8::Local<v8::Value>(),
-			v8::PropertyHandlerFlags::kNone));
-	env->SetConstructor("level.tiles", level_tiles_ctor);
-
+	Setup_LevelTiles(env, isolate);
+	Setup_LevelLinks(env, isolate, engine_ref);
+	Setup_LevelSigns(env, isolate, engine_ref);
+	Setup_LevelChests(env, isolate, engine_ref);
+	Setup_LevelNpcs(env, isolate, engine_ref);
 
 	// Persist the constructor
 	env->SetConstructor(ScriptConstructorId<TLevel>::result, level_ctor);
