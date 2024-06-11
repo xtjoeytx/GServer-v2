@@ -125,108 +125,179 @@ enum
 #define propscount 83
 
 class Server;
+
 class Account
 {
 public:
 	// Constructor - Deconstructor
 	Account(Server* pServer);
+
 	~Account();
 
 	static bool meetsConditions(CString fileName, CString conditions);
 
 	// Load/Save Account
 	void reset();
+
 	bool loadAccount(const CString& pAccount, bool ignoreNickname = false);
+
 	bool saveAccount();
 
 	// Attribute-Managing
 	bool hasChest(const CString& pChest);
+
 	bool hasWeapon(const CString& pWeapon);
 
 	// Flag-Managing
 	CString getFlag(const std::string& pFlagName) const;
+
 	void setFlag(CString pFlag);
+
 	void setFlag(const std::string& pFlagName, const CString& pFlagValue);
+
 	void deleteFlag(const std::string& pFlagName);
 
 	CString translate(const CString& pKey);
+
 	bool hasRight(int mask) { return (m_adminRights & mask) ? true : false; }
 
 	// get functions
 	bool getGuest() { return m_isGuest; }
+
 	float getX() const { return m_x; }
+
 	float getY() const { return m_y; }
+
 	float getPower() const { return m_hitpoints; }
+
 	int getAlignment() const { return m_ap; }
+
 	int getArrowCount() const { return m_arrowCount; }
+
 	int getBombCount() const { return m_bombCount; }
+
 	int getGlovePower() const { return m_glovePower; }
+
 	int getMagicPower() const { return m_mp; }
+
 	int getMaxPower() const { return m_maxHitpoints; }
+
 	int getRupees() const { return m_gralatCount; }
+
 	int getSwordPower() const { return m_swordPower; }
+
 	int getShieldPower() const { return m_shieldPower; }
+
 	int getSprite() const { return m_sprite; }
+
 	int getStatus() const { return m_status; }
+
 	int getOnlineTime() const { return m_onlineTime; }
+
 	int getKills() const { return m_kills; }
+
 	int getDeaths() const { return m_deaths; }
+
 	int getAdminRights() const { return m_adminRights; }
+
 	int64_t getDeviceId() const { return m_deviceId; }
+
 	bool getBanned() const { return m_isBanned; }
+
 	bool getLoadOnly() const { return m_isLoadOnly; }
+
 	unsigned char getColorId(unsigned int idx) const;
+
 	unsigned int getAttachedNPC() const { return m_attachNPC; }
 
 	const CString& getAccountName() const { return m_accountName; }
+
 	const CString& getNickname() const { return m_nickName; }
+
 	const CString& getLevelName() const { return m_levelName; }
+
 	const CString& getBodyImage() const { return m_bodyImage; }
+
 	const CString& getHeadImage() const { return m_headImage; }
+
 	//Level * getLevel()						{ return nullptr; }
 	const CString& getShieldImage() const { return m_shieldImage; }
+
 	const CString& getSwordImage() const { return m_swordImage; }
+
 	const CString& getAnimation() const { return m_gani; }
+
 	const CString& getAdminIp() const { return m_adminIp; }
+
 	const CString& getBanReason() const { return m_banReason; }
+
 	const CString& getBanLength() const { return m_banLength; }
+
 	const CString& getChatMsg() const { return m_chatMessage; }
+
 	const CString& getEmail() const { return m_email; }
+
 	const CString& getIpStr() const { return m_accountIpStr; }
+
 	const CString& getComments() const { return m_accountComments; }
+
 	std::unordered_map<std::string, CString>& getFlagList() { return m_flagList; }
+
 	std::vector<CString>& getFolderList() { return m_folderList; }
+
 	std::vector<CString>& getWeaponList() { return m_weaponList; }
 
 	// set functions
 	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
+
 	void setLastSparTime(time_t newTime) { m_lastSparTime = newTime; }
+
 	void setApCounter(int newTime) { m_apCounter = newTime; }
+
 	void setKills(int newKills) { m_kills = newKills; }
+
 	void setRating(int newRate, int newDeviate)
 	{
 		m_eloRating = (float)newRate;
 		m_eloDeviation = (float)newDeviate;
 	}
+
 	void setAccountName(CString account) { m_accountName = account; }
+
 	void setExternal(bool external) { m_isExternal = external; }
+
 	void setBanned(bool banned) { m_isBanned = banned; }
+
 	void setBanReason(CString reason) { m_banReason = reason; }
+
 	void setBanLength(CString length) { m_banLength = length; }
+
 	void setLoadOnly(bool loadOnly) { m_isLoadOnly = loadOnly; }
+
 	void setEmail(CString email) { m_email = email; }
+
 	void setAdminRights(int rights) { m_adminRights = rights; }
+
 	void setAdminIp(CString ip) { m_adminIp = ip; }
+
 	void setComments(CString comments) { m_accountComments = comments; }
 
 	void setBodyImage(const CString& newImage);
+
 	void setHeadImage(const CString& newImage);
+
 	void setMaxPower(int newMaxPower);
+
 	void setPower(float newPower);
+
 	void setShieldImage(const CString& newImage);
+
 	void setShieldPower(int newPower);
+
 	void setSwordImage(const CString& newImage);
+
 	void setSwordPower(int newPower);
+
 	void setGani(const CString& newGani);
 
 protected:

@@ -24,10 +24,12 @@ public:
 
 	// Move operations
 	UpdatePackage(UpdatePackage&& o) noexcept;
+
 	UpdatePackage& operator=(UpdatePackage&& o) noexcept;
 
 	// Delete copy operations
 	UpdatePackage(const UpdatePackage&) = delete;
+
 	UpdatePackage& operator=(const UpdatePackage&) = delete;
 
 	//! Get the package filename

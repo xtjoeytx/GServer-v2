@@ -1,10 +1,10 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
 	#include "IUtil.h"
 	#include "Level.h"
 	#include "NPC.h"
 	#include "Player.h"
+	#include "ScriptEngine.h"
 	#include "Server.h"
 	#include <cassert>
 	#include <stdio.h>
@@ -66,12 +66,14 @@ void Player_GetInt_Alignment(v8::Local<v8::String> prop, const v8::PropertyCallb
 	info.GetReturnValue().Set(playerObject->getAlignment());
 }
 
-void Player_SetInt_Alignment(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_Alignment(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.bodyimg
@@ -85,7 +87,8 @@ void Player_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallb
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_BodyImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_BodyImage(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+							 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -108,12 +111,14 @@ void Player_GetInt_Bombs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set(playerObject->getBombCount());
 }
 
-void Player_SetInt_Bombs(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_Bombs(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_BOMBSCOUNT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_BOMBSCOUNT >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.chat
@@ -127,7 +132,8 @@ void Player_GetStr_Chat(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_Chat(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_Chat(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+						const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -150,12 +156,14 @@ void Player_GetInt_Darts(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set(playerObject->getArrowCount());
 }
 
-void Player_SetInt_Darts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_Darts(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_ARROWSCOUNT >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_ARROWSCOUNT >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.dir
@@ -171,7 +179,8 @@ void Player_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, c
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)(value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked() % 4);
-	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_SPRITE >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.fullhearts
@@ -182,12 +191,14 @@ void Player_GetInt_Fullhearts(v8::Local<v8::String> prop, const v8::PropertyCall
 	info.GetReturnValue().Set(playerObject->getMaxPower());
 }
 
-void Player_SetInt_Fullhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_Fullhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)clip(newValue, 0, 20), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)clip(newValue, 0, 20),
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.glovepower
@@ -198,12 +209,14 @@ void Player_GetInt_GlovePower(v8::Local<v8::String> prop, const v8::PropertyCall
 	info.GetReturnValue().Set(playerObject->getGlovePower());
 }
 
-void Player_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_GLOVEPOWER >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_GLOVEPOWER >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.guild
@@ -217,7 +230,8 @@ void Player_GetStr_Guild(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_Guild(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_Guild(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -248,12 +262,14 @@ void Player_GetNum_Hearts(v8::Local<v8::String> prop, const v8::PropertyCallback
 	info.GetReturnValue().Set(playerObject->getPower());
 }
 
-void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	int newValue = (int)(value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked() * 2);
-	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)clip(newValue, 0, 40), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_CURPOWER >> (char)clip(newValue, 0, 40),
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.headimg
@@ -267,7 +283,8 @@ void Player_GetStr_HeadImage(v8::Local<v8::String> prop, const v8::PropertyCallb
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_HeadImage(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+							 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -345,12 +362,14 @@ void Player_GetInt_MagicPower(v8::Local<v8::String> prop, const v8::PropertyCall
 	info.GetReturnValue().Set(playerObject->getMagicPower());
 }
 
-void Player_SetInt_MagicPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_MagicPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	unsigned char newValue = (unsigned char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_MAGICPOINTS >> (char)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_MAGICPOINTS >> (char)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.nickname
@@ -364,7 +383,8 @@ void Player_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallba
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_Nickname(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+							const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -398,12 +418,14 @@ void Player_GetInt_Rupees(v8::Local<v8::String> prop, const v8::PropertyCallback
 	info.GetReturnValue().Set(playerObject->getRupees());
 }
 
-void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	int newValue = value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_RUPEESCOUNT >> (int)newValue,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.shieldimg
@@ -417,7 +439,8 @@ void Player_GetStr_ShieldImage(v8::Local<v8::String> prop, const v8::PropertyCal
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_ShieldImage(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_ShieldImage(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							   const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -440,7 +463,8 @@ void Player_GetInt_ShieldPower(v8::Local<v8::String> prop, const v8::PropertyCal
 	info.GetReturnValue().Set(playerObject->getShieldPower());
 }
 
-void Player_SetInt_ShieldPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_ShieldPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							   const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -464,7 +488,8 @@ void Player_GetStr_SwordImage(v8::Local<v8::String> prop, const v8::PropertyCall
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_SetStr_SwordImage(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetStr_SwordImage(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -487,7 +512,8 @@ void Player_GetInt_SwordPower(v8::Local<v8::String> prop, const v8::PropertyCall
 	info.GetReturnValue().Set(playerObject->getSwordPower());
 }
 
-void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+							  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -521,7 +547,8 @@ void Player_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	else
 		newValueInt <<= 1;
 
-	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_X2 >> (short)newValueInt,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.y
@@ -545,7 +572,8 @@ void Player_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, con
 	else
 		newValueInt <<= 1;
 
-	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	playerObject->setProps(CString() >> (char)PLPROP_Y2 >> (short)newValueInt,
+						   PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 // PROPERTY: player.attr
@@ -555,7 +583,9 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalAttr = v8::String::NewFromUtf8(isolate, "_internalAttr", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalAttr = v8::String::NewFromUtf8(isolate, "_internalAttr",
+																 v8::NewStringType::kInternalized)
+											 .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalAttr).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalAttr).ToLocalChecked());
@@ -581,12 +611,15 @@ void Player_GetObject_Attrs(v8::Local<v8::String> prop, const v8::PropertyCallba
 	V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("attr", new_instance);
 
-	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+																		v8::PropertyAttribute::DontDelete |
+																		v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalAttr, new_instance, propAttr).FromJust();
 	info.GetReturnValue().Set(new_instance);
 }
 
-const char __pAttrPackets[30] = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
+const char __pAttrPackets[30] = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+								  67, 68, 69, 70, 71, 72, 73, 74 };
 
 void Player_Attr_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
@@ -638,7 +671,9 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalName = v8::String::NewFromUtf8(isolate, "_internalColors", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalName = v8::String::NewFromUtf8(isolate, "_internalColors",
+																 v8::NewStringType::kInternalized)
+											 .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalName).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalName).ToLocalChecked());
@@ -664,7 +699,9 @@ void Player_GetObject_Colors(v8::Local<v8::String> prop, const v8::PropertyCallb
 	V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("colors", new_instance);
 
-	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	v8::PropertyAttribute propAttributes = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+																			  v8::PropertyAttribute::DontDelete |
+																			  v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalName, new_instance, propAttributes).FromJust();
 	info.GetReturnValue().Set(new_instance);
 }
@@ -724,7 +761,9 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalFlags = v8::String::NewFromUtf8(isolate, "_internalFlags", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalFlags = v8::String::NewFromUtf8(isolate, "_internalFlags",
+																  v8::NewStringType::kInternalized)
+											  .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalFlags).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalFlags).ToLocalChecked());
@@ -750,7 +789,9 @@ void Player_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(playerObject->getScriptObject());
 	v8_wrapped->addChild("flags", new_instance);
 
-	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+																		v8::PropertyAttribute::DontDelete |
+																		v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalFlags, new_instance, propAttr).FromJust();
 	info.GetReturnValue().Set(new_instance);
 }
@@ -773,7 +814,8 @@ void Player_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 	info.GetReturnValue().Set(strText);
 }
 
-void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+void Player_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
@@ -1016,7 +1058,8 @@ void Player_Function_SendPM(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		// PM message
 		CString pmMessage(*newValue);
-		playerObject->sendPacket({PLO_PRIVATEMESSAGE, CString() >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize()});
+		playerObject->sendPacket(
+			{ PLO_PRIVATEMESSAGE, CString() >> (short)npcServer->getId() << "\"\"," << pmMessage.gtokenize() });
 	}
 }
 
@@ -1058,7 +1101,8 @@ void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 			if (args[i]->IsString() || args[i]->IsNumber())
 			{
-				v8::String::Utf8Value aniParam(isolate, args[i]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+				v8::String::Utf8Value aniParam(isolate,
+											   args[i]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 				animation << "," << *aniParam;
 			}
 		}
@@ -1267,7 +1311,8 @@ void Player_Function_TriggerAction(const v8::FunctionCallbackInfo<v8::Value>& ar
 		// Unwrap Object
 		V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-		playerObject->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)trigx >> (char)trigy << trigaction});
+		playerObject->sendPacket(
+			{ PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)trigx >> (char)trigy << trigaction });
 	}
 }
 
@@ -1293,7 +1338,8 @@ void Player_Function_TriggerClient(const v8::FunctionCallbackInfo<v8::Value>& ar
 			// Unwrap Object
 			V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-			playerObject->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction});
+			playerObject->sendPacket(
+				{ PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << trigaction });
 		}
 	}
 }
@@ -1308,71 +1354,110 @@ void bindClass_Player(ScriptEngine* scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "player"
-	v8::Local<v8::String> className = v8::String::NewFromUtf8Literal(isolate, "player", v8::NewStringType::kInternalized);
+	v8::Local<v8::String> className = v8::String::NewFromUtf8Literal(isolate, "player",
+																	 v8::NewStringType::kInternalized);
 
 	// Create constructor for class
-	v8::Local<v8::FunctionTemplate> player_ctor = v8::FunctionTemplate::New(isolate, nullptr, engine_ref); // , Player_Constructor);
+	v8::Local<v8::FunctionTemplate> player_ctor = v8::FunctionTemplate::New(isolate, nullptr,
+																			engine_ref); // , Player_Constructor);
 	v8::Local<v8::ObjectTemplate> player_proto = player_ctor->PrototypeTemplate();
 
 	player_ctor->SetClassName(className);
 	player_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addweapon"), v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "disableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "enableweapons"), v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "freezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_FreezePlayer, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "unfreezeplayer"), v8::FunctionTemplate::New(isolate, Player_Function_UnfreezePlayer, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "hasweapon"), v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removeweapon"), v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "say"), v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendpm"), v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendrpgmessage"), v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"), v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "addweapon"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_AddWeapon));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "disableweapons"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_DisableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "enableweapons"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_EnableWeapons));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "freezeplayer"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_FreezePlayer, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "unfreezeplayer"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_UnfreezePlayer, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "hasweapon"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_HasWeapon));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "removeweapon"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_RemoveWeapon));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "say"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_Say, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendpm"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_SendPM, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendrpgmessage"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_SendRPGMessage, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setani"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_SetAni, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setgender"), v8::FunctionTemplate::New(isolate, Player_Function_SetGender, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setlevel2"), v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setlevel2"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_SetLevel2, engine_ref));
 	//player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setplayerprop"), v8::FunctionTemplate::New(isolate, Player_Function_SetPlayerProp, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attached"), v8::FunctionTemplate::New(isolate, Player_Function_Attached, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_AttachNpc, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "detachnpc"), v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "join"), v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggeraction"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
-	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggerclient"), v8::FunctionTemplate::New(isolate, Player_Function_TriggerClient, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attached"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_Attached, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "attachnpc"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_AttachNpc, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "detachnpc"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_DetachNpc, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "join"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_Join, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggeraction"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_TriggerAction, engine_ref));
+	player_proto->Set(v8::String::NewFromUtf8Literal(isolate, "triggerclient"),
+					  v8::FunctionTemplate::New(isolate, Player_Function_TriggerClient, engine_ref));
 
 	// Properties
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "id"), Player_GetInt_Id);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "account"), Player_GetStr_Account);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ani"), Player_GetStr_Ani, Player_SetStr_Ani);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ap"), Player_GetInt_Alignment, Player_SetInt_Alignment);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "bodyimg"), Player_GetStr_BodyImage, Player_SetStr_BodyImage);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "bombs"), Player_GetInt_Bombs, Player_SetInt_Bombs);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ap"), Player_GetInt_Alignment,
+							  Player_SetInt_Alignment);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "bodyimg"), Player_GetStr_BodyImage,
+							  Player_SetStr_BodyImage);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "bombs"), Player_GetInt_Bombs,
+							  Player_SetInt_Bombs);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "chat"), Player_GetStr_Chat, Player_SetStr_Chat);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "darts"), Player_GetInt_Darts, Player_SetInt_Darts);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "darts"), Player_GetInt_Darts,
+							  Player_SetInt_Darts);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "dir"), Player_GetInt_Dir, Player_SetInt_Dir);
 	//player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "hatimg"), Player_GetStr_HatImage, Player_SetStr_HatImage);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "hearts"), Player_GetNum_Hearts, Player_SetNum_Hearts);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "headimg"), Player_GetStr_HeadImage, Player_SetStr_HeadImage);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "fullhearts"), Player_GetInt_Fullhearts, Player_SetInt_Fullhearts);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "glovepower"), Player_GetInt_GlovePower, Player_SetInt_GlovePower);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "guild"), Player_GetStr_Guild, Player_SetStr_Guild);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "hearts"), Player_GetNum_Hearts,
+							  Player_SetNum_Hearts);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "headimg"), Player_GetStr_HeadImage,
+							  Player_SetStr_HeadImage);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "fullhearts"), Player_GetInt_Fullhearts,
+							  Player_SetInt_Fullhearts);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "glovepower"), Player_GetInt_GlovePower,
+							  Player_SetInt_GlovePower);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "guild"), Player_GetStr_Guild,
+							  Player_SetStr_Guild);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "isadmin"), Player_GetBool_IsAdmin);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "isclient"), Player_GetBool_IsClient);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "isstaff"), Player_GetBool_IsStaff);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "level"), Player_GetObject_Level);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "levelname"), Player_GetStr_LevelName);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mp"), Player_GetInt_MagicPower, Player_SetInt_MagicPower);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "nick"), Player_GetStr_Nickname, Player_SetStr_Nickname);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mp"), Player_GetInt_MagicPower,
+							  Player_SetInt_MagicPower);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "nick"), Player_GetStr_Nickname,
+							  Player_SetStr_Nickname);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "platform"), Player_GetString_Platform);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "rupees"), Player_GetInt_Rupees, Player_SetInt_Rupees);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "shieldimg"), Player_GetStr_ShieldImage, Player_SetStr_ShieldImage);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "shieldpower"), Player_GetInt_ShieldPower, Player_SetInt_ShieldPower);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordimg"), Player_GetStr_SwordImage, Player_SetStr_SwordImage);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordpower"), Player_GetInt_SwordPower, Player_SetInt_SwordPower);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "rupees"), Player_GetInt_Rupees,
+							  Player_SetInt_Rupees);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "shieldimg"), Player_GetStr_ShieldImage,
+							  Player_SetStr_ShieldImage);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "shieldpower"), Player_GetInt_ShieldPower,
+							  Player_SetInt_ShieldPower);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordimg"), Player_GetStr_SwordImage,
+							  Player_SetStr_SwordImage);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "swordpower"), Player_GetInt_SwordPower,
+							  Player_SetInt_SwordPower);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), Player_GetNum_X, Player_SetNum_X);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Player_GetNum_Y, Player_SetNum_Y);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "attr"), Player_GetObject_Attrs, nullptr, engine_ref);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "colors"), Player_GetObject_Colors, nullptr, engine_ref);
-	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Player_GetObject_Flags, nullptr, engine_ref);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "attr"), Player_GetObject_Attrs, nullptr,
+							  engine_ref);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "colors"), Player_GetObject_Colors, nullptr,
+							  engine_ref);
+	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Player_GetObject_Flags, nullptr,
+							  engine_ref);
 	player_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "weapons"), Player_GetArray_Weapons);
 
 	// Create the player attr template

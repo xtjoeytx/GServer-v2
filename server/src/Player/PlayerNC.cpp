@@ -14,9 +14,11 @@
 #define rclog m_server->getRCLog()
 
 typedef bool (Player::*TPLSock)(CString&);
+
 extern std::vector<TPLSock> TPLFunc; // From Player.cpp
 
 #ifdef V8NPCSERVER
+
 bool Player::msgPLI_NC_NPCGET(CString& pPacket)
 {
 	if (!isNC())
@@ -36,7 +38,7 @@ bool Player::msgPLI_NC_NPCGET(CString& pPacket)
 		if (npc != nullptr)
 		{
 			CString npcDump = npc->getVariableDump();
-			sendPacket({PLO_NC_NPCATTRIBUTES, CString() << npcDump.gtokenize()});
+			sendPacket({ PLO_NC_NPCATTRIBUTES, CString() << npcDump.gtokenize() });
 		}
 	}
 
@@ -60,7 +62,7 @@ bool Player::msgPLI_NC_NPCDELETE(CString& pPacket)
 		bool result = m_server->deleteNPC(npc, true);
 		if (result)
 		{
-			m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCDELETE, CString() >> (int)npcId});
+			m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_NC_NPCDELETE, CString() >> (int)npcId });
 
 			CString logMsg;
 			logMsg << "NPC " << npcName << " deleted by " << m_accountName << "\n";
@@ -110,7 +112,7 @@ bool Player::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	if (npc != nullptr)
 	{
 		CString code = npc->getSource().getSource();
-		sendPacket({PLO_NC_NPCSCRIPT, CString() >> (int)npcId << code.gtokenize()});
+		sendPacket({ PLO_NC_NPCSCRIPT, CString() >> (int)npcId << code.gtokenize() });
 	}
 	//	else printf("npc doesn't exist\n");
 
@@ -159,7 +161,7 @@ bool Player::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		for (const auto& [flag, value]: flagList)
 			flagListStr << flag << "=" << value << "\n";
 
-		sendPacket({PLO_NC_NPCFLAGS, CString() >> (int)npcId << flagListStr.gtokenize()});
+		sendPacket({ PLO_NC_NPCFLAGS, CString() >> (int)npcId << flagListStr.gtokenize() });
 	}
 
 	return true;
@@ -284,18 +286,21 @@ bool Player::msgPLI_NC_NPCADD(CString& pPacket)
 		return true;
 	}
 
-	auto newNpc = m_server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level, true);
+	auto newNpc = m_server->addServerNpc(strtoint(npcId), (float)strtofloat(npcX), (float)strtofloat(npcY), level,
+										 true);
 	if (newNpc != nullptr)
 	{
 		m_server->assignNPCName(newNpc, npcName.toString());
 
-		CString npcProps = CString() >> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType >> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
+		CString npcProps = CString() >> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType >> (char)NPCPROP_CURLEVEL
+																																							  << newNpc->getProp(NPCPROP_CURLEVEL);
 
 		// NOTE: This can't be sent to other clients, so rather than assemble the same packet twice just set the scripter separately.
-		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
+		newNpc->setProps(
+			CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
 
 		// Send packet to npc controls about new npc
-		m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCADD, CString() >> (int)newNpc->getId() << npcProps});
+		m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_NC_NPCADD, CString() >> (int)newNpc->getId() << npcProps });
 
 		// Persist NPC
 		newNpc->saveNPC();
@@ -330,7 +335,7 @@ bool Player::msgPLI_NC_CLASSEDIT(CString& pPacket)
 
 		CString ret;
 		ret >> (char)className.length() << className << classCode.gtokenize();
-		sendPacket({PLO_NC_CLASSGET, ret});
+		sendPacket({ PLO_NC_CLASSGET, ret });
 	}
 
 	return true;
@@ -358,7 +363,7 @@ bool Player::msgPLI_NC_CLASSADD(CString& pPacket)
 	{
 		CString ret;
 		ret << className;
-		m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_CLASSADD, ret});
+		m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_NC_CLASSADD, ret });
 	}
 
 	// Logging
@@ -384,7 +389,7 @@ bool Player::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	{
 		CString ret;
 		ret << className;
-		m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_CLASSDELETE, ret});
+		m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_NC_CLASSDELETE, ret });
 		logMsg << m_accountName << " has deleted class " << className << "\n";
 	}
 	else
@@ -423,7 +428,7 @@ bool Player::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 					<< npc->getVariableDump() << "\n";
 		}
 
-		sendPacket({PLO_NC_LEVELDUMP, CString() << npcDump.gtokenize()});
+		sendPacket({ PLO_NC_LEVELDUMP, CString() << npcDump.gtokenize() });
 	}
 
 	return true;
@@ -449,7 +454,7 @@ bool Player::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 		ret >> (char)weaponName.length() << weaponName;
 	}
 
-	sendPacket({PLO_NC_WEAPONLISTGET, ret});
+	sendPacket({ PLO_NC_WEAPONLISTGET, ret });
 	return true;
 }
 
@@ -472,21 +477,19 @@ bool Player::msgPLI_NC_WEAPONGET(CString& pPacket)
 
 		if (getVersion() < NCVER_2_1)
 		{
-			sendPacket({PLO_NPCWEAPONADD, CString()
-				>> (char)weaponName.length() << weaponName
-				>> (char)0 >> (char)weapon->getImage().length() << weapon->getImage()
-				>> (char)1 >> (short)script.length() << script});
+			sendPacket({ PLO_NPCWEAPONADD, CString() >> (char)weaponName.length() << weaponName >> (char)0 >> (char)weapon->getImage().length() << weapon->getImage() >> (char)1 >> (short)script.length() << script });
 		}
 		else
 		{
-			sendPacket({PLO_NC_WEAPONGET, CString() >>
-				(char)weaponName.length() << weaponName >>
-				(char)weapon->getImage().length() << weapon->getImage() <<
-				script});
+			sendPacket({ PLO_NC_WEAPONGET, CString() >>
+											   (char)weaponName.length() << weaponName >>
+											   (char)weapon->getImage().length() << weapon->getImage() << script });
 		}
 	}
 	else
-		m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_RC_CHAT, CString() << m_accountName << " prob: weapon " << weaponName << " doesn't exist"});
+		m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_RC_CHAT,
+												   CString() << m_accountName << " prob: weapon " << weaponName
+															 << " doesn't exist" });
 
 	return true;
 }
@@ -527,7 +530,8 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		auto weapon = std::make_shared<Weapon>(m_server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		auto weapon = std::make_shared<Weapon>(m_server, weaponName, std::move(weaponImage), std::move(weaponCode), 0,
+											   true);
 		bool success = m_server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";
@@ -586,7 +590,7 @@ bool Player::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 			ret << level->getActualLevelName() << "\n";
 	}
 
-	sendPacket({PLO_NC_LEVELLIST, CString() << ret.gtokenize()});
+	sendPacket({ PLO_NC_LEVELLIST, CString() << ret.gtokenize() });
 	return true;
 }
 
@@ -611,7 +615,8 @@ void Player::sendNCAddr()
 				npcServerIp = m_accountIpStr;
 		}
 
-		sendPacket({PLO_NPCSERVERADDR, CString() >> (short)npcServer->getId() << npcServerIp << "," << CString(m_server->getNCPort())});
+		sendPacket({ PLO_NPCSERVERADDR,
+					 CString() >> (short)npcServer->getId() << npcServerIp << "," << CString(m_server->getNCPort()) });
 	}
 }
 

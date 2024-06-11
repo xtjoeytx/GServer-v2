@@ -56,7 +56,8 @@ constexpr uint8_t starting_baddy_id = 1;
 	Level: Constructor - Deconstructor
 */
 Level::Level(Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0), m_nextBaddyId{ starting_baddy_id }
+	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0),
+	  m_nextBaddyId{ starting_baddy_id }
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)
@@ -66,7 +67,8 @@ Level::Level(Server* pServer)
 }
 
 Level::Level(short fillTile, Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0), m_nextBaddyId{ starting_baddy_id }
+	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0),
+	  m_nextBaddyId{ starting_baddy_id }
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)
@@ -110,7 +112,7 @@ Level::~Level()
 		for (auto& player: m_players)
 		{
 			if (auto p = m_server->getPlayer(player); p)
-				p->sendPacket({PLO_ITEMDEL, packet});
+				p->sendPacket({ PLO_ITEMDEL, packet });
 		}
 	}
 	m_items.clear();
@@ -142,7 +144,7 @@ PlayerOutPackets Level::getBaddyPackets(int clientVersion)
 			continue;
 
 		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		packets.push_back({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion)});
+		packets.push_back({ PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(clientVersion) });
 	}
 
 	return packets;
@@ -151,9 +153,9 @@ PlayerOutPackets Level::getBaddyPackets(int clientVersion)
 PlayerOutPacket Level::getBoardPacket()
 {
 	CString retVal;
-	retVal.write((char *)m_tiles[0], sizeof(short[4096]));
+	retVal.write((char*)m_tiles[0], sizeof(short[4096]));
 
-	return {PLO_BOARDPACKET, retVal};
+	return { PLO_BOARDPACKET, retVal };
 }
 
 PlayerOutPacket Level::getLayerPacket(int layer)
@@ -164,7 +166,7 @@ PlayerOutPacket Level::getLayerPacket(int layer)
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
 	retVal.write((char*)m_tiles[layer], sizeof(short[4096]));
 
-	return {PLO_BOARDLAYER, retVal};
+	return { PLO_BOARDLAYER, retVal };
 }
 
 PlayerOutPacket Level::getBoardChangesPacket(time_t time)
@@ -177,7 +179,7 @@ PlayerOutPacket Level::getBoardChangesPacket(time_t time)
 			retVal << change.getBoardStr();
 	}
 
-	return {PLO_LEVELBOARD, retVal};
+	return { PLO_LEVELBOARD, retVal };
 }
 
 PlayerOutPacket Level::getBoardChangesPacket2(time_t time)
@@ -190,7 +192,7 @@ PlayerOutPacket Level::getBoardChangesPacket2(time_t time)
 			retVal << change.getBoardStr();
 	}
 
-	return {PLO_BOARDMODIFY, retVal};
+	return { PLO_BOARDMODIFY, retVal };
 }
 
 PlayerOutPackets Level::getChestPackets(Player* pPlayer)
@@ -205,7 +207,7 @@ PlayerOutPackets Level::getChestPackets(Player* pPlayer)
 			CString retVal;
 			retVal >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
 			if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
-			packets.push_back({PLO_LEVELCHEST, retVal});
+			packets.push_back({ PLO_LEVELCHEST, retVal });
 		}
 	}
 
@@ -218,7 +220,7 @@ PlayerOutPackets Level::getHorsePackets()
 
 	for (auto& horse: m_horses)
 	{
-		packets.push_back({PLO_HORSEADD, CString() << horse.getHorseStr()});
+		packets.push_back({ PLO_HORSEADD, CString() << horse.getHorseStr() });
 	}
 
 	return packets;
@@ -230,7 +232,7 @@ PlayerOutPackets Level::getLinkPackets()
 
 	for (const auto& link: m_links)
 	{
-		packets.push_back({PLO_LEVELLINK, CString() << link->getLinkStr()});
+		packets.push_back({ PLO_LEVELLINK, CString() << link->getLinkStr() });
 	}
 
 	return packets;
@@ -244,7 +246,7 @@ PlayerOutPackets Level::getNpcPackets(Player* pPlayer, time_t time, int clientVe
 		auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
 
-		packets.push_back({PLO_NPCPROPS, CString() >> (int)npc->getId() << npc->getProps(time, clientVersion)});
+		packets.push_back({ PLO_NPCPROPS, CString() >> (int)npc->getId() << npc->getProps(time, clientVersion) });
 
 		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
 		{
@@ -252,8 +254,8 @@ PlayerOutPackets Level::getNpcPackets(Player* pPlayer, time_t time, int clientVe
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n' && !pPlayer->m_newProtocol)
 				byteCodePacket << "\n";
 
-			packets.push_back({PLO_RAWDATA, CString() >> (int)byteCodePacket.length()});
-			packets.push_back({PLO_NPCBYTECODE, byteCodePacket});
+			packets.push_back({ PLO_RAWDATA, CString() >> (int)byteCodePacket.length() });
+			packets.push_back({ PLO_NPCBYTECODE, byteCodePacket });
 		}
 	}
 
@@ -265,7 +267,7 @@ PlayerOutPackets Level::getSignPackets(Player* pPlayer = nullptr)
 	PlayerOutPackets packets;
 	for (const auto& sign: m_signs)
 	{
-		packets.push_back({PLO_LEVELSIGN, CString() << sign->getSignStr(pPlayer)});
+		packets.push_back({ PLO_LEVELSIGN, CString() << sign->getSignStr(pPlayer) });
 	}
 
 	return packets;
@@ -320,7 +322,7 @@ bool Level::reload()
 		for (auto& playerId: m_players)
 		{
 			if (auto player = m_server->getPlayer(playerId); player)
-				player->sendPacket({PLO_ITEMDEL, packet});
+				player->sendPacket({ PLO_ITEMDEL, packet });
 		}
 	}
 	m_items.clear();
@@ -1142,7 +1144,8 @@ void Level::saveLevel(const std::string& filename)
 			/* Draw one BOARD entry for each chunk so transparent tile-data is culled */
 			for (const auto& chunk: chunks)
 			{
-				fileStream << "BOARD" << s << chunk.first << s << y << s << chunk.second.length() / 2 << s << layer // x, y, width, layer
+				fileStream << "BOARD" << s << chunk.first << s << y << s << chunk.second.length() / 2 << s
+						   << layer // x, y, width, layer
 						   << s << chunk.second << std::endl;
 			}
 		}
@@ -1164,12 +1167,14 @@ void Level::saveLevel(const std::string& filename)
 
 	for (const auto& chest: getChests())
 	{
-		fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s << LevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
+		fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s
+				   << LevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
 	}
 
 	for (const auto& baddy: m_baddies)
 	{
-		fileStream << "BADDY" << s << baddy.second->getX() << s << baddy.second->getY() << s << baddy.second->getType() << std::endl;
+		fileStream << "BADDY" << s << baddy.second->getX() << s << baddy.second->getY() << s << baddy.second->getType()
+				   << std::endl;
 
 		for (const auto& verse: baddy.second->getVerses())
 		{
@@ -1238,7 +1243,7 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 						case 0x6E5:
 						case 0x6F4:
 						case 0x6F5:
-						// blue
+							// blue
 						case 0x7CE:
 						case 0x7CF:
 						case 0x7DE:
@@ -1253,7 +1258,9 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 			// Check if we found a full tile.  If so, don't accept the change.
 			if (foundCount == 4)
 			{
-				player->sendPacket({PLO_BOARDMODIFY, CString() >> (char)pX >> (char)pY >> (char)pWidth >> (char)pHeight << pTileData});
+				player->sendPacket({ PLO_BOARDMODIFY,
+									 CString() >> (char)pX >> (char)pY >> (char)pWidth >> (char)pHeight
+																							  << pTileData });
 				return false;
 			}
 		}
@@ -1295,7 +1302,8 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 
 	// TODO: old gserver didn't save the board change if oldTiles.length() == 0.
 	// Should we do it that way still?
-	m_boardChanges.push_back(LevelBoardChange(pX, pY, pWidth, pHeight, pTileData, oldTiles, (doRespawn ? respawnTime : -1)));
+	m_boardChanges.push_back(
+		LevelBoardChange(pX, pY, pWidth, pHeight, pTileData, oldTiles, (doRespawn ? respawnTime : -1)));
 	return true;
 }
 
@@ -1560,7 +1568,8 @@ bool Level::doTimedEvents()
 			// change, the client won't get the new data.
 			change.swapTiles();
 			change.setModTime(time(0));
-			m_server->sendPacketToOneLevel({PLO_BOARDMODIFY, CString() << change.getBoardStr()}, this->shared_from_this());
+			m_server->sendPacketToOneLevel({ PLO_BOARDMODIFY, CString() << change.getBoardStr() },
+										   this->shared_from_this());
 		}
 	}
 
@@ -1586,7 +1595,9 @@ bool Level::doTimedEvents()
 		int deleteTimer = horse.timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			m_server->sendPacketToOneLevel({PLO_HORSEDEL, CString() >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2)}, this->shared_from_this());
+			m_server->sendPacketToOneLevel(
+				{ PLO_HORSEDEL, CString() >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2) },
+				this->shared_from_this());
 			i = m_horses.erase(i);
 		}
 		else
@@ -1619,7 +1630,7 @@ bool Level::doTimedEvents()
 					for (unsigned int i = 1; i < m_players.size(); ++i)
 					{
 						auto player = m_server->getPlayer(m_players[i]);
-						player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props});
+						player->sendPacket({ PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props });
 					}
 				}
 			}
@@ -1634,7 +1645,7 @@ bool Level::doTimedEvents()
 				for (unsigned int i = 1; i < m_players.size(); ++i)
 				{
 					auto player = m_server->getPlayer(m_players[i]);
-					player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props});
+					player->sendPacket({ PLO_BADDYPROPS, CString() >> (char)baddy->getId() << props });
 				}
 			}
 			else
@@ -1643,7 +1654,8 @@ bool Level::doTimedEvents()
 				for (auto p: m_players)
 				{
 					auto player = m_server->getPlayer(p);
-					player->sendPacket({PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps(player->getVersion())});
+					player->sendPacket({ PLO_BADDYPROPS,
+										 CString() >> (char)baddy->getId() << baddy->getProps(player->getVersion()) });
 				}
 			}
 		}
@@ -1929,7 +1941,7 @@ void Level::modifyBoardDirect(uint32_t index, short tile)
 	auto change = LevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
 
 	m_boardChanges.push_back(change);
-	m_server->sendPacketToOneLevel({PLO_BOARDMODIFY, CString() << change.getBoardStr()}, shared_from_this());
+	m_server->sendPacketToOneLevel({ PLO_BOARDMODIFY, CString() << change.getBoardStr() }, shared_from_this());
 }
 
 #endif

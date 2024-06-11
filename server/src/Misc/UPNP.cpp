@@ -12,8 +12,8 @@
 
 		#include <windows.h>
 	#endif
-	#include "UPNP.h"
 	#include "Server.h"
+	#include "UPNP.h"
 
 void UPNP::discover()
 {

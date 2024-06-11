@@ -10,14 +10,18 @@
 #include <vector>
 
 #ifdef V8NPCSERVER
-	#include "ScriptEngine.h"
+
 	#include "Player.h"
+	#include "ScriptEngine.h"
+
 #endif
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
-const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
+const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+								  66, 67, 68, 69, 70, 71, 72, 73 };
 
 static CString toWeaponName(const CString& code);
+
 static CString doJoins(const CString& code, FileSystem* fs);
 
 std::string minifyClientCode(const CString& src)
@@ -39,7 +43,8 @@ std::string minifyClientCode(const CString& src)
 	return minified;
 }
 
-NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type)
+NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel,
+		 NPCType type)
 	: NPC(pServer, type)
 {
 	setX(int(pX * 16));
@@ -76,7 +81,8 @@ NPC::NPC(Server* pServer, NPCType type)
 	  m_gani("idle")
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_npcDeleteRequested(false), m_canWarp(NPCWarpType::None), m_width(32), m_height(32), m_timeout(0), m_scriptEventsMask(0xFF)
+	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_npcDeleteRequested(false),
+	  m_canWarp(NPCWarpType::None), m_width(32), m_height(32), m_timeout(0), m_scriptEventsMask(0xFF)
 #endif
 {
 	memset((void*)m_colors, 0, sizeof(m_colors));
@@ -92,7 +98,8 @@ NPC::NPC(Server* pServer, NPCType type)
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(0);
+	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(
+		0);
 
 	// Needs to be called so it creates a script-object
 	setScriptCode("");
@@ -202,10 +209,10 @@ void NPC::setScriptCode(std::string pScript)
 		//m_image = "";
 
 		// TODO(joey): refactor
-		m_server->sendPacketToLevelArea({PLO_NPCDEL, CString() >> (int)getId()}, level);
+		m_server->sendPacketToLevelArea({ PLO_NPCDEL, CString() >> (int)getId() }, level);
 
 		CString packet = CString() >> (int)getId() << getProps(0);
-		m_server->sendPacketToLevelArea({PLO_NPCPROPS, packet}, level);
+		m_server->sendPacketToLevelArea({ PLO_NPCPROPS, packet }, level);
 	}
 #endif
 }
@@ -239,7 +246,8 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 					return CString() >> (short)0;
 			}
 
-			return CString() >> (short)(m_clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : m_clientScriptFormatted.length()) << m_clientScriptFormatted.substr(0, 0x3FFF);
+			return CString() >> (short)(m_clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : m_clientScriptFormatted.length())
+									<< m_clientScriptFormatted.substr(0, 0x3FFF);
 
 		case NPCPROP_X:
 			return CString() >> (char)(m_x / 8.0);
@@ -297,8 +305,8 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 		case NPCPROP_ID:
 			return CString() >> (int)m_id;
 
-		// Sprite is deprecated and has been replaced by def.gani.
-		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
+			// Sprite is deprecated and has been replaced by def.gani.
+			// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
 		case NPCPROP_SPRITE:
 		{
 			if (clientVersion < CLVER_2_1)
@@ -395,7 +403,8 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 	}
 
 	// Gani attributes.
-	if (inrange(pId, NPCPROP_GATTRIB1, NPCPROP_GATTRIB5) || inrange(pId, NPCPROP_GATTRIB6, NPCPROP_GATTRIB9) || inrange(pId, NPCPROP_GATTRIB10, NPCPROP_GATTRIB30))
+	if (inrange(pId, NPCPROP_GATTRIB1, NPCPROP_GATTRIB5) || inrange(pId, NPCPROP_GATTRIB6, NPCPROP_GATTRIB9) ||
+		inrange(pId, NPCPROP_GATTRIB10, NPCPROP_GATTRIB30))
 	{
 		// TODO(joey): Are we really looping every single possible attribute to find the one we want....??
 		for (unsigned int i = 0; i < sizeof(__nAttrPackets); i++)
@@ -519,7 +528,8 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					if (len > 0)
 					{
 						m_swordImage = pProps.readChars(len);
-						if (!m_swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_swordImage).isEmpty())
+						if (!m_swordImage.isEmpty() && clientVersion < CLVER_2_1 &&
+							getExtension(m_swordImage).isEmpty())
 							m_swordImage << ".gif";
 					}
 					else
@@ -534,7 +544,8 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 3)
-					m_shieldImage = CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_shieldImage =
+						CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
 					sp -= 10;
@@ -542,7 +553,8 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					if (len > 0)
 					{
 						m_shieldImage = pProps.readChars(len);
-						if (!m_shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_shieldImage).isEmpty())
+						if (!m_shieldImage.isEmpty() && clientVersion < CLVER_2_1 &&
+							getExtension(m_shieldImage).isEmpty())
 							m_shieldImage << ".gif";
 					}
 					else
@@ -668,9 +680,9 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				pProps.readChars(pProps.readGShort());
 				break;
 
-			// Location, in pixels, of the npc on the level in 2.3+ clients.
-			// Bit 0x0001 controls if it is negative or not.
-			// Bits 0xFFFE are the actual value.
+				// Location, in pixels, of the npc on the level in 2.3+ clients.
+				// Bit 0x0001 controls if it is negative or not.
+				// Bits 0xFFFE are the actual value.
 			case NPCPROP_X2:
 				if (m_blockPositionUpdates)
 				{
@@ -852,7 +864,7 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 	if (pForward)
 	{
 		// Send the props.
-		m_server->sendPacketToLevelArea({PLO_NPCPROPS, CString() >> (int)m_id << ret}, m_curlevel);
+		m_server->sendPacketToLevelArea({ PLO_NPCPROPS, CString() >> (int)m_id << ret }, m_curlevel);
 	}
 
 #ifdef V8NPCSERVER
@@ -899,7 +911,8 @@ void NPC::testForLinks()
 
 		int dir = m_sprite % 4;
 
-		auto linkTouched = level->getLink((int)(m_x / 16) + touchtestd[dir * 2], (int)(m_y / 16) + touchtestd[dir * 2 + 1]);
+		auto linkTouched = level->getLink((int)(m_x / 16) + touchtestd[dir * 2],
+										  (int)(m_y / 16) + touchtestd[dir * 2 + 1]);
 		if (linkTouched)
 		{
 			auto newLevel = m_server->getLevel(linkTouched.value()->getNewLevel().toString());
@@ -979,11 +992,13 @@ void NPC::queueNpcTrigger(const std::string& action, Player* player, const std::
 
 	if (playerObject)
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
+		m_scriptExecutionContext.addAction(
+			scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, playerObject, data));
 	}
 	else
 	{
-		m_scriptExecutionContext.addAction(scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
+		m_scriptExecutionContext.addAction(
+			scriptEngine->createAction("npc.trigger", getScriptObject(), triggerIter->second, nullptr, data));
 	}
 
 	scriptEngine->registerNpcUpdate(this);
@@ -1020,7 +1035,8 @@ void NPC::updateClientCode()
 
 	// Just a little warning for people who don't know.
 	if (m_clientScriptFormatted.length() > 0x705F)
-		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (m_weaponName.length() != 0 ? m_weaponName.text() : m_image.c_str()));
+		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n",
+			   (m_weaponName.length() != 0 ? m_weaponName.text() : m_image.c_str()));
 
 	// Compile gs2
 	if (!m_npcScript.getClientGS2().empty())
@@ -1033,7 +1049,8 @@ void NPC::updateClientCode()
 									   {
 										   auto& byteCode = response.bytecode;
 										   m_npcBytecode.clear(byteCode.length());
-										   m_npcBytecode.write((const char*)byteCode.buffer(), (int)byteCode.length());
+										   m_npcBytecode.write((const char*)byteCode.buffer(),
+															   (int)byteCode.length());
 									   }
 								   });
 	}
@@ -1136,7 +1153,7 @@ NPCEventResponse NPC::runScriptEvents()
 		m_propModified.clear();
 
 		if (!m_curlevel.expired())
-			m_server->sendPacketToLevelArea({PLO_NPCPROPS, propPacket}, m_curlevel);
+			m_server->sendPacketToLevelArea({ PLO_NPCPROPS, propPacket }, m_curlevel);
 	}
 
 	if (m_npcDeleteRequested)
@@ -1233,7 +1250,8 @@ CString NPC::getVariableDump()
 					image = CString() << "sword" << CString(m_hitpoints) << ".png";
 
 				if (!image.isEmpty())
-					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints) << ")\n";
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints)
+							<< ")\n";
 
 				break;
 			}
@@ -1251,7 +1269,8 @@ CString NPC::getVariableDump()
 					image = CString() << "shield" << CString(m_hitpoints) << ".png";
 
 				if (!image.isEmpty())
-					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints) << ")\n";
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints)
+							<< ")\n";
 
 				break;
 			}
@@ -1417,7 +1436,8 @@ void NPC::resetNPC()
 {
 	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
 	m_canWarp = NPCWarpType::None;
-	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(0);
+	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(
+		0);
 	m_headImage = "";
 	m_bodyImage = "";
 	m_image = "";
@@ -1447,7 +1467,7 @@ void NPC::moveNPC(int dx, int dy, double time, int options)
 	setY(m_y + dy);
 
 	if (!m_curlevel.expired())
-		m_server->sendPacketToLevelArea({PLO_MOVE2, CString() >> (int)m_id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options}, m_curlevel);
+		m_server->sendPacketToLevelArea({ PLO_MOVE2, CString() >> (int)m_id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options }, m_curlevel);
 
 	if (isWarpable())
 		testTouch();
@@ -1464,7 +1484,7 @@ void NPC::warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY)
 		// TODO(joey): NPCMOVED needs to be sent to everyone who potentially has this level cached or else the npc
 		//  will stay visible when you come back to the level. Should this just be sent to everyone on the server? We do
 		//  such for PLO_NPCDEL
-		m_server->sendPacketToType(PLTYPE_ANYPLAYER, {PLO_NPCMOVED, CString() >> (int)m_id});
+		m_server->sendPacketToType(PLTYPE_ANYPLAYER, { PLO_NPCMOVED, CString() >> (int)m_id });
 
 		// Remove the npc from the old level
 		level->removeNPC(m_id);
@@ -1485,10 +1505,11 @@ void NPC::warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY)
 	updatePropModTime(NPCPROP_Y2);
 
 	// Send the properties to the players in the new level
-	m_server->sendPacketToLevelArea({PLO_NPCPROPS, CString() >> (int)m_id << getProps(0)}, level);
+	m_server->sendPacketToLevelArea({ PLO_NPCPROPS, CString() >> (int)m_id << getProps(0) }, level);
 
 	if (!m_npcName.empty())
-		m_server->sendPacketToType(PLTYPE_ANYNC, {PLO_NC_NPCADD, CString() >> (int)m_id >> (char)NPCPROP_CURLEVEL << getProp(NPCPROP_CURLEVEL)});
+		m_server->sendPacketToType(PLTYPE_ANYNC, { PLO_NC_NPCADD, CString() >> (int)m_id >> (char)NPCPROP_CURLEVEL
+																								<< getProp(NPCPROP_CURLEVEL) });
 
 	// Queue event
 	this->queueNpcAction("npc.warped");
@@ -1569,7 +1590,9 @@ void NPC::saveNPC()
 	fileData << "SWORD " << m_swordImage << NL;
 	fileData << "SHIELD " << m_shieldImage << NL;
 	fileData << "HORSE " << m_horseImage << NL;
-	fileData << "COLORS " << CString((int)m_colors[0]) << "," << CString((int)m_colors[1]) << "," << CString((int)m_colors[2]) << "," << CString((int)m_colors[3]) << "," << CString((int)m_colors[4]) << NL;
+	fileData << "COLORS " << CString((int)m_colors[0]) << "," << CString((int)m_colors[1]) << ","
+			 << CString((int)m_colors[2]) << "," << CString((int)m_colors[3]) << "," << CString((int)m_colors[4])
+			 << NL;
 	fileData << "SPRITE " << CString(m_sprite) << NL;
 	fileData << "AP " << CString(m_ap) << NL;
 	fileData << "TIMEOUT " << CString(m_timeout / 20) << NL;
@@ -1580,7 +1603,8 @@ void NPC::saveNPC()
 	if (m_blockFlags & NPCBLOCKFLAG_NOBLOCK)
 		fileData << "DONTBLOCK 1" << NL;
 
-	fileData << "SAVEARR " << CString((int)m_saves[0]) << "," << CString((int)m_saves[1]) << "," << CString((int)m_saves[2]) << ","
+	fileData << "SAVEARR " << CString((int)m_saves[0]) << "," << CString((int)m_saves[1]) << ","
+			 << CString((int)m_saves[2]) << ","
 			 << CString((int)m_saves[3]) << "," << CString((int)m_saves[4]) << "," << CString((int)m_saves[5]) << ","
 			 << CString((int)m_saves[6]) << "," << CString((int)m_saves[7]) << "," << CString((int)m_saves[8]) << ","
 			 << CString((int)m_saves[9]) << NL;
@@ -1591,7 +1615,7 @@ void NPC::saveNPC()
 			fileData << "ATTR" << std::to_string(i + 1) << " " << m_ganiAttribs[i] << NL;
 	}
 
-	for (auto & it : m_flagList)
+	for (auto& it: m_flagList)
 		fileData << "FLAG " << it.first << "=" << it.second << NL;
 
 	fileData << "NPCSCRIPT" << NL << CString(m_npcScript.getSource()).replaceAll("\n", NL);

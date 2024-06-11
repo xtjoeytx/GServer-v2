@@ -104,7 +104,8 @@ public:
 			}
 			else
 			{
-				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::m_argc, m_args); // base::Argc - 1, m_args + 1);
+				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::m_argc,
+															 m_args); // base::Argc - 1, m_args + 1);
 				static_cast<void>(ret);
 				//ret.IsEmpty();
 			}

@@ -57,7 +57,8 @@ void Chest_GetNum_ItemType(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set((int)chestObject->getItemIndex());
 }
 
-void Chest_SetNum_ItemType(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Chest_SetNum_ItemType(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						   const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
@@ -74,7 +75,8 @@ void Chest_GetNum_SignId(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	info.GetReturnValue().Set((int)chestObject->getSignIndex());
 }
 
-void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Chest_SetNum_SignId(v8::Local<v8::String> prop, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, LevelChest, chestObject);
 
@@ -107,8 +109,10 @@ void bindClass_LevelChest(ScriptEngine* scriptEngine)
 	// Properties
 	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), Chest_GetNum_X, Chest_SetNum_X);
 	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Chest_GetNum_Y, Chest_SetNum_Y);
-	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "itemtype"), Chest_GetNum_ItemType, Chest_SetNum_ItemType);
-	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signid"), Chest_GetNum_SignId, Chest_SetNum_SignId);
+	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "itemtype"), Chest_GetNum_ItemType,
+							 Chest_SetNum_ItemType);
+	chest_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signid"), Chest_GetNum_SignId,
+							 Chest_SetNum_SignId);
 
 	// Persist the constructor
 	env->setConstructor(ScriptConstructorId<LevelChest>::result, chest_ctor);

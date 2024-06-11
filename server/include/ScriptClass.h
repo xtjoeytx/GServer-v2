@@ -7,10 +7,12 @@
 #include <string>
 
 class Server;
+
 class ScriptClass
 {
 public:
 	ScriptClass(Server* server, const std::string& className, const std::string& classSource);
+
 	~ScriptClass();
 
 	// Functions -> Inline Get-Functions

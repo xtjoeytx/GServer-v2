@@ -8,6 +8,7 @@
 namespace utilities
 {
 	std::string retokenizeArray(const std::vector<CString>& triggerData, int start_idx = 0);
+
 	CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx = 0);
 } // namespace utilities
 

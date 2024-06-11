@@ -22,9 +22,11 @@ public:
 	using user_callback_type = std::function<void(const CompilerResponse&)>;
 
 	GS2ScriptManager();
+
 	~GS2ScriptManager() {}
 
 	void compileScript(const std::string& script, user_callback_type finishedCb);
+
 	void runQueue();
 
 private:
@@ -33,6 +35,7 @@ private:
 
 	// Sync Compile
 	GS2Context _context;
+
 	void syncCompileJob(const std::string& script, user_callback_type& finishedCb);
 
 	BytecodeCache m_bytecodeCache;

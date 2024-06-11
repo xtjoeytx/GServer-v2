@@ -17,14 +17,20 @@ public:
 
 	// functions
 	CString getBoardStr() const;
+
 	void swapTiles();
 
 	// get private variables
 	int getX() const { return m_x; }
+
 	int getY() const { return m_y; }
+
 	int getWidth() const { return m_width; }
+
 	int getHeight() const { return m_height; }
+
 	CString getTiles() const { return m_newTiles; }
+
 	time_t getModTime() const { return m_modTime; }
 
 	// set private variables

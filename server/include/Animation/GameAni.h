@@ -22,10 +22,12 @@ public:
 
 	// Move operations
 	GameAni(GameAni&& o) noexcept;
+
 	GameAni& operator=(GameAni&& o) noexcept;
 
 	// Delete copy operations
 	GameAni(const GameAni&) = delete;
+
 	GameAni& operator=(const GameAni&) = delete;
 
 	//! Get the animation filename

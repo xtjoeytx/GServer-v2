@@ -6,7 +6,9 @@
 #include <vector>
 
 #ifdef V8NPCSERVER
+
 	#include "ScriptBindings.h"
+
 #endif
 
 enum class LevelItemType;
@@ -60,6 +62,7 @@ public:
 	}
 
 #ifdef V8NPCSERVER
+
 	inline IScriptObject<LevelChest>* getScriptObject() const
 	{
 		return m_scriptObject.get();
@@ -69,6 +72,7 @@ public:
 	{
 		m_scriptObject = std::move(object);
 	}
+
 #endif
 
 private:

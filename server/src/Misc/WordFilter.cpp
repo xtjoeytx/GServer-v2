@@ -212,7 +212,9 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 
 				// Check and see if we hit the limit.
 				if (rule->precisionPercentage == false && wordsMatched < rule->precision) continue;
-				if (rule->precisionPercentage == true && rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100)) continue;
+				if (rule->precisionPercentage == true &&
+					rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100))
+					continue;
 
 				// Add the word to the list of words found.
 				wordsFound.push_back(*word);
@@ -312,7 +314,9 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 
 				// Check and see if we hit the limit.
 				if (rule->precisionPercentage == false && wordsMatched < rule->precision) continue;
-				if (rule->precisionPercentage == true && rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100)) continue;
+				if (rule->precisionPercentage == true &&
+					rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100))
+					continue;
 
 				// Trim the word.
 				word.trimI();
@@ -363,7 +367,8 @@ WordFilterActions:
 		CLog wordfilter;
 		wordfilter.setFilename(m_server->getServerPath() << "logs/serverlog.txt");
 		wordfilter.setEnabled(true);
-		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(), badwords.text());
+		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(),
+					   badwords.text());
 	}
 
 	// Graal doesn't implement.  Should we?
@@ -379,7 +384,9 @@ WordFilterActions:
 	// Tell RC what happened.
 	if (m_showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		m_server->sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
+		m_server->sendPacketToType(PLTYPE_ANYRC, { PLO_RC_CHAT,
+												   CString() << "Word Filter: Player " << player->getAccountName()
+															 << " was caught using these words: " << badwords });
 	}
 
 	// If it is a warning rule, we are altering the message.

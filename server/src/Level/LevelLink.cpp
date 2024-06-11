@@ -16,7 +16,8 @@ LevelLink::LevelLink(const std::vector<CString>& pLink)
 CString LevelLink::getLinkStr() const
 {
 	static char retVal[500];
-	sprintf(retVal, "%s %i %i %i %i %s %s", m_newLevel.text(), m_x, m_y, m_width, m_height, m_newX.text(), m_newY.text());
+	sprintf(retVal, "%s %i %i %i %i %s %s", m_newLevel.text(), m_x, m_y, m_width, m_height, m_newX.text(),
+			m_newY.text());
 	return retVal;
 }
 

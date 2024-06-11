@@ -18,17 +18,25 @@ struct ScriptConstructorId
 	};
 
 SCRIPTFACTORY_CONSTRUCTOR(Level, level)
+
 SCRIPTFACTORY_CONSTRUCTOR(LevelLink, link)
+
 SCRIPTFACTORY_CONSTRUCTOR(LevelSign, sign)
+
 SCRIPTFACTORY_CONSTRUCTOR(LevelChest, chest)
+
 SCRIPTFACTORY_CONSTRUCTOR(NPC, npc)
+
 SCRIPTFACTORY_CONSTRUCTOR(Player, player)
+
 SCRIPTFACTORY_CONSTRUCTOR(Weapon, weapon)
 
 #undef SCRIPTFACTORY_CONSTRUCTOR
 
 #ifdef SCRIPTSYS_HASV8
+
 	#include "V8ScriptArguments.h"
+
 #endif
 
 #include <memory>
@@ -61,11 +69,13 @@ struct ScriptFactory
 	}
 
 #ifdef SCRIPTSYS_HASV8
+
 	template<typename... Args>
 	static inline ScriptArguments<Args...>* createArguments(V8ScriptEnv* env, Args&&... An)
 	{
 		return new V8ScriptArguments<Args...>(std::forward<Args>(An)...);
 	}
+
 #endif
 
 	/*
@@ -79,7 +89,8 @@ struct ScriptFactory
 	}
 
 	template<typename Cls>
-	static inline std::unique_ptr<IScriptObject<Cls>> wrapObject(IScriptEnv* env, const std::string& ctor_name, Cls* obj)
+	static inline std::unique_ptr<IScriptObject<Cls>>
+	wrapObject(IScriptEnv* env, const std::string& ctor_name, Cls* obj)
 	{
 		switch (env->getType())
 		{
@@ -94,11 +105,14 @@ struct ScriptFactory
 	}
 
 #ifdef SCRIPTSYS_HASV8
+
 	template<typename Cls>
-	static inline std::unique_ptr<IScriptObject<Cls>> wrapObject(V8ScriptEnv* env, const std::string& ctor_name, Cls* obj)
+	static inline std::unique_ptr<IScriptObject<Cls>>
+	wrapObject(V8ScriptEnv* env, const std::string& ctor_name, Cls* obj)
 	{
 		return env->wrap(ctor_name, obj);
 	}
+
 #endif
 };
 

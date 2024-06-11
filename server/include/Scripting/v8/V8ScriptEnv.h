@@ -14,15 +14,19 @@ class V8ScriptEnv : public IScriptEnv
 {
 public:
 	V8ScriptEnv();
+
 	virtual ~V8ScriptEnv();
 
 	int getType() const override { return 1; }
 
 	void initialize() override;
+
 	void cleanup(bool shutDown = false) override;
 
 	IScriptFunction* compile(const std::string& name, const std::string& source) override;
+
 	void callFunctionInScope(std::function<void()> function) override;
+
 	void terminateExecution() override;
 
 	// Parse errors from a TryCatch into lastScriptError
@@ -30,13 +34,19 @@ public:
 
 	// --
 	v8::Isolate* isolate() const;
+
 	v8::Local<v8::Context> context() const;
+
 	v8::Local<v8::Object> global() const;
+
 	v8::Local<v8::ObjectTemplate> globalTemplate() const;
+
 	v8::Local<v8::FunctionTemplate> getConstructor(const std::string& key) const;
 
 	void setGlobal(v8::Local<v8::Object> global);
+
 	void setGlobalTemplate(v8::Local<v8::ObjectTemplate> global_tpl);
+
 	bool setConstructor(const std::string& key, v8::Local<v8::FunctionTemplate> func_tpl);
 
 	// --

@@ -26,6 +26,7 @@ public:
 	};
 
 	CommandDispatcher() {}
+
 	CommandDispatcher(std::function<void(Builder)> initfn)
 	{
 		initfn(Builder(m_commands));

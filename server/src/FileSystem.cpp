@@ -1,13 +1,17 @@
 #include "IDebug.h"
 #include <sys/stat.h>
+
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 	#include <sys/utime.h>
 	#define _utime utime
 	#define _utimbuf utimbuf;
 #else
+
 	#include <dirent.h>
 	#include <utime.h>
+
 #endif
+
 #include "FileSystem.h"
 #include "IDebug.h"
 #include "IUtil.h"
@@ -16,8 +20,8 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef __GNUC__ // rain
-		#include <mutex>
 		#include <condition_variable>
+		#include <mutex>
 	#endif
 #endif
 
@@ -178,6 +182,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	FindClose(hFind);
 }
 #else
+
 void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 {
 	CString path = CString() << directory.remove(directory.findl(fSep)) << fSep;
@@ -221,6 +226,7 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 	}
 	closedir(dir);
 }
+
 #endif
 
 CString FileSystem::load(const CString& file) const

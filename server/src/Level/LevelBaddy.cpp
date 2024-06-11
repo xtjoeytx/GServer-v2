@@ -19,7 +19,8 @@ const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer)
+LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel,
+					   Server* pServer)
 	: m_level(pLevel), m_server(pServer), m_type(pType), m_id(0),
 	  m_startX(pX), m_startY(pY),
 	  m_canRespawn(true), m_hasCustomImage(false)
@@ -71,7 +72,8 @@ void LevelBaddy::dropItem()
 		if (auto lvl = m_level.lock(); lvl)
 		{
 			if (lvl->addItem(m_x, m_y, itemType))
-				m_server->sendPacketToOneLevel({PLO_ITEMADD, CString() >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)LevelItem::getItemTypeId(itemType)}, m_level);
+				m_server->sendPacketToOneLevel({ PLO_ITEMADD, CString() >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)LevelItem::getItemTypeId(itemType) },
+											   m_level);
 		}
 	}
 }

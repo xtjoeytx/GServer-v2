@@ -37,7 +37,8 @@ namespace scripting
 
 		auto level = npc.getLevel();
 		if (level)
-			origin.append(fmt::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
+			origin.append(fmt::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0,
+									  npc.getY() / 16.0));
 
 		return origin;
 	}

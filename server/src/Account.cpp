@@ -18,8 +18,10 @@ Account::Account(Server* pServer)
 	  m_nickName("default"), m_shieldImage("shield1.png"), m_swordImage("sword1.png"),
 	  m_eloDeviation(350.0f), m_hitpoints(3.0), m_eloRating(1500.0f),
 	  m_x(0), m_y(0), m_z(0),
-	  m_additionalFlags(0), m_ap(50), m_apCounter(0), m_arrowCount(10), m_bombCount(5), m_bombPower(1), m_carrySprite(-1),
-	  m_deaths(0), m_glovePower(1), m_bowPower(1), m_gralatCount(0), m_horseBombCount(0), m_kills(0), m_mp(0), m_maxHitpoints(3),
+	  m_additionalFlags(0), m_ap(50), m_apCounter(0), m_arrowCount(10), m_bombCount(5), m_bombPower(1),
+	  m_carrySprite(-1),
+	  m_deaths(0), m_glovePower(1), m_bowPower(1), m_gralatCount(0), m_horseBombCount(0), m_kills(0), m_mp(0),
+	  m_maxHitpoints(3),
 	  m_onlineTime(0), m_shieldPower(1), m_sprite(2), m_status(20), m_swordPower(1), m_udpport(0),
 	  m_attachNPC(0),
 	  m_lastSparTime(0),
@@ -350,7 +352,8 @@ bool Account::saveAccount()
 	newFile << "BODY " << m_bodyImage << "\r\n";
 	newFile << "SWORD " << m_swordImage << "\r\n";
 	newFile << "SHIELD " << m_shieldImage << "\r\n";
-	newFile << "COLORS " << CString(m_colors[0]) << "," << CString(m_colors[1]) << "," << CString(m_colors[2]) << "," << CString(m_colors[3]) << "," << CString(m_colors[4]) << "\r\n";
+	newFile << "COLORS " << CString(m_colors[0]) << "," << CString(m_colors[1]) << "," << CString(m_colors[2]) << ","
+			<< CString(m_colors[3]) << "," << CString(m_colors[4]) << "\r\n";
 	newFile << "SPRITE " << CString(m_sprite) << "\r\n";
 	newFile << "STATUS " << CString(m_status) << "\r\n";
 	newFile << "MP " << CString(m_mp) << "\r\n";
@@ -686,5 +689,7 @@ void Account::setSwordPower(int newPower)
 {
 	const auto& settings = m_server->getSettings();
 
-	m_swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
+	m_swordPower = clip(newPower,
+						((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0),
+						settings.getInt("swordlimit", 3));
 }

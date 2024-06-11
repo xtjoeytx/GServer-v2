@@ -28,7 +28,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 								{
 									auto npcObject = this->getNPCByName(triggerData[1].toString());
 									if (npcObject != nullptr)
-										npcObject->queueNpcTrigger(triggerData[2].toString(), player, utilities::retokenizeArray(triggerData, 3));
+										npcObject->queueNpcTrigger(triggerData[2].toString(), player,
+																   utilities::retokenizeArray(triggerData, 3));
 								}
 
 								return true;
@@ -44,9 +45,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 								for (auto& serverData: serverList)
 									actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
 
-		player->sendPacket({PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData});
-		return true;
-	});
+								player->sendPacket(
+									{ PLO_TRIGGERACTION, CString() >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData });
+								return true;
+							});
 
 	// Weapon management
 	builder.registerCommand("gr.addweapon", [&](Player* player, std::vector<CString>& triggerData)
@@ -158,8 +160,11 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 											{
 												CString nick = p->getNickname();
 												p->setNick(nick.readString("(").trimI());
-												p->sendPacket({PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME)});
-												sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME)}, { pid });
+												p->sendPacket(
+													{ PLO_PLAYERPROPS, CString() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME) });
+												sendPacketToAll({ PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME
+																														  << p->getProp(PLPROP_NICKNAME) },
+																{ pid });
 											}
 										}
 									}
@@ -184,8 +189,12 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										{
 											CString nick = p->getNickname();
 											p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
-											p->sendPacket({PLO_PLAYERPROPS, CString()  >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname()});
-											sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname()}, { p->getId() });
+											p->sendPacket({ PLO_PLAYERPROPS,
+															CString() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length()
+																									  << p->getNickname() });
+											sendPacketToAll({ PLO_OTHERPLPROPS, CString() >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length()
+																																			   << p->getNickname() },
+															{ p->getId() });
 										}
 									}
 								}
@@ -265,7 +274,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 										packet >> (short)(duration / 0.05f);
 										packet >> (char)options;
-										sendPacketToLevelArea({PLO_MOVE, CString() >> (int)id << packet}, getPlayer(player->getId()));
+										sendPacketToLevelArea({ PLO_MOVE, CString() >> (int)id << packet }, getPlayer(player->getId()));
 
 										npc->setX(npc->getX() + dx * 16);
 										npc->setY(npc->getY() + dy * 16);
@@ -294,7 +303,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										CString packet;
 										packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
 										packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-										sendPacketToLevelArea({PLO_NPCPROPS, CString() >> (int)id << packet}, getPlayer(player->getId()));
+										sendPacketToLevelArea({ PLO_NPCPROPS, CString() >> (int)id << packet }, getPlayer(player->getId()));
 									}
 								}
 

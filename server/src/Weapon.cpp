@@ -11,7 +11,9 @@
 #include "GS2Context.h"
 
 #ifdef V8NPCSERVER
+
 	#include "Player.h"
+
 #endif
 
 // -- Constructor: Default Weapons -- //
@@ -26,8 +28,10 @@ Weapon::Weapon(Server* pServer, LevelItemType pId)
 }
 
 // -- Constructor: Weapon Script -- //
-Weapon::Weapon(Server* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
-	: m_server(pServer), m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
+Weapon::Weapon(Server* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime,
+			   bool pSaveWeapon)
+	: m_server(pServer), m_weaponName(std::move(pName)), m_modTime(pModTime),
+	  m_weaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptExecutionContext(pServer->getScriptEngine())
@@ -114,14 +118,16 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon, Server* serve
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
 	{
-		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(), weaponName.c_str());
+		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(),
+								   weaponName.c_str());
 		server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", server->getName().text());
 	}
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 	{
-		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
+		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n",
+								   server->getName().text(), weaponName.c_str());
 		weaponScript.clear();
 	}
 
@@ -153,7 +159,8 @@ bool Weapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = m_server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
+	CString filename =
+		m_server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
@@ -180,15 +187,14 @@ bool Weapon::saveWeapon()
 PlayerOutPackets Weapon::getWeaponPackets(int clientVersion) const
 {
 	PlayerOutPackets packets;
-	if ( this->isDefault())
+	if (this->isDefault())
 	{
-		packets.push_back({PLO_DEFAULTWEAPON, CString() >> (char)m_weaponDefault});
+		packets.push_back({ PLO_DEFAULTWEAPON, CString() >> (char)m_weaponDefault });
 		return packets;
 	}
 
 	CString weaponPacket;
-	weaponPacket >> (char)m_weaponName.length() << m_weaponName
-				 >> (char)NPCPROP_IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
+	weaponPacket >> (char)m_weaponName.length() << m_weaponName >> (char)NPCPROP_IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
 
 	// GS2 is available for v4+
 	if (clientVersion >= CLVER_4_0211)
@@ -196,12 +202,12 @@ PlayerOutPackets Weapon::getWeaponPackets(int clientVersion) const
 		if (!m_bytecode.isEmpty())
 		{
 			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-			packets.push_back({PLO_NPCWEAPONADD, weaponPacket});
+			packets.push_back({ PLO_NPCWEAPONADD, weaponPacket });
 			CString b = m_bytecode;
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			packets.push_back({PLO_UNKNOWN197, CString() << header << "," >> (long long)time(nullptr)});
+			packets.push_back({ PLO_UNKNOWN197, CString() << header << "," >> (long long)time(nullptr) });
 			return packets;
 		}
 
@@ -210,7 +216,8 @@ PlayerOutPackets Weapon::getWeaponPackets(int clientVersion) const
 			return packets;
 	}
 
-	packets.push_back({PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)m_formattedClientGS1.length() << m_formattedClientGS1});
+	packets.push_back({ PLO_NPCWEAPONADD, weaponPacket >> (char)NPCPROP_SCRIPT >> (short)m_formattedClientGS1.length()
+																					  << m_formattedClientGS1 });
 
 	return packets;
 }
@@ -328,7 +335,8 @@ void Weapon::queueWeaponAction(Player* player, const std::string& args)
 {
 	ScriptEngine* scriptEngine = m_server->getScriptEngine();
 
-	ScriptAction scriptAction = scriptEngine->createAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
+	ScriptAction scriptAction = scriptEngine->createAction("weapon.serverside", getScriptObject(),
+														   player->getScriptObject(), args);
 	m_scriptExecutionContext.addAction(scriptAction);
 	scriptEngine->registerWeaponUpdate(this);
 }

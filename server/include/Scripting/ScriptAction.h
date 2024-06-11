@@ -20,6 +20,7 @@ public:
 	}
 
 	ScriptAction(const ScriptAction& o) = delete;
+
 	ScriptAction& operator=(const ScriptAction& o) = delete;
 
 	ScriptAction(ScriptAction&& o) noexcept

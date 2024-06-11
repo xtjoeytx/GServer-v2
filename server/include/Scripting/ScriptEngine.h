@@ -16,48 +16,67 @@
 #include <vector>
 
 #ifdef V8NPCSERVER
+
 	#include "V8ScriptWrappers.h"
+
 #endif
 
 class IScriptEnv;
+
 class IScriptFunction;
 
 class NPC;
+
 class Server;
+
 class Weapon;
 
 class ScriptEngine
 {
 public:
 	ScriptEngine(Server* server);
+
 	~ScriptEngine();
 
 	bool initialize();
+
 	void cleanup(bool shutDown = false);
+
 	void runScripts(const std::chrono::high_resolution_clock::time_point& time);
 
 	void scriptWatcher();
+
 	void startScriptExecution(const std::chrono::high_resolution_clock::time_point& startTime);
+
 	bool stopScriptExecution();
 
 	Server* getServer() const;
+
 	IScriptEnv* getScriptEnv() const;
+
 	IScriptObject<Server>* getServerObject() const;
 
 	bool executeNpc(NPC* npc);
+
 	bool executeWeapon(Weapon* weapon);
 
 	void registerNpcTimer(NPC* npc);
+
 	void registerNpcUpdate(NPC* npc);
+
 	void registerWeaponUpdate(Weapon* weapon);
 
 	void unregisterNpcTimer(NPC* npc);
+
 	void unregisterNpcUpdate(NPC* npc);
+
 	void unregisterWeaponUpdate(Weapon* weapon);
 
 	// callbacks
 	IScriptFunction* getCallBack(const std::string& callback) const;
+
 	void removeCallBack(const std::string& callback);
+
 	void setCallBack(const std::string& callback, IScriptFunction* cbFunc);
 
 	// Compile script into a ScriptFunction
@@ -82,6 +101,7 @@ public:
 	const ScriptRunError& getScriptError() const;
 
 	void reportScriptException(const ScriptRunError& error);
+
 	void reportScriptException(const std::string& error_message);
 
 private:

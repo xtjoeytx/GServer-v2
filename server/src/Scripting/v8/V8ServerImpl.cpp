@@ -268,7 +268,8 @@ void Server_Function_SetShootParams(const v8::FunctionCallbackInfo<v8::Value>& a
 		CString shootParams;
 		for (int i = 0; i < args.Length(); i++)
 		{
-			shootParams << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+			shootParams << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked())
+						<< "\n";
 		}
 		shootParams.gtokenizeI();
 
@@ -364,7 +365,8 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8Literal(isolate, "_internalFlags", v8::NewStringType::kInternalized);
+	v8::Local<v8::String> internalProperty = v8::String::NewFromUtf8Literal(isolate, "_internalFlags",
+																			v8::NewStringType::kInternalized);
 	if (self->HasRealNamedProperty(context, internalProperty).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalProperty).ToLocalChecked());
@@ -386,7 +388,9 @@ void Server_GetObject_Flags(v8::Local<v8::String> prop, const v8::PropertyCallba
 	v8::Local<v8::Object> new_instance = ctor_tpl->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetAlignedPointerInInternalField(0, serverObject);
 
-	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	v8::PropertyAttribute propAttr = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+																		v8::PropertyAttribute::DontDelete |
+																		v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalProperty, new_instance, propAttr).FromJust();
 	info.GetReturnValue().Set(new_instance);
 }
@@ -407,7 +411,8 @@ void Server_Flags_Getter(v8::Local<v8::Name> property, const v8::PropertyCallbac
 	info.GetReturnValue().Set(strText);
 }
 
-void Server_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+void Server_Flags_Setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value,
+						 const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.This();
@@ -507,7 +512,9 @@ void Server_GetArray_Serverlist(v8::Local<v8::String> prop, const v8::PropertyCa
 
 	for (auto it = serverList.begin(); it != serverList.end(); ++it)
 	{
-		v8::Local<v8::String> key_servername = v8::String::NewFromUtf8(isolate, it->first.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+		v8::Local<v8::String> key_servername = v8::String::NewFromUtf8(isolate, it->first.c_str(),
+																	   v8::NewStringType::kNormal)
+												   .ToLocalChecked();
 		result->Set(context, key_servername, v8::Number::New(isolate, it->second)).Check();
 	}
 
@@ -524,7 +531,8 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "server"
-	v8::Local<v8::String> serverStr = v8::String::NewFromUtf8Literal(isolate, "server", v8::NewStringType::kInternalized);
+	v8::Local<v8::String> serverStr = v8::String::NewFromUtf8Literal(isolate, "server",
+																	 v8::NewStringType::kInternalized);
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> server_ctor = v8::FunctionTemplate::New(isolate);
@@ -534,19 +542,30 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 	server_ctor->InstanceTemplate()->SetInternalFieldCount(1);
 
 	// Method functions
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httpget"), v8::FunctionTemplate::New(isolate, Server_Function_HttpGet, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httppost"), v8::FunctionTemplate::New(isolate, Server_Function_HttpPost, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"), v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"), v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
-	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtorc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httpget"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_HttpGet, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "httppost"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_HttpPost, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findlevel"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_FindLevel, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtorc"),
+					  v8::FunctionTemplate::New(isolate, Server_Function_SendToRC, engine_ref));
 
 	// Properties
-	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Server_GetObject_Flags, nullptr, engine_ref);
+	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "flags"), Server_GetObject_Flags, nullptr,
+							  engine_ref);
 	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Server_GetArray_Npcs);
 	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Server_GetArray_Players);
 	server_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "serverlist"), Server_GetArray_Serverlist);

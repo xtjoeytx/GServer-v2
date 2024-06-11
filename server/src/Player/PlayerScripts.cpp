@@ -23,11 +23,12 @@ bool Player::msgPLI_UPDATEGANI(CString& pPacket)
 	// Compare the bytecode checksum from the client with the one for the
 	// current script, if it doesn't match send the updated bytecode
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		for (const auto& packet : findAni->getBytecodePackets())
+		for (const auto& packet: findAni->getBytecodePackets())
 			sendPacket(packet);
 
 	// v4 and up needs this for some reason.
-	sendPacket({PLO_UNKNOWN195, CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\""});
+	sendPacket({ PLO_UNKNOWN195,
+				 CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"" });
 	return true;
 }
 
@@ -44,7 +45,7 @@ bool Player::msgPLI_UPDATESCRIPT(CString& pPacket)
 	{
 		CString b = weaponObj->getByteCode();
 		if (!m_newProtocol)
-			sendPacket({PLO_RAWDATA, CString() >> (int)b.length() << "\n"});
+			sendPacket({ PLO_RAWDATA, CString() >> (int)b.length() << "\n" });
 
 		sendPacket({ PLO_NPCWEAPONSCRIPT, b });
 	}
@@ -65,9 +66,9 @@ bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 	if (classObj != nullptr)
 	{
 		if (!m_newProtocol)
-			sendPacket({PLO_RAWDATA, CString() >> (int)classObj->getByteCode().length() << "\n"});
+			sendPacket({ PLO_RAWDATA, CString() >> (int)classObj->getByteCode().length() << "\n" });
 
-		sendPacket({PLO_NPCWEAPONSCRIPT, classObj->getByteCode()});
+		sendPacket({ PLO_NPCWEAPONSCRIPT, classObj->getByteCode() });
 	}
 	else
 	{
@@ -83,7 +84,7 @@ bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 		// Should technically be PLO_UNKNOWN197 but for some reason the client breaks player.join() scripts
 		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by
 		// sending an empty bytecode
-		sendPacket({PLO_NPCWEAPONSCRIPT, CString() >> (short)gstr.length() << gstr});
+		sendPacket({ PLO_NPCWEAPONSCRIPT, CString() >> (short)gstr.length() << gstr });
 	}
 
 	return true;

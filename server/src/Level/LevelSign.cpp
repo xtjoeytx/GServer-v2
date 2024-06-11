@@ -3,7 +3,9 @@
 #include "Player.h"
 
 static CString encodeSignCode(CString& pText);
+
 static CString encodeSign(const CString& pSignText);
+
 static CString decodeSignCode(CString pText);
 
 const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

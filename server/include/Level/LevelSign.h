@@ -6,7 +6,9 @@
 #include <vector>
 
 #ifdef V8NPCSERVER
+
 	#include "ScriptBindings.h"
+
 #endif
 
 class Player;
@@ -21,16 +23,23 @@ public:
 
 	// get private variables
 	int getX() const { return m_x; }
+
 	int getY() const { return m_y; }
+
 	CString getText() const { return m_text; }
+
 	CString getUText() const { return m_unformattedText; }
 
 	void setX(int value = 0) { m_x = value; }
+
 	void setY(int value = 0) { m_y = value; }
+
 	void setText(const CString& value);
+
 	void setUText(const CString& value);
 
 #ifdef V8NPCSERVER
+
 	inline IScriptObject<LevelSign>* getScriptObject() const
 	{
 		return m_scriptObject.get();
@@ -40,6 +49,7 @@ public:
 	{
 		m_scriptObject = std::move(object);
 	}
+
 #endif
 
 private:

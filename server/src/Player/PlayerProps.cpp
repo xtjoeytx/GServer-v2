@@ -212,9 +212,9 @@ void Player::getProp(CString& buffer, int pPropId) const
 			return;
 		}
 
-		// Simplifies login.
-		// Manually send prop if you are leaving the level.
-		// 1 = join level, 0 = leave level.
+			// Simplifies login.
+			// Manually send prop if you are leaving the level.
+			// 1 = join level, 0 = leave level.
 		case PLPROP_JOINLEAVELVL:
 			buffer >> (char)1;
 			return;
@@ -239,14 +239,14 @@ void Player::getProp(CString& buffer, int pPropId) const
 			return;
 		}
 
-		// OS type.
-		// Windows: wind
+			// OS type.
+			// Windows: wind
 		case PLPROP_OSTYPE:
 			buffer >> (char)m_os.length() << m_os;
 			return;
 
-		// Text codepage.
-		// Example: 1252
+			// Text codepage.
+			// Example: 1252
 		case PLPROP_TEXTCODEPAGE:
 			buffer.writeGInt(m_envCodePage);
 			return;
@@ -286,9 +286,9 @@ void Player::getProp(CString& buffer, int pPropId) const
 			buffer >> (char)(level ? level->getMapY() : 0);
 			return;
 
-		// TODO(joey): figure this out. Something to do with guilds? irc-related
-		//	(char)(some bitflag for something, uses the first 3 bits im not sure)
-		//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
+			// TODO(joey): figure this out. Something to do with guilds? irc-related
+			//	(char)(some bitflag for something, uses the first 3 bits im not sure)
+			//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
 		case PLPROP_UNKNOWN81:
 			//return CString();
 			return;
@@ -399,7 +399,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 #endif
 					if (rc != nullptr)
 					{
-						if (m_server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
+						if (m_server->getSettings().getBool("normaladminscanchangegralats", true) ||
+							(rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
 							m_gralatCount = newGralatCount;
 					}
 					else
@@ -548,10 +549,18 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 					nPacket >> (short)m_id >> (char)m_swordPower;
 					char hx = (char)((m_x + 1.5f) * 2);
 					char hy = (char)((m_y + 2.0f) * 2);
-					m_server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy - 4)}, m_currentLevel, { m_id });
-					m_server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy + 4)}, m_currentLevel, { m_id });
-					m_server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx - 4) >> (char)(hy)}, m_currentLevel, { m_id });
-					m_server->sendPacketToOneLevel({PLO_HITOBJECTS, CString() << nPacket >> (char)(hx + 4) >> (char)(hy)}, m_currentLevel, { m_id });
+					m_server->sendPacketToOneLevel(
+						{ PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy - 4) }, m_currentLevel,
+						{ m_id });
+					m_server->sendPacketToOneLevel(
+						{ PLO_HITOBJECTS, CString() << nPacket >> (char)(hx) >> (char)(hy + 4) }, m_currentLevel,
+						{ m_id });
+					m_server->sendPacketToOneLevel(
+						{ PLO_HITOBJECTS, CString() << nPacket >> (char)(hx - 4) >> (char)(hy) }, m_currentLevel,
+						{ m_id });
+					m_server->sendPacketToOneLevel(
+						{ PLO_HITOBJECTS, CString() << nPacket >> (char)(hx + 4) >> (char)(hy) }, m_currentLevel,
+						{ m_id });
 				}
 			}
 			break;
@@ -688,7 +697,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 					levelBuff >> (char)PLPROP_CURPOWER >> (char)(m_hitpoints * 2.0f);
 
 					if (level != nullptr && level->isPlayerLeader(m_id))
-						sendPacket({PLO_ISLEADER, CString()});
+						sendPacket({ PLO_ISLEADER, CString() });
 
 					/*
 					// If we are the leader of the level, call warp().  This will fix NPCs not
@@ -701,7 +710,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				// When they die, increase deaths and make somebody else level leader.
 				if ((oldStatus & PLSTATUS_DEAD) == 0 && (m_status & PLSTATUS_DEAD) > 0)
 				{
-					if ( !level->isSparringZone())
+					if (!level->isSparringZone())
 					{
 						m_deaths++;
 						dropItemsOnDeath();
@@ -715,7 +724,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 						level->addPlayer(m_id);
 
 						auto leader = m_server->getPlayer(level->getPlayers().front());
-						if (leader) leader->sendPacket({PLO_ISLEADER, CString()});
+						if (leader) leader->sendPacket({ PLO_ISLEADER, CString() });
 					}
 				}
 			}
@@ -770,9 +779,12 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 								// and tell the player to remove the NPC from memory.
 								m_carryNpcId = 0;
 								isOwner = false;
-								sendPacket({PLO_PLAYERPROPS, CString() >> (char)PLPROP_CARRYNPC >> (int)0});
-								sendPacket({PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)m_carryNpcId});
-								m_server->sendPacketToOneLevel({PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0}, level, { m_id });
+								sendPacket({ PLO_PLAYERPROPS, CString() >> (char)PLPROP_CARRYNPC >> (int)0 });
+								sendPacket({ PLO_NPCDEL2,
+											 CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)m_carryNpcId });
+								m_server->sendPacketToOneLevel({ PLO_OTHERPLPROPS,
+																 CString() >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0 },
+															   level, { m_id });
 								break;
 							}
 						}
@@ -782,7 +794,10 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 						// We own this NPC now so remove it from the level and have everybody else delete it.
 						auto npc = m_server->getNPC(m_carryNpcId);
 						level->removeNPC(npc);
-						m_server->sendPacketToAll({PLO_NPCDEL2, CString() >> (char)level->getLevelName().length() << level->getLevelName() >> (int)m_carryNpcId}, { m_id });
+						m_server->sendPacketToAll({ PLO_NPCDEL2, CString() >> (char)level->getLevelName().length()
+																				  << level->getLevelName() >>
+																	 (int)m_carryNpcId },
+												  { m_id });
 					}
 				}
 			}
@@ -825,7 +840,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			case PLPROP_UDPPORT:
 				m_udpport = pPacket.readGInt();
 				if (m_id != -1 && m_loaded)
-					m_server->sendPacketToType(PLTYPE_ANYCLIENT, {PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_UDPPORT >> (int)m_udpport}, this);
+					m_server->sendPacketToType(PLTYPE_ANYCLIENT, { PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_UDPPORT >> (int)m_udpport }, this);
 				// TODO: udp support.
 				break;
 
@@ -921,8 +936,10 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				if (m_id == -1 || !m_loaded)
 					break;
 
-				m_server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_PSTATUSMSG >> (char)m_statusMsg}, { m_id });
-			break;
+				m_server->sendPacketToAll(
+					{ PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_PSTATUSMSG >> (char)m_statusMsg },
+					{ m_id });
+				break;
 
 			case PLPROP_GATTRIB1:
 				m_attrList[0] = pPacket.readChars(pPacket.readGUChar());
@@ -1015,21 +1032,21 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				m_attrList[29] = pPacket.readChars(pPacket.readGUChar());
 				break;
 
-			// OS type.
-			// Windows: wind
+				// OS type.
+				// Windows: wind
 			case PLPROP_OSTYPE:
 				m_os = pPacket.readChars(pPacket.readGUChar());
 				break;
 
-			// Text codepage.
-			// Example: 1252
+				// Text codepage.
+				// Example: 1252
 			case PLPROP_TEXTCODEPAGE:
 				m_envCodePage = pPacket.readGInt();
 				break;
 
-			// Location, in pixels, of the player on the level in 2.30+ clients.
-			// Bit 0x0001 controls if it is negative or not.
-			// Bits 0xFFFE are the actual value.
+				// Location, in pixels, of the player on the level in 2.30+ clients.
+				// Bit 0x0001 controls if it is negative or not.
+				// Bits 0xFFFE are the actual value.
 			case PLPROP_X2:
 				len = pPacket.readGUShort();
 				m_x = (len >> 1) / 16.0f;
@@ -1120,7 +1137,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 	if (isLoggedIn() && isLoaded())
 	{
 		if (globalBuff.length() > 0)
-			m_server->sendPacketToAll({PLO_OTHERPLPROPS, CString() >> (short)m_id << globalBuff}, { m_id });
+			m_server->sendPacketToAll({ PLO_OTHERPLPROPS, CString() >> (short)m_id << globalBuff }, { m_id });
 		if (levelBuff.length() > 0)
 		{
 			// We need to arrange the props packet in a certain way depending
@@ -1129,10 +1146,14 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			bool MOVE_PRECISE = false;
 			if (m_versionId >= CLVER_2_3) MOVE_PRECISE = true;
 
-			m_server->sendPacketToLevelArea({PLO_OTHERPLPROPS, CString() >> (short)m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff)}, shared_from_this(), { m_id });
+			m_server->sendPacketToLevelArea({ PLO_OTHERPLPROPS,
+											  CString() >> (short)m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2)
+																	   << (!MOVE_PRECISE ? levelBuff2 : levelBuff) },
+											shared_from_this(),
+											{ m_id });
 		}
 		if (selfBuff.length() > 0)
-			sendPacket({PLO_PLAYERPROPS, CString() << selfBuff});
+			sendPacket({ PLO_PLAYERPROPS, CString() << selfBuff });
 
 #ifdef V8NPCSERVER
 		// Movement check.
@@ -1155,8 +1176,9 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		m_invalidPackets++;
 		if (m_invalidPackets > 5)
 		{
-			serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_nickName.text());
-			sendPacket({PLO_DISCMESSAGE, CString() << "Disconnected for sending invalid packets."});
+			serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(),
+						  m_nickName.text());
+			sendPacket({ PLO_DISCMESSAGE, CString() << "Disconnected for sending invalid packets." });
 			m_server->deletePlayer(shared_from_this());
 		}
 	}
@@ -1176,7 +1198,7 @@ void Player::sendProps(const bool* pProps, int pCount)
 	}
 
 	// Send Packet
-	sendPacket({PLO_PLAYERPROPS, CString() << propPacket});
+	sendPacket({ PLO_PLAYERPROPS, CString() << propPacket });
 }
 
 CString Player::getProps(const bool* pProps, int pCount)

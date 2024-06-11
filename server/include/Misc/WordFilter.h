@@ -42,17 +42,22 @@ struct WordFilterRule
 	int precision;
 	CString warnMessage;
 };
+
 using WordFilterRulePtr = std::unique_ptr<WordFilterRule>;
 
 class Server;
+
 class Player;
+
 class WordFilter
 {
 public:
 	WordFilter(Server* pServer) : m_server(pServer), m_showWordsToRC(false) {}
+
 	~WordFilter();
 
 	void load(const CString& file);
+
 	int apply(const Player* player, CString& chat, int check);
 
 private:

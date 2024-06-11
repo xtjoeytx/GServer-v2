@@ -61,7 +61,7 @@ PlayerOutPacket ScriptClass::getClassPacket() const
 		// Get the mod time and send packet 197.
 		CString smod = CString() >> (long long)time(nullptr);
 		smod.gtokenizeI();
-		return {PLO_UNKNOWN197, CString() << header << "," << smod};
+		return { PLO_UNKNOWN197, CString() << header << "," << smod };
 	}
 
 	return {};

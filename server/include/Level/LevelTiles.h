@@ -12,6 +12,7 @@ public:
 	}
 
 	short& operator[](uint32_t index) { return m_tiles[index]; }
+
 	explicit operator char*() const { return (char*)m_tiles; };
 
 private:

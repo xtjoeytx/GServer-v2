@@ -20,7 +20,9 @@ void Sign_GetStr_Text(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 {
 	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), signObject->getUText().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															signObject->getUText().text())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
