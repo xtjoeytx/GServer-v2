@@ -41,33 +41,50 @@ enum
 };
 
 class Server;
+
 class Level;
+
 class LevelBaddy
 {
 public:
 	LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer);
 
 	void reset();
+
 	void dropItem();
 
 	// get functions
 	unsigned char getType() const { return m_type; }
+
 	char getId() const { return m_id; }
+
 	char getPower() const { return m_power; }
+
 	char getMode() const { return m_mode; }
+
 	char getAni() const { return m_ani; }
+
 	char getDir() const { return m_dir; }
+
 	float getX() const { return m_x; }
+
 	float getY() const { return m_y; }
+
 	float getStartX() const { return m_startX; }
+
 	float getStartY() const { return m_startY; }
+
 	CString getProp(const int propId, int clientVersion = CLVER_2_17) const;
+
 	CString getProps(int clientVersion = CLVER_2_17) const;
+
 	std::vector<CString> getVerses() const { return m_verses; };
 
 	// set functions
 	void setProps(CString& pProps);
+
 	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
+
 	void setId(const char pId) { m_id = pId; }
 
 	CTimeout timeout;

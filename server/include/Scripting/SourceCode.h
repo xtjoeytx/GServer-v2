@@ -8,7 +8,9 @@ class SourceCode
 {
 public:
 	SourceCode() : m_gs2default(false) {}
+
 	SourceCode(std::string src, bool gs2default = false) : m_src(std::move(src)), m_gs2default(gs2default) { init(); }
+
 	SourceCode(SourceCode&& o) noexcept : m_src(std::move(o.m_src)), m_gs2default(o.m_gs2default) { init(); }
 
 	SourceCode& operator=(SourceCode&& o) noexcept

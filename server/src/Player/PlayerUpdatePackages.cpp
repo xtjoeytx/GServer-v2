@@ -23,7 +23,7 @@ bool Player::msgPLI_VERIFYWANTSEND(CString& pPacket)
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)
 			{
-				sendPacket(CString() >> (char)PLO_FILEUPTODATE << fileName);
+				sendPacket({ PLO_FILEUPTODATE, CString() << fileName });
 				return true;
 			}
 		}
@@ -73,11 +73,12 @@ bool Player::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 		}
 	}
 
-	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE >> (char)packageName.length() << packageName >> (long long)totalDownloadSize);
+	sendPacket({ PLO_UPDATEPACKAGESIZE,
+				 CString() >> (char)packageName.length() << packageName >> (long long)totalDownloadSize });
 
 	for (const auto& wantFile: missingFiles)
-		this->sendFile(wantFile);
+		sendFile(wantFile);
 
-	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << packageName);
+	sendPacket({ PLO_UPDATEPACKAGEDONE, CString() << packageName });
 	return true;
 }

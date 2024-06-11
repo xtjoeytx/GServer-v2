@@ -20,11 +20,14 @@ void Link_GetStr_NewLevel(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewLevel().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															linkObject->getNewLevel().text())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
-void Link_SetStr_NewLevel(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
+void Link_SetStr_NewLevel(v8::Local<v8::String> props, v8::Local<v8::Value> value,
+						  const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
@@ -106,7 +109,9 @@ void Link_GetStr_NewX(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 {
 	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewX().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															linkObject->getNewX().text())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -124,7 +129,9 @@ void Link_GetStr_NewY(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 {
 	V8ENV_SAFE_UNWRAP(info, LevelLink, linkObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), linkObject->getNewY().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															linkObject->getNewY().text())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -159,7 +166,8 @@ void bindClass_LevelLink(ScriptEngine* scriptEngine)
 	//link_proto->Set(v8::String::NewFromUtf8Literal(isolate, "clone"), v8::FunctionTemplate::New(isolate, Level_Function_Clone, engine_ref));
 
 	// Properties
-	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newlevel"), Link_GetStr_NewLevel, Link_SetStr_NewLevel);
+	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "newlevel"), Link_GetStr_NewLevel,
+							Link_SetStr_NewLevel);
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "x"), Link_GetNum_X, Link_SetNum_X);
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Link_GetNum_Y, Link_SetNum_Y);
 	link_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "width"), Link_GetNum_Width, Link_SetNum_Width);

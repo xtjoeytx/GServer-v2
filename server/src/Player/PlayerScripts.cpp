@@ -23,10 +23,12 @@ bool Player::msgPLI_UPDATEGANI(CString& pPacket)
 	// Compare the bytecode checksum from the client with the one for the
 	// current script, if it doesn't match send the updated bytecode
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		sendPacket(findAni->getBytecodePacket());
+		for (const auto& packet: findAni->getBytecodePackets())
+			sendPacket(packet);
 
 	// v4 and up needs this for some reason.
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
+	sendPacket({ PLO_UNKNOWN195,
+				 CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"" });
 	return true;
 }
 
@@ -42,10 +44,10 @@ bool Player::msgPLI_UPDATESCRIPT(CString& pPacket)
 	if (weaponObj != nullptr)
 	{
 		CString b = weaponObj->getByteCode();
-		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << b;
+		if (!m_newProtocol)
+			sendPacket({ PLO_RAWDATA, CString() >> (int)b.length() << "\n" });
 
-		sendPacket(out);
+		sendPacket({ PLO_NPCWEAPONSCRIPT, b });
 	}
 
 	return true;
@@ -63,10 +65,10 @@ bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 
 	if (classObj != nullptr)
 	{
-		CString out;
-		out >> (char)PLO_RAWDATA >> (int)classObj->getByteCode().length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << classObj->getByteCode();
-		sendPacket(out);
+		if (!m_newProtocol)
+			sendPacket({ PLO_RAWDATA, CString() >> (int)classObj->getByteCode().length() << "\n" });
+
+		sendPacket({ PLO_NPCWEAPONSCRIPT, classObj->getByteCode() });
 	}
 	else
 	{
@@ -82,7 +84,7 @@ bool Player::msgPLI_UPDATECLASS(CString& pPacket)
 		// Should technically be PLO_UNKNOWN197 but for some reason the client breaks player.join() scripts
 		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by
 		// sending an empty bytecode
-		sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)gstr.length() << gstr);
+		sendPacket({ PLO_NPCWEAPONSCRIPT, CString() >> (short)gstr.length() << gstr });
 	}
 
 	return true;

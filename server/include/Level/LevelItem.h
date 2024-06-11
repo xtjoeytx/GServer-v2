@@ -37,6 +37,7 @@ enum class LevelItemType
 };
 
 class Player;
+
 class LevelItem
 {
 public:
@@ -50,21 +51,30 @@ public:
 
 	// Get functions.
 	float getX() const { return m_x; }
+
 	float getY() const { return m_y; }
+
 	LevelItemType getItem() const { return m_item; }
+
 	time_t getModTime() const { return m_modTime; }
 
 	CTimeout timeout;
 
 	// Static functions.
 	static LevelItemType getItemId(signed char itemId);
+
 	static LevelItemType getItemId(const std::string& pItemName);
+
 	static std::string getItemName(LevelItemType itemId);
+
 	static CString getItemPlayerProp(LevelItemType itemType, Player* player);
+
 	static CString getItemPlayerProp(const std::string& pItemName, Player* player);
+
 	static constexpr auto getItemTypeId(LevelItemType val);
 
 	static bool isRupeeType(LevelItemType itemType);
+
 	static uint16_t GetRupeeCount(LevelItemType type);
 
 private:

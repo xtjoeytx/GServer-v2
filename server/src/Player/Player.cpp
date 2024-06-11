@@ -14,8 +14,12 @@
 #include "NPC.h"
 #include "Player.h"
 #include "Server.h"
+#include "TPacket.h"
 #include "Weapon.h"
 #include "utilities/stringutils.h"
+
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
 
 /*
 	Logs
@@ -27,11 +31,19 @@
 	Global Definitions
 */
 const char* __defaultfiles[] = {
-	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani", "grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani", "idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani",
+	"carried.gani", "carry.gani", "carrystill.gani", "carrypeople.gani", "dead.gani", "def.gani", "ghostani.gani",
+	"grab.gani", "gralats.gani", "hatoff.gani", "haton.gani", "hidden.gani", "hiddenstill.gani", "hurt.gani",
+	"idle.gani", "kick.gani", "lava.gani", "lift.gani", "maps1.gani", "maps2.gani", "maps3.gani", "pull.gani",
+	"push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani",
+	"ridesword.gani", "shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani",
+	"walk.gani", "walkslow.gani",
 	"sword?.png", "sword?.gif",
 	"shield?.png", "shield?.gif",
 	"body.png", "body2.png", "body3.png",
-	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
+	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav",
+	"extra.wav", "fire.wav", "frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav",
+	"item2.wav", "jump.wav", "lift.wav", "lift2.wav", "nextpage.wav", "put.wav", "sign.wav", "steps.wav",
+	"steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav",
 	"pics1.png"
 };
 const char* __defaultbodies[] = {
@@ -45,7 +57,8 @@ const char* __defaultshields[] = {
 };
 
 // Enum per Attr
-int __attrPackets[30] = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
+int __attrPackets[30] = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
+						  69, 70, 71, 72, 73, 74 };
 
 // Sent on Login
 bool __sendLogin[propscount] = {
@@ -155,7 +168,9 @@ bool __playerPropsRC[propscount] = {
 	Pointer-Functions for Packets
 */
 bool Player::created = false;
+
 typedef bool (Player::*TPLSock)(CString&);
+
 std::vector<TPLSock> TPLFunc(256, &Player::msgPLI_NULL);
 
 void Player::createFunctions()
@@ -311,7 +326,7 @@ Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
 	  m_nextIsRaw(false), m_rawPacketSize(0), m_isFtp(false),
 	  m_grMovementUpdated(false),
 	  m_fileQueue(pSocket),
-	  m_packetCount(0), m_firstLevel(true), m_invalidPackets(0)
+	  m_packetCount(0), m_firstLevel(true), m_invalidPackets(0), m_newProtocol(false)
 #ifdef V8NPCSERVER
 	  ,
 	  m_processRemoval(false)
@@ -323,7 +338,7 @@ Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
 	m_serverName = m_server->getName();
 	m_nextExternalPlayerId = 16000;
 
-	srand((unsigned int)time(0));
+	srand((unsigned int)time(nullptr));
 
 	// Create Functions
 	if (!Player::created)
@@ -355,16 +370,19 @@ void Player::cleanup()
 		// Announce our departure to other clients.
 		if (!isNC())
 		{
-			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_PCONNECTED, this);
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)m_id, this);
+			m_server->sendPacketToType(PLTYPE_ANYCLIENT,
+									   { PLO_OTHERPLPROPS, CString() >> (short)m_id >> (char)PLPROP_PCONNECTED }, this);
+			m_server->sendPacketToType(PLTYPE_ANYRC, { PLO_DELPLAYER, CString() >> (short)m_id }, this);
 		}
 
 		if (!m_accountName.isEmpty())
 		{
 			if (isRC())
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "RC Disconnected: " << m_accountName, this);
+				m_server->sendPacketToType(PLTYPE_ANYRC,
+										   { PLO_RC_CHAT, CString() << "RC Disconnected: " << m_accountName }, this);
 			else if (isNC())
-				m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "NC Disconnected: " << m_accountName, this);
+				m_server->sendPacketToType(PLTYPE_ANYNC,
+										   { PLO_RC_CHAT, CString() << "NC Disconnected: " << m_accountName }, this);
 		}
 
 		// Log.
@@ -395,7 +413,7 @@ void Player::cleanup()
 bool Player::onRecv()
 {
 	// If our socket is gone, delete ourself.
-	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
 	// Grab the data from the socket and put it into our receive buffer.
@@ -418,7 +436,7 @@ bool Player::onRecv()
 
 bool Player::onSend()
 {
-	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
 	// Send data.
@@ -444,6 +462,53 @@ bool Player::canSend()
 	return m_fileQueue.canSend();
 }
 
+/* server recv callback */
+int Player::serverRecv(WOLFSSL* ssl, char* buf, int sz, void* ctx)
+{
+	printf("ServerRecv\n");
+
+	auto* instance = (Player*)(wolfSSL_get_ex_data(ssl, 0));
+	if (instance && instance->m_playerSock->getState() == SOCKET_STATE_CONNECTED)
+	{
+		if (instance->m_recvBuffer.bytesLeft() > 0)
+		{
+		}
+		else
+		{
+			char* data = instance->m_playerSock->getData(reinterpret_cast<unsigned int*>(&sz));
+			if (sz != 0)
+			{
+				instance->m_recvBuffer.clear();
+				instance->m_recvBuffer.write(data, (int)sz);
+#if defined(WOLFSSL_ENABLED)
+				if (instance->m_playerSock->webSocket)
+					if (webSocketFixIncomingPacket(instance->m_recvBuffer) < 0) return true;
+#endif
+			}
+		}
+		memcpy(buf, instance->m_recvBuffer.readChars(sz).text(), sz);
+		return sz;
+	}
+
+	return -1;
+}
+
+/* client send callback */
+int Player::serverSend(WOLFSSL* ssl, char* buf, int sz, void* ctx)
+{
+	printf("ServerSend\n");
+
+	auto* instance = (Player*)(wolfSSL_get_ex_data(ssl, 0));
+	if (instance && instance->m_playerSock->getState() == SOCKET_STATE_CONNECTED)
+	{
+		return instance->m_playerSock->sendData(buf, (unsigned int*)&sz);
+
+		return sz;
+	}
+
+	return -1;
+}
+
 /*
 	Socket-Control Functions
 */
@@ -457,20 +522,29 @@ bool Player::doMain()
 	while (m_recvBuffer.length() > 1)
 	{
 #if defined(WOLFSSL_ENABLED)
-		if (!this->m_playerSock->webSocket && m_recvBuffer.findi("GET /") > -1 && m_recvBuffer.findi("HTTP/1.1\r\n") > -1)
+		if (!m_playerSock->webSocket && m_recvBuffer.findi("GET /") > -1 && m_recvBuffer.findi("HTTP/1.1\r\n") > -1)
 		{
 
 			CString webSocketKeyHeader = "Sec-WebSocket-Key:";
 			if (m_recvBuffer.findi(webSocketKeyHeader) < 0)
 			{
-				CString simpleHtml = CString() << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to " << m_server->getSettings().getStr("name") << "!</h1>" << m_server->getServerMessage().replaceAll("my server", m_server->getSettings().getStr("name")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by " << CString(APP_CREDITS) << "</p></body></html>";
-				CString webResponse = CString() << "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: " << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n"
-												<< simpleHtml << "\r\n";
+				CString simpleHtml = CString()
+									 << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to "
+									 << m_server->getSettings().getStr("name") << "!</h1>"
+									 << m_server->getServerMessage().replaceAll("my server",
+																				m_server->getSettings().getStr("name"))
+											.text()
+									 << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by "
+									 << CString(APP_CREDITS) << "</p></body></html>";
+				CString webResponse = CString()
+									  << "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: "
+									  << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n"
+									  << simpleHtml << "\r\n";
 				unsigned int dsize = webResponse.length();
-				this->m_playerSock->sendData(webResponse.text(), &dsize);
+				m_playerSock->sendData(webResponse.text(), &dsize);
 				return false;
 			}
-			this->m_playerSock->webSocket = true;
+			m_playerSock->webSocket = true;
 			// Get the WebSocket handshake key
 			m_recvBuffer.setRead(m_recvBuffer.findi(webSocketKeyHeader));
 			CString webSocketKey = m_recvBuffer.readString("\r").subString(webSocketKeyHeader.length() + 1).trimI();
@@ -492,15 +566,151 @@ bool Player::doMain()
 
 			unsigned int dsize = webSockHandshake.length();
 
-			this->m_playerSock->sendData(webSockHandshake.text(), &dsize);
+			m_playerSock->sendData(webSockHandshake.text(), &dsize);
 
 			m_recvBuffer.removeI(0, m_recvBuffer.length());
 			return true;
 		}
 #endif
 		// New data.
-		m_lastData = time(0);
+		m_lastData = time(nullptr);
+		if (m_packetCount == 0)
+		{
+			m_packetCount++;
+			if (m_recvBuffer.bytesLeft() >= 8)
+			{
+				if (m_recvBuffer.subString(0, 8) == "GNP1905C")
+				{
+					serverlog.out("[%s] New Protocol client connected! Sending weapons!\n", m_server->getName().text());
+					m_encryptionCodecIn.setGen(ENCRYPT_GEN_6);
+					m_fileQueue.setCodec(ENCRYPT_GEN_6, 0);
+					m_newProtocol = true;
 
+					for (const auto& weapon: m_server->getWeaponList())
+					{
+						for (const auto& packet: weapon.second->getWeaponPackets(CLVER_4_0211))
+						{
+							sendPacket(packet, true);
+						}
+						sendPacket({ PLO_NPCWEAPONSCRIPT, weapon.second->getByteCode() }, true);
+					}
+
+					m_recvBuffer.removeI(0, 8);
+					return true;
+				}
+			}
+		}
+
+		if (m_newProtocol)
+		{
+			m_recvBuffer.removeI(0, m_recvBuffer.length());
+			break;
+		}
+
+		m_recvBuffer.save("indata.bin");
+		if (m_recvBuffer[0] == 0x16)
+		{
+			wolfSSL_Debugging_ON();
+			char* hostname = nullptr;
+
+			WOLFSSL_METHOD* method;
+			/* Initialize wolfSSL library */
+			wolfSSL_Init();
+
+			/* Get encryption method */
+			method = wolfTLS_server_method();
+
+			/* Create wolfSSL_CTX */
+			if ((ctx = wolfSSL_CTX_new(method)) == nullptr)
+			{
+				printf("wolfSSL_CTX_new error\n");
+
+				return false;
+			}
+
+			if (wolfSSL_CTX_set_cipher_list(ctx, "ALL") != SSL_SUCCESS)
+			{
+				printf("Error setting cipher suites.\n");
+
+				return false;
+			}
+
+			/* Load server certs into ctx */
+			if (wolfSSL_CTX_use_certificate_file(ctx, "certs/server-cert.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
+			{
+				printf("Error loading certs/server-cert.pem\n");
+
+				return false;
+			}
+
+			/* Load server key into ctx */
+			if (wolfSSL_CTX_use_PrivateKey_file(ctx, "certs/server-key.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
+			{
+				printf("Error loading certs/server-key.pem\n");
+
+				return false;
+			}
+
+			wolfSSL_SetIOSend(ctx, serverSend);
+			wolfSSL_SetIORecv(ctx, serverRecv);
+
+			/* Create wolfSSL object */
+			if ((ssl = wolfSSL_new(ctx)) == nullptr)
+			{
+				printf("wolfSSL_new error\n");
+
+				return false;
+			}
+
+			iBuffer = m_recvBuffer;
+			//rBuffer.removeI(0, rBuffer.length());
+
+			wolfSSL_set_ex_data(ssl, 0, this);
+
+			/* accept tls connection without tcp sockets */
+			int ret = wolfSSL_accept(ssl);
+			if (ret != SSL_SUCCESS)
+			{
+				int err = wolfSSL_get_error(ssl, ret);
+				const char* errString = wolfSSL_ERR_reason_error_string(err);
+				printf("SSL/TLS handshake error: %s\n", errString);
+				// Additional error handling code
+				WOLFSSL_CIPHER* currentCipher = wolfSSL_get_current_cipher(ssl);
+				if (currentCipher != nullptr)
+				{
+					const char* cipherSuiteName = wolfSSL_CIPHER_get_name(currentCipher);
+					char availableCiphers[1024];
+					wolfSSL_get_ciphers(availableCiphers, 1024);
+					printf("Client requested cipher suite: %s\nciphers: %s\n", cipherSuiteName, availableCiphers);
+					printf("\n");
+				}
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
+		if (ssl != nullptr)
+		{
+			iBuffer = m_recvBuffer;
+			//rBuffer.removeI(0, rBuffer.length());
+
+			unsigned char buf[80];
+			memset(buf, 0, sizeof(buf));
+			int ret = wolfSSL_read(ssl, buf, sizeof(buf) - 1);
+			if (ret != SSL_SUCCESS)
+			{
+				int err = wolfSSL_get_error(ssl, ret);
+				const char* errString = wolfSSL_ERR_reason_error_string(err);
+				printf("SSL/TLS error: %s\n", errString);
+
+				return false;
+			}
+			m_recvBuffer << *buf;
+			printf("client msg = %s\n", buf);
+		}
 		// packet length
 		auto len = (unsigned short)m_recvBuffer.readShort();
 		if ((unsigned int)len > (unsigned int)m_recvBuffer.length() - 2)
@@ -516,21 +726,21 @@ bool Player::doMain()
 			case ENCRYPT_GEN_1: // Gen 1 is not encrypted or compressed.
 				break;
 
-			// Gen 2 and 3 are zlib compressed.  Gen 3 encrypts individual packets
-			// Uncompress so we can properly decrypt later on.
+				// Gen 2 and 3 are zlib compressed.  Gen 3 encrypts individual packets
+				// Uncompress, so we can properly decrypt later on.
 			case ENCRYPT_GEN_2:
 			case ENCRYPT_GEN_3:
 				unBuffer.zuncompressI();
 				break;
 
-			// Gen 4 and up encrypt the whole combined and compressed packet.
-			// Decrypt and decompress.
+				// Gen 4 and up encrypt the whole combined and compressed packet.
+				// Decrypt and decompress.
 			default:
 				decryptPacket(unBuffer);
 				break;
 		}
 
-		// well theres your buffer
+		// well there's your buffer
 		if (!parsePacket(unBuffer))
 			return false;
 	}
@@ -554,10 +764,10 @@ bool Player::doMain()
 
 bool Player::doTimedEvents()
 {
-	time_t currTime = time(0);
+	time_t currTime = time(nullptr);
 
 	// If we are disconnected, delete ourself!
-	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 	{
 		m_server->deletePlayer(shared_from_this());
 		return false;
@@ -574,10 +784,12 @@ bool Player::doTimedEvents()
 	if (settings.getBool("disconnectifnotmoved"))
 	{
 		int maxnomovement = settings.getInt("maxnomovement", 1200);
-		if (((int)difftime(currTime, m_lastMovement) > maxnomovement) && ((int)difftime(currTime, m_lastChat) > maxnomovement))
+		if (((int)difftime(currTime, m_lastMovement) > maxnomovement) &&
+			((int)difftime(currTime, m_lastChat) > maxnomovement))
 		{
-			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", m_server->getName().text(), m_accountName.text());
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
+			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", m_server->getName().text(),
+						  m_accountName.text());
+			sendPacket({ PLO_DISCMESSAGE, CString() << "You have been disconnected due to inactivity." });
 			return false;
 		}
 	}
@@ -603,7 +815,8 @@ bool Player::doTimedEvents()
 				if (m_ap < 100)
 				{
 					m_ap++;
-					setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+					setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_ap,
+							 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				}
 				if (m_ap < 20) m_apCounter = settings.getInt("aptime0", 30);
 				else if (m_ap < 40)
@@ -686,11 +899,11 @@ bool Player::parsePacket(CString& pPacket)
 			decryptPacket(curPacket);
 
 		// Get the packet id.
-		unsigned char id = curPacket.readGUChar();
+		unsigned char packetId = curPacket.readGUChar();
 
 		// RC version 1.1 adds a "\n" string to the end of file uploads instead of a newline character.
 		// This causes issues because it messes with the packet order.
-		if (isRC() && m_versionId == RCVER_1_1 && id == PLI_RC_FILEBROWSER_UP)
+		if (isRC() && m_versionId == RCVER_1_1 && packetId == PLI_RC_FILEBROWSER_UP)
 		{
 			curPacket.removeI(curPacket.length() - 1);
 			curPacket.setRead(1);
@@ -703,7 +916,7 @@ bool Player::parsePacket(CString& pPacket)
 
 		// Forwards packets from server back to client as rc chat (for debugging)
 		//sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Data [" << CString(id) << "]:" << (curPacket.text() + 1));
-		if (!(*this.*TPLFunc[id])(curPacket))
+		if (!(*this.*TPLFunc[packetId])(curPacket))
 			return false;
 	}
 
@@ -734,10 +947,10 @@ void Player::decryptPacket(CString& pPacket)
 		// Uncompress packet.
 		pPacket.bzuncompressI();
 	}
-	else if (m_encryptionCodecIn.getGen() >= ENCRYPT_GEN_5)
+	else if (m_encryptionCodecIn.getGen() == ENCRYPT_GEN_5)
 	{
 		// Find the compression type and remove it.
-		int pType = pPacket.readChar();
+		int pType = (uint8_t)pPacket.readChar();
 		pPacket.removeI(0, 1);
 
 		// Decrypt the packet.
@@ -750,11 +963,37 @@ void Player::decryptPacket(CString& pPacket)
 		else if (pType == COMPRESS_BZ2)
 			pPacket.bzuncompressI();
 		else if (pType != COMPRESS_UNCOMPRESSED)
-			serverlog.out("[%s] ** [ERROR] Client gave incorrect packet compression type! [%d]\n", m_server->getName().text(), pType);
+			serverlog.out("[%s] ** [ERROR] Client gave incorrect packet compression type! [%d]\n",
+						  m_server->getName().text(), pType);
 	}
 }
 
-void Player::sendPacket(CString pPacket, bool appendNL)
+void Player::sendPacketNewProtocol(unsigned char packetId, const CString& pPacket, bool sendNow, bool appendNL)
+{
+	serverlog.out("[%s][%i] %s\n", m_server->getName().text(), (int)packetId, pPacket.text());
+
+	// We ignore appendNL here because new protocol doesn't end with newlines
+	CString buf2 = CString() << (char)0 << (char)m_packetCount;
+	m_packetCount++;
+	buf2.writeInt3(pPacket.length() + 6, false);
+	buf2.writeChar((char)packetId, false);
+	buf2.write(pPacket.text(), pPacket.length(), true);
+
+	if (sendNow)
+	{
+		if (m_playerSock->webSocket)
+			webSocketFixOutgoingPacket(buf2);
+		unsigned int dsize = buf2.length();
+		m_playerSock->sendData(buf2.text(), &dsize);
+	}
+	else
+	{
+		// append buffer
+		m_fileQueue.addPacket(buf2);
+	}
+}
+
+void Player::sendPacketOldProtocol(CString pPacket, bool appendNL)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -773,7 +1012,7 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 
 bool Player::sendFile(const CString& pFile)
 {
-	// Add the filename to the list of known files so we can resend the file
+	// Add the filename to the list of known files, so we can resend the file
 	// to the client if it gets changed after it was originally sent
 	if (isClient())
 		m_knownFiles.insert(pFile.toString());
@@ -784,7 +1023,7 @@ bool Player::sendFile(const CString& pFile)
 	CString path = fileSystem->find(pFile);
 	if (path.isEmpty())
 	{
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+		sendPacket({ PLO_FILESENDFAILED, CString() << pFile });
 
 		return false;
 	}
@@ -795,7 +1034,7 @@ bool Player::sendFile(const CString& pFile)
 		path.removeI(0, m_server->getServerPath().length());
 
 	// Send the file now.
-	return this->sendFile(path, pFile);
+	return sendFile(path, pFile);
 }
 
 bool Player::sendFile(const CString& pPath, const CString& pFile)
@@ -805,14 +1044,16 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 	fileData.load(filepath);
 
 	time_t modTime = 0;
-	struct stat fileStat;
+	struct stat fileStat
+	{
+	};
 	if (stat(filepath.text(), &fileStat) != -1)
 		modTime = fileStat.st_mtime;
 
 	// See if the file exists.
 	if (fileData.length() == 0)
 	{
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+		sendPacket({ PLO_FILESENDFAILED, CString() << pFile });
 
 		return false;
 	}
@@ -835,7 +1076,7 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 		if (m_versionId < CLVER_2_1) packetLength -= 5; // modTime isn't sent.
 		if (fileData.length() > 64000)
 		{
-			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+			sendPacket({ PLO_FILESENDFAILED, CString() << pFile });
 			return false;
 		}
 		isBigFile = false;
@@ -844,8 +1085,8 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 	// If we are sending a big file, let the client know now.
 	if (isBigFile)
 	{
-		sendPacket(CString() >> (char)PLO_LARGEFILESTART << pFile);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+		sendPacket({ PLO_LARGEFILESTART, CString() << pFile });
+		sendPacket({ PLO_LARGEFILESIZE, CString() >> (long long)fileData.length() });
 	}
 
 	// Send the file now.
@@ -858,20 +1099,25 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
 			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)pFile.length() << pFile << fileData.subString(0, sendSize), false);
+			if (!m_newProtocol)
+				sendPacket({ PLO_RAWDATA, CString() >> (int)(packetLength - 1 + sendSize) });
+			sendPacket({ PLO_FILE, CString() >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) },
+					   false);
 		}
 		else
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n", false);
+			if (!m_newProtocol)
+				sendPacket({ PLO_RAWDATA, CString() >> (int)(packetLength + sendSize) });
+			sendPacket({ PLO_FILE, CString() >> (long long)modTime >> (char)pFile.length() << pFile
+																						   << fileData.subString(0, sendSize) << "\n" },
+					   false);
 		}
 
 		fileData.removeI(0, sendSize);
 	}
 
 	// If we had sent a large file, let the client know we finished sending it.
-	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << pFile);
+	if (isBigFile) sendPacket({ PLO_LARGEFILEEND, CString() << pFile });
 
 	return true;
 }
@@ -893,7 +1139,7 @@ bool Player::testSign()
 				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
 				if (m_y == signLoc[1] && inrange(m_x, signLoc[0] - 1.5f, signLoc[0] + 0.5f))
 				{
-					sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
+					sendPacket({ PLO_SAY2, CString() << sign->getUText().replaceAll("\n", "#b") });
 				}
 			}
 		}
@@ -946,7 +1192,8 @@ void Player::dropItemsOnDeath()
 	m_gralatCount -= drop_gralats;
 	m_arrowCount -= (drop_arrows * 5);
 	m_bombCount -= (drop_bombs * 5);
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_RUPEESCOUNT >> (int)m_gralatCount >> (char)PLPROP_ARROWSCOUNT >> (char)m_arrowCount >> (char)PLPROP_BOMBSCOUNT >> (char)m_bombCount);
+	sendPacket({ PLO_PLAYERPROPS,
+				 CString() >> (char)PLPROP_RUPEESCOUNT >> (int)m_gralatCount >> (char)PLPROP_ARROWSCOUNT >> (char)m_arrowCount >> (char)PLPROP_BOMBSCOUNT >> (char)m_bombCount });
 
 	// Add gralats to the level.
 	while (drop_gralats != 0)
@@ -980,7 +1227,7 @@ void Player::dropItemsOnDeath()
 		packet.readGChar(); // So msgPLI_ITEMADD works.
 
 		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		sendPacket({ PLO_ITEMADD, CString() << packet.subString(1) });
 	}
 
 	// Add arrows and bombs to the level.
@@ -989,11 +1236,12 @@ void Player::dropItemsOnDeath()
 		float pX = m_x + 1.5f + (rand() % 8) - 2.0f;
 		float pY = m_y + 2.0f + (rand() % 8) - 2.0f;
 
-		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4; // 4 = arrows
-		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
+		CString packet =
+			CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4; // 4 = arrows
+		packet.readGChar();                                                                // So msgPLI_ITEMADD works.
 
 		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		sendPacket({ PLO_ITEMADD, CString() << packet.subString(1) });
 	}
 	for (int i = 0; i < drop_bombs; ++i)
 	{
@@ -1004,23 +1252,23 @@ void Player::dropItemsOnDeath()
 		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
 
 		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		sendPacket({ PLO_ITEMADD, CString() << packet.subString(1) });
 	}
 }
 
 bool Player::processChat(CString pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
-	if (chatParse.size() == 0) return false;
+	if (chatParse.empty()) return false;
 	bool processed = false;
 	bool setcolorsallowed = m_server->getSettings().getBool("setcolorsallowed", true);
 
 	if (chatParse[0] == "setnick")
 	{
 		processed = true;
-		if ((int)difftime(time(0), m_lastNick) >= 10)
+		if ((int)difftime(time(nullptr), m_lastNick) >= 10)
 		{
-			m_lastNick = time(0);
+			m_lastNick = time(nullptr);
 			CString newName = pChat.subString(8).trim();
 
 			// Word filter.
@@ -1031,7 +1279,8 @@ bool Player::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName,
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
@@ -1066,25 +1315,29 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
+			m_server->getServerList().sendPacket({ SVO_GETFILE3,
+												   CString() >> (short)m_id >> (char)0 >> (char)chatParse[1].length()
+																							  << chatParse[1] });
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
-		if (m_server->getSettings().getBool("setbodyallowed", true) == false) return false;
+		if (!m_server->getSettings().getBool("setbodyallowed", true)) return false;
 		processed = true;
 
 		// Check to see if it is a default body.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultbodies) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultbodies[i])) == true) isDefault = true;
+		for (auto& __defaultbody: __defaultbodies)
+			if (chatParse[1].match(CString(__defaultbody))) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1113,9 +1366,12 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
+			m_server->getServerList().sendPacket({ SVO_GETFILE3,
+												   CString() >> (short)m_id >> (char)1 >> (char)chatParse[1].length()
+																							  << chatParse[1] });
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
@@ -1124,14 +1380,16 @@ bool Player::processChat(CString pChat)
 
 		// Check to see if it is a default sword.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultswords) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultswords[i])) == true) isDefault = true;
+		for (auto& __defaultsword: __defaultswords)
+			if (chatParse[1].match(CString(__defaultsword))) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length()
+																							  << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1160,9 +1418,13 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length()
+																							  << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
+			m_server->getServerList().sendPacket({ SVO_GETFILE3,
+												   CString() >> (short)m_id >> (char)2 >> (char)chatParse[1].length()
+																							  << chatParse[1] });
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
@@ -1171,14 +1433,15 @@ bool Player::processChat(CString pChat)
 
 		// Check to see if it is a default shield.
 		bool isDefault = false;
-		for (unsigned int i = 0; i < sizeof(__defaultshields) / sizeof(char*); ++i)
-			if (chatParse[1].match(CString(__defaultshields[i])) == true) isDefault = true;
+		for (auto& __defaultshield: __defaultshields)
+			if (chatParse[1].match(CString(__defaultshield))) isDefault = true;
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1207,9 +1470,12 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
-			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
+			m_server->getServerList().sendPacket({ SVO_GETFILE3,
+												   CString() >> (short)m_id >> (char)3 >> (char)chatParse[1].length()
+																							  << chatParse[1] });
 	}
 	else if (chatParse[0] == "setskin" && chatParse.size() == 2 && setcolorsallowed)
 	{
@@ -1221,7 +1487,8 @@ bool Player::processChat(CString pChat)
 		if (color != -1)
 		{
 			m_colors[0] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
@@ -1234,7 +1501,8 @@ bool Player::processChat(CString pChat)
 		if (color != -1)
 		{
 			m_colors[1] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
@@ -1247,7 +1515,8 @@ bool Player::processChat(CString pChat)
 		if (color != -1)
 		{
 			m_colors[2] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
@@ -1260,7 +1529,8 @@ bool Player::processChat(CString pChat)
 		if (color != -1)
 		{
 			m_colors[3] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
@@ -1273,7 +1543,8 @@ bool Player::processChat(CString pChat)
 		if (color != -1)
 		{
 			m_colors[4] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4],
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "warpto")
@@ -1304,7 +1575,8 @@ bool Player::processChat(CString pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2),
+					 PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
@@ -1340,12 +1612,12 @@ bool Player::processChat(CString pChat)
 			processed = true;
 
 			// Check if the player is in a jailed level.
-			std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
-			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
-				if (i->trim() == m_levelName) return false;
+			std::vector<CString> jailLevels = m_server->getSettings().getStr("jaillevels").tokenize(",");
+			for (auto& jailLevel: jailLevels)
+				if (jailLevel.trim() == m_levelName) return false;
 
 			int unstickTime = m_server->getSettings().getInt("unstickmetime", 30);
-			if ((int)difftime(time(0), m_lastMovement) >= unstickTime)
+			if ((int)difftime(time(nullptr), m_lastMovement) >= unstickTime)
 			{
 				m_lastMovement = time(0);
 				CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -1355,7 +1627,8 @@ bool Player::processChat(CString pChat)
 				setChat("Warped!");
 			}
 			else
-				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
+				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat
+								  << "'!");
 		}
 	}
 	else if (pChat == "update level" && hasRight(PLPERM_UPDATELEVEL))
@@ -1401,7 +1674,8 @@ bool Player::processChat(CString pChat)
 				{
 					// If our guild matches, add it to our string.
 					if (player->getGuild() == g)
-						msg << (msg.length() == 0 ? "" : ", ") << player->getNickname().subString(0, player->getNickname().find('(')).trimI();
+						msg << (msg.length() == 0 ? "" : ", ")
+							<< player->getNickname().subString(0, player->getNickname().find('(')).trimI();
 				}
 			}
 			if (msg.length() == 0)
@@ -1450,14 +1724,16 @@ bool Player::processChat(CString pChat)
 				// If our guild matches, send the PM.
 				if (player->getGuild() == m_guild)
 				{
-					player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << "\"\",\"Guild message:\",\"" << pm << "\"");
+					player->sendPacket({ PLO_PRIVATEMESSAGE,
+										 CString() >> (short)m_id << R"("","Guild message:",")" << pm << "\"" });
 					++num;
 				}
 			}
 		}
 
 		// Tell the player how many guild members received his message.
-		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "") << " received your message)");
+		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "")
+						  << " received your message)");
 	}
 
 	return processed;
@@ -1466,9 +1742,9 @@ bool Player::processChat(CString pChat)
 bool Player::isAdminIp()
 {
 	std::vector<CString> adminIps = m_adminIp.tokenize(",");
-	for (std::vector<CString>::iterator i = adminIps.begin(); i != adminIps.end(); ++i)
+	for (auto& adminIp: adminIps)
 	{
-		if (m_accountIpStr.match(*i))
+		if (m_accountIpStr.match(adminIp))
 			return true;
 	}
 
@@ -1496,7 +1772,8 @@ bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2),
+				 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		return true;
 	}
 
@@ -1535,7 +1812,7 @@ bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 		if (!warped)
 		{
 			// Failed, so try warping to the unstick level.  If that fails, we disconnect.
-			if (unstickLevel == 0) return false;
+			if (unstickLevel == nullptr) return false;
 
 			// Try to warp to the unstick me level.
 			m_x = unstickX;
@@ -1570,7 +1847,7 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	auto newLevel = Level::findLevel(pLevelName, m_server);
 	if (newLevel == nullptr)
 	{
-		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
+		sendPacket({ PLO_WARPFAILED, CString() << pLevelName });
 		return false;
 	}
 	m_currentLevel = newLevel;
@@ -1579,7 +1856,9 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	// If so, see if we have been there before.  If not, duplicate it.
 	if (newLevel->isSingleplayer())
 	{
-		auto nl = (m_singleplayerLevels.find(newLevel->getLevelName()) != m_singleplayerLevels.end() ? m_singleplayerLevels[newLevel->getLevelName()] : nullptr);
+		auto nl = (m_singleplayerLevels.find(newLevel->getLevelName()) != m_singleplayerLevels.end()
+					   ? m_singleplayerLevels[newLevel->getLevelName()]
+					   : nullptr);
 		if (nl == nullptr)
 		{
 			newLevel = newLevel->clone();
@@ -1597,10 +1876,17 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 		{
 			// If any players are in this level, they might have been cached on the client.  Solve this by manually removing them.
 			auto& plist = newLevel->getPlayers();
-			for (auto id: plist)
+			for (auto playerId: plist)
 			{
-				auto p = m_server->getPlayer(id);
-				sendPacket(p->getProps(0, 0) >> (char)PLPROP_CURLEVEL >> (char)(newLevel->getLevelName().length() + 1 + 7) << newLevel->getLevelName() << ".unknown" >> (char)PLPROP_X << p->getProp(PLPROP_X) >> (char)PLPROP_Y << p->getProp(PLPROP_Y));
+				auto p = m_server->getPlayer(playerId);
+				sendPacket({ PLO_OTHERPLPROPS, p->getProps(nullptr, 0) >> (char)PLPROP_CURLEVEL >> (char)(newLevel->getLevelName().length() + 1 +
+																										  7)
+																									   << newLevel->getLevelName()
+																									   << ".unknown" >>
+												   (char)PLPROP_X
+													   << p->getProp(PLPROP_X) >>
+												   (char)PLPROP_Y
+													   << p->getProp(PLPROP_Y) });
 			}
 
 			// Set the correct level now.
@@ -1638,11 +1924,13 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)(m_z + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY()
-																																						<< map->getMapName());
+			sendPacket(
+				{ PLO_PLAYERWARP2,
+				  CString() >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)(m_z + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY()
+																														  << map->getMapName() });
 		}
 		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(m_x * 2) >> (char)(m_y * 2) << m_levelName);
+			sendPacket({ PLO_PLAYERWARP, CString() >> (char)(m_x * 2) >> (char)(m_y * 2) << m_levelName });
 	}
 
 	// Send the level now.
@@ -1654,11 +1942,11 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 
 	if (!succeed)
 	{
-		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
+		sendPacket({ PLO_WARPFAILED, CString() << pLevelName });
 		return false;
 	}
 
-	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
+	// If the level is a sparring zone, and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
 	if (newLevel->isSparringZone() && m_ap == 100)
 	{
@@ -1668,7 +1956,10 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
-	CString minimap = this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y);
+	CString minimap =
+		this->getProps(nullptr, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X
+																									 << this->getProp(PLPROP_X) >>
+		(char)PLPROP_Y << this->getProp(PLPROP_Y);
 	for (auto& [pid, player]: m_server->getPlayerList())
 	{
 		if (pid == this->getId())
@@ -1676,9 +1967,9 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 		if (auto map = m_pmap.lock(); map && map->isGroupMap() && m_levelGroup != player->getGroup())
 			continue;
 
-		player->sendPacket(minimap);
+		player->sendPacket({ PLO_OTHERPLPROPS, minimap });
 	}
-	//m_server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
+	//m_server->sendPacketToAll(getProps(0, 0) >> (char)PLPROP_CURLEVEL << getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << getProp(PLPROP_X) >> (char)PLPROP_Y << getProp(PLPROP_Y), this);
 
 	return true;
 }
@@ -1689,67 +1980,90 @@ bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromA
 	CSettings& settings = m_server->getSettings();
 
 	// Send Level
-	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+	sendPacket({ PLO_LEVELNAME, CString() << pLevel->getLevelName() });
 	time_t l_time = getCachedLevelModTime(pLevel.get());
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time == 0)
 	{
 		if (modTime != pLevel->getModTime())
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1 + (64 * 64 * 2) + 1)));
-			sendPacket(CString() << pLevel->getBoardPacket());
+			if (!m_newProtocol)
+				sendPacket({ PLO_RAWDATA, CString() >> (int)(1 + (64 * 64 * 2) + 1) });
+			sendPacket(pLevel->getBoardPacket());
 
 			for (const auto& layers: pLevel->getLayers())
 			{
 				if (layers.first == 0) continue;
-				CString layer = pLevel->getLayerPacket(layers.first);
-				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
-				sendPacket(layer);
+
+				auto layerPacket = pLevel->getLayerPacket(layers.first);
+				if (!m_newProtocol)
+					sendPacket({ PLO_RAWDATA, CString() >> (int)(layerPacket.Data.length() + 2) });
+
+				sendPacket(layerPacket);
 			}
 		}
 
 		// Send links, signs, and mod time.
-		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
-		sendPacket(CString() << pLevel->getLinksPacket());
-		sendPacket(CString() << pLevel->getSignsPacket(this));
+		sendPacket({ PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime() });
+		for (const auto& packet: pLevel->getLinkPackets())
+		{
+			sendPacket(packet);
+		}
+		for (const auto& packet: pLevel->getSignPackets(this))
+		{
+			sendPacket(packet);
+		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
-		sendPacket(CString() << pLevel->getChestPacket(this));
-		sendPacket(CString() << pLevel->getHorsePacket());
-		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
+		sendPacket(pLevel->getBoardChangesPacket(l_time));
+
+		for (const auto& packet: pLevel->getChestPackets(this))
+		{
+			sendPacket(packet);
+		}
+
+		for (const auto& packet: pLevel->getHorsePackets())
+		{
+			sendPacket(packet);
+		}
+
+		for (const auto& packet: pLevel->getBaddyPackets(m_versionId))
+		{
+			sendPacket(packet);
+		}
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
 	if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP)
-		sendPacket(CString() >> (char)PLO_LEVELNAME << map->getMapName());
+		sendPacket({ PLO_LEVELNAME, CString() << map->getMapName() });
 
 	// Tell the client if there are any ghost players in the level.
 	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
-	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
+	sendPacket({ PLO_GHOSTICON, CString() >> (char)0 });
 
 	if (!fromAdjacent || !m_pmap.expired())
 	{
 		// If we are the leader, send it now.
-		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true)
-			sendPacket(CString() >> (char)PLO_ISLEADER);
+		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer())
+			sendPacket({ PLO_ISLEADER, CString() << "" });
 	}
 
 	// Send new world time.
-	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
+	sendPacket({ PLO_NEWWORLDTIME, CString() << CString().writeGInt4(m_server->getNWTime()) });
 	if (!fromAdjacent || !m_pmap.expired())
 	{
 		// Send NPCs.
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP)
 		{
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
+			sendPacket({ PLO_SETACTIVELEVEL, CString() << map->getMapName() });
 
-			auto val = pLevel->getNpcsPacket(l_time, m_versionId);
-			sendPacket(val);
+			auto val = pLevel->getNpcPackets(this, l_time, m_versionId);
 
+			for (const auto& packet: val)
+				sendPacket(packet);
 			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << m_pmap->getMapName());
 			CString pmapLevels = m_pmap->getLevels();
 			Level* tmpLvl;
@@ -1763,8 +2077,11 @@ bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromA
 		}
 		else
 		{
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
-			sendPacket(CString() << pLevel->getNpcsPacket(l_time, m_versionId));
+			sendPacket({ PLO_SETACTIVELEVEL, CString() << pLevel->getLevelName() });
+			for (const auto& packet: pLevel->getNpcPackets(this, l_time, m_versionId))
+			{
+				sendPacket(packet);
+			}
 		}
 	}
 
@@ -1772,7 +2089,9 @@ bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromA
 	if (auto level = m_currentLevel.lock(); level && !level->isSingleplayer())
 	{
 		// Send my props.
-		m_server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this(), { m_id });
+		m_server->sendPacketToLevelArea(
+			{ PLO_OTHERPLPROPS, this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)) },
+			this->shared_from_this(), { m_id });
 
 		// Get other player props.
 		if (auto map = m_pmap.lock(); map)
@@ -1792,7 +2111,8 @@ bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromA
 				// Check if they are nearby before sending the packet.
 				auto ogmap{ other->getMapPosition() };
 				if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-					this->sendPacket(other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)));
+					this->sendPacket(
+						{ PLO_OTHERPLPROPS, other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)) });
 			}
 		}
 		else
@@ -1801,7 +2121,7 @@ bool Player::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromA
 			{
 				if (m_id == otherid) continue;
 				auto other = m_server->getPlayer(otherid);
-				this->sendPacket(other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)));
+				sendPacket({ PLO_OTHERPLPROPS, other->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)) });
 			}
 		}
 	}
@@ -1818,69 +2138,87 @@ bool Player::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fr
 	if (modTime == -1) modTime = pLevel->getModTime();
 	if (l_time != 0)
 	{
-		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
+		sendPacket(pLevel->getBoardChangesPacket(l_time));
 	}
 	else
 	{
 		if (modTime != pLevel->getModTime())
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1 + (64 * 64 * 2) + 1));
-			sendPacket(CString() << pLevel->getBoardPacket());
+			if (!m_newProtocol)
+				sendPacket({ PLO_RAWDATA, CString() >> (int)(1 + (64 * 64 * 2) + 1) });
+			sendPacket(pLevel->getBoardPacket());
 
 			if (m_firstLevel)
-				sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+				sendPacket({ PLO_LEVELNAME, CString() << pLevel->getLevelName() });
 			m_firstLevel = false;
 
 			// Send links, signs, and mod time.
 			if (!settings.getBool("serverside", false)) // TODO: NPC server check instead.
 			{
-				sendPacket(CString() << pLevel->getLinksPacket());
-				sendPacket(CString() << pLevel->getSignsPacket(this));
+				for (const auto& packet: pLevel->getLinkPackets())
+				{
+					sendPacket(packet);
+				}
+
+				for (const auto& packet: pLevel->getSignPackets(this))
+				{
+					sendPacket(packet);
+				}
 			}
-			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+			sendPacket({ PLO_LEVELMODTIME, CString() >> (long long)pLevel->getModTime() });
 		}
 		else
-			sendPacket(CString() >> (char)PLO_LEVELBOARD);
+			sendPacket({ PLO_LEVELBOARD, CString() << "" });
 
 		if (!fromAdjacent)
 		{
-			sendPacket(CString() << pLevel->getBoardChangesPacket2(l_time));
-			sendPacket(CString() << pLevel->getChestPacket(this));
+			sendPacket(pLevel->getBoardChangesPacket2(l_time));
+
+			for (const auto& packet: pLevel->getChestPackets(this))
+			{
+				sendPacket(packet);
+			}
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		sendPacket(CString() << pLevel->getHorsePacket());
-		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
-	}
+		for (const auto& packet: pLevel->getHorsePackets())
+		{
+			sendPacket(packet);
+		}
 
-	if (fromAdjacent == false)
-	{
+		for (const auto& packet: pLevel->getBaddyPackets(m_versionId))
+		{
+			sendPacket(packet);
+		}
+
 		// If we are the leader, send it now.
-		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true)
-			sendPacket(CString() >> (char)PLO_ISLEADER);
+		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer())
+			sendPacket({ PLO_ISLEADER, CString() });
 	}
 
 	// Send new world time.
-	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
+	sendPacket({ PLO_NEWWORLDTIME, CString() << CString().writeGInt4(m_server->getNWTime()) });
 
 	// Send NPCs.
 	if (!fromAdjacent)
-		sendPacket(CString() << pLevel->getNpcsPacket(l_time, m_versionId));
+		for (const auto& packet: pLevel->getNpcPackets(this, l_time, m_versionId))
+			sendPacket(packet);
 
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)
 	{
-		m_server->sendPacketToLevelArea(this->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)), this->shared_from_this(), { m_id });
+		m_server->sendPacketToLevelArea({ PLO_OTHERPLPROPS, getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)) },
+										shared_from_this(), { m_id });
 
-		for (auto id: pLevel->getPlayers())
+		for (auto playerId: pLevel->getPlayers())
 		{
-			if (id == getId()) continue;
+			if (playerId == getId()) continue;
 
-			auto player = m_server->getPlayer(id);
-			this->sendPacket(player->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)));
+			auto player = m_server->getPlayer(playerId);
+			sendPacket({ PLO_OTHERPLPROPS, player->getProps(__getLogin, sizeof(__getLogin) / sizeof(bool)) });
 		}
 	}
 
@@ -1900,12 +2238,12 @@ bool Player::leaveLevel(bool resetCache)
 		auto cllevel = cl->level.lock();
 		if (cllevel == levelp)
 		{
-			cl->modTime = (resetCache ? 0 : time(0));
+			cl->modTime = (resetCache ? 0 : time(nullptr));
 			found = true;
 			break;
 		}
 	}
-	if (!found) m_cachedLevels.push_back(std::make_unique<CachedLevel>(m_currentLevel, time(0)));
+	if (!found) m_cachedLevels.push_back(std::make_unique<CachedLevel>(m_currentLevel, time(nullptr)));
 
 	// Remove self from list of players in level.
 	levelp->removePlayer(m_id);
@@ -1914,20 +2252,23 @@ bool Player::leaveLevel(bool resetCache)
 	if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
 	{
 		auto leader = m_server->getPlayer(levelPlayerList.front());
-		leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+		leader->sendPacket({ PLO_ISLEADER, CString() });
 	}
 
 	// Tell everyone I left.
 	// This prop isn't used at all???  Maybe it is required for 1.41?
 	//	if (m_pmap && m_pmap->getType() != MAPTYPE_GMAP)
 	{
-		m_server->sendPacketToLevelArea(this->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0, this->shared_from_this(), { m_id });
+		m_server->sendPacketToLevelArea(
+			{ PLO_OTHERPLPROPS, this->getProps(nullptr, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0 },
+			this->shared_from_this(), { m_id });
 
 		for (auto& [pid, player]: m_server->getPlayerList())
 		{
 			if (pid == getId()) continue;
 			if (player->getLevel() != getLevel()) continue;
-			this->sendPacket(player->getProps(0, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0);
+			this->sendPacket(
+				{ PLO_OTHERPLPROPS, player->getProps(nullptr, 0) >> (char)PLPROP_JOINLEAVELVL >> (char)0 });
 		}
 	}
 
@@ -1984,7 +2325,8 @@ std::pair<int, int> Player::getMapPosition() const
 
 void Player::setChat(const CString& pChat)
 {
-	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat,
+			 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
 void Player::setNick(CString pNickName, bool force)
@@ -2034,7 +2376,7 @@ void Player::setNick(CString pNickName, bool force)
 	if (nick == m_accountName)
 		newNick = CString("*");
 
-	// Add the nick name.
+	// Add the nickname.
 	newNick << nick;
 
 	// If a guild was specified, add the guild.
@@ -2091,7 +2433,8 @@ void Player::setNick(CString pNickName, bool force)
 		if (askGlobal)
 		{
 			m_server->getServerList().sendPacket(
-				CString() >> (char)SVO_VERIGUILD >> (short)m_id >> (char)m_accountName.length() << m_accountName >> (char)newNick.length() << newNick >> (char)guild.length() << guild);
+				{ SVO_VERIGUILD,
+				  CString() >> (short)m_id >> (char)m_accountName.length() << m_accountName >> (char)newNick.length() << newNick >> (char)guild.length() << guild });
 		}
 	}
 	else
@@ -2121,7 +2464,7 @@ bool Player::addWeapon(LevelItemType defaultWeapon)
 		m_server->NC_AddWeapon(weapon);
 	}
 
-	return this->addWeapon(weapon);
+	return addWeapon(weapon);
 }
 
 bool Player::addWeapon(const std::string& name)
@@ -2141,7 +2484,10 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 		if (m_id == -1) return true;
 
 		// Send weapon.
-		sendPacket(weapon->getWeaponPacket(m_versionId));
+		for (const auto& packet: weapon->getWeaponPackets(m_versionId))
+		{
+			sendPacket(packet, true);
+		}
 	}
 
 	return true;
@@ -2169,7 +2515,7 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 		if (m_id == -1) return true;
 
 		// Send delete notice.
-		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
+		sendPacket({ PLO_NPCWEAPONDEL, CString() << weapon->getName() });
 	}
 
 	return true;
@@ -2177,34 +2523,34 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 
 void Player::disableWeapons()
 {
-	this->m_status &= ~PLSTATUS_ALLOWWEAPONS;
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+	m_status &= ~PLSTATUS_ALLOWWEAPONS;
+	sendPacket({ PLO_PLAYERPROPS, CString() >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS) });
 }
 
 void Player::enableWeapons()
 {
-	this->m_status |= PLSTATUS_ALLOWWEAPONS;
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS));
+	m_status |= PLSTATUS_ALLOWWEAPONS;
+	sendPacket({ PLO_PLAYERPROPS, CString() >> (char)PLPROP_STATUS << getProp(PLPROP_STATUS) });
 }
 
 void Player::freezePlayer()
 {
-	sendPacket(CString() >> (char)PLO_FREEZEPLAYER2);
+	sendPacket({ PLO_FREEZEPLAYER2, CString() << "" });
 }
 
 void Player::unfreezePlayer()
 {
-	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
+	sendPacket({ PLO_UNFREEZEPLAYER, CString() << "" });
 }
 
 void Player::sendRPGMessage(const CString& message)
 {
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << message.gtokenize());
+	sendPacket({ PLO_RPGWINDOW, CString() << message.gtokenize() }, true);
 }
 
 void Player::sendSignMessage(const CString& message)
 {
-	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
+	sendPacket({ PLO_SAY2, CString() << message.replaceAll("\n", "#b") });
 }
 
 void Player::setAni(CString gani)
@@ -2227,7 +2573,7 @@ void Player::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
 
 	if (sendToPlayer)
 	{
-		sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+		sendPacket({ PLO_FLAGDEL, CString() << pFlagName });
 	}
 }
 
@@ -2240,9 +2586,9 @@ void Player::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 	if (sendToPlayer)
 	{
 		if (pFlagValue.isEmpty())
-			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName);
+			sendPacket({ PLO_FLAGSET, CString() << pFlagName });
 		else
-			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+			sendPacket({ PLO_FLAGSET, CString() << pFlagName << "=" << pFlagValue });
 	}
 }
 
@@ -2261,7 +2607,7 @@ bool Player::msgPLI_NULL(CString& pPacket)
 	if (m_invalidPackets > 5)
 	{
 		serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_nickName.text());
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
+		sendPacket({ PLO_DISCMESSAGE, CString() << "Disconnected for sending invalid packets." });
 		return false;
 	}
 
@@ -2324,7 +2670,8 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 			break;
 		default:
 			serverlog.append("Unknown (%d)\n", m_type);
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
+			sendPacket({ PLO_DISCMESSAGE, CString() << "Your client type is unknown.  Please inform the " << APP_VENDOR
+													<< " Team.  Type: " << CString((int)m_type) << "." });
 			return false;
 			break;
 	}
@@ -2346,7 +2693,8 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	{
 		// Get Iterator-Key
 		// 2.19+ RC and any client should get the key.
-		if ((isClient() && m_type != PLTYPE_WEB) || (isRC() && m_encryptionCodecIn.getGen() > ENCRYPT_GEN_3) || getKey == true)
+		if ((isClient() && m_type != PLTYPE_WEB) || (isRC() && m_encryptionCodecIn.getGen() > ENCRYPT_GEN_3) ||
+			getKey == true)
 		{
 			m_encryptionKey = (unsigned char)pPacket.readGChar();
 
@@ -2369,7 +2717,8 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	CString identity = pPacket.readString("");
 
 	//serverlog.out("[%s]    Key: %d\n", m_server->getName().text(), key);
-	serverlog.out("[%s]    Version:\t%s (%s)\n", m_server->getName().text(), m_version.text(), getVersionString(m_version, m_type));
+	serverlog.out("[%s]    Version:\t%s (%s)\n", m_server->getName().text(), m_version.text(),
+				  getVersionString(m_version, m_type));
 	serverlog.out("[%s]    Account:\t%s\n", m_server->getName().text(), m_accountName.text());
 	if (!identity.isEmpty())
 	{
@@ -2381,14 +2730,14 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	// Check for available slots on the server.
 	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().getInt("maxplayers", 128))
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
+		sendPacket({ PLO_DISCMESSAGE, CString() << "This server has reached its player limit." });
 		return false;
 	}
 
 	// Check if they are ip-banned or not.
 	if (m_server->isIpBanned(m_playerSock->getRemoteIp()) && !hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned from this server.");
+		sendPacket({ PLO_DISCMESSAGE, CString() << "You have been banned from this server." });
 		return false;
 	}
 
@@ -2422,7 +2771,8 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 		}
 		if (!allowed)
 		{
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.\rAllowed: " << m_server->getAllowedVersionString());
+			sendPacket({ PLO_DISCMESSAGE, CString() << "Your client version is not allowed on this server.\rAllowed: "
+													<< m_server->getAllowedVersionString() });
 			return false;
 		}
 	}
@@ -2431,7 +2781,7 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	// TODO: localhost mode.
 	if (!m_server->getServerList().getConnected())
 	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");
+		sendPacket({ PLO_DISCMESSAGE, CString() << "The login server is offline.  Try again later." });
 		return false;
 	}
 
@@ -2474,7 +2824,7 @@ bool Player::msgPLI_BOARDMODIFY(CString& pPacket)
 	// Alter level data.
 	auto level = getLevel();
 	if (level->alterBoard(tiles, loc[0], loc[1], dim[0], dim[1], this))
-		m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << (pPacket.text() + 1), level);
+		m_server->sendPacketToOneLevel({ PLO_BOARDMODIFY, CString() << (pPacket.text() + 1) }, level);
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63) return true;
 
@@ -2511,14 +2861,15 @@ bool Player::msgPLI_BOARDMODIFY(CString& pPacket)
 	if (dropItem != LevelItemType::INVALID)
 	{
 		// TODO: GS2 replacement of item drops. How does it work?
-		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)LevelItem::getItemTypeId(dropItem);
+		CString packet =
+			CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)LevelItem::getItemTypeId(dropItem);
 		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
 		packet2.readGChar(); // So msgPLI_ITEMADD works.
 
 		spawnLevelItem(packet2, false);
 
 		if (getVersion() <= CLVER_5_12)
-			sendPacket(CString() >> (char)PLO_ITEMADD << packet);
+			sendPacket({ PLO_ITEMADD, CString() << packet });
 	}
 
 	return true;
@@ -2537,7 +2888,8 @@ bool Player::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	short h = pPacket.readGShort();
 
 	// TODO: What to return?
-	serverlog.out("[%s] :: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", m_server->getName().text(), level.text(), x, y, w, h, modTime);
+	serverlog.out("[%s] :: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n",
+				  m_server->getName().text(), level.text(), x, y, w, h, modTime);
 
 	return true;
 }
@@ -2550,7 +2902,7 @@ bool Player::msgPLI_PLAYERPROPS(CString& pPacket)
 
 bool Player::msgPLI_NPCPROPS(CString& pPacket)
 {
-	// Dont accept npc-properties from clients when an npc-server is present
+	// Don't accept npc-properties from clients when a npc-server is present
 #ifdef V8NPCSERVER
 	return true;
 #endif
@@ -2571,9 +2923,9 @@ bool Player::msgPLI_NPCPROPS(CString& pPacket)
 	if (npc->getLevel() != level)
 		return true;
 
-	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
+	CString packet = CString() >> (int)npcId;
 	packet << npc->setProps(npcProps, m_versionId);
-	m_server->sendPacketToLevelArea(packet, shared_from_this(), { m_id });
+	m_server->sendPacketToLevelArea({ PLO_NPCPROPS, packet }, shared_from_this(), { m_id });
 
 	return true;
 }
@@ -2598,13 +2950,14 @@ bool Player::msgPLI_BOMBADD(CString& pPacket)
 	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
 	*/
 
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_BOMBADD, CString() >> (short)m_id << (pPacket.text() + 1) }, m_currentLevel,
+								   { m_id });
 	return true;
 }
 
 bool Player::msgPLI_BOMBDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_BOMBDEL, CString() << (pPacket.text() + 1) }, m_currentLevel, { m_id });
 	return true;
 }
 
@@ -2612,7 +2965,7 @@ bool Player::msgPLI_TOALL(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
 	std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
-	if (std::find_if(jailList.begin(), jailList.end(), [&levelName = this->m_levelName](CString& level)
+	if (std::find_if(jailList.begin(), jailList.end(), [&levelName = m_levelName](CString& level)
 					 {
 						 return level.trim() == levelName;
 					 }) != jailList.end())
@@ -2636,14 +2989,14 @@ bool Player::msgPLI_TOALL(CString& pPacket)
 		unsigned char flags = strtoint(player->getProp(PLPROP_ADDITFLAGS));
 		if (flags & PLFLAG_NOTOALL) continue;
 
-		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)m_id >> (char)message.length() << message);
+		player->sendPacket({ PLO_TOALL, CString() >> (short)m_id >> (char)message.length() << message });
 	}
 	return true;
 }
 
 bool Player::msgPLI_HORSEADD(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_HORSEADD, CString() << (pPacket.text() + 1) }, m_currentLevel, { m_id });
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	unsigned char dir_bush = pPacket.readGUChar();
@@ -2658,7 +3011,7 @@ bool Player::msgPLI_HORSEADD(CString& pPacket)
 
 bool Player::msgPLI_HORSEDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_HORSEDEL, CString() << (pPacket.text() + 1) }, m_currentLevel, { m_id });
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
@@ -2669,13 +3022,15 @@ bool Player::msgPLI_HORSEDEL(CString& pPacket)
 
 bool Player::msgPLI_ARROWADD(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_ARROWADD, CString() >> (short)m_id << (pPacket.text() + 1) }, m_currentLevel,
+								   { m_id });
 	return true;
 }
 
 bool Player::msgPLI_FIRESPY(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_FIRESPY, CString() >> (short)m_id << (pPacket.text() + 1) }, m_currentLevel,
+								   { m_id });
 	return true;
 }
 
@@ -2695,7 +3050,8 @@ bool Player::msgPLI_THROWCARRIED(CString& pPacket)
 				level->addNPC(npc);
 		}
 	}
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_THROWCARRIED >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_THROWCARRIED, CString() >> (short)m_id << (pPacket.text() + 1) },
+								   m_currentLevel, { m_id });
 	return true;
 }
 
@@ -2758,8 +3114,8 @@ bool Player::removeItem(LevelItemType itemType)
 
 #ifndef V8NPCSERVER
 		// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
-		// same is true for sword/shield. assuming its true for the weapon-items, but
-		// its currently not tested.
+		// same is true for sword/shield. assuming it's true for the weapon-items, but
+		// It's currently not tested.
 		case LevelItemType::GLOVE1:
 		case LevelItemType::GLOVE2:
 		{
@@ -2834,11 +3190,11 @@ bool Player::spawnLevelItem(CString& pPacket, bool playerDrop)
 			auto level = getLevel();
 			if (level->addItem(loc[0], loc[1], itemType))
 			{
-				m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
+				m_server->sendPacketToOneLevel({ PLO_ITEMADD, CString() << (pPacket.text() + 1) }, level, { m_id });
 			}
 			else
 			{
-				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+				sendPacket({ PLO_ITEMDEL, CString() << (pPacket.text() + 1) });
 			}
 
 #ifdef V8NPCSERVER
@@ -2851,7 +3207,7 @@ bool Player::spawnLevelItem(CString& pPacket, bool playerDrop)
 
 bool Player::msgPLI_ITEMDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel({ PLO_ITEMDEL, CString() << (pPacket.text() + 1) }, m_currentLevel, { m_id });
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
@@ -2862,7 +3218,7 @@ bool Player::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setProps(CString() << LevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		setProps(CString() << LevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 
 	return true;
 }
@@ -2884,21 +3240,32 @@ bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 		// Get some stats we are going to use.
 		// Need to parse the other player's PLPROP_RATING.
 		unsigned int otherRating = killer->getProp(PLPROP_RATING).readGUInt();
-		float oldStats[4] = { m_eloRating, m_eloDeviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
+		float oldStats[4] = { m_eloRating, m_eloDeviation, (float)((otherRating >> 9) & 0xFFF),
+							  (float)(otherRating & 0x1FF) };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
 		if (CString(m_playerSock->getRemoteIp()) == CString(killer->getSocket()->getRemoteIp()))
 			return true;
 
-		float gSpar[2] = { static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),   //Winner
-						   static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f)) }; //Loser
-		float ESpar[2] = { 1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f))),                                           //Winner
-						   1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f))) };                                         //Loser
-		float dSpar[2] = { static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                        //Winner
-						   static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1]))) };                      //Loser
+		float gSpar[2] = { static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) /
+																	 pow(3.14159265f, 2)),
+														 0.5f)), //Winner
+						   static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) /
+																	 pow(3.14159265f, 2)),
+														 0.5f)) }; //Loser
+		float ESpar[2] = { 1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) /
+													  400.0f))), //Winner
+						   1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) /
+													  400.0f))) }; //Loser
+		float dSpar[2] = { static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] *
+													  (1.0f - ESpar[0]))), //Winner
+						   static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] *
+													  (1.0f - ESpar[1]))) }; //Loser
 
-		float tWinRating = oldStats[2] + (0.0057565f / (1.0f / powf(oldStats[3], 2) + 1.0f / dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
-		float tLoseRating = oldStats[0] + (0.0057565f / (1.0f / powf(oldStats[1], 2) + 1.0f / dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
+		float tWinRating = oldStats[2] + (0.0057565f / (1.0f / powf(oldStats[3], 2) + 1.0f / dSpar[0])) *
+											 (gSpar[0] * (1.0f - ESpar[0]));
+		float tLoseRating = oldStats[0] + (0.0057565f / (1.0f / powf(oldStats[1], 2) + 1.0f / dSpar[1])) *
+											  (gSpar[1] * (0.0f - ESpar[1]));
 		float tWinDeviation = powf((1.0f / (1.0f / powf(oldStats[3], 2) + 1 / dSpar[0])), 0.5f);
 		float tLoseDeviation = powf((1.0f / (1.0f / powf(oldStats[1], 2) + 1 / dSpar[1])), 0.5f);
 
@@ -2914,19 +3281,19 @@ bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			setRating((int)tLoseRating, (int)tLoseDeviation);
-			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			killer->setRating((int)tWinRating, (int)tWinDeviation);
 			killer->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
-		this->setLastSparTime(time(0));
-		killer->setLastSparTime(time(0));
+		this->setLastSparTime(time(nullptr));
+		killer->setLastSparTime(time(nullptr));
 	}
 	else
 	{
-		CSettings& settings = m_server->getSettings();
+		const CSettings& settings = m_server->getSettings();
 
 		// Give a kill to the player who killed me.
 		if (!settings.getBool("dontchangekills", false))
@@ -2940,13 +3307,15 @@ bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && m_ap > 19)
 			{
-				int aptime[] = { settings.getInt("aptime0", 30), settings.getInt("aptime1", 90),
-								 settings.getInt("aptime2", 300), settings.getInt("aptime3", 600),
-								 settings.getInt("aptime4", 1200) };
+				const int aptime[] = { settings.getInt("aptime0", 30), settings.getInt("aptime1", 90),
+									   settings.getInt("aptime2", 300), settings.getInt("aptime3", 600),
+									   settings.getInt("aptime4", 1200) };
 				oAp -= (((oAp / 20) + 1) * (m_ap / 20));
 				if (oAp < 0) oAp = 0;
-				killer->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
-				killer->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				killer->setApCounter(
+					(oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
+				killer->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp,
+								 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			}
 		}
 	}
@@ -2956,33 +3325,33 @@ bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 
 bool Player::msgPLI_BADDYPROPS(CString& pPacket)
 {
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr) return true;
 
-	unsigned char id = pPacket.readGUChar();
+	const unsigned char baddyId = pPacket.readGUChar();
 	CString props = pPacket.readString("");
 
 	// Get the baddy.
-	LevelBaddy* baddy = level->getBaddy(id);
-	if (baddy == 0) return true;
+	LevelBaddy* baddy = level->getBaddy(baddyId);
+	if (baddy == nullptr) return true;
 
 	// Get the leader.
 	auto leaderId = level->getPlayers().front();
 	auto leader = m_server->getPlayer(leaderId);
 
 	// Set the props and send to everybody in the level, except the leader.
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, level, { leaderId });
+	m_server->sendPacketToOneLevel({ PLO_BADDYPROPS, CString() >> (char)baddyId << props }, level, { leaderId });
 	baddy->setProps(props);
 	return true;
 }
 
 bool Player::msgPLI_BADDYHURT(CString& pPacket)
 {
-	auto level = getLevel();
-	auto leaderId = level->getPlayers().front();
-	auto leader = m_server->getPlayer(leaderId);
+	const auto level = getLevel();
+	const auto leaderId = level->getPlayers().front();
+	const auto leader = m_server->getPlayer(leaderId);
 	if (leader == nullptr) return true;
-	leader->sendPacket(CString() >> (char)PLO_BADDYHURT << (pPacket.text() + 1));
+	leader->sendPacket({ PLO_BADDYHURT, CString() << (pPacket.text() + 1) });
 	return true;
 }
 
@@ -3005,14 +3374,14 @@ bool Player::msgPLI_BADDYADD(CString& pPacket)
 	// Add the baddy.
 	auto level = getLevel();
 	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], bType);
-	if (baddy == 0) return true;
+	if (baddy == nullptr) return true;
 
 	// Set the baddy props.
 	baddy->setRespawn(false);
 	baddy->setProps(CString() >> (char)BDPROP_POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
 
 	// Send the props to everybody in the level.
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), level);
+	m_server->sendPacketToOneLevel({ PLO_BADDYPROPS, CString() >> (char)baddy->getId() << baddy->getProps() }, level);
 	return true;
 }
 
@@ -3089,7 +3458,7 @@ bool Player::msgPLI_FLAGSET(CString& pPacket)
 	}
 
 	// Set Flag
-	this->setFlag(flagName.text(), flagValue, (m_versionId > CLVER_2_31));
+	setFlag(flagName.text(), flagValue, (m_versionId > CLVER_2_31));
 	return true;
 }
 
@@ -3118,7 +3487,7 @@ bool Player::msgPLI_FLAGDEL(CString& pPacket)
 	}
 
 	// Remove Flag
-	this->deleteFlag(flagName);
+	deleteFlag(flagName);
 	return true;
 }
 
@@ -3137,8 +3506,9 @@ bool Player::msgPLI_OPENCHEST(CString& pPacket)
 			if (!hasChest(chestStr))
 			{
 				LevelItemType chestItem = chest.value()->getItemIndex();
-				setProps(CString() << LevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
-				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
+				setProps(CString() << LevelItem::getItemPlayerProp(chestItem, this),
+						 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				sendPacket({ PLO_LEVELCHEST, CString() >> (char)1 >> (char)cX >> (char)cY });
 				m_chestList.push_back(chestStr);
 			}
 		}
@@ -3202,13 +3572,14 @@ bool Player::msgPLI_WANTFILE(CString& pPacket)
 	//printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
-	this->sendFile(file);
+	sendFile(file);
 	return true;
 }
 
 bool Player::msgPLI_SHOWIMG(CString& pPacket)
 {
-	m_server->sendPacketToLevelArea(CString() >> (char)PLO_SHOWIMG >> (short)m_id << (pPacket.text() + 1), this->shared_from_this(), { m_id });
+	m_server->sendPacketToLevelArea({ PLO_SHOWIMG, CString() >> (short)m_id << (pPacket.text() + 1) },
+									this->shared_from_this(), { m_id });
 	return true;
 }
 
@@ -3222,13 +3593,14 @@ bool Player::msgPLI_HURTPLAYER(CString& pPacket)
 
 	// Get the victim.
 	auto victim = m_server->getPlayer(pId, PLTYPE_ANYCLIENT);
-	if (victim == 0) return true;
+	if (victim == nullptr) return true;
 
 	// If they are paused, they don't get hurt.
 	if (victim->getProp(PLPROP_STATUS).readGChar() & PLSTATUS_PAUSED) return true;
 
 	// Send the packet.
-	victim->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)m_id >> (char)hurtdx >> (char)hurtdy >> (char)power >> (int)npc);
+	victim->sendPacket(
+		{ PLO_HURTPLAYER, CString() >> (short)m_id >> (char)hurtdx >> (char)hurtdy >> (char)power >> (int)npc });
 
 	return true;
 }
@@ -3243,8 +3615,9 @@ bool Player::msgPLI_EXPLOSION(CString& pPacket)
 	unsigned char epower = pPacket.readGUChar();
 
 	// Send the packet out.
-	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-	m_server->sendPacketToOneLevel(packet, m_currentLevel, { m_id });
+	CString packet =
+		CString() >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+	m_server->sendPacketToOneLevel({ PLO_EXPLOSION, packet }, m_currentLevel, { m_id });
 
 	return true;
 }
@@ -3253,19 +3626,21 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
 	// TODO(joey): Is this needed?
 	const int sendLimit = 4;
-	if (isClient() && (int)difftime(time(0), m_lastMessage) <= 4)
+	if (isClient() && (int)difftime(time(nullptr), m_lastMessage) <= 4)
 	{
-		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7You can only send messages once every " << CString((int)sendLimit) << " seconds.");
+		sendPacket({ PLO_RC_ADMINMESSAGE,
+					 CString() << "Server message:\xa7You can only send messages once every " << CString((int)sendLimit)
+							   << " seconds." });
 		return true;
 	}
-	m_lastMessage = time(0);
+	m_lastMessage = time(nullptr);
 
 	// Check if the player is in a jailed level.
 	std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
 	bool jailed = false;
-	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
+	for (auto& jail: jailList)
 	{
-		if (i->trim() == m_levelName)
+		if (jail.trim() == m_levelName)
 		{
 			jailed = true;
 			break;
@@ -3289,7 +3664,9 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	int messageLimit = 1024;
 	if (pmMessage.length() > messageLimit)
 	{
-		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7There is a message limit of " << CString((int)messageLimit) << " characters.");
+		sendPacket({ PLO_RC_ADMINMESSAGE,
+					 CString() << "Server message:\xa7There is a message limit of " << CString((int)messageLimit)
+							   << " characters." });
 		return true;
 	}
 
@@ -3300,7 +3677,8 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		int filter = m_server->getWordFilter().apply(this, pmMessage, FILTER_CHECK_PM);
 		if (filter & FILTER_ACTION_WARN)
 		{
-			sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
+			sendPacket({ PLO_RC_ADMINMESSAGE, CString()
+												  << "Word Filter:\xa7Your PM could not be sent because it was caught by the word filter." });
 			return true;
 		}
 	}
@@ -3342,13 +3720,13 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			// Jailed people cannot send PMs to normal players.
 			if (jailed && !isStaff() && !pmPlayer->isStaff())
 			{
-				sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)pmPlayer->getId() << "\"Server Message:\","
-																							 << "\"From jail you can only send PMs to admins (RCs).\"");
+				sendPacket({ PLO_PRIVATEMESSAGE, CString() >> (short)pmPlayer->getId() << "\"Server Message:\","
+																					   << "\"From jail you can only send PMs to admins (RCs).\"" });
 				continue;
 			}
 
 			// Send the message.
-			pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << pmMessageType << pmMessage);
+			pmPlayer->sendPacket({ PLO_PRIVATEMESSAGE, CString() >> (short)m_id << pmMessageType << pmMessage });
 		}
 	}
 
@@ -3358,7 +3736,7 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 bool Player::msgPLI_NPCWEAPONDEL(CString& pPacket)
 {
 	CString weapon = pPacket.readString("");
-	for (std::vector<CString>::iterator i = m_weaponList.begin(); i != m_weaponList.end();)
+	for (auto i = m_weaponList.begin(); i != m_weaponList.end();)
 	{
 		if (*i == weapon)
 		{
@@ -3375,7 +3753,8 @@ bool Player::msgPLI_PACKETCOUNT(CString& pPacket)
 	unsigned short count = pPacket.readGUShort();
 	if (count != m_packetCount || m_packetCount > 10000)
 	{
-		serverlog.out("[%s] :: Warning - Player %s had an invalid packet count.\n", m_server->getName().text(), m_accountName.text());
+		serverlog.out("[%s] :: Warning - Player %s had an invalid packet count.\n", m_server->getName().text(),
+					  m_accountName.text());
 	}
 	m_packetCount = 0;
 
@@ -3389,10 +3768,10 @@ bool Player::msgPLI_WEAPONADD(CString& pPacket)
 	return true;
 #endif
 
-	unsigned char type = pPacket.readGUChar();
+	unsigned char weaponType = pPacket.readGUChar();
 
 	// Type 0 means it is a default weapon.
-	if (type == 0)
+	if (weaponType == 0)
 	{
 		this->addWeapon(LevelItem::getItemId(pPacket.readGChar()));
 	}
@@ -3416,7 +3795,9 @@ bool Player::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(m_server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
+			weapon = std::make_shared<Weapon>(m_server, name.toString(), npc->getImage(),
+											  std::string{ npc->getSource().getClientGS1() },
+											  npc->getLevel()->getModTime(), true);
 			m_server->NC_AddWeapon(weapon);
 		}
 
@@ -3425,7 +3806,8 @@ bool Player::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->getModTime() < npc->getLevel()->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->getImage(), std::string{ npc->getSource().getClientGS1() },
+								 npc->getLevel()->getModTime());
 
 			// Send to Players
 			m_server->updateWeaponForPlayers(weapon);
@@ -3433,7 +3815,7 @@ bool Player::msgPLI_WEAPONADD(CString& pPacket)
 
 		// Send the weapon to the player now.
 		if (!hasWeapon(weapon->getName()))
-			this->addWeapon(weapon);
+			addWeapon(weapon);
 	}
 
 	return true;
@@ -3474,9 +3856,9 @@ bool Player::msgPLI_UPDATEFILE(CString& pPacket)
 	}
 
 	if (m_versionId < CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
+		sendPacket({ PLO_FILESENDFAILED, CString() << file });
 	else
-		sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+		sendPacket({ PLO_FILEUPTODATE, CString() << file });
 	return true;
 }
 
@@ -3513,12 +3895,12 @@ bool Player::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
 	auto map = m_pmap.lock();
 	if (map && map->getType() == MapType::GMAP)
-		sendPacket(CString() >> (char)PLO_LEVELNAME << map->getMapName());
+		sendPacket({ PLO_LEVELNAME, CString() << map->getMapName() });
 	else
-		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevel()->getLevelName());
+		sendPacket({ PLO_LEVELNAME, CString() << getLevel()->getLevelName() });
 
 	if (getLevel()->isPlayerLeader(m_id))
-		sendPacket(CString() >> (char)PLO_ISLEADER);
+		sendPacket({ PLO_ISLEADER, CString() });
 
 	return true;
 }
@@ -3532,12 +3914,11 @@ bool Player::msgPLI_HITOBJECTS(CString& pPacket)
 	// Construct the packet.
 	// {46}{SHORT player_id / 0 for NPC}{CHAR power}{CHAR x}{CHAR y}[{INT npc_id}]
 	CString nPacket;
-	nPacket >> (char)PLO_HITOBJECTS;
 	nPacket >> (short)((nid == -1) ? m_id : 0); // If it came from an NPC, send 0 for the id.
 	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
-	m_server->sendPacketToLevelArea(nPacket, shared_from_this(), { m_id });
+	m_server->sendPacketToLevelArea({ PLO_HITOBJECTS, nPacket }, shared_from_this(), { m_id });
 	return true;
 }
 
@@ -3620,7 +4001,9 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
 					{
-						serverlog.out("[%s] Error: Player %s tried to load execscript %s, but the script was not found.\n", m_server->getName().text(), m_accountName.text(), actionParts[2].text());
+						serverlog.out(
+							"[%s] Error: Player %s tried to load execscript %s, but the script was not found.\n",
+							m_server->getName().text(), m_accountName.text(), actionParts[2].text());
 						return true;
 					}
 
@@ -3644,15 +4027,15 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 					}
 
 					// Create the weapon packet.
-					CString weapon_packet = CString() >> (char)PLO_NPCWEAPONADD >> (char)wepname.length() << wepname >> (char)0 >> (char)wepimage.length() << wepimage >> (char)1 >> (short)wepscript.length() << wepscript;
+					CString weapon_packet = CString() >> (char)wepname.length() << wepname >> (char)0 >> (char)wepimage.length() << wepimage >> (char)1 >> (short)wepscript.length() << wepscript;
 
 					// Send it to the players now.
 					if (actionParts[1] == "ALLPLAYERS")
-						m_server->sendPacketToType(PLTYPE_ANYCLIENT, weapon_packet);
+						m_server->sendPacketToType(PLTYPE_ANYCLIENT, { PLO_NPCWEAPONADD, weapon_packet });
 					else
 					{
 						auto p = m_server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
-						if (p) p->sendPacket(weapon_packet);
+						if (p) p->sendPacket({ PLO_NPCWEAPONADD, weapon_packet });
 					}
 					m_grExecParameterList.clear();
 				}
@@ -3739,8 +4122,8 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 				error = CString(id) << "," << error;
 
 				// Send it back to the player.
-				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.fileerror=" << error);
-				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.filedata=" << tokens[line]);
+				sendPacket({ PLO_FLAGSET, CString() << "gr.fileerror=" << error });
+				sendPacket({ PLO_FLAGSET, CString() << "gr.filedata=" << tokens[line] });
 			}
 		}
 
@@ -3756,7 +4139,8 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+						setProps(CString() >> (char)(__attrPackets[attrNum - 1]) >> (char)val.length() << val,
+								 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 					}
 				}
 			}
@@ -3767,7 +4151,8 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts,
+							 PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				}
 			}
 		}
@@ -3815,7 +4200,8 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 #endif
 
 			// Send to the level.
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
+			m_server->sendPacketToOneLevel({ PLO_TRIGGERACTION, CString() >> (short)m_id << (pPacket.text() + 1) },
+										   level, { m_id });
 		}
 	}
 
@@ -3831,7 +4217,8 @@ bool Player::msgPLI_MAPINFO(CString& pPacket)
 
 void ShootPacketNew::debug()
 {
-	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx / 16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
+	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx / 16.0f, (float)pixely / 16.0f,
+		   (float)pixelz / 16.0f, gani.text(), gani.length());
 	printf("\t Offset: %d, %d\n", offsetx, offsety);
 	printf("\t Angle: %d\n", sangle);
 	printf("\t Z-Angle: %d\n", sanglez);
@@ -3914,14 +4301,16 @@ bool Player::msgPLI_SHOOT(CString& pPacket)
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+	CString oldPacketBuf = CString() >> (short)m_id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (short)m_id << newPacket.constructShootV2();
 
-	m_server->sendPacketToLevelArea(oldPacketBuf, shared_from_this(), { m_id }, [](const auto pl)
+	m_server->sendPacketToLevelArea({ PLO_SHOOT, oldPacketBuf }, shared_from_this(), { m_id },
+									[](const auto pl)
 									{
 										return pl->getVersion() < CLVER_5_07;
 									});
-	m_server->sendPacketToLevelArea(newPacketBuf, shared_from_this(), { m_id }, [](const auto pl)
+	m_server->sendPacketToLevelArea({ PLO_SHOOT2, newPacketBuf }, shared_from_this(), { m_id },
+									[](const auto pl)
 									{
 										return pl->getVersion() >= CLVER_5_07;
 									});
@@ -3963,14 +4352,16 @@ bool Player::msgPLI_SHOOT2(CString& pPacket)
 	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+	CString oldPacketBuf = CString() >> (short)m_id << newPacket.constructShootV1();
+	CString newPacketBuf = CString() >> (short)m_id << newPacket.constructShootV2();
 
-	m_server->sendPacketToLevelArea(oldPacketBuf, shared_from_this(), { m_id }, [](const auto pl)
+	m_server->sendPacketToLevelArea({ PLO_SHOOT, oldPacketBuf }, shared_from_this(), { m_id },
+									[](const auto pl)
 									{
 										return pl->getVersion() < CLVER_5_07;
 									});
-	m_server->sendPacketToLevelArea(newPacketBuf, shared_from_this(), { m_id }, [](const auto pl)
+	m_server->sendPacketToLevelArea({ PLO_SHOOT2, newPacketBuf }, shared_from_this(), { m_id },
+									[](const auto pl)
 									{
 										return pl->getVersion() >= CLVER_5_07;
 									});
@@ -3982,7 +4373,7 @@ bool Player::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
 	m_server->getServerLog().out("%s is requesting serverwarp to %s", m_accountName.text(), servername.text());
-	m_server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)m_id << servername);
+	m_server->getServerList().sendPacket({ SVO_SERVERINFO, CString() >> (short)m_id << servername });
 	return true;
 }
 
@@ -4013,7 +4404,7 @@ bool Player::msgPLI_RAWDATA(CString& pPacket)
 bool Player::msgPLI_PROFILEGET(CString& pPacket)
 {
 	// Send the packet ID for backwards compatibility.
-	m_server->getServerList().sendPacket(CString() >> (char)SVO_GETPROF >> (short)m_id << pPacket);
+	m_server->getServerList().sendPacket({ SVO_GETPROF, CString() >> (short)m_id << pPacket });
 	return true;
 }
 
@@ -4024,7 +4415,7 @@ bool Player::msgPLI_PROFILESET(CString& pPacket)
 
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.
-	m_server->getServerList().sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
+	m_server->getServerList().sendPacket({ SVO_SETPROF, CString() << pPacket });
 	return true;
 }
 

@@ -5,25 +5,35 @@
 	#include "NPC.h"
 	#include "Player.h"
 	#include "Server.h"
-	#include "Weapon.h"
 	#include "V8ScriptWrappers.h"
+	#include "Weapon.h"
 
 extern const unsigned char JSBOOTSTRAPSCRIPT[];
 extern const size_t JSBOOTSTRAPSCRIPT_SIZE;
 
 extern void bindGlobalFunctions(ScriptEngine* scriptEngine);
+
 extern void bindClass_Environment(ScriptEngine* scriptEngine);
+
 extern void bindClass_Level(ScriptEngine* scriptEngine);
+
 extern void bindClass_LevelLink(ScriptEngine* scriptEngine);
+
 extern void bindClass_LevelSign(ScriptEngine* scriptEngine);
+
 extern void bindClass_LevelChest(ScriptEngine* scriptEngine);
+
 extern void bindClass_NPC(ScriptEngine* scriptEngine);
+
 extern void bindClass_Player(ScriptEngine* scriptEngine);
+
 extern void bindClass_Server(ScriptEngine* scriptEngine);
+
 extern void bindClass_Weapon(ScriptEngine* scriptEngine);
 
 ScriptEngine::ScriptEngine(Server* server)
-	: m_server(server), m_env(nullptr), m_bootstrapFunction(nullptr), m_environmentObject(nullptr), m_serverObject(nullptr), m_scriptIsRunning(false), m_scriptWatcherRunning(false), m_scriptWatcherThread()
+	: m_server(server), m_env(nullptr), m_bootstrapFunction(nullptr), m_environmentObject(nullptr),
+	  m_serverObject(nullptr), m_scriptIsRunning(false), m_scriptWatcherRunning(false), m_scriptWatcherThread()
 {
 	m_accumulator = std::chrono::nanoseconds(0);
 	m_lastScriptTimer = std::chrono::high_resolution_clock::now();

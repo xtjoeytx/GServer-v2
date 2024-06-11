@@ -30,7 +30,9 @@
 #endif
 
 #ifdef V8NPCSERVER
+
 	#include "ScriptEngine.h"
+
 #endif
 
 #include "GS2ScriptManager.h"
@@ -42,10 +44,15 @@
 #include "UpdatePackage.h"
 
 class Player;
+
 class Level;
+
 class NPC;
+
 class ScriptClass;
+
 class Map;
+
 class Weapon;
 
 enum // Socket Type
@@ -75,169 +82,290 @@ class Server : public CSocketStub
 public:
 	// Required by CSocketStub.
 	bool onRecv();
+
 	bool onSend() { return true; }
+
 	bool onRegister() { return true; }
+
 	void onUnregister() { return; }
+
 	SOCKET getSocketHandle() { return m_playerSock.getHandle(); }
+
 	bool canRecv() { return true; }
+
 	bool canSend() { return false; }
 
 	Server(const CString& pName);
+
 	~Server();
+
 	void operator()();
+
 	void cleanup();
+
 	void restart();
+
 	bool running;
 
-	int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
+	int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "",
+			 const CString& serverinterface = "");
+
 	bool doMain();
 
 	// Server Management
 	int loadConfigFiles();
+
 	void loadSettings();
+
 	void loadAdminSettings();
+
 	void loadAllowedVersions();
+
 	void loadFileSystem();
+
 	void loadServerFlags();
+
 	void loadServerMessage();
+
 	void loadIPBans();
+
 	void loadClasses(bool print = false);
+
 	void loadWeapons(bool print = false);
+
 	void loadMaps(bool print = false);
+
 	void loadMapLevels();
+
 #ifdef V8NPCSERVER
+
 	void loadNpcs(bool print = false);
+
 #endif
+
 	void loadTranslations();
+
 	void loadWordFilter();
 
 	void loadAllFolders();
+
 	void loadFolderConfig();
 
 	void saveServerFlags();
+
 	void saveWeapons();
+
 #ifdef V8NPCSERVER
+
 	void saveNpcs();
+
 	std::vector<std::pair<double, std::string>> calculateNpcStats();
+
 #endif
 
 	void reportScriptException(const ScriptRunError& error);
+
 	void reportScriptException(const std::string& error_message);
 
 	// Get functions.
 	const CString& getName() const { return m_name; }
+
 	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
+
 	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
+
 	CLog& getNPCLog() { return m_npcLog; }
+
 	CLog& getServerLog() { return m_serverLog; }
+
 	CLog& getRCLog() { return m_rcLog; }
+
 	CLog& getScriptLog() { return m_scriptLog; }
+
 	CSettings& getSettings() { return m_settings; }
+
 	CSettings& getAdminSettings() { return m_adminSettings; }
+
 	CSocketManager& getSocketManager() { return m_sockManager; }
+
 	CString getServerPath() const { return m_serverPath; }
+
 	const CString& getServerMessage() const { return m_serverMessage; }
+
 	const CString& getAllowedVersionString() const { return m_allowedVersionString; }
+
 	CTranslationManager& getTranslationManager() { return m_translationManager; }
+
 	WordFilter& getWordFilter() { return m_wordFilter; }
+
 	ServerList& getServerList() { return m_serverlist; }
+
 	AnimationManager& getAnimationManager() { return m_animationManager; }
+
 	PackageManager& getPackageManager() { return m_packageManager; }
+
 	unsigned int getNWTime() const { return m_serverTime; }
+
 	void calculateServerTime();
 
 	std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
+
 	std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
+
 	std::unordered_map<std::string, CString>& getServerFlags() { return m_serverFlags; }
+
 	std::unordered_map<std::string, std::shared_ptr<Weapon>>& getWeaponList() { return m_weaponList; }
+
 	std::unordered_map<uint16_t, std::shared_ptr<Player>>& getPlayerList() { return m_playerList; }
+
 	std::unordered_map<uint32_t, std::shared_ptr<NPC>>& getNPCList() { return m_npcList; }
+
 	std::vector<std::shared_ptr<Level>>& getLevelList() { return m_levelList; }
+
 	const std::vector<std::shared_ptr<Map>>& getMapList() const { return m_mapList; }
+
 	const std::vector<CString>& getStatusList() const { return m_statusList; }
+
 	const std::vector<CString>& getAllowedVersions() const { return m_allowedVersions; }
+
 	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
 
 #ifdef V8NPCSERVER
+
 	ScriptEngine* getScriptEngine() { return &m_scriptEngine; }
+
 	int getNCPort() const { return m_ncPort; }
+
 	std::shared_ptr<Player> getNPCServer() const { return m_npcServer; }
+
 #endif
 
 	FileSystem* getFileSystemByType(CString& type);
+
 	CString getFlag(const std::string& pFlagName);
+
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
+
 	std::shared_ptr<NPC> getNPC(const uint32_t id) const;
+
 	std::shared_ptr<Player> getPlayer(const uint16_t id) const;
+
 	std::shared_ptr<Player> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
 	std::shared_ptr<Player> getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
+
 	void assignNPCName(std::shared_ptr<NPC> npc, const std::string& name);
+
 	void removeNPCName(std::shared_ptr<NPC> npc);
+
 	std::shared_ptr<NPC> getNPCByName(const std::string& name) const;
-	std::shared_ptr<NPC> addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers = false);
+
+	std::shared_ptr<NPC>
+	addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers = false);
 
 	void handlePM(Player* player, const CString& message);
+
 	void setPMFunction(uint32_t npcId, IScriptFunction* function = nullptr);
+
 #endif
-	std::shared_ptr<NPC> addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers = false);
+
+	std::shared_ptr<NPC>
+	addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel,
+		   bool pLevelNPC, bool sendToPlayers = false);
+
 	bool deleteNPC(int id, bool eraseFromLevel = true);
+
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
+
 	bool deleteClass(const std::string& className);
+
 	bool hasClass(const std::string& className) const;
+
 	ScriptClass* getClass(const std::string& className) const;
+
 	void updateClass(const std::string& className, const std::string& classCode);
+
 	bool isIpBanned(const CString& ip);
+
 	bool isStaff(const CString& accountName);
+
 	void logToFile(const std::string& fileName, const std::string& message);
 
 	bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
+
 	bool setFlag(CString pFlag, bool pSendToPlayers = true);
+
 	bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
 
 	// Admin chat functions
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
+
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 
 	// Packet sending.
 	using PlayerPredicate = std::function<bool(const Player*)>;
-	void sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude = {}) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}) const;
-	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
-	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
+
+	void sendPacketToAll(const PlayerOutPacket& packet, const std::set<uint16_t>& exclude = {}) const;
+
+	void sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<Level> level,
+							   const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+
+	void sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<Player> player,
+							   const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+
+	void sendPacketToOneLevel(const PlayerOutPacket& packet, std::weak_ptr<Level> level,
+							  const std::set<uint16_t>& exclude = {}) const;
+
+	void sendPacketToType(int who, const PlayerOutPacket& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
+
+	void sendPacketToType(int who, const PlayerOutPacket& pPacket, Player* pPlayer) const;
 
 	// Specific packet sending
-	void sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
+	void
+	sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle,
+						float strength, const std::string& ani, const std::string& aniArgs) const;
 
 	// Player Management
 	uint16_t getFreePlayerId();
+
 	bool addPlayer(std::shared_ptr<Player> player, uint16_t id = USHRT_MAX);
+
 	bool deletePlayer(std::shared_ptr<Player> player);
+
 	void playerLoggedIn(std::shared_ptr<Player> player);
+
 	bool warpPlayerToSafePlace(uint16_t playerId);
 
 	// Translation Management
 	bool TS_Load(const CString& pLanguage, const CString& pFileName);
+
 	CString TS_Translate(const CString& pLanguage, const CString& pKey);
+
 	void TS_Reload();
+
 	void TS_Save();
 
 	// Weapon Management
 	std::shared_ptr<Weapon> getWeapon(const std::string& name);
+
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
+
 	bool NC_DelWeapon(const std::string& pWeaponName);
+
 	void updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon);
+
 	void updateClassForPlayers(ScriptClass* pClass);
 
 	/*
 	 * GS2 Functionality
 	 */
 	void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
+
 	void compileGS2Script(NPC* npc, GS2ScriptManager::user_callback_type cb);
+
 	void compileGS2Script(Weapon* weapon, GS2ScriptManager::user_callback_type cb);
+
 	void compileGS2Script(ScriptClass* cls, GS2ScriptManager::user_callback_type cb);
 
 	std::time_t getServerStartTime() const
@@ -270,6 +398,7 @@ private:
 
 private:
 	bool doTimedEvents();
+
 	void cleanupDeletedPlayers();
 
 	bool m_doRestart;
@@ -313,6 +442,7 @@ private:
 
 	// Trigger dispatcher
 	TriggerDispatcher m_triggerActionDispatcher;
+
 	void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
 
 	std::string m_shootParams;
@@ -374,7 +504,7 @@ inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSen
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYRC, { PLO_RC_CHAT, CString() << pMessage.subString(0, len) }, pSender);
 }
 
 inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender) const
@@ -383,7 +513,7 @@ inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSen
 	if (len == -1)
 		len = pMessage.length();
 
-	sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	sendPacketToType(PLTYPE_ANYNC, { PLO_RC_CHAT, CString() << pMessage.subString(0, len) }, pSender);
 }
 
 #endif

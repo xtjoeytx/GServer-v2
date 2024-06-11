@@ -16,7 +16,9 @@ void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	v8::Local<v8::Object> self = info.This();
 	Weapon* weaponObject = unwrapObject<Weapon>(self);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getName().c_str()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															weaponObject->getName().c_str())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -26,7 +28,9 @@ void Weapon_GetStr_Image(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 	v8::Local<v8::Object> self = info.This();
 	Weapon* weaponObject = unwrapObject<Weapon>(self);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), weaponObject->getImage().c_str()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															weaponObject->getImage().c_str())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -40,7 +44,8 @@ void bindClass_Weapon(ScriptEngine* scriptEngine)
 	// v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
 
 	// Create V8 string for "weapon"
-	v8::Local<v8::String> weaponStr = v8::String::NewFromUtf8Literal(isolate, "weapon", v8::NewStringType::kInternalized);
+	v8::Local<v8::String> weaponStr = v8::String::NewFromUtf8Literal(isolate, "weapon",
+																	 v8::NewStringType::kInternalized);
 
 	// Create constructor for class
 	v8::Local<v8::FunctionTemplate> weapon_ctor = v8::FunctionTemplate::New(isolate);

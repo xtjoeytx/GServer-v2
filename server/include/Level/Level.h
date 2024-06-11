@@ -2,6 +2,7 @@
 #define TLEVEL_H
 
 #include "CString.h"
+#include "IEnums.h"
 #include "IUtil.h"
 #include "LevelBaddy.h"
 #include "LevelBoardChange.h"
@@ -11,6 +12,7 @@
 #include "LevelLink.h"
 #include "LevelSign.h"
 #include "LevelTiles.h"
+#include "TPacket.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -20,8 +22,11 @@
 #include <vector>
 
 class Server;
+
 class Player;
+
 class NPC;
+
 class Map;
 
 class Level : public std::enable_shared_from_this<Level>
@@ -35,6 +40,7 @@ public:
 	//! \param server The server the level belongs to.
 	//! \return A pointer to the level found.
 	static std::shared_ptr<Level> findLevel(const CString& pLevelName, Server* server, bool loadAbsolute = false);
+
 	static std::shared_ptr<Level> createLevel(Server* server, short fillTile = 511, const std::string& levelName = "");
 
 	//! Re-loads the level.
@@ -47,16 +53,25 @@ public:
 	std::shared_ptr<Level> clone();
 
 	// get crafted packets
-	CString getBaddyPacket(int clientVersion = CLVER_2_17);
-	CString getBoardPacket();
-	CString getLayerPacket(int i);
-	CString getBoardChangesPacket(time_t time);
-	CString getBoardChangesPacket2(time_t time);
-	CString getChestPacket(Player* pPlayer);
-	CString getHorsePacket();
-	CString getLinksPacket();
-	CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
-	CString getSignsPacket(Player* pPlayer);
+	PlayerOutPacket getBoardPacket();
+
+	PlayerOutPacket getLayerPacket(int i);
+
+	PlayerOutPacket getBoardChangesPacket(time_t time);
+
+	PlayerOutPacket getBoardChangesPacket2(time_t time);
+
+	PlayerOutPackets getBaddyPackets(int clientVersion = CLVER_2_17);
+
+	PlayerOutPackets getChestPackets(Player* pPlayer);
+
+	PlayerOutPackets getHorsePackets();
+
+	PlayerOutPackets getLinkPackets();
+
+	PlayerOutPackets getNpcPackets(Player* pPlayer, time_t time, int clientVersion = CLVER_2_17);
+
+	PlayerOutPackets getSignPackets(Player* pPlayer);
 
 	//! Gets the actual level name.
 	//! \return The actual level name.
@@ -207,6 +222,7 @@ public:
 	//! \param npc NPC to add to the level.
 	//! \return True if the NPC was successfully added or false if it already exists in the level.
 	bool addNPC(std::shared_ptr<NPC> npc);
+
 	bool addNPC(uint32_t npcId);
 
 	//! Adds a level link to the level.
@@ -252,6 +268,7 @@ public:
 	//! Removes an NPC from the level.
 	//! \param npc The NPC to remove.
 	void removeNPC(std::shared_ptr<NPC> npc);
+
 	void removeNPC(uint32_t npcId);
 
 	//! Sets the map for the current level.
@@ -265,33 +282,49 @@ public:
 	bool doTimedEvents();
 
 	bool isOnWall(int pX, int pY);
+
 	bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
+
 	bool isOnWater(int pX, int pY);
+
 	std::optional<LevelChest*> getChest(int x, int y) const;
+
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
+
 	CString getChestStr(LevelChest* chest) const;
 
 #ifdef V8NPCSERVER
+
 	std::vector<NPC*> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
+
 	std::vector<NPC*> testTouch(int pX, int pY);
+
 	NPC* isOnNPC(float pX, float pY, bool checkEventFlag = false);
+
 	void sendChatToLevel(const Player* player, const std::string& message);
 
 	IScriptObject<Level>* getScriptObject() const;
+
 	void setScriptObject(std::unique_ptr<IScriptObject<Level>> object);
+
 #endif
 
 	void modifyBoardDirect(uint32_t index, short tile);
 
 private:
 	Level(Server* pServer);
+
 	Level(short fillTile = 0xFF, Server* pServer = nullptr);
 
 	// level-loading functions
 	bool loadLevel(const CString& pLevelName);
+
 	bool detectLevelType(const CString& pLevelName);
+
 	bool loadGraal(const CString& pLevelName);
+
 	bool loadZelda(const CString& pLevelName);
+
 	bool loadNW(const CString& pLevelName);
 
 private:

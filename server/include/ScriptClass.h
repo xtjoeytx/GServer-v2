@@ -2,18 +2,21 @@
 #define TSCRIPTCLASS_H
 
 #include "CString.h"
+#include "Player.h"
 #include "SourceCode.h"
 #include <string>
 
 class Server;
+
 class ScriptClass
 {
 public:
 	ScriptClass(Server* server, const std::string& className, const std::string& classSource);
+
 	~ScriptClass();
 
 	// Functions -> Inline Get-Functions
-	CString getClassPacket() const;
+	PlayerOutPacket getClassPacket() const;
 
 	const std::string& getName() const
 	{

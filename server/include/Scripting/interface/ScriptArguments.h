@@ -39,6 +39,7 @@ class IScriptArguments
 {
 public:
 	IScriptArguments() = default;
+
 	virtual ~IScriptArguments() = default;
 
 	virtual bool invoke(IScriptFunction* func, bool catchExceptions = false) = 0;

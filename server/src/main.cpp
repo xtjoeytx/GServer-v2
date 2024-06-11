@@ -18,7 +18,9 @@
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
+
 	#include <unistd.h>
+
 	#ifndef SIGBREAK
 		#define SIGBREAK SIGQUIT
 	#endif
@@ -29,7 +31,9 @@ typedef void (*sighandler_t)(int);
 
 // Home path of the gserver.
 CString homePath;
+
 static void getBasePath();
+
 std::string getBaseHomePath()
 {
 	return homePath.text();
@@ -87,6 +91,7 @@ CString overrideStaff = nullptr;
 std::atomic_bool shutdownProgram{ false };
 
 #ifndef NOMAIN
+
 int main(int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))
@@ -211,7 +216,9 @@ int main(int argc, char* argv[])
 
 	return ERR_SUCCESS;
 }
+
 #endif
+
 /*
 	Extra-Cool Functions :D
 */

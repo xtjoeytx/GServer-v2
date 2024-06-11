@@ -27,7 +27,9 @@ void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelObject->getLevelName().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+															levelObject->getLevelName().text())
+										.ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -39,7 +41,9 @@ void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallback
 	auto map = levelObject->getMap();
 	if (map)
 	{
-		v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), map->getMapName().c_str()).ToLocalChecked();
+		v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(),
+																map->getMapName().c_str())
+											.ToLocalChecked();
 		info.GetReturnValue().Set(strText);
 		return;
 	}
@@ -54,7 +58,9 @@ void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalSigns = v8::String::NewFromUtf8(isolate, "_internalSigns", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalSigns = v8::String::NewFromUtf8(isolate, "_internalSigns",
+																  v8::NewStringType::kInternalized)
+											  .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalSigns).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalSigns).ToLocalChecked());
@@ -80,7 +86,9 @@ void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
 	v8_wrapped->addChild("signs", new_instance);
 
-	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+														v8::PropertyAttribute::DontDelete |
+														v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalSigns, new_instance, propLinks).FromJust();
 
 	info.GetReturnValue().Set(new_instance);
@@ -190,7 +198,8 @@ void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
 
-	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Sign_Next, obj));
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"),
+					v8::FunctionTemplate::New(isolate, Level_Sign_Next, obj));
 
 	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
@@ -271,7 +280,9 @@ void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallba
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalChests = v8::String::NewFromUtf8(isolate, "_internalChests", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalChests = v8::String::NewFromUtf8(isolate, "_internalChests",
+																   v8::NewStringType::kInternalized)
+											   .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalChests).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalChests).ToLocalChecked());
@@ -297,7 +308,9 @@ void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallba
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
 	v8_wrapped->addChild("chests", new_instance);
 
-	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+														v8::PropertyAttribute::DontDelete |
+														v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalChests, new_instance, propLinks).FromJust();
 
 	info.GetReturnValue().Set(new_instance);
@@ -407,7 +420,8 @@ void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
 
-	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Chest_Next, obj));
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"),
+					v8::FunctionTemplate::New(isolate, Level_Chest_Next, obj));
 
 	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
@@ -489,7 +503,9 @@ void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalNpcs = v8::String::NewFromUtf8(isolate, "_internalNpcs", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalNpcs = v8::String::NewFromUtf8(isolate, "_internalNpcs",
+																 v8::NewStringType::kInternalized)
+											 .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalNpcs).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalNpcs).ToLocalChecked());
@@ -515,7 +531,9 @@ void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
 	v8_wrapped->addChild("npcs", new_instance);
 
-	auto propNpcs = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	auto propNpcs = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+													   v8::PropertyAttribute::DontDelete |
+													   v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalNpcs, new_instance, propNpcs).FromJust();
 
 	info.GetReturnValue().Set(new_instance);
@@ -631,7 +649,8 @@ void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
 
-	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Npc_Next, obj));
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"),
+					v8::FunctionTemplate::New(isolate, Level_Npc_Next, obj));
 
 	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
@@ -761,7 +780,9 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalTiles = v8::String::NewFromUtf8(isolate, "_internalTiles", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalTiles = v8::String::NewFromUtf8(isolate, "_internalTiles",
+																  v8::NewStringType::kInternalized)
+											  .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalTiles).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalTiles).ToLocalChecked());
@@ -787,7 +808,9 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
 	v8_wrapped->addChild("tiles", new_instance);
 
-	auto propTiles = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	auto propTiles = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+														v8::PropertyAttribute::DontDelete |
+														v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalTiles, new_instance, propTiles).FromJust();
 	info.GetReturnValue().Set(new_instance);
 }
@@ -836,7 +859,9 @@ void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 	v8::Local<v8::Object> self = info.This();
 
-	v8::Local<v8::String> internalLinks = v8::String::NewFromUtf8(isolate, "_internalLinks", v8::NewStringType::kInternalized).ToLocalChecked();
+	v8::Local<v8::String> internalLinks = v8::String::NewFromUtf8(isolate, "_internalLinks",
+																  v8::NewStringType::kInternalized)
+											  .ToLocalChecked();
 	if (self->HasRealNamedProperty(context, internalLinks).ToChecked())
 	{
 		info.GetReturnValue().Set(self->Get(context, internalLinks).ToLocalChecked());
@@ -862,7 +887,9 @@ void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
 	v8_wrapped->addChild("links", new_instance);
 
-	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete | v8::PropertyAttribute::DontEnum);
+	auto propLinks = static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly |
+														v8::PropertyAttribute::DontDelete |
+														v8::PropertyAttribute::DontEnum);
 	self->DefineOwnProperty(context, internalLinks, new_instance, propLinks).FromJust();
 
 	info.GetReturnValue().Set(new_instance);
@@ -977,7 +1004,8 @@ void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	v8::Local<v8::ObjectTemplate> test_proto = test_ctor->PrototypeTemplate();
 
-	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"), v8::FunctionTemplate::New(isolate, Level_Link_Next, obj));
+	test_proto->Set(v8::String::NewFromUtf8Literal(isolate, "next"),
+					v8::FunctionTemplate::New(isolate, Level_Link_Next, obj));
 
 	v8::Local<v8::Object> new_instance = test_ctor->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	new_instance->SetInternalField(0, v8::Number::New(isolate, current_index));
@@ -1010,7 +1038,8 @@ void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args
 
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber())
+	if (args[0]->IsString() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() &&
+		args[4]->IsNumber())
 	{
 		V8ENV_SAFE_UNWRAP(args, Level, levelObject);
 
@@ -1165,8 +1194,12 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		std::sort(playerListSorted.begin(), playerListSorted.end());
 
 		// Create array of objects
-		v8::Local<v8::String> key_distance = v8::String::NewFromUtf8(isolate, "distance", v8::NewStringType::kInternalized).ToLocalChecked();
-		v8::Local<v8::String> key_player = v8::String::NewFromUtf8(isolate, "player", v8::NewStringType::kInternalized).ToLocalChecked();
+		v8::Local<v8::String> key_distance = v8::String::NewFromUtf8(isolate, "distance",
+																	 v8::NewStringType::kInternalized)
+												 .ToLocalChecked();
+		v8::Local<v8::String> key_player = v8::String::NewFromUtf8(isolate, "player",
+																   v8::NewStringType::kInternalized)
+											   .ToLocalChecked();
 		v8::Local<v8::Array> result = v8::Array::New(isolate, (int)playerListSorted.size());
 
 		int idx = 0;
@@ -1197,7 +1230,8 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber() && args[5]->IsNumber() && args[6]->IsString() && args[7]->IsString())
+	if (args[0]->IsNumber() && args[1]->IsNumber() && args[2]->IsNumber() && args[3]->IsNumber() &&
+		args[4]->IsNumber() && args[5]->IsNumber() && args[6]->IsString() && args[7]->IsString())
 	{
 		V8ENV_SAFE_UNWRAP(args, Level, levelObject);
 
@@ -1216,7 +1250,8 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 		CString aniArgs;
 		for (int i = 7; i < args.Length(); i++)
 		{
-			aniArgs << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked()) << "\n";
+			aniArgs << (std::string)*v8::String::Utf8Value(isolate, args[i]->ToString(context).ToLocalChecked())
+					<< "\n";
 		}
 		aniArgs.gtokenizeI();
 
@@ -1255,8 +1290,9 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 		unsigned char epower = 1;
 
 		// Send the packet out.
-		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-		server->sendPacketToOneLevel(packet, level);
+		CString packet =
+			CString() >> (short)0 >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+		server->sendPacketToOneLevel({ PLO_EXPLOSION, packet }, level);
 	}
 }
 
@@ -1381,7 +1417,8 @@ void Setup_LevelTiles(V8ScriptEnv* env, v8::Isolate* isolate)
 	env->setConstructor("level.tiles", level_tiles_ctor);
 }
 
-void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate,
+					  v8::Local<v8::External>& engine_ref)
 { // Create the level link template
 	v8::Local<v8::FunctionTemplate> level_links_ctor = v8::FunctionTemplate::New(isolate);
 	level_links_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "links"));
@@ -1398,8 +1435,10 @@ void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 			v8::PropertyHandlerFlags::kNone));
 	v8::Local<v8::ObjectTemplate> level_links_proto = level_links_ctor->PrototypeTemplate();
 
-	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelLink, engine_ref));
-	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelLink, engine_ref));
+	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"),
+						   v8::FunctionTemplate::New(isolate, Level_Function_AddLevelLink, engine_ref));
+	level_links_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"),
+						   v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelLink, engine_ref));
 	level_links_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Link_Length);
 
 	// Define the Symbol.iterator method on the prototype to make "level.links" iterable
@@ -1410,7 +1449,8 @@ void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	env->setConstructor("level.links", level_links_ctor);
 }
 
-void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate,
+					  v8::Local<v8::External>& engine_ref)
 { // Create the level signs template
 	v8::Local<v8::FunctionTemplate> level_signs_ctor = v8::FunctionTemplate::New(isolate);
 	level_signs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "signs"));
@@ -1427,8 +1467,10 @@ void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 			v8::PropertyHandlerFlags::kNone));
 	v8::Local<v8::ObjectTemplate> level_signs_proto = level_signs_ctor->PrototypeTemplate();
 
-	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelSign, engine_ref));
-	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
+	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"),
+						   v8::FunctionTemplate::New(isolate, Level_Function_AddLevelSign, engine_ref));
+	level_signs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"),
+						   v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelSign, engine_ref));
 	level_signs_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Sign_Length);
 
 	// Define the Symbol.iterator method on the prototype to make "level.signs" iterable
@@ -1439,7 +1481,8 @@ void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	env->setConstructor("level.signs", level_signs_ctor);
 }
 
-void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate,
+					   v8::Local<v8::External>& engine_ref)
 { // Create the level chests template
 	v8::Local<v8::FunctionTemplate> level_chests_ctor = v8::FunctionTemplate::New(isolate);
 	level_chests_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "chests"));
@@ -1456,8 +1499,10 @@ void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Ext
 			v8::PropertyHandlerFlags::kNone));
 	v8::Local<v8::ObjectTemplate> level_chests_proto = level_chests_ctor->PrototypeTemplate();
 
-	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelChest, engine_ref));
-	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelChest, engine_ref));
+	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"),
+							v8::FunctionTemplate::New(isolate, Level_Function_AddLevelChest, engine_ref));
+	level_chests_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"),
+							v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelChest, engine_ref));
 	level_chests_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Chest_Length);
 
 	// Define the Symbol.iterator method on the prototype to make "level.chests" iterable
@@ -1468,7 +1513,8 @@ void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Ext
 	env->setConstructor("level.chests", level_chests_ctor);
 }
 
-void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate,
+					 v8::Local<v8::External>& engine_ref)
 { // Create the level chests template
 	v8::Local<v8::FunctionTemplate> level_npcs_ctor = v8::FunctionTemplate::New(isolate);
 	level_npcs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "npcs"));
@@ -1485,8 +1531,10 @@ void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exter
 			v8::PropertyHandlerFlags::kNone));
 	v8::Local<v8::ObjectTemplate> level_npcs_proto = level_npcs_ctor->PrototypeTemplate();
 
-	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"), v8::FunctionTemplate::New(isolate, Level_Function_AddLevelNpc, engine_ref));
-	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"), v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelNpc, engine_ref));
+	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "add"),
+						  v8::FunctionTemplate::New(isolate, Level_Function_AddLevelNpc, engine_ref));
+	level_npcs_proto->Set(v8::String::NewFromUtf8Literal(isolate, "remove"),
+						  v8::FunctionTemplate::New(isolate, Level_Function_RemoveLevelNpc, engine_ref));
 	level_npcs_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "length"), Level_Npc_Length);
 
 	// Define the Symbol.iterator method on the prototype to make "level.chests" iterable
@@ -1517,27 +1565,40 @@ void bindClass_Level(ScriptEngine* scriptEngine)
 
 	// Method functions
 	//	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "clone"), v8::FunctionTemplate::New(isolate, Level_Function_Clone, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelevel"), v8::FunctionTemplate::New(isolate, Level_Function_SaveLevel, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"), v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"), v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelevel"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_SaveLevel, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findareanpcs"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_FindAreaNpcs, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnearestplayers"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_FindNearestPlayers, engine_ref));
 	//	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "reload"), v8::FunctionTemplate::New(isolate, Level_Function_Reload, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "shoot"), v8::FunctionTemplate::New(isolate, Level_Function_Shoot, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"), v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"), v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
-	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"), v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "shoot"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_Shoot, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putexplosion"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_PutExplosion, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "putnpc"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_PutNPC, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_OnWall, engine_ref));
+	level_proto->Set(v8::String::NewFromUtf8Literal(isolate, "onwall2"),
+					 v8::FunctionTemplate::New(isolate, Level_Function_OnWall2, engine_ref));
 
 	// Properties
 	//	level_proto->SetAccessor(v8::String::NewFromUtf8(isolate, "isnopkzone"), Level_GetBool_IsNoPkZone);		// TODO(joey): must be missing a status flag or something
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "issparringzone"), Level_GetBool_IsSparringZone);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "name"), Level_GetStr_Name);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "mapname"), Level_GetStr_MapName);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetObject_Npcs, nullptr, engine_ref);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "links"), Level_GetObject_Links, nullptr, engine_ref);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signs"), Level_GetObject_Signs, nullptr, engine_ref);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "chests"), Level_GetObject_Chests, nullptr, engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "npcs"), Level_GetObject_Npcs, nullptr,
+							 engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "links"), Level_GetObject_Links, nullptr,
+							 engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "signs"), Level_GetObject_Signs, nullptr,
+							 engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "chests"), Level_GetObject_Chests, nullptr,
+							 engine_ref);
 	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "players"), Level_GetArray_Players);
-	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr, engine_ref);
+	level_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "tiles"), Level_GetObject_Tiles, nullptr,
+							 engine_ref);
 
 	Setup_LevelTiles(env, isolate);
 	Setup_LevelLinks(env, isolate, engine_ref);

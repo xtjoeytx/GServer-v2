@@ -9,12 +9,14 @@
 #include <memory>
 
 #ifdef V8NPCSERVER
+
 	#include "ScriptAction.h"
 	#include "ScriptBindings.h"
 	#include "ScriptExecutionContext.h"
 	#include <queue>
 	#include <unordered_map>
 	#include <unordered_set>
+
 #endif
 
 enum
@@ -177,99 +179,150 @@ struct ScriptEventTimer
 #endif
 
 class Server;
+
 class Level;
+
 class Player;
+
 class ScriptClass;
+
 class NPC
 {
 public:
 	NPC(Server* pServer, NPCType type);
-	NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type);
+
+	NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel,
+		NPCType type);
+
 	~NPC();
 
 	void setScriptCode(std::string pScript);
 
 	// prop functions
 	CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
+
 	CString getProps(time_t newTime, int clientVersion = CLVER_2_17) const;
+
 	CString setProps(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
+
 	void setPropModTime(unsigned char pid, time_t time);
 
 	// NPCPROP functions begin
 
 	const std::string& getChat() const;
+
 	void setChat(const std::string& msg);
 
 	const std::string& getGani() const;
+
 	void setGani(const std::string& gani);
 
 	const std::string& getImage() const;
+
 	void setImage(const std::string& image);
+
 	void setImage(const std::string& image, int offsetx, int offsety, int widt, int height);
 
 	const std::string& getNickname() const;
+
 	void setNickname(const std::string& nick);
 
 	unsigned char getSave(unsigned int idx) const;
+
 	void setSave(unsigned int idx, unsigned char val);
 
 	int getRupees() const;
+
 	void setRupees(int val);
 
 	int getDarts() const;
+
 	void setDarts(int val);
 
 	const CString& getBodyImage() const;
+
 	void setBodyImage(const std::string& pBodyImage);
 
 	const CString& getHeadImage() const;
+
 	void setHeadImage(const std::string& pHeadImage);
 
 	const CString& getHorseImage() const;
+
 	void setHorseImage(const std::string& pHeadImage);
 
 	const CString& getShieldImage() const;
+
 	void setShieldImage(const std::string& pShieldImage);
 
 	const CString& getSwordImage() const;
+
 	void setSwordImage(const std::string& pSwordImage);
 
 	// NPCPROP functions end
 
 	// set functions
 	void setId(unsigned int pId) { m_id = pId; }
+
 	void setLevel(std::shared_ptr<Level> pLevel) { m_curlevel = pLevel; }
+
 	void setX(int val) { m_x = val; }
+
 	void setY(int val) { m_y = val; }
+
 	void setHeight(int val) { m_height = val; }
+
 	void setWidth(int val) { m_width = val; }
+
 	void setName(const std::string& name) { m_npcName = name; }
+
 	void setScripter(const CString& name) { m_npcScripter = name; }
+
 	void setScriptType(const CString& type) { m_npcScriptType = type; }
+
 	void setBlockingFlags(int val) { m_blockFlags = val; }
+
 	void setVisibleFlags(int val) { m_visFlags = val; }
+
 	void setColorId(unsigned int idx, unsigned char val);
+
 	void setSprite(int val) { m_sprite = val; }
 
 	// get functions
 	unsigned int getId() const { return m_id; }
+
 	NPCType getType() const { return m_npcType; }
+
 	int getX() const { return m_x; }
+
 	int getY() const { return m_y; }
+
 	int getHeight() const { return m_height; }
+
 	int getWidth() const { return m_width; }
+
 	unsigned char getSprite() const { return m_sprite; }
+
 	int getBlockFlags() const { return m_blockFlags; }
+
 	int getVisibleFlags() const { return m_visFlags; }
+
 	int getTimeout() const { return m_timeout; }
 
 	const SourceCode& getSource() const { return m_npcScript; }
+
 	const std::string& getName() const { return m_npcName; }
+
 	const CString& getScriptType() const { return m_npcScriptType; }
+
 	const CString& getScripter() const { return m_npcScripter; }
+
 	const CString& getWeaponName() const { return m_weaponName; }
+
 	std::shared_ptr<Level> getLevel() const;
+
 	time_t getPropModTime(unsigned char pId);
+
 	unsigned char getColorId(unsigned int idx) const;
 
 	const CString& getByteCode() const
@@ -278,6 +331,7 @@ public:
 	}
 
 #ifdef V8NPCSERVER
+
 	bool getIsNpcDeleteRequested() const { return m_npcDeleteRequested; }
 
 	bool joinedClass(const std::string& name)
@@ -287,47 +341,65 @@ public:
 	}
 
 	ScriptClass* joinClass(const std::string& className);
+
 	void setTimeout(int val);
+
 	void updatePropModTime(unsigned char propId);
 
 	//
 	bool hasScriptEvent(int flag) const;
+
 	void setScriptEvents(int mask);
 
 	ScriptExecutionContext& getExecutionContext();
+
 	IScriptObject<NPC>* getScriptObject() const;
+
 	void setScriptObject(std::unique_ptr<IScriptObject<NPC>> object);
 
 	// -- flags
 	CString getFlag(const std::string& pFlagName) const;
+
 	void setFlag(const std::string& pFlagName, const CString& pFlagValue);
+
 	void deleteFlag(const std::string& pFlagName);
+
 	std::unordered_map<std::string, CString>& getFlagList() { return m_flagList; }
 
 	bool deleteNPC();
+
 	void reloadNPC();
+
 	void resetNPC();
 
 	bool isWarpable() const;
+
 	void allowNpcWarping(NPCWarpType m_canWarp);
+
 	void moveNPC(int dx, int dy, double time, int options);
+
 	void warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY);
 
 	// file
 	bool loadNPC(const CString& fileName);
+
 	void saveNPC();
 
 	void queueNpcAction(const std::string& action, Player* player = nullptr, bool registerAction = true);
+
 	void queueNpcTrigger(const std::string& action, Player* player = nullptr, const std::string& data = "");
 
 	template<class... Args>
 	void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
 
 	void registerNpcUpdates();
+
 	void registerTriggerAction(const std::string& action, IScriptFunction* cbFunc);
+
 	void scheduleEvent(unsigned int timeout, ScriptAction& action);
 
 	bool runScriptTimer();
+
 	NPCEventResponse runScriptEvents();
 
 	CString getVariableDump();
@@ -365,10 +437,15 @@ private:
 	CString m_npcBytecode;
 
 #ifdef V8NPCSERVER
+
 	bool hasTimerUpdates() const;
+
 	void freeScriptResources();
+
 	void testTouch();
+
 	void testForLinks();
+
 	void updateClientCode();
 
 	std::map<std::string, std::string> m_classMap;

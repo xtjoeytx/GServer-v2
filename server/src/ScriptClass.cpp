@@ -50,10 +50,8 @@ void ScriptClass::parseScripts(Server* server, const std::string& classSource)
 }
 
 // -- Function: Get Player Packet -- //
-CString ScriptClass::getClassPacket() const
+PlayerOutPacket ScriptClass::getClassPacket() const
 {
-	CString out;
-
 	if (!m_bytecode.isEmpty())
 	{
 		CString b = m_bytecode;
@@ -61,10 +59,10 @@ CString ScriptClass::getClassPacket() const
 		CString header = b.readChars(b.readGUShort());
 
 		// Get the mod time and send packet 197.
-		CString smod = CString() >> (long long)time(0);
+		CString smod = CString() >> (long long)time(nullptr);
 		smod.gtokenizeI();
-		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
+		return { PLO_UNKNOWN197, CString() << header << "," << smod };
 	}
 
-	return out;
+	return {};
 }

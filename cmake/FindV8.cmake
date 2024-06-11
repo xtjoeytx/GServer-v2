@@ -6,7 +6,7 @@
 # V8_FOUND, if false, do not try to link to V8
 # V8_INCLUDE_DIR, where to find the headers
 
-message("Looking for monolithic v8...")
+message(STATUS "Looking for monolithic V8...")
 
 IF (NOT $ENV{V8_DIR} STREQUAL "")
 	SET(V8_DIR $ENV{V8_DIR})
@@ -113,13 +113,13 @@ FIND_LIBRARY(V8_LIBRARY
 
 if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 	if(NOT V8_LIBRARY)
-		message("Couldn't find v8 library.")
+		message(STATUS "Couldn't find V8 library.")
 	endif()
 	if(NOT V8_INCLUDE_DIR)
-		message("Couldn't find v8 include dir.")
+		message(STATUS "Couldn't find v8 include dir.")
 	endif()
 
-	message("Monolith search failed, looking for mingw package")
+	message(STATUS "Monolith search failed, looking for mingw package")
 
 	find_library(V8_MAIN_LIBRARY libv8.dll.a
 			PATHS ${V8_LIBRARY_SEARCH_PATHS}
@@ -138,7 +138,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 	endif()
 
 	if(NOT V8_MAIN_LIBRARY OR NOT V8_BASE_LIBRARY OR NOT V8_PLATFORM_LIBRARY)
-		message("Mingw package search failed, looking for nuget package")
+		message(STATUS "Mingw package search failed, looking for nuget package")
 
 		if (NOT V8_LIBRARY AND NOT V8_INCLUDE_DIR AND MSVC)
 			file(DOWNLOAD https://dist.nuget.org/win-x86-commandline/latest/nuget.exe "${CMAKE_BINARY_DIR}/nuget.exe")
@@ -154,7 +154,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		endif()
 
 		if(CMAKE_BUILD_TYPE STREQUAL "Release")
-			message("Searching for Release libraries as chosen")
+			message(STATUS "Searching for Release libraries as chosen")
 			set(V8_LIBRARY_SEARCH_PATHS
 				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Release
 				${V8_DIR}/Release
@@ -167,11 +167,11 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 			set(V8_REDIST_DIR ${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_REDIST}/lib/Release)
 		else()
 			if(NOT CMAKE_BUILD_TYPE)
-				message("Searching for Debug libraries by default")
+				message(STATUS "Searching for Debug libraries by default")
 			elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-				message("Searching for Debug library as chosen")
+				message(STATUS "Searching for Debug library as chosen")
 			else()
-				message("Build type not recognized, searching for Debug libraries")
+				message(STATUS "Build type not recognized, searching for Debug libraries")
 			endif()
 			set(V8_LIBRARY_SEARCH_PATHS
 				${CMAKE_SOURCE_DIR}/packages/${V8_NUGET_NAME}/lib/Debug
@@ -197,7 +197,7 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 	endif()
 
 	if(NOT V8_MAIN_LIBRARY OR NOT V8_BASE_LIBRARY OR NOT V8_PLATFORM_LIBRARY)
-		message("Couldn't find v8 libraries as nuget package")
+		message(STATUS "Couldn't find V8 libraries as nuget package")
 	else()
 		file(GLOB V8_REDIST_LIBS "${V8_REDIST_DIR}/*.dll" "${V8_REDIST_DIR}/snapshot_blob.bin")
 		foreach(V8_REDIST_LIB ${V8_REDIST_LIBS})
@@ -206,15 +206,15 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		endforeach()
 	endif()
 	if(NOT V8_INCLUDE_DIR)
-		message("Couldn't find v8 include dir as nuget package")
+		message(STATUS "Couldn't find V8 include dir as nuget package")
 	endif()
 
 endif()
 
 IF (V8_INCLUDE_DIR AND ((V8_LIBRARY) OR (V8_MAIN_LIBRARY AND V8_BASE_LIBRARY AND V8_PLATFORM_LIBRARY)))
-	message("V8 found!")
+	message(STATUS "V8 found!")
 	set(V8_FOUND TRUE)
 ELSE()
-	message("V8 lookup failed.")
+	message(FATAL_ERROR "V8 lookup failed.")
 ENDIF()
 

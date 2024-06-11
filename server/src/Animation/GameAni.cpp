@@ -75,33 +75,38 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 	{
 		// Synchronous callback
 		server->compileGS2Script(gameAni.m_script, [&gameAni](const CompilerResponse& response)
-								   {
-									   if (response.success)
-									   {
-										   gameAni.m_bytecode.clear(response.bytecode.length());
-										   gameAni.m_bytecode.write((const char*)response.bytecode.buffer(), response.bytecode.length());
-									   }
-									   else
-										   gameAni.m_bytecode.clear();
-								   });
+								 {
+									 if (response.success)
+									 {
+										 gameAni.m_bytecode.clear(response.bytecode.length());
+										 gameAni.m_bytecode.write((const char*)response.bytecode.buffer(), response.bytecode.length());
+									 }
+									 else
+										 gameAni.m_bytecode.clear();
+								 });
 	}
 
 	return gameAni;
 }
 
-CString GameAni::getBytecodePacket() const
+PlayerOutPackets GameAni::getBytecodePackets(bool newProtocol) const
 {
+	PlayerOutPackets packets;
 	std::string_view gani = m_aniName;
 	if (gani.ends_with(".gani"))
 		gani = gani.substr(0, gani.length() - 5);
 
-	CString out;
 	// filename ".gani" protection
 	if (!gani.empty() && !m_bytecode.isEmpty())
 	{
-		out >> (char)PLO_RAWDATA >> (int)(m_bytecode.length() + gani.length() + 1) << "\n";
-		out >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << m_bytecode;
+		if (!newProtocol)
+		{
+			packets.push_back({ PLO_RAWDATA, CString() >> (int)(m_bytecode.length() + gani.length() + 1) << "\n" });
+			packets.push_back({ PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << m_bytecode });
+		}
+		else
+			packets.push_back({ PLO_GANISCRIPT, CString() >> (char)gani.length() << std::string(gani) << m_bytecode });
 	}
 
-	return out;
+	return packets;
 }

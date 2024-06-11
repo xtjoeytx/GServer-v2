@@ -14,7 +14,9 @@
 	Pointer-Functions for Packets
 */
 bool ServerList::created = false;
+
 typedef void (ServerList::*TSLSock)(CString&);
+
 std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
 
 void ServerList::createFunctions()
@@ -55,7 +57,8 @@ void ServerList::createFunctions()
 	Constructor - Deconstructor
 */
 ServerList::ServerList(Server* server)
-	: m_server(server), m_fileQueue(&m_socket), m_nextIsRaw(false), m_rawPacketSize(0), m_serverRemoteIp("127.0.0.1"), m_connectionAttempts(0), m_nextConnectionAttempt(0)
+	: m_server(server), m_fileQueue(&m_socket), m_nextIsRaw(false), m_rawPacketSize(0),
+	  m_serverRemoteIp("127.0.0.1"), m_connectionAttempts(0), m_nextConnectionAttempt(0)
 {
 	m_socket.setProtocol(SOCKET_PROTOCOL_TCP);
 	m_socket.setType(SOCKET_TYPE_CLIENT);
@@ -189,14 +192,16 @@ bool ServerList::connectServer()
 	// Initialize the socket
 	if (m_socket.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", m_server->getName().text(), m_socket.getDescription());
+		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", m_server->getName().text(),
+					  m_socket.getDescription());
 		return false;
 	}
 
 	// Connect to Server
 	if (m_socket.connect() != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", m_server->getName().text(), m_socket.getDescription());
+		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", m_server->getName().text(),
+					  m_socket.getDescription());
 		return false;
 	}
 
@@ -218,7 +223,8 @@ bool ServerList::connectServer()
 		localip = m_socket.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		serverLog.out(CString() << "[" << m_server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		serverLog.out(CString() << "[" << m_server->getName().text() << "] ** [WARNING] Socket returned " << localip
+								<< " for its local ip!  Not sending local ip to serverlist.\n");
 		localip.clear();
 	}
 
@@ -228,21 +234,23 @@ bool ServerList::connectServer()
 
 	// Use the new protocol for communicating with the listserver
 	m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
-	sendPacket(CString() >> (char)SVO_REGISTERV3 << version, true);
+	sendPacket({ SVO_REGISTERV3, CString() << version }, true);
 	m_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
 	auto& adminsettings = m_server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
+	sendPacket({ SVO_SERVERHQPASS, CString() << adminsettings.getStr("hq_password") });
 
 	// Send server info.
-	sendPacket(CString() >> (char)SVO_NEWSERVER >> (char)name.length() << name >> (char)desc.length() << desc >> (char)language.length() << language >> (char)version.length() << version >> (char)url.length() << url >> (char)ip.length() << ip >> (char)port.length() << port >> (char)localip.length() << localip);
+	sendPacket(
+		{ SVO_NEWSERVER,
+		  CString() >> (char)name.length() << name >> (char)desc.length() << desc >> (char)language.length() << language >> (char)version.length() << version >> (char)url.length() << url >> (char)ip.length() << ip >> (char)port.length() << port >> (char)localip.length() << localip });
 
 	// Set the level now.
 	if (m_server->getSettings().getBool("onlystaff", false))
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
+		sendPacket({ SVO_SERVERHQLEVEL, CString() >> (char)0 });
 	else
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
+		sendPacket({ SVO_SERVERHQLEVEL, CString() >> (char)adminsettings.getInt("hq_level", 1) });
 
 	sendVersionConfig();
 
@@ -272,18 +280,19 @@ void ServerList::sendVersionConfig()
 	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
-void ServerList::sendPacket(CString& pPacket, bool sendNow)
+void ServerList::sendPacket(const ListServerOutPacket& pPacket, bool sendNow)
 {
 	// empty buffer?
-	if (pPacket.isEmpty())
+	if (pPacket.Data.isEmpty())
 		return;
 
+	CString packet = CString() >> (char)pPacket.Id << pPacket.Data;
 	// append '\n'
-	if (pPacket[pPacket.length() - 1] != '\n')
-		pPacket.writeChar('\n');
+	if (packet[packet.length() - 1] != '\n')
+		packet.writeChar('\n');
 
 	// append buffer
-	m_fileQueue.addPacket(pPacket);
+	m_fileQueue.addPacket(packet);
 
 	// send buffer now?
 	if (sendNow)
@@ -298,7 +307,7 @@ void ServerList::addPlayer(PlayerPtr player)
 	assert(player != nullptr);
 
 	CString dataPacket;
-	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
+	dataPacket >> (short)player->getId() >> (char)player->getType();
 	dataPacket >> (char)PLPROP_ACCOUNTNAME << player->getProp(PLPROP_ACCOUNTNAME);
 	dataPacket >> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME);
 	dataPacket >> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL);
@@ -306,20 +315,20 @@ void ServerList::addPlayer(PlayerPtr player)
 	dataPacket >> (char)PLPROP_Y << player->getProp(PLPROP_Y);
 	dataPacket >> (char)PLPROP_ALIGNMENT << player->getProp(PLPROP_ALIGNMENT);
 	dataPacket >> (char)PLPROP_IPADDR << player->getProp(PLPROP_IPADDR);
-	sendPacket(dataPacket);
+	sendPacket({ SVO_PLYRADD, dataPacket });
 }
 
 void ServerList::deletePlayer(PlayerPtr player)
 {
 	assert(player != nullptr);
 
-	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
+	sendPacket({ SVO_PLYRREM, CString() >> (short)player->getId() });
 }
 
 void ServerList::sendPlayers()
 {
 	// Clears the serverlist players
-	sendPacket(CString() >> (char)SVO_SETPLYR);
+	sendPacket({ SVO_SETPLYR, CString() });
 
 	// Adds the players to the serverlist
 	auto& playerList = m_server->getPlayerList();
@@ -344,7 +353,9 @@ void ServerList::handleText(const CString& data)
 				if (params.size() == 6 && params[2] == "privmsg")
 				{
 					std::string channel = params[4].guntokenize().text();
-					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
+					CString tmpData =
+						CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << ","
+												 << params[5].gtokenize();
 
 					auto& playerList = m_server->getPlayerList();
 					for (auto& [id, pl]: playerList)
@@ -352,7 +363,7 @@ void ServerList::handleText(const CString& data)
 						if (pl->inChatChannel(channel))
 						{
 							CString weapon = pl->isClient() ? "-Serverlist_Chat" : "GraalEngine";
-							pl->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << tmpData);
+							pl->sendPacket({ PLO_SERVERTEXT, CString() << weapon << tmpData });
 						}
 					}
 				}
@@ -398,44 +409,39 @@ void ServerList::handleText(const CString& data)
 
 void ServerList::sendText(const CString& data)
 {
-	CString dataPacket;
-	dataPacket.writeGChar(SVO_SENDTEXT);
-	dataPacket << data;
-	sendPacket(dataPacket);
+	sendPacket({ SVO_SENDTEXT, data });
 }
 
 void ServerList::sendText(const std::vector<CString>& stringList)
 {
 	CString dataPacket;
-	dataPacket.writeGChar(SVO_SENDTEXT);
 	for (const auto& string: stringList)
 		dataPacket << string.gtokenize();
-	sendPacket(dataPacket);
+	sendPacket({ SVO_SENDTEXT, dataPacket });
 }
 
 void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
 {
 	assert(player != nullptr);
 
-	CString dataPacket;
-	dataPacket.writeGChar(SVO_REQUESTLIST);
-	dataPacket >> (short)player->getId() << data;
-	sendPacket(dataPacket);
+	sendPacket({ SVO_REQUESTLIST, CString() >> (short)player->getId() << data });
 }
 
 void ServerList::sendLoginPacketForPlayer(PlayerPtr player, const CString& password, const CString& identity)
 {
-	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->getAccountName().length() << player->getAccountName() >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
+	sendPacket(
+		{ SVO_VERIACC2,
+		  CString() >> (char)player->getAccountName().length() << player->getAccountName() >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity });
 }
 
 void ServerList::sendServerHQ()
 {
 	auto& adminsettings = m_server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
+	sendPacket({ SVO_SERVERHQPASS, CString() << adminsettings.getStr("hq_password") });
 	if (m_server->getSettings().getBool("onlystaff", false))
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
+		sendPacket({ SVO_SERVERHQLEVEL, CString() >> (char)0 });
 	else
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
+		sendPacket({ SVO_SERVERHQLEVEL, CString() >> (char)adminsettings.getInt("hq_level", 1) });
 }
 
 /*
@@ -467,12 +473,14 @@ bool ServerList::parsePacket(CString& pPacket)
 void ServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	m_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", m_server->getName().text(), pPacket.readGUChar(), pPacket.text() + 1);
+	m_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", m_server->getName().text(),
+								 pPacket.readGUChar(), pPacket.text() + 1);
 }
 
 void ServerList::msgSVI_VERIACC(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERIGUILD(CString& pPacket)
@@ -488,33 +496,36 @@ void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 		// Assign the nickname to the player.
 		p->setNick(nickname, true);
-		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
+		p->sendPacket({ PLO_PLAYERPROPS, CString() << prop });
 
 		// Tell everybody else the new nickname.
-		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, { p->getId() });
+		m_server->sendPacketToAll({ PLO_OTHERPLPROPS, CString() >> (short)playerID << prop }, { p->getId() });
 	}
 }
 
 void ServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
 	m_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
-								  ":: An updated version is available online.\n",
-								  APP_VENDOR, APP_NAME, m_server->getName().text());
+								 ":: An updated version is available online.\n",
+								 APP_VENDOR, APP_NAME, m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -663,12 +674,13 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	}
 
 	// Send the profiles.
-	p1->sendPacket(CString() >> (char)PLO_PROFILE << profile);
+	p1->sendPacket({ PLO_PROFILE, CString() << profile });
 }
 
 void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] :: %s - [Error] %s\n", m_server->getName().text(), m_socket.getDescription(), pPacket.readString("").text());
+	m_server->getServerLog().out("[%s] :: %s - [Error] %s\n", m_server->getName().text(), m_socket.getDescription(),
+								 pPacket.readString("").text());
 }
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)
@@ -688,14 +700,14 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
-		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
+		player->sendPacket({ PLO_DISCMESSAGE, CString() << message });
 		player->setLoadOnly(true); // Prevent saving of the account.
 		player->disconnect();
 		return;
 	}
 
 	// Send the player his account.  If it fails, disconnect him.
-	if (player->sendLogin() == false)
+	if (!player->sendLogin())
 	{
 		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
 		player->setLoadOnly(true); // Prevent saving of the account.
@@ -705,23 +717,26 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void ServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n",
+								 m_server->getName().text());
 }
 
 void ServerList::msgSVI_PING(CString& pPacket)
 {
 	// When server pings, we pong
-	sendPacket(CString() >> (char)SVO_PING);
+	sendPacket({ SVO_PING, CString() });
 }
 
 void ServerList::msgSVI_RAWDATA(CString& pPacket)
@@ -816,7 +831,8 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// Set the file mod time.
 	if (m_server->getFileSystem()->setModTime(shortName, modTime) == false)
-		m_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", m_server->getName().text(), fileName.text());
+		m_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n",
+									 m_server->getName().text(), fileName.text());
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
@@ -826,24 +842,32 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		switch (type)
 		{
 			case SVF_HEAD:
-				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName,
+							PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 
 			case SVF_BODY:
-				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName,
+							PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 
 			case SVF_SWORD:
 			{
 				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				p->setProps(
+					CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length()
+																						   << shortName,
+					PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 			}
 
 			case SVF_SHIELD:
 			{
 				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				p->setProps(
+					CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length()
+																							<< shortName,
+					PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				break;
 			}
 		}
@@ -858,7 +882,7 @@ void ServerList::msgSVI_SERVERINFO(CString& pPacket)
 	// A hack to allow v5 clients to serverwarp to servers
 	auto player = m_server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
-		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
+		player->sendPacket({ PLO_SERVERWARP, CString() << serverpacket });
 }
 
 void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
@@ -890,13 +914,15 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 					{
 						CString channel = params[3].guntokenize();
 						if (player->addChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
+							player->sendPacket(
+								{ PLO_SERVERTEXT, CString() << weapon << ",irc,join," << params[3].gtokenize() });
 					}
 					else if (params[2] == "part")
 					{
 						CString channel = params[3].guntokenize();
 						if (player->inChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
+							player->sendPacket(
+								{ PLO_SERVERTEXT, CString() << weapon << ",irc,part," << params[3].gtokenize() });
 					}
 				}
 			}
@@ -942,7 +968,7 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 			//m_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
 			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
-				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+				player->sendPacket({ PLO_SERVERTEXT, CString() << message });
 		}
 	}
 }
@@ -981,7 +1007,7 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);
 		auto tmpPlyr = p->getExternalPlayer(account);
-		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3, true);
+		p->sendPacket({ PLO_PRIVATEMESSAGE, CString() >> (short)tmpPlyr->getId() << pmMessageType << message3 }, true);
 	}
 
 	message2 = "";

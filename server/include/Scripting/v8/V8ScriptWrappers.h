@@ -73,6 +73,7 @@ inline std::string wrapScript(const std::string_view& code)
 }
 
 class NPC;
+
 template<>
 inline std::string wrapScript<NPC>(const std::string_view& code)
 {
@@ -104,6 +105,7 @@ inline std::string wrapScript<NPC>(const std::string_view& code)
 }
 
 class Player;
+
 template<>
 inline std::string wrapScript<Player>(const std::string_view& code)
 {
@@ -122,6 +124,7 @@ inline std::string wrapScript<Player>(const std::string_view& code)
 }
 
 class Weapon;
+
 template<>
 inline std::string wrapScript<Weapon>(const std::string_view& code)
 {

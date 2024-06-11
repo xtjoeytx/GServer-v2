@@ -95,42 +95,37 @@ STRING(REGEX REPLACE "(-[0-9]+:[0-9]+)" "" VER_CPACK ${VER_CPACK})
 
 # Generate version header from the above
 configure_file(
-		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
-		${PROJECT_BINARY_DIR}/server/include/IConfig.h
+	${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
+message(STATUS "Configuring ${PROJECT_NAME} v${VER_FULL}")
+list(APPEND CMAKE_MESSAGE_INDENT "* ")
 option(STATIC "Compile as a static runtime." ON)
+message(STATUS "Compile as static runtime:\t\t\t\t\t${STATIC}")
 if(STATIC)
-	message("Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
 else()
-	message("Don't compile as a static runtime")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 endif()
 
 option(GRALATNPC "Compile with Gralat NPC support, only works when V8NPCSERVER is enabled." ON)
+message(STATUS "Compile with Gralat NPC support:\t\t\t${GRALATNPC}")
 if(GRALATNPC)
-	message("Compile with Gralat NPC support")
 	add_definitions(-DGRALATNPC)
-else()
-	message("Don't compile with Gralat NPC support")
 endif()
 
 option(V8NPCSERVER "Compile built-in V8 NPC-Server" OFF)
+message(STATUS "Compile with built-in V8 NPC-Server:\t\t${V8NPCSERVER}")
 if(V8NPCSERVER)
-	message("Enabling built-in V8 NPC-Server")
 	add_definitions(-DV8NPCSERVER)
-else()
-	message("Disabling built-in V8 NPC-Server")
 endif()
 
 option(UPNP "Compile with UPNP support" OFF)
+message(STATUS "Compile with UPNP support:\t\t\t\t\t${UPNP}")
 if(UPNP)
-	message("Enabling UPNP support")
 	add_definitions(-DUPNP)
-else()
-	message("Disabling UPNP support")
 endif()
 
 # Packaging
@@ -138,12 +133,12 @@ if(APPLE)
 	set(CPACK_GENERATOR DragNDrop)
 	set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} ${VER_FULL}")
 	set(
-			CPACK_DMG_DS_STORE_SETUP_SCRIPT
-			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt
+		CPACK_DMG_DS_STORE_SETUP_SCRIPT
+		${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt
 	)
 	set(
-			CPACK_DMG_BACKGROUND_IMAGE
-			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif
+		CPACK_DMG_BACKGROUND_IMAGE
+		${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif
 	)
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP")
@@ -169,8 +164,8 @@ include(CPack)
 
 # Generate version header from the above
 configure_file(
-		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
-		${PROJECT_BINARY_DIR}/server/include/IConfig.h
+	${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
+	${PROJECT_BINARY_DIR}/server/include/IConfig.h
 )
 
 if(APPLE)
@@ -210,8 +205,8 @@ elseif(WIN32)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 		set(
-				CMAKE_CXX_FLAGS_RELWITHDEBINFO
-				"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
+			CMAKE_CXX_FLAGS_RELWITHDEBINFO
+			"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
 		)
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
 		cmake_policy(SET CMP0043 NEW)
@@ -244,7 +239,7 @@ elseif(WIN32)
 else()
 	set(MAKE_TESTS ON)
 	if(STATIC)
-		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
+		#SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1 -DNDEBUG=1 -DENABLE_SCRIPTENV_DEBUG=1)
@@ -271,7 +266,7 @@ if(V8NPCSERVER)
 
 
 	if(NOT V8_FOUND)
-		message("v8 not found in system")
+		message(FATAL_ERROR "V8 not found in system")
 	endif()
 endif()
 
@@ -279,7 +274,7 @@ if(UPNP)
 	find_package(Miniupnpc)
 
 	if(NOT MINIUPNPC_FOUND)
-		message("MiniUPNPC not found in system. Compiling it ourselves.")
+		message(STATUS "MiniUPNPC not found in system. Compiling it ourselves.")
 
 		if(STATIC)
 			add_definitions(-DMINIUPNP_STATICLIB)
@@ -315,6 +310,9 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 
 enable_testing()
+set(CMAKE_MESSAGE_INDENT "")
+message(STATUS "Configure Unit Testing")
+set(CMAKE_MESSAGE_INDENT "* ")
 add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

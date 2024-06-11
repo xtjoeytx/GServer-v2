@@ -46,7 +46,8 @@ CString operator<<(const CString& first, const CString& second)
 }
 
 Server::Server(const CString& pName)
-	: running(false), m_doRestart(false), m_name(pName), m_serverlist(this), m_wordFilter(this), m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
+	: running(false), m_doRestart(false), m_name(pName), m_serverlist(this), m_wordFilter(this),
+	  m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 #ifdef V8NPCSERVER
 	  ,
@@ -104,7 +105,8 @@ Server::~Server()
 	cleanup();
 }
 
-int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
+int Server::init(const CString& serverip, const CString& serverport, const CString& localip,
+				 const CString& serverinterface)
 {
 #ifdef V8NPCSERVER
 	// Initialize the Script Engine
@@ -290,7 +292,7 @@ void Server::cleanup()
 #endif
 
 	// Save translations.
-	this->TS_Save();
+	TS_Save();
 
 	// Save server flags.
 	saveServerFlags();
@@ -381,7 +383,7 @@ bool Server::doTimedEvents()
 			if (!player->isNPCServer())
 			{
 				if (!player->doTimedEvents())
-					this->deletePlayer(player);
+					deletePlayer(player);
 			}
 		}
 	}
@@ -409,7 +411,7 @@ bool Server::doTimedEvents()
 		calculateServerTime();
 
 		m_lastNewWorldTimer = m_lastTimer;
-		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+		sendPacketToAll({ PLO_NEWWORLDTIME, CString() << CString().writeGInt4(getNWTime()) });
 	}
 
 	// Stuff that happens every minute.
@@ -419,7 +421,7 @@ bool Server::doTimedEvents()
 		m_last1mTimer = m_lastTimer;
 
 		// Save server flags.
-		this->saveServerFlags();
+		saveServerFlags();
 	}
 
 	// Stuff that happens every 3 minutes.
@@ -557,7 +559,8 @@ void Server::loadFolderConfig()
 		if (fs != nullptr)
 		{
 			fs->addDir(dir, wildcard);
-			m_serverLog.out("[%s]        adding %s [%s] to %s\n", m_name.text(), dir.text(), wildcard.text(), type.text());
+			m_serverLog.out("[%s]        adding %s [%s] to %s\n", m_name.text(), dir.text(), wildcard.text(),
+							type.text());
 		}
 		m_filesystem[0].addDir(dir, wildcard);
 	}
@@ -644,11 +647,14 @@ void Server::loadSettings()
 		m_settings.setSeparator("=");
 		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
 		if (!m_settings.isOpened())
-			m_serverLog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", m_name.text());
+			m_serverLog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n",
+							m_name.text());
 	}
 
 	// Load status list.
-	m_statusList = m_settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
+	m_statusList = m_settings.getStr("playerlisticons",
+									 "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing")
+					   .tokenize(",");
 
 	// Load staff list
 	m_staffList = m_settings.getStr("staff").tokenize(",");
@@ -662,7 +668,8 @@ void Server::loadAdminSettings()
 	m_adminSettings.setSeparator("=");
 	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
 	if (!m_adminSettings.isOpened())
-		m_serverLog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", m_name.text());
+		m_serverLog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n",
+						m_name.text());
 	else
 		getServerList().sendServerHQ();
 }
@@ -692,7 +699,8 @@ void Server::loadAllowedVersions()
 			int vid = getVersionID(s);
 			int vid2 = getVersionID(f);
 			if (vid != -1 && vid2 != -1)
-				m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
+				m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - "
+									   << getVersionString(f, PLTYPE_ANYCLIENT);
 		}
 	}
 }
@@ -713,7 +721,7 @@ void Server::loadServerFlags()
 {
 	std::vector<CString> lines = CString::loadToken(CString() << m_serverPath << "serverflags.txt", "\n", true);
 	for (auto& line: lines)
-		this->setFlag(line, false);
+		setFlag(line, false);
 }
 
 void Server::loadServerMessage()
@@ -779,7 +787,8 @@ void Server::loadWeapons(bool print)
 				if (print)
 				{
 					m_serverLog.out("[%s]        %s [updated]\n", m_name.text(), weapon->getName().c_str());
-					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
+					sendPacketToType(PLTYPE_ANYRC,
+									 { PLO_RC_CHAT, CString() << "Server: Updated weapon " << weapon->getName() << " " });
 				}
 			}
 			else
@@ -792,13 +801,20 @@ void Server::loadWeapons(bool print)
 	}
 
 	// Add the default weapons.
-	if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
-	if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
-	if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
-	if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
-	if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
-	if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
-	if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
+	if (!m_weaponList.contains("bow"))
+		m_weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
+	if (!m_weaponList.contains("bomb"))
+		m_weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
+	if (!m_weaponList.contains("superbomb"))
+		m_weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
+	if (!m_weaponList.contains("fireball"))
+		m_weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
+	if (!m_weaponList.contains("fireblast"))
+		m_weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
+	if (!m_weaponList.contains("nukeshot"))
+		m_weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
+	if (!m_weaponList.contains("joltbomb"))
+		m_weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
 }
 
 void Server::loadMapLevels()
@@ -837,9 +853,10 @@ void Server::loadMaps(bool print)
 		auto gmap = std::make_unique<Map>(MapType::GMAP);
 		if (!gmap->load(CString() << gmapName, this))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << gmapName << ".gmap"
-												 << "\n");
+			if (print)
+				m_serverLog.out(CString() << "[" << m_name << "] "
+										  << "** [Error] Could not load " << gmapName << ".gmap"
+										  << "\n");
 			continue;
 		}
 
@@ -858,8 +875,9 @@ void Server::loadMaps(bool print)
 		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
 		if (!bigmap->load(i.trim(), this))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << i << "\n");
+			if (print)
+				m_serverLog.out(CString() << "[" << m_name << "] "
+										  << "** [Error] Could not load " << i << "\n");
 			continue;
 		}
 
@@ -890,8 +908,9 @@ void Server::loadMaps(bool print)
 		// Load the map.
 		if (!gmap->load(CString() << groupmap, this))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << groupmap << "\n");
+			if (print)
+				m_serverLog.out(CString() << "[" << m_name << "] "
+										  << "** [Error] Could not load " << groupmap << "\n");
 			continue;
 		}
 
@@ -922,6 +941,7 @@ void Server::loadMaps(bool print)
 }
 
 #ifdef V8NPCSERVER
+
 void Server::loadNpcs(bool print)
 {
 	FileSystem npcFS(this);
@@ -959,11 +979,12 @@ void Server::loadNpcs(bool print)
 		}
 	}
 }
+
 #endif
 
 void Server::loadTranslations()
 {
-	this->TS_Reload();
+	TS_Reload();
 }
 
 void Server::loadWordFilter()
@@ -1003,6 +1024,7 @@ void Server::saveWeapons()
 }
 
 #ifdef V8NPCSERVER
+
 void Server::saveNpcs()
 {
 	for (const auto& [npcId, npc]: m_npcList)
@@ -1054,6 +1076,7 @@ std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
 	std::sort(script_profiles.rbegin(), script_profiles.rend());
 	return script_profiles;
 }
+
 #endif
 
 std::string transformString(const std::string& str)
@@ -1170,6 +1193,7 @@ FileSystem* Server::getFileSystemByType(CString& type)
 }
 
 #ifdef V8NPCSERVER
+
 void Server::assignNPCName(std::shared_ptr<NPC> npc, const std::string& name)
 {
 	std::string newName = name;
@@ -1188,7 +1212,8 @@ void Server::removeNPCName(std::shared_ptr<NPC> npc)
 		m_npcNameList.erase(npcIter);
 }
 
-std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers)
+std::shared_ptr<NPC>
+Server::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers)
 {
 	// Force database npc ids to be >= 1000
 	if (npcId < 1000)
@@ -1218,8 +1243,8 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 		// Send the NPC's props to everybody in range.
 		if (sendToPlayers)
 		{
-			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-			sendPacketToLevelArea(packet, pLevel);
+			CString packet = CString() >> (int)newNPC->getId() << newNPC->getProps(0);
+			sendPacketToLevelArea({ PLO_NPCPROPS, packet }, pLevel);
 		}
 	}
 
@@ -1232,14 +1257,16 @@ void Server::handlePM(Player* player, const CString& message)
 	{
 		CString npcServerMsg;
 		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_npcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
+		player->sendPacket(
+			{ PLO_PRIVATEMESSAGE, CString() >> (short)m_npcServer->getId() << "\"\"," << npcServerMsg.gtokenize() });
 		return;
 	}
 
 	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
 	//m_pmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
 
-	m_pmHandlerNpc->getExecutionContext().addAction(m_scriptEngine.createAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
+	m_pmHandlerNpc->getExecutionContext().addAction(
+		m_scriptEngine.createAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
 	m_scriptEngine.registerNpcUpdate(m_pmHandlerNpc.get());
 }
 
@@ -1256,13 +1283,17 @@ void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)
 	m_scriptEngine.setCallBack("npcserver.playerpm", function);
 	m_pmHandlerNpc = npc;
 }
+
 #endif
 
-std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers)
+std::shared_ptr<NPC>
+Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel,
+			   bool pLevelNPC, bool sendToPlayers)
 {
 	// New Npc
 	auto level = pLevel.lock();
-	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
+	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level,
+										(pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
 	// Get available NPC Id.
 	uint32_t newId = m_nextNpcId;
@@ -1281,8 +1312,8 @@ std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScrip
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-		sendPacketToLevelArea(packet, level);
+		CString packet = CString() >> (int)newNPC->getId() << newNPC->getProps(0);
+		sendPacketToLevelArea({ PLO_NPCPROPS, packet }, level);
 	}
 
 	return newNPC;
@@ -1317,9 +1348,10 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			if (p->isClient())
 			{
 				if (isOnMap || p->getVersion() < CLVER_2_1)
-					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+					p->sendPacket({ PLO_NPCDEL, CString() >> (int)npc->getId() });
 				else
-					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+					p->sendPacket(
+						{ PLO_NPCDEL2, CString() >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId() });
 			}
 		}
 	}
@@ -1511,7 +1543,7 @@ bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	{
 		m_serverFlags.erase(mServerFlag);
 		if (pSendToPlayers)
-			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
+			sendPacketToAll({ PLO_FLAGDEL, CString() << pFlagName });
 		return true;
 	}
 
@@ -1522,7 +1554,7 @@ bool Server::setFlag(CString pFlag, bool pSendToPlayers)
 {
 	std::string flagName = pFlag.readString("=").text();
 	CString flagValue = pFlag.readString("");
-	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
+	return setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
 }
 
 bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
@@ -1548,7 +1580,7 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 		m_serverFlags[pFlagName] = pFlagValue;
 
 	if (pSendToPlayers)
-		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+		sendPacketToAll({ PLO_FLAGSET, CString() << pFlagName << "=" << pFlagValue });
 	return true;
 }
 
@@ -1556,7 +1588,7 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 	Packet-Sending Functions
 */
 
-void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToAll(const PlayerOutPacket& packet, const std::set<uint16_t>& exclude) const
 {
 	for (auto& [id, player]: m_playerList)
 	{
@@ -1569,7 +1601,8 @@ void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& ex
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<Level> level,
+								   const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1606,7 +1639,8 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const PlayerOutPacket& packet, std::weak_ptr<Player> player,
+								   const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1648,7 +1682,8 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> 
 	}
 }
 
-void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToOneLevel(const PlayerOutPacket& packet, std::weak_ptr<Level> level,
+								  const std::set<uint16_t>& exclude) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1661,7 +1696,7 @@ void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> le
 	}
 }
 
-void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer) const
+void Server::sendPacketToType(int who, const PlayerOutPacket& pPacket, std::weak_ptr<Player> pPlayer) const
 {
 	auto p = pPlayer.lock();
 	if (!running) return;
@@ -1669,7 +1704,7 @@ void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Pla
 	sendPacketToType(who, pPacket, p.get());
 }
 
-void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const
+void Server::sendPacketToType(int who, const PlayerOutPacket& pPacket, Player* pPlayer) const
 {
 	if (!running) return;
 	for (auto& [id, player]: m_playerList)
@@ -1713,7 +1748,7 @@ bool Server::NC_DelWeapon(const std::string& pWeaponName)
 	m_weaponList.erase(pWeaponName);
 
 	// Delete from Players
-	sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
+	sendPacketToType(PLTYPE_ANYCLIENT, { PLO_NPCWEAPONDEL, CString() << pWeaponName });
 	return true;
 }
 
@@ -1727,8 +1762,11 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 
 		if (player->hasWeapon(pWeapon->getName()))
 		{
-			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
-			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));
+			player->sendPacket({ PLO_NPCWEAPONDEL, CString() << pWeapon->getName() });
+			for (const auto& packet: pWeapon->getWeaponPackets(player->getVersion()))
+			{
+				player->sendPacket(packet, true);
+			}
 		}
 	}
 }
@@ -1745,12 +1783,12 @@ void Server::updateClassForPlayers(ScriptClass* pClass)
 		{
 			if (pClass != nullptr)
 			{
-				CString out;
 				CString b = pClass->getByteCode();
-				out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-				out >> (char)PLO_NPCWEAPONSCRIPT << b;
 
-				player->sendPacket(out);
+				if (!player->m_newProtocol)
+					player->sendPacket({ PLO_RAWDATA, CString() >> (int)b.length() });
+
+				player->sendPacket({ PLO_NPCWEAPONSCRIPT, b });
 			}
 		}
 	}
@@ -1912,7 +1950,7 @@ CString Server::TS_Translate(const CString& pLanguage, const CString& pKey)
 void Server::TS_Reload()
 {
 	// Save Translations
-	this->TS_Save();
+	TS_Save();
 
 	// Reset Translations
 	m_translationManager.reset();
@@ -1924,7 +1962,7 @@ void Server::TS_Reload()
 	// Load Each File
 	const std::map<CString, CString>& temp = translationFS.getFileList();
 	for (auto& i: temp)
-		this->TS_Load(removeExtension(i.first), i.second);
+		TS_Load(removeExtension(i.first), i.second);
 }
 
 void Server::TS_Save()
@@ -1963,7 +2001,8 @@ void Server::TS_Save()
 	}
 }
 
-void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const
+void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, float y, float z, float angle, float zangle,
+								 float strength, const std::string& ani, const std::string& aniArgs) const
 {
 	auto levelLock = level.lock();
 	ShootPacketNew newPacket{};
@@ -1980,8 +2019,8 @@ void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, flo
 	newPacket.ganiArgs = aniArgs;
 	newPacket.shootParams = getShootParams();
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
+	PlayerOutPacket oldPacketBuf = { PLO_SHOOT, CString() >> (short)0 << newPacket.constructShootV1() };
+	PlayerOutPacket newPacketBuf = { PLO_SHOOT2, CString() >> (short)0 << newPacket.constructShootV2() };
 
 	sendPacketToLevelArea(oldPacketBuf, levelLock, { 0 }, [](const auto pl)
 						  {

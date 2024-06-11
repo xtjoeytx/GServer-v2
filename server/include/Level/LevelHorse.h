@@ -5,6 +5,7 @@
 #include "CTimeout.h"
 
 class Server;
+
 class LevelHorse
 {
 public:
@@ -18,9 +19,13 @@ public:
 
 	// get private variables
 	CString getImage() const { return m_image; }
+
 	float getX() const { return m_x; }
+
 	float getY() const { return m_y; }
+
 	char getDir() const { return m_dir; }
+
 	char getBushes() const { return m_bushes; }
 
 	CTimeout timeout;

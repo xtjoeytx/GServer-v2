@@ -114,7 +114,8 @@ bool V8ScriptEnv::parseErrors(v8::TryCatch* tryCatch)
 		{
 			m_lastScriptError.error = *v8::String::Utf8Value(isolate, tryCatch->Exception());
 			m_lastScriptError.filename = *v8::String::Utf8Value(isolate, message->GetScriptResourceName());
-			m_lastScriptError.error_line = *v8::String::Utf8Value(isolate, message->GetSourceLine(context).ToLocalChecked());
+			m_lastScriptError.error_line = *v8::String::Utf8Value(isolate,
+																  message->GetSourceLine(context).ToLocalChecked());
 			m_lastScriptError.lineno = message->GetLineNumber(context).ToChecked();
 			m_lastScriptError.startcol = message->GetStartColumn(context).ToChecked();
 			m_lastScriptError.endcol = message->GetEndColumn(context).ToChecked();
@@ -150,11 +151,14 @@ IScriptFunction* V8ScriptEnv::compile(const std::string& name, const std::string
 	v8::Context::Scope context_scope(context);
 
 	// Create a string containing the JavaScript source code.
-	v8::Local<v8::String> sourceStr = v8::String::NewFromUtf8(isolate, source.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+	v8::Local<v8::String> sourceStr = v8::String::NewFromUtf8(isolate, source.c_str(),
+															  v8::NewStringType::kNormal)
+										  .ToLocalChecked();
 
 	// Compile the source code.
 	v8::TryCatch try_catch(isolate);
-	v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
+	v8::ScriptOrigin origin(
+		v8::String::NewFromUtf8(isolate, name.c_str(), v8::NewStringType::kNormal).ToLocalChecked());
 	v8::Local<v8::Script> script;
 	if (!v8::Script::Compile(context, sourceStr, &origin).ToLocal(&script))
 	{

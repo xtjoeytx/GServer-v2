@@ -17,10 +17,12 @@ public:
 
 	// Delete move operations
 	ResourceManager(ResourceManager&& o) = delete;
+
 	ResourceManager& operator=(ResourceManager&& o) noexcept = delete;
 
 	// Delete copy operations
 	ResourceManager& operator=(const ResourceManager&) = delete;
+
 	ResourceManager(const ResourceManager&) = delete;
 
 	//! Retrieve a resource that has already been loaded
