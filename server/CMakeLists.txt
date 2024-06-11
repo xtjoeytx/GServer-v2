@@ -23,26 +23,26 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
-	src/CFileSystem.cpp
-	src/main.cpp
-	src/TAccount.cpp
-	src/TMap.cpp
-	src/TNPC.cpp
-	src/TScriptClass.cpp
-	src/TServer.cpp
-	src/TServerList.cpp
-	src/TUpdatePackage.cpp
-	src/TWeapon.cpp
-	src/Scripting/GS2ScriptManager.cpp
-	src/TriggerCommandHandlers.cpp
-	${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
+	"src/FileSystem.cpp"
+	"src/main.cpp"
+	"src/Account.cpp"
+	"src/Map.cpp"
+	"src/NPC.cpp"
+	"src/ScriptClass.cpp"
+	"src/Server.cpp"
+	"src/ServerList.cpp"
+	"src/UpdatePackage.cpp"
+	"src/Weapon.cpp"
+	"src/Scripting/GS2ScriptManager.cpp"
+	"src/TriggerCommandHandlers.cpp"
+	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
-file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)
-list(APPEND SOURCES ${TPLAYER_SOURCES})
+file(GLOB PLAYER_SOURCES src/Player/**.cpp)
+list(APPEND SOURCES ${PLAYER_SOURCES})
 
-file(GLOB TLEVEL_SOURCES src/TLevel/**.cpp)
-list(APPEND SOURCES ${TLEVEL_SOURCES})
+file(GLOB LEVEL_SOURCES src/Level/**.cpp)
+list(APPEND SOURCES ${LEVEL_SOURCES})
 
 file(GLOB MISC_SOURCES src/Misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
@@ -58,24 +58,25 @@ include(bin2h)
 set(EXE_HEADERS "")
 set(
 	HEADERS
-	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	include/CFileSystem.h
-	include/main.h
-	include/TAccount.h
-	include/TMap.h
-	include/TNPC.h
-	include/TPlayer.h
-	include/TScriptClass.h
-	include/TServer.h
-	include/TServerList.h
-	include/TUpdatePackage.h
-	include/TWeapon.h
-	include/Scripting/GS2ScriptManager.h
-	include/Scripting/ScriptOrigin.h
-	include/Scripting/SourceCode.h)
+	"${PROJECT_BINARY_DIR}/server/include/IConfig.h"
+	"include/FileSystem.h"
+	"include/main.h"
+	"include/Account.h"
+	"include/Map.h"
+	"include/NPC.h"
+	"include/Player.h"
+	"include/ScriptClass.h"
+	"include/Server.h"
+	"include/ServerList.h"
+	"include/UpdatePackage.h"
+	"include/Weapon.h"
+	"include/Scripting/GS2ScriptManager.h"
+	"include/Scripting/ScriptOrigin.h"
+	"include/Scripting/SourceCode.h"
+)
 
-file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
-list(APPEND HEADERS ${TLEVEL_HEADERS})
+file(GLOB LEVEL_HEADERS include/Level/**.h)
+list(APPEND HEADERS ${LEVEL_HEADERS})
 
 file(GLOB MISC_HEADERS include/Misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
@@ -138,7 +139,7 @@ include_directories(
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include/Misc
-	${PROJECT_SOURCE_DIR}/server/include/TLevel
+	${PROJECT_SOURCE_DIR}/server/include/Level
 	${PROJECT_SOURCE_DIR}/server/include/utilities
 	${PROJECT_SOURCE_DIR}/server/include/Scripting
 	${PROJECT_SOURCE_DIR}/server/include/Scripting/interface
@@ -341,10 +342,6 @@ if(V8NPCSERVER)
 	include_directories(${V8_INCLUDE_DIR})
 
 	target_link_libraries(${TARGET_NAME} httplib::httplib OpenSSL::SSL OpenSSL::Crypto)
-
-	if(zstd_FOUND)
-		target_link_libraries(${TARGET_NAME} zstd)
-	endif()
 
 	add_custom_command(
 			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
