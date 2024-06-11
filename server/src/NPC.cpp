@@ -1866,7 +1866,7 @@ CString doJoins(const CString& code, FileSystem* fs)
 			CString spacecheck = c.subString(pos, loc - pos);
 			if (!spacecheck.contains(" \t") && c.bytesLeft())
 			{
-				ret << ";\xa7";
+				ret << ";\n";
 				joinList.push_back(CString() << c.readString(";") << ".txt");
 			}
 		}
@@ -1877,8 +1877,7 @@ CString doJoins(const CString& code, FileSystem* fs)
 	{
 		c = fs->load(fileName);
 		c.removeAllI("\r");
-		c.replaceAllI("\n", "\xa7");
-		ret << removeComments(c, "\xa7");
+		ret << removeComments(c);
 	}
 
 	return ret;

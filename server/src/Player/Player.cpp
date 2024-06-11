@@ -3167,10 +3167,9 @@ bool Player::msgPLI_PUTNPC(CString& pPacket)
 	// Load the code.
 	CString code = m_server->getFileSystem(0)->load(ncode);
 	code.removeAllI("\r");
-	code.replaceAllI("\n", "\xa7");
 
 	// Add NPC to level
-	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, true, true);
+	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, false, true);
 
 	return true;
 }
