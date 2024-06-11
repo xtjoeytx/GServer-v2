@@ -35,7 +35,6 @@ private:
 	GS2Context _context;
 	void syncCompileJob(const std::string& script, user_callback_type& finishedCb);
 
-	//
 	BytecodeCache m_bytecodeCache;
 	CompilerThreadPool m_compilerThreadPool;
 

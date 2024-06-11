@@ -53,9 +53,9 @@ struct ShootPacketNew
 	void debug();
 };
 
-struct SCachedLevel
+struct CachedLevel
 {
-	SCachedLevel(std::weak_ptr<Level> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) {}
+	CachedLevel(std::weak_ptr<Level> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) {}
 	std::weak_ptr<Level> level;
 	time_t modTime;
 };
@@ -362,7 +362,7 @@ private:
 	uint16_t m_id;
 	int m_type, m_versionId;
 	time_t m_lastData, m_lastMovement, m_lastChat, m_lastNick, m_lastMessage, m_lastSave, m_last1m;
-	std::vector<std::unique_ptr<SCachedLevel>> m_cachedLevels;
+	std::vector<std::unique_ptr<CachedLevel>> m_cachedLevels;
 	std::map<CString, CString> m_rcLargeFiles;
 	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
 	std::set<std::string> m_channelList;

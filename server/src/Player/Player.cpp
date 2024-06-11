@@ -1905,7 +1905,7 @@ bool Player::leaveLevel(bool resetCache)
 			break;
 		}
 	}
-	if (!found) m_cachedLevels.push_back(std::make_unique<SCachedLevel>(m_currentLevel, time(0)));
+	if (!found) m_cachedLevels.push_back(std::make_unique<CachedLevel>(m_currentLevel, time(0)));
 
 	// Remove self from list of players in level.
 	levelp->removePlayer(m_id);
