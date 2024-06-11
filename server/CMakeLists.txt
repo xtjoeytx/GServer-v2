@@ -108,7 +108,7 @@ if(V8NPCSERVER)
 		APPEND
 		HEADERS
 		${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
-		include/Scripting/CScriptEngine.h
+		include/Scripting/ScriptEngine.h
 		include/Scripting/ScriptAction.h
 		include/Scripting/ScriptExecutionContext.h
 		include/Scripting/ScriptFactory.h
@@ -119,7 +119,7 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		SOURCES
-		src/Scripting/CScriptEngine.cpp
+		src/Scripting/ScriptEngine.cpp
 		src/Scripting/v8/V8EnvironmentImpl.cpp
 		src/Scripting/v8/V8FunctionsImpl.cpp
 		src/Scripting/v8/V8LevelImpl.cpp
@@ -342,6 +342,10 @@ if(V8NPCSERVER)
 	include_directories(${V8_INCLUDE_DIR})
 
 	target_link_libraries(${TARGET_NAME} httplib::httplib OpenSSL::SSL OpenSSL::Crypto)
+
+	if(zstd_FOUND)
+		target_link_libraries(${TARGET_NAME} zstd)
+	endif()
 
 	add_custom_command(
 			OUTPUT ${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h

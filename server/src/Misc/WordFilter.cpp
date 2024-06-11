@@ -1,13 +1,14 @@
-#include "IDebug.h"
+#include "WordFilter.h"
 #include "CLog.h"
+#include "IDebug.h"
 #include "IEnums.h"
-#include "CWordFilter.h"
-#include "TServer.h"
-#include "TPlayer.h"
+#include "Player.h"
+#include "Server.h"
 
-char bypass[] =
-{
-	' ', '\r', '\n',
+char bypass[] = {
+	' ',
+	'\r',
+	'\n',
 };
 
 static bool isUpper(char c)
@@ -34,16 +35,16 @@ static char toUpper(char c)
 	return c;
 }
 
-CWordFilter::~CWordFilter()
+WordFilter::~WordFilter()
 {
-	rules.clear();
+	m_rules.clear();
 }
 
-void CWordFilter::load(const CString& file)
+void WordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.
-	if (rules.size() != 0)
-		rules.clear();
+	if (m_rules.size() != 0)
+		m_rules.clear();
 
 	// Load the file.
 	std::vector<CString> f = CString::loadToken(file, "\n", true);
@@ -58,7 +59,7 @@ void CWordFilter::load(const CString& file)
 
 		if (wordParts[0] == "RULE")
 		{
-			auto rule = std::make_unique<SWordFilterRule>();
+			auto rule = std::make_unique<WordFilterRule>();
 			++i;
 			while (i != f.end() && (*i) != "RULEEND")
 			{
@@ -75,9 +76,12 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "chat") rule->check |= FILTER_CHECK_CHAT;
-						else if (wordParts2[j] == "pm") rule->check |= FILTER_CHECK_PM;
-						else if (wordParts2[j] == "nick") rule->check |= FILTER_CHECK_NICK;
-						else if (wordParts2[j] == "toall") rule->check |= FILTER_CHECK_TOALL;
+						else if (wordParts2[j] == "pm")
+							rule->check |= FILTER_CHECK_PM;
+						else if (wordParts2[j] == "nick")
+							rule->check |= FILTER_CHECK_NICK;
+						else if (wordParts2[j] == "toall")
+							rule->check |= FILTER_CHECK_TOALL;
 					}
 				}
 				else if (wordParts2[0] == "MATCH")
@@ -94,7 +98,8 @@ void CWordFilter::load(const CString& file)
 							rule->precisionPercentage = true;
 							wordParts2[1].removeAll("%");
 						}
-						else rule->precisionPercentage = false;
+						else
+							rule->precisionPercentage = false;
 						rule->precision = strtoint(wordParts2[1]);
 					}
 				}
@@ -103,8 +108,10 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "full") rule->wordPosition |= FILTER_POSITION_FULL;
-						else if (wordParts2[j] == "start") rule->wordPosition |= FILTER_POSITION_START;
-						else if (wordParts2[j] == "part") rule->wordPosition |= FILTER_POSITION_PART;
+						else if (wordParts2[j] == "start")
+							rule->wordPosition |= FILTER_POSITION_START;
+						else if (wordParts2[j] == "part")
+							rule->wordPosition |= FILTER_POSITION_PART;
 					}
 				}
 				else if (wordParts2[0] == "ACTION")
@@ -112,11 +119,16 @@ void CWordFilter::load(const CString& file)
 					for (std::vector<CString>::size_type j = 1; j < wordParts2.size(); ++j)
 					{
 						if (wordParts2[j] == "log") rule->action |= FILTER_ACTION_LOG;
-						else if (wordParts2[j] == "tellrc") rule->action |= FILTER_ACTION_TELLRC;
-						else if (wordParts2[j] == "replace") rule->action |= FILTER_ACTION_REPLACE;
-						else if (wordParts2[j] == "warn") rule->action |= FILTER_ACTION_WARN;
-						else if (wordParts2[j] == "jail") rule->action |= FILTER_ACTION_JAIL;
-						else if (wordParts2[j] == "ban") rule->action |= FILTER_ACTION_BAN;
+						else if (wordParts2[j] == "tellrc")
+							rule->action |= FILTER_ACTION_TELLRC;
+						else if (wordParts2[j] == "replace")
+							rule->action |= FILTER_ACTION_REPLACE;
+						else if (wordParts2[j] == "warn")
+							rule->action |= FILTER_ACTION_WARN;
+						else if (wordParts2[j] == "jail")
+							rule->action |= FILTER_ACTION_JAIL;
+						else if (wordParts2[j] == "ban")
+							rule->action |= FILTER_ACTION_BAN;
 					}
 				}
 				else if (wordParts2[0] == "WARNMESSAGE")
@@ -132,23 +144,23 @@ void CWordFilter::load(const CString& file)
 				continue;
 
 			// Add the rule to the list.
-			rules.push_back(std::move(rule));
+			m_rules.push_back(std::move(rule));
 		}
 		else if (wordParts[0] == "WARNMESSAGE")
 		{
-			defaultWarnMessage = word.remove(0, 12).trim();
+			m_defaultWarnMessage = word.remove(0, 12).trim();
 		}
 		else if (wordParts[0] == "SHOWWORDSTORC")
 		{
 			if (wordParts.size() == 2 && wordParts[1] == "true")
-				showWordsToRC = true;
+				m_showWordsToRC = true;
 		}
 	}
 }
 
-int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
+int WordFilter::apply(const Player* player, CString& chat, int check)
 {
-	if (chat.isEmpty() || rules.size() == 0 || check == 0) return 0;
+	if (chat.isEmpty() || m_rules.size() == 0 || check == 0) return 0;
 
 	CString out = chat;
 	CString warnmessage;
@@ -156,7 +168,7 @@ int CWordFilter::apply(const TPlayer* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (SWordFilterRulePtr& rule : rules)
+	for (WordFilterRulePtr& rule: m_rules)
 	{
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;
@@ -349,7 +361,7 @@ WordFilterActions:
 	if (actionsFound & FILTER_ACTION_LOG)
 	{
 		CLog wordfilter;
-		wordfilter.setFilename(server->getServerPath() << "logs/serverlog.txt");
+		wordfilter.setFilename(m_server->getServerPath() << "logs/serverlog.txt");
 		wordfilter.setEnabled(true);
 		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(), badwords.text());
 	}
@@ -365,19 +377,21 @@ WordFilterActions:
 	}
 
 	// Tell RC what happened.
-	if (showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
+	if (m_showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		server->sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
+		m_server->sendPacketToType(PLTYPE_ANYRC, {PLO_RC_CHAT, CString() << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords});
 	}
 
 	// If it is a warning rule, we are altering the message.
 	// If not, set the message to the filtered message.
 	if (actionsFound & FILTER_ACTION_WARN)
 	{
-		if (warnmessage.isEmpty()) chat = defaultWarnMessage;
-		else chat = warnmessage;
+		if (warnmessage.isEmpty()) chat = m_defaultWarnMessage;
+		else
+			chat = warnmessage;
 	}
-	else chat = out;
+	else
+		chat = out;
 
 	return actionsFound;
 }

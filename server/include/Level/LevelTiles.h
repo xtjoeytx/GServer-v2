@@ -3,18 +3,19 @@
 
 #include <cstring>
 
-class TLevelTiles {
-	public:
-		TLevelTiles(short fillTile = 0x00) {
-			memset(levelTiles, fillTile, sizeof(levelTiles));
-		}
+class LevelTiles
+{
+public:
+	LevelTiles(short fillTile = 0x00)
+	{
+		memset(m_tiles, fillTile, sizeof(m_tiles));
+	}
 
-		short& operator[](uint32_t index) { return levelTiles[index]; }
-		explicit operator	char*() const { return (char*)levelTiles; };
-
+	short& operator[](uint32_t index) { return m_tiles[index]; }
+	explicit operator char*() const { return (char*)m_tiles; };
 
 private:
-		short levelTiles[4096];
+	short m_tiles[4096];
 };
 
 #endif //GS2EMU_TLEVELTILES_H

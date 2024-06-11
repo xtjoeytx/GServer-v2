@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SCRIPTFUNCTION_H
 #define SCRIPTFUNCTION_H
 
@@ -8,28 +6,32 @@ class IScriptArguments;
 class IScriptFunction
 {
 public:
-	IScriptFunction() : _referenceCount(0) { }
-	
+	IScriptFunction() : m_referenceCount(0) {}
+
 	virtual ~IScriptFunction() = 0;
 
-	inline bool isReferenced() const {
-		return _referenceCount > 0;
+	inline bool isReferenced() const
+	{
+		return m_referenceCount > 0;
 	}
 
-	inline int getReferenceCount() const {
-		return _referenceCount;
+	inline int getReferenceCount() const
+	{
+		return m_referenceCount;
 	}
 
-	inline void increaseReference() {
-		_referenceCount++;
+	inline void increaseReference()
+	{
+		m_referenceCount++;
 	}
 
-	inline void decreaseReference() {
-		_referenceCount--;
+	inline void decreaseReference()
+	{
+		m_referenceCount--;
 	}
 
 private:
-	int _referenceCount;
+	int m_referenceCount;
 };
 
 inline IScriptFunction::~IScriptFunction() = default;

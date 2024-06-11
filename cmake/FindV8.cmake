@@ -141,8 +141,8 @@ if(NOT V8_LIBRARY OR NOT V8_INCLUDE_DIR)
 		message(STATUS "Mingw package search failed, looking for nuget package")
 
 		if (NOT V8_LIBRARY AND NOT V8_INCLUDE_DIR AND MSVC)
-			file(DOWNLOAD https://dist.nuget.org/win-x86-commandline/latest/nuget.exe ${CMAKE_BINARY_DIR}/nuget.exe)
-			set(NUGET_COMMAND ${CMAKE_BINARY_DIR}/nuget.exe)
+			file(DOWNLOAD https://dist.nuget.org/win-x86-commandline/latest/nuget.exe "${CMAKE_BINARY_DIR}/nuget.exe")
+			set(NUGET_COMMAND "${CMAKE_BINARY_DIR}/nuget.exe")
 			include("${CMAKE_SOURCE_DIR}/cmake/nuget/cmake/NuGetTools.cmake")
 			# Call this once before any other nuget_* calls.
 			nuget_initialize()

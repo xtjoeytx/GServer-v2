@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef V8SCRIPTBINDINGS_H
 #define V8SCRIPTBINDINGS_H
 
@@ -7,6 +5,6 @@
 #include "V8ScriptEnv.h"
 #include "V8ScriptFunction.h"
 #include "V8ScriptUtils.h"
-#include "V8ScriptWrapped.h"
+#include "V8ScriptWrappers.h"
 
 #endif

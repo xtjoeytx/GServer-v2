@@ -1,29 +1,29 @@
 #ifdef UPNP
-#define UPNPCOMMAND_CONFLICTING_MAPPING 718
+	#define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
-#if defined(_WIN32) || defined(_WIN64)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
+	#if defined(_WIN32) || defined(_WIN64)
+		#ifndef WIN32_LEAN_AND_MEAN
+			#define WIN32_LEAN_AND_MEAN
+		#endif
+
+		#ifndef __GNUC__ // rain
+			#pragma comment(lib, "ws2_32.lib")
+		#endif
+
+		#include <windows.h>
 	#endif
+	#include "UPNP.h"
+	#include "Server.h"
 
-	#ifndef __GNUC__ // rain
-	#pragma comment(lib, "ws2_32.lib")
-	#endif
-
-	#include <windows.h>
-#endif
-#include "CUPNP.h"
-#include "TServer.h"
-
-void CUPNP::discover()
+void UPNP::discover()
 {
 	struct UPNPDev* device_list;
 	struct UPNPDev* device;
 	char* xmlDescription;
 	int xmlDescriptionSize = 0, responseCode = 0;
 
-	memset(&urls, 0, sizeof(UPNPUrls));
-	memset(&data, 0, sizeof(IGDdatas));
+	memset(&m_urls, 0, sizeof(UPNPUrls));
+	memset(&m_data, 0, sizeof(IGDdatas));
 
 	device_list = upnpDiscover(2000, 0, 0, 0, 0, 0, 0);
 	if (device_list)
@@ -40,39 +40,39 @@ void CUPNP::discover()
 		// If no valid device was found, default to the first device.
 		if (!device)
 			device = device_list;
-		
-		//server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", server->getName().text(), device->descURL, device->st);
+
+		// m_server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", m_server->getName().text(), device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
 		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode);
 		if (xmlDescription)
 		{
 			// Parse the XML description.
-			parserootdesc(xmlDescription, xmlDescriptionSize, &data);
+			parserootdesc(xmlDescription, xmlDescriptionSize, &m_data);
 			free(xmlDescription);
 			xmlDescription = 0;
 
 			// Get the UPNP urls from the description.
-			GetUPNPUrls(&urls, &data, device->descURL, 0);
+			GetUPNPUrls(&m_urls, &m_data, device->descURL, 0);
 		}
 		freeUPNPDevlist(device_list);
 	}
 	else
 	{
-		server->getServerLog().out("[%s] ** [UPnP] No devices found.\n", server->getName().text());
+		m_server->getServerLog().out("[%s] ** [UPnP] No devices found.\n", m_server->getName().text());
 	}
 }
 
-void CUPNP::add_port_forward(const CString& addr, const CString& port)
+void UPNP::addPortForward(const CString& addr, const CString& port)
 {
-	if (urls.controlURL == 0 || urls.controlURL[0] == '\0')
+	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;
 
-	CLog& serverlog = server->getServerLog();
-	int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
+	CLog& serverlog = m_server->getServerLog();
+	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
 	if (r != 0)
 	{
-		serverlog.out("[%s] ** [UPnP] Failed to forward port %s to %s: ", server->getName().text(), port.text(), addr.text());
+		serverlog.out("[%s] ** [UPnP] Failed to forward port %s to %s: ", m_server->getName().text(), port.text(), addr.text());
 		switch (r)
 		{
 			case UPNPCOMMAND_INVALID_ARGS:
@@ -81,9 +81,9 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 			case UPNPCOMMAND_HTTP_ERROR:
 				serverlog.out("HTTP error.\n");
 				break;
-		    case UPNPCOMMAND_CONFLICTING_MAPPING:
-		        serverlog.out("Port mapping already exists.\n");
-		        break;
+			case UPNPCOMMAND_CONFLICTING_MAPPING:
+				serverlog.out("Port mapping already exists.\n");
+				break;
 			default:
 			case UPNPCOMMAND_UNKNOWN_ERROR:
 				serverlog.out("Unknown error.\n");
@@ -92,18 +92,18 @@ void CUPNP::add_port_forward(const CString& addr, const CString& port)
 	}
 	else
 	{
-		server->getServerLog().out("[%s] :: [UPnP] Forwarded port %s to %s.\n", server->getName().text(), port.text(), addr.text());
-		ports_forwarded.insert(port);
+		m_server->getServerLog().out("[%s] :: [UPnP] Forwarded port %s to %s.\n", m_server->getName().text(), port.text(), addr.text());
+		m_portsForwarded.insert(port);
 	}
 }
 
-void CUPNP::remove_port_forward(const CString& port)
+void UPNP::removePortForward(const CString& port)
 {
-	if (urls.controlURL == 0 || urls.controlURL[0] == '\0')
+	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;
 
-	UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.text(), "TCP", 0);
-	server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", server->getName().text(), port.text());
-	ports_forwarded.erase(port);
+	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), "TCP", 0);
+	m_server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", m_server->getName().text(), port.text());
+	m_portsForwarded.erase(port);
 }
 #endif

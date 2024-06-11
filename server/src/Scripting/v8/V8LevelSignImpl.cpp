@@ -1,24 +1,24 @@
 #ifdef V8NPCSERVER
 
-#include <cassert>
-#include <v8.h>
-#include <math.h>
-#include <algorithm>
-#include <unordered_map>
-#include "CScriptEngine.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
+	#include "ScriptEngine.h"
+	#include "V8ScriptFunction.h"
+	#include "V8ScriptObject.h"
+	#include <algorithm>
+	#include <cassert>
+	#include <math.h>
+	#include <unordered_map>
+	#include <v8.h>
 
-#include "TLevel.h"
-#include "TLevelLink.h"
-#include "TMap.h"
-#include "TNPC.h"
-#include "TPlayer.h"
+	#include "Level.h"
+	#include "LevelLink.h"
+	#include "Map.h"
+	#include "NPC.h"
+	#include "Player.h"
 
 // PROPERTY: sign.text
 void Sign_GetStr_Text(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), signObject->getUText().text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -26,7 +26,7 @@ void Sign_GetStr_Text(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 
 void Sign_SetStr_Text(v8::Local<v8::String> props, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	v8::String::Utf8Value newValue(info.GetIsolate(), value);
 
@@ -36,14 +36,14 @@ void Sign_SetStr_Text(v8::Local<v8::String> props, v8::Local<v8::Value> value, c
 // PROPERTY: sign.x
 void Sign_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	info.GetReturnValue().Set(signObject->getX());
 }
 
 void Sign_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
@@ -53,25 +53,25 @@ void Sign_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const
 // PROPERTY: sign.y
 void Sign_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	info.GetReturnValue().Set(signObject->getY());
 }
 
 void Sign_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
-	V8ENV_SAFE_UNWRAP(info, TLevelSign, signObject);
+	V8ENV_SAFE_UNWRAP(info, LevelSign, signObject);
 
 	int newValue = (int)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 
 	signObject->setY(newValue);
 }
 
-void bindClass_LevelSign(CScriptEngine *scriptEngine)
+void bindClass_LevelSign(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
-	V8ScriptEnv *env = static_cast<V8ScriptEnv *>(scriptEngine->getScriptEnv());
-	v8::Isolate *isolate = env->Isolate();
+	V8ScriptEnv* env = static_cast<V8ScriptEnv*>(scriptEngine->getScriptEnv());
+	v8::Isolate* isolate = env->isolate();
 
 	// External pointer
 	v8::Local<v8::External> engine_ref = v8::External::New(isolate, scriptEngine);
@@ -94,7 +94,7 @@ void bindClass_LevelSign(CScriptEngine *scriptEngine)
 	sign_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "y"), Sign_GetNum_Y, Sign_SetNum_Y);
 
 	// Persist the constructor
-	env->SetConstructor(ScriptConstructorId<TLevelSign>::result, sign_ctor);
+	env->setConstructor(ScriptConstructorId<LevelSign>::result, sign_ctor);
 }
 
 #endif

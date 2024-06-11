@@ -1,9 +1,9 @@
+#include "LevelBaddy.h"
 #include "IDebug.h"
 #include "IEnums.h"
-#include "TServer.h"
 #include "IUtil.h"
-#include "TLevelBaddy.h"
-#include "TLevel.h"
+#include "Level.h"
+#include "Server.h"
 
 const int baddytypes = 10;
 const char* baddyImages[baddytypes] = {
@@ -11,7 +11,7 @@ const char* baddyImages[baddytypes] = {
 	"baddyhare.png", "baddyoctopus.png", "baddygold.png", "baddylizardon.png", "baddydragon.png"
 };
 const char baddyStartMode[baddytypes] = {
-	BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK,	BDMODE_SWAMPSHOT,
+	BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_SWAMPSHOT,
 	BDMODE_HAREJUMP, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK
 };
 const int baddyPower[baddytypes] = {
@@ -19,46 +19,45 @@ const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-
-TLevelBaddy::TLevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<TLevel> pLevel, TServer* pServer)
-: level(pLevel), server(pServer), type(pType), id(0),
-startX(pX), startY(pY),
-respawn(true), setImage(false)
+LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer)
+	: m_level(pLevel), m_server(pServer), m_type(pType), m_id(0),
+	  m_startX(pX), m_startY(pY),
+	  m_canRespawn(true), m_hasCustomImage(false)
 {
-	if (pType > baddytypes) type = 0;
-	verses.resize(3);
+	if (pType > baddytypes) m_type = 0;
+	m_verses.resize(3);
 	reset();
 }
 
-void TLevelBaddy::reset()
+void LevelBaddy::reset()
 {
-	mode = baddyStartMode[(int)type];
-	x = startX;
-	y = startY;
-	power = baddyPower[(int)type];
-	image = baddyImages[(int)type];
-	dir = (2 << 2) | 2;			// Both head/body direction is encoded in dir.
-	ani = 0;
-	setImage = false;
+	m_mode = baddyStartMode[(int)m_type];
+	m_x = m_startX;
+	m_y = m_startY;
+	m_power = baddyPower[(int)m_type];
+	m_image = baddyImages[(int)m_type];
+	m_dir = (2 << 2) | 2; // Both head/body direction is encoded in dir.
+	m_ani = 0;
+	m_hasCustomImage = false;
 }
 
-void TLevelBaddy::dropItem()
+void LevelBaddy::dropItem()
 {
 	// 41.66...% chance of a green gralat.
 	// 41.66...% chance of something else.
 	// 16.66...% chance of nothing.
-	int itemId = rand()%12;
+	int itemId = rand() % 12;
 	LevelItemType itemType = LevelItemType::INVALID;
 
 	switch (itemId)
 	{
-		case 0:	//GREENRUPEE
-		case 1:	//BLUERUPEE
-		case 2:	//REDRUPEE
-		case 3:	//BOMBS
-		case 4:	//DARTS
-		case 5:	//HEART
-			itemType = TLevelItem::getItemId(itemId);
+		case 0: //GREENRUPEE
+		case 1: //BLUERUPEE
+		case 2: //REDRUPEE
+		case 3: //BOMBS
+		case 4: //DARTS
+		case 5: //HEART
+			itemType = LevelItem::getItemId(itemId);
 			break;
 
 		default:
@@ -69,60 +68,62 @@ void TLevelBaddy::dropItem()
 
 	if (itemType != LevelItemType::INVALID)
 	{
-		if (auto lvl = level.lock(); lvl)
+		if (auto lvl = m_level.lock(); lvl)
 		{
-			if (lvl->addItem(this->x, this->y, itemType))
-				server->sendPacketToOneLevel({PLO_ITEMADD, CString() >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)TLevelItem::getItemTypeId(itemType)}, level);
+			if (lvl->addItem(m_x, m_y, itemType))
+				m_server->sendPacketToOneLevel({PLO_ITEMADD, CString() >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)LevelItem::getItemTypeId(itemType)}, m_level);
 		}
 	}
 }
 
-CString TLevelBaddy::getProp(const int propId, int clientVersion) const
+CString LevelBaddy::getProp(const int propId, int clientVersion) const
 {
 	switch (propId)
 	{
 		case BDPROP_ID:
-		return CString() >> (char)id;
+			return CString() >> (char)m_id;
 
 		case BDPROP_X:
-		return CString() >> (char)(x * 2);
+			return CString() >> (char)(m_x * 2);
 
 		case BDPROP_Y:
-		return CString() >> (char)(y * 2);
+			return CString() >> (char)(m_y * 2);
 
 		case BDPROP_TYPE:
-		return CString() >> (char)type;
+			return CString() >> (char)m_type;
 
 		case BDPROP_POWERIMAGE:
 		{
-			if (clientVersion < CLVER_2_1 && image == baddyImages[(int)type])
-				return CString() >> (char)power >> (char)image.length() << image.replaceAll(".png", ".gif");
-			else return CString() >> (char)power >> (char)image.length() << image;
+			if (clientVersion < CLVER_2_1 && m_image == baddyImages[(int)m_type])
+				return CString() >> (char)m_power >> (char)m_image.length() << m_image.replaceAll(".png", ".gif");
+			else
+				return CString() >> (char)m_power >> (char)m_image.length() << m_image;
 		}
 
 		case BDPROP_MODE:
-		return CString() >> (char)mode;
+			return CString() >> (char)m_mode;
 
 		case BDPROP_ANI:
-		return CString() >> (char)ani;
+			return CString() >> (char)m_ani;
 
 		case BDPROP_DIR:
-		return CString() >> (char)dir;
+			return CString() >> (char)m_dir;
 
 		case BDPROP_VERSESIGHT:
 		case BDPROP_VERSEHURT:
 		case BDPROP_VERSEATTACK:
 		{
 			unsigned int verseId = propId - BDPROP_VERSESIGHT;
-			if (verseId < verses.size())
-				return CString() >> (char)verses[verseId].length() << verses[verseId];
-			else return CString() >> (char)0;
+			if (verseId < m_verses.size())
+				return CString() >> (char)m_verses[verseId].length() << m_verses[verseId];
+			else
+				return CString() >> (char)0;
 		}
 	}
 	return {};
 }
 
-CString TLevelBaddy::getProps(int clientVersion) const
+CString LevelBaddy::getProps(int clientVersion) const
 {
 	CString retVal;
 	for (int i = 1; i < BDPROP_COUNT; i++)
@@ -130,7 +131,7 @@ CString TLevelBaddy::getProps(int clientVersion) const
 	return retVal;
 }
 
-void TLevelBaddy::setProps(CString &pProps)
+void LevelBaddy::setProps(CString& pProps)
 {
 	int len = 0;
 	while (pProps.bytesLeft())
@@ -139,40 +140,40 @@ void TLevelBaddy::setProps(CString &pProps)
 		switch (propId)
 		{
 			case BDPROP_ID:
-				id = pProps.readGChar();
-			break;
+				m_id = pProps.readGChar();
+				break;
 
 			case BDPROP_X:
-				x = (float)pProps.readGChar() / 2.0f;
-				x = clip(x, 0.0f, 63.5f);
-			break;
+				m_x = (float)pProps.readGChar() / 2.0f;
+				m_x = clip(m_x, 0.0f, 63.5f);
+				break;
 
 			case BDPROP_Y:
-				y = (float)pProps.readGChar() / 2.0f;
-				y = clip(y, 0.0f, 63.5f);
-			break;
+				m_y = (float)pProps.readGChar() / 2.0f;
+				m_y = clip(m_y, 0.0f, 63.5f);
+				break;
 
 			case BDPROP_TYPE:
-				type = pProps.readGChar();
-			break;
+				m_type = pProps.readGChar();
+				break;
 
 			case BDPROP_POWERIMAGE:
 			{
-				power = pProps.readGChar();
+				m_power = pProps.readGChar();
 				if (pProps.bytesLeft() != 0)
 				{
 					CString newImage = pProps.readChars(pProps.readGUChar());
 
 					if (newImage.isEmpty())
-						image = baddyImages[(int)type];
+						m_image = baddyImages[(int)m_type];
 					else
 					{
 						// Why we need this I have no idea.
 						// For some reason, the client resets the custom image when the baddy is hurt.
-						if (setImage == false)
+						if (m_hasCustomImage == false)
 						{
-							setImage = true;
-							image = newImage;
+							m_hasCustomImage = true;
+							m_image = newImage;
 						}
 					}
 				}
@@ -180,43 +181,44 @@ void TLevelBaddy::setProps(CString &pProps)
 			break;
 
 			case BDPROP_MODE:
-				mode = pProps.readGChar();
-				if (type == 4 && mode == BDMODE_HURT)
+				m_mode = pProps.readGChar();
+				if (m_type == 4 && m_mode == BDMODE_HURT)
 				{
 					// Workaround for buggy client.  In 2 seconds, set us back to BDMODE_SWAMPSHOT from
-					// inside TLevel.cpp.
+					// inside Level.cpp.
 					timeout.setTimeout(2);
 				}
-				else if (mode == BDMODE_DIE)
+				else if (m_mode == BDMODE_DIE)
 				{
-					// In 2 seconds, set our mode to BDMODE_DEAD inside TLevel.cpp.
+					// In 2 seconds, set our mode to BDMODE_DEAD inside Level.cpp.
 					timeout.setTimeout(2);
 
 					// Drop items when dead.
-					if (server->getSettings().getBool("baddyitems", false) == true)
+					if (m_server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
 				}
-				else if (mode == BDMODE_DEAD)
+				else if (m_mode == BDMODE_DEAD)
 				{
-					if (respawn)
-						timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
+					if (m_canRespawn)
+						timeout.setTimeout(m_server->getSettings().getInt("baddyrespawntime", 60));
 					else
 					{
-						if (auto lvl = level.lock(); lvl)
-							lvl->removeBaddy(id);
-						else delete this;
+						if (auto lvl = m_level.lock(); lvl)
+							lvl->removeBaddy(m_id);
+						else
+							delete this;
 						return;
 					}
 				}
-			break;
+				break;
 
 			case BDPROP_ANI:
-				ani = pProps.readGChar();
-			break;
+				m_ani = pProps.readGChar();
+				break;
 
 			case BDPROP_DIR:
-				dir = pProps.readGChar();
-			break;
+				m_dir = pProps.readGChar();
+				break;
 
 			case BDPROP_VERSESIGHT:
 			case BDPROP_VERSEHURT:
@@ -224,8 +226,8 @@ void TLevelBaddy::setProps(CString &pProps)
 			{
 				len = pProps.readGUChar();
 				unsigned int verseId = propId - BDPROP_VERSESIGHT;
-				if (verseId < verses.size())
-					verses[verseId] = pProps.readChars(len);
+				if (verseId < m_verses.size())
+					m_verses[verseId] = pProps.readChars(len);
 			}
 		}
 	}
