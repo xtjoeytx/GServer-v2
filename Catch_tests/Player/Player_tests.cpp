@@ -1,15 +1,15 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch_all.hpp"
-#include <TPlayer.h>
-#include <TServer.h>
+#include <Player.h>
+#include <Server.h>
 
-SCENARIO( "TPlayer", "[object]" ) {
+SCENARIO( "Player", "[object]" ) {
 
-	GIVEN( "TPlayer" ) {
+	GIVEN( "Player" ) {
 		int id = 123;
-		auto* server = new TServer("test");
+		auto* server = new Server("test");
 		auto* socket = new CSocket();
-		auto* player = new TPlayer(server, (CSocket*)socket, id);
+		auto* player = new Player(server, (CSocket*)socket, id);
 
 		WHEN( "getting player id" ) {
 			THEN( "id should be " << id ) {

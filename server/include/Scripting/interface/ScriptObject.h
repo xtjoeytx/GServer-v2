@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef SCRIPTOBJECT_H
 #define SCRIPTOBJECT_H
 
@@ -9,42 +7,49 @@ template<class T>
 class IScriptObject
 {
 public:
-	IScriptObject(T *object)
-		: _object(object), _referenceCount(0) {
+	IScriptObject(T* object)
+		: m_object(object), m_referenceCount(0)
+	{
 	}
 
-	virtual ~IScriptObject() {
+	virtual ~IScriptObject()
+	{
 		// This assert is triggered when updating levels quickly. The reason for this
 		// is because npcs may have actions queued up, and referenceCount doesn't decrease on destructor
 		// only when the action is invoked and the arguments are parsed. Will look into this, but shouldn't
 		// have any side effects anyway.
 		// joey (5/24/19) - believe this is fixed, but leaving the note and enabling the assert
-		assert(_referenceCount == 0);
+		assert(m_referenceCount == 0);
 	}
 
-	T * Object() const {
-		return _object;
+	T* object() const
+	{
+		return m_object;
 	}
 
-	bool isReferenced() const {
-		return _referenceCount > 0;
+	bool isReferenced() const
+	{
+		return m_referenceCount > 0;
 	}
 
-	int getReferenceCount() const {
-		return _referenceCount;
+	int getReferenceCount() const
+	{
+		return m_referenceCount;
 	}
 
-	void increaseReference() {
-		_referenceCount++;
+	void increaseReference()
+	{
+		m_referenceCount++;
 	}
 
-	void decreaseReference() {
-		_referenceCount--;
+	void decreaseReference()
+	{
+		m_referenceCount--;
 	}
 
 protected:
-	T *_object;
-	int _referenceCount;
+	T* m_object;
+	int m_referenceCount;
 };
 
 #endif

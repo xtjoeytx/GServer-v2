@@ -27,4 +27,5 @@ dependencies/v8*
 lib/
 out/
 packages/
+vcpkg_installed/
 CMakeSettings.json

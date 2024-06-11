@@ -1,63 +1,62 @@
+#include "ScriptClass.h"
 #include "GS2Context.h"
-#include "TScriptClass.h"
-#include "TServer.h"
+#include "Server.h"
 
-TScriptClass::TScriptClass(TServer *server, const std::string& className, const std::string& classSource)
-	: _className(className)
+ScriptClass::ScriptClass(Server* server, const std::string& className, const std::string& classSource)
+	: m_className(className)
 {
 	parseScripts(server, classSource);
 }
 
-TScriptClass::~TScriptClass()
+ScriptClass::~ScriptClass()
 {
-
 }
 
-void TScriptClass::parseScripts(TServer *server, const std::string& classSource)
+void ScriptClass::parseScripts(Server* server, const std::string& classSource)
 {
 	bool gs2default = server->getSettings().getBool("gs2default", false);
 
-	_source = { classSource, gs2default };
+	m_source = { classSource, gs2default };
 
 	// Compile GS2 code
-	auto gs2Script = _source.getClientGS2();
+	auto gs2Script = m_source.getClientGS2();
 	if (!gs2Script.empty())
 	{
-		server->compileGS2Script(this, [this](const CompilerResponse &response)
-		{
-			if (response.success)
-			{
-				auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "class", _className, true);
+		server->compileGS2Script(this, [this](const CompilerResponse& response)
+								 {
+									 if (response.success)
+									 {
+										 auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "class", m_className, true);
 
-				// these should be sent for compilation right after
-				//_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
+										 // these should be sent for compilation right after
+										 //m_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
 
-				_bytecode.clear(bytecodeWithHeader.length());
-				_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+										 m_bytecode.clear(bytecodeWithHeader.length());
+										 m_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
 
-				// temp: save bytecode to file
-				//CString bytecodeFile;
-				//bytecodeFile << _server->getServerPath() << "bytecode/classes/";
-				//std::filesystem::create_directories(bytecodeFile.text());
-				//bytecodeFile << "class_" << _className << ".gs2bc";
+										 // temp: save bytecode to file
+										 //CString bytecodeFile;
+										 //bytecodeFile << m_server->getServerPath() << "bytecode/classes/";
+										 //std::filesystem::create_directories(bytecodeFile.text());
+										 //bytecodeFile << "class_" << m_className << ".gs2bc";
 
-				//CString bytecodeDump;
-				//bytecodeDump.writeInt(1);
-				//bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-				//bytecodeDump.save(bytecodeFile);
-			}
-		});
+										 //CString bytecodeDump;
+										 //bytecodeDump.writeInt(1);
+										 //bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+										 //bytecodeDump.save(bytecodeFile);
+									 }
+								 });
 	}
 }
 
 // -- Function: Get Player Packet -- //
-CString TScriptClass::getClassPacket() const
+CString ScriptClass::getClassPacket() const
 {
 	CString out;
 
-	if (!_bytecode.isEmpty())
+	if (!m_bytecode.isEmpty())
 	{
-		CString b = _bytecode;
+		CString b = m_bytecode;
 
 		CString header = b.readChars(b.readGUShort());
 
@@ -69,4 +68,3 @@ CString TScriptClass::getClassPacket() const
 
 	return out;
 }
-

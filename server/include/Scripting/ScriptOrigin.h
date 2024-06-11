@@ -3,16 +3,16 @@
 
 #pragma once
 
-#include <string>
+#include "Level.h"
+#include "NPC.h"
+#include "ScriptClass.h"
+#include "Weapon.h"
 #include <fmt/format.h>
-#include "TNPC.h"
-#include "TScriptClass.h"
-#include "TWeapon.h"
-#include "TLevel.h"
+#include <string>
 
 namespace scripting
 {
-	std::string getErrorOrigin(const TNPC& npc)
+	std::string getErrorOrigin(const NPC& npc)
 	{
 		std::string origin;
 
@@ -42,15 +42,15 @@ namespace scripting
 		return origin;
 	}
 
-	std::string getErrorOrigin(const TScriptClass& cls)
+	std::string getErrorOrigin(const ScriptClass& cls)
 	{
 		return fmt::format("Class {}", cls.getName());
 	}
 
-	std::string getErrorOrigin(const TWeapon& npc)
+	std::string getErrorOrigin(const Weapon& npc)
 	{
 		return fmt::format("Weapon {}", npc.getName());
 	}
-}
+} // namespace scripting
 
 #endif
