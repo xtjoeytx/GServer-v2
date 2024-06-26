@@ -542,7 +542,7 @@ bool Level::loadZelda(const CString& pLevelName)
 			CString level = vline[0];
 			if (vline.size() > 7)
 			{
-				for (unsigned int i = 0; i < vline.size() - 7; ++i)
+				for (size_t i = 0; i < vline.size() - 7; ++i)
 					level << " " << vline[1 + i];
 			}
 
@@ -727,7 +727,7 @@ bool Level::loadGraal(const CString& pLevelName)
 			CString level = vline[0];
 			if (vline.size() > 7)
 			{
-				for (unsigned int i = 0; i < vline.size() - 7; ++i)
+				for (size_t i = 0; i < vline.size() - 7; ++i)
 					level << " " << vline[1 + i];
 			}
 
@@ -901,7 +901,7 @@ bool Level::loadNW(const CString& pLevelName)
 			CString level(link[0]);
 			if (link.size() > 7)
 			{
-				for (auto i = 0; i < link.size() - 7; ++i)
+				for (size_t i = 0; i < link.size() - 7; ++i)
 					level << " " << link[i + 1];
 			}
 
@@ -921,7 +921,7 @@ bool Level::loadNW(const CString& pLevelName)
 			if (curLine.size() > 4)
 			{
 				offset = (int)curLine.size() - 4;
-				for (unsigned int i = 0; i < offset; ++i)
+				for (size_t i = 0; i < offset; ++i)
 					image << " " << curLine[i + 2];
 			}
 
@@ -1100,7 +1100,7 @@ void Level::saveLevel(const std::string& filename)
 	// write tiles
 	for (int layer = 0; layer < getLayers().size(); layer++)
 	{
-		auto tiles = getTiles(layer);
+		auto& tiles = getTiles(layer);
 		for (int y = 0; y < 64 /*tiles.get_height()*/; y++)
 		{
 			std::string data;

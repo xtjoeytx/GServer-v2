@@ -222,7 +222,7 @@ void Server::cleanupDeletedPlayers()
 	for (auto i = std::begin(m_deletedPlayers); i != std::end(m_deletedPlayers);)
 	{
 		// Value copy so the shared_ptr exists until the end.
-		auto player = *i;
+		PlayerPtr player = *i;
 
 #ifdef V8NPCSERVER
 		IScriptObject<Player>* playerObject = player->getScriptObject();
