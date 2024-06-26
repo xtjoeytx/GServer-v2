@@ -49,14 +49,12 @@ constexpr int getBase64Position(char c)
 	return 0;
 }
 
-// Starting baddy id.  Baddy id 0 breaks the client so always start here.
-constexpr uint8_t starting_baddy_id = 1;
 
 /*
 	Level: Constructor - Deconstructor
 */
 Level::Level(Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0), m_nextBaddyId{ starting_baddy_id }
+	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0)
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)
@@ -66,7 +64,7 @@ Level::Level(Server* pServer)
 }
 
 Level::Level(short fillTile, Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0), m_nextBaddyId{ starting_baddy_id }
+	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0)
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)
@@ -92,7 +90,7 @@ Level::~Level()
 
 	// Delete baddies.
 	m_baddies.clear();
-	m_freeBaddyIds.clear();
+	m_baddyIdGenerator.resetAndSetNext(BADDYID_INIT);
 
 	// Delete chests.
 	m_chests.clear();
@@ -298,8 +296,7 @@ bool Level::reload()
 
 	// Delete baddies.
 	m_baddies.clear();
-	m_freeBaddyIds.clear();
-	m_nextBaddyId = starting_baddy_id;
+	m_baddyIdGenerator.resetAndSetNext(BADDYID_INIT);
 
 	// Delete chests.
 	m_chests.clear();
@@ -360,7 +357,7 @@ bool Level::reload()
 	return ret;
 }
 
-std::shared_ptr<Level> Level::clone()
+std::shared_ptr<Level> Level::clone() const
 {
 	Level* level = new Level(m_server);
 	if (!level->loadLevel(m_levelName))
@@ -1430,14 +1427,7 @@ LevelBaddy* Level::addBaddy(float pX, float pY, char pType)
 	auto newBaddy = std::make_unique<LevelBaddy>(pX, pY, pType, this->shared_from_this(), m_server);
 
 	// Get the next baddy id.
-	uint8_t new_id = m_nextBaddyId;
-	if (!m_freeBaddyIds.empty())
-	{
-		new_id = *(m_freeBaddyIds.begin());
-		m_freeBaddyIds.erase(new_id);
-	}
-	else
-		++m_nextBaddyId;
+	auto new_id = m_baddyIdGenerator.getAvailableId();
 
 	// Assign the new id.
 	newBaddy->setId(new_id);
@@ -1459,7 +1449,7 @@ void Level::removeBaddy(uint8_t pId)
 
 	// Erase the baddy.
 	auto id = iter->first;
-	m_freeBaddyIds.insert(id);
+	m_baddyIdGenerator.freeId(id);
 	m_baddies.erase(iter);
 }
 

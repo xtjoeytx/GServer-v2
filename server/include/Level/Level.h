@@ -11,6 +11,7 @@
 #include "LevelLink.h"
 #include "LevelSign.h"
 #include "LevelTiles.h"
+#include "utilities/IdGenerator.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -18,6 +19,11 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+
+
+// Starting baddy id.  Baddy id 0 breaks the client so always start here.
+constexpr uint8_t BADDYID_INIT = 1;
+
 
 class Server;
 class Player;
@@ -44,7 +50,7 @@ public:
 	void saveLevel(const std::string& filename);
 
 	//! Returns a clone of the level.
-	std::shared_ptr<Level> clone();
+	std::shared_ptr<Level> clone() const;
 
 	// get crafted packets
 	CString getBaddyPacket(int clientVersion = CLVER_2_17);
@@ -305,8 +311,7 @@ private:
 	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;
 
 	std::unordered_map<uint8_t, LevelBaddyPtr> m_baddies;
-	std::set<uint8_t> m_freeBaddyIds;
-	uint8_t m_nextBaddyId;
+	IdGenerator<uint8_t> m_baddyIdGenerator{ BADDYID_INIT };
 
 	std::vector<LevelBoardChange> m_boardChanges;
 	std::vector<LevelChestPtr> m_chests;
