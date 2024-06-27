@@ -1,9 +1,10 @@
 #ifndef UTILITIES_ID_GENERATOR_H
 #define UTILITIES_ID_GENERATOR_H
 
+#include <concepts>
 #include <set>
 
-template <typename T>
+template <std::integral T>
 class IdGenerator
 {
 public:
@@ -48,7 +49,7 @@ public:
 	}
 
 protected:
-	T m_nextId = 0;
+	T m_nextId = static_cast<T>(0);
 	std::set<T> m_freeIds;
 };
 

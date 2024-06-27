@@ -13,6 +13,7 @@ bin/*.exe
 bin/*.pdb
 bin/*.zip
 bin/*.txt
+bin/*.ilk
 bin/GS2Emu.*
 bin/gs2emu*
 bin/servers/*
