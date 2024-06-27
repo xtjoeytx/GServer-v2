@@ -61,14 +61,6 @@ Server::Server(const CString& pName)
 	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
-	// Player ids 0 and 1 break things.  NPC id 0 breaks things.
-	// Don't allow anything to have one of those ids.
-	// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
-	// The players from other servers should be unique lists for each player as they are fetched depending on
-	// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-	m_nextPlayerId = 2;
-	m_nextNpcId = 10001;
-
 	// This has the full path to the server directory.
 	m_serverPath = CString() << getBaseHomePath() << "servers/" << m_name << "/";
 	FileSystem::fixPathSeparators(m_serverPath);
@@ -268,7 +260,7 @@ void Server::cleanupDeletedPlayers()
 #endif
 
 		// Get rid of the player now.
-		m_freePlayerIds.insert(player->getId());
+		m_playerIdGenerator.freeId(player->getId());
 		m_sockManager.unregisterSocket(player.get());
 		m_playerList.erase(player->getId());
 		player->cleanup();
@@ -308,8 +300,7 @@ void Server::cleanup()
 
 	m_playerList.clear();
 	m_deletedPlayers.clear();
-	m_freePlayerIds.clear();
-	m_nextPlayerId = 2;
+	m_playerIdGenerator.resetAndSetNext(PLAYERID_INIT);
 
 	m_levelList.clear();
 	m_mapList.clear();
@@ -317,10 +308,7 @@ void Server::cleanup()
 
 	m_npcList.clear();
 	m_npcNameList.clear();
-	m_freeNpcIds.clear();
-	//nextNpcIdLevel = 1;
-	//nextNpcIdGlobal = 10001;
-	m_nextNpcId = 10001;
+	m_npcIdGenerator.resetAndSetNext(NPCID_INIT);
 
 	saveWeapons();
 	m_weaponList.clear();
@@ -1265,14 +1253,7 @@ std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScrip
 	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
 	// Get available NPC Id.
-	uint32_t newId = m_nextNpcId;
-	if (!m_freeNpcIds.empty())
-	{
-		newId = *m_freeNpcIds.begin();
-		m_freeNpcIds.erase(newId);
-	}
-	else
-		++m_nextNpcId;
+	uint32_t newId = m_npcIdGenerator.getAvailableId();
 
 	// Assign NPC Id and add to list.
 	newNPC->setId(newId);
@@ -1375,27 +1356,13 @@ void Server::updateClass(const std::string& className, const std::string& classC
 	fileData.save(filePath);
 }
 
-uint16_t Server::getFreePlayerId()
-{
-	uint16_t newId = m_nextPlayerId;
-	if (!m_freePlayerIds.empty())
-	{
-		newId = *(m_freePlayerIds.begin());
-		m_freePlayerIds.erase(newId);
-	}
-	else
-		++m_nextPlayerId;
-
-	return newId;
-}
-
 bool Server::addPlayer(PlayerPtr player, uint16_t id)
 {
 	assert(player);
 
 	// No id was passed, so we will fetch one
 	if (id == USHRT_MAX)
-		id = getFreePlayerId();
+		id = m_playerIdGenerator.getAvailableId();
 
 	// Add them to the player list.
 	player->setId(id);

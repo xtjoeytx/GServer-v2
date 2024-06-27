@@ -184,7 +184,7 @@ if(APPLE)
 	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
 elseif(WIN32)
-	set(MAKE_TESTS OFF)
+	set(MAKE_TESTS ON)
 	# Visual C++ Compiler options
 	if(MSVC)
 		# Suppress secure string function warnings

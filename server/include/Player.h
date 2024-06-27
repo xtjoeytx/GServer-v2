@@ -6,6 +6,7 @@
 #include "CFileQueue.h"
 #include "CSocket.h"
 #include "IEnums.h"
+#include "utilities/IdGenerator.h"
 #include <map>
 #include <memory>
 #include <set>
@@ -21,6 +22,8 @@ class Level;
 class Server;
 class Map;
 class Weapon;
+
+constexpr uint16_t EXTERNALPLAYERID_INIT = 16000;
 
 enum class LevelItemType;
 
@@ -370,8 +373,7 @@ private:
 	std::weak_ptr<Map> m_pmap;
 
 	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_externalPlayers;
-	std::set<uint16_t> m_freeExternalPlayerIds;
-	uint16_t m_nextExternalPlayerId;
+	IdGenerator<uint16_t> m_externalPlayerIdGenerator{ EXTERNALPLAYERID_INIT };
 
 	unsigned int m_carryNpcId;
 	bool m_carryNpcThrown;

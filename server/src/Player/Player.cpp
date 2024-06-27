@@ -321,7 +321,6 @@ Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
 	m_lastChat = m_lastMessage = m_lastNick = 0;
 	m_isExternal = false;
 	m_serverName = m_server->getName();
-	m_nextExternalPlayerId = 16000;
 
 	srand((unsigned int)time(0));
 

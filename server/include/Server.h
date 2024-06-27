@@ -18,12 +18,13 @@
 #include "CSocket.h"
 #include "CString.h"
 #include "CTranslationManager.h"
-#include "FileSystem.h"
 #include "IEnums.h"
-#include "ServerList.h"
-#include "WordFilter.h"
 
-#include "CommandDispatcher.h"
+#include "FileSystem.h"
+#include "ServerList.h"
+#include "Misc/WordFilter.h"
+#include "utilities/CommandDispatcher.h"
+#include "utilities/IdGenerator.h"
 
 #ifdef UPNP
 	#include "UPNP.h"
@@ -65,6 +66,14 @@ enum
 	FS_SHIELD = 6,
 };
 #define FS_COUNT 7
+
+// Player ids 0 and 1 break things.  NPC id 0 breaks things.
+// Don't allow anything to have one of those ids.
+// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
+// The players from other servers should be unique lists for each player as they are fetched depending on
+// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
+constexpr uint16_t PLAYERID_INIT = 2;
+constexpr uint32_t NPCID_INIT = 10001;
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
 using PackageManager = ResourceManager<UpdatePackage, Server*>;
@@ -213,7 +222,6 @@ public:
 	void sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
 
 	// Player Management
-	uint16_t getFreePlayerId();
 	bool addPlayer(std::shared_ptr<Player> player, uint16_t id = USHRT_MAX);
 	bool deletePlayer(std::shared_ptr<Player> player);
 	void playerLoggedIn(std::shared_ptr<Player> player);
@@ -294,17 +302,15 @@ private:
 
 	std::unordered_map<uint32_t, std::shared_ptr<NPC>> m_npcList;
 	std::unordered_map<std::string, std::weak_ptr<NPC>> m_npcNameList;
-	std::set<uint32_t> m_freeNpcIds;
-	uint32_t m_nextNpcId;
+	IdGenerator<uint32_t> m_npcIdGenerator{ NPCID_INIT };
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
 	std::vector<std::shared_ptr<Level>> m_levelList;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
 	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_playerList;
-	std::set<uint16_t> m_freePlayerIds;
-	uint16_t m_nextPlayerId;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
+	IdGenerator<uint16_t> m_playerIdGenerator{ PLAYERID_INIT };
 
 	ServerList m_serverlist;
 	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
