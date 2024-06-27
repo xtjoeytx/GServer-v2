@@ -886,8 +886,8 @@ bool Player::testSign()
 		auto level = getLevel();
 		if (level)
 		{
-			auto signs = level->getSigns();
-			for (auto sign: signs)
+			const auto& signs = level->getSigns();
+			for (const auto& sign: signs)
 			{
 				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
 				if (m_y == signLoc[1] && inrange(m_x, signLoc[0] - 1.5f, signLoc[0] + 0.5f))
@@ -2396,7 +2396,7 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	{
 		auto& allowedVersions = m_server->getAllowedVersions();
 		bool allowed = false;
-		for (auto ver: allowedVersions)
+		for (CString ver: allowedVersions)
 		{
 			if (ver.find(":") != -1)
 			{

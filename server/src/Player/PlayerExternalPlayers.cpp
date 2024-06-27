@@ -45,7 +45,7 @@ bool Player::remPMServer(CString& option)
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (auto [externalId, externalPlayer]: m_externalPlayers)
+		for (const auto& [externalId, externalPlayer]: m_externalPlayers)
 		{
 			if (option == externalPlayer->getServerName())
 			{
@@ -84,7 +84,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (auto [externalId, externalPlayer]: m_externalPlayers)
+		for (const auto& [externalId, externalPlayer]: m_externalPlayers)
 		{
 			bool exist2 = false;
 			for (auto& p2: players2)
