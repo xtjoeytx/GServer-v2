@@ -30,3 +30,4 @@ out/
 packages/
 vcpkg_installed/
 CMakeSettings.json
+!server/include/Packet/Out/
