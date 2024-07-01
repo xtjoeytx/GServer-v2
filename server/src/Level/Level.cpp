@@ -11,6 +11,8 @@
 #include <set>
 #include <tiletypes.h>
 
+#include "Packet/Out/LevelBoard.h"
+
 /*
 	Global Variables
 */
@@ -170,6 +172,17 @@ CString Level::getLayerPacket(int layer)
 CString Level::getBoardChangesPacket(time_t time)
 {
 	CString retVal;
+	for (const auto& change : m_boardChanges)
+	{
+		if (change.getModTime() >= time)
+		{
+			LevelBoard boardChange{ .levelBoardChange = &change };
+			retVal << boardChange.serialize();
+		}
+	}
+	return retVal;
+	/*
+	CString retVal;
 	retVal >> (char)PLO_LEVELBOARD;
 	for (const auto& change: m_boardChanges)
 	{
@@ -177,6 +190,7 @@ CString Level::getBoardChangesPacket(time_t time)
 			retVal << change.getBoardStr();
 	}
 	return retVal;
+	*/
 }
 
 CString Level::getBoardChangesPacket2(time_t time)

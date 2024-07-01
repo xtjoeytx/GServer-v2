@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "PacketBase.h"
+#include "Packet/PacketBase.h"
 #include "IEnums.h"
 
 
@@ -15,24 +15,31 @@ struct LevelWarp : public PacketBase<LevelWarp>
 	//time_t modificationTime = 0;
 	float x = 0.0f;
 	float y = 0.0f;
-	std::string level;
+	CString level;
 
 public:
 	static const uint8_t ID = PLI_LEVELWARP;
 
-	bool deserialize(CString&& buffer) noexcept
+	static LevelWarp deserialize(CString& buffer) noexcept
 	{
+		LevelWarp packet;
+
 		/*
 		uint8_t packetType = buffer.readGUChar();
 		if (packetType == PLI_LEVELWARPMOD)
 			modificationTime = (time_t)buffer.readGUInt5();
 		*/
 
-		x = (float)(buffer.readGChar() / 2.0f);
-		y = (float)(buffer.readGChar() / 2.0f);
-		level = buffer.readString("");
+		packet.x = (float)(buffer.readGChar() / 2.0f);
+		packet.y = (float)(buffer.readGChar() / 2.0f);
+		packet.level = buffer.readString("");
 
-		return true;
+		return packet;
+	}
+
+	static LevelWarp deserialize(CString&& buffer) noexcept
+	{
+		return deserialize(buffer);
 	}
 
 	[[nodiscard]]

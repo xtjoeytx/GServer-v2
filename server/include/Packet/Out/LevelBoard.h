@@ -6,22 +6,27 @@
 #include <string>
 #include <vector>
 
-#include "PacketBase.h"
+#include "Packet/PacketBase.h"
 #include "IEnums.h"
 
 #include "Level/LevelBoardChange.h"
 
 
-struct LevelWarp : public PacketBase<LevelWarp>
+struct LevelBoard : public PacketBase<LevelBoard>
 {
-	LevelBoardChange& levelBoardChange;
+	const LevelBoardChange* levelBoardChange = nullptr;
 
 public:
 	static const uint8_t ID = PLO_LEVELBOARD;
 
-	bool deserialize(CString&& buffer) noexcept
+	static LevelBoard deserialize(CString& buffer) noexcept
 	{
-		return false;
+		return {};
+	}
+
+	static LevelBoard deserialize(CString&& buffer) noexcept
+	{
+		return {};
 	}
 
 	[[nodiscard]]
@@ -30,7 +35,9 @@ public:
 		CString packet;
 
 		packet.writeGChar(ID);
-		packet.write(levelBoardChange.getBoardStr());
+
+		if (levelBoardChange != nullptr)
+			packet.write(levelBoardChange->getBoardStr());
 
 		return packet;
 	}

@@ -17,6 +17,8 @@
 #include "Weapon.h"
 #include "utilities/stringutils.h"
 
+#include "Packet/In/LevelWarp.h"
+
 /*
 	Logs
 */
@@ -2453,12 +2455,17 @@ bool Player::msgPLI_LEVELWARP(CString& pPacket)
 {
 	time_t modTime = 0;
 
+	LevelWarp lw = LevelWarp::deserialize(pPacket);
+	warp(lw.level, lw.x, lw.y, modTime);
+
+	/*
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
 		modTime = (time_t)pPacket.readGUInt5();
 
 	float loc[2] = { (float)(pPacket.readGChar() / 2.0f), (float)(pPacket.readGChar() / 2.0f) };
 	CString newLevel = pPacket.readString("");
 	warp(newLevel, loc[0], loc[1], modTime);
+	*/
 
 	return true;
 }

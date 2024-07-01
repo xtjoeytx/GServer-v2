@@ -137,7 +137,7 @@ public:
 	bool sendFile(const CString& pFile);
 	bool sendFile(const CString& pPath, const CString& pFile);
 
-	template <class T>
+	template <IsPacket T>
 	void sendPacket(PacketBase<T>&& packet, bool appendNL = true)
 	{
 		sendPacket(packet.serialize(m_versionId), appendNL);

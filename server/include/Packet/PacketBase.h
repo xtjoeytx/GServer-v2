@@ -12,19 +12,24 @@
 template <typename T>
 concept IsPacket = requires(T t)
 {
-	{ T::ID } -> std::same_as<uint8_t>;
-	{ t.deserialize(std::declval<CString&&>()) } -> std::same_as<bool>;
+	{ T::ID } -> std::same_as<const uint8_t>;
+	{ T::deserialize(std::declval<CString&&>()) } -> std::same_as<T>;
 	{ t.serialize() } -> std::same_as<CString>;
 };
 
-template <IsPacket T>
+template <class T>
 struct PacketBase
 {
-	static const uint8_t ID = T::ID;
+	//static const uint8_t ID = T::ID;
 
-	bool deserialize(CString&& buffer) noexcept
+	static T deserialize(CString& buffer) noexcept
 	{
-		return static_cast<T*>(this)->deserialize(buffer);
+		return T::deserialize(std::forward(buffer));
+	}
+	
+	static T deserialize(CString&& buffer) noexcept
+	{
+		return T::deserialize(std::forward(buffer));
 	}
 
 	[[nodiscard]]
