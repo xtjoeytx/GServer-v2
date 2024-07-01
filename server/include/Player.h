@@ -14,6 +14,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "Packet/PacketBase.h"
+
 #ifdef V8NPCSERVER
 	#include "ScriptBindings.h"
 #endif
@@ -134,6 +136,12 @@ public:
 	void sendPacket(CString pPacket, bool appendNL = true);
 	bool sendFile(const CString& pFile);
 	bool sendFile(const CString& pPath, const CString& pFile);
+
+	template <IsPacket T>
+	void sendPacket(PacketBase<T>&& packet, bool appendNL = true)
+	{
+		sendPacket(packet.serialize(m_versionId), appendNL);
+	}
 
 	// Type of player
 	bool isAdminIp();
