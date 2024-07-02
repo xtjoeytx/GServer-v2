@@ -92,7 +92,7 @@ void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 
 	v8::Isolate* isolate = info.GetIsolate();
 
-	auto sign = levelObject->getSigns()[index];
+	const auto& sign = levelObject->getSigns()[index];
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(sign->getScriptObject());
 
@@ -107,7 +107,7 @@ void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 
 	auto signSize = levelObject->getSigns().size();
 
-	info.GetReturnValue().Set(v8::Number::New(isolate, signSize));
+	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, signSize));
 }
 
 void Level_Sign_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
@@ -309,7 +309,7 @@ void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value
 
 	v8::Isolate* isolate = info.GetIsolate();
 
-	auto chest = levelObject->getChests()[index];
+	const auto& chest = levelObject->getChests()[index];
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelSign>*>(chest->getScriptObject());
 
@@ -324,7 +324,7 @@ void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 
 	auto chestSize = levelObject->getChests().size();
 
-	info.GetReturnValue().Set(v8::Number::New(isolate, chestSize));
+	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, chestSize));
 }
 
 void Level_Chest_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
@@ -547,7 +547,7 @@ void Level_Npc_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 
 	auto npcSize = levelObject->getNPCs().size();
 
-	info.GetReturnValue().Set(v8::Number::New(isolate, npcSize));
+	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, npcSize));
 }
 
 void Level_Npc_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
@@ -879,7 +879,7 @@ void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 		return;
 	}
 
-	auto link = levelObject->getLinks()[index];
+	const auto& link = levelObject->getLinks()[index];
 
 	auto* v8_wrapped = dynamic_cast<V8ScriptObject<LevelLink>*>(link->getScriptObject());
 
@@ -894,7 +894,7 @@ void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 
 	auto linkSize = levelObject->getLinks().size();
 
-	info.GetReturnValue().Set(v8::Number::New(isolate, linkSize));
+	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, linkSize));
 }
 
 void Level_Link_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)

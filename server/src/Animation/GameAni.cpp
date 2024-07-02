@@ -75,15 +75,15 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 	{
 		// Synchronous callback
 		server->compileGS2Script(gameAni.m_script, [&gameAni](const CompilerResponse& response)
-								   {
-									   if (response.success)
-									   {
-										   gameAni.m_bytecode.clear(response.bytecode.length());
-										   gameAni.m_bytecode.write((const char*)response.bytecode.buffer(), response.bytecode.length());
-									   }
-									   else
-										   gameAni.m_bytecode.clear();
-								   });
+								 {
+									 if (response.success)
+									 {
+										 gameAni.m_bytecode.clear(response.bytecode.length());
+										 gameAni.m_bytecode.write((const char*)response.bytecode.buffer(), static_cast<int>(response.bytecode.length()));
+									 }
+									 else
+										 gameAni.m_bytecode.clear();
+								 });
 	}
 
 	return gameAni;

@@ -66,7 +66,7 @@ Server::Server(const CString& pName)
 	FileSystem::fixPathSeparators(m_serverPath);
 
 	// Set up the log files.
-	CString logpath = m_serverPath.remove(0, getBaseHomePath().length());
+	CString logpath = m_serverPath.remove(0, static_cast<int>(getBaseHomePath().length()));
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
@@ -1452,7 +1452,7 @@ bool Server::isStaff(const CString& accountName)
 
 void Server::logToFile(const std::string& fileName, const std::string& message)
 {
-	CString fileNamePath = CString() << getServerPath().remove(0, getBaseHomePath().length()) << "logs/";
+	CString fileNamePath = CString() << getServerPath().remove(0, static_cast<int>(getBaseHomePath().length())) << "logs/";
 
 	// Remove leading characters that may try to go up a directory
 	int idx = 0;

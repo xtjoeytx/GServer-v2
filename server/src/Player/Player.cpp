@@ -3722,7 +3722,7 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 				// Find the line.
 				int id = rand() % 0xFFFF;
 				CString error;
-				unsigned int line = strtoint(action.subString(finish));
+				size_t line = strtoint(action.subString(finish));
 				if (line >= tokens.size())
 				{
 					// We asked for a line that doesn't exist.  Mark it as an error!

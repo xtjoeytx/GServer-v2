@@ -259,7 +259,7 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 
 										   auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", m_weaponName, true);
 										   m_bytecode.clear(bytecodeWithHeader.length());
-										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
 									   }
 								   });
 	}
@@ -279,7 +279,7 @@ void Weapon::setClientScript(const CString& pScript)
 	CString formattedScript = removeComments(pScript);
 
 	// Extra padding incase we need to add //#CLIENTSIDE to the script
-	m_formattedClientGS1.clear(formattedScript.length() + 14);
+	m_formattedClientGS1.clear(static_cast<size_t>(formattedScript.length()) + 14);
 
 	if (formattedScript.find("//#CLIENTSIDE") != 0)
 	{

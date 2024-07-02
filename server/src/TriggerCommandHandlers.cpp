@@ -208,7 +208,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
-									auto playerList = player->getLevel()->getPlayers();
+									const auto& playerList = player->getLevel()->getPlayers();
 									for (auto& id: playerList)
 									{
 										auto pl = getPlayer(id);

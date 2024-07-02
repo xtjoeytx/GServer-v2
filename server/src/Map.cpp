@@ -109,7 +109,7 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 					if (!lcLevelName.empty())
 					{
 						levelMap[mx + my * m_width] = lcLevelName;
-						m_levels[lcLevelName] = MapLevel(mx, my);
+						m_levels[lcLevelName] = MapLevel(static_cast<int>(mx), static_cast<int>(my));
 					}
 				}
 			}

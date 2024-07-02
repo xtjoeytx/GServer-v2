@@ -192,6 +192,9 @@ elseif(WIN32)
 		# Suppress secure string function warnings
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
+		# Supress fmtlib warnings
+		add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
+
 		include(CheckCXXCompilerFlag)
 		CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
 		if (_cpp_latest_flag_supported)

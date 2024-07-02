@@ -1305,8 +1305,8 @@ bool Level::addItem(float pX, float pY, LevelItemType pItem)
 		NPC* gralatNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
-		auto pixelX = (pX - 0.5) * 16;
-		auto pixelY = (pY - 0.5) * 16;
+		auto pixelX = static_cast<int>((pX - 0.5) * 16);
+		auto pixelY = static_cast<int>((pY - 0.5) * 16);
 
 		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
 		for (auto& npc: npcList)
@@ -1345,8 +1345,8 @@ bool Level::addItem(float pX, float pY, LevelItemType pItem)
 		NPC* dartNPC = nullptr;
 
 		// Find existing rupees, and add to the npc
-		auto pixelX = (pX - 0.5) * 16;
-		auto pixelY = (pY - 0.5) * 16;
+		auto pixelX = static_cast<int>((pX - 0.5) * 16);
+		auto pixelY = static_cast<int>((pY - 0.5) * 16);
 
 		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
 		for (auto& npc: npcList)

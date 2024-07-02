@@ -32,7 +32,7 @@ void ScriptClass::parseScripts(Server* server, const std::string& classSource)
 										 //m_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
 
 										 m_bytecode.clear(bytecodeWithHeader.length());
-										 m_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
 
 										 // temp: save bytecode to file
 										 //CString bytecodeFile;

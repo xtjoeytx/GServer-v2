@@ -579,7 +579,7 @@ bool Player::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	auto& levelList = m_server->getLevelList();
 	if (!levelList.empty())
 	{
-		for (auto level: levelList)
+		for (const auto& level: levelList)
 			ret << level->getActualLevelName() << "\n";
 	}
 
