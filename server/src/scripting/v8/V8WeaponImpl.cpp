@@ -5,6 +5,7 @@
 	#include <unordered_map>
 	#include <v8.h>
 
+	#include "Server.h"
 	#include "Weapon.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"

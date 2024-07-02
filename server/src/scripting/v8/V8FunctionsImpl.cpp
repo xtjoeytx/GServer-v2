@@ -3,6 +3,7 @@
 	#include <string>
 	#include <unordered_map>
 
+	#include "Server.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptEnv.h"
 	#include "scripting/v8/V8ScriptFunction.h"

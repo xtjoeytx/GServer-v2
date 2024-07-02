@@ -12,12 +12,12 @@ Map::Map(MapType pType, bool pGroupMap)
 {
 }
 
-bool Map::load(const CString& pFileName, Server* pServer)
+bool Map::load(const CString& pFileName)
 {
 	if (m_type == MapType::BIGMAP)
-		return loadBigMap(pFileName, pServer);
+		return loadBigMap(pFileName);
 	else if (m_type == MapType::GMAP)
-		return loadGMap(pFileName, pServer);
+		return loadGMap(pFileName);
 	return true;
 }
 
@@ -44,12 +44,12 @@ const std::string& Map::getLevelAt(int mx, int my) const
 	return emptyStr;
 }
 
-bool Map::loadBigMap(const CString& pFileName, Server* pServer)
+bool Map::loadBigMap(const CString& pFileName)
 {
 	// Get the appropriate filesystem.
-	FileSystem* fileSystem = pServer->getFileSystem();
-	if (!pServer->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = pServer->getFileSystem(FS_FILE);
+	FileSystem* fileSystem = m_server->getFileSystem();
+	if (!m_server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = m_server->getFileSystem(FS_FILE);
 
 	CString fileName = fileSystem->find(pFileName);
 	m_modTime = fileSystem->getModTime(pFileName);
@@ -116,12 +116,12 @@ bool Map::loadBigMap(const CString& pFileName, Server* pServer)
 	return true;
 }
 
-bool Map::loadGMap(const CString& pFileName, Server* pServer)
+bool Map::loadGMap(const CString& pFileName)
 {
 	// Get the appropriate filesystem.
-	FileSystem* fileSystem = pServer->getFileSystem();
-	if (!pServer->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = pServer->getFileSystem(FS_LEVEL);
+	FileSystem* fileSystem = m_server->getFileSystem();
+	if (!m_server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = m_server->getFileSystem(FS_LEVEL);
 
 	CString fileName = fileSystem->find(pFileName);
 	m_modTime = fileSystem->getModTime(pFileName);
@@ -261,7 +261,7 @@ bool Map::loadGMap(const CString& pFileName, Server* pServer)
 	return true;
 }
 
-void Map::loadMapLevels(Server* server) const
+void Map::loadMapLevels() const
 {
 	if (m_loadFullMap)
 	{
@@ -269,7 +269,7 @@ void Map::loadMapLevels(Server* server) const
 		{
 			if (!levelName.empty())
 			{
-				auto lvl = server->getLevel(levelName);
+				auto lvl = m_server->getLevel(levelName);
 				assert(lvl);
 			}
 		}
@@ -278,7 +278,7 @@ void Map::loadMapLevels(Server* server) const
 	{
 		for (auto& level: m_preloadLevelList)
 		{
-			auto lvl = server->getLevel(level);
+			auto lvl = m_server->getLevel(level);
 			assert(lvl);
 		}
 	}

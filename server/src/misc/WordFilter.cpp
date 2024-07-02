@@ -36,11 +36,6 @@ static char toUpper(char c)
 	return c;
 }
 
-WordFilter::~WordFilter()
-{
-	m_rules.clear();
-}
-
 void WordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.

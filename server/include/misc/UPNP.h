@@ -7,6 +7,7 @@
 	#include <set>
 
 	#include <CString.h>
+	#include "BabyDI.h"
 
 	#include <miniupnpc.h>
 	#include <miniwget.h>
@@ -17,11 +18,6 @@ class Server;
 class UPNP
 {
 public:
-	UPNP(Server* server)
-	{
-		m_server = server;
-	}
-
 	// Allows std::thread to work.
 	void operator()()
 	{
@@ -59,7 +55,8 @@ public:
 	}
 
 private:
-	Server* m_server;
+	BabyDI_INJECT(Server, m_server);
+
 	std::set<CString> m_portsForwarded;
 	CString m_localIp;
 	CString m_port;

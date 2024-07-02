@@ -24,13 +24,6 @@
 #endif
 
 FileSystem::FileSystem()
-	: m_server(nullptr)
-{
-	m_preventChange = new std::recursive_mutex();
-}
-
-FileSystem::FileSystem(Server* pServer)
-	: m_server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();
 }

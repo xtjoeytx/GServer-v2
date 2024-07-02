@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <CString.h>
+#include "BabyDI.h"
 
 enum class MapType
 {
@@ -43,8 +44,8 @@ class Map
 public:
 	Map(MapType pType, bool pGroupMap = false);
 
-	bool load(const CString& filename, Server* pServer);
-	void loadMapLevels(Server* server) const;
+	bool load(const CString& filename);
+	void loadMapLevels() const;
 
 	bool isLevelOnMap(const std::string& level, int& mx, int& my) const;
 	const std::string& getLevelAt(int mx, int my) const;
@@ -60,8 +61,10 @@ public:
 	bool isGroupMap() const { return m_groupMap; }
 
 private:
-	bool loadBigMap(const CString& pFileName, Server* pServer);
-	bool loadGMap(const CString& pFileName, Server* pServer);
+	bool loadBigMap(const CString& pFileName);
+	bool loadGMap(const CString& pFileName);
+
+	BabyDI_INJECT(Server, m_server);
 
 	MapType m_type;
 	time_t m_modTime = 0;

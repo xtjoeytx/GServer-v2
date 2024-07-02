@@ -7,6 +7,7 @@
 #include <string>
 
 #include <CString.h>
+#include "BabyDI.h"
 
 #include "level/LevelItem.h"
 #include "scripting/SourceCode.h"
@@ -23,21 +24,21 @@ class Weapon
 {
 public:
 	// -- Constructor | Destructor -- //
-	Weapon(Server* pServer, LevelItemType itemType);
-	Weapon(Server* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
+	Weapon(LevelItemType itemType);
+	Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
 	~Weapon();
 
 	// -- Functions -- //
 	bool saveWeapon();
 	void updateWeapon(std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = true);
 
-	static std::shared_ptr<Weapon> loadWeapon(const CString& pWeapon, Server* server);
+	static std::shared_ptr<Weapon> loadWeapon(const CString& pWeapon);
 
 	// Functions -> Inline Get-Functions
 	CString getWeaponPacket(int clientVersion) const;
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
 	bool hasBytecode() const { return (!m_bytecode.isEmpty()); }
-	LevelItemType getWeaponId() { return m_weaponDefault; }
+	LevelItemType getWeaponId() const { return m_weaponDefault; }
 	const SourceCode& getSource() const { return m_source; }
 	const CString& getByteCode() const { return m_bytecode; }
 	const std::string& getByteCodeFile() const { return m_bytecodeFile; }
@@ -60,12 +61,13 @@ public:
 	void setScriptObject(std::unique_ptr<IScriptObject<Weapon>> object);
 #endif
 protected:
+	BabyDI_INJECT(Server, m_server);
+
 	void setClientScript(const CString& pScript);
 
 	// Varaibles -> Weapon Data
 	LevelItemType m_weaponDefault;
 	time_t m_modTime;
-	Server* m_server;
 
 	SourceCode m_source;
 	CString m_formattedClientGS1;

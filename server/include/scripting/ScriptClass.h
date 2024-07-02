@@ -4,6 +4,7 @@
 #include <string>
 
 #include <CString.h>
+#include "BabyDI.h"
 
 #include "scripting/SourceCode.h"
 
@@ -11,7 +12,7 @@ class Server;
 class ScriptClass
 {
 public:
-	ScriptClass(Server* server, const std::string& className, const std::string& classSource);
+	ScriptClass(const std::string& className, const std::string& classSource);
 	~ScriptClass();
 
 	// Functions -> Inline Get-Functions
@@ -33,7 +34,9 @@ public:
 	}
 
 private:
-	void parseScripts(Server* server, const std::string& classSource);
+	BabyDI_INJECT(Server, m_server);
+
+	void parseScripts(const std::string& classSource);
 
 	std::string m_className;
 	SourceCode m_source;

@@ -5,6 +5,7 @@
 	#include <cmath>
 	#include <v8.h>
 
+	#include "BabyDI.h"
 	#include "NPC.h"
 	#include "Player.h"
 	#include "level/Level.h"
@@ -526,7 +527,7 @@ void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 
 	v8::Isolate* isolate = info.GetIsolate();
 	auto& npcList = levelObject->getNPCs();
-	auto server = levelObject->getServer();
+	auto* server = BabyDI::Get<Server>();
 
 	if (server && npcList.size() > index)
 	{
@@ -616,7 +617,7 @@ void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	// Get link list
 	auto& levelNpcs = levelObject->getNPCs();
-	auto server = levelObject->getServer();
+	auto* server = BabyDI::Get<Server>();
 
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -678,7 +679,7 @@ void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 		}
 
-		Server* server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 		auto level = server->getLevel(levelObject->getLevelName().toString());
 
 		auto npc = server->addNPC("", script, npcX, npcY, level, true, true);
@@ -712,7 +713,7 @@ void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& ar
 
 		int index = (int)args[0]->NumberValue(context).ToChecked();
 		auto& npcList = levelObject->getNPCs();
-		auto server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 
 		if (server && npcList.size() > index)
 		{
@@ -735,7 +736,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 
 	// Get npcs list
 	auto& playerList = levelObject->getPlayers();
-	auto server = levelObject->getServer();
+	auto* server = BabyDI::Get<Server>();
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate, server ? (int)playerList.size() : 0);
 
@@ -1143,7 +1144,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 		float targetY = (float)args[1]->NumberValue(context).ToChecked();
 
 		auto& playerList = levelObject->getPlayers();
-		auto server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 		if (server == nullptr) [[unlikely]]
 		{
 			v8::Local<v8::Array> result = v8::Array::New(isolate, (int)0);
@@ -1200,7 +1201,7 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		V8ENV_SAFE_UNWRAP(args, Level, levelObject);
 
-		Server* server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 		if (server == nullptr) return;
 		auto level = server->getLevel(levelObject->getLevelName().toString());
 
@@ -1241,7 +1242,7 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 	{
 		V8ENV_SAFE_UNWRAP(args, Level, levelObject);
 
-		Server* server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 		if (server == nullptr) return;
 		auto level = server->getLevel(levelObject->getLevelName().toString());
 
@@ -1286,7 +1287,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 		}
 
-		Server* server = levelObject->getServer();
+		auto* server = BabyDI::Get<Server>();
 		auto level = server->getLevel(levelObject->getLevelName().toString());
 
 		auto npc = server->addNPC("", script, npcX, npcY, level, false, true);

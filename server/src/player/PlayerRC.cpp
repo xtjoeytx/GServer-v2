@@ -587,7 +587,7 @@ bool Player::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	bool onlyLoad = (pPacket.readGUChar() != 0);
 	pPacket.readGUChar(); // Admin level, deprecated.
 
-	Account newAccount(m_server);
+	Account newAccount;
 	newAccount.loadAccount(acc);
 	newAccount.setBanned(banned);
 	newAccount.setLoadOnly(onlyLoad);
@@ -705,7 +705,7 @@ bool Player::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -741,7 +741,7 @@ bool Player::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -793,7 +793,7 @@ bool Player::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -841,7 +841,7 @@ bool Player::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -882,7 +882,7 @@ bool Player::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1233,7 +1233,7 @@ bool Player::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1269,7 +1269,7 @@ bool Player::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1366,7 +1366,7 @@ bool Player::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1396,7 +1396,7 @@ bool Player::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1436,7 +1436,7 @@ bool Player::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1466,7 +1466,7 @@ bool Player::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
 			return true;
 
-		p = std::make_shared<Player>(m_server, nullptr, 0);
+		p = std::make_shared<Player>(nullptr, 0);
 		if (!p->loadAccount(acc))
 			return true;
 	}
@@ -1546,7 +1546,7 @@ bool Player::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		m_lastFolder = folderMap.begin()->first;
 
 	// Create the file system.
-	FileSystem fs(m_server);
+	FileSystem fs;
 	fs.addDir(m_lastFolder);
 
 	// Construct the file list.
@@ -1620,7 +1620,7 @@ bool Player::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		m_lastFolder = newFolder;
 
 	// Create the file system.
-	FileSystem fs(m_server);
+	FileSystem fs;
 	fs.addDir(m_lastFolder);
 
 	// Make sure our folder exists.

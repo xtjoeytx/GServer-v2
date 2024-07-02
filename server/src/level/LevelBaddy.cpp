@@ -20,8 +20,8 @@ const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer)
-	: m_level(pLevel), m_server(pServer), m_type(pType),
+LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel)
+	: m_level(pLevel), m_type(pType),
 	  m_startX(pX), m_startY(pY)
 {
 	if (pType > baddytypes) m_type = 0;

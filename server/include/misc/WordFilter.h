@@ -48,9 +48,6 @@ class Player;
 class WordFilter
 {
 public:
-	WordFilter(Server* pServer) : m_server(pServer) {}
-	~WordFilter();
-
 	void load(const CString& file);
 	int apply(const Player* player, CString& chat, int check);
 

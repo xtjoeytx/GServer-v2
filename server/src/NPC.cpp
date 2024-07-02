@@ -42,8 +42,8 @@ std::string minifyClientCode(const CString& src)
 	return minified;
 }
 
-NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type)
-	: NPC(pServer, type)
+NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, std::shared_ptr<Level> pLevel, NPCType type)
+	: NPC(type)
 {
 	setX(int(pX * 16));
 	setY(int(pY * 16));
@@ -70,11 +70,11 @@ NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server*
 	setScriptCode(std::move(pScript));
 }
 
-NPC::NPC(Server* pServer, NPCType type)
-	: m_server(pServer), m_npcType(type)
+NPC::NPC(NPCType type)
+	: m_npcType(type)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y)
+	  m_scriptExecutionContext(m_server->getScriptEngine()), m_origX(m_x), m_origY(m_y)
 #endif
 {
 	memset((void*)m_saves, 0, sizeof(m_saves));

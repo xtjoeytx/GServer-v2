@@ -140,7 +140,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			// Get a free id to be assigned to the new player.
 			auto newId = m_externalPlayerIdGenerator.getAvailableId();
-			auto tmpPlyr2 = std::make_shared<Player>(m_server, nullptr, newId);
+			auto tmpPlyr2 = std::make_shared<Player>(nullptr, newId);
 			m_externalPlayers[newId] = tmpPlyr2;
 			tmpPlyr2->loadAccount(account);
 			tmpPlyr2->setAccountName(account);

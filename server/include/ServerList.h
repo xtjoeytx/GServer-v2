@@ -9,6 +9,7 @@
 #include <CFileQueue.h>
 #include <CSocket.h>
 #include <CString.h>
+#include "BabyDI.h"
 
 enum
 {
@@ -34,7 +35,7 @@ public:
 	bool canSend() { return m_fileQueue.canSend(); }
 
 	// Constructor - Deconstructor
-	ServerList(Server* server);
+	ServerList();
 	~ServerList();
 
 	bool doTimedEvents();
@@ -97,6 +98,8 @@ public:
 	void msgSVI_ASSIGNPCID(CString& pPacket);
 
 protected:
+	BabyDI_INJECT(Server, m_server);
+
 	// Packet Functions
 	bool parsePacket(CString& pPacket);
 
@@ -109,7 +112,6 @@ protected:
 	time_t m_lastData, m_lastTimer;
 	time_t m_nextConnectionAttempt = 0;
 	uint8_t m_connectionAttempts = 0;
-	Server* m_server;
 
 	std::map<std::string, int> m_serverListCount;
 	std::string m_serverLocalIp;

@@ -304,8 +304,8 @@ void Player::createFunctions()
 /*
 	Constructor - Deconstructor
 */
-Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
-	: Account(pServer),
+Player::Player(CSocket* pSocket, uint16_t pId)
+	: Account(),
 	  m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
 	m_lastData = m_lastMovement = m_lastSave = m_last1m = time(0);
@@ -2030,7 +2030,7 @@ void Player::setNick(CString pNickName, bool force)
 	if (guild.length() != 0)
 	{
 		// Read the guild list.
-		FileSystem guildFS(m_server);
+		FileSystem guildFS;
 		guildFS.addDir("guilds");
 		CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 		if (guildList.isEmpty())
@@ -2106,7 +2106,7 @@ bool Player::addWeapon(LevelItemType defaultWeapon)
 	auto weapon = m_server->getWeapon(LevelItem::getItemName(defaultWeapon));
 	if (!weapon)
 	{
-		weapon = std::make_shared<Weapon>(m_server, defaultWeapon);
+		weapon = std::make_shared<Weapon>(defaultWeapon);
 		m_server->NC_AddWeapon(weapon);
 	}
 
@@ -3405,7 +3405,7 @@ bool Player::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(m_server, name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
+			weapon = std::make_shared<Weapon>(name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
 			m_server->NC_AddWeapon(weapon);
 		}
 
@@ -3602,7 +3602,7 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 					CString wepimage = "wbomb1.png";
 
 					// Load in all the execscripts.
-					FileSystem execscripts(m_server);
+					FileSystem execscripts;
 					execscripts.addDir("execscripts");
 					CString wepscript = execscripts.load(actionParts[2]);
 

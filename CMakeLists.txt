@@ -207,6 +207,9 @@ elseif(WIN32)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 
+		# Enable preprocessor conformance mode.
+		string(APPEND CMAKE_CXX_FLAGS " /Zc:preprocessor")
+
 		# Enable static linkage of the Microsoft Visual C/C++ Runtime
 		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")

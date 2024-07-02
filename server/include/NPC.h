@@ -7,6 +7,7 @@
 
 #include <CString.h>
 #include <IUtil.h>
+#include "BabyDI.h"
 
 #include "scripting/SourceCode.h"
 
@@ -186,8 +187,8 @@ class ScriptClass;
 class NPC
 {
 public:
-	NPC(Server* pServer, NPCType type);
-	NPC(const CString& pImage, std::string pScript, float pX, float pY, Server* pServer, std::shared_ptr<Level> pLevel, NPCType type);
+	NPC(NPCType type);
+	NPC(const CString& pImage, std::string pScript, float pX, float pY, std::shared_ptr<Level> pLevel, NPCType type);
 	~NPC();
 
 	void setScriptCode(std::string pScript);
@@ -338,6 +339,8 @@ public:
 #endif
 
 private:
+	BabyDI_INJECT(Server, m_server);
+
 	NPCType m_npcType;
 	SourceCode m_npcScript;
 
@@ -366,7 +369,6 @@ private:
 	CString m_imagePart, m_weaponName;
 	unsigned char m_saves[10];
 	std::weak_ptr<Level> m_curlevel;
-	Server* m_server;
 
 	std::string m_chatMessage, m_gani, m_image;
 	std::string m_nickName;

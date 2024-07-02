@@ -11,6 +11,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "BabyDI.h"
+
 #include "scripting/ScriptAction.h"
 #include "scripting/ScriptFactory.h"
 #include "scripting/SourceCode.h"
@@ -30,7 +32,7 @@ class Weapon;
 class ScriptEngine
 {
 public:
-	ScriptEngine(Server* server) : m_server(server) {}
+	ScriptEngine() = default;
 	~ScriptEngine();
 
 	bool initialize();
@@ -88,11 +90,12 @@ public:
 private:
 	void runTimers(const std::chrono::high_resolution_clock::time_point& time);
 
+	BabyDI_INJECT(Server, m_server);
+
 	IScriptEnv* m_env = nullptr;
 	IScriptFunction* m_bootstrapFunction = nullptr;
 	std::unique_ptr<IScriptObject<Server>> m_environmentObject;
 	std::unique_ptr<IScriptObject<Server>> m_serverObject;
-	Server* m_server;
 
 	std::chrono::high_resolution_clock::time_point m_lastScriptTimer = std::chrono::high_resolution_clock::now();
 	std::chrono::nanoseconds m_accumulator = std::chrono::nanoseconds(0);

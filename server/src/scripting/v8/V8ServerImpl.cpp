@@ -173,7 +173,7 @@ void Server_Function_CreateLevel(const v8::FunctionCallbackInfo<v8::Value>& args
 		short fillTile = args[0]->Uint32Value(context).ToChecked();
 		std::string levelName = *v8::String::Utf8Value(isolate, args[1]->ToString(context).ToLocalChecked());
 
-		auto levelObject = Level::createLevel(serverObject, fillTile, levelName);
+		auto levelObject = Level::createLevel(fillTile, levelName);
 		if (levelObject != nullptr)
 		{
 			V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());

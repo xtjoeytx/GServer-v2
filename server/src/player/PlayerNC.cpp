@@ -525,7 +525,7 @@ bool Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		auto weapon = std::make_shared<Weapon>(m_server, weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
+		auto weapon = std::make_shared<Weapon>(weaponName, std::move(weaponImage), std::move(weaponCode), 0, true);
 		bool success = m_server->NC_AddWeapon(weapon);
 		if (success)
 			actionTaken = "added";

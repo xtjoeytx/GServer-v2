@@ -86,7 +86,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -115,7 +115,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -146,7 +146,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString path = guildFS.find(CString() << "guild" << guild << ".txt");
 

@@ -4,6 +4,8 @@
 #include <memory.h>
 #include <time.h>
 
+#include "BabyDI.h"
+
 #include "Account.h"
 #include "FileSystem.h"
 #include "Server.h"
@@ -11,10 +13,7 @@
 /*
 	Account: Constructor - Deconstructor
 */
-Account::Account(Server* pServer)
-	: m_server(pServer)
-{
-}
+Account::Account() = default;
 
 Account::~Account() = default;
 

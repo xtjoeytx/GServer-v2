@@ -11,6 +11,7 @@
 
 #include <CString.h>
 #include <IUtil.h>
+#include "BabyDI.h"
 
 #include "level/LevelBaddy.h"
 #include "level/LevelBoardChange.h"
@@ -42,8 +43,8 @@ public:
 	//! \param pLevelName The name of the level to search for.
 	//! \param server The server the level belongs to.
 	//! \return A pointer to the level found.
-	static std::shared_ptr<Level> findLevel(const CString& pLevelName, Server* server, bool loadAbsolute = false);
-	static std::shared_ptr<Level> createLevel(Server* server, short fillTile = 511, const std::string& levelName = "");
+	static std::shared_ptr<Level> findLevel(const CString& pLevelName, bool loadAbsolute = false);
+	static std::shared_ptr<Level> createLevel(short fillTile = 511, const std::string& levelName = "");
 
 	//! Re-loads the level.
 	//! \return True if it succeeds in re-loading the level.
@@ -118,10 +119,8 @@ public:
 	//! \return The players on the level.
 	std::deque<uint16_t>& getPlayers() { return m_players; }
 
-	//! Gets the server this level belongs to.
-	//! \return The server this level belongs to.
-	Server* getServer() const { return m_server; }
-
+	//! Gets the tile data for all layers.
+	//! \return A map of all the layers and their tile data.
 	std::map<uint8_t, LevelTiles> getLayers() const { return m_tiles; }
 
 	//! Gets the status on whether players are on the level.
@@ -292,8 +291,7 @@ public:
 	void modifyBoardDirect(uint32_t index, short tile);
 
 private:
-	Level(Server* pServer);
-	Level(short fillTile = 0xFF, Server* pServer = nullptr);
+	Level(short fillTile = 0);
 
 	// level-loading functions
 	bool loadLevel(const CString& pLevelName);
@@ -303,7 +301,8 @@ private:
 	bool loadNW(const CString& pLevelName);
 
 private:
-	Server* m_server = nullptr;
+	BabyDI_INJECT(Server, m_server);
+
 	time_t m_modTime = 0;
 	bool m_isSparringZone = false;
 	bool m_isSingleplayer = false;

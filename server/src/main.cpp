@@ -11,6 +11,7 @@
 #include <CSocket.h>
 #include <CString.h>
 #include <IUtil.h>
+#include "BabyDI.h"
 
 #include "IConfig.h"
 
@@ -161,7 +162,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Initialize the server.
-		auto server = std::make_unique<Server>(overrideServer);
+		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
 		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
@@ -184,7 +185,7 @@ int main(int argc, char* argv[])
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				Account accfs(server.get());
+				Account accfs;
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -209,6 +210,8 @@ int main(int argc, char* argv[])
 
 		// Destroy the sockets.
 		CSocket::socketSystemDestroy();
+
+		BabyDI_RELEASE(Server);
 	}
 
 	return ERR_SUCCESS;

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <CString.h>
+#include "BabyDI.h"
 
 #include "level/LevelChest.h"
 
@@ -131,7 +132,7 @@ class Account
 {
 public:
 	// Constructor - Deconstructor
-	Account(Server* pServer);
+	Account();
 	~Account();
 
 	static bool meetsConditions(CString fileName, CString conditions);
@@ -152,10 +153,10 @@ public:
 	void deleteFlag(const std::string& pFlagName);
 
 	CString translate(const CString& pKey);
-	bool hasRight(int mask) { return (m_adminRights & mask) ? true : false; }
+	bool hasRight(int mask) const { return (m_adminRights & mask) ? true : false; }
 
 	// get functions
-	bool getGuest() { return m_isGuest; }
+	bool getGuest() const { return m_isGuest; }
 	float getX() const { return m_x; }
 	float getY() const { return m_y; }
 	float getPower() const { return m_hitpoints; }
@@ -232,7 +233,7 @@ public:
 	void setGani(const CString& newGani);
 
 protected:
-	Server* m_server;
+	BabyDI_INJECT(Server, m_server);
 
 	// Player-Account
 	bool m_isBanned = false;

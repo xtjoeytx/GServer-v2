@@ -13,8 +13,10 @@
 #include <CSocket.h>
 #include <IEnums.h>
 #include <IUtil.h>
+#include "BabyDI.h"
 
 #include "Account.h"
+#include "Server.h"
 #include "utilities/IdGenerator.h"
 
 #ifdef V8NPCSERVER
@@ -22,7 +24,6 @@
 #endif
 
 class Level;
-class Server;
 class Map;
 class Weapon;
 
@@ -79,7 +80,7 @@ public:
 	bool canSend();
 
 	// Constructor - Deconstructor
-	Player(Server* pServer, CSocket* pSocket, uint16_t pId);
+	Player(CSocket* pSocket, uint16_t pId);
 	~Player();
 	void cleanup();
 

@@ -7,6 +7,7 @@
 #include <CString.h>
 #include <CTimeout.h>
 #include <IUtil.h>
+#include "BabyDI.h"
 
 // Baddy props
 enum
@@ -46,7 +47,7 @@ class Level;
 class LevelBaddy
 {
 public:
-	LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer);
+	LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel);
 
 	void reset();
 	void dropItem();
@@ -74,7 +75,7 @@ public:
 	CTimeout timeout;
 
 private:
-	Server* m_server;
+	BabyDI_INJECT(Server, m_server);
 
 	std::weak_ptr<Level> m_level;
 	unsigned char m_type;

@@ -54,24 +54,8 @@ constexpr int getBase64Position(char c)
 /*
 	Level: Constructor - Deconstructor
 */
-Level::Level(Server* pServer)
-	: m_server(pServer)
-#ifdef V8NPCSERVER
-	  ,
-	  m_scriptObject(nullptr)
-#endif
+Level::Level(short fillTile)
 {
-	m_tiles[0] = LevelTiles();
-}
-
-Level::Level(short fillTile, Server* pServer)
-	: m_server(pServer)
-#ifdef V8NPCSERVER
-	  ,
-	  m_scriptObject(nullptr)
-#endif
-{
-
 	m_tiles[0] = LevelTiles(fillTile);
 }
 
@@ -360,7 +344,7 @@ bool Level::reload()
 
 std::shared_ptr<Level> Level::clone() const
 {
-	Level* level = new Level(m_server);
+	Level* level = new Level();
 	if (!level->loadLevel(m_levelName))
 	{
 		delete level;
@@ -1002,9 +986,9 @@ bool Level::loadNW(const CString& pLevelName)
 /*
 	Level: Find Level
 */
-std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, Server* server, bool loadAbsolute)
+std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbsolute)
 {
-	auto& levelList = server->getLevelList();
+	auto& levelList = m_server->getLevelList();
 
 	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
 	// 	this is still going to break on the first occurrence.
@@ -1019,9 +1003,9 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, Server* serve
 
 	if (loadAbsolute)
 	{
-		FileSystem* fileSystem = server->getFileSystem();
-		if (!server->getSettings().getBool("nofoldersconfig", false))
-			fileSystem = server->getFileSystem(FS_LEVEL);
+		FileSystem* fileSystem = m_server->getFileSystem();
+		if (!m_server->getSettings().getBool("nofoldersconfig", false))
+			fileSystem = m_server->getFileSystem(FS_LEVEL);
 
 		if (fileSystem->find(pLevelName).trim().length() == 0)
 		{
@@ -1031,11 +1015,11 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, Server* serve
 	}
 
 	// Load New Level
-	auto level = std::shared_ptr<Level>(new Level(server));
+	auto level = std::shared_ptr<Level>(new Level());
 	if (!level->loadLevel(pLevelName))
 		return nullptr;
 
-	auto& mapList = server->getMapList();
+	auto& mapList = m_server->getMapList();
 	for (const auto& map: mapList)
 	{
 		int mx, my;
@@ -1054,16 +1038,16 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, Server* serve
 /*
 	Level: Create Level
 */
-std::shared_ptr<Level> Level::createLevel(Server* server, short fillTile, const std::string& levelName)
+std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& levelName)
 {
-	auto& levelList = server->getLevelList();
+	auto& levelList = m_server->getLevelList();
 
 	// Load New Level
-	auto level = std::shared_ptr<Level>(new Level(fillTile, server));
+	auto level = std::shared_ptr<Level>(new Level(fillTile));
 	level->setLevelName(levelName);
 
 #ifdef V8NPCSERVER
-	server->getScriptEngine()->wrapScriptObject(level.get());
+	m_server->getScriptEngine()->wrapScriptObject(level.get());
 #endif
 
 	// Return Level
@@ -1425,7 +1409,7 @@ LevelBaddy* Level::addBaddy(float pX, float pY, char pType)
 	if (m_baddies.size() > 50) return nullptr;
 
 	// New Baddy
-	auto newBaddy = std::make_unique<LevelBaddy>(pX, pY, pType, this->shared_from_this(), m_server);
+	auto newBaddy = std::make_unique<LevelBaddy>(pX, pY, pType, this->shared_from_this());
 
 	// Get the next baddy id.
 	auto new_id = m_baddyIdGenerator.getAvailableId();

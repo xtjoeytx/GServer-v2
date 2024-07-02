@@ -56,8 +56,8 @@ void ServerList::createFunctions()
 /*
 	Constructor - Deconstructor
 */
-ServerList::ServerList(Server* server)
-	: m_server(server), m_fileQueue(&m_socket)
+ServerList::ServerList()
+	: m_fileQueue(&m_socket)
 {
 	m_socket.setProtocol(SOCKET_PROTOCOL_TCP);
 	m_socket.setType(SOCKET_TYPE_CLIENT);
