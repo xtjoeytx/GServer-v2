@@ -1,9 +1,11 @@
-#include "Level.h"
+#include <IDebug.h>
+
 #include "NPC.h"
 #include "Player.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "utilities/stringutils.h"
+#include "level/Level.h"
+#include "utilities/StringUtils.h"
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {

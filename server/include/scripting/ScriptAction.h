@@ -1,10 +1,11 @@
 #ifndef SCRIPTACTION_H
 #define SCRIPTACTION_H
 
-#include "ScriptArguments.h"
-#include "ScriptFunction.h"
 #include <cassert>
 #include <string>
+
+#include "scripting/interface/ScriptArguments.h"
+#include "scripting/interface/ScriptFunction.h"
 
 class ScriptAction
 {

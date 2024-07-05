@@ -1,15 +1,17 @@
-#include "Level.h"
-#include "IDebug.h"
-#include "IEnums.h"
-#include "Map.h"
-#include "NPC.h"
-#include "Player.h"
-#include "Server.h"
 #include <cmath>
 #include <fstream>
 #include <list>
 #include <set>
 #include <tiletypes.h>
+
+#include <IDebug.h>
+#include <IEnums.h>
+
+#include "NPC.h"
+#include "Player.h"
+#include "Server.h"
+#include "level/Level.h"
+#include "level/Map.h"
 
 /*
 	Global Variables
@@ -48,7 +50,6 @@ constexpr int getBase64Position(char c)
 
 	return 0;
 }
-
 
 /*
 	Level: Constructor - Deconstructor

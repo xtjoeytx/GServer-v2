@@ -1,10 +1,11 @@
-#include "IDebug.h"
 #include <map>
 #include <vector>
 
+#include <IDebug.h>
+
 #include "FileSystem.h"
-#include "Map.h"
 #include "Server.h"
+#include "level/Map.h"
 
 Map::Map(MapType pType, bool pGroupMap)
 	: m_type(pType), m_modTime(0), m_width(0), m_height(0), m_groupMap(pGroupMap), m_loadFullMap(false)

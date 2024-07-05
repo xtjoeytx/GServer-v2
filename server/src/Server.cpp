@@ -1,4 +1,5 @@
-#include "IDebug.h"
+#include <IDebug.h>
+
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -6,15 +7,18 @@
 
 #include <fmt/format.h>
 
-#include "IUtil.h"
-#include "Level.h"
-#include "Map.h"
+#include <CString.h>
+#include <IUtil.h>
+
+#include "main.h"
+
 #include "NPC.h"
 #include "Player.h"
-#include "ScriptOrigin.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "main.h"
+#include "level/Level.h"
+#include "level/Map.h"
+#include "scripting/ScriptOrigin.h"
 
 static const char* const filesystemTypes[] = {
 	"all",

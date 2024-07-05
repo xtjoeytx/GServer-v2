@@ -1,10 +1,11 @@
 #ifndef V8SCRIPTFUNCTION_H
 #define V8SCRIPTFUNCTION_H
 
-#include "ScriptBindings.h"
-#include "V8ScriptEnv.h"
-#include "V8ScriptUtils.h"
 #include <cassert>
+
+#include "scripting/interface/ScriptBindings.h"
+#include "scripting/v8/V8ScriptEnv.h"
+#include "scripting/v8/V8ScriptUtils.h"
 
 class V8ScriptData
 {

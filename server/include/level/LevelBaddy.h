@@ -1,11 +1,12 @@
 #ifndef TLEVELBADDY_H
 #define TLEVELBADDY_H
 
-#include "CString.h"
-#include "CTimeout.h"
-#include "IUtil.h"
 #include <memory>
 #include <vector>
+
+#include <CString.h>
+#include <CTimeout.h>
+#include <IUtil.h>
 
 // Baddy props
 enum

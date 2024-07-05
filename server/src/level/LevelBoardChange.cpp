@@ -1,5 +1,6 @@
-#include "LevelBoardChange.h"
-#include "IDebug.h"
+#include <IDebug.h>
+
+#include "level/LevelBoardChange.h"
 
 CString LevelBoardChange::getBoardStr() const
 {

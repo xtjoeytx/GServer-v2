@@ -1,14 +1,15 @@
 #ifndef V8SCRIPTARGUMENTS_H
 #define V8SCRIPTARGUMENTS_H
 
-#include "ScriptBindings.h"
-#include "V8ScriptEnv.h"
-#include "V8ScriptFunction.h"
-#include "V8ScriptObject.h"
 #include <cassert>
 #include <string>
 #include <unordered_map>
 #include <v8.h>
+
+#include "scripting/interface/ScriptBindings.h"
+#include "scripting/v8/V8ScriptEnv.h"
+#include "scripting/v8/V8ScriptFunction.h"
+#include "scripting/v8/V8ScriptObject.h"
 
 namespace detail
 {

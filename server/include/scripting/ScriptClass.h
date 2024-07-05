@@ -1,9 +1,11 @@
 #ifndef TSCRIPTCLASS_H
 #define TSCRIPTCLASS_H
 
-#include "CString.h"
-#include "SourceCode.h"
 #include <string>
+
+#include <CString.h>
+
+#include "scripting/SourceCode.h"
 
 class Server;
 class ScriptClass

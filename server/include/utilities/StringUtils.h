@@ -1,9 +1,10 @@
 #ifndef UTILITIES_STRINGUTILS_H
 #define UTILITIES_STRINGUTILS_H
 
-#include "CString.h"
 #include <string>
 #include <vector>
+
+#include <CString.h>
 
 namespace utilities
 {

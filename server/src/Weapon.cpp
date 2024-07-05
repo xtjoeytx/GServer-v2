@@ -1,14 +1,15 @@
-#include "IDebug.h"
+#include <IDebug.h>
 
-#include "IEnums.h"
-#include "IUtil.h"
-#include "LevelItem.h"
+#include <IEnums.h>
+#include <IUtil.h>
+
+// GS2 Compiler includes
+#include <GS2Context.h>
+
 #include "NPC.h"
 #include "Server.h"
 #include "Weapon.h"
-
-// GS2 Compiler includes
-#include "GS2Context.h"
+#include "level/LevelItem.h"
 
 #ifdef V8NPCSERVER
 	#include "Player.h"

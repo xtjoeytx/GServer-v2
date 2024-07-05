@@ -1,9 +1,10 @@
-#include "V8ScriptEnv.h"
-#include "ScriptBindings.h"
-#include "V8ScriptArguments.h"
-#include "V8ScriptFunction.h"
 #include <cstring>
 #include <libplatform/libplatform.h>
+
+#include "scripting/interface/ScriptBindings.h"
+#include "scripting/v8/V8ScriptEnv.h"
+#include "scripting/v8/V8ScriptArguments.h"
+#include "scripting/v8/V8ScriptFunction.h"
 
 bool _v8_initialized = false;
 int V8ScriptEnv::m_count = 0;

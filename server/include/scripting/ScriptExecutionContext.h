@@ -1,12 +1,13 @@
 #ifndef SCRIPTEXECUTION_H
 #define SCRIPTEXECUTION_H
 
-#include "ScriptAction.h"
-#include "ScriptEngine.h"
-#include "ScriptUtils.h"
 #include <algorithm>
 #include <chrono>
 #include <vector>
+
+#include "scripting/ScriptAction.h"
+#include "scripting/ScriptEngine.h"
+#include "scripting/interface/ScriptUtils.h"
 
 class ScriptExecutionContext
 {

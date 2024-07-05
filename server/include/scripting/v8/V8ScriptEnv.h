@@ -1,12 +1,13 @@
 #ifndef V8SCRIPTENV_H
 #define V8SCRIPTENV_H
 
-#include "ScriptBindings.h"
-#include "V8ScriptObject.h"
-#include "V8ScriptUtils.h"
 #include <memory>
 #include <v8.h>
 #include <vector>
+
+#include "scripting/interface/ScriptBindings.h"
+#include "scripting/v8/V8ScriptObject.h"
+#include "scripting/v8/V8ScriptUtils.h"
 
 class IScriptFunction;
 

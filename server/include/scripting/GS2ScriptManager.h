@@ -4,10 +4,11 @@
 #include <mutex>
 #include <queue>
 
-#include "CompilerThreadJob.h"
-#include "GS2Context.h"
-#include "interface/ScriptUtils.h"
-#include "utils/ContextThreadPool.h"
+#include <CompilerThreadJob.h>
+#include <GS2Context.h>
+#include <utils/ContextThreadPool.h>
+
+#include "scripting/interface/ScriptUtils.h"
 
 class GS2ScriptManager
 {

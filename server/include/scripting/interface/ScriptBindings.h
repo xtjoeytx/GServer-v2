@@ -16,10 +16,10 @@
 		while (0)
 #endif
 
-#include "ScriptArguments.h"
-#include "ScriptEnv.h"
-#include "ScriptFunction.h"
-#include "ScriptObject.h"
-#include "ScriptUtils.h"
+#include "scripting/interface/ScriptArguments.h"
+#include "scripting/interface/ScriptEnv.h"
+#include "scripting/interface/ScriptFunction.h"
+#include "scripting/interface/ScriptObject.h"
+#include "scripting/interface/ScriptUtils.h"
 
 #endif

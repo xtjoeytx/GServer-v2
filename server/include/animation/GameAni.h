@@ -1,9 +1,10 @@
 #ifndef TGAMEANI_H
 #define TGAMEANI_H
 
-#include "CString.h"
 #include <optional>
 #include <string>
+
+#include <CString.h>
 
 class Server;
 

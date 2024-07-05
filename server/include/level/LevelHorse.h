@@ -1,8 +1,8 @@
 #ifndef TLEVELHORSE_H
 #define TLEVELHORSE_H
 
-#include "CString.h"
-#include "CTimeout.h"
+#include <CString.h>
+#include <CTimeout.h>
 
 class Server;
 class LevelHorse

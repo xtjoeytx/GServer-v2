@@ -1,11 +1,13 @@
+#include <IDebug.h>
+
 #include <fmt/format.h>
 
-#include "IConfig.h"
-#include "IDebug.h"
+#include <CCommon.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
-#include "CCommon.h"
-#include "IEnums.h"
-#include "IUtil.h"
+#include "IConfig.h"
+
 #include "Player.h"
 #include "Server.h"
 #include "ServerList.h"
@@ -513,8 +515,8 @@ void ServerList::msgSVI_FILEDATA(CString& pPacket)
 void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
 	m_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
-								  ":: An updated version is available online.\n",
-								  APP_VENDOR, APP_NAME, m_server->getName().text());
+								 ":: An updated version is available online.\n",
+								 APP_VENDOR, APP_NAME, m_server->getName().text());
 }
 
 void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)

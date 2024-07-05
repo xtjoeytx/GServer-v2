@@ -1,6 +1,7 @@
-#include "ScriptClass.h"
-#include "GS2Context.h"
+#include <GS2Context.h>
+
 #include "Server.h"
+#include "scripting/ScriptClass.h"
 
 ScriptClass::ScriptClass(Server* server, const std::string& className, const std::string& classSource)
 	: m_className(className)
@@ -32,7 +33,7 @@ void ScriptClass::parseScripts(Server* server, const std::string& classSource)
 										 //m_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
 
 										 m_bytecode.clear(bytecodeWithHeader.length());
-										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
+										 m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
 
 										 // temp: save bytecode to file
 										 //CString bytecodeFile;

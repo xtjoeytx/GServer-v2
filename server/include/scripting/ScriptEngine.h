@@ -1,10 +1,6 @@
 #ifndef CSCRIPTENGINE_H
 #define CSCRIPTENGINE_H
 
-#include "ScriptAction.h"
-#include "ScriptBindings.h"
-#include "ScriptFactory.h"
-#include "SourceCode.h"
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -15,8 +11,13 @@
 #include <unordered_set>
 #include <vector>
 
+#include "scripting/ScriptAction.h"
+#include "scripting/ScriptFactory.h"
+#include "scripting/SourceCode.h"
+#include "scripting/interface/ScriptBindings.h"
+
 #ifdef V8NPCSERVER
-	#include "V8ScriptWrappers.h"
+	#include "scripting/v8/V8ScriptWrappers.h"
 #endif
 
 class IScriptEnv;

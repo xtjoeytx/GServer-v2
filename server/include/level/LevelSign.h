@@ -1,12 +1,13 @@
 #ifndef TLEVELSIGN_H
 #define TLEVELSIGN_H
 
-#include "CString.h"
 #include <memory>
 #include <vector>
 
+#include <CString.h>
+
 #ifdef V8NPCSERVER
-	#include "ScriptBindings.h"
+	#include "scripting/interface/ScriptBindings.h"
 #endif
 
 class Player;

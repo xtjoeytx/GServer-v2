@@ -1,10 +1,11 @@
 #ifndef V8SCRIPTWRAPPED_H
 #define V8SCRIPTWRAPPED_H
 
-#include "ScriptBindings.h"
-#include "V8ScriptUtils.h"
 #include <unordered_map>
 #include <v8.h>
+
+#include "scripting/interface/ScriptBindings.h"
+#include "scripting/v8/V8ScriptUtils.h"
 
 template<class T>
 class V8ScriptObject : public IScriptObject<T>

@@ -1,12 +1,13 @@
 #ifndef TLEVELCHEST_H
 #define TLEVELCHEST_H
 
-#include "CString.h"
 #include <memory>
 #include <vector>
 
+#include <CString.h>
+
 #ifdef V8NPCSERVER
-	#include "ScriptBindings.h"
+	#include "scripting/interface/ScriptBindings.h"
 #endif
 
 enum class LevelItemType;

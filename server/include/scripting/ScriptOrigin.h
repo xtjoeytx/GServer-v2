@@ -1,14 +1,13 @@
 #ifndef SCRIPTORIGIN_H
 #define SCRIPTORIGIN_H
 
-#pragma once
-
-#include "Level.h"
-#include "NPC.h"
-#include "ScriptClass.h"
-#include "Weapon.h"
 #include <fmt/format.h>
 #include <string>
+
+#include "NPC.h"
+#include "Weapon.h"
+#include "level/Level.h"
+#include "scripting/ScriptClass.h"
 
 namespace scripting
 {

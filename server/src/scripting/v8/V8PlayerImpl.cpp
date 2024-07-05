@@ -1,17 +1,18 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "IUtil.h"
-	#include "Level.h"
-	#include "NPC.h"
-	#include "Player.h"
-	#include "Server.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <v8.h>
 
-	#include "V8ScriptFunction.h"
-	#include "V8ScriptObject.h"
+	#include <IUtil.h>
+
+	#include "NPC.h"
+	#include "Player.h"
+	#include "Server.h"
+	#include "level/Level.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptFunction.h"
+	#include "scripting/v8/V8ScriptObject.h"
 
 // PROPERTY: player.id
 void Player_GetInt_Id(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

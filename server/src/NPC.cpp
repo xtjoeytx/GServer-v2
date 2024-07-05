@@ -1,16 +1,19 @@
-#include "NPC.h"
-#include "FileSystem.h"
-#include "IDebug.h"
-#include "IEnums.h"
-#include "Level.h"
-#include "Map.h"
-#include "Server.h"
+#include <IDebug.h>
+
 #include <math.h>
 #include <time.h>
 #include <vector>
 
+#include <IEnums.h>
+
+#include "FileSystem.h"
+#include "NPC.h"
+#include "Server.h"
+#include "level/Level.h"
+#include "level/Map.h"
+
 #ifdef V8NPCSERVER
-	#include "ScriptEngine.h"
+	#include "scripting/ScriptEngine.h"
 	#include "Player.h"
 #endif
 

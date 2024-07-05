@@ -1,17 +1,19 @@
 #ifndef TWEAPON_H
 #define TWEAPON_H
 
-#include "CString.h"
-#include "LevelItem.h"
-#include "SourceCode.h"
 #include <memory>
 #include <time.h>
 #include <vector>
+#include <string>
+
+#include <CString.h>
+
+#include "level/LevelItem.h"
+#include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
-	#include "ScriptBindings.h"
-	#include "ScriptExecutionContext.h"
-	#include <string>
+	#include "scripting/interface/ScriptBindings.h"
+	#include "scripting/ScriptExecutionContext.h"
 
 class Player;
 #endif

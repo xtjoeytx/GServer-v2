@@ -1,7 +1,10 @@
-#include "UpdatePackage.h"
+#include <IDebug.h>
+
+#include <filesystem>
+
 #include "FileSystem.h"
 #include "Server.h"
-#include <filesystem>
+#include "UpdatePackage.h"
 
 std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
 {

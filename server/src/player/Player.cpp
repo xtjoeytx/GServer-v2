@@ -1,21 +1,23 @@
-#include "IDebug.h"
-#include <IConfig.h>
+#include <IDebug.h>
+
 #include <math.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <time.h>
 
-#include "Account.h"
+#include <IEnums.h>
+#include <IUtil.h>
+
 #include "IConfig.h"
-#include "IEnums.h"
-#include "IUtil.h"
-#include "Level.h"
-#include "Map.h"
+
+#include "Account.h"
 #include "NPC.h"
 #include "Player.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "utilities/stringutils.h"
+#include "level/Level.h"
+#include "level/Map.h"
+#include "utilities/StringUtils.h"
 
 /*
 	Logs

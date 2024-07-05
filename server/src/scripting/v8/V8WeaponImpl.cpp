@@ -1,14 +1,14 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "Weapon.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <unordered_map>
 	#include <v8.h>
 
-	#include "V8ScriptFunction.h"
-	#include "V8ScriptObject.h"
+	#include "Weapon.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptFunction.h"
+	#include "scripting/v8/V8ScriptObject.h"
 
 // PROPERTY: Name
 void Weapon_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

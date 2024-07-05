@@ -1,12 +1,13 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
 	#include "EmbeddedBootstrapScript.h"
+
 	#include "NPC.h"
 	#include "Player.h"
 	#include "Server.h"
 	#include "Weapon.h"
-	#include "V8ScriptWrappers.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptWrappers.h"
 
 extern const unsigned char JSBOOTSTRAPSCRIPT[];
 extern const size_t JSBOOTSTRAPSCRIPT_SIZE;

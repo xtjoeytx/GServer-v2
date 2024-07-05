@@ -1,15 +1,15 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "NPC.h"
-	#include "Server.h"
 	#include <cassert>
 	#include <stdio.h>
 	#include <unordered_map>
 	#include <v8.h>
 
-	#include "V8ScriptFunction.h"
-	#include "V8ScriptObject.h"
+	#include "NPC.h"
+	#include "Server.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptFunction.h"
+	#include "scripting/v8/V8ScriptObject.h"
 
 // PROPERTY: env.global
 void Environment_GetObject_Global(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

@@ -1,12 +1,6 @@
 #ifndef TPLAYER_H
 #define TPLAYER_H
 
-#include "Account.h"
-#include "CEncryption.h"
-#include "CFileQueue.h"
-#include "CSocket.h"
-#include "IEnums.h"
-#include "utilities/IdGenerator.h"
 #include <map>
 #include <memory>
 #include <set>
@@ -14,8 +8,16 @@
 #include <unordered_set>
 #include <vector>
 
+#include <CEncryption.h>
+#include <CFileQueue.h>
+#include <CSocket.h>
+#include <IEnums.h>
+
+#include "Account.h"
+#include "utilities/IdGenerator.h"
+
 #ifdef V8NPCSERVER
-	#include "ScriptBindings.h"
+	#include "scripting/interface/ScriptBindings.h"
 #endif
 
 class Level;

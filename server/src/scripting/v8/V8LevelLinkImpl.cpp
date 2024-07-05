@@ -1,19 +1,19 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "V8ScriptFunction.h"
-	#include "V8ScriptObject.h"
 	#include <algorithm>
 	#include <cassert>
 	#include <math.h>
 	#include <unordered_map>
 	#include <v8.h>
 
-	#include "Level.h"
-	#include "LevelLink.h"
-	#include "Map.h"
 	#include "NPC.h"
 	#include "Player.h"
+	#include "level/Level.h"
+	#include "level/LevelLink.h"
+	#include "level/Map.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptFunction.h"
+	#include "scripting/v8/V8ScriptObject.h"
 
 // PROPERTY: link.newlevel
 void Link_GetStr_NewLevel(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)

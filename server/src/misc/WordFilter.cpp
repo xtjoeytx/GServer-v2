@@ -1,9 +1,10 @@
-#include "WordFilter.h"
-#include "CLog.h"
-#include "IDebug.h"
-#include "IEnums.h"
+#include <CLog.h>
+#include <IDebug.h>
+#include <IEnums.h>
+
 #include "Player.h"
 #include "Server.h"
+#include "misc/WordFilter.h"
 
 char bypass[] = {
 	' ',

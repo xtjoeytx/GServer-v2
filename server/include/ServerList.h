@@ -1,13 +1,14 @@
 #ifndef TSERVERLIST_H
 #define TSERVERLIST_H
 
-#include "CFileQueue.h"
-#include "CSocket.h"
-#include "CString.h"
 #include <assert.h>
 #include <map>
 #include <memory>
 #include <time.h>
+
+#include <CFileQueue.h>
+#include <CSocket.h>
+#include <CString.h>
 
 enum
 {

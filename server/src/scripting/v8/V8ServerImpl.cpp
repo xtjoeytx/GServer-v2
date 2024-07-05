@@ -1,15 +1,15 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "V8ScriptFunction.h"
-	#include "V8ScriptObject.h"
 	#include <cassert>
 	#include <httplib.h>
 	#include <v8.h>
 
-	#include "Level.h"
 	#include "NPC.h"
 	#include "Player.h"
+	#include "level/Level.h"
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptFunction.h"
+	#include "scripting/v8/V8ScriptObject.h"
 
 void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args)
 {

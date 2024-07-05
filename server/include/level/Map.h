@@ -1,12 +1,13 @@
 #ifndef TGMAP_H
 #define TGMAP_H
 
-#include "CString.h"
 #include <ctime>
 #include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <CString.h>
 
 enum class MapType
 {

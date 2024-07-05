@@ -1,20 +1,23 @@
 #ifndef TNPC_H
 #define TNPC_H
 
-#include "CString.h"
-#include "IUtil.h"
-#include "SourceCode.h"
 #include <algorithm>
 #include <ctime>
 #include <memory>
 
+#include <CString.h>
+#include <IUtil.h>
+
+#include "scripting/SourceCode.h"
+
 #ifdef V8NPCSERVER
-	#include "ScriptAction.h"
-	#include "ScriptBindings.h"
-	#include "ScriptExecutionContext.h"
 	#include <queue>
 	#include <unordered_map>
 	#include <unordered_set>
+
+    #include "scripting/ScriptAction.h"
+	#include "scripting/ScriptExecutionContext.h"
+	#include "scripting/interface/ScriptBindings.h"
 #endif
 
 enum

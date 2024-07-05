@@ -1,10 +1,12 @@
-#include "Account.h"
-#include "FileSystem.h"
-#include "IDebug.h"
-#include "Server.h"
+#include <IDebug.h>
+
 #include <algorithm>
 #include <memory.h>
 #include <time.h>
+
+#include "Account.h"
+#include "FileSystem.h"
+#include "Server.h"
 
 /*
 	Account: Constructor - Deconstructor

@@ -1,10 +1,11 @@
 #ifndef SCRIPTARGUMENTS_H
 #define SCRIPTARGUMENTS_H
 
-#include "ScriptObject.h"
 #include <memory>
 #include <string>
 #include <tuple>
+
+#include "scripting/interface/ScriptObject.h"
 
 class IScriptFunction;
 

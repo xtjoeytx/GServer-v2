@@ -1,7 +1,9 @@
-#include "Animation/GameAni.h"
-#include "GS2Context.h"
-#include "Server.h"
 #include <filesystem>
+
+#include <GS2Context.h>
+
+#include "animation/GameAni.h"
+#include "Server.h"
 
 std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
 {

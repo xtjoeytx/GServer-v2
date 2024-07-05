@@ -1,9 +1,10 @@
 #ifndef CWORDFILTER_H
 #define CWORDFILTER_H
 
-#include "CString.h"
 #include <memory>
 #include <vector>
+
+#include <CString.h>
 
 enum
 {

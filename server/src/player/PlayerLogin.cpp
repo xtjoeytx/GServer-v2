@@ -1,15 +1,18 @@
-#include "IDebug.h"
+#include <IDebug.h>
+
 #include <math.h>
 #include <vector>
 
+#include <IUtil.h>
+
 #include "IConfig.h"
-#include "IUtil.h"
-#include "Level.h"
-#include "Map.h"
+
 #include "NPC.h"
 #include "Player.h"
 #include "Server.h"
 #include "Weapon.h"
+#include "level/Level.h"
+#include "level/Map.h"
 
 #define serverlog m_server->getServerLog()
 #define rclog m_server->getRCLog()

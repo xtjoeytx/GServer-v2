@@ -3,12 +3,14 @@
 
 #ifdef UPNP
 
-	#include "CString.h"
-	#include "miniupnpc.h"
-	#include "miniwget.h"
-	#include "upnpcommands.h"
 	#include <memory.h>
 	#include <set>
+
+	#include <CString.h>
+
+	#include <miniupnpc.h>
+	#include <miniwget.h>
+	#include <upnpcommands.h>
 
 class Server;
 

@@ -1,8 +1,9 @@
 #ifndef SCRIPTENV_H
 #define SCRIPTENV_H
 
-#include "ScriptUtils.h"
 #include <functional>
+
+#include "scripting/interface/ScriptUtils.h"
 
 class IScriptFunction;
 

@@ -28,7 +28,7 @@ SCRIPTFACTORY_CONSTRUCTOR(Weapon, weapon)
 #undef SCRIPTFACTORY_CONSTRUCTOR
 
 #ifdef SCRIPTSYS_HASV8
-	#include "V8ScriptArguments.h"
+	#include "scripting/v8/V8ScriptArguments.h"
 #endif
 
 #include <memory>

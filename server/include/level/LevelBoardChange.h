@@ -1,10 +1,11 @@
 #ifndef TLEVELBOARDCHANGE_H
 #define TLEVELBOARDCHANGE_H
 
-#include "CString.h"
-#include "CTimeout.h"
 #include <time.h>
 #include <vector>
+
+#include <CString.h>
+#include <CTimeout.h>
 
 class LevelBoardChange
 {

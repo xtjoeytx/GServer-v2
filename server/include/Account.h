@@ -1,12 +1,14 @@
 #ifndef TACCOUNT_H
 #define TACCOUNT_H
 
-#include "CString.h"
-#include "LevelChest.h"
 #include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <CString.h>
+
+#include "level/LevelChest.h"
 
 enum
 {

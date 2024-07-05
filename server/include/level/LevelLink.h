@@ -1,12 +1,13 @@
 #ifndef TLEVELLINK_H
 #define TLEVELLINK_H
 
-#include "CString.h"
 #include <memory>
 #include <vector>
 
+#include <CString.h>
+
 #ifdef V8NPCSERVER
-	#include "ScriptBindings.h"
+	#include "scripting/interface/ScriptBindings.h"
 #endif
 
 class LevelLink : public std::enable_shared_from_this<LevelLink>

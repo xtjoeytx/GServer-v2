@@ -1,4 +1,4 @@
-#include "GS2ScriptManager.h"
+#include "scripting/GS2ScriptManager.h"
 
 const uint32_t THREADPOOL_WORKERS = 0;
 

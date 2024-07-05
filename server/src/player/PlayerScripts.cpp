@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "utilities/stringutils.h"
+#include "utilities/StringUtils.h"
 
 // packet 157
 bool Player::msgPLI_UPDATEGANI(CString& pPacket)

@@ -1,17 +1,6 @@
 #ifndef TLEVEL_H
 #define TLEVEL_H
 
-#include "CString.h"
-#include "IUtil.h"
-#include "LevelBaddy.h"
-#include "LevelBoardChange.h"
-#include "LevelChest.h"
-#include "LevelHorse.h"
-#include "LevelItem.h"
-#include "LevelLink.h"
-#include "LevelSign.h"
-#include "LevelTiles.h"
-#include "utilities/IdGenerator.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -19,6 +8,19 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+
+#include <CString.h>
+#include <IUtil.h>
+
+#include "level/LevelBaddy.h"
+#include "level/LevelBoardChange.h"
+#include "level/LevelChest.h"
+#include "level/LevelHorse.h"
+#include "level/LevelItem.h"
+#include "level/LevelLink.h"
+#include "level/LevelSign.h"
+#include "level/LevelTiles.h"
+#include "utilities/IdGenerator.h"
 
 
 // Starting baddy id.  Baddy id 0 breaks the client so always start here.

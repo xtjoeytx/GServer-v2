@@ -1,9 +1,10 @@
 #ifndef TLEVELITEM_H
 #define TLEVELITEM_H
 
-#include "CString.h"
-#include "CTimeout.h"
 #include <ctime>
+
+#include <CString.h>
+#include <CTimeout.h>
 
 enum class LevelItemType
 {

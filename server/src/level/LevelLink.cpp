@@ -1,5 +1,6 @@
-#include "LevelLink.h"
-#include "IDebug.h"
+#include <IDebug.h>
+
+#include "level/LevelLink.h"
 
 /*
 	LevelLink: Constructor - Deconstructor

@@ -1,10 +1,11 @@
 #ifdef V8NPCSERVER
 
-	#include "ScriptEngine.h"
-	#include "V8ScriptEnv.h"
-	#include "V8ScriptFunction.h"
 	#include <string>
 	#include <unordered_map>
+
+	#include "scripting/ScriptEngine.h"
+	#include "scripting/v8/V8ScriptEnv.h"
+	#include "scripting/v8/V8ScriptFunction.h"
 
 // Global Method: print(arg0, arg1, arg2, arg3) [no format atm];
 void Global_Function_Print(const v8::FunctionCallbackInfo<v8::Value>& args)
