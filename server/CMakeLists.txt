@@ -27,31 +27,29 @@ set(
 	"src/FileSystem.cpp"
 	"src/main.cpp"
 	"src/Account.cpp"
-	"src/Map.cpp"
 	"src/NPC.cpp"
-	"src/ScriptClass.cpp"
 	"src/Server.cpp"
 	"src/ServerList.cpp"
 	"src/UpdatePackage.cpp"
 	"src/Weapon.cpp"
-	"src/Scripting/GS2ScriptManager.cpp"
+	"src/scripting/GS2ScriptManager.cpp"
 	"src/TriggerCommandHandlers.cpp"
 	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
-file(GLOB PLAYER_SOURCES src/Player/**.cpp)
+file(GLOB PLAYER_SOURCES src/player/**.cpp)
 list(APPEND SOURCES ${PLAYER_SOURCES})
 
-file(GLOB LEVEL_SOURCES src/Level/**.cpp)
+file(GLOB LEVEL_SOURCES src/level/**.cpp)
 list(APPEND SOURCES ${LEVEL_SOURCES})
 
-file(GLOB MISC_SOURCES src/Misc/**.cpp)
+file(GLOB MISC_SOURCES src/misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
 file(GLOB UTILITIES_SOURCES src/utilities/**.cpp)
 list(APPEND SOURCES ${UTILITIES_SOURCES})
 
-file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
+file(GLOB ANIMATION_SOURCES src/animation/**.cpp)
 list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
@@ -63,45 +61,44 @@ set(
 	"include/FileSystem.h"
 	"include/main.h"
 	"include/Account.h"
-	"include/Map.h"
 	"include/NPC.h"
 	"include/Player.h"
-	"include/ScriptClass.h"
 	"include/Server.h"
 	"include/ServerList.h"
 	"include/UpdatePackage.h"
 	"include/Weapon.h"
-	"include/Scripting/GS2ScriptManager.h"
-	"include/Scripting/ScriptOrigin.h"
-	"include/Scripting/SourceCode.h"
+	"include/scripting/GS2ScriptManager.h"
+	"include/scripting/ScriptClass.h"
+	"include/scripting/ScriptOrigin.h"
+	"include/scripting/SourceCode.h"
 )
 
-file(GLOB LEVEL_HEADERS include/Level/**.h)
+file(GLOB LEVEL_HEADERS include/level/**.h)
 list(APPEND HEADERS ${LEVEL_HEADERS})
 
-file(GLOB MISC_HEADERS include/Misc/**.h)
+file(GLOB MISC_HEADERS include/misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
 
 file(GLOB UTILITIES_HEADERS include/utilities/**.h)
 list(APPEND HEADERS ${UTILITIES_HEADERS})
 
-file(GLOB ANIMATION_HEADERS include/Animation/**.h)
+file(GLOB ANIMATION_HEADERS include/animation/**.h)
 list(APPEND HEADERS ${ANIMATION_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
-	file(GLOB SCRIPT_INTERFACE_HEADERS include/Scripting/interface/**.h)
+	file(GLOB SCRIPT_INTERFACE_HEADERS include/scripting/interface/**.h)
 	list(APPEND HEADERS ${SCRIPT_INTERFACE_HEADERS})
 
 	# Headers for script library v8 implementation
-	file(GLOB SCRIPT_V8_HEADERS include/Scripting/v8/**.h)
+	file(GLOB SCRIPT_V8_HEADERS include/scripting/v8/**.h)
 	list(APPEND HEADERS ${SCRIPT_V8_HEADERS})
 
 	# Source for script library v8 implementation
 	list(
 		APPEND
 		SOURCES
-		src/Scripting/v8/V8ScriptEnv.cpp
+		src/scripting/v8/V8ScriptEnv.cpp
 	)
 
 	# GServer specific headers for implementation
@@ -109,29 +106,30 @@ if(V8NPCSERVER)
 		APPEND
 		HEADERS
 		${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
-		include/Scripting/ScriptEngine.h
-		include/Scripting/ScriptAction.h
-		include/Scripting/ScriptExecutionContext.h
-		include/Scripting/ScriptFactory.h
-		include/Scripting/v8/V8ScriptWrappers.h
+		include/scripting/ScriptEngine.h
+		include/scripting/ScriptAction.h
+		include/scripting/ScriptExecutionContext.h
+		include/scripting/ScriptFactory.h
+		include/scripting/v8/V8ScriptWrappers.h
 	)
 
 	# GServer specific source for implementation
 	list(
 		APPEND
 		SOURCES
-		src/Scripting/ScriptEngine.cpp
-		src/Scripting/v8/V8EnvironmentImpl.cpp
-		src/Scripting/v8/V8FunctionsImpl.cpp
-		src/Scripting/v8/V8LevelImpl.cpp
-		src/Scripting/v8/V8LevelLinkImpl.cpp
-		src/Scripting/v8/V8LevelSignImpl.cpp
-		src/Scripting/v8/V8LevelChestImpl.cpp
-		src/Scripting/v8/V8NPCImpl.cpp
-		src/Scripting/v8/V8PlayerImpl.cpp
-		src/Scripting/v8/V8ScriptEnv.cpp
-		src/Scripting/v8/V8ServerImpl.cpp
-		src/Scripting/v8/V8WeaponImpl.cpp
+		src/scripting/ScriptEngine.cpp
+		src/scripting/ScriptClass.cpp
+		src/scripting/v8/V8EnvironmentImpl.cpp
+		src/scripting/v8/V8FunctionsImpl.cpp
+		src/scripting/v8/V8LevelImpl.cpp
+		src/scripting/v8/V8LevelLinkImpl.cpp
+		src/scripting/v8/V8LevelSignImpl.cpp
+		src/scripting/v8/V8LevelChestImpl.cpp
+		src/scripting/v8/V8NPCImpl.cpp
+		src/scripting/v8/V8PlayerImpl.cpp
+		src/scripting/v8/V8ScriptEnv.cpp
+		src/scripting/v8/V8ServerImpl.cpp
+		src/scripting/v8/V8WeaponImpl.cpp
 	)
 endif()
 
@@ -139,12 +137,12 @@ include_directories(
 	# Include the CMake-generated version header from the build directory
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
-	${PROJECT_SOURCE_DIR}/server/include/Misc
-	${PROJECT_SOURCE_DIR}/server/include/Level
+	${PROJECT_SOURCE_DIR}/server/include/misc
+	${PROJECT_SOURCE_DIR}/server/include/level
 	${PROJECT_SOURCE_DIR}/server/include/utilities
-	${PROJECT_SOURCE_DIR}/server/include/Scripting
-	${PROJECT_SOURCE_DIR}/server/include/Scripting/interface
-	${PROJECT_SOURCE_DIR}/server/include/Scripting/v8
+	${PROJECT_SOURCE_DIR}/server/include/scripting
+	${PROJECT_SOURCE_DIR}/server/include/scripting/interface
+	${PROJECT_SOURCE_DIR}/server/include/scripting/v8
 )
 
 # Set target names for the executables
