@@ -951,8 +951,8 @@ void NPC_Function_ScheduleEvent(const v8::FunctionCallbackInfo<v8::Value>& args)
 	SCRIPTENV_D("End NPC::registerAction()\n");
 }
 
-	#include "ScriptClass.h"
-	#include "V8ScriptWrappers.h"
+	#include "scripting/ScriptClass.h"
+	#include "scripting/v8/V8ScriptWrappers.h"
 
 // NPC Function: NPC.join("class");
 void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)

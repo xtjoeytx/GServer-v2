@@ -1194,8 +1194,8 @@ void Player_Function_DetachNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 	playerObject->setProps(propPacket, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
 
-	#include "ScriptClass.h"
-	#include "V8ScriptWrappers.h"
+	#include "scripting/ScriptClass.h"
+	#include "scripting/v8/V8ScriptWrappers.h"
 
 // Player Function: player.join("class");
 void Player_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)

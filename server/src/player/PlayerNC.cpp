@@ -311,7 +311,7 @@ bool Player::msgPLI_NC_NPCADD(CString& pPacket)
 	return true;
 }
 
-	#include "ScriptClass.h"
+	#include "scripting/ScriptClass.h"
 
 bool Player::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
