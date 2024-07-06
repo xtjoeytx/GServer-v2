@@ -21,9 +21,8 @@ const int baddyPower[baddytypes] = {
 };
 
 LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel, Server* pServer)
-	: m_level(pLevel), m_server(pServer), m_type(pType), m_id(0),
-	  m_startX(pX), m_startY(pY),
-	  m_canRespawn(true), m_hasCustomImage(false)
+	: m_level(pLevel), m_server(pServer), m_type(pType),
+	  m_startX(pX), m_startY(pY)
 {
 	if (pType > baddytypes) m_type = 0;
 	m_verses.resize(3);

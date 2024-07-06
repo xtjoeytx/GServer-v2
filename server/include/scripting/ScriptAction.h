@@ -10,9 +10,7 @@
 class ScriptAction
 {
 public:
-	ScriptAction() : m_function(nullptr), m_args(nullptr)
-	{
-	}
+	ScriptAction() = default;
 
 	explicit ScriptAction(IScriptFunction* function, IScriptArguments* args, const std::string& action = "")
 		: m_function(function), m_args(args), m_action(action)
@@ -85,8 +83,8 @@ public:
 
 protected:
 	std::string m_action;
-	IScriptArguments* m_args;
-	IScriptFunction* m_function;
+	IScriptArguments* m_args = nullptr;
+	IScriptFunction* m_function = nullptr;
 };
 
 #endif

@@ -8,15 +8,9 @@
 #include "level/Map.h"
 
 Map::Map(MapType pType, bool pGroupMap)
-	: m_type(pType), m_modTime(0), m_width(0), m_height(0), m_groupMap(pGroupMap), m_loadFullMap(false)
+	: m_type(pType), m_groupMap(pGroupMap)
 {
 }
-
-//Map::Map(MapType pType, const CString& pFileName, Server* pServer, bool pGroupMap)
-//: m_type(pType), m_modTime(0), m_width(0), m_height(0), m_groupMap(pGroupMap), m_loadFullMap(false)
-//{
-//	load(pFileName, pServer);
-//}
 
 bool Map::load(const CString& pFileName, Server* pServer)
 {

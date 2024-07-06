@@ -41,7 +41,7 @@ class Player;
 class LevelItem
 {
 public:
-	LevelItem(float pX, float pY, LevelItemType pItem) : m_x(pX), m_y(pY), m_item(pItem), m_modTime(time(0))
+	LevelItem(float pX, float pY, LevelItemType pItem) : m_x(pX), m_y(pY), m_item(pItem)
 	{
 		timeout.setTimeout(10);
 	}
@@ -72,7 +72,7 @@ private:
 	float m_x;
 	float m_y;
 	LevelItemType m_item;
-	time_t m_modTime;
+	time_t m_modTime = time(0);
 };
 
 inline CString LevelItem::getItemPlayerProp(const std::string& pItemName, Player* player)

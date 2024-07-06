@@ -23,13 +23,6 @@ extern void bindClass_Player(ScriptEngine* scriptEngine);
 extern void bindClass_Server(ScriptEngine* scriptEngine);
 extern void bindClass_Weapon(ScriptEngine* scriptEngine);
 
-ScriptEngine::ScriptEngine(Server* server)
-	: m_server(server), m_env(nullptr), m_bootstrapFunction(nullptr), m_environmentObject(nullptr), m_serverObject(nullptr), m_scriptIsRunning(false), m_scriptWatcherRunning(false), m_scriptWatcherThread()
-{
-	m_accumulator = std::chrono::nanoseconds(0);
-	m_lastScriptTimer = std::chrono::high_resolution_clock::now();
-}
-
 ScriptEngine::~ScriptEngine()
 {
 	this->cleanup();

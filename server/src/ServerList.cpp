@@ -57,7 +57,7 @@ void ServerList::createFunctions()
 	Constructor - Deconstructor
 */
 ServerList::ServerList(Server* server)
-	: m_server(server), m_fileQueue(&m_socket), m_nextIsRaw(false), m_rawPacketSize(0), m_serverRemoteIp("127.0.0.1"), m_connectionAttempts(0), m_nextConnectionAttempt(0)
+	: m_server(server), m_fileQueue(&m_socket)
 {
 	m_socket.setProtocol(SOCKET_PROTOCOL_TCP);
 	m_socket.setType(SOCKET_TYPE_CLIENT);

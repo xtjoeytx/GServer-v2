@@ -13,13 +13,6 @@ struct ScriptTimeSample
 class ScriptRunError
 {
 public:
-	ScriptRunError()
-		: lineno(0), startcol(0), endcol(0)
-	{
-	}
-
-	~ScriptRunError() = default;
-
 	std::string getErrorString() const
 	{
 		std::string error_message; // ("Error compiling: ");
@@ -32,8 +25,9 @@ public:
 	std::string filename;
 	std::string error;
 	std::string error_line;
-	int startcol, endcol;
-	int lineno;
+	int startcol = 0;
+	int endcol = 0;
+	int lineno = 0;
 };
 
 #endif

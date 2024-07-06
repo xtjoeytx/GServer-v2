@@ -74,15 +74,17 @@ public:
 	CTimeout timeout;
 
 private:
-	std::weak_ptr<Level> m_level;
 	Server* m_server;
+
+	std::weak_ptr<Level> m_level;
 	unsigned char m_type;
-	char m_id, m_power, m_mode, m_ani, m_dir;
+	char m_id = 0;
+	char m_power, m_mode, m_ani, m_dir;
 	float m_x, m_y, m_startX, m_startY;
 	CString m_image;
 	std::vector<CString> m_verses;
-	bool m_canRespawn;
-	bool m_hasCustomImage;
+	bool m_canRespawn = true;
+	bool m_hasCustomImage = false;
 };
 
 using LevelBaddyPtr = std::unique_ptr<LevelBaddy>;

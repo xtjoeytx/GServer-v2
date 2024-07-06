@@ -14,7 +14,7 @@ public:
 	LevelBoardChange(const int pX, const int pY, const int pWidth, const int pHeight,
 					 const CString& pTiles, const CString& pOldTiles, const int respawn = 15)
 		: m_x(pX), m_y(pY), m_width(pWidth), m_height(pHeight),
-		  m_newTiles(pTiles), m_oldTiles(pOldTiles), m_modTime(time(0)) { timeout.setTimeout(respawn); }
+		  m_newTiles(pTiles), m_oldTiles(pOldTiles) { timeout.setTimeout(respawn); }
 
 	// functions
 	CString getBoardStr() const;
@@ -36,7 +36,7 @@ public:
 private:
 	int m_x, m_y, m_width, m_height;
 	CString m_newTiles, m_oldTiles;
-	time_t m_modTime;
+	time_t m_modTime = time(0);
 };
 
 #endif // TLEVELBOARDCHANGE_H

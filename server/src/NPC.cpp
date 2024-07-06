@@ -17,7 +17,6 @@
 	#include "Player.h"
 #endif
 
-const unsigned char npcColors[5] = { 2, 0, 10, 4, 18 };
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
@@ -72,18 +71,12 @@ NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, Server*
 }
 
 NPC::NPC(Server* pServer, NPCType type)
-	: m_server(pServer), m_npcType(type), m_blockPositionUpdates(false),
-	  m_x(int(30 * 16)), m_y(int(30.5 * 16)),
-	  m_hurtX(32.0f), m_hurtY(32.0f), m_id(0), m_rupees(0),
-	  m_darts(0), m_bombs(0), m_glovePower(0), m_bombPower(0), m_swordPower(0), m_shieldPower(0),
-	  m_visFlags(1), m_blockFlags(0), m_sprite(2), m_hitpoints(0), m_ap(50),
-	  m_gani("idle")
+	: m_server(pServer), m_npcType(type)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_npcDeleteRequested(false), m_canWarp(NPCWarpType::None), m_width(32), m_height(32), m_timeout(0), m_scriptEventsMask(0xFF)
+	  m_scriptExecutionContext(pServer->getScriptEngine()), m_origX(m_x), m_origY(m_y)
 #endif
 {
-	memcpy((void*)m_colors, (void*)npcColors, sizeof(npcColors));
 	memset((void*)m_saves, 0, sizeof(m_saves));
 	memset((void*)m_modTime, 0, sizeof(m_modTime));
 

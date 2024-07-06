@@ -12,6 +12,7 @@
 #include <CFileQueue.h>
 #include <CSocket.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
 #include "Account.h"
 #include "utilities/IdGenerator.h"
@@ -357,15 +358,17 @@ private:
 	CString m_recvBuffer;
 
 	// Encryption
-	unsigned char m_encryptionKey;
+	unsigned char m_encryptionKey = 0;
 	CEncryption m_encryptionCodecIn;
 
 	// Variables
-	CString m_version, m_os, m_serverName;
-	int m_envCodePage;
-	std::weak_ptr<Level> m_currentLevel;
-	uint16_t m_id;
-	int m_type, m_versionId;
+	CString m_version;
+	CString m_os{ "wind" };
+	CString m_serverName;
+	uint16_t m_id = 0;
+	int m_envCodePage = 1252;
+	int m_type = PLTYPE_AWAIT;
+	int m_versionId = CLVER_UNKNOWN;
 	time_t m_lastData, m_lastMovement, m_lastChat, m_lastNick, m_lastMessage, m_lastSave, m_last1m;
 	std::vector<std::unique_ptr<CachedLevel>> m_cachedLevels;
 	std::map<CString, CString> m_rcLargeFiles;
@@ -373,24 +376,25 @@ private:
 	std::set<std::string> m_channelList;
 	std::unordered_set<std::string> m_knownFiles;
 	std::weak_ptr<Map> m_pmap;
+	std::weak_ptr<Level> m_currentLevel;
 
 	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_externalPlayers;
 	IdGenerator<uint16_t> m_externalPlayerIdGenerator{ EXTERNALPLAYERID_INIT };
 
-	unsigned int m_carryNpcId;
-	bool m_carryNpcThrown;
-	CString m_guild;
-	bool m_loaded;
-	bool m_nextIsRaw;
-	int m_rawPacketSize;
-	bool m_isFtp;
-	bool m_grMovementUpdated;
+	unsigned int m_carryNpcId = 0;
+	bool m_carryNpcThrown = false;
+	bool m_loaded = false;
+	bool m_nextIsRaw = false;
+	int m_rawPacketSize = 0;
+	bool m_isFtp = false;
+	bool m_grMovementUpdated = false;
+	bool m_firstLevel = true;
 	CString m_grMovementPackets;
 	CString m_npcserverPort;
-	int m_packetCount;
-	bool m_firstLevel;
+	int m_packetCount = 0;
+	int m_invalidPackets = 0;
+	CString m_guild;
 	CString m_levelGroup;
-	int m_invalidPackets;
 
 	CString m_grExecParameterList;
 
@@ -398,7 +402,7 @@ private:
 	CFileQueue m_fileQueue;
 
 #ifdef V8NPCSERVER
-	bool m_processRemoval;
+	bool m_processRemoval = false;
 	std::unique_ptr<IScriptObject<Player>> m_scriptObject;
 #endif
 

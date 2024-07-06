@@ -306,22 +306,10 @@ void Player::createFunctions()
 */
 Player::Player(Server* pServer, CSocket* pSocket, uint16_t pId)
 	: Account(pServer),
-	  m_playerSock(pSocket), m_encryptionKey(0),
-	  m_os("wind"), m_envCodePage(1252),
-	  m_id(pId), m_type(PLTYPE_AWAIT), m_versionId(CLVER_UNKNOWN),
-	  m_carryNpcId(0), m_carryNpcThrown(false), m_loaded(false),
-	  m_nextIsRaw(false), m_rawPacketSize(0), m_isFtp(false),
-	  m_grMovementUpdated(false),
-	  m_fileQueue(pSocket),
-	  m_packetCount(0), m_firstLevel(true), m_invalidPackets(0)
-#ifdef V8NPCSERVER
-	  ,
-	  m_processRemoval(false)
-#endif
+	  m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
 	m_lastData = m_lastMovement = m_lastSave = m_last1m = time(0);
 	m_lastChat = m_lastMessage = m_lastNick = 0;
-	m_isExternal = false;
 	m_serverName = m_server->getName();
 
 	srand((unsigned int)time(0));

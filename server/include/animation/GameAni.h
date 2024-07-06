@@ -90,20 +90,19 @@ public:
 private:
 	std::string m_aniName;
 	std::string m_script;
-	CString m_bytecode;
 	std::string m_setBackTo;
-	uint8_t m_aniFlags;
+	CString m_bytecode;
+	uint8_t m_aniFlags = 0;
 };
 
 inline GameAni::GameAni(std::string aniName)
-	: m_aniName(aniName), m_aniFlags(0)
+	: m_aniName(aniName)
 {
 }
 
 inline GameAni::GameAni(GameAni&& o) noexcept
 	: m_aniName(std::move(o.m_aniName)), m_script(std::move(o.m_script)),
-	  m_bytecode(std::move(o.m_bytecode)), m_setBackTo(o.m_setBackTo),
-	  m_aniFlags(o.m_aniFlags)
+	  m_setBackTo(std::move(o.m_setBackTo)), m_bytecode(std::move(o.m_bytecode)), m_aniFlags(o.m_aniFlags)
 {
 }
 
@@ -111,8 +110,8 @@ inline GameAni& GameAni::operator=(GameAni&& o) noexcept
 {
 	m_aniName = std::move(o.m_aniName);
 	m_script = std::move(o.m_script);
-	m_bytecode = std::move(o.m_bytecode);
 	m_setBackTo = std::move(o.m_setBackTo);
+	m_bytecode = std::move(o.m_bytecode);
 	m_aniFlags = o.m_aniFlags;
 	return *this;
 }

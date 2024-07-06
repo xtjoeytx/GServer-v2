@@ -6,8 +6,6 @@ class IScriptArguments;
 class IScriptFunction
 {
 public:
-	IScriptFunction() : m_referenceCount(0) {}
-
 	virtual ~IScriptFunction() = 0;
 
 	inline bool isReferenced() const
@@ -31,7 +29,7 @@ public:
 	}
 
 private:
-	int m_referenceCount;
+	int m_referenceCount = 0;
 };
 
 inline IScriptFunction::~IScriptFunction() = default;

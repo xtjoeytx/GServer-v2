@@ -17,7 +17,7 @@ enum class MapType
 
 struct MapLevel
 {
-	MapLevel() : mapx(-1), mapy(-1) {}
+	MapLevel() = default;
 	MapLevel(int x, int y) : mapx(x), mapy(y) {}
 	MapLevel(const MapLevel& level)
 	{
@@ -32,8 +32,8 @@ struct MapLevel
 		return *this;
 	}
 
-	int mapx;
-	int mapy;
+	int mapx = -1;
+	int mapy = -1;
 };
 
 class Server;
@@ -64,11 +64,11 @@ private:
 	bool loadGMap(const CString& pFileName, Server* pServer);
 
 	MapType m_type;
-	time_t m_modTime;
-	size_t m_width;
-	size_t m_height;
+	time_t m_modTime = 0;
+	size_t m_width = 0;
+	size_t m_height = 0;
 	bool m_groupMap;
-	bool m_loadFullMap;
+	bool m_loadFullMap = false;
 	std::string m_mapName;
 	std::string m_mapImage;
 	std::string m_miniMapImage;

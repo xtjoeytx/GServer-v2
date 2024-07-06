@@ -12,28 +12,8 @@
 	Account: Constructor - Deconstructor
 */
 Account::Account(Server* pServer)
-	: m_server(pServer),
-	  m_isBanned(false), m_isLoadOnly(false), m_isGuest(false), m_isExternal(false),
-	  m_adminIp("0.0.0.0"),
-	  m_accountIp(0), m_adminRights(0),
-	  m_bodyImage("body.png"), m_headImage("head0.png"), m_gani("idle"), m_language("English"),
-	  m_nickName("default"), m_shieldImage("shield1.png"), m_swordImage("sword1.png"),
-	  m_eloDeviation(350.0f), m_hitpoints(3.0), m_eloRating(1500.0f),
-	  m_x(0), m_y(0), m_z(0),
-	  m_additionalFlags(0), m_ap(50), m_apCounter(0), m_arrowCount(10), m_bombCount(5), m_bombPower(1), m_carrySprite(-1),
-	  m_deaths(0), m_glovePower(1), m_bowPower(1), m_gralatCount(0), m_horseBombCount(0), m_kills(0), m_mp(0), m_maxHitpoints(3),
-	  m_onlineTime(0), m_shieldPower(1), m_sprite(2), m_status(20), m_swordPower(1), m_udpport(0),
-	  m_attachNPC(0),
-	  m_lastSparTime(0),
-	  m_statusMsg(0), m_deviceId(0)
+	: m_server(pServer)
 {
-	// Other Defaults
-	m_colors[0] = 2;  // c
-	m_colors[1] = 0;  // a
-	m_colors[2] = 10; // k
-	m_colors[3] = 4;  // e
-	m_colors[4] = 18; // s
-	m_bowPower = 1;
 }
 
 Account::~Account() = default;

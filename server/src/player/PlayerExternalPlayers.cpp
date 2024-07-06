@@ -185,7 +185,7 @@ bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMe
 	return true;
 }
 
-PlayerPtr Player::getExternalPlayer(const unsigned short id, bool includeRC) const
+PlayerPtr Player::getExternalPlayer(const uint16_t id, bool includeRC) const
 {
 	auto iter = m_externalPlayers.find(id);
 	if (iter == std::end(m_externalPlayers)) return nullptr;

@@ -14,7 +14,7 @@ class LevelLink : public std::enable_shared_from_this<LevelLink>
 {
 public:
 	// constructor - destructor
-	LevelLink() : m_x(0), m_y(0), m_width(0), m_height(0) {}
+	LevelLink() = default;
 	LevelLink(const std::vector<CString>& pLink);
 
 	// functions
@@ -53,7 +53,10 @@ public:
 
 private:
 	CString m_newLevel, m_newX, m_newY;
-	int m_x, m_y, m_width, m_height;
+	int m_x = 0;
+	int m_y = 0;
+	int m_width = 0;
+	int m_height = 0;
 
 #ifdef V8NPCSERVER
 	std::unique_ptr<IScriptObject<LevelLink>> m_scriptObject;

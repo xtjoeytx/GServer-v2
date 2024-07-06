@@ -30,7 +30,7 @@ class Weapon;
 class ScriptEngine
 {
 public:
-	ScriptEngine(Server* server);
+	ScriptEngine(Server* server) : m_server(server) {}
 	~ScriptEngine();
 
 	bool initialize();
@@ -88,18 +88,18 @@ public:
 private:
 	void runTimers(const std::chrono::high_resolution_clock::time_point& time);
 
-	IScriptEnv* m_env;
-	IScriptFunction* m_bootstrapFunction;
+	IScriptEnv* m_env = nullptr;
+	IScriptFunction* m_bootstrapFunction = nullptr;
 	std::unique_ptr<IScriptObject<Server>> m_environmentObject;
 	std::unique_ptr<IScriptObject<Server>> m_serverObject;
 	Server* m_server;
 
-	std::chrono::high_resolution_clock::time_point m_lastScriptTimer;
-	std::chrono::nanoseconds m_accumulator;
+	std::chrono::high_resolution_clock::time_point m_lastScriptTimer = std::chrono::high_resolution_clock::now();
+	std::chrono::nanoseconds m_accumulator = std::chrono::nanoseconds(0);
 
 	// Script watcher
-	std::atomic<bool> m_scriptIsRunning;
-	std::atomic<bool> m_scriptWatcherRunning;
+	std::atomic<bool> m_scriptIsRunning = false;
+	std::atomic<bool> m_scriptWatcherRunning = false;
 	std::chrono::high_resolution_clock::time_point m_scriptStartTime;
 	std::mutex m_scriptWatcherLock;
 	std::thread m_scriptWatcherThread;

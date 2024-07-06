@@ -55,7 +55,7 @@ constexpr int getBase64Position(char c)
 	Level: Constructor - Deconstructor
 */
 Level::Level(Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0)
+	: m_server(pServer)
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)
@@ -65,7 +65,7 @@ Level::Level(Server* pServer)
 }
 
 Level::Level(short fillTile, Server* pServer)
-	: m_server(pServer), m_modTime(0), m_isSparringZone(false), m_isSingleplayer(false), m_mapX(0), m_mapY(0)
+	: m_server(pServer)
 #ifdef V8NPCSERVER
 	  ,
 	  m_scriptObject(nullptr)

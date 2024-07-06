@@ -33,14 +33,12 @@ enum
 
 struct WordFilterRule
 {
-	WordFilterRule() : check(0), wordPosition(0), action(0), precisionPercentage(true), precision(100) {}
-
-	int check;
+	int check = 0;
+	int wordPosition = 0;
+	int action = 0;
+	int precision = 100;
+	bool precisionPercentage = true;
 	CString match;
-	int wordPosition;
-	int action;
-	bool precisionPercentage;
-	int precision;
 	CString warnMessage;
 };
 using WordFilterRulePtr = std::unique_ptr<WordFilterRule>;
@@ -50,7 +48,7 @@ class Player;
 class WordFilter
 {
 public:
-	WordFilter(Server* pServer) : m_server(pServer), m_showWordsToRC(false) {}
+	WordFilter(Server* pServer) : m_server(pServer) {}
 	~WordFilter();
 
 	void load(const CString& file);
@@ -59,8 +57,8 @@ public:
 private:
 	Server* m_server;
 
+	bool m_showWordsToRC = false;
 	CString m_defaultWarnMessage;
-	bool m_showWordsToRC;
 	std::vector<WordFilterRulePtr> m_rules;
 };
 

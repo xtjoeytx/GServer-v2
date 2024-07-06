@@ -303,12 +303,13 @@ private:
 	bool loadNW(const CString& pLevelName);
 
 private:
-	Server* m_server;
-	time_t m_modTime;
-	bool m_isSparringZone;
-	bool m_isSingleplayer;
+	Server* m_server = nullptr;
+	time_t m_modTime = 0;
+	bool m_isSparringZone = false;
+	bool m_isSingleplayer = false;
+	int m_mapX = 0;
+	int m_mapY = 0;
 	std::map<uint8_t, LevelTiles> m_tiles;
-	int m_mapX, m_mapY;
 	std::weak_ptr<Map> m_map;
 	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;
 

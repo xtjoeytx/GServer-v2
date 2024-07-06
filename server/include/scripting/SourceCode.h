@@ -7,7 +7,7 @@
 class SourceCode
 {
 public:
-	SourceCode() : m_gs2default(false) {}
+	SourceCode() = default;
 	SourceCode(std::string src, bool gs2default = false) : m_src(std::move(src)), m_gs2default(gs2default) { init(); }
 	SourceCode(SourceCode&& o) noexcept : m_src(std::move(o.m_src)), m_gs2default(o.m_gs2default) { init(); }
 
@@ -60,7 +60,7 @@ public:
 	}
 
 private:
-	bool m_gs2default;
+	bool m_gs2default = false;
 	std::string m_src;
 	std::string_view m_clientside, m_serverside;
 	std::string_view m_clientGS1, m_clientGS2;

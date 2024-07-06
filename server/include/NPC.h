@@ -341,14 +341,26 @@ private:
 	NPCType m_npcType;
 	SourceCode m_npcScript;
 
-	bool m_blockPositionUpdates;
+	bool m_blockPositionUpdates = false;
 	time_t m_modTime[NPCPROP_COUNT];
-	float m_hurtX, m_hurtY;
-	int m_x, m_y;
-	unsigned int m_id;
-	int m_rupees;
-	unsigned char m_darts, m_bombs, m_glovePower, m_bombPower, m_swordPower, m_shieldPower;
-	unsigned char m_visFlags, m_blockFlags, m_sprite, m_colors[5], m_hitpoints, m_ap;
+	float m_hurtX = 32.0f;
+	float m_hurtY = 32.0f;
+	int m_x = static_cast<int>(30 * 16);
+	int m_y = static_cast<int>(30.5 * 16);
+	unsigned int m_id = 0;
+	int m_rupees = 0;
+	unsigned char m_darts = 0;
+	unsigned char m_bombs = 0;
+	unsigned char m_glovePower = 1;
+	unsigned char m_bombPower = 1;
+	unsigned char m_swordPower = 1;
+	unsigned char m_shieldPower = 1;
+	unsigned char m_visFlags = 1;
+	unsigned char m_blockFlags = 0;
+	unsigned char m_sprite = 2;
+	unsigned char m_colors[5] = { 2, 0, 10, 4, 18 };
+	unsigned char m_hitpoints = 0;
+	unsigned char m_ap = 50;
 	CString m_ganiAttribs[30];
 	CString m_swordImage, m_shieldImage, m_headImage, m_bodyImage, m_horseImage, m_bowImage;
 	CString m_imagePart, m_weaponName;
@@ -362,8 +374,9 @@ private:
 	CString m_npcScripter, m_npcScriptType;
 	std::string m_npcName;
 	std::string m_clientScriptFormatted;
-	int m_timeout;
-	int m_width, m_height;
+	int m_timeout = 0;
+	int m_width = 32;
+	int m_height = 32;
 
 	CString m_npcBytecode;
 
@@ -383,11 +396,11 @@ private:
 	int m_origX, m_origY;
 
 	// npc-server
-	NPCWarpType m_canWarp;
-	bool m_npcDeleteRequested;
+	NPCWarpType m_canWarp = NPCWarpType::None;
+	bool m_npcDeleteRequested = false;
 	std::unordered_map<std::string, CString> m_flagList;
 
-	unsigned int m_scriptEventsMask;
+	unsigned int m_scriptEventsMask = 0xFF;
 	std::unique_ptr<IScriptObject<NPC>> m_scriptObject;
 	ScriptExecutionContext m_scriptExecutionContext;
 	std::unordered_map<std::string, IScriptFunction*> m_triggerActions;

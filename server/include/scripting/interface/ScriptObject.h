@@ -8,7 +8,7 @@ class IScriptObject
 {
 public:
 	IScriptObject(T* object)
-		: m_object(object), m_referenceCount(0)
+		: m_object(object)
 	{
 	}
 
@@ -49,7 +49,7 @@ public:
 
 protected:
 	T* m_object;
-	int m_referenceCount;
+	int m_referenceCount = 0;
 };
 
 #endif
