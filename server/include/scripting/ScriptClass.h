@@ -4,11 +4,9 @@
 #include <string>
 
 #include <CString.h>
-#include "BabyDI.h"
 
 #include "scripting/SourceCode.h"
 
-class Server;
 class ScriptClass
 {
 public:
@@ -34,8 +32,6 @@ public:
 	}
 
 private:
-	BabyDI_INJECT(Server, m_server);
-
 	void parseScripts(const std::string& classSource);
 
 	std::string m_className;

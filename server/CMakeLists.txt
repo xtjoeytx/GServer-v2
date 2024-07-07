@@ -24,16 +24,18 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
+	"src/Account.cpp"
 	"src/FileSystem.cpp"
 	"src/main.cpp"
-	"src/Account.cpp"
 	"src/NPC.cpp"
 	"src/Server.cpp"
 	"src/ServerList.cpp"
+	"src/TriggerCommandHandlers.cpp"
 	"src/UpdatePackage.cpp"
 	"src/Weapon.cpp"
 	"src/scripting/GS2ScriptManager.cpp"
-	"src/TriggerCommandHandlers.cpp"
+	"src/scripting/ScriptClass.cpp"
+	"src/scripting/SourceCode.cpp"
 	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
@@ -117,19 +119,18 @@ if(V8NPCSERVER)
 	list(
 		APPEND
 		SOURCES
-		src/scripting/ScriptEngine.cpp
-		src/scripting/ScriptClass.cpp
-		src/scripting/v8/V8EnvironmentImpl.cpp
-		src/scripting/v8/V8FunctionsImpl.cpp
-		src/scripting/v8/V8LevelImpl.cpp
-		src/scripting/v8/V8LevelLinkImpl.cpp
-		src/scripting/v8/V8LevelSignImpl.cpp
-		src/scripting/v8/V8LevelChestImpl.cpp
-		src/scripting/v8/V8NPCImpl.cpp
-		src/scripting/v8/V8PlayerImpl.cpp
-		src/scripting/v8/V8ScriptEnv.cpp
-		src/scripting/v8/V8ServerImpl.cpp
-		src/scripting/v8/V8WeaponImpl.cpp
+		"src/scripting/ScriptEngine.cpp"
+		"src/scripting/v8/V8EnvironmentImpl.cpp"
+		"src/scripting/v8/V8FunctionsImpl.cpp"
+		"src/scripting/v8/V8LevelImpl.cpp"
+		"src/scripting/v8/V8LevelLinkImpl.cpp"
+		"src/scripting/v8/V8LevelSignImpl.cpp"
+		"src/scripting/v8/V8LevelChestImpl.cpp"
+		"src/scripting/v8/V8NPCImpl.cpp"
+		"src/scripting/v8/V8PlayerImpl.cpp"
+		"src/scripting/v8/V8ScriptEnv.cpp"
+		"src/scripting/v8/V8ServerImpl.cpp"
+		"src/scripting/v8/V8WeaponImpl.cpp"
 	)
 endif()
 
