@@ -46,14 +46,12 @@ std::string minifyClientCode(const CString& src)
 NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, std::shared_ptr<Level> pLevel, NPCType type)
 	: NPC(type)
 {
-	setX(int(pX * 16));
-	setY(int(pY * 16));
+	setX(pX);
+	setY(pY);
 	m_image = pImage.text();
 	m_curlevel = pLevel;
 #ifdef V8NPCSERVER
 	m_origImage = m_image;
-	m_origX = m_x;
-	m_origY = m_y;
 #endif
 
 	// Keep a copy of the original level for resets
@@ -75,7 +73,7 @@ NPC::NPC(NPCType type)
 	: m_npcType(type)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(m_server->getScriptEngine()), m_origX(m_x), m_origY(m_y)
+	  m_scriptExecutionContext(m_server->getScriptEngine()), m_origX(m_x), m_origY(m_y), m_origZ(m_z)
 #endif
 {
 	memset((void*)m_saves, 0, sizeof(m_saves));
@@ -237,10 +235,14 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (short)(m_clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : m_clientScriptFormatted.length()) << m_clientScriptFormatted.substr(0, 0x3FFF);
 
 		case NPCPROP_X:
-			return CString() >> (char)(m_x / 8.0);
+			return CString() >> (char)(m_x / 8);
 
 		case NPCPROP_Y:
-			return CString() >> (char)(m_y / 8.0);
+			return CString() >> (char)(m_y / 8);
+
+		case NPCPROP_Z:
+			// range: -25 to 85
+			return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (m_z / 8))) + 50);
 
 		case NPCPROP_POWER:
 			return CString() >> (char)(m_character.hitpoints * 2);
@@ -392,6 +394,16 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 				val |= 0x0001;
 			return CString().writeGShort(val);
 		}
+
+		case NPCPROP_Z2:
+		{
+			// range: -25 to 85
+			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, m_z));
+			val = std::abs(val) << 1;
+			if (m_z < 0)
+				val |= 0x0001;
+			return CString().writeGShort(val);
+		}
 	}
 
 	// Gani attributes.
@@ -480,6 +492,16 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					continue;
 				}
 				m_y = pProps.readGChar() * 8;
+				hasMoved = true;
+				break;
+				
+			case NPCPROP_Z:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGChar();
+					continue;
+				}
+				m_z = (pProps.readGChar() - 50) * 8;
 				hasMoved = true;
 				break;
 
@@ -663,9 +685,9 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				pProps.readChars(pProps.readGShort());
 				break;
 
-			// Location, in pixels, of the npc on the level in 2.3+ clients.
-			// Bit 0x0001 controls if it is negative or not.
-			// Bits 0xFFFE are the actual value.
+				// Location, in pixels, of the npc on the level in 2.3+ clients.
+				// Bit 0x0001 controls if it is negative or not.
+				// Bits 0xFFFE are the actual value.
 			case NPCPROP_X2:
 				if (m_blockPositionUpdates)
 				{
@@ -696,6 +718,23 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				// If the first bit is 1, our position is negative.
 				if ((uint16_t)len & 0x0001)
 					m_y = -m_y;
+
+				hasMoved = true;
+				break;
+
+			case NPCPROP_Z2:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
+				len = pProps.readGUShort();
+				m_z = (len >> 1);
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					m_z = -m_z;
 
 				hasMoved = true;
 				break;
@@ -1438,8 +1477,8 @@ void NPC::moveNPC(int dx, int dy, double time, int options)
 	int delta_y = ((uint16_t)std::abs(dy) << 1) | (dy < 0 ? 0x0001 : 0x0000);
 	short itime = (short)(time / 0.05);
 
-	setX(m_x + dx);
-	setY(m_y + dy);
+	setPixelX(m_x + dx);
+	setPixelY(m_y + dy);
 
 	if (!m_curlevel.expired())
 		m_server->sendPacketToLevelArea(CString() >> (char)PLO_MOVE2 >> (int)m_id >> (short)start_x >> (short)start_y >> (short)delta_x >> (short)delta_y >> (short)itime >> (char)options, m_curlevel);
@@ -1542,13 +1581,15 @@ void NPC::saveNPC()
 	fileData << "SCRIPTER " << m_npcScripter << NL;
 	fileData << "IMAGE " << m_image << NL;
 	fileData << "STARTLEVEL " << m_origLevel << NL;
-	fileData << "STARTX " << CString((float)m_origX / 16.0) << NL;
-	fileData << "STARTY " << CString((float)m_origY / 16.0) << NL;
+	fileData << "STARTX " << CString((float)m_origX / 16.0f) << NL;
+	fileData << "STARTY " << CString((float)m_origY / 16.0f) << NL;
+	fileData << "STARTZ " << CString((float)m_origY / 16.0f) << NL;
 	if (level)
 	{
 		fileData << "LEVEL " << level->getLevelName() << NL;
-		fileData << "X " << CString((float)m_x / 16.0) << NL;
-		fileData << "Y " << CString((float)m_y / 16.0) << NL;
+		fileData << "X " << CString(getX()) << NL;
+		fileData << "Y " << CString(getY()) << NL;
+		fileData << "Z " << CString(getZ()) << NL;
 	}
 	fileData << "NICK " << m_character.nickName << NL;
 	fileData << "ANI " << m_character.gani << NL;
@@ -1653,15 +1694,19 @@ bool NPC::loadNPC(const CString& fileName)
 		else if (curCommand == "STARTLEVEL")
 			m_origLevel = curLine.readString("");
 		else if (curCommand == "STARTX")
-			m_origX = int(strtofloat(curLine.readString("")) * 16.0);
+			m_origX = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "STARTY")
-			m_origY = int(strtofloat(curLine.readString("")) * 16.0);
+			m_origY = int(strtofloat(curLine.readString("")) * 16);
+		else if (curCommand == "STARTZ")
+			m_origZ = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "LEVEL")
 			npcLevel = curLine.readString("");
 		else if (curCommand == "X")
-			setX(int(strtofloat(curLine.readString("")) * 16.0));
+			setX(strtofloat(curLine.readString("")));
 		else if (curCommand == "Y")
-			setY(int(strtofloat(curLine.readString("")) * 16.0));
+			setY(strtofloat(curLine.readString("")));
+		else if (curCommand == "Z")
+			setZ(strtofloat(curLine.readString("")));
 		else if (curCommand == "MAPX")
 		{
 			//gmaplevelx = strtoint(curLine.readString(""));

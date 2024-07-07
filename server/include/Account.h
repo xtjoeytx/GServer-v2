@@ -158,12 +158,12 @@ public:
 
 	// get functions
 	bool getGuest() const { return m_isGuest; }
-	float getX() const { return m_x; }
-	float getY() const { return m_y; }
-	float getPower() const { return m_hitpoints; }
-	int getAlignment() const { return m_ap; }
-	int getArrowCount() const { return m_arrowCount; }
-	int getBombCount() const { return m_bombCount; }
+	float getX() const { return m_x / 16.0f; }
+	float getY() const { return m_y / 16.0f; }
+	float getZ() const { return m_z / 16.0f; }
+	int16_t getPixelX() const { return m_x; }
+	int16_t getPixelY() const { return m_y; }
+	int16_t getPixelZ() const { return m_z; }
 	float getPower() const { return m_character.hitpoints; }
 	int getAlignment() const { return m_character.ap; }
 	int getArrowCount() const { return m_character.arrows; }
@@ -207,6 +207,12 @@ public:
 	std::vector<CString>& getWeaponList() { return m_weaponList; }
 
 	// set functions
+	void setX(float val) { m_x = static_cast<int16_t>(val * 16); }
+	void setY(float val) { m_y = static_cast<int16_t>(val * 16); }
+	void setZ(float val) { m_z = static_cast<int16_t>(val * 16); }
+	void setPixelX(int16_t val) { m_x = val; }
+	void setPixelY(int16_t val) { m_y = val; }
+	void setPixelZ(int16_t val) { m_z = val; }
 	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
 	void setLastSparTime(time_t newTime) { m_lastSparTime = newTime; }
 	void setApCounter(int newTime) { m_apCounter = newTime; }
@@ -257,7 +263,7 @@ protected:
 
 	CString m_language{ "English" };
 	CString m_levelName;
-	float m_x = 0.0f, m_y = 0.0f, m_z = 0.0f;
+	int16_t m_x = 0, m_y = 0, m_z = 0;
 	float m_eloDeviation = 350.0f;
 	float m_eloRating = 1500.0f;
 	uint8_t m_maxHitpoints = 3;

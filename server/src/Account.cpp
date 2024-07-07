@@ -87,9 +87,9 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 			m_communityName = val;
 		else if (section == "LEVEL")
 			m_levelName = val;
-		else if (section == "X") { m_x = (float)strtofloat(val); }
-		else if (section == "Y") { m_y = (float)strtofloat(val); }
-		else if (section == "Z") { m_z = (float)strtofloat(val); }
+		else if (section == "X") { setX(strtofloat(val)); }
+		else if (section == "Y") { setY(strtofloat(val)); }
+		else if (section == "Z") { setZ(strtofloat(val)); }
 		else if (section == "MAXHP")
 			setMaxPower(strtoint(val));
 		else if (section == "HP")
@@ -284,11 +284,11 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 			m_levelName = settings.getStr("startlevel", "onlinestartlocal.nw");
 		if (settings.exists("startx"))
 		{
-			m_x = settings.getFloat("startx", 30.0f);
+			setX(settings.getFloat("startx", 30.0f));
 		}
 		if (settings.exists("starty"))
 		{
-			m_y = settings.getFloat("starty", 30.5f);
+			setY(settings.getFloat("starty", 30.5f));
 		}
 
 		// Save our account now and add it to the file system.
@@ -313,9 +313,9 @@ bool Account::saveAccount()
 	newFile << "NICK " << m_character.nickName << "\r\n";
 	newFile << "COMMUNITYNAME " << m_accountName /*m_communityName*/ << "\r\n";
 	newFile << "LEVEL " << m_levelName << "\r\n";
-	newFile << "X " << CString(m_x) << "\r\n";
-	newFile << "Y " << CString(m_y) << "\r\n";
-	newFile << "Z " << CString(m_z) << "\r\n";
+	newFile << "X " << CString(getX()) << "\r\n";
+	newFile << "Y " << CString(getY()) << "\r\n";
+	newFile << "Z " << CString(getZ()) << "\r\n";
 	newFile << "MAXHP " << CString(m_maxHitpoints) << "\r\n";
 	newFile << "HP " << CString(m_character.hitpoints) << "\r\n";
 	newFile << "RUPEES " << CString(m_character.gralats) << "\r\n";

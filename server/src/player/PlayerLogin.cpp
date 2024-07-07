@@ -342,7 +342,7 @@ bool Player::sendLoginClient()
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	bool warpSuccess = warp(m_levelName, m_x, m_y);
+	bool warpSuccess = warp(m_levelName, getX(), getY());
 	if (!warpSuccess && m_currentLevel.expired())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");

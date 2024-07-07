@@ -176,7 +176,7 @@ void Player::setPropsRC(CString& pPacket, Player* rc)
 	}
 
 	// Warp the player to his new location now.
-	if (m_id != -1) warp(m_levelName, m_x, m_y, 0);
+	if (m_id != -1) warp(m_levelName, getX(), getY(), 0);
 }
 
 CString Player::getPropsRC()

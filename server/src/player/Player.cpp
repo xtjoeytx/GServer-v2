@@ -880,7 +880,7 @@ bool Player::testSign()
 			for (const auto& sign: signs)
 			{
 				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
-				if (m_y == signLoc[1] && inrange(m_x, signLoc[0] - 1.5f, signLoc[0] + 0.5f))
+				if (getY() == signLoc[1] && inrange(getX(), signLoc[0] - 1.5f, signLoc[0] + 0.5f))
 				{
 					sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
 				}
@@ -896,8 +896,8 @@ void Player::testTouch()
 	static const int touchtestd[] = { 24, 16, 0, 32, 24, 56, 48, 32 };
 	int dir = m_character.sprite % 4;
 
-	int pixelX = int(m_x * 16.0);
-	int pixelY = int(m_y * 16.0);
+	int pixelX = getPixelX();
+	int pixelY = getPixelY();
 
 	auto level = getLevel();
 	auto npcList = level->testTouch(pixelX + touchtestd[dir * 2], pixelY + touchtestd[dir * 2 + 1]);
@@ -962,8 +962,8 @@ void Player::dropItemsOnDeath()
 			item = 0;
 		}
 
-		float pX = m_x + 1.5f + (rand() % 8) - 2.0f;
-		float pY = m_y + 2.0f + (rand() % 8) - 2.0f;
+		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)item;
 		packet.readGChar(); // So msgPLI_ITEMADD works.
@@ -975,8 +975,8 @@ void Player::dropItemsOnDeath()
 	// Add arrows and bombs to the level.
 	for (int i = 0; i < drop_arrows; ++i)
 	{
-		float pX = m_x + 1.5f + (rand() % 8) - 2.0f;
-		float pY = m_y + 2.0f + (rand() % 8) - 2.0f;
+		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4; // 4 = arrows
 		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
@@ -986,8 +986,8 @@ void Player::dropItemsOnDeath()
 	}
 	for (int i = 0; i < drop_bombs; ++i)
 	{
-		float pX = m_x + 1.5f + (rand() % 8) - 2.0f;
-		float pY = m_y + 2.0f + (rand() % 8) - 2.0f;
+		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)3; // 3 = bombs
 		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
@@ -1320,7 +1320,7 @@ bool Player::processChat(CString pChat)
 		}
 
 		auto p = m_server->getPlayer(chatParse[1], PLTYPE_ANYCLIENT);
-		if (p) p->warp(m_levelName, m_x, m_y);
+		if (p) p->warp(m_levelName, getX(), getY());
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -1503,9 +1503,9 @@ bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 		m_pmap = newLevel->getMap();
 
 	// Set x/y location.
-	float oldX = m_x, oldY = m_y;
-	m_x = pX;
-	m_y = pY;
+	float oldX = getX(), oldY = getY();
+	setX(pX);
+	setY(pY);
 
 	// Try warping to the new level.
 	bool warpSuccess = setLevel(pLevelName, modTime);
@@ -1516,8 +1516,8 @@ bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 		if (currentLevel == nullptr) warped = false;
 		else
 		{
-			m_x = oldX;
-			m_y = oldY;
+			setX(oldX);
+			setY(oldY);
 			m_pmap = currentLevel->getMap();
 			warped = setLevel(currentLevel->getLevelName());
 		}
@@ -1527,8 +1527,8 @@ bool Player::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
 			if (unstickLevel == 0) return false;
 
 			// Try to warp to the unstick me level.
-			m_x = unstickX;
-			m_y = unstickY;
+			setX(unstickX);
+			setY(unstickY);
 			m_pmap = unstickLevel->getMap();
 			if (!setLevel(unstickLevel->getLevelName()))
 				return false;
@@ -1627,11 +1627,11 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(m_x * 2) >> (char)(m_y * 2) >> (char)(m_z + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY()
+			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(getX() * 2) >> (char)(getY() * 2) >> (char)(getZ() + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY()
 																																						<< map->getMapName());
 		}
 		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(m_x * 2) >> (char)(m_y * 2) << m_levelName);
+			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(getX() * 2) >> (char)(getY() * 2) << m_levelName);
 	}
 
 	// Send the level now.
@@ -3039,7 +3039,7 @@ bool Player::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return true;
 				float pos = (float)atof(flagValue.text());
-				if (pos != m_x)
+				if (pos != getX())
 					m_grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
 				return true;
 			}
@@ -3047,7 +3047,7 @@ bool Player::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return true;
 				float pos = (float)atof(flagValue.text());
-				if (pos != m_y)
+				if (pos != getY())
 					m_grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
 				return true;
 			}
@@ -3055,7 +3055,7 @@ bool Player::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return true;
 				float pos = (float)atof(flagValue.text());
-				if (pos != m_z)
+				if (pos != getZ())
 					m_grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
 				return true;
 			}

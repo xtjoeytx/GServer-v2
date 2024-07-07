@@ -17,7 +17,7 @@
 	#include <unordered_map>
 	#include <unordered_set>
 
-    #include "scripting/ScriptAction.h"
+	#include "scripting/ScriptAction.h"
 	#include "scripting/ScriptExecutionContext.h"
 	#include "scripting/interface/ScriptBindings.h"
 #endif
@@ -68,7 +68,7 @@ enum
 	NPCPROP_GMAPLEVELX = 41,
 	NPCPROP_GMAPLEVELY = 42,
 
-	NPCPROP_UNKNOWN43 = 43,
+	NPCPROP_Z = 43,
 
 	NPCPROP_GATTRIB6 = 44,
 	NPCPROP_GATTRIB7 = 45,
@@ -106,6 +106,7 @@ enum
 	NPCPROP_CLASS = 74, // NPC-Server class.  Possibly also join scripts.
 	NPCPROP_X2 = 75,
 	NPCPROP_Y2 = 76,
+	NPCPROP_Z2 = 77,
 
 	NPCPROP_COUNT
 };
@@ -244,8 +245,12 @@ public:
 	// set functions
 	void setId(unsigned int pId) { m_id = pId; }
 	void setLevel(std::shared_ptr<Level> pLevel) { m_curlevel = pLevel; }
-	void setX(int val) { m_x = val; }
-	void setY(int val) { m_y = val; }
+	void setX(float val) { m_x = static_cast<int16_t>(val * 16); }
+	void setY(float val) { m_y = static_cast<int16_t>(val * 16); }
+	void setZ(float val) { m_z = static_cast<int16_t>(val * 16); }
+	void setPixelX(int16_t val) { m_x = val; }
+	void setPixelY(int16_t val) { m_y = val; }
+	void setPixelZ(int16_t val) { m_z = val; }
 	void setHeight(int val) { m_height = val; }
 	void setWidth(int val) { m_width = val; }
 	void setName(const std::string& name) { m_npcName = name; }
@@ -259,8 +264,12 @@ public:
 	// get functions
 	unsigned int getId() const { return m_id; }
 	NPCType getType() const { return m_npcType; }
-	int getX() const { return m_x; }
-	int getY() const { return m_y; }
+	float getX() const { return m_x / 16.0f; }
+	float getY() const { return m_y / 16.0f; }
+	float getZ() const { return m_z / 16.0f; }
+	int16_t getPixelX() const { return m_x; }
+	int16_t getPixelY() const { return m_y; }
+	int16_t getPixelZ() const { return m_z; }
 	int getHeight() const { return m_height; }
 	int getWidth() const { return m_width; }
 	unsigned char getSprite() const { return m_character.sprite; }
@@ -348,7 +357,7 @@ private:
 	unsigned int m_id = 0;
 	int16_t m_x = (30 * 16);
 	int16_t m_y = (30.5 * 16);
-	unsigned char m_bombs = 0;
+	int16_t m_z = 0;
 	unsigned char m_visFlags = 1;
 	unsigned char m_blockFlags = 0;
 	float m_hurtX = 32.0f;
@@ -390,6 +399,7 @@ private:
 	CString m_origImage, m_origLevel;
 	int16_t m_origX;
 	int16_t m_origY;
+	int16_t m_origZ;
 
 	// npc-server
 	NPCWarpType m_canWarp = NPCWarpType::None;
