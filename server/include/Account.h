@@ -187,7 +187,7 @@ public:
 	unsigned int getAttachedNPC() const { return m_attachNPC; }
 
 	const CString& getAccountName() const { return m_accountName; }
-	const CString& getNickname() const { return m_character.nickName; }
+	const std::string& getNickname() const { return m_character.nickName; }
 	const CString& getLevelName() const { return m_levelName; }
 	const CString& getBodyImage() const { return m_character.bodyImage; }
 	const CString& getHeadImage() const { return m_character.headImage; }

@@ -1390,7 +1390,7 @@ bool Player::processChat(CString pChat)
 				{
 					// If our guild matches, add it to our string.
 					if (player->getGuild() == g)
-						msg << (msg.length() == 0 ? "" : ", ") << player->getNickname().subString(0, player->getNickname().find('(')).trimI();
+						msg << (msg.length() == 0 ? "" : ", ") << CString(player->getNickname()).subString(0, player->getNickname().find('(')).trimI();
 				}
 			}
 			if (msg.length() == 0)
@@ -3305,7 +3305,7 @@ bool Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			auto pmPlayer = getExternalPlayer(pmPlayerId);
 			if (pmPlayer != nullptr)
 			{
-				serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname().text());
+				serverlog.out("Sending PM to global player: %s.\n", pmPlayer->getNickname().c_str());
 				pmMessage.guntokenizeI();
 				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->getAccountName(), pmMessage);
 				pmMessage.gtokenizeI();
