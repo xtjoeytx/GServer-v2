@@ -19,6 +19,7 @@
 #include "level/Level.h"
 #include "level/Map.h"
 #include "scripting/ScriptOrigin.h"
+#include "scripting/ScriptClass.h"
 
 static const char* const filesystemTypes[] = {
 	"all",

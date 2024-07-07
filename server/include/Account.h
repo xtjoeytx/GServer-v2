@@ -9,6 +9,7 @@
 #include <CString.h>
 #include "BabyDI.h"
 
+#include "animation/Character.h"
 #include "level/LevelChest.h"
 
 enum
@@ -152,7 +153,7 @@ public:
 	void setFlag(const std::string& pFlagName, const CString& pFlagValue);
 	void deleteFlag(const std::string& pFlagName);
 
-	CString translate(const CString& pKey);
+	CString translate(const CString& pKey) const;
 	bool hasRight(int mask) const { return (m_adminRights & mask) ? true : false; }
 
 	// get functions
@@ -163,13 +164,17 @@ public:
 	int getAlignment() const { return m_ap; }
 	int getArrowCount() const { return m_arrowCount; }
 	int getBombCount() const { return m_bombCount; }
-	int getGlovePower() const { return m_glovePower; }
+	float getPower() const { return m_character.hitpoints; }
+	int getAlignment() const { return m_character.ap; }
+	int getArrowCount() const { return m_character.arrows; }
+	int getBombCount() const { return m_character.bombs; }
+	int getGlovePower() const { return m_character.glovePower; }
 	int getMagicPower() const { return m_mp; }
 	int getMaxPower() const { return m_maxHitpoints; }
-	int getRupees() const { return m_gralatCount; }
-	int getSwordPower() const { return m_swordPower; }
-	int getShieldPower() const { return m_shieldPower; }
-	int getSprite() const { return m_sprite; }
+	int getRupees() const { return m_character.gralats; }
+	int getSwordPower() const { return m_character.swordPower; }
+	int getShieldPower() const { return m_character.shieldPower; }
+	int getSprite() const { return m_character.sprite; }
 	int getStatus() const { return m_status; }
 	int getOnlineTime() const { return m_onlineTime; }
 	int getKills() const { return m_kills; }
@@ -182,18 +187,18 @@ public:
 	unsigned int getAttachedNPC() const { return m_attachNPC; }
 
 	const CString& getAccountName() const { return m_accountName; }
-	const CString& getNickname() const { return m_nickName; }
+	const CString& getNickname() const { return m_character.nickName; }
 	const CString& getLevelName() const { return m_levelName; }
-	const CString& getBodyImage() const { return m_bodyImage; }
-	const CString& getHeadImage() const { return m_headImage; }
+	const CString& getBodyImage() const { return m_character.bodyImage; }
+	const CString& getHeadImage() const { return m_character.headImage; }
 	//Level * getLevel()						{ return nullptr; }
-	const CString& getShieldImage() const { return m_shieldImage; }
-	const CString& getSwordImage() const { return m_swordImage; }
-	const CString& getAnimation() const { return m_gani; }
+	const CString& getShieldImage() const { return m_character.shieldImage; }
+	const CString& getSwordImage() const { return m_character.swordImage; }
+	const CString& getAnimation() const { return m_character.gani; }
 	const CString& getAdminIp() const { return m_adminIp; }
 	const CString& getBanReason() const { return m_banReason; }
 	const CString& getBanLength() const { return m_banLength; }
-	const CString& getChatMsg() const { return m_chatMessage; }
+	const CString& getChatMsg() const { return m_character.chatMessage; }
 	const CString& getEmail() const { return m_email; }
 	const CString& getIpStr() const { return m_accountIpStr; }
 	const CString& getComments() const { return m_accountComments; }
@@ -248,47 +253,27 @@ protected:
 	int64_t m_deviceId = 0;
 
 	// Player-Attributes
-	CString m_attrList[30];
-	CString m_nickName{ "default" };
-	CString m_bodyImage{ "body.png" };
-	CString m_headImage{ "head0.png" };
-	CString m_shieldImage{ "shield1.png" };
-	CString m_swordImage{ "sword1.png" };
-	CString m_gani{ "idle" };
+	Character m_character;
+
 	CString m_language{ "English" };
-	CString m_bowImage;
-	CString m_horseImage;
-	CString m_chatMessage;
 	CString m_levelName;
 	float m_x = 0.0f, m_y = 0.0f, m_z = 0.0f;
 	float m_eloDeviation = 350.0f;
 	float m_eloRating = 1500.0f;
-	float m_hitpoints = 3.0f;
-	int m_maxHitpoints = 3;
-	int m_mp = 0;
-	int m_ap = 50;
-	int m_apCounter = 0;
-	int m_arrowCount = 10;
-	int m_bombCount = 5;
-	int m_bombPower = 1;
-	int m_shieldPower = 1;
-	int m_swordPower = 1;
-	int m_glovePower = 1;
-	int m_bowPower = 1;
-	int m_horseBombCount = 0;
-	int m_gralatCount = 0;
-	int m_kills = 0;
-	int m_deaths = 0;
-	int m_sprite = 2;
-	int m_carrySprite = -1;
+	uint8_t m_maxHitpoints = 3;
+	uint8_t m_mp = 0;
+	uint8_t m_apCounter = 0;
+	uint8_t m_horseBombCount = 0;
+	uint32_t m_kills = 0;
+	uint32_t m_deaths = 0;
+	uint8_t m_carrySprite = -1;
 	int m_additionalFlags = 0;
 	int m_onlineTime = 0;
 	int m_status = 20;
 	int m_udpport = 0;
 	time_t m_lastSparTime = 0;
-	unsigned int m_attachNPC = 0;
-	unsigned char m_statusMsg = 0;
-	unsigned char m_colors[5] = { 2, 0, 10, 4, 18 };	// cakes
+	uint32_t m_attachNPC = 0;
+	uint8_t m_statusMsg = 0;
 	std::unordered_map<std::string, CString> m_flagList;
 	std::vector<CString> m_chestList, m_folderList, m_weaponList, m_privateMessageServerList;
 };
@@ -308,38 +293,38 @@ inline void Account::deleteFlag(const std::string& pFlagName)
 
 inline unsigned char Account::getColorId(unsigned int idx) const
 {
-	if (idx < 5) return m_colors[idx];
+	if (idx < 5) return m_character.colors[idx];
 	return 0;
 }
 
 inline void Account::setPower(float newPower)
 {
-	m_hitpoints = clip(newPower, 0.0f, (float)m_maxHitpoints);
+	m_character.hitpoints = clip(newPower, 0.0f, (float)m_maxHitpoints);
 }
 
 inline void Account::setShieldImage(const CString& newImage)
 {
-	m_shieldImage = newImage.subString(0, 223);
+	m_character.shieldImage = newImage.subString(0, 223);
 }
 
 inline void Account::setSwordImage(const CString& newImage)
 {
-	m_swordImage = newImage.subString(0, 223);
+	m_character.swordImage = newImage.subString(0, 223);
 }
 
 inline void Account::setGani(const CString& newGani)
 {
-	m_gani = newGani.subString(0, 223);
+	m_character.gani = newGani.subString(0, 223);
 }
 
 inline void Account::setBodyImage(const CString& newImage)
 {
-	m_bodyImage = newImage.subString(0, 223);
+	m_character.bodyImage = newImage.subString(0, 223);
 }
 
 inline void Account::setHeadImage(const CString& newImage)
 {
-	m_headImage = newImage.subString(0, 123);
+	m_character.headImage = newImage.subString(0, 123);
 }
 
 #endif // TACCOUNT_H

@@ -10,6 +10,7 @@
 #include "Server.h"
 #include "Weapon.h"
 #include "level/LevelItem.h"
+#include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
 	#include "Player.h"

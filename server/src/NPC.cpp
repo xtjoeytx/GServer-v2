@@ -11,6 +11,7 @@
 #include "Server.h"
 #include "level/Level.h"
 #include "level/Map.h"
+#include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
 	#include "scripting/ScriptEngine.h"
@@ -79,9 +80,6 @@ NPC::NPC(NPCType type)
 {
 	memset((void*)m_saves, 0, sizeof(m_saves));
 	memset((void*)m_modTime, 0, sizeof(m_modTime));
-
-	// bowImage for pre-2.x clients.
-	m_bowImage >> (char)0;
 
 	// imagePart needs to be Graal-packed.
 	for (int i = 0; i < 6; i++)
@@ -245,39 +243,44 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)(m_y / 8.0);
 
 		case NPCPROP_POWER:
-			return CString() >> (char)m_hitpoints;
+			return CString() >> (char)(m_character.hitpoints * 2);
 
 		case NPCPROP_RUPEES:
-			return CString() >> (int)m_rupees;
+			return CString() >> (int)m_character.gralats;
 
 		case NPCPROP_ARROWS:
-			return CString() >> (char)m_darts;
+			return CString() >> (char)m_character.arrows;
 
 		case NPCPROP_BOMBS:
-			return CString() >> (char)m_bombs;
+			return CString() >> (char)m_character.bombs;
 
 		case NPCPROP_GLOVEPOWER:
-			return CString() >> (char)m_glovePower;
+			return CString() >> (char)m_character.glovePower;
 
 		case NPCPROP_BOMBPOWER:
-			return CString() >> (char)m_bombPower;
+			return CString() >> (char)m_character.bombPower;
 
 		case NPCPROP_SWORDIMAGE:
-			if (m_swordPower == 0)
+			if (m_character.swordPower == 0)
 				return CString() >> (char)0;
 			else
-				return CString() >> (char)(m_swordPower + 30) >> (char)m_swordImage.length() << m_swordImage;
+				return CString() >> (char)(m_character.swordPower + 30) >> (char)m_character.swordImage.length() << m_character.swordImage;
 
 		case NPCPROP_SHIELDIMAGE:
-			if (m_shieldPower + 10 > 10)
-				return CString() >> (char)(m_shieldPower + 10) >> (char)m_shieldImage.length() << m_shieldImage;
+			if (m_character.shieldPower + 10 > 10)
+				return CString() >> (char)(m_character.shieldPower + 10) >> (char)m_character.shieldImage.length() << m_character.shieldImage;
 			else
 				return CString() >> (char)0;
 
 		case NPCPROP_GANI:
 			if (clientVersion < CLVER_2_1)
-				return m_bowImage;
-			return CString() >> (char)m_gani.length() << m_gani;
+			{
+				if (m_character.bowPower < 10)
+					return CString() >> (char)m_character.bowPower;
+				else
+					return CString() >> (char)(m_character.bowImage.length() + 10) << m_character.bowImage;
+			}
+			return CString() >> (char)m_character.gani.length() << m_character.gani;
 
 		case NPCPROP_VISFLAGS:
 			return CString() >> (char)m_visFlags;
@@ -286,7 +289,7 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)m_blockFlags;
 
 		case NPCPROP_MESSAGE:
-			return CString() >> (char)m_chatMessage.length() << m_chatMessage;
+			return CString() >> (char)m_character.chatMessage.length() << m_character.chatMessage;
 
 		case NPCPROP_HURTDXDY:
 			return CString() >> (char)((m_hurtX * 32) + 32) >> (char)((m_hurtY * 32) + 32);
@@ -299,22 +302,22 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 		case NPCPROP_SPRITE:
 		{
 			if (clientVersion < CLVER_2_1)
-				return CString() >> (char)m_sprite;
+				return CString() >> (char)m_character.sprite;
 			else
-				return CString() >> (char)(m_sprite % 4);
+				return CString() >> (char)(m_character.sprite % 4);
 		}
 
 		case NPCPROP_COLORS:
-			return CString() >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4];
+			return CString() >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4];
 
 		case NPCPROP_NICKNAME:
-			return CString() >> (char)m_nickName.length() << m_nickName;
+			return CString() >> (char)m_character.nickName.length() << m_character.nickName;
 
 		case NPCPROP_HORSEIMAGE:
-			return CString() >> (char)m_horseImage.length() << m_horseImage;
+			return CString() >> (char)m_character.horseImage.length() << m_character.horseImage;
 
 		case NPCPROP_HEADIMAGE:
-			return CString() >> (char)(m_headImage.length() + 100) << m_headImage;
+			return CString() >> (char)(m_character.headImage.length() + 100) << m_character.headImage;
 
 		case NPCPROP_SAVE0:
 		case NPCPROP_SAVE1:
@@ -329,13 +332,13 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)m_saves[pId - NPCPROP_SAVE0];
 
 		case NPCPROP_ALIGNMENT:
-			return CString() >> (char)m_ap;
+			return CString() >> (char)m_character.ap;
 
 		case NPCPROP_IMAGEPART:
 			return CString() << m_imagePart;
 
 		case NPCPROP_BODYIMAGE:
-			return CString() >> (char)m_bodyImage.length() << m_bodyImage;
+			return CString() >> (char)m_character.bodyImage.length() << m_character.bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
 			return CString() >> (char)(level ? level->getMapX() : 0);
@@ -398,7 +401,7 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 		for (unsigned int i = 0; i < sizeof(__nAttrPackets); i++)
 		{
 			if (__nAttrPackets[i] == pId)
-				return CString() >> (char)m_ganiAttribs[i].length() << m_ganiAttribs[i];
+				return CString() >> (char)m_character.ganiAttributes[i].length() << m_character.ganiAttributes[i];
 		}
 	}
 
@@ -481,49 +484,49 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_POWER:
-				m_hitpoints = pProps.readGUChar();
+				m_character.hitpoints = (pProps.readGUChar() / 2.0f);
 				break;
 
 			case NPCPROP_RUPEES:
-				m_rupees = pProps.readGUInt();
+				m_character.gralats = pProps.readGUInt();
 				break;
 
 			case NPCPROP_ARROWS:
-				m_darts = pProps.readGUChar();
+				m_character.arrows = pProps.readGUChar();
 				break;
 
 			case NPCPROP_BOMBS:
-				m_bombs = pProps.readGUChar();
+				m_character.bombs = pProps.readGUChar();
 				break;
 
 			case NPCPROP_GLOVEPOWER:
-				m_glovePower = pProps.readGUChar();
+				m_character.glovePower = pProps.readGUChar();
 				break;
 
 			case NPCPROP_BOMBPOWER:
-				m_bombPower = pProps.readGUChar();
+				m_character.bombPower = pProps.readGUChar();
 				break;
 
 			case NPCPROP_SWORDIMAGE:
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 4)
-					m_swordImage = CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.swordImage = CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
 					sp -= 30;
 					len = pProps.readGUChar();
 					if (len > 0)
 					{
-						m_swordImage = pProps.readChars(len);
-						if (!m_swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_swordImage).isEmpty())
-							m_swordImage << ".gif";
+						m_character.swordImage = pProps.readChars(len);
+						if (!m_character.swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.swordImage).isEmpty())
+							m_character.swordImage << ".gif";
 					}
 					else
-						m_swordImage = "";
-					//m_swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
+						m_character.swordImage = "";
+					//m_character.swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
-				m_swordPower = sp;
+				m_character.swordPower = sp;
 				break;
 			}
 
@@ -531,21 +534,21 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 3)
-					m_shieldImage = CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.shieldImage = CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
 					sp -= 10;
 					len = pProps.readGUChar();
 					if (len > 0)
 					{
-						m_shieldImage = pProps.readChars(len);
-						if (!m_shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_shieldImage).isEmpty())
-							m_shieldImage << ".gif";
+						m_character.shieldImage = pProps.readChars(len);
+						if (!m_character.shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.shieldImage).isEmpty())
+							m_character.shieldImage << ".gif";
 					}
 					else
-						m_shieldImage = "";
+						m_character.shieldImage = "";
 				}
-				m_shieldPower = sp;
+				m_character.shieldPower = std::min<uint8_t>(sp, 3);
 				break;
 			}
 
@@ -554,21 +557,16 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				if (clientVersion < CLVER_2_1)
 				{
 					// Older clients don't use ganis.  This is the bow power and image instead.
-					int sp = pProps.readGUChar();
-					if (sp < 10)
-						m_bowImage = CString() >> (char)sp;
-					else
+					m_character.bowPower = pProps.readGUChar();
+					if (m_character.bowPower >= 10)
 					{
-						sp -= 10;
-						if (sp < 0) break;
-						m_bowImage = pProps.readChars(sp);
-						if (!m_bowImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_bowImage).isEmpty())
-							m_bowImage << ".gif";
-						m_bowImage = CString() >> (char)(10 + m_bowImage.length()) << m_bowImage;
+						m_character.bowImage = pProps.readChars(m_character.bowPower - 10);
+						if (!m_character.bowImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.bowImage).isEmpty())
+							m_character.bowImage << ".gif";
 					}
 					break;
 				}
-				m_gani = pProps.readChars(pProps.readGUChar()).text();
+				m_character.gani = pProps.readChars(pProps.readGUChar()).text();
 				break;
 			}
 
@@ -581,7 +579,7 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_MESSAGE:
-				m_chatMessage = pProps.readChars(pProps.readGUChar()).text();
+				m_character.chatMessage = pProps.readChars(pProps.readGUChar()).text();
 				break;
 
 			case NPCPROP_HURTDXDY:
@@ -594,39 +592,39 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_SPRITE:
-				m_sprite = pProps.readGUChar();
+				m_character.sprite = pProps.readGUChar();
 				break;
 
 			case NPCPROP_COLORS:
 				for (int i = 0; i < 5; i++)
-					m_colors[i] = pProps.readGUChar();
+					m_character.colors[i] = pProps.readGUChar();
 				break;
 
 			case NPCPROP_NICKNAME:
-				m_nickName = pProps.readChars(pProps.readGUChar()).text();
+				m_character.nickName = pProps.readChars(pProps.readGUChar()).text();
 				break;
 
 			case NPCPROP_HORSEIMAGE:
-				m_horseImage = pProps.readChars(pProps.readGUChar());
-				if (!m_horseImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_horseImage).isEmpty())
-					m_horseImage << ".gif";
+				m_character.horseImage = pProps.readChars(pProps.readGUChar());
+				if (!m_character.horseImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.horseImage).isEmpty())
+					m_character.horseImage << ".gif";
 				break;
 
 			case NPCPROP_HEADIMAGE:
 				len = pProps.readGUChar();
 				if (len < 100)
-					m_headImage = CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.headImage = CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
 				else
 				{
-					m_headImage = pProps.readChars(len - 100);
-					if (!m_headImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_headImage).isEmpty())
-						m_headImage << ".gif";
+					m_character.headImage = pProps.readChars(len - 100);
+					if (!m_character.headImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.headImage).isEmpty())
+						m_character.headImage << ".gif";
 				}
 				break;
 
 			case NPCPROP_ALIGNMENT:
-				m_ap = pProps.readGUChar();
-				m_ap = clip(m_ap, 0, 100);
+				m_character.ap = pProps.readGUChar();
+				m_character.ap = clip(m_character.ap, 0, 100);
 				break;
 
 			case NPCPROP_IMAGEPART:
@@ -634,7 +632,7 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_BODYIMAGE:
-				m_bodyImage = pProps.readChars(pProps.readGUChar());
+				m_character.bodyImage = pProps.readChars(pProps.readGUChar());
 				break;
 
 			case NPCPROP_GMAPLEVELX:
@@ -734,94 +732,94 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_GATTRIB1:
-				m_ganiAttribs[0] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[0] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB2:
-				m_ganiAttribs[1] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[1] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB3:
-				m_ganiAttribs[2] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[2] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB4:
-				m_ganiAttribs[3] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[3] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB5:
-				m_ganiAttribs[4] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[4] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB6:
-				m_ganiAttribs[5] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[5] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB7:
-				m_ganiAttribs[6] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[6] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB8:
-				m_ganiAttribs[7] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[7] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB9:
-				m_ganiAttribs[8] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[8] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB10:
-				m_ganiAttribs[9] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[9] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB11:
-				m_ganiAttribs[10] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[10] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB12:
-				m_ganiAttribs[11] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[11] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB13:
-				m_ganiAttribs[12] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[12] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB14:
-				m_ganiAttribs[13] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[13] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB15:
-				m_ganiAttribs[14] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[14] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB16:
-				m_ganiAttribs[15] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[15] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB17:
-				m_ganiAttribs[16] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[16] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB18:
-				m_ganiAttribs[17] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[17] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB19:
-				m_ganiAttribs[18] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[18] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB20:
-				m_ganiAttribs[19] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[19] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB21:
-				m_ganiAttribs[20] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[20] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB22:
-				m_ganiAttribs[21] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[21] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB23:
-				m_ganiAttribs[22] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[22] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB24:
-				m_ganiAttribs[23] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[23] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB25:
-				m_ganiAttribs[24] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[24] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB26:
-				m_ganiAttribs[25] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[25] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB27:
-				m_ganiAttribs[26] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[26] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB28:
-				m_ganiAttribs[27] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[27] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB29:
-				m_ganiAttribs[28] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[28] = pProps.readChars(pProps.readGUChar());
 				break;
 			case NPCPROP_GATTRIB30:
-				m_ganiAttribs[29] = pProps.readChars(pProps.readGUChar());
+				m_character.ganiAttributes[29] = pProps.readChars(pProps.readGUChar());
 				break;
 
 			default:
@@ -894,7 +892,7 @@ void NPC::testForLinks()
 	{
 		static const int touchtestd[] = { 2, 1, 0, 2, 2, 4, 3, 2 };
 
-		int dir = m_sprite % 4;
+		int dir = m_character.sprite % 4;
 
 		auto linkTouched = level->getLink((int)(m_x / 16) + touchtestd[dir * 2], (int)(m_y / 16) + touchtestd[dir * 2 + 1]);
 		if (linkTouched)
@@ -1219,36 +1217,36 @@ CString NPC::getVariableDump()
 
 			case NPCPROP_SWORDIMAGE:
 			{
-				int m_hitpoints = prop.readGUChar();
+				int sp = prop.readGUChar();
 				CString image;
-				if (m_hitpoints > 30)
+				if (sp > 30)
 				{
 					image = prop.readChars(prop.readGUChar());
-					m_hitpoints -= 30;
+					sp -= 30;
 				}
-				else if (m_hitpoints > 0)
-					image = CString() << "sword" << CString(m_hitpoints) << ".png";
+				else if (sp > 0)
+					image = CString() << "sword" << CString(sp) << ".png";
 
 				if (!image.isEmpty())
-					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints) << ")\n";
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(sp) << ")\n";
 
 				break;
 			}
 
 			case NPCPROP_SHIELDIMAGE:
 			{
-				int m_hitpoints = prop.readGUChar();
+				int sp = prop.readGUChar();
 				CString image;
-				if (m_hitpoints > 10)
+				if (sp > 10)
 				{
 					image = prop.readChars(prop.readGUChar());
-					m_hitpoints -= 10;
+					sp -= 10;
 				}
-				else if (m_hitpoints > 0)
-					image = CString() << "shield" << CString(m_hitpoints) << ".png";
+				else if (sp > 0)
+					image = CString() << "shield" << CString(sp) << ".png";
 
 				if (!image.isEmpty())
-					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(m_hitpoints) << ")\n";
+					npcDump << npcNameStr << "." << propNames[propId] << ": " << image << " (" << CString(sp) << ")\n";
 
 				break;
 			}
@@ -1415,10 +1413,10 @@ void NPC::resetNPC()
 	// TODO(joey): reset script execution, clear flags.. unsure what else gets reset. TBD
 	m_canWarp = NPCWarpType::None;
 	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(0);
-	m_headImage = "";
-	m_bodyImage = "";
+	m_character.headImage = "";
+	m_character.bodyImage = "";
 	m_image = "";
-	m_gani = "idle";
+	m_character.gani = "idle";
 
 	// Reset script execution
 	setScriptCode(m_npcScript.getSource());
@@ -1552,23 +1550,25 @@ void NPC::saveNPC()
 		fileData << "X " << CString((float)m_x / 16.0) << NL;
 		fileData << "Y " << CString((float)m_y / 16.0) << NL;
 	}
-	fileData << "NICK " << m_nickName << NL;
-	fileData << "ANI " << m_gani << NL;
-	fileData << "HP " << CString(m_hitpoints) << NL;
-	fileData << "GRALATS " << CString(m_rupees) << NL;
-	fileData << "ARROWS " << CString(m_darts) << NL;
-	fileData << "BOMBS " << CString(m_bombs) << NL;
-	fileData << "GLOVEP " << CString(m_glovePower) << NL;
-	fileData << "SWORDP " << CString(m_swordPower) << NL;
-	fileData << "SHIELDP " << CString(m_shieldPower) << NL;
-	fileData << "HEAD " << m_headImage << NL;
-	fileData << "BODY " << m_bodyImage << NL;
-	fileData << "SWORD " << m_swordImage << NL;
-	fileData << "SHIELD " << m_shieldImage << NL;
-	fileData << "HORSE " << m_horseImage << NL;
-	fileData << "COLORS " << CString((int)m_colors[0]) << "," << CString((int)m_colors[1]) << "," << CString((int)m_colors[2]) << "," << CString((int)m_colors[3]) << "," << CString((int)m_colors[4]) << NL;
-	fileData << "SPRITE " << CString(m_sprite) << NL;
-	fileData << "AP " << CString(m_ap) << NL;
+	fileData << "NICK " << m_character.nickName << NL;
+	fileData << "ANI " << m_character.gani << NL;
+	fileData << "HP " << CString(m_character.hitpoints) << NL;
+	fileData << "GRALATS " << CString(m_character.gralats) << NL;
+	fileData << "ARROWS " << CString(m_character.arrows) << NL;
+	fileData << "BOMBS " << CString(m_character.bombs) << NL;
+	fileData << "GLOVEP " << CString(m_character.glovePower) << NL;
+	fileData << "SWORDP " << CString(m_character.swordPower) << NL;
+	fileData << "SHIELDP " << CString(m_character.shieldPower) << NL;
+	fileData << "BOWP" << CString(m_character.bowPower) << NL;
+	fileData << "BOW" << m_character.bowImage << NL;
+	fileData << "HEAD " << m_character.headImage << NL;
+	fileData << "BODY " << m_character.bodyImage << NL;
+	fileData << "SWORD " << m_character.swordImage << NL;
+	fileData << "SHIELD " << m_character.shieldImage << NL;
+	fileData << "HORSE " << m_character.horseImage << NL;
+	fileData << "COLORS " << CString((int)m_character.colors[0]) << "," << CString((int)m_character.colors[1]) << "," << CString((int)m_character.colors[2]) << "," << CString((int)m_character.colors[3]) << "," << CString((int)m_character.colors[4]) << NL;
+	fileData << "SPRITE " << CString(m_character.sprite) << NL;
+	fileData << "AP " << CString(m_character.ap) << NL;
 	fileData << "TIMEOUT " << CString(m_timeout / 20) << NL;
 	fileData << "LAYER 0" << NL;
 	fileData << "SHAPETYPE 0" << NL;
@@ -1584,8 +1584,8 @@ void NPC::saveNPC()
 
 	for (int i = 0; i < 30; i++)
 	{
-		if (!m_ganiAttribs[i].isEmpty())
-			fileData << "ATTR" << std::to_string(i + 1) << " " << m_ganiAttribs[i] << NL;
+		if (!m_character.ganiAttributes[i].isEmpty())
+			fileData << "ATTR" << std::to_string(i + 1) << " " << m_character.ganiAttributes[i] << NL;
 	}
 
 	for (auto it = m_flagList.begin(); it != m_flagList.end(); ++it)
@@ -1674,89 +1674,99 @@ bool NPC::loadNPC(const CString& fileName)
 		}
 		else if (curCommand == "NICK")
 		{
-			m_nickName = curLine.readString("").text();
+			m_character.nickName = curLine.readString("").text();
 			m_modTime[NPCPROP_NICKNAME] = updateTime;
 		}
 		else if (curCommand == "ANI")
 		{
-			m_gani = curLine.readString("").text();
+			m_character.gani = curLine.readString("").text();
 			m_modTime[NPCPROP_GANI] = updateTime;
 		}
 		else if (curCommand == "HP")
 		{
-			m_hitpoints = (int)(strtofloat(curLine.readString("")) * 2);
+			m_character.hitpoints = (int)strtofloat(curLine.readString(""));
 			m_modTime[NPCPROP_POWER] = updateTime;
 		}
 		else if (curCommand == "GRALATS")
 		{
-			m_rupees = strtoint(curLine.readString(""));
+			m_character.gralats = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_RUPEES] = updateTime;
 		}
 		else if (curCommand == "ARROWS")
 		{
-			m_darts = strtoint(curLine.readString(""));
+			m_character.arrows = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_ARROWS] = updateTime;
 		}
 		else if (curCommand == "BOMBS")
 		{
-			m_bombs = strtoint(curLine.readString(""));
+			m_character.bombs = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_BOMBS] = updateTime;
 		}
 		else if (curCommand == "GLOVEP")
 		{
-			m_glovePower = strtoint(curLine.readString(""));
+			m_character.glovePower = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_GLOVEPOWER] = updateTime;
 		}
 		else if (curCommand == "SWORDP")
 		{
-			m_swordPower = strtoint(curLine.readString(""));
+			m_character.swordPower = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_SWORDIMAGE] = updateTime;
 		}
 		else if (curCommand == "SHIELDP")
 		{
-			m_shieldPower = strtoint(curLine.readString(""));
+			m_character.shieldPower = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_SHIELDIMAGE] = updateTime;
+		}
+		else if (curCommand == "BOWP")
+		{
+			m_character.bowPower = strtoint(curLine.readString(""));
+			m_modTime[NPCPROP_GANI] = updateTime;
+		}
+		else if (curCommand == "BOW")
+		{
+			m_character.bowImage = curLine.readString("");
+			m_modTime[NPCPROP_GANI] = updateTime;
 		}
 		else if (curCommand == "HEAD")
 		{
-			m_headImage = curLine.readString("");
+			m_character.headImage = curLine.readString("");
 			m_modTime[NPCPROP_HEADIMAGE] = updateTime;
 		}
 		else if (curCommand == "BODY")
 		{
-			m_bodyImage = curLine.readString("");
+			m_character.bodyImage = curLine.readString("");
 			m_modTime[NPCPROP_BODYIMAGE] = updateTime;
 		}
 		else if (curCommand == "SWORD")
 		{
-			m_swordImage = curLine.readString("");
+			m_character.swordImage = curLine.readString("");
 			m_modTime[NPCPROP_SWORDIMAGE] = updateTime;
 		}
 		else if (curCommand == "SHIELD")
 		{
-			m_shieldImage = curLine.readString("");
+			m_character.shieldImage = curLine.readString("");
 			m_modTime[NPCPROP_SHIELDIMAGE] = updateTime;
 		}
 		else if (curCommand == "HORSE")
 		{
-			m_horseImage = curLine.readString("");
+			m_character.horseImage = curLine.readString("");
 			m_modTime[NPCPROP_HORSEIMAGE] = updateTime;
 		}
 		else if (curCommand == "SPRITE")
 		{
-			m_sprite = strtoint(curLine.readString(""));
+			m_character.sprite = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_SPRITE] = updateTime;
 		}
 		else if (curCommand == "AP")
 		{
-			m_ap = strtoint(curLine.readString(""));
+			m_character.ap = strtoint(curLine.readString(""));
 			m_modTime[NPCPROP_ALIGNMENT] = updateTime;
 		}
 		else if (curCommand == "COLORS")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
 			for (int idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
-				m_colors[idx] = strtoint(tokens[idx]);
+				m_character.colors[idx] = strtoint(tokens[idx]);
 			m_modTime[NPCPROP_COLORS] = updateTime;
 		}
 		else if (curCommand == "SAVEARR")
@@ -1796,7 +1806,7 @@ bool NPC::loadNPC(const CString& fileName)
 			if (attrId > 0 && attrId < 30)
 			{
 				int idx = attrId - 1;
-				m_ganiAttribs[idx] = curLine.readString("");
+				m_character.ganiAttributes[idx] = curLine.readString("");
 				m_modTime[__nAttrPackets[idx]] = updateTime;
 			}
 		}

@@ -934,14 +934,14 @@ bool Player::msgPLI_RC_CHAT(CString& pPacket)
 	{
 		// TODO(joey): All RC's with NC support are sending two messages at a time.
 		//  Can use this section for npc-server related commands though.
-		//m_server->sendToNC(CString(m_nickName) << ": " << message);
+		//m_server->sendToNC(CString(m_character.nickName) << ": " << message);
 		return true;
 	}
 #endif
 
 	if (words[0].text()[0] != '/')
 	{
-		m_server->sendToRC(CString(m_nickName) << ": " << message);
+		m_server->sendToRC(CString(m_character.nickName) << ": " << message);
 		return true;
 	}
 	else

@@ -589,17 +589,17 @@ bool Player::doTimedEvents()
 
 			if (m_apCounter <= 0)
 			{
-				if (m_ap < 100)
+				if (m_character.ap < 100)
 				{
-					m_ap++;
-					setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+					m_character.ap++;
+					setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_character.ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 				}
-				if (m_ap < 20) m_apCounter = settings.getInt("aptime0", 30);
-				else if (m_ap < 40)
+				if (m_character.ap < 20) m_apCounter = settings.getInt("aptime0", 30);
+				else if (m_character.ap < 40)
 					m_apCounter = settings.getInt("aptime1", 90);
-				else if (m_ap < 60)
+				else if (m_character.ap < 60)
 					m_apCounter = settings.getInt("aptime2", 300);
-				else if (m_ap < 80)
+				else if (m_character.ap < 80)
 					m_apCounter = settings.getInt("aptime3", 600);
 				else
 					m_apCounter = settings.getInt("aptime4", 1200);
@@ -871,7 +871,7 @@ bool Player::testSign()
 	if (!settings.getBool("serverside", false)) return true; // TODO: NPC server check instead
 
 	// Check for sign collisions.
-	if ((m_sprite % 4) == 0)
+	if ((m_character.sprite % 4) == 0)
 	{
 		auto level = getLevel();
 		if (level)
@@ -894,7 +894,7 @@ void Player::testTouch()
 {
 #ifdef V8NPCSERVER
 	static const int touchtestd[] = { 24, 16, 0, 32, 24, 56, 48, 32 };
-	int dir = m_sprite % 4;
+	int dir = m_character.sprite % 4;
 
 	int pixelX = int(m_x * 16.0);
 	int pixelY = int(m_y * 16.0);
@@ -922,20 +922,20 @@ void Player::dropItemsOnDeath()
 	{
 		drop_gralats = rand() % maxdeathgralats;
 		clip(drop_gralats, mindeathgralats, maxdeathgralats);
-		if (drop_gralats > m_gralatCount) drop_gralats = m_gralatCount;
+		if (drop_gralats > m_character.gralats) drop_gralats = m_character.gralats;
 	}
 
 	// Determine how many arrows and bombs to remove from the account.
 	int drop_arrows = rand() % 4;
 	int drop_bombs = rand() % 4;
-	if ((drop_arrows * 5) > m_arrowCount) drop_arrows = m_arrowCount / 5;
-	if ((drop_bombs * 5) > m_bombCount) drop_bombs = m_bombCount / 5;
+	if ((drop_arrows * 5) > m_character.arrows) drop_arrows = m_character.arrows / 5;
+	if ((drop_bombs * 5) > m_character.bombs) drop_bombs = m_character.bombs / 5;
 
 	// Remove gralats/bombs/arrows.
-	m_gralatCount -= drop_gralats;
-	m_arrowCount -= (drop_arrows * 5);
-	m_bombCount -= (drop_bombs * 5);
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_RUPEESCOUNT >> (int)m_gralatCount >> (char)PLPROP_ARROWSCOUNT >> (char)m_arrowCount >> (char)PLPROP_BOMBSCOUNT >> (char)m_bombCount);
+	m_character.gralats -= drop_gralats;
+	m_character.arrows -= (drop_arrows * 5);
+	m_character.bombs -= (drop_bombs * 5);
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_RUPEESCOUNT >> (int)m_character.gralats >> (char)PLPROP_ARROWSCOUNT >> (char)m_character.arrows >> (char)PLPROP_BOMBSCOUNT >> (char)m_character.bombs);
 
 	// Add gralats to the level.
 	while (drop_gralats != 0)
@@ -1120,7 +1120,7 @@ bool Player::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1149,7 +1149,7 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(m_character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1167,7 +1167,7 @@ bool Player::processChat(CString pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 			return false;
 		}
 
@@ -1196,7 +1196,7 @@ bool Player::processChat(CString pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(m_character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1209,8 +1209,8 @@ bool Player::processChat(CString pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			m_colors[0] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			m_character.colors[0] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
@@ -1222,8 +1222,8 @@ bool Player::processChat(CString pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			m_colors[1] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			m_character.colors[1] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
@@ -1235,8 +1235,8 @@ bool Player::processChat(CString pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			m_colors[2] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			m_character.colors[2] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
@@ -1248,8 +1248,8 @@ bool Player::processChat(CString pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			m_colors[3] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			m_character.colors[3] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
@@ -1261,8 +1261,8 @@ bool Player::processChat(CString pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			m_colors[4] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_colors[0] >> (char)m_colors[1] >> (char)m_colors[2] >> (char)m_colors[3] >> (char)m_colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			m_character.colors[4] = color;
+			setProps(CString() >> (char)PLPROP_COLORS >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 		}
 	}
 	else if (chatParse[0] == "warpto")
@@ -1649,11 +1649,11 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
-	if (newLevel->isSparringZone() && m_ap == 100)
+	if (newLevel->isSparringZone() && m_character.ap == 100)
 	{
-		m_ap = 99;
+		m_character.ap = 99;
 		m_apCounter = 1;
-		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)m_character.ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
@@ -2007,7 +2007,7 @@ void Player::setNick(CString pNickName, bool force)
 
 	if (force || (guild == "RC" && isRC()))
 	{
-		m_nickName = pNickName;
+		m_character.nickName = pNickName.toString();
 		this->m_guild = guild;
 		return;
 	}
@@ -2049,22 +2049,22 @@ void Player::setNick(CString pNickName, bool force)
 				if ((line2[1])[0] == '*') line2[1].removeI(0, 1);
 				if ((line2[1]) == nick) // Use nick instead of newNick because nick doesn't include the *
 				{
-					m_nickName = newNick;
-					m_nickName << " (" << guild << ")";
+					newNick << " (" << guild << ")";
+					m_character.nickName = newNick.toString();
 					this->m_guild = guild;
 					return;
 				}
 			}
 			else
 			{
-				m_nickName = newNick;
-				m_nickName << " (" << guild << ")";
+				newNick << " (" << guild << ")";
+				m_character.nickName = newNick.toString();
 				this->m_guild = guild;
 				return;
 			}
 		}
 		else
-			m_nickName = newNick;
+			m_character.nickName = newNick.toString();
 
 		// See if we can ask if it is a global guild.
 		bool askGlobal = m_server->getSettings().getBool("globalguilds", true);
@@ -2086,13 +2086,13 @@ void Player::setNick(CString pNickName, bool force)
 	else
 	{
 		// Save it.
-		m_nickName = newNick;
+		m_character.nickName = newNick.toString();
 		this->m_guild.clear();
 	}
 
 	if (m_isExternal)
 	{
-		m_nickName = pNickName;
+		m_character.nickName = pNickName.toString();
 	}
 }
 
@@ -2249,7 +2249,7 @@ bool Player::msgPLI_NULL(CString& pPacket)
 	m_invalidPackets++;
 	if (m_invalidPackets > 5)
 	{
-		serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_nickName.text());
+		serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_character.nickName.c_str());
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 		return false;
 	}
@@ -2706,9 +2706,9 @@ bool Player::removeItem(LevelItemType itemType)
 			else
 				gralatsRequired = 1;
 
-			if (m_gralatCount >= gralatsRequired)
+			if (m_character.gralats >= gralatsRequired)
 			{
-				m_gralatCount -= gralatsRequired;
+				m_character.gralats -= gralatsRequired;
 				return true;
 			}
 
@@ -2717,9 +2717,9 @@ bool Player::removeItem(LevelItemType itemType)
 
 		case LevelItemType::BOMBS:
 		{
-			if (m_bombCount >= 5)
+			if (m_character.bombs >= 5)
 			{
-				m_bombCount -= 5;
+				m_character.bombs -= 5;
 				return true;
 			}
 			return false;
@@ -2727,9 +2727,9 @@ bool Player::removeItem(LevelItemType itemType)
 
 		case LevelItemType::DARTS:
 		{
-			if (m_arrowCount >= 5)
+			if (m_character.arrows >= 5)
 			{
-				m_arrowCount -= 5;
+				m_character.arrows -= 5;
 				return true;
 			}
 			return false;
@@ -2737,9 +2737,9 @@ bool Player::removeItem(LevelItemType itemType)
 
 		case LevelItemType::HEART:
 		{
-			if (m_hitpoints > 1.0f)
+			if (m_character.hitpoints > 1.0f)
 			{
-				m_hitpoints -= 1.0f;
+				m_character.hitpoints -= 1.0f;
 				return true;
 			}
 			return false;
@@ -2752,9 +2752,9 @@ bool Player::removeItem(LevelItemType itemType)
 		case LevelItemType::GLOVE1:
 		case LevelItemType::GLOVE2:
 		{
-			if (m_glovePower > 1)
+			if (m_character.glovePower > 1)
 			{
-				m_glovePower--;
+				m_character.glovePower--;
 				return true;
 			}
 			return false;
@@ -2927,12 +2927,12 @@ bool Player::msgPLI_CLAIMPKER(CString& pPacket)
 			signed char oAp = killer->getProp(PLPROP_ALIGNMENT).readGChar();
 
 			// If I have 20 or more AP, they lose AP.
-			if (oAp > 0 && m_ap > 19)
+			if (oAp > 0 && m_character.ap > 19)
 			{
 				int aptime[] = { settings.getInt("aptime0", 30), settings.getInt("aptime1", 90),
 								 settings.getInt("aptime2", 300), settings.getInt("aptime3", 600),
 								 settings.getInt("aptime4", 1200) };
-				oAp -= (((oAp / 20) + 1) * (m_ap / 20));
+				oAp -= (((oAp / 20) + 1) * (m_character.ap / 20));
 				if (oAp < 0) oAp = 0;
 				killer->setApCounter((oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4])))));
 				killer->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);

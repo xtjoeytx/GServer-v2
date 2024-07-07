@@ -430,8 +430,8 @@ bool Player::sendLoginRC()
 	sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
 	// If no nickname was specified, set the nickname to the account name.
-	if (m_nickName.length() == 0)
-		m_nickName = CString("*") << m_accountName;
+	if (m_character.nickName.length() == 0)
+		m_character.nickName = (CString("*") << m_accountName).toString();
 	m_levelName = " ";
 
 	// Set the head to the server's set staff head.

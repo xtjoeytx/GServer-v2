@@ -174,7 +174,7 @@ bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMe
 	auto& list = m_server->getServerList();
 	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)m_id << CString(CString() << servername << "\n"
 																						<< m_accountName << "\n"
-																						<< m_nickName << "\n"
+																						<< m_character.nickName << "\n"
 																						<< "GraalEngine"
 																						<< "\n"
 																						<< "pmplayer"

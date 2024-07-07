@@ -55,7 +55,7 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		return false;
 
 	// Clear Lists
-	for (auto& i: m_attrList) i.clear();
+	for (auto& i: m_character.ganiAttributes) i.clear();
 	m_chestList.clear();
 	m_flagList.clear();
 	m_folderList.clear();
@@ -81,7 +81,7 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		if (section == "NAME") continue;
 		else if (section == "NICK")
 		{
-			if (!ignoreNickname) m_nickName = val.subString(0, 223);
+			if (!ignoreNickname) m_character.nickName = val.subString(0, 223).toString();
 		}
 		else if (section == "COMMUNITYNAME")
 			m_communityName = val;
@@ -95,23 +95,23 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "HP")
 			setPower((float)strtofloat(val));
 		else if (section == "RUPEES")
-			m_gralatCount = strtoint(val);
+			m_character.gralats = strtoint(val);
 		else if (section == "ANI")
 			setGani(val);
 		else if (section == "ARROWS")
-			m_arrowCount = strtoint(val);
+			m_character.arrows = strtoint(val);
 		else if (section == "BOMBS")
-			m_bombCount = strtoint(val);
+			m_character.bombs = strtoint(val);
 		else if (section == "GLOVEP")
-			m_glovePower = strtoint(val);
+			m_character.glovePower = strtoint(val);
 		else if (section == "SHIELDP")
 			setShieldPower(strtoint(val));
 		else if (section == "SWORDP")
 			setSwordPower(strtoint(val));
 		else if (section == "BOWP")
-			m_bowPower = strtoint(val);
+			m_character.bowPower = strtoint(val);
 		else if (section == "BOW")
-			m_bowImage = val;
+			m_character.bowImage = val;
 		else if (section == "HEAD")
 			setHeadImage(val);
 		else if (section == "BODY")
@@ -123,16 +123,16 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "COLORS")
 		{
 			std::vector<CString> t = val.tokenize(",");
-			for (int i = 0; i < (int)t.size() && i < 5; i++) m_colors[i] = (unsigned char)strtoint(t[i]);
+			for (int i = 0; i < (int)t.size() && i < 5; i++) m_character.colors[i] = (unsigned char)strtoint(t[i]);
 		}
 		else if (section == "SPRITE")
-			m_sprite = strtoint(val);
+			m_character.sprite = strtoint(val);
 		else if (section == "STATUS")
 			m_status = strtoint(val);
 		else if (section == "MP")
 			m_mp = strtoint(val);
 		else if (section == "AP")
-			m_ap = strtoint(val);
+			m_character.ap = strtoint(val);
 		else if (section == "APCOUNTER")
 			m_apCounter = strtoint(val);
 		else if (section == "ONSECS")
@@ -159,65 +159,65 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "FLAG")
 			setFlag(val);
 		else if (section == "ATTR1")
-			m_attrList[0] = val;
+			m_character.ganiAttributes[0] = val;
 		else if (section == "ATTR2")
-			m_attrList[1] = val;
+			m_character.ganiAttributes[1] = val;
 		else if (section == "ATTR3")
-			m_attrList[2] = val;
+			m_character.ganiAttributes[2] = val;
 		else if (section == "ATTR4")
-			m_attrList[3] = val;
+			m_character.ganiAttributes[3] = val;
 		else if (section == "ATTR5")
-			m_attrList[4] = val;
+			m_character.ganiAttributes[4] = val;
 		else if (section == "ATTR6")
-			m_attrList[5] = val;
+			m_character.ganiAttributes[5] = val;
 		else if (section == "ATTR7")
-			m_attrList[6] = val;
+			m_character.ganiAttributes[6] = val;
 		else if (section == "ATTR8")
-			m_attrList[7] = val;
+			m_character.ganiAttributes[7] = val;
 		else if (section == "ATTR9")
-			m_attrList[8] = val;
+			m_character.ganiAttributes[8] = val;
 		else if (section == "ATTR10")
-			m_attrList[9] = val;
+			m_character.ganiAttributes[9] = val;
 		else if (section == "ATTR11")
-			m_attrList[10] = val;
+			m_character.ganiAttributes[10] = val;
 		else if (section == "ATTR12")
-			m_attrList[11] = val;
+			m_character.ganiAttributes[11] = val;
 		else if (section == "ATTR13")
-			m_attrList[12] = val;
+			m_character.ganiAttributes[12] = val;
 		else if (section == "ATTR14")
-			m_attrList[13] = val;
+			m_character.ganiAttributes[13] = val;
 		else if (section == "ATTR15")
-			m_attrList[14] = val;
+			m_character.ganiAttributes[14] = val;
 		else if (section == "ATTR16")
-			m_attrList[15] = val;
+			m_character.ganiAttributes[15] = val;
 		else if (section == "ATTR17")
-			m_attrList[16] = val;
+			m_character.ganiAttributes[16] = val;
 		else if (section == "ATTR18")
-			m_attrList[17] = val;
+			m_character.ganiAttributes[17] = val;
 		else if (section == "ATTR19")
-			m_attrList[18] = val;
+			m_character.ganiAttributes[18] = val;
 		else if (section == "ATTR20")
-			m_attrList[19] = val;
+			m_character.ganiAttributes[19] = val;
 		else if (section == "ATTR21")
-			m_attrList[20] = val;
+			m_character.ganiAttributes[20] = val;
 		else if (section == "ATTR22")
-			m_attrList[21] = val;
+			m_character.ganiAttributes[21] = val;
 		else if (section == "ATTR23")
-			m_attrList[22] = val;
+			m_character.ganiAttributes[22] = val;
 		else if (section == "ATTR24")
-			m_attrList[23] = val;
+			m_character.ganiAttributes[23] = val;
 		else if (section == "ATTR25")
-			m_attrList[24] = val;
+			m_character.ganiAttributes[24] = val;
 		else if (section == "ATTR26")
-			m_attrList[25] = val;
+			m_character.ganiAttributes[25] = val;
 		else if (section == "ATTR27")
-			m_attrList[26] = val;
+			m_character.ganiAttributes[26] = val;
 		else if (section == "ATTR28")
-			m_attrList[27] = val;
+			m_character.ganiAttributes[27] = val;
 		else if (section == "ATTR29")
-			m_attrList[28] = val;
+			m_character.ganiAttributes[28] = val;
 		else if (section == "ATTR30")
-			m_attrList[29] = val;
+			m_character.ganiAttributes[29] = val;
 		else if (section == "WEAPON")
 			m_weaponList.push_back(val);
 		else if (section == "CHEST")
@@ -310,32 +310,32 @@ bool Account::saveAccount()
 
 	CString newFile = "GRACC001\r\n";
 	newFile << "NAME " << m_accountName << "\r\n";
-	newFile << "NICK " << m_nickName << "\r\n";
+	newFile << "NICK " << m_character.nickName << "\r\n";
 	newFile << "COMMUNITYNAME " << m_accountName /*m_communityName*/ << "\r\n";
 	newFile << "LEVEL " << m_levelName << "\r\n";
 	newFile << "X " << CString(m_x) << "\r\n";
 	newFile << "Y " << CString(m_y) << "\r\n";
 	newFile << "Z " << CString(m_z) << "\r\n";
 	newFile << "MAXHP " << CString(m_maxHitpoints) << "\r\n";
-	newFile << "HP " << CString(m_hitpoints) << "\r\n";
-	newFile << "RUPEES " << CString(m_gralatCount) << "\r\n";
-	newFile << "ANI " << m_gani << "\r\n";
-	newFile << "ARROWS " << CString(m_arrowCount) << "\r\n";
-	newFile << "BOMBS " << CString(m_bombCount) << "\r\n";
-	newFile << "GLOVEP " << CString(m_glovePower) << "\r\n";
-	newFile << "SHIELDP " << CString(m_shieldPower) << "\r\n";
-	newFile << "SWORDP " << CString(m_swordPower) << "\r\n";
-	newFile << "BOWP " << CString(m_bowPower) << "\r\n";
-	newFile << "BOW " << m_bowImage << "\r\n";
-	newFile << "HEAD " << m_headImage << "\r\n";
-	newFile << "BODY " << m_bodyImage << "\r\n";
-	newFile << "SWORD " << m_swordImage << "\r\n";
-	newFile << "SHIELD " << m_shieldImage << "\r\n";
-	newFile << "COLORS " << CString(m_colors[0]) << "," << CString(m_colors[1]) << "," << CString(m_colors[2]) << "," << CString(m_colors[3]) << "," << CString(m_colors[4]) << "\r\n";
-	newFile << "SPRITE " << CString(m_sprite) << "\r\n";
+	newFile << "HP " << CString(m_character.hitpoints) << "\r\n";
+	newFile << "RUPEES " << CString(m_character.gralats) << "\r\n";
+	newFile << "ANI " << m_character.gani << "\r\n";
+	newFile << "ARROWS " << CString(m_character.arrows) << "\r\n";
+	newFile << "BOMBS " << CString(m_character.bombs) << "\r\n";
+	newFile << "GLOVEP " << CString(m_character.glovePower) << "\r\n";
+	newFile << "SHIELDP " << CString(m_character.shieldPower) << "\r\n";
+	newFile << "SWORDP " << CString(m_character.swordPower) << "\r\n";
+	newFile << "BOWP " << CString(m_character.bowPower) << "\r\n";
+	newFile << "BOW " << m_character.bowImage << "\r\n";
+	newFile << "HEAD " << m_character.headImage << "\r\n";
+	newFile << "BODY " << m_character.bodyImage << "\r\n";
+	newFile << "SWORD " << m_character.swordImage << "\r\n";
+	newFile << "SHIELD " << m_character.shieldImage << "\r\n";
+	newFile << "COLORS " << CString(m_character.colors[0]) << "," << CString(m_character.colors[1]) << "," << CString(m_character.colors[2]) << "," << CString(m_character.colors[3]) << "," << CString(m_character.colors[4]) << "\r\n";
+	newFile << "SPRITE " << CString(m_character.sprite) << "\r\n";
 	newFile << "STATUS " << CString(m_status) << "\r\n";
 	newFile << "MP " << CString(m_mp) << "\r\n";
-	newFile << "AP " << CString(m_ap) << "\r\n";
+	newFile << "AP " << CString(m_character.ap) << "\r\n";
 	newFile << "APCOUNTER " << CString(m_apCounter) << "\r\n";
 	newFile << "ONSECS " << CString(m_onlineTime) << "\r\n";
 	newFile << "IP " << CString(m_accountIp) << "\r\n";
@@ -349,8 +349,8 @@ bool Account::saveAccount()
 	// Attributes
 	for (unsigned int i = 0; i < 30; i++)
 	{
-		if (m_attrList[i].length() > 0)
-			newFile << "ATTR" << CString(i + 1) << " " << m_attrList[i] << "\r\n";
+		if (m_character.ganiAttributes[i].length() > 0)
+			newFile << "ATTR" << CString(i + 1) << " " << m_character.ganiAttributes[i] << "\r\n";
 	}
 
 	// Chests
@@ -643,7 +643,7 @@ void Account::setFlag(const std::string& pFlagName, const CString& pFlagValue)
 /*
 	Translation Functionality
 */
-CString Account::translate(const CString& pKey)
+CString Account::translate(const CString& pKey) const
 {
 	return m_server->TS_Translate(m_language, pKey);
 }
@@ -660,12 +660,12 @@ void Account::setShieldPower(int newPower)
 {
 	const auto& settings = m_server->getSettings();
 
-	m_shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
+	m_character.shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
 }
 
 void Account::setSwordPower(int newPower)
 {
 	const auto& settings = m_server->getSettings();
 
-	m_swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
+	m_character.swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
 }
