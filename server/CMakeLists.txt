@@ -35,7 +35,6 @@ set(
 	"src/Weapon.cpp"
 	"src/scripting/GS2ScriptManager.cpp"
 	"src/scripting/ScriptClass.cpp"
-	"src/scripting/SourceCode.cpp"
 	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
