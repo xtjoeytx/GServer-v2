@@ -358,11 +358,11 @@ void Player::cleanup()
 
 		// Log.
 		if (isClient())
-			serverlog.out("[%s] :: Client disconnected: %s\n", m_server->getName().text(), m_accountName.text());
+			serverlog.out(":: Client disconnected: %s\n", m_accountName.text());
 		else if (isRC())
-			serverlog.out("[%s] :: RC disconnected: %s\n", m_server->getName().text(), m_accountName.text());
+			serverlog.out(":: RC disconnected: %s\n", m_accountName.text());
 		else if (isNC())
-			serverlog.out("[%s] :: NC disconnected: %s\n", m_server->getName().text(), m_accountName.text());
+			serverlog.out(":: NC disconnected: %s\n", m_accountName.text());
 	}
 
 	// Clean up.
@@ -565,7 +565,7 @@ bool Player::doTimedEvents()
 		int maxnomovement = settings.getInt("maxnomovement", 1200);
 		if (((int)difftime(currTime, m_lastMovement) > maxnomovement) && ((int)difftime(currTime, m_lastChat) > maxnomovement))
 		{
-			serverlog.out("[%s] Client %s has been disconnected due to inactivity.\n", m_server->getName().text(), m_accountName.text());
+			serverlog.out("Client %s has been disconnected due to inactivity.\n", m_accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
 			return false;
 		}
@@ -574,7 +574,7 @@ bool Player::doTimedEvents()
 	// Disconnect if no data has been received in 5 minutes.
 	if ((int)difftime(currTime, m_lastData) > 300)
 	{
-		serverlog.out("[%s] Client %s has timed out.\n", m_server->getName().text(), m_accountName.text());
+		serverlog.out("Client %s has timed out.\n", m_accountName.text());
 		return false;
 	}
 
@@ -739,7 +739,7 @@ void Player::decryptPacket(CString& pPacket)
 		else if (pType == COMPRESS_BZ2)
 			pPacket.bzuncompressI();
 		else if (pType != COMPRESS_UNCOMPRESSED)
-			serverlog.out("[%s] ** [ERROR] Client gave incorrect packet compression type! [%d]\n", m_server->getName().text(), pType);
+			serverlog.out("** [ERROR] Client gave incorrect packet compression type! [%d]\n", pType);
 	}
 }
 
@@ -808,7 +808,7 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 
 	// Warn for very large files.  These are the cause of many bug reports.
 	if (fileData.length() > 3145728) // 3MB
-		serverlog.out("[%s] [WARNING] Sending a large file (over 3MB): %s\n", m_server->getName().text(), pFile.text());
+		serverlog.out("[WARNING] Sending a large file (over 3MB): %s\n", pFile.text());
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
@@ -2249,7 +2249,7 @@ bool Player::msgPLI_NULL(CString& pPacket)
 	m_invalidPackets++;
 	if (m_invalidPackets > 5)
 	{
-		serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_character.nickName.c_str());
+		serverlog.out("Player %s is sending invalid packets.\n", m_character.nickName.c_str());
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 		return false;
 	}
@@ -2270,7 +2270,7 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	// TODO(joey): Hijack type based on what graal sends, rather than use it directly.
 
 	// Read Client-Type
-	serverlog.out("[%s] :: New login:\t", m_server->getName().text());
+	serverlog.out(":: New login:   ");
 	m_type = (1 << pPacket.readGChar());
 	bool getKey = false;
 	switch (m_type)
@@ -2357,12 +2357,12 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");
 
-	//serverlog.out("[%s]    Key: %d\n", m_server->getName().text(), key);
-	serverlog.out("[%s]    Version:\t%s (%s)\n", m_server->getName().text(), m_version.text(), getVersionString(m_version, m_type));
-	serverlog.out("[%s]    Account:\t%s\n", m_server->getName().text(), m_accountName.text());
+	//serverlog.out("   Key: %d\n", key);
+	serverlog.out("   Version:     %s (%s)\n", m_version.text(), getVersionString(m_version, m_type));
+	serverlog.out("   Account:     %s\n", m_accountName.text());
 	if (!identity.isEmpty())
 	{
-		serverlog.out("[%s]    Identity:\t%s\n", m_server->getName().text(), identity.text());
+		serverlog.out("   Identity:    %s\n", identity.text());
 		auto identityTokens = identity.tokenize(",", true);
 		m_os = identityTokens[0];
 	}
@@ -2526,7 +2526,7 @@ bool Player::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	short h = pPacket.readGShort();
 
 	// TODO: What to return?
-	serverlog.out("[%s] :: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", m_server->getName().text(), level.text(), x, y, w, h, modTime);
+	serverlog.out(":: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", level.text(), x, y, w, h, modTime);
 
 	return true;
 }
@@ -2541,7 +2541,7 @@ bool Player::msgPLI_NPCPROPS(CString& pPacket)
 {
 	// Dont accept npc-properties from clients when an npc-server is present
 #ifdef V8NPCSERVER
-	return true;
+		return true;
 #endif
 
 	unsigned int npcId = pPacket.readGUInt();
@@ -3364,7 +3364,7 @@ bool Player::msgPLI_PACKETCOUNT(CString& pPacket)
 	unsigned short count = pPacket.readGUShort();
 	if (count != m_packetCount || m_packetCount > 10000)
 	{
-		serverlog.out("[%s] :: Warning - Player %s had an invalid packet count.\n", m_server->getName().text(), m_accountName.text());
+		serverlog.out(":: Warning - Player %s had an invalid packet count.\n", m_accountName.text());
 	}
 	m_packetCount = 0;
 
@@ -3609,7 +3609,7 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
 					{
-						serverlog.out("[%s] Error: Player %s tried to load execscript %s, but the script was not found.\n", m_server->getName().text(), m_accountName.text(), actionParts[2].text());
+						serverlog.out("Error: Player %s tried to load execscript %s, but the script was not found.\n", m_accountName.text(), actionParts[2].text());
 						return true;
 					}
 

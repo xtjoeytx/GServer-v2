@@ -92,7 +92,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Initialize the Script Engine
 	if (!m_scriptEngine.initialize())
 	{
-		m_serverLog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
+		m_serverLog.out("** [Error] Could not initialize script engine.\n");
 		// TODO(joey): new error number? log is probably enough
 		return ERR_SETTINGS;
 	}
@@ -130,21 +130,21 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	m_serverLog.out("[%s]      Initializing player listen socket.\n", m_name.text());
+	m_serverLog.out(":: Initializing player listen socket.\n");
 	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
 	{
-		m_serverLog.out("[%s] ** [Error] Could not initialize listening socket...\n", m_name.text());
+		m_serverLog.out("** [Error] Could not initialize listening socket...\n");
 		return ERR_LISTEN;
 	}
 	if (m_playerSock.connect())
 	{
-		m_serverLog.out("[%s] ** [Error] Could not connect listening socket...\n", m_name.text());
+		m_serverLog.out("** [Error] Could not connect listening socket...\n");
 		return ERR_LISTEN;
 	}
 
 #ifdef UPNP
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
-	serverlog.out("[%s]      Starting UPnP discovery thread.\n", m_name.text());
+	serverlog.out(":: Starting UPnP discovery thread.\n");
 	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
@@ -174,7 +174,9 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
 
+	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	
 	return 0;
 }
 
@@ -535,7 +537,7 @@ void Server::loadFolderConfig()
 		if (fs != nullptr)
 		{
 			fs->addDir(dir, wildcard);
-			m_serverLog.out("[%s]        adding %s [%s] to %s\n", m_name.text(), dir.text(), wildcard.text(), type.text());
+			m_serverLog.out("       adding %s [%s] to %s\n", dir.text(), wildcard.text(), type.text());
 		}
 		m_filesystem[0].addDir(dir, wildcard);
 	}
@@ -545,58 +547,59 @@ int Server::loadConfigFiles()
 {
 	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
 	//	Move them out of here?
-	m_serverLog.out("[%s] :: Loading server configuration...\n", m_name.text());
+	m_serverLog.out(":: Loading server configuration...\n");
 
 	// Load Settings
-	m_serverLog.out("[%s]      Loading settings...\n", m_name.text());
+	m_serverLog.out("     Loading settings...\n");
 	loadSettings();
 
 	// Load Admin Settings
-	m_serverLog.out("[%s]      Loading admin settings...\n", m_name.text());
+	m_serverLog.out("     Loading admin settings...\n");
 	loadAdminSettings();
 
 	// Load allowed versions.
-	m_serverLog.out("[%s]      Loading allowed client versions...\n", m_name.text());
+	m_serverLog.out("     Loading allowed client versions...\n");
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	m_serverLog.out("[%s]      Folder config: ", m_name.text());
+	m_serverLog.out("     Folder config: ");
 	if (!m_settings.getBool("nofoldersconfig", false))
 	{
 		m_serverLog.append("ENABLED\n");
 	}
 	else
 		m_serverLog.append("disabled\n");
-	m_serverLog.out("[%s]      Loading file system...\n", m_name.text());
+
+	m_serverLog.out("     Loading file system...\n");
 	loadFileSystem();
 
 	// Load server flags.
-	m_serverLog.out("[%s]      Loading serverflags.txt...\n", m_name.text());
+	m_serverLog.out("     Loading serverflags.txt...\n");
 	loadServerFlags();
 
 	// Load server message.
-	m_serverLog.out("[%s]      Loading config/servermessage.html...\n", m_name.text());
+	m_serverLog.out("     Loading config/servermessage.html...\n");
 	loadServerMessage();
 
 	// Load IP bans.
-	m_serverLog.out("[%s]      Loading config/ipbans.txt...\n", m_name.text());
+	m_serverLog.out("     Loading config/ipbans.txt...\n");
 	loadIPBans();
 
 	// Load weapons.
-	m_serverLog.out("[%s]      Loading weapons...\n", m_name.text());
+	m_serverLog.out("     Loading weapons...\n");
 	loadWeapons(true);
 
 	// Load classes.
-	m_serverLog.out("[%s]      Loading classes...\n", m_name.text());
+	m_serverLog.out("     Loading classes...\n");
 	loadClasses(true);
 
 	// Load maps.
-	m_serverLog.out("[%s]      Loading maps...\n", m_name.text());
+	m_serverLog.out("     Loading maps...\n");
 	loadMaps(true);
 
 #ifdef V8NPCSERVER
 	// Load database npcs.
-	m_serverLog.out("[%s]      Loading npcs...\n", m_name.text());
+	m_serverLog.out("     Loading npcs...\n");
 	loadNpcs(true);
 #endif
 
@@ -605,11 +608,11 @@ int Server::loadConfigFiles()
 	loadMapLevels();
 
 	// Load translations.
-	m_serverLog.out("[%s]      Loading translations...\n", m_name.text());
+	m_serverLog.out("     Loading translations...\n");
 	loadTranslations();
 
 	// Load word filter.
-	m_serverLog.out("[%s]      Loading word filter...\n", m_name.text());
+	m_serverLog.out("     Loading word filter...\n");
 	loadWordFilter();
 
 	return 0;
@@ -622,7 +625,7 @@ void Server::loadSettings()
 		m_settings.setSeparator("=");
 		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
 		if (!m_settings.isOpened())
-			m_serverLog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", m_name.text());
+			m_serverLog.out("** [Error] Could not open config/serveroptions.txt.  Will use default config.\n");
 	}
 
 	// Load status list.
@@ -640,7 +643,7 @@ void Server::loadAdminSettings()
 	m_adminSettings.setSeparator("=");
 	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
 	if (!m_adminSettings.isOpened())
-		m_serverLog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", m_name.text());
+		m_serverLog.out("** [Error] Could not open config/adminconfig.txt.  Will use default config.\n");
 	else
 		getServerList().sendServerHQ();
 }
@@ -744,7 +747,7 @@ void Server::loadWeapons(bool print)
 		if (m_weaponList.find(weapon->getName()) == m_weaponList.end())
 		{
 			m_weaponList[weapon->getName()] = weapon;
-			if (print) m_serverLog.out("[%s]        %s\n", m_name.text(), weapon->getName().c_str());
+			if (print) m_serverLog.out("       %s\n", weapon->getName().c_str());
 		}
 		else
 		{
@@ -756,7 +759,7 @@ void Server::loadWeapons(bool print)
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					m_serverLog.out("[%s]        %s [updated]\n", m_name.text(), weapon->getName().c_str());
+					m_serverLog.out("       %s [updated]\n", weapon->getName().c_str());
 					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
@@ -764,7 +767,7 @@ void Server::loadWeapons(bool print)
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) m_serverLog.out("[%s]        %s [skipped]\n", m_name.text(), weapon->getName().c_str());
+				if (print) m_serverLog.out("       %s [skipped]\n", weapon->getName().c_str());
 			}
 		}
 	}
@@ -816,12 +819,12 @@ void Server::loadMaps(bool print)
 		if (!gmap->load(CString() << gmapName))
 		{
 			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << gmapName << ".gmap"
+												 << "** [Error] Could not load " << gmapName
 												 << "\n");
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [gmap] %s\n", m_name.text(), gmapName.text());
+		if (print) m_serverLog.out("       [gmap] %s\n", gmapName.text());
 		m_mapList.push_back(std::move(gmap));
 	}
 
@@ -841,7 +844,7 @@ void Server::loadMaps(bool print)
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [bigmap] %s\n", m_name.text(), i.text());
+		if (print) m_serverLog.out("       [bigmap] %s\n", i.text());
 		m_mapList.push_back(std::move(bigmap));
 	}
 
@@ -873,7 +876,7 @@ void Server::loadMaps(bool print)
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [group map] %s\n", m_name.text(), groupmap.text());
+		if (print) m_serverLog.out("       [group map] %s\n", groupmap.text());
 		m_mapList.push_back(std::move(gmap));
 	}
 

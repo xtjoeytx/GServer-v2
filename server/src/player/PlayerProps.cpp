@@ -1156,7 +1156,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		m_invalidPackets++;
 		if (m_invalidPackets > 5)
 		{
-			serverlog.out("[%s] Player %s is sending invalid packets.\n", m_server->getName().text(), m_character.nickName.c_str());
+			serverlog.out("Player %s is sending invalid packets.\n", m_character.nickName.c_str());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 			m_server->deletePlayer(shared_from_this());
 		}

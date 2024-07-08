@@ -116,14 +116,14 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
 	{
-		m_server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", m_server->getName().text(), weaponName.c_str());
-		m_server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", m_server->getName().text());
+		m_server->getServerLog().out("WARNING: Weapon %s is malformed.\n", weaponName.c_str());
+		m_server->getServerLog().out("SCRIPTEND needs to be on its own line.\n");
 	}
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 	{
-		m_server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", m_server->getName().text(), weaponName.c_str());
+		m_server->getServerLog().out("WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", weaponName.c_str());
 		weaponScript.clear();
 	}
 

@@ -41,7 +41,7 @@ void UPNP::discover()
 		if (!device)
 			device = device_list;
 
-		// m_server->getServerLog().out("[%s] :: [UPnP] Device desc: %s, st: %s\n", m_server->getName().text(), device->descURL, device->st);
+		// m_server->getServerLog().out(":: [UPnP] Device desc: %s, st: %s\n", device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
 		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode);
@@ -59,7 +59,7 @@ void UPNP::discover()
 	}
 	else
 	{
-		m_server->getServerLog().out("[%s] ** [UPnP] No devices found.\n", m_server->getName().text());
+		m_server->getServerLog().out("** [UPnP] No devices found.\n");
 	}
 }
 
@@ -72,7 +72,7 @@ void UPNP::addPortForward(const CString& addr, const CString& port)
 	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
 	if (r != 0)
 	{
-		serverlog.out("[%s] ** [UPnP] Failed to forward port %s to %s: ", m_server->getName().text(), port.text(), addr.text());
+		serverlog.out("** [UPnP] Failed to forward port %s to %s: ", port.text(), addr.text());
 		switch (r)
 		{
 			case UPNPCOMMAND_INVALID_ARGS:
@@ -92,7 +92,7 @@ void UPNP::addPortForward(const CString& addr, const CString& port)
 	}
 	else
 	{
-		m_server->getServerLog().out("[%s] :: [UPnP] Forwarded port %s to %s.\n", m_server->getName().text(), port.text(), addr.text());
+		m_server->getServerLog().out(":: [UPnP] Forwarded port %s to %s.\n", port.text(), addr.text());
 		m_portsForwarded.insert(port);
 	}
 }
@@ -103,7 +103,7 @@ void UPNP::removePortForward(const CString& port)
 		return;
 
 	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), "TCP", 0);
-	m_server->getServerLog().out("[%s] :: [UPnP] Removing forward on port %s.\n", m_server->getName().text(), port.text());
+	m_server->getServerLog().out(":: [UPnP] Removing forward on port %s.\n", port.text());
 	m_portsForwarded.erase(port);
 }
 #endif

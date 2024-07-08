@@ -200,7 +200,11 @@ int main(int argc, char* argv[])
 		}
 
 		// Announce that the program is now running.
-		serverlog.out(":: Program started.\n");
+		serverlog.out(":: Started server %s", server->getName().text());
+		if (server->getSettings().exists("name"))
+			serverlog.append(" (%s)\n", server->getSettings().getStr("name").text());
+		else serverlog.append("\n");
+
 	#if defined(WIN32) || defined(WIN64)
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif

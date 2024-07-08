@@ -61,7 +61,7 @@ bool Player::sendLogin()
 		// Check and see if we are allowed in.
 		if (!isStaff() || !isAdminIp())
 		{
-			rclog.out("[%s] Attempted RC login by %s.\n", m_server->getName().text(), m_accountName.text());
+			rclog.out("Attempted RC login by %s.\n", m_accountName.text());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 			return false;
 		}
