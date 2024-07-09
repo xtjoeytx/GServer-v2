@@ -214,6 +214,8 @@ public:
 	void sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;

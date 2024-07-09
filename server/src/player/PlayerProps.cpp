@@ -283,11 +283,11 @@ void Player::getProp(CString& buffer, int pPropId) const
 		}
 
 		case PLPROP_GMAPLEVELX:
-			buffer >> (char)(level ? level->getMapX() : 0);
+			buffer >> (char)(level ? level->getGmapX() : 0);
 			return;
 
 		case PLPROP_GMAPLEVELY:
-			buffer >> (char)(level ? level->getMapY() : 0);
+			buffer >> (char)(level ? level->getGmapY() : 0);
 			return;
 
 			// TODO(joey): figure this out. Something to do with guilds? irc-related
@@ -880,7 +880,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			int mx = pPacket.readGUChar();
 
-			if (auto cmap = level->getMap(); level && cmap)
+			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
 				leaveLevel();
@@ -896,7 +896,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			int my = pPacket.readGUChar();
 
-			if (auto cmap = level->getMap(); level && cmap)
+			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
 				leaveLevel();

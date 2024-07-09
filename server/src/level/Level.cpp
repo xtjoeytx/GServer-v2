@@ -251,6 +251,20 @@ CString Level::getSignsPacket(Player* pPlayer = 0)
 	return retVal;
 }
 
+int Level::getGmapX() const
+{
+	if (auto map = m_map.lock(); map && map->isGmap())
+		return m_mapX;
+	return 0;
+}
+
+int Level::getGmapY() const
+{
+	if (auto map = m_map.lock(); map && map->isGmap())
+		return m_mapY;
+	return 0;
+}
+
 /*
 	Level: Level-Loading Functions
 */

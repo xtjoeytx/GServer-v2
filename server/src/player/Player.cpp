@@ -1627,8 +1627,7 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(getX() * 2) >> (char)(getY() * 2) >> (char)(getZ() + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY()
-																																						<< map->getMapName());
+			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(getX() * 2) >> (char)(getY() * 2) >> (char)(getZ() * 2 + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
 		}
 		else
 			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(getX() * 2) >> (char)(getY() * 2) << m_levelName);
@@ -1643,6 +1642,7 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 
 	if (!succeed)
 	{
+		leaveLevel();
 		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
 		return false;
 	}
@@ -2562,7 +2562,7 @@ bool Player::msgPLI_NPCPROPS(CString& pPacket)
 
 	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
 	packet << npc->setProps(npcProps, m_versionId);
-	m_server->sendPacketToLevelArea(packet, shared_from_this(), { m_id });
+	m_server->sendPacketToLevelOnlyGmapArea(packet, shared_from_this(), { m_id });
 
 	return true;
 }
@@ -3526,7 +3526,7 @@ bool Player::msgPLI_HITOBJECTS(CString& pPacket)
 	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
-	m_server->sendPacketToLevelArea(nPacket, shared_from_this(), { m_id });
+	m_server->sendPacketToLevelOnlyGmapArea(nPacket, shared_from_this(), { m_id });
 	return true;
 }
 

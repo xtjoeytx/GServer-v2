@@ -115,6 +115,14 @@ public:
 	//! \return The map y of this level on the map
 	int getMapY() const { return m_mapY; }
 
+	//! Gets the gmap x of this level or 0 if it doesn't belong to a gmap.
+	//! \return The gmap x of this level on the map or 0 if it doesn't belong to a gmap.
+	int getGmapX() const;
+
+	//! Gets the gmap y of this level or 0 if it doesn't belong to a gmap.
+	//! \return The gmap y of this level on the map or 0 if it doesn't belong to a gmap.
+	int getGmapY() const;
+
 	//! Gets a vector full of the players on the level.
 	//! \return The players on the level.
 	std::deque<uint16_t>& getPlayers() { return m_players; }

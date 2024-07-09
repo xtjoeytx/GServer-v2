@@ -343,10 +343,10 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)m_character.bodyImage.length() << m_character.bodyImage;
 
 		case NPCPROP_GMAPLEVELX:
-			return CString() >> (char)(level ? level->getMapX() : 0);
+			return CString() >> (char)(level ? level->getGmapX() : 0);
 
 		case NPCPROP_GMAPLEVELY:
-			return CString() >> (char)(level ? level->getMapY() : 0);
+			return CString() >> (char)(level ? level->getGmapY() : 0);
 
 #ifdef V8NPCSERVER
 		case NPCPROP_SCRIPTER:
