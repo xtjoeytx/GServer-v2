@@ -56,13 +56,12 @@ public:
 private:
 	std::string m_packageName;
 	std::unordered_map<std::string, FileEntry> m_fileList;
-	uint32_t m_checksum;
-	uint32_t m_packageSize;
+	uint32_t m_checksum = 0;
+	uint32_t m_packageSize = 0;
 };
 
 inline UpdatePackage::UpdatePackage(std::string packageName)
-	: m_packageName(std::move(packageName)),
-	  m_checksum(0), m_packageSize(0)
+	: m_packageName(std::move(packageName))
 {
 }
 

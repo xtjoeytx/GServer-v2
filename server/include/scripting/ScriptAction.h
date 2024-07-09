@@ -1,0 +1,90 @@
+#ifndef SCRIPTACTION_H
+#define SCRIPTACTION_H
+
+#include <cassert>
+#include <string>
+
+#include "scripting/interface/ScriptArguments.h"
+#include "scripting/interface/ScriptFunction.h"
+
+class ScriptAction
+{
+public:
+	ScriptAction() = default;
+
+	explicit ScriptAction(IScriptFunction* function, IScriptArguments* args, const std::string& action = "")
+		: m_function(function), m_args(args), m_action(action)
+	{
+		m_function->increaseReference();
+	}
+
+	ScriptAction(const ScriptAction& o) = delete;
+	ScriptAction& operator=(const ScriptAction& o) = delete;
+
+	ScriptAction(ScriptAction&& o) noexcept
+	{
+		m_action = std::move(o.m_action);
+		m_args = o.m_args;
+		m_function = o.m_function;
+
+		o.m_args = nullptr;
+		o.m_function = nullptr;
+	}
+
+	ScriptAction& operator=(ScriptAction&& o) noexcept
+	{
+		m_action = std::move(o.m_action);
+		m_args = o.m_args;
+		m_function = o.m_function;
+
+		o.m_args = nullptr;
+		o.m_function = nullptr;
+		return *this;
+	}
+
+	~ScriptAction()
+	{
+		if (m_args)
+		{
+			delete m_args;
+		}
+
+		if (m_function)
+		{
+			m_function->decreaseReference();
+			if (!m_function->isReferenced())
+			{
+				delete m_function;
+			}
+		}
+	}
+
+	bool invoke() const
+	{
+		assert(m_args);
+
+		return m_args->invoke(m_function, true);
+	}
+
+	const std::string& getAction() const
+	{
+		return m_action;
+	}
+
+	IScriptArguments* getArguments() const
+	{
+		return m_args;
+	}
+
+	IScriptFunction* getFunction() const
+	{
+		return m_function;
+	}
+
+protected:
+	std::string m_action;
+	IScriptArguments* m_args = nullptr;
+	IScriptFunction* m_function = nullptr;
+};
+
+#endif

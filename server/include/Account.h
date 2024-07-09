@@ -1,12 +1,16 @@
 #ifndef TACCOUNT_H
 #define TACCOUNT_H
 
-#include "CString.h"
-#include "LevelChest.h"
 #include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <CString.h>
+#include "BabyDI.h"
+
+#include "animation/Character.h"
+#include "level/LevelChest.h"
 
 enum
 {
@@ -129,7 +133,7 @@ class Account
 {
 public:
 	// Constructor - Deconstructor
-	Account(Server* pServer);
+	Account();
 	~Account();
 
 	static bool meetsConditions(CString fileName, CString conditions);
@@ -149,24 +153,28 @@ public:
 	void setFlag(const std::string& pFlagName, const CString& pFlagValue);
 	void deleteFlag(const std::string& pFlagName);
 
-	CString translate(const CString& pKey);
-	bool hasRight(int mask) { return (m_adminRights & mask) ? true : false; }
+	CString translate(const CString& pKey) const;
+	bool hasRight(int mask) const { return (m_adminRights & mask) ? true : false; }
 
 	// get functions
-	bool getGuest() { return m_isGuest; }
-	float getX() const { return m_x; }
-	float getY() const { return m_y; }
-	float getPower() const { return m_hitpoints; }
-	int getAlignment() const { return m_ap; }
-	int getArrowCount() const { return m_arrowCount; }
-	int getBombCount() const { return m_bombCount; }
-	int getGlovePower() const { return m_glovePower; }
+	bool getGuest() const { return m_isGuest; }
+	float getX() const { return m_x / 16.0f; }
+	float getY() const { return m_y / 16.0f; }
+	float getZ() const { return m_z / 16.0f; }
+	int16_t getPixelX() const { return m_x; }
+	int16_t getPixelY() const { return m_y; }
+	int16_t getPixelZ() const { return m_z; }
+	float getPower() const { return m_character.hitpoints; }
+	int getAlignment() const { return m_character.ap; }
+	int getArrowCount() const { return m_character.arrows; }
+	int getBombCount() const { return m_character.bombs; }
+	int getGlovePower() const { return m_character.glovePower; }
 	int getMagicPower() const { return m_mp; }
 	int getMaxPower() const { return m_maxHitpoints; }
-	int getRupees() const { return m_gralatCount; }
-	int getSwordPower() const { return m_swordPower; }
-	int getShieldPower() const { return m_shieldPower; }
-	int getSprite() const { return m_sprite; }
+	int getRupees() const { return m_character.gralats; }
+	int getSwordPower() const { return m_character.swordPower; }
+	int getShieldPower() const { return m_character.shieldPower; }
+	int getSprite() const { return m_character.sprite; }
 	int getStatus() const { return m_status; }
 	int getOnlineTime() const { return m_onlineTime; }
 	int getKills() const { return m_kills; }
@@ -179,18 +187,18 @@ public:
 	unsigned int getAttachedNPC() const { return m_attachNPC; }
 
 	const CString& getAccountName() const { return m_accountName; }
-	const CString& getNickname() const { return m_nickName; }
+	const std::string& getNickname() const { return m_character.nickName; }
 	const CString& getLevelName() const { return m_levelName; }
-	const CString& getBodyImage() const { return m_bodyImage; }
-	const CString& getHeadImage() const { return m_headImage; }
+	const CString& getBodyImage() const { return m_character.bodyImage; }
+	const CString& getHeadImage() const { return m_character.headImage; }
 	//Level * getLevel()						{ return nullptr; }
-	const CString& getShieldImage() const { return m_shieldImage; }
-	const CString& getSwordImage() const { return m_swordImage; }
-	const CString& getAnimation() const { return m_gani; }
+	const CString& getShieldImage() const { return m_character.shieldImage; }
+	const CString& getSwordImage() const { return m_character.swordImage; }
+	const CString& getAnimation() const { return m_character.gani; }
 	const CString& getAdminIp() const { return m_adminIp; }
 	const CString& getBanReason() const { return m_banReason; }
 	const CString& getBanLength() const { return m_banLength; }
-	const CString& getChatMsg() const { return m_chatMessage; }
+	const CString& getChatMsg() const { return m_character.chatMessage; }
 	const CString& getEmail() const { return m_email; }
 	const CString& getIpStr() const { return m_accountIpStr; }
 	const CString& getComments() const { return m_accountComments; }
@@ -199,6 +207,12 @@ public:
 	std::vector<CString>& getWeaponList() { return m_weaponList; }
 
 	// set functions
+	void setX(float val) { m_x = static_cast<int16_t>(val * 16); }
+	void setY(float val) { m_y = static_cast<int16_t>(val * 16); }
+	void setZ(float val) { m_z = static_cast<int16_t>(val * 16); }
+	void setPixelX(int16_t val) { m_x = val; }
+	void setPixelY(int16_t val) { m_y = val; }
+	void setPixelZ(int16_t val) { m_z = val; }
 	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
 	void setLastSparTime(time_t newTime) { m_lastSparTime = newTime; }
 	void setApCounter(int newTime) { m_apCounter = newTime; }
@@ -230,28 +244,42 @@ public:
 	void setGani(const CString& newGani);
 
 protected:
-	Server* m_server;
+	BabyDI_INJECT(Server, m_server);
 
 	// Player-Account
-	bool m_isBanned, m_isLoadOnly, m_isGuest;
-	bool m_isExternal;
-	CString m_adminIp, m_accountComments, m_accountName, m_communityName, m_banReason, m_banLength, m_lastFolder, m_email;
+	bool m_isBanned = false;
+	bool m_isLoadOnly = false;
+	bool m_isGuest = false;
+	bool m_isExternal = false;
+	CString m_adminIp{ "0.0.0.0" };
+	CString m_accountComments, m_accountName, m_communityName, m_banReason, m_banLength, m_lastFolder, m_email;
 	CString m_accountIpStr;
-	unsigned long m_accountIp;
-	int m_adminRights;
-	int64_t m_deviceId;
+	unsigned long m_accountIp = 0;
+	int m_adminRights = 0;
+	int64_t m_deviceId = 0;
 
 	// Player-Attributes
-	CString m_attrList[30], m_bodyImage, m_chatMessage, m_headImage, m_horseImage, m_gani, m_bowImage, m_language;
-	CString m_levelName, m_nickName, m_shieldImage, m_swordImage;
-	float m_eloDeviation, m_hitpoints, m_eloRating, m_x, m_y, m_z;
-	int m_additionalFlags, m_ap, m_apCounter, m_arrowCount, m_bombCount, m_bombPower, m_carrySprite;
-	unsigned char m_colors[5];
-	int m_deaths, m_glovePower, m_bowPower, m_gralatCount, m_horseBombCount, m_kills, m_mp, m_maxHitpoints;
-	int m_onlineTime, m_shieldPower, m_sprite, m_status, m_swordPower, m_udpport;
-	unsigned int m_attachNPC;
-	time_t m_lastSparTime;
-	unsigned char m_statusMsg;
+	Character m_character;
+
+	CString m_language{ "English" };
+	CString m_levelName;
+	int16_t m_x = 0, m_y = 0, m_z = 0;
+	float m_eloDeviation = 350.0f;
+	float m_eloRating = 1500.0f;
+	uint8_t m_maxHitpoints = 3;
+	uint8_t m_mp = 0;
+	uint8_t m_apCounter = 0;
+	uint8_t m_horseBombCount = 0;
+	uint32_t m_kills = 0;
+	uint32_t m_deaths = 0;
+	uint8_t m_carrySprite = -1;
+	int m_additionalFlags = 0;
+	int m_onlineTime = 0;
+	int m_status = 20;
+	int m_udpport = 0;
+	time_t m_lastSparTime = 0;
+	uint32_t m_attachNPC = 0;
+	uint8_t m_statusMsg = 0;
 	std::unordered_map<std::string, CString> m_flagList;
 	std::vector<CString> m_chestList, m_folderList, m_weaponList, m_privateMessageServerList;
 };
@@ -271,38 +299,38 @@ inline void Account::deleteFlag(const std::string& pFlagName)
 
 inline unsigned char Account::getColorId(unsigned int idx) const
 {
-	if (idx < 5) return m_colors[idx];
+	if (idx < 5) return m_character.colors[idx];
 	return 0;
 }
 
 inline void Account::setPower(float newPower)
 {
-	m_hitpoints = clip(newPower, 0.0f, (float)m_maxHitpoints);
+	m_character.hitpoints = clip(newPower, 0.0f, (float)m_maxHitpoints);
 }
 
 inline void Account::setShieldImage(const CString& newImage)
 {
-	m_shieldImage = newImage.subString(0, 223);
+	m_character.shieldImage = newImage.subString(0, 223);
 }
 
 inline void Account::setSwordImage(const CString& newImage)
 {
-	m_swordImage = newImage.subString(0, 223);
+	m_character.swordImage = newImage.subString(0, 223);
 }
 
 inline void Account::setGani(const CString& newGani)
 {
-	m_gani = newGani.subString(0, 223);
+	m_character.gani = newGani.subString(0, 223);
 }
 
 inline void Account::setBodyImage(const CString& newImage)
 {
-	m_bodyImage = newImage.subString(0, 223);
+	m_character.bodyImage = newImage.subString(0, 223);
 }
 
 inline void Account::setHeadImage(const CString& newImage)
 {
-	m_headImage = newImage.subString(0, 123);
+	m_character.headImage = newImage.subString(0, 123);
 }
 
 #endif // TACCOUNT_H

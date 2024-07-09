@@ -1,13 +1,15 @@
 #ifndef TSERVERLIST_H
 #define TSERVERLIST_H
 
-#include "CFileQueue.h"
-#include "CSocket.h"
-#include "CString.h"
 #include <assert.h>
 #include <map>
 #include <memory>
 #include <time.h>
+
+#include <CFileQueue.h>
+#include <CSocket.h>
+#include <CString.h>
+#include "BabyDI.h"
 
 enum
 {
@@ -33,7 +35,7 @@ public:
 	bool canSend() { return m_fileQueue.canSend(); }
 
 	// Constructor - Deconstructor
-	ServerList(Server* server);
+	ServerList();
 	~ServerList();
 
 	bool doTimedEvents();
@@ -96,23 +98,24 @@ public:
 	void msgSVI_ASSIGNPCID(CString& pPacket);
 
 protected:
+	BabyDI_INJECT(Server, m_server);
+
 	// Packet Functions
 	bool parsePacket(CString& pPacket);
 
 	// Socket Variables
-	bool m_nextIsRaw;
-	int m_rawPacketSize;
+	bool m_nextIsRaw = false;
+	int m_rawPacketSize = 0;
 	CFileQueue m_fileQueue;
 	CString m_readBuffer;
 	CSocket m_socket;
 	time_t m_lastData, m_lastTimer;
-	time_t m_nextConnectionAttempt;
-	uint8_t m_connectionAttempts;
-	Server* m_server;
+	time_t m_nextConnectionAttempt = 0;
+	uint8_t m_connectionAttempts = 0;
 
 	std::map<std::string, int> m_serverListCount;
 	std::string m_serverLocalIp;
-	std::string m_serverRemoteIp;
+	std::string m_serverRemoteIp{ "127.0.0.1" };
 };
 
 #endif // TSERVERLIST_H

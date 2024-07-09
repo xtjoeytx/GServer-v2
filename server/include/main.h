@@ -1,7 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "CString.h"
+#include <string>
 
 bool parseArgs(int argc, char* argv[]);
 void printHelp(const char* pname);

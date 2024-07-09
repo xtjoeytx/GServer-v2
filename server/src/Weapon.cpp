@@ -1,36 +1,38 @@
-#include "IDebug.h"
+#include <IDebug.h>
 
-#include "IEnums.h"
-#include "IUtil.h"
-#include "LevelItem.h"
+#include <IEnums.h>
+#include <IUtil.h>
+
+// GS2 Compiler includes
+#include <GS2Context.h>
+
 #include "NPC.h"
 #include "Server.h"
 #include "Weapon.h"
-
-// GS2 Compiler includes
-#include "GS2Context.h"
+#include "level/LevelItem.h"
+#include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
 	#include "Player.h"
 #endif
 
 // -- Constructor: Default Weapons -- //
-Weapon::Weapon(Server* pServer, LevelItemType pId)
-	: m_server(pServer), m_modTime(0), m_weaponDefault(pId)
+Weapon::Weapon(LevelItemType pId)
+	: m_modTime(0), m_weaponDefault(pId)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pServer->getScriptEngine())
+	  m_scriptExecutionContext(m_server->getScriptEngine())
 #endif
 {
 	m_weaponName = LevelItem::getItemName(m_weaponDefault);
 }
 
 // -- Constructor: Weapon Script -- //
-Weapon::Weapon(Server* pServer, std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
-	: m_server(pServer), m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
+Weapon::Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
+	: m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
 #ifdef V8NPCSERVER
 	  ,
-	  m_scriptExecutionContext(pServer->getScriptEngine())
+	  m_scriptExecutionContext(m_server->getScriptEngine())
 #endif
 {
 	// Update Weapon
@@ -45,10 +47,10 @@ Weapon::~Weapon()
 }
 
 // -- Function: Load Weapon -- //
-std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon, Server* server)
+std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 {
 	// File Path
-	CString fileName = server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
+	CString fileName = m_server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -87,7 +89,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon, Server* serve
 		{
 			CString fileName = curLine.readString("");
 
-			byteCodeData.load(server->getServerPath() << "weapon_bytecode/" << fileName);
+			byteCodeData.load(m_server->getServerPath() << "weapon_bytecode/" << fileName);
 			if (!byteCodeData.isEmpty())
 				byteCodeFile = fileName.toString();
 		}
@@ -114,18 +116,18 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon, Server* serve
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
 	{
-		server->getServerLog().out("[%s] WARNING: Weapon %s is malformed.\n", server->getName().text(), weaponName.c_str());
-		server->getServerLog().out("[%s] SCRIPTEND needs to be on its own line.\n", server->getName().text());
+		m_server->getServerLog().out("WARNING: Weapon %s is malformed.\n", weaponName.c_str());
+		m_server->getServerLog().out("SCRIPTEND needs to be on its own line.\n");
 	}
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 	{
-		server->getServerLog().out("[%s] WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", server->getName().text(), weaponName.c_str());
+		m_server->getServerLog().out("WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", weaponName.c_str());
 		weaponScript.clear();
 	}
 
-	auto weapon = std::make_shared<Weapon>(server, weaponName, weaponImage, weaponScript, 0);
+	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty())
 	{
 		weapon->m_bytecode = CString(std::move(byteCodeData));
@@ -259,7 +261,7 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 
 										   auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", m_weaponName, true);
 										   m_bytecode.clear(bytecodeWithHeader.length());
-										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
+										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
 									   }
 								   });
 	}
@@ -279,7 +281,7 @@ void Weapon::setClientScript(const CString& pScript)
 	CString formattedScript = removeComments(pScript);
 
 	// Extra padding incase we need to add //#CLIENTSIDE to the script
-	m_formattedClientGS1.clear(formattedScript.length() + 14);
+	m_formattedClientGS1.clear(static_cast<size_t>(formattedScript.length()) + 14);
 
 	if (formattedScript.find("//#CLIENTSIDE") != 0)
 	{

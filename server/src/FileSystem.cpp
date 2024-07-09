@@ -1,4 +1,6 @@
-#include "IDebug.h"
+#include <IDebug.h>
+
+#include <map>
 #include <sys/stat.h>
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 	#include <sys/utime.h>
@@ -8,11 +10,11 @@
 	#include <dirent.h>
 	#include <utime.h>
 #endif
+
+#include <IUtil.h>
+
 #include "FileSystem.h"
-#include "IDebug.h"
-#include "IUtil.h"
 #include "Server.h"
-#include <map>
 
 #if defined(_WIN32) || defined(_WIN64)
 	#ifndef __GNUC__ // rain
@@ -22,13 +24,6 @@
 #endif
 
 FileSystem::FileSystem()
-	: m_server(nullptr)
-{
-	m_preventChange = new std::recursive_mutex();
-}
-
-FileSystem::FileSystem(Server* pServer)
-	: m_server(pServer)
 {
 	m_preventChange = new std::recursive_mutex();
 }

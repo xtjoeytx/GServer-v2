@@ -1,4 +1,5 @@
-#include "IDebug.h"
+#include <IDebug.h>
+
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -6,15 +7,19 @@
 
 #include <fmt/format.h>
 
-#include "IUtil.h"
-#include "Level.h"
-#include "Map.h"
+#include <CString.h>
+#include <IUtil.h>
+
+#include "main.h"
+
 #include "NPC.h"
 #include "Player.h"
-#include "ScriptOrigin.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "main.h"
+#include "level/Level.h"
+#include "level/Map.h"
+#include "scripting/ScriptOrigin.h"
+#include "scripting/ScriptClass.h"
 
 static const char* const filesystemTypes[] = {
 	"all",
@@ -46,16 +51,8 @@ CString operator<<(const CString& first, const CString& second)
 }
 
 Server::Server(const CString& pName)
-	: running(false), m_doRestart(false), m_name(pName), m_serverlist(this), m_wordFilter(this), m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
+	: running(false), m_doRestart(false), m_name(pName), m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
-#ifdef V8NPCSERVER
-	  ,
-	  m_scriptEngine(this)
-#endif
-#ifdef UPNP
-	  ,
-	  m_upnp(this)
-#endif
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
@@ -66,7 +63,7 @@ Server::Server(const CString& pName)
 	FileSystem::fixPathSeparators(m_serverPath);
 
 	// Set up the log files.
-	CString logpath = m_serverPath.remove(0, getBaseHomePath().length());
+	CString logpath = m_serverPath.remove(0, static_cast<int>(getBaseHomePath().length()));
 	CString npcPath = CString() << logpath << "logs/npclog.txt";
 	CString rcPath = CString() << logpath << "logs/rclog.txt";
 	CString serverPath = CString() << logpath << "logs/serverlog.txt";
@@ -82,13 +79,6 @@ Server::Server(const CString& pName)
 	FileSystem::fixPathSeparators(scriptPath);
 	m_scriptLog.setFilename(scriptPath);
 #endif
-
-	// Announce ourself to other classes.
-	for (auto& fs: m_filesystem)
-	{
-		fs.setServer(this);
-	}
-	m_filesystemAccounts.setServer(this);
 }
 
 Server::~Server()
@@ -102,7 +92,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Initialize the Script Engine
 	if (!m_scriptEngine.initialize())
 	{
-		m_serverLog.out("[%s] ** [Error] Could not initialize script engine.\n", m_name.text());
+		m_serverLog.out("** [Error] Could not initialize script engine.\n");
 		// TODO(joey): new error number? log is probably enough
 		return ERR_SETTINGS;
 	}
@@ -140,21 +130,21 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	m_serverLog.out("[%s]      Initializing player listen socket.\n", m_name.text());
+	m_serverLog.out(":: Initializing player listen socket.\n");
 	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
 	{
-		m_serverLog.out("[%s] ** [Error] Could not initialize listening socket...\n", m_name.text());
+		m_serverLog.out("** [Error] Could not initialize listening socket...\n");
 		return ERR_LISTEN;
 	}
 	if (m_playerSock.connect())
 	{
-		m_serverLog.out("[%s] ** [Error] Could not connect listening socket...\n", m_name.text());
+		m_serverLog.out("** [Error] Could not connect listening socket...\n");
 		return ERR_LISTEN;
 	}
 
 #ifdef UPNP
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
-	serverlog.out("[%s]      Starting UPnP discovery thread.\n", m_name.text());
+	serverlog.out(":: Starting UPnP discovery thread.\n");
 	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
@@ -163,7 +153,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Setup NPC Control port
 	m_ncPort = strtoint(m_settings.getStr("serverport"));
 
-	m_npcServer = std::make_shared<Player>(this, nullptr, 0);
+	m_npcServer = std::make_shared<Player>(nullptr, 0);
 	m_npcServer->setType(PLTYPE_NPCSERVER);
 	m_npcServer->loadAccount("(npcserver)");
 	m_npcServer->setHeadImage(m_settings.getStr("staffhead", "head25.png"));
@@ -184,7 +174,9 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
 
+	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	
 	return 0;
 }
 
@@ -480,7 +472,7 @@ bool Server::onRecv()
 		return true;
 
 	// Create the new player.
-	auto newPlayer = std::make_shared<Player>(this, newSock, 0);
+	auto newPlayer = std::make_shared<Player>(newSock, 0);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))
@@ -545,7 +537,7 @@ void Server::loadFolderConfig()
 		if (fs != nullptr)
 		{
 			fs->addDir(dir, wildcard);
-			m_serverLog.out("[%s]        adding %s [%s] to %s\n", m_name.text(), dir.text(), wildcard.text(), type.text());
+			m_serverLog.out("       adding %s [%s] to %s\n", dir.text(), wildcard.text(), type.text());
 		}
 		m_filesystem[0].addDir(dir, wildcard);
 	}
@@ -555,58 +547,59 @@ int Server::loadConfigFiles()
 {
 	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
 	//	Move them out of here?
-	m_serverLog.out("[%s] :: Loading server configuration...\n", m_name.text());
+	m_serverLog.out(":: Loading server configuration...\n");
 
 	// Load Settings
-	m_serverLog.out("[%s]      Loading settings...\n", m_name.text());
+	m_serverLog.out("     Loading settings...\n");
 	loadSettings();
 
 	// Load Admin Settings
-	m_serverLog.out("[%s]      Loading admin settings...\n", m_name.text());
+	m_serverLog.out("     Loading admin settings...\n");
 	loadAdminSettings();
 
 	// Load allowed versions.
-	m_serverLog.out("[%s]      Loading allowed client versions...\n", m_name.text());
+	m_serverLog.out("     Loading allowed client versions...\n");
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	m_serverLog.out("[%s]      Folder config: ", m_name.text());
+	m_serverLog.out("     Folder config: ");
 	if (!m_settings.getBool("nofoldersconfig", false))
 	{
 		m_serverLog.append("ENABLED\n");
 	}
 	else
 		m_serverLog.append("disabled\n");
-	m_serverLog.out("[%s]      Loading file system...\n", m_name.text());
+
+	m_serverLog.out("     Loading file system...\n");
 	loadFileSystem();
 
 	// Load server flags.
-	m_serverLog.out("[%s]      Loading serverflags.txt...\n", m_name.text());
+	m_serverLog.out("     Loading serverflags.txt...\n");
 	loadServerFlags();
 
 	// Load server message.
-	m_serverLog.out("[%s]      Loading config/servermessage.html...\n", m_name.text());
+	m_serverLog.out("     Loading config/servermessage.html...\n");
 	loadServerMessage();
 
 	// Load IP bans.
-	m_serverLog.out("[%s]      Loading config/ipbans.txt...\n", m_name.text());
+	m_serverLog.out("     Loading config/ipbans.txt...\n");
 	loadIPBans();
 
 	// Load weapons.
-	m_serverLog.out("[%s]      Loading weapons...\n", m_name.text());
+	m_serverLog.out("     Loading weapons...\n");
 	loadWeapons(true);
 
 	// Load classes.
-	m_serverLog.out("[%s]      Loading classes...\n", m_name.text());
+	m_serverLog.out("     Loading classes...\n");
 	loadClasses(true);
 
 	// Load maps.
-	m_serverLog.out("[%s]      Loading maps...\n", m_name.text());
+	m_serverLog.out("     Loading maps...\n");
 	loadMaps(true);
 
 #ifdef V8NPCSERVER
 	// Load database npcs.
-	m_serverLog.out("[%s]      Loading npcs...\n", m_name.text());
+	m_serverLog.out("     Loading npcs...\n");
 	loadNpcs(true);
 #endif
 
@@ -615,11 +608,11 @@ int Server::loadConfigFiles()
 	loadMapLevels();
 
 	// Load translations.
-	m_serverLog.out("[%s]      Loading translations...\n", m_name.text());
+	m_serverLog.out("     Loading translations...\n");
 	loadTranslations();
 
 	// Load word filter.
-	m_serverLog.out("[%s]      Loading word filter...\n", m_name.text());
+	m_serverLog.out("     Loading word filter...\n");
 	loadWordFilter();
 
 	return 0;
@@ -632,7 +625,7 @@ void Server::loadSettings()
 		m_settings.setSeparator("=");
 		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
 		if (!m_settings.isOpened())
-			m_serverLog.out("[%s] ** [Error] Could not open config/serveroptions.txt.  Will use default config.\n", m_name.text());
+			m_serverLog.out("** [Error] Could not open config/serveroptions.txt.  Will use default config.\n");
 	}
 
 	// Load status list.
@@ -650,7 +643,7 @@ void Server::loadAdminSettings()
 	m_adminSettings.setSeparator("=");
 	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
 	if (!m_adminSettings.isOpened())
-		m_serverLog.out("[%s] ** [Error] Could not open config/adminconfig.txt.  Will use default config.\n", m_name.text());
+		m_serverLog.out("** [Error] Could not open config/adminconfig.txt.  Will use default config.\n");
 	else
 		getServerList().sendServerHQ();
 }
@@ -718,7 +711,7 @@ void Server::loadIPBans()
 
 void Server::loadClasses(bool print)
 {
-	FileSystem scriptFS(this);
+	FileSystem scriptFS;
 	scriptFS.addDir("scripts", "*.txt");
 	const std::map<CString, CString>& scriptFileList = scriptFS.getFileList();
 	for (auto& scriptFile: scriptFileList)
@@ -727,7 +720,7 @@ void Server::loadClasses(bool print)
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		m_classList[className] = std::make_unique<ScriptClass>(this, className, scriptData.text());
+		m_classList[className] = std::make_unique<ScriptClass>(className, scriptData.text());
 
 		updateClassForPlayers(getClass(className));
 	}
@@ -735,15 +728,15 @@ void Server::loadClasses(bool print)
 
 void Server::loadWeapons(bool print)
 {
-	FileSystem weaponFS(this);
+	FileSystem weaponFS;
 	weaponFS.addDir("weapons", "weapon*.txt");
-	FileSystem bcweaponFS(this);
+	FileSystem bcweaponFS;
 	bcweaponFS.addDir("weapon_bytecode", "*");
 
 	auto& weaponFileList = weaponFS.getFileList();
 	for (auto& weaponFile: weaponFileList)
 	{
-		auto weapon = Weapon::loadWeapon(weaponFile.first, this);
+		auto weapon = Weapon::loadWeapon(weaponFile.first);
 		if (weapon == nullptr) continue;
 		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
@@ -754,7 +747,7 @@ void Server::loadWeapons(bool print)
 		if (m_weaponList.find(weapon->getName()) == m_weaponList.end())
 		{
 			m_weaponList[weapon->getName()] = weapon;
-			if (print) m_serverLog.out("[%s]        %s\n", m_name.text(), weapon->getName().c_str());
+			if (print) m_serverLog.out("       %s\n", weapon->getName().c_str());
 		}
 		else
 		{
@@ -766,7 +759,7 @@ void Server::loadWeapons(bool print)
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					m_serverLog.out("[%s]        %s [updated]\n", m_name.text(), weapon->getName().c_str());
+					m_serverLog.out("       %s [updated]\n", weapon->getName().c_str());
 					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
@@ -774,19 +767,19 @@ void Server::loadWeapons(bool print)
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) m_serverLog.out("[%s]        %s [skipped]\n", m_name.text(), weapon->getName().c_str());
+				if (print) m_serverLog.out("       %s [skipped]\n", weapon->getName().c_str());
 			}
 		}
 	}
 
 	// Add the default weapons.
-	if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bow"));
-	if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("bomb"));
-	if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("superbomb"));
-	if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireball"));
-	if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(this, LevelItem::getItemId("fireblast"));
-	if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(this, LevelItem::getItemId("nukeshot"));
-	if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(this, LevelItem::getItemId("joltbomb"));
+	if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(LevelItem::getItemId("bow"));
+	if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(LevelItem::getItemId("bomb"));
+	if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("superbomb"));
+	if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(LevelItem::getItemId("fireball"));
+	if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(LevelItem::getItemId("fireblast"));
+	if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(LevelItem::getItemId("nukeshot"));
+	if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("joltbomb"));
 }
 
 void Server::loadMapLevels()
@@ -795,7 +788,7 @@ void Server::loadMapLevels()
 	for (const auto& map: m_mapList)
 	{
 		if (map->getType() == MapType::GMAP)
-			map->loadMapLevels(this);
+			map->loadMapLevels();
 	}
 }
 
@@ -823,15 +816,15 @@ void Server::loadMaps(bool print)
 
 		// Load the gmap.
 		auto gmap = std::make_unique<Map>(MapType::GMAP);
-		if (!gmap->load(CString() << gmapName, this))
+		if (!gmap->load(CString() << gmapName))
 		{
 			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << gmapName << ".gmap"
+												 << "** [Error] Could not load " << gmapName
 												 << "\n");
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [gmap] %s\n", m_name.text(), gmapName.text());
+		if (print) m_serverLog.out("       [gmap] %s\n", gmapName.text());
 		m_mapList.push_back(std::move(gmap));
 	}
 
@@ -844,14 +837,14 @@ void Server::loadMaps(bool print)
 
 		// Load the bigmap.
 		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
-		if (!bigmap->load(i.trim(), this))
+		if (!bigmap->load(i.trim()))
 		{
 			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
 												 << "** [Error] Could not load " << i << "\n");
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [bigmap] %s\n", m_name.text(), i.text());
+		if (print) m_serverLog.out("       [bigmap] %s\n", i.text());
 		m_mapList.push_back(std::move(bigmap));
 	}
 
@@ -876,14 +869,14 @@ void Server::loadMaps(bool print)
 			continue;
 
 		// Load the map.
-		if (!gmap->load(CString() << groupmap, this))
+		if (!gmap->load(CString() << groupmap))
 		{
 			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
 												 << "** [Error] Could not load " << groupmap << "\n");
 			continue;
 		}
 
-		if (print) m_serverLog.out("[%s]        [group map] %s\n", m_name.text(), groupmap.text());
+		if (print) m_serverLog.out("       [group map] %s\n", groupmap.text());
 		m_mapList.push_back(std::move(gmap));
 	}
 
@@ -912,7 +905,7 @@ void Server::loadMaps(bool print)
 #ifdef V8NPCSERVER
 void Server::loadNpcs(bool print)
 {
-	FileSystem npcFS(this);
+	FileSystem npcFS;
 	npcFS.addDir("npcs", "npc*.txt");
 
 	auto& npcFileList = npcFS.getFileList();
@@ -921,7 +914,7 @@ void Server::loadNpcs(bool print)
 		bool loaded = false;
 
 		// Create the npc
-		auto newNPC = std::make_shared<NPC>("", "", 30.f, 30.5f, this, nullptr, NPCType::DBNPC);
+		auto newNPC = std::make_shared<NPC>("", "", 30.f, 30.5f, nullptr, NPCType::DBNPC);
 		if (newNPC->loadNPC(fileName))
 		{
 			int npcId = newNPC->getId();
@@ -969,7 +962,7 @@ void Server::saveServerFlags()
 
 void Server::saveWeapons()
 {
-	FileSystem weaponFS(this);
+	FileSystem weaponFS;
 	weaponFS.addDir("weapons", "weapon*.txt");
 	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
@@ -1116,7 +1109,7 @@ std::shared_ptr<Player> Server::getPlayer(const CString& account, int type) cons
 
 std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
 {
-	return Level::findLevel(pLevel, this);
+	return Level::findLevel(pLevel);
 }
 
 std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
@@ -1194,7 +1187,7 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 	}
 
 	// Create the npc
-	auto newNPC = std::make_shared<NPC>("", "", pX, pY, this, pLevel, NPCType::DBNPC);
+	auto newNPC = std::make_shared<NPC>("", "", pX, pY, pLevel, NPCType::DBNPC);
 	newNPC->setId(npcId);
 	m_npcList.insert(std::make_pair(npcId, newNPC));
 
@@ -1207,7 +1200,7 @@ std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::sh
 		if (sendToPlayers)
 		{
 			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-			sendPacketToLevelArea(packet, pLevel);
+			sendPacketToLevelOnlyGmapArea(packet, pLevel);
 		}
 	}
 
@@ -1250,7 +1243,7 @@ std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScrip
 {
 	// New Npc
 	auto level = pLevel.lock();
-	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, this, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
+	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
 
 	// Get available NPC Id.
 	uint32_t newId = m_npcIdGenerator.getAvailableId();
@@ -1263,7 +1256,7 @@ std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScrip
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-		sendPacketToLevelArea(packet, level);
+		sendPacketToLevelOnlyGmapArea(packet, level);
 	}
 
 	return newNPC;
@@ -1347,7 +1340,7 @@ bool Server::deleteClass(const std::string& className)
 
 void Server::updateClass(const std::string& className, const std::string& classCode)
 {
-	m_classList[className] = std::make_unique<ScriptClass>(this, className, classCode);
+	m_classList[className] = std::make_unique<ScriptClass>(className, classCode);
 
 	CString filePath = getServerPath() << "scripts/" << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
@@ -1452,7 +1445,7 @@ bool Server::isStaff(const CString& accountName)
 
 void Server::logToFile(const std::string& fileName, const std::string& message)
 {
-	CString fileNamePath = CString() << getServerPath().remove(0, getBaseHomePath().length()) << "logs/";
+	CString fileNamePath = CString() << getServerPath().remove(0, static_cast<int>(getBaseHomePath().length())) << "logs/";
 
 	// Remove leading characters that may try to go up a directory
 	int idx = 0;
@@ -1598,6 +1591,86 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> 
 		auto sgmap{ playerp->getMapPosition() };
 
 		for (auto& [id, other]: m_playerList)
+		{
+			if (exclude.contains(id)) continue;
+			if (!other->isClient()) continue;
+			if (sendIf != nullptr && !sendIf(other.get())) continue;
+
+			auto othermap = other->getMap().lock();
+			if (!othermap || othermap != map) continue;
+			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
+
+			// Check if they are nearby before sending the packet.
+			auto ogmap{ other->getMapPosition() };
+			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+				other->sendPacket(packet);
+		}
+	}
+}
+
+void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+{
+	auto levelp = level.lock();
+	if (!levelp) return;
+
+	// If we have no map, just send to the level players.
+	// If it we are on a bigmap, also just send to level players.
+	auto map = levelp->getMap();
+	if (!map || map->getType() == MapType::BIGMAP)
+	{
+		for (auto id : levelp->getPlayers())
+		{
+			if (exclude.contains(id)) continue;
+			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
+				other->sendPacket(packet);
+		}
+	}
+	else
+	{
+		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
+
+		for (auto& [id, other] : m_playerList)
+		{
+			if (exclude.contains(id)) continue;
+			if (!other->isClient()) continue;
+			if (sendIf != nullptr && !sendIf(other.get())) continue;
+
+			auto othermap = other->getMap().lock();
+			if (!othermap || othermap != map) continue;
+
+			// Check if they are nearby before sending the packet.
+			auto ogmap{ other->getMapPosition() };
+			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+				other->sendPacket(packet);
+		}
+	}
+}
+
+void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+{
+	auto playerp = player.lock();
+	if (!playerp) return;
+
+	auto level = playerp->getLevel();
+	if (!level) return;
+
+	// If we have no map, just send to the level players.
+	auto map = level->getMap();
+	if (!map || map->getType() == MapType::BIGMAP)
+	{
+		for (auto id : level->getPlayers())
+		{
+			if (exclude.contains(id)) continue;
+			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
+				other->sendPacket(packet);
+		}
+	}
+	else
+	{
+		auto isGroupMap = map->isGroupMap();
+		auto sgmap{ playerp->getMapPosition() };
+
+		for (auto& [id, other] : m_playerList)
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1885,7 +1958,7 @@ void Server::TS_Reload()
 	m_translationManager.reset();
 
 	// Load Translation Folder
-	FileSystem translationFS(this);
+	FileSystem translationFS;
 	translationFS.addDir("translations", "*.po");
 
 	// Load Each File

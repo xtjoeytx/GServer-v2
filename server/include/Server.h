@@ -13,33 +13,33 @@
 #include <unordered_set>
 #include <vector>
 
-#include "CLog.h"
-#include "CSettings.h"
-#include "CSocket.h"
-#include "CString.h"
-#include "CTranslationManager.h"
-#include "IEnums.h"
+#include <CLog.h>
+#include <CSettings.h>
+#include <CSocket.h>
+#include <CString.h>
+#include <CTranslationManager.h>
+#include <IEnums.h>
 
 #include "FileSystem.h"
 #include "ServerList.h"
-#include "Misc/WordFilter.h"
+#include "misc/WordFilter.h"
 #include "utilities/CommandDispatcher.h"
 #include "utilities/IdGenerator.h"
 
 #ifdef UPNP
-	#include "UPNP.h"
+	#include "misc/UPNP.h"
 #endif
 
 #ifdef V8NPCSERVER
-	#include "ScriptEngine.h"
+	#include "scripting/ScriptEngine.h"
 #endif
 
-#include "GS2ScriptManager.h"
-#include "ScriptClass.h"
+#include "scripting/GS2ScriptManager.h"
+#include "scripting/ScriptClass.h"
 
 // Resources
-#include "Animation/GameAni.h"
-#include "ResourceManager.h"
+#include "animation/GameAni.h"
+#include "utilities/ResourceManager.h"
 #include "UpdatePackage.h"
 
 class Player;
@@ -214,6 +214,8 @@ public:
 	void sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;

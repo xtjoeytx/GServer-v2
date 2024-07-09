@@ -1,11 +1,13 @@
+#include <IDebug.h>
+
 #include <fmt/format.h>
 
-#include "IConfig.h"
-#include "IDebug.h"
+#include <CCommon.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
-#include "CCommon.h"
-#include "IEnums.h"
-#include "IUtil.h"
+#include "IConfig.h"
+
 #include "Player.h"
 #include "Server.h"
 #include "ServerList.h"
@@ -54,8 +56,8 @@ void ServerList::createFunctions()
 /*
 	Constructor - Deconstructor
 */
-ServerList::ServerList(Server* server)
-	: m_server(server), m_fileQueue(&m_socket), m_nextIsRaw(false), m_rawPacketSize(0), m_serverRemoteIp("127.0.0.1"), m_connectionAttempts(0), m_nextConnectionAttempt(0)
+ServerList::ServerList()
+	: m_fileQueue(&m_socket)
 {
 	m_socket.setProtocol(SOCKET_PROTOCOL_TCP);
 	m_socket.setType(SOCKET_TYPE_CLIENT);
@@ -109,7 +111,7 @@ bool ServerList::canRecv()
 
 void ServerList::onUnregister()
 {
-	m_server->getServerLog().out("[%s] :: %s - Disconnected.\n", m_server->getName().text(), m_socket.getDescription());
+	m_server->getServerLog().out(":: %s - Disconnected.\n", m_socket.getDescription());
 }
 
 bool ServerList::main()
@@ -184,24 +186,24 @@ bool ServerList::connectServer()
 
 	auto& serverLog = m_server->getServerLog();
 
-	serverLog.out("[%s] :: Initializing %s socket.\n", m_server->getName().text(), m_socket.getDescription());
+	serverLog.out(":: Initializing %s socket.\n", m_socket.getDescription());
 
 	// Initialize the socket
 	if (m_socket.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not initialize %s socket.\n", m_server->getName().text(), m_socket.getDescription());
+		serverLog.out(":: [Error] Could not initialize %s socket.\n", m_socket.getDescription());
 		return false;
 	}
 
 	// Connect to Server
 	if (m_socket.connect() != 0)
 	{
-		serverLog.out("[%s] :: [Error] Could not connect %s socket.\n", m_server->getName().text(), m_socket.getDescription());
+		serverLog.out(":: [Error] Could not connect %s socket.\n", m_socket.getDescription());
 		return false;
 	}
 
 	m_server->getSocketManager().registerSocket((CSocketStub*)this);
-	serverLog.out("[%s] :: %s - Connected.\n", m_server->getName().text(), m_socket.getDescription());
+	serverLog.out(":: %s - Connected.\n", m_socket.getDescription());
 
 	// Get Some Stuff
 	CString name(settings.getStr("name"));
@@ -218,7 +220,7 @@ bool ServerList::connectServer()
 		localip = m_socket.getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
-		serverLog.out(CString() << "[" << m_server->getName().text() << "] ** [WARNING] Socket returned " << localip << " for its local ip!  Not sending local ip to serverlist.\n");
+		serverLog.out("** [WARNING] Socket returned %s for its local ip!  Not sending local ip to serverlist.\n", localip.text());
 		localip.clear();
 	}
 
@@ -467,12 +469,12 @@ bool ServerList::parsePacket(CString& pPacket)
 void ServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	m_server->getServerLog().out("[%s] Unknown Serverlist Packet: %i (%s)\n", m_server->getName().text(), pPacket.readGUChar(), pPacket.text() + 1);
+	m_server->getServerLog().out("Unknown Serverlist Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text() + 1);
 }
 
 void ServerList::msgSVI_VERIACC(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_VERIACC is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_VERIACC is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_VERIGUILD(CString& pPacket)
@@ -497,24 +499,24 @@ void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 
 void ServerList::msgSVI_FILESTART(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILESTART is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILESTART is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_FILEEND(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEEND is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILEEND is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_FILEDATA(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEDATA is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILEDATA is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] :: You are running an old version of %s %s.\n"
-								  ":: An updated version is available online.\n",
-								  APP_VENDOR, APP_NAME, m_server->getName().text());
+	m_server->getServerLog().out(":: You are running an old version of %s %s.\n"
+								 ":: An updated version is available online.\n",
+								 APP_VENDOR, APP_NAME);
 }
 
 void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -668,7 +670,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] :: %s - [Error] %s\n", m_server->getName().text(), m_socket.getDescription(), pPacket.readString("").text());
+	m_server->getServerLog().out(":: %s - [Error] %s\n", m_socket.getDescription(), pPacket.readString("").text());
 }
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)
@@ -705,17 +707,17 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 
 void ServerList::msgSVI_FILESTART2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILESTART2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILESTART2 is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_FILEDATA2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEDATA2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILEDATA2 is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_FILEEND2(CString& pPacket)
 {
-	m_server->getServerLog().out("[%s] ** SVI_FILEEND2 is deprecated.  It should not be used.\n", m_server->getName().text());
+	m_server->getServerLog().out("** SVI_FILEEND2 is deprecated.  It should not be used.\n");
 }
 
 void ServerList::msgSVI_PING(CString& pPacket)
@@ -816,7 +818,7 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// Set the file mod time.
 	if (m_server->getFileSystem()->setModTime(shortName, modTime) == false)
-		m_server->getServerLog().out("[%s] ** [WARNING] Could not set modification time on file %s\n", m_server->getName().text(), fileName.text());
+		m_server->getServerLog().out("** [WARNING] Could not set modification time on file %s\n", fileName.text());
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead

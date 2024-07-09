@@ -1,9 +1,11 @@
 #ifndef CFILESYSTEM_H
 #define CFILESYSTEM_H
 
-#include "CString.h"
 #include <map>
 #include <mutex>
+
+#include <CString.h>
+#include "BabyDI.h"
 
 class Server;
 class FileSystem
@@ -18,11 +20,8 @@ class FileSystem
 
 public:
 	FileSystem();
-	FileSystem(Server* pServer);
 	~FileSystem();
 	void clear();
-
-	void setServer(Server* pServer) { m_server = pServer; }
 
 	void addDir(const CString& dir, const CString& wildcard = "*", bool forceRecursive = false);
 	void removeDir(const CString& dir);
@@ -49,7 +48,8 @@ public:
 private:
 	void loadAllDirectories(const CString& directory, bool recursive = false);
 
-	Server* m_server;
+	BabyDI_INJECT(Server, m_server);
+
 	CString m_basedir;
 	std::map<CString, CString> m_fileList;
 	std::vector<CString> m_directoryList;

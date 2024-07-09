@@ -1,9 +1,11 @@
-#include "Level.h"
+#include <IDebug.h>
+
 #include "NPC.h"
 #include "Player.h"
 #include "Server.h"
 #include "Weapon.h"
-#include "utilities/stringutils.h"
+#include "level/Level.h"
+#include "utilities/StringUtils.h"
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
@@ -84,7 +86,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -113,7 +115,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty() && !account.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
 
@@ -144,7 +146,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 									if (!guild.isEmpty())
 									{
 										// Read the guild list.
-										FileSystem guildFS(this);
+										FileSystem guildFS;
 										guildFS.addDir("guilds");
 										CString path = guildFS.find(CString() << "guild" << guild << ".txt");
 
@@ -208,7 +210,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
 								{
-									auto playerList = player->getLevel()->getPlayers();
+									const auto& playerList = player->getLevel()->getPlayers();
 									for (auto& id: playerList)
 									{
 										auto pl = getPlayer(id);
@@ -265,7 +267,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 										packet >> (short)(duration / 0.05f);
 										packet >> (char)options;
-										sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer(player->getId()));
+										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer(player->getId()));
 
 										npc->setX(npc->getX() + dx * 16);
 										npc->setY(npc->getY() + dy * 16);
@@ -294,7 +296,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										CString packet;
 										packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
 										packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-										sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer(player->getId()));
+										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer(player->getId()));
 									}
 								}
 

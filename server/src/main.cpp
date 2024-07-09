@@ -1,18 +1,21 @@
-#include "IDebug.h"
+#include <IDebug.h>
+
 #include <atomic>
 #include <csignal>
+#include <cstdlib>
 #include <filesystem>
 #include <functional>
-
-#include <cstdlib>
 #include <map>
 
-#include "Account.h"
-#include "CLog.h"
-#include "CSocket.h"
-#include "CString.h"
+#include <CLog.h>
+#include <CSocket.h>
+#include <CString.h>
+#include <IUtil.h>
+#include "BabyDI.h"
+
 #include "IConfig.h"
-#include "IUtil.h"
+
+#include "Account.h"
 #include "Server.h"
 #include "main.h"
 
@@ -159,7 +162,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Initialize the server.
-		auto server = std::make_unique<Server>(overrideServer);
+		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
 		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
@@ -182,7 +185,7 @@ int main(int argc, char* argv[])
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				Account accfs(server.get());
+				Account accfs;
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -197,7 +200,11 @@ int main(int argc, char* argv[])
 		}
 
 		// Announce that the program is now running.
-		serverlog.out(":: Program started.\n");
+		serverlog.out(":: Started server %s", server->getName().text());
+		if (server->getSettings().exists("name"))
+			serverlog.append(" (%s)\n", server->getSettings().getStr("name").text());
+		else serverlog.append("\n");
+
 	#if defined(WIN32) || defined(WIN64)
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
@@ -207,6 +214,8 @@ int main(int argc, char* argv[])
 
 		// Destroy the sockets.
 		CSocket::socketSystemDestroy();
+
+		BabyDI_RELEASE(Server);
 	}
 
 	return ERR_SUCCESS;
