@@ -757,38 +757,48 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_CARRYNPC:
 		{
-			m_carryNpcId = pPacket.readGUInt();
+			uint32_t newNpcId = pPacket.readGUInt();
 
-			// TODO: Remove when an npcserver is created.
-			if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
+			// Thrown.
+			if (m_carryNpcId != 0 && newNpcId == 0)
 			{
-				bool isOwner = true;
+				// TODO: Thrown
+			}
+			else
+			{
+				// TODO: Remove when an npcserver is created.
+				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
 				{
-					auto& playerList = m_server->getPlayerList();
-					for (auto& [otherId, other] : playerList)
+					bool isOwner = true;
 					{
-						if (other.get() == this) continue;
-						if (other->getProp(PLPROP_CARRYNPC).readGUInt() == m_carryNpcId)
+						auto& playerList = m_server->getPlayerList();
+						for (auto& [otherId, other] : playerList)
 						{
-							// Somebody else got this NPC first.  Force the player to throw his down
-							// and tell the player to remove the NPC from memory.
-							m_carryNpcId = 0;
-							isOwner = false;
-							sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
-							sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)m_carryNpcId);
-							m_server->sendPacketToOneLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, level, { m_id });
-							break;
+							if (other.get() == this) continue;
+							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
+							{
+								// Somebody else got this NPC first.  Force the player to throw his down
+								// and tell the player to remove the NPC from memory.
+								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
+								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
+								m_server->sendPacketToOneLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, level, { m_id });
+								isOwner = false;
+								newNpcId = 0;
+								break;
+							}
 						}
 					}
-				}
-				if (isOwner)
-				{
-					// We own this NPC now so remove it from the level and have everybody else delete it.
-					auto npc = m_server->getNPC(m_carryNpcId);
-					level->removeNPC(npc);
-					m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)m_carryNpcId, { m_id });
+					if (isOwner)
+					{
+						// We own this NPC now so remove it from the level and have everybody else delete it.
+						auto npc = m_server->getNPC(newNpcId);
+						level->removeNPC(npc);
+						m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId, { m_id });
+					}
 				}
 			}
+
+			m_carryNpcId = newNpcId;
 		}
 		break;
 
