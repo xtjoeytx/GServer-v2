@@ -27,19 +27,17 @@ set(
 	"src/Account.cpp"
 	"src/FileSystem.cpp"
 	"src/main.cpp"
-	"src/NPC.cpp"
 	"src/Server.cpp"
 	"src/ServerList.cpp"
 	"src/TriggerCommandHandlers.cpp"
 	"src/UpdatePackage.cpp"
-	"src/Weapon.cpp"
 	"src/scripting/GS2ScriptManager.cpp"
 	"src/scripting/ScriptClass.cpp"
 	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
-file(GLOB PLAYER_SOURCES src/player/**.cpp)
-list(APPEND SOURCES ${PLAYER_SOURCES})
+file(GLOB ANIMATION_SOURCES src/animation/**.cpp)
+list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 file(GLOB LEVEL_SOURCES src/level/**.cpp)
 list(APPEND SOURCES ${LEVEL_SOURCES})
@@ -47,11 +45,14 @@ list(APPEND SOURCES ${LEVEL_SOURCES})
 file(GLOB MISC_SOURCES src/misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
+file(GLOB OBJECT_SOURCES src/object/**.cpp)
+list(APPEND SOURCES ${OBJECT_SOURCES})
+
+file(GLOB PLAYER_SOURCES src/player/**.cpp)
+list(APPEND SOURCES ${PLAYER_SOURCES})
+
 file(GLOB UTILITIES_SOURCES src/utilities/**.cpp)
 list(APPEND SOURCES ${UTILITIES_SOURCES})
-
-file(GLOB ANIMATION_SOURCES src/animation/**.cpp)
-list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
 
@@ -59,20 +60,20 @@ set(EXE_HEADERS "")
 set(
 	HEADERS
 	"${PROJECT_BINARY_DIR}/server/include/IConfig.h"
+	"include/Account.h"
 	"include/FileSystem.h"
 	"include/main.h"
-	"include/Account.h"
-	"include/NPC.h"
-	"include/Player.h"
 	"include/Server.h"
 	"include/ServerList.h"
 	"include/UpdatePackage.h"
-	"include/Weapon.h"
 	"include/scripting/GS2ScriptManager.h"
 	"include/scripting/ScriptClass.h"
 	"include/scripting/ScriptOrigin.h"
 	"include/scripting/SourceCode.h"
 )
+
+file(GLOB ANIMATION_HEADERS include/animation/**.h)
+list(APPEND HEADERS ${ANIMATION_HEADERS})
 
 file(GLOB LEVEL_HEADERS include/level/**.h)
 list(APPEND HEADERS ${LEVEL_HEADERS})
@@ -80,11 +81,14 @@ list(APPEND HEADERS ${LEVEL_HEADERS})
 file(GLOB MISC_HEADERS include/misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
 
+file(GLOB OBJECT_HEADERS include/object/**.h)
+list(APPEND HEADERS ${OBJECT_HEADERS})
+
+file(GLOB SCRIPT_ENGINE_HEADERS include/scripting/**.h)
+list(APPEND HEADERS ${SCRIPT_ENGINE_HEADERS})
+
 file(GLOB UTILITIES_HEADERS include/utilities/**.h)
 list(APPEND HEADERS ${UTILITIES_HEADERS})
-
-file(GLOB ANIMATION_HEADERS include/animation/**.h)
-list(APPEND HEADERS ${ANIMATION_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
@@ -137,12 +141,6 @@ include_directories(
 	# Include the CMake-generated version header from the build directory
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
-	${PROJECT_SOURCE_DIR}/server/include/misc
-	${PROJECT_SOURCE_DIR}/server/include/level
-	${PROJECT_SOURCE_DIR}/server/include/utilities
-	${PROJECT_SOURCE_DIR}/server/include/scripting
-	${PROJECT_SOURCE_DIR}/server/include/scripting/interface
-	${PROJECT_SOURCE_DIR}/server/include/scripting/v8
 )
 
 # Set target names for the executables
