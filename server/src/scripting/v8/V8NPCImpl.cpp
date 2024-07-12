@@ -35,15 +35,16 @@ void NPC_GetNum_X(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	info.GetReturnValue().Set(npcObject->getX() / 16.0);
+	info.GetReturnValue().Set(npcObject->getX());
 }
 
 void NPC_SetNum_X(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	int newValue = int(16 * value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked());
+	auto newValue = (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 	npcObject->setX(newValue);
+
 	//npcObject->updatePropModTime(NPCPROP_X);
 	npcObject->updatePropModTime(NPCPROP_X2);
 }
@@ -53,14 +54,14 @@ void NPC_GetNum_Y(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8:
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	info.GetReturnValue().Set(npcObject->getY() / 16.0);
+	info.GetReturnValue().Set(npcObject->getY());
 }
 
 void NPC_SetNum_Y(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	int newValue = int(16 * (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked());
+	auto newValue = (float)value->NumberValue(info.GetIsolate()->GetCurrentContext()).ToChecked();
 	npcObject->setY(newValue);
 
 	//npcObject->updatePropModTime(NPCPROP_Y);

@@ -1840,8 +1840,8 @@ std::vector<NPC*> Level::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
 	for (const auto& npcId: m_npcs)
 	{
 		auto npc = m_server->getNPC(npcId);
-		if (pX < npc->getX() + npc->getWidth() && testEndX > npc->getX() &&
-			pY < npc->getY() + npc->getHeight() && testEndY > npc->getY())
+		if (pX < npc->getPixelX() + npc->getWidth() && testEndX > npc->getPixelX() &&
+			pY < npc->getPixelY() + npc->getHeight() && testEndY > npc->getPixelY())
 		{
 			npcList.push_back(npc.get());
 		}
@@ -1858,8 +1858,8 @@ std::vector<NPC*> Level::testTouch(int pX, int pY)
 		auto npc = m_server->getNPC(npcId);
 		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
 		{
-			if (npc->getX() <= pX && npc->getX() + npc->getWidth() >= pX &&
-				npc->getY() <= pY && npc->getY() + npc->getHeight() >= pY)
+			if (npc->getPixelX() <= pX && npc->getPixelX() + npc->getWidth() >= pX &&
+				npc->getPixelY() <= pY && npc->getPixelY() + npc->getHeight() >= pY)
 			{
 				npcList.push_back(npc.get());
 			}
