@@ -749,9 +749,7 @@ bool Player::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	// Save RC stuff.
 	CString adminip = p->getAdminIp();
 	int rights = p->getAdminRights();
-	std::vector<CString> folders;
-	for (const auto& folder: p->getFolderList())
-		folders.push_back(folder);
+	std::vector<CString> folders(p->getFolderList());
 
 	// Reset the player.
 	p->reset();
@@ -759,9 +757,7 @@ bool Player::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	// Add the RC stuff back in.
 	p->setAdminIp(adminip);
 	p->setAdminRights(rights);
-	auto& pFolders = p->getFolderList();
-	for (const auto& folder: folders)
-		pFolders.push_back(folder);
+	p->setFolderRights(folders);
 
 	// Save the account.
 	p->saveAccount();
@@ -1302,24 +1298,24 @@ bool Player::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	// Untokenize and load the directories.
 	CString folders = pPacket.readChars(pPacket.readGUShort());
 	folders.guntokenizeI();
-	auto& fList = p->getFolderList();
-	fList.clear();
-	fList = folders.tokenize("\n");
+	auto folderList = folders.tokenize("\n");
 
 	// Remove any invalid directories.
-	for (std::vector<CString>::iterator i = fList.begin(); i != fList.end();)
+	for (std::vector<CString>::iterator i = folderList.begin(); i != folderList.end();)
 	{
 		if ((*i).find(":") != -1 || (*i).find("..") != -1 || (*i).find(" /*") != -1)
-			i = fList.erase(i);
+			i = folderList.erase(i);
 		else
 			++i;
 	}
+
+	p->setFolderRights(folderList);
 
 	// Save the account.
 	p->saveAccount();
 
 	// If the account is currently on RC, reload it.
-	if (auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
+	if (auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC | PLTYPE_NPCSERVER); pRC)
 	{
 		pRC->loadAccount(acc, true);
 

@@ -10,6 +10,7 @@
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"
 	#include "scripting/v8/V8ScriptObject.h"
+#include <PermissionManager.h>
 
 void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -243,6 +244,42 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		V8ScriptObject<Player>* v8_wrapped = static_cast<V8ScriptObject<Player>*>(playerObject->getScriptObject());
 		args.GetReturnValue().Set(v8_wrapped->handle(isolate));
+	}
+}
+
+
+void Server_Function_LoadString(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	// TODO(joey): second parameter could indicticate if it should skip rcs?
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	Server* serverObject = unwrapObject<Server>(args.This());
+
+	// Find player object from user input
+	PlayerPtr playerObject = serverObject->getNPCServer();
+	if (playerObject && args[0]->IsString())
+	{
+		v8::String::Utf8Value filePath(isolate, args[0]->ToString(context).ToLocalChecked());
+
+		const auto& folderRights = playerObject->getFolderRights();
+		bool result = folderRights.hasPermission(*filePath, FilePermissions::Read);
+
+		serverObject->sendToNC(CString("Has right to ") << CString(*filePath) << CString(": ") << (result ? "TRUE" : "FALSE"));
+
+		if (result) {
+			CString fileData;
+			if (fileData.load(serverObject->getServerPath(*filePath))) {
+				auto result = v8::String::NewFromUtf8(isolate, fileData.text(), v8::NewStringType::kNormal, fileData.length());
+				args.GetReturnValue().Set(result.ToLocalChecked());
+			} else {
+				args.GetReturnValue().SetUndefined();
+			}
+		}
 	}
 }
 
@@ -540,6 +577,7 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "loadstring"), v8::FunctionTemplate::New(isolate, Server_Function_LoadString, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"), v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));

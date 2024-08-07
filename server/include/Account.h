@@ -11,6 +11,7 @@
 
 #include "animation/Character.h"
 #include "level/LevelChest.h"
+#include "utilities/FilePermissions.h"
 
 enum
 {
@@ -203,7 +204,8 @@ public:
 	const CString& getIpStr() const { return m_accountIpStr; }
 	const CString& getComments() const { return m_accountComments; }
 	std::unordered_map<std::string, CString>& getFlagList() { return m_flagList; }
-	std::vector<CString>& getFolderList() { return m_folderList; }
+	const std::vector<CString>& getFolderList() const { return m_folderList; }
+	const FilePermissions& getFolderRights() const { return m_folderRights; }
 	std::vector<CString>& getWeaponList() { return m_weaponList; }
 
 	// set functions
@@ -242,6 +244,7 @@ public:
 	void setSwordImage(const CString& newImage);
 	void setSwordPower(int newPower);
 	void setGani(const CString& newGani);
+	void setFolderRights(const std::vector<CString>& folderRights);
 
 protected:
 	BabyDI_INJECT(Server, m_server);
@@ -282,6 +285,7 @@ protected:
 	uint8_t m_statusMsg = 0;
 	std::unordered_map<std::string, CString> m_flagList;
 	std::vector<CString> m_chestList, m_folderList, m_weaponList, m_privateMessageServerList;
+	FilePermissions m_folderRights;
 };
 
 inline CString Account::getFlag(const std::string& pFlagName) const

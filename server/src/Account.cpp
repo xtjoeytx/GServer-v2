@@ -58,9 +58,9 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 	for (auto& i: m_character.ganiAttributes) i.clear();
 	m_chestList.clear();
 	m_flagList.clear();
-	m_folderList.clear();
 	m_weaponList.clear();
 	m_privateMessageServerList.clear();
+	std::vector<CString> folderList;
 
 	// Parse File
 	for (auto& i: fileData)
@@ -239,10 +239,12 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 		else if (section == "LOADONLY")
 			m_isLoadOnly = (strtoint(val) == 0 ? false : true);
 		else if (section == "FOLDERRIGHT")
-			m_folderList.push_back(val);
+			folderList.push_back(val);
 		else if (section == "LASTFOLDER")
 			m_lastFolder = val;
 	}
+
+	setFolderRights(folderList);
 
 	// If this is a guest account, loadonly is set to true.
 	if (pAccount.toLower() == "guest")
@@ -668,4 +670,15 @@ void Account::setSwordPower(int newPower)
 	const auto& settings = m_server->getSettings();
 
 	m_character.swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
+}
+
+void Account::setFolderRights(const std::vector<CString>& folderRights)
+{
+	m_folderList = folderRights;
+	m_folderRights = {};
+
+	for (const auto& folder : folderRights)
+	{
+		m_folderRights.addPermission(folder.text());
+	}
 }

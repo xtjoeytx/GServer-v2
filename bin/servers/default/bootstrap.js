@@ -314,6 +314,10 @@
 			return server.sendtonc(...args);
 		};
 
+		env.global.loadstring = function (...args) {
+			return server.loadstring(...args);
+		};
+
 		Object.defineProperty(env.global, 'allplayers', {
 			get: function() {
 				return server.players;
