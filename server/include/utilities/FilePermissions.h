@@ -8,9 +8,11 @@
 #include <string>
 #include <vector>
 
-class FilePermissions {
+class FilePermissions
+{
 public:
-	enum Type : uint8_t {
+	enum Type : uint8_t
+	{
 		Read,
 		Write,
 		COUNT
@@ -21,7 +23,8 @@ public:
 	void loadPermissions(const std::string& permissionString);
 
 private:
-	struct Permission {
+	struct Permission
+	{
 		std::bitset<Type::COUNT> flags;
 		std::vector<std::regex> segments;
 	};
@@ -29,7 +32,7 @@ private:
 	std::vector<Permission> permissions;
 	std::vector<Permission> negativePermissions;
 
-	bool match(const std::string& path, const Permission& permission) const;
+	static bool match(const std::string& path, const Permission& permission);
 };
 
 #endif //GS2EMU_FILEPERMISSIONS_H
