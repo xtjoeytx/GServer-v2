@@ -10,7 +10,6 @@
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"
 	#include "scripting/v8/V8ScriptObject.h"
-#include <PermissionManager.h>
 
 void Server_Function_HttpGet(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
