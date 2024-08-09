@@ -318,6 +318,10 @@
 			return server.loadstring(...args);
 		};
 
+		env.global.savestring = function (...args) {
+			return server.savestring(...args);
+		};
+
 		Object.defineProperty(env.global, 'allplayers', {
 			get: function() {
 				return server.players;
