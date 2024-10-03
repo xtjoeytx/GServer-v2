@@ -2,10 +2,10 @@
 
 	#include "EmbeddedBootstrapScript.h"
 
-	#include "NPC.h"
-	#include "Player.h"
 	#include "Server.h"
-	#include "Weapon.h"
+	#include "object/NPC.h"
+	#include "object/Player.h"
+	#include "object/Weapon.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptWrappers.h"
 

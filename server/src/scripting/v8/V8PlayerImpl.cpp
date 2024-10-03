@@ -6,9 +6,9 @@
 
 	#include <IUtil.h>
 
-	#include "NPC.h"
-	#include "Player.h"
 	#include "Server.h"
+	#include "object/NPC.h"
+	#include "object/Player.h"
 	#include "level/Level.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"

@@ -9,7 +9,7 @@
 #include <CString.h>
 #include "BabyDI.h"
 
-#include "animation/Character.h"
+#include "object/Character.h"
 #include "level/LevelChest.h"
 #include "utilities/FilePermissions.h"
 

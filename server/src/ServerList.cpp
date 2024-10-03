@@ -8,9 +8,9 @@
 
 #include "IConfig.h"
 
-#include "Player.h"
 #include "Server.h"
 #include "ServerList.h"
+#include "object/Player.h"
 
 /*
 	Pointer-Functions for Packets

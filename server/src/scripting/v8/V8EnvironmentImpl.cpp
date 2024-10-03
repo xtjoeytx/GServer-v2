@@ -5,8 +5,8 @@
 	#include <unordered_map>
 	#include <v8.h>
 
-	#include "NPC.h"
 	#include "Server.h"
+	#include "object/NPC.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"
 	#include "scripting/v8/V8ScriptObject.h"

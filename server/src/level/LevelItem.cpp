@@ -1,7 +1,7 @@
 #include <IDebug.h>
 #include <IEnums.h>
 
-#include "Player.h"
+#include "object/Player.h"
 #include "level/LevelItem.h"
 
 const char* __itemList[] = {

@@ -2,14 +2,14 @@
 #include <fstream>
 #include <list>
 #include <set>
-#include <tiletypes.h>
 
 #include <IDebug.h>
 #include <IEnums.h>
 
-#include "NPC.h"
-#include "Player.h"
 #include "Server.h"
+#include "object/NPC.h"
+#include "object/Player.h"
+#include "level/tiletypes.h"
 #include "level/Level.h"
 #include "level/Map.h"
 

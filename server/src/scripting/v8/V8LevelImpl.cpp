@@ -6,8 +6,8 @@
 	#include <v8.h>
 
 	#include "BabyDI.h"
-	#include "NPC.h"
-	#include "Player.h"
+	#include "object/NPC.h"
+	#include "object/Player.h"
 	#include "level/Level.h"
 	#include "level/Map.h"
 	#include "scripting/ScriptEngine.h"

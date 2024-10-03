@@ -7,7 +7,7 @@
 
 	#include <IUtil.h>
 
-	#include "NPC.h"
+	#include "object/NPC.h"
 	#include "level/Level.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"

@@ -6,14 +6,14 @@
 // GS2 Compiler includes
 #include <GS2Context.h>
 
-#include "NPC.h"
 #include "Server.h"
-#include "Weapon.h"
+#include "object/NPC.h"
+#include "object/Weapon.h"
 #include "level/LevelItem.h"
 #include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
-	#include "Player.h"
+	#include "object/Player.h"
 #endif
 
 // -- Constructor: Default Weapons -- //

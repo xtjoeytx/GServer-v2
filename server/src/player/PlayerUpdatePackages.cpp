@@ -1,7 +1,7 @@
 #include "FileSystem.h"
-#include "Player.h"
 #include "Server.h"
 #include "UpdatePackage.h"
+#include "object/Player.h"
 
 bool Player::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {

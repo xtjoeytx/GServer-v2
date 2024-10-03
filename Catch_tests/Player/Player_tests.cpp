@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch_all.hpp"
 #include <BabyDI.h>
-#include <Player.h>
 #include <Server.h>
+#include <object/Player.h>
 
 SCENARIO( "Player", "[object]" ) {
 

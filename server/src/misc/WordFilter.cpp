@@ -2,8 +2,8 @@
 #include <IDebug.h>
 #include <IEnums.h>
 
-#include "Player.h"
 #include "Server.h"
+#include "object/Player.h"
 #include "misc/WordFilter.h"
 
 char bypass[] = {

@@ -7,10 +7,10 @@
 
 #include "IConfig.h"
 
-#include "NPC.h"
-#include "Player.h"
 #include "Server.h"
-#include "Weapon.h"
+#include "object/NPC.h"
+#include "object/Player.h"
+#include "object/Weapon.h"
 #include "level/Level.h"
 #include "level/Map.h"
 
