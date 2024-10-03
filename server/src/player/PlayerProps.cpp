@@ -4,8 +4,8 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include "Player.h"
 #include "Server.h"
+#include "object/Player.h"
 #include "level/Level.h"
 #include "level/Map.h"
 

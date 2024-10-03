@@ -1,7 +1,7 @@
 #include "FileSystem.h"
-#include "Player.h"
 #include "Server.h"
-#include "Weapon.h"
+#include "object/Player.h"
+#include "object/Weapon.h"
 #include "utilities/StringUtils.h"
 
 // packet 157

@@ -9,7 +9,7 @@
 #include <CString.h>
 #include <IUtil.h>
 
-#include "animation/Character.h"
+#include "object/Character.h"
 #include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER

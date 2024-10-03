@@ -6,8 +6,8 @@
 	#include <unordered_map>
 	#include <v8.h>
 
-	#include "NPC.h"
-	#include "Player.h"
+	#include "object/NPC.h"
+	#include "object/Player.h"
 	#include "level/Level.h"
 	#include "level/LevelChest.h"
 	#include "level/Map.h"

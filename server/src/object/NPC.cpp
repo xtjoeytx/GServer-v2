@@ -7,15 +7,15 @@
 #include <IEnums.h>
 
 #include "FileSystem.h"
-#include "NPC.h"
 #include "Server.h"
+#include "object/NPC.h"
 #include "level/Level.h"
 #include "level/Map.h"
 #include "scripting/SourceCode.h"
 
 #ifdef V8NPCSERVER
 	#include "scripting/ScriptEngine.h"
-	#include "Player.h"
+	#include "object/Player.h"
 #endif
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };

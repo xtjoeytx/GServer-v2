@@ -4,8 +4,8 @@
 #include <fmt/format.h>
 #include <string>
 
-#include "NPC.h"
-#include "Weapon.h"
+#include "object/NPC.h"
+#include "object/Weapon.h"
 #include "level/Level.h"
 #include "scripting/ScriptClass.h"
 

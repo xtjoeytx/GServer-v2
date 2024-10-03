@@ -6,7 +6,7 @@
 	#include <v8.h>
 
 	#include "Server.h"
-	#include "Weapon.h"
+	#include "object/Weapon.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"
 	#include "scripting/v8/V8ScriptObject.h"

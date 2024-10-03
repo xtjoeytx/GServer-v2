@@ -16,8 +16,8 @@
 
 #include "IConfig.h"
 
-#include "Player.h"
 #include "Server.h"
+#include "object/Player.h"
 #include "level/Level.h"
 #include "utilities/TimeUnits.h"
 

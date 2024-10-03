@@ -1,6 +1,6 @@
 #include "FileSystem.h"
-#include "Player.h"
 #include "Server.h"
+#include "object/Player.h"
 
 bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 {
