@@ -79,13 +79,17 @@ TServer::TServer(const CString& pName)
 	CFileSystem::fixPathSeparators(npcPath);
 	CFileSystem::fixPathSeparators(rcPath);
 	CFileSystem::fixPathSeparators(serverPath);
+	npclog.setLogToCliEnabled(true);
 	npclog.setFilename(npcPath);
+	rclog.setLogToCliEnabled(true);
 	rclog.setFilename(rcPath);
+	serverlog.setLogToCliEnabled(true);
 	serverlog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
 	CFileSystem::fixPathSeparators(scriptPath);
+	scriptlog.setLogToCliEnabled(true);
 	scriptlog.setFilename(scriptPath);
 #endif
 

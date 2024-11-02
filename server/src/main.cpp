@@ -7,14 +7,14 @@
 #include <cstdlib>
 #include <map>
 
-#include "main.h"
-#include "IConfig.h"
-#include "CString.h"
-#include "IUtil.h"
 #include "CLog.h"
 #include "CSocket.h"
-#include "TServer.h"
+#include "CString.h"
+#include "IConfig.h"
+#include "IUtil.h"
 #include "TAccount.h"
+#include "TServer.h"
+#include "main.h"
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
@@ -86,7 +86,142 @@ CString overrideStaff = nullptr;
 
 std::atomic_bool shutdownProgram{ false };
 
-#ifndef NOMAIN
+#if defined(NOMAIN)
+
+#ifdef _WIN32
+#define DLL_EXPORT __declspec(dllexport)
+#else
+#define DLL_EXPORT
+#endif
+
+extern "C" {
+	DLL_EXPORT void* get_server_instance(const char *servername) {
+		overrideServer = servername;
+		srand((unsigned int)time(0));
+
+		getBasePath();
+		serverlog.setLogToCliEnabled(true);
+		serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+		serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
+
+		serverlog.out("OverrideServer: %s\n\n", overrideServer.text());
+
+		// Load Server Settings
+		if (overrideServer.isEmpty())
+		{
+			serverlog.out(":: Determining the server to start... ");
+
+			auto found_server = [](const std::string& why, const std::string &server)
+			{
+				serverlog.append("success! %s\n", why.c_str());
+				overrideServer = server;
+			};
+
+			// startupserver.txt
+			{
+				CString startup;
+				startup.load(CString(homePath) << "startupserver.txt");
+				if (!startup.isEmpty())
+					found_server("(startupserver.txt)", std::string{startup.text()});
+			}
+
+			// Number of directories.
+			if (overrideServer.isEmpty())
+			{
+				std::vector<std::filesystem::path> servers;
+
+				std::filesystem::path base_dir{homePath.text()};
+				for (const auto &p: std::filesystem::directory_iterator{base_dir / "servers"})
+				{
+					if (p.is_directory())
+						servers.push_back(p.path().filename());
+				}
+
+				if (servers.size() == 1)
+					found_server("(directory search)", servers.front().string());
+			}
+
+			// Failure.
+			if (overrideServer.isEmpty())
+			{
+				serverlog.append("FAILED!\n");
+				return nullptr;
+			}
+		}
+
+		return new TServer(overrideServer);
+	}
+
+	DLL_EXPORT int initialize_server_instance(void* serverPtr, const char* overrideServerIp, const char* overridePort, const char* overrideLocalIp, const char* overrideServerInterface, const char* overrideName, const char* overrideStaff, const char* overrideListIp, const char* overrideListPort) {
+		const auto server = static_cast<TServer*>(serverPtr);
+
+		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
+		{
+			serverlog.out("** [Error] Failed to start server: %s\n", server->getName().text());
+			return 1;
+		}
+
+		// Save override settings.
+		{
+			auto &settings = server->getSettings();
+
+			if (overrideName != nullptr)
+				settings.addKey("name", overrideName);
+
+			if (overrideListIp != nullptr)
+				settings.addKey("listip", overrideListIp);
+
+			if (overrideListPort != nullptr)
+				settings.addKey("listport", overrideListPort);
+
+			if (overrideStaff != nullptr)
+			{
+				if (!server->isStaff(overrideStaff))
+				{
+					auto staff = settings.getStr("staff");
+					settings.addKey("staff", staff << "," << overrideStaff);
+				}
+
+				TAccount accfs(server);
+				accfs.loadAccount(overrideStaff, false);
+				if (accfs.getOnlineTime() == 0)
+				{
+					accfs.loadAccount("YOURACCOUNT");
+					accfs.setAccountName(overrideStaff);
+					accfs.saveAccount();
+				}
+			}
+
+			settings.saveFile();
+			server->loadSettings();
+		}
+		return 0;
+	}
+
+	DLL_EXPORT void start_server_instance(void* serverPtr) {
+		const auto server = static_cast<TServer*>(serverPtr);
+		// Run the server.
+		(*server)();
+
+		// Destroy the sockets.
+		CSocket::socketSystemDestroy();
+	}
+
+	DLL_EXPORT void restart_server_instance(void* serverPtr) {
+		const auto server = static_cast<TServer*>(serverPtr);
+		server->restart();
+	}
+
+	DLL_EXPORT void shutdown_server_instance(void* serverPtr) {
+		shutdownProgram = true;
+	}
+
+	DLL_EXPORT void register_log_callback(void* functionPtr) {
+		CLog::external_log_function = (StringPrintCallback)functionPtr;
+	}
+};
+
+#else
 int main(int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))

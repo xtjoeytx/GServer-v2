@@ -158,7 +158,7 @@ else()
 endif()
 
 set(TARGET_NAME_OLD ${TARGET_NAME})
-set(TARGET_NAME ${TARGET_NAME}_lib)
+set(TARGET_NAME "lib${TARGET_NAME}")
 
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
@@ -168,8 +168,11 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
-
+	if(STATIC)
+		add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	else()
+		add_library(${TARGET_NAME} SHARED ${SOURCES} ${HEADERS})
+	endif()
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
@@ -201,7 +204,11 @@ elseif(WIN32)
 				"<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
 	endif()
 
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	if(STATIC)
+		add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	else()
+		add_library(${TARGET_NAME} SHARED ${SOURCES} ${HEADERS})
+	endif()
 
 	if(MINGW)
 		if(V8NPCSERVER)
@@ -229,11 +236,20 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	if(STATIC)
+		add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	else()
+		add_library(${TARGET_NAME} SHARED ${SOURCES} ${HEADERS})
+	endif()
 else()
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	if(STATIC)
+		add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	else()
+		add_library(${TARGET_NAME} SHARED ${SOURCES} ${HEADERS})
+	endif()
 endif()
 
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
 
 add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
@@ -265,11 +281,12 @@ if(UPNP)
 endif()
 
 if (MINGW)
-	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
-	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
-
+	if(STATIC)
+		target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+		target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
+		target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+		target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+	endif()
 	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
 
 	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
