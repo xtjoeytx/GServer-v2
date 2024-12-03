@@ -40,7 +40,7 @@ void V8ScriptEnv::Initialize()
 		v8::V8::Initialize();
 		_v8_initialized = true;
 	}
-	
+
 	// Sets the lower limit of the stack, as far as I know std::thread does not let me control the size
 	//	of the stack, or lets me know how large it is. This fix seems to work for now, if it causes issues we can
 	//	most-likely figure out what the default stack size is per thread and set the constraints through that.
@@ -52,7 +52,7 @@ void V8ScriptEnv::Initialize()
 	// Create v8 isolate
 	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 	_isolate = v8::Isolate::New(create_params);
-	
+
 	// Create global object and persist it
 	v8::HandleScope handle_scope(_isolate);
 	v8::Local<v8::ObjectTemplate> global_tpl = v8::ObjectTemplate::New(_isolate);
@@ -60,7 +60,7 @@ void V8ScriptEnv::Initialize()
 
 	// Increment v8 environment counter
 	V8ScriptEnv::s_count++;
-	
+
 	// Initialized
 	_initialized = true;
 }
@@ -72,8 +72,8 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	}
 
 	// Clear persistent handles to function-constructors
-	for (auto it = _constructorMap.begin(); it != _constructorMap.end(); ++it)
-		it->second.Reset();
+	for (auto & it : _constructorMap)
+		it.second.Reset();
 	_constructorMap.clear();
 
 	// Clear persistent handles to the global object, and context
@@ -85,7 +85,7 @@ void V8ScriptEnv::Cleanup(bool shutDown)
 	_isolate->Dispose();
 	_isolate = nullptr;
 	delete create_params.array_buffer_allocator;
-	
+
 	// Decrease v8 environment counter
 	V8ScriptEnv::s_count--;
 	_initialized = false;
@@ -107,7 +107,7 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 		// Fetch the v8 isolate and context
 		v8::Isolate *isolate = this->Isolate();
 		v8::Local<v8::Context> context = this->Context();
-		
+
 		v8::Handle<v8::Message> message = tryCatch->Message();
 		if (!message.IsEmpty())
 		{
@@ -121,7 +121,7 @@ bool V8ScriptEnv::ParseErrors(v8::TryCatch *tryCatch)
 
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -147,7 +147,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 
 	// Enter the context for compiling and running the script.
 	v8::Context::Scope context_scope(context);
-	
+
 	// Create a string containing the JavaScript source code.
 	v8::Local<v8::String> sourceStr = v8::String::NewFromUtf8(isolate, source.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
 
@@ -159,7 +159,7 @@ IScriptFunction * V8ScriptEnv::Compile(const std::string& name, const std::strin
 		ParseErrors(&try_catch);
 		return nullptr;
 	}
-	
+
 	// Run the script to get the result.
 	v8::Local<v8::Value> result;
 
