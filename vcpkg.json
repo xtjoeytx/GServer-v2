@@ -1,0 +1,8 @@
+{
+	"features": {
+		"npcserver": {
+			"description": "Dependencies for the npc-server",
+			"dependencies": [ "openssl" ]
+		}
+	}
+}
