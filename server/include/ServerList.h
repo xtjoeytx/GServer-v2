@@ -1,118 +1,121 @@
 #ifndef TSERVERLIST_H
 #define TSERVERLIST_H
 
-#include <memory>
+#include <assert.h>
 #include <map>
+#include <memory>
 #include <time.h>
-#include "CFileQueue.h"
-#include "CString.h"
-#include "CSocket.h"
-#include <assert.h> 
+
+#include <CFileQueue.h>
+#include <CSocket.h>
+#include <CString.h>
+#include "BabyDI.h"
 
 enum
 {
-	SVF_HEAD			= 0,
-	SVF_BODY			= 1,
-	SVF_SWORD			= 2,
-	SVF_SHIELD			= 3,
-	SVF_FILE			= 4,
+	SVF_HEAD = 0,
+	SVF_BODY = 1,
+	SVF_SWORD = 2,
+	SVF_SHIELD = 3,
+	SVF_FILE = 4,
 };
 
-class TPlayer;
-class TServer;
-class TServerList : public CSocketStub
+class Player;
+class Server;
+class ServerList : public CSocketStub
 {
-	public:
-		// Required by CSocketStub.
-		bool onRecv();
-		bool onSend();
-		bool onRegister()			{ return true; }
-		void onUnregister();
-		SOCKET getSocketHandle()	{ return sock.getHandle(); }
-		bool canRecv();
-		bool canSend()				{ return _fileQueue.canSend(); }
+public:
+	// Required by CSocketStub.
+	bool onRecv();
+	bool onSend();
+	bool onRegister() { return true; }
+	void onUnregister();
+	SOCKET getSocketHandle() { return m_socket.getHandle(); }
+	bool canRecv();
+	bool canSend() { return m_fileQueue.canSend(); }
 
-		// Constructor - Deconstructor
-		TServerList(TServer *server);
-		~TServerList();
+	// Constructor - Deconstructor
+	ServerList();
+	~ServerList();
 
-		bool doTimedEvents();
-		
-		// Socket-Control Functions
-		bool getConnected() const;
-		bool main();
-		bool connectServer();
-		CSocket& getSocket()					{ return sock; }
-		void sendPacket(CString& pPacket, bool sendNow = false);
+	bool doTimedEvents();
 
-		// Send players to the listserver
-		void addPlayer(std::shared_ptr<TPlayer> player);
-		void deletePlayer(std::shared_ptr<TPlayer> player);
-		void sendPlayers();
-		void handleText(const CString& data);
-		void sendText(const CString& data);
-		void sendText(const std::vector<CString>& stringList);
-		void sendTextForPlayer(std::shared_ptr<TPlayer> player, const CString& data);
+	// Socket-Control Functions
+	bool getConnected() const;
+	bool main();
+	bool connectServer();
+	CSocket& getSocket() { return m_socket; }
+	void sendPacket(CString& pPacket, bool sendNow = false);
 
-		void sendLoginPacketForPlayer(std::shared_ptr<TPlayer> player, const CString& password, const CString& identity);
+	// Send players to the listserver
+	void addPlayer(std::shared_ptr<Player> player);
+	void deletePlayer(std::shared_ptr<Player> player);
+	void sendPlayers();
+	void handleText(const CString& data);
+	void sendText(const CString& data);
+	void sendText(const std::vector<CString>& stringList);
+	void sendTextForPlayer(std::shared_ptr<Player> player, const CString& data);
 
-		const std::map<std::string, int>& getServerList() { return serverListCount; }
-		const std::string& getLocalIP() const { return _serverLocalIp; }
-		const std::string& getServerIP() const { return _serverRemoteIp; }
+	void sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity);
 
-		// Send New Server-Info
-		void sendServerHQ();
-		void sendVersionConfig();
+	const std::map<std::string, int>& getServerList() { return m_serverListCount; }
+	const std::string& getLocalIP() const { return m_serverLocalIp; }
+	const std::string& getServerIP() const { return m_serverRemoteIp; }
 
-		// Incoming message parsing functions
-		static bool created;
-		static void createFunctions();
+	// Send New Server-Info
+	void sendServerHQ();
+	void sendVersionConfig();
 
-		void msgSVI_NULL(CString& pPacket);
-		void msgSVI_VERIACC(CString& pPacket);
-		void msgSVI_VERIGUILD(CString& pPacket);
-		void msgSVI_FILESTART(CString& pPacket);
-		void msgSVI_FILEEND(CString& pPacket);
-		void msgSVI_FILEDATA(CString& pPacket);
-		void msgSVI_VERSIONOLD(CString& pPacket);
-		void msgSVI_VERSIONCURRENT(CString& pPacket);
-		void msgSVI_PROFILE(CString& pPacket);
-		void msgSVI_ERRMSG(CString& pPacket);
-		//void msgSVI_NULL4(CString& pPacket);
-		//void msgSVI_NULL5(CString& pPacket);
-		void msgSVI_VERIACC2(CString& pPacket);
-		void msgSVI_FILESTART2(CString& pPacket);
-		void msgSVI_FILEDATA2(CString& pPacket);
-		void msgSVI_FILEEND2(CString& pPacket);
-		void msgSVI_PING(CString& pPacket);
-		void msgSVI_RAWDATA(CString& pPacket);
-		void msgSVI_FILESTART3(CString& pPacket);
-		void msgSVI_FILEDATA3(CString& pPacket);
-		void msgSVI_FILEEND3(CString& pPacket);
-		void msgSVI_SERVERINFO(CString& pPacket);
-		void msgSVI_REQUESTTEXT(CString& pPacket);
-		void msgSVI_SENDTEXT(CString& pPacket);
-		void msgSVI_PMPLAYER(CString& pPacket);
-		void msgSVI_ASSIGNPCID(CString& pPacket);
-		
-	protected:
-		// Packet Functions
-		bool parsePacket(CString& pPacket);
+	// Incoming message parsing functions
+	static bool created;
+	static void createFunctions();
 
-		// Socket Variables
-		bool nextIsRaw;
-		int rawPacketSize;
-		CFileQueue _fileQueue;
-		CString readBuffer;
-		CSocket sock;
-		time_t lastData, lastTimer;
-		time_t nextConnectionAttempt;
-		uint8_t connectionAttempts;
-		TServer *_server;
+	void msgSVI_NULL(CString& pPacket);
+	void msgSVI_VERIACC(CString& pPacket);
+	void msgSVI_VERIGUILD(CString& pPacket);
+	void msgSVI_FILESTART(CString& pPacket);
+	void msgSVI_FILEEND(CString& pPacket);
+	void msgSVI_FILEDATA(CString& pPacket);
+	void msgSVI_VERSIONOLD(CString& pPacket);
+	void msgSVI_VERSIONCURRENT(CString& pPacket);
+	void msgSVI_PROFILE(CString& pPacket);
+	void msgSVI_ERRMSG(CString& pPacket);
+	//void msgSVI_NULL4(CString& pPacket);
+	//void msgSVI_NULL5(CString& pPacket);
+	void msgSVI_VERIACC2(CString& pPacket);
+	void msgSVI_FILESTART2(CString& pPacket);
+	void msgSVI_FILEDATA2(CString& pPacket);
+	void msgSVI_FILEEND2(CString& pPacket);
+	void msgSVI_PING(CString& pPacket);
+	void msgSVI_RAWDATA(CString& pPacket);
+	void msgSVI_FILESTART3(CString& pPacket);
+	void msgSVI_FILEDATA3(CString& pPacket);
+	void msgSVI_FILEEND3(CString& pPacket);
+	void msgSVI_SERVERINFO(CString& pPacket);
+	void msgSVI_REQUESTTEXT(CString& pPacket);
+	void msgSVI_SENDTEXT(CString& pPacket);
+	void msgSVI_PMPLAYER(CString& pPacket);
+	void msgSVI_ASSIGNPCID(CString& pPacket);
 
-		std::map<std::string, int> serverListCount;
-		std::string _serverLocalIp;
-		std::string _serverRemoteIp;
+protected:
+	BabyDI_INJECT(Server, m_server);
+
+	// Packet Functions
+	bool parsePacket(CString& pPacket);
+
+	// Socket Variables
+	bool m_nextIsRaw = false;
+	int m_rawPacketSize = 0;
+	CFileQueue m_fileQueue;
+	CString m_readBuffer;
+	CSocket m_socket;
+	time_t m_lastData, m_lastTimer;
+	time_t m_nextConnectionAttempt = 0;
+	uint8_t m_connectionAttempts = 0;
+
+	std::map<std::string, int> m_serverListCount;
+	std::string m_serverLocalIp;
+	std::string m_serverRemoteIp{ "127.0.0.1" };
 };
 
 #endif // TSERVERLIST_H

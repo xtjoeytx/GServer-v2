@@ -20,13 +20,12 @@ Currently, v8 is too much of a pain to build for this method to be viable. We su
 
 ### On Windows, using MSVC/MSBuild with VSCode
 #### Setup the environment:
-Install Microsoft C++ compiler and latest Windows SDK through the [VS installer](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019)
+Install [Visual Studio 2022](https://learn.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2022).
 
-Install and add [CMake](https://cmake.org/download/) to path
-
-Download and add [nuget](https://www.nuget.org/downloads) to path
-
-Add `%programfiles(x86)%\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\` to `VCTargetsPath` in your system paths. The trailing \ may be required.
+- Install the "Desktop development with C++" workload.
+- Install the "C++ CMake tools for Windows" component.
+- Install the "NuGet package manager" component.
+- Install the "Windows SDK" component.
 
 #### Building the server with NPC-server support enabled
 A folder called GServer-v2 will be created. Remember to update the Visual Studio installation path to your Visual Studio installation path.
@@ -35,25 +34,12 @@ git clone https://github.com/xtjoeytx/GServer-v2
 cd GServer-v2
 git submodule update --init --recursive
 
-mkdir packages
-cd packages
+.\vcpkg\bootstrap-vcpkg.bat
 
-nuget install v8-v142-x64 -version 7.4.288.26
+"%programfiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 
-cd ..
-
-mkdir build
-cd build
-
-"%programfiles(x86)%\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-cmake .. -G "Visual Studio 16 2019" -A x64 -DV8NPCSERVER=TRUE
-
+cmake .. -G "Visual Studio 17 2022" -A x64 -DV8NPCSERVER=TRUE
 cmake --build .
-
-//The next lines copy the required v8 files to the build path.
-robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.dll
-robocopy ..\packages\v8.redist-v142-x64.7.4.288.26\lib\Debug ..\bin\ *.bin
 ```
 
 ## Quick Start Instructions

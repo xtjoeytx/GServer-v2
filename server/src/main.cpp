@@ -1,19 +1,22 @@
-#include "IDebug.h"
-#include <csignal>
-#include <atomic>
-#include <functional>
-#include <filesystem>
+#include <IDebug.h>
 
+#include <atomic>
+#include <csignal>
 #include <cstdlib>
+#include <filesystem>
+#include <functional>
 #include <map>
 
-#include "CLog.h"
-#include "CSocket.h"
-#include "CString.h"
+#include <CLog.h>
+#include <CSocket.h>
+#include <CString.h>
+#include <IUtil.h>
+#include "BabyDI.h"
+
 #include "IConfig.h"
-#include "IUtil.h"
-#include "TAccount.h"
-#include "TServer.h"
+
+#include "Account.h"
+#include "Server.h"
 #include "main.h"
 
 // Linux specific stuff.
@@ -39,8 +42,8 @@ void getBasePath()
 {
 #if defined(_WIN32) || defined(_WIN64)
 	// Get the path.
-	char path[ MAX_PATH ];
-	GetCurrentDirectoryA(MAX_PATH,path);
+	char path[MAX_PATH];
+	GetCurrentDirectoryA(MAX_PATH, path);
 
 	// Find the program exe and remove it from the path.
 	// Assign the path to homepath.
@@ -227,18 +230,18 @@ int main(int argc, char* argv[])
 	if (parseArgs(argc, argv))
 		return 1;
 
-#if (defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)) && defined(_MSC_VER)
-#if defined(DEBUG) || defined(_DEBUG)
-	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-#endif
-#endif
+	#if (defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)) && defined(_MSC_VER)
+		#if defined(DEBUG) || defined(_DEBUG)
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+		#endif
+	#endif
 
 	{
 		// Shut down the server if we get a kill signal.
-		signal(SIGINT, (sighandler_t) shutdownServer);
-		signal(SIGTERM, (sighandler_t) shutdownServer);
-		signal(SIGBREAK, (sighandler_t) shutdownServer);
-		signal(SIGABRT, (sighandler_t) shutdownServer);
+		signal(SIGINT, (sighandler_t)shutdownServer);
+		signal(SIGTERM, (sighandler_t)shutdownServer);
+		signal(SIGBREAK, (sighandler_t)shutdownServer);
+		signal(SIGABRT, (sighandler_t)shutdownServer);
 
 		// Seed the random number generator with the current time.
 		srand((unsigned int)time(0));
@@ -255,7 +258,7 @@ int main(int argc, char* argv[])
 		{
 			serverlog.out(":: Determining the server to start... ");
 
-			auto found_server = [](const std::string& why, const std::string &server)
+			auto found_server = [](const std::string& why, const std::string& server)
 			{
 				serverlog.append("success! %s\n", why.c_str());
 				overrideServer = server;
@@ -266,7 +269,7 @@ int main(int argc, char* argv[])
 				CString startup;
 				startup.load(CString(homePath) << "startupserver.txt");
 				if (!startup.isEmpty())
-					found_server("(startupserver.txt)", std::string{startup.text()});
+					found_server("(startupserver.txt)", std::string{ startup.text() });
 			}
 
 			// Number of directories.
@@ -274,8 +277,8 @@ int main(int argc, char* argv[])
 			{
 				std::vector<std::filesystem::path> servers;
 
-				std::filesystem::path base_dir{homePath.text()};
-				for (const auto &p: std::filesystem::directory_iterator{base_dir / "servers"})
+				std::filesystem::path base_dir{ homePath.text() };
+				for (const auto& p: std::filesystem::directory_iterator{ base_dir / "servers" })
 				{
 					if (p.is_directory())
 						servers.push_back(p.path().filename());
@@ -294,9 +297,9 @@ int main(int argc, char* argv[])
 		}
 
 		// Initialize the server.
-		auto server = std::make_unique<TServer>(overrideServer);
+		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
 		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
-		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
+		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
 			serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
 			return 1;
@@ -304,7 +307,7 @@ int main(int argc, char* argv[])
 
 		// Save override settings.
 		{
-			auto &settings = server->getSettings();
+			auto& settings = server->getSettings();
 
 			if (!overrideName.isEmpty())
 				settings.addKey("name", overrideName);
@@ -317,7 +320,7 @@ int main(int argc, char* argv[])
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				TAccount accfs(server.get());
+				Account accfs;
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -332,7 +335,11 @@ int main(int argc, char* argv[])
 		}
 
 		// Announce that the program is now running.
-		serverlog.out(":: Program started.\n");
+		serverlog.out(":: Started server %s", server->getName().text());
+		if (server->getSettings().exists("name"))
+			serverlog.append(" (%s)\n", server->getSettings().getStr("name").text());
+		else serverlog.append("\n");
+
 	#if defined(WIN32) || defined(WIN64)
 		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
 	#endif
@@ -342,6 +349,8 @@ int main(int argc, char* argv[])
 
 		// Destroy the sockets.
 		CSocket::socketSystemDestroy();
+
+		BabyDI_RELEASE(Server);
 	}
 
 	return ERR_SUCCESS;
@@ -362,9 +371,10 @@ bool parseArgs(int argc, char* argv[])
 {
 	std::vector<CString> args;
 
-	auto test_for_end = [&args](auto &&iterator, auto &&end)
+	auto test_for_end = [&args](auto&& iterator, auto&& end)
 	{
-		if (iterator == end) {
+		if (iterator == end)
+		{
 			printHelp(args[0].text());
 			return true;
 		}
@@ -373,17 +383,23 @@ bool parseArgs(int argc, char* argv[])
 
 	bool use_env = getenv("USE_ENV");
 
-	if (!use_env) {
-		for ( int i = 0; i < argc; ++i )
+	if (!use_env)
+	{
+		for (int i = 0; i < argc; ++i)
 			args.push_back(CString(argv[i]));
 
-		for ( auto i = args.begin(); i != args.end(); ++i ) {
-			if ((*i).find("--") == 0 ) {
+		for (auto i = args.begin(); i != args.end(); ++i)
+		{
+			if ((*i).find("--") == 0)
+			{
 				CString key((*i).subString(2));
-				if (key == "help") {
+				if (key == "help")
+				{
 					printHelp(args[0].text());
 					return true;
-				} else {
+				}
+				else
+				{
 					if (test_for_end(++i, args.end()))
 						return true;
 
@@ -402,18 +418,24 @@ bool parseArgs(int argc, char* argv[])
 					else if (key == "name" && !overrideServer.isEmpty())
 						overrideName = *i;
 				}
-			} else if ((*i)[0] == '-' ) {
-				for ( int j = 1; j < (*i).length(); ++j ) {
-					if ((*i)[j] == 'h' ) {
+			}
+			else if ((*i)[0] == '-')
+			{
+				for (int j = 1; j < (*i).length(); ++j)
+				{
+					if ((*i)[j] == 'h')
+					{
 						printHelp(args[0].text());
 						return true;
 					}
-					if ((*i)[j] == 's' ) {
+					if ((*i)[j] == 's')
+					{
 						if (test_for_end(++i, args.end()))
 							return true;
 						overrideServer = *i;
 					}
-					if ((*i)[j] == 'p' && !overrideServer.isEmpty()) {
+					if ((*i)[j] == 'p' && !overrideServer.isEmpty())
+					{
 						if (test_for_end(++i, args.end()))
 							return true;
 						overridePort = *i;
@@ -424,25 +446,25 @@ bool parseArgs(int argc, char* argv[])
 	}
 	else
 	{
-		if ( getenv("SERVER") )
+		if (getenv("SERVER"))
 			overrideServer = getenv("SERVER");
 
-		if ( getenv("PORT") && !overrideServer.isEmpty())
+		if (getenv("PORT") && !overrideServer.isEmpty())
 			overridePort = getenv("PORT");
 
-		if ( getenv("LOCALIP") && !overrideServer.isEmpty())
+		if (getenv("LOCALIP") && !overrideServer.isEmpty())
 			overrideLocalIp = getenv("LOCALIP");
 
-		if ( getenv("SERVERIP") && !overrideServer.isEmpty())
+		if (getenv("SERVERIP") && !overrideServer.isEmpty())
 			overrideServerIp = getenv("SERVERIP");
 
-		if ( getenv("INTERFACE") && !overrideServer.isEmpty())
+		if (getenv("INTERFACE") && !overrideServer.isEmpty())
 			overrideServerInterface = getenv("INTERFACE");
 
-		if ( getenv("STAFFACCOUNT") && !overrideServer.isEmpty())
+		if (getenv("STAFFACCOUNT") && !overrideServer.isEmpty())
 			overrideStaff = getenv("STAFFACCOUNT");
 
-		if ( getenv("SERVERNAME") && !overrideServer.isEmpty())
+		if (getenv("SERVERNAME") && !overrideServer.isEmpty())
 			overrideName = getenv("SERVERNAME");
 	}
 
@@ -464,4 +486,3 @@ void printHelp(const char* pname)
 
 	serverlog.out("\n");
 }
-
