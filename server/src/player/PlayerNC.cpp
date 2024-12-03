@@ -177,6 +177,8 @@ bool Player::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcScript = pPacket.readString("").guntokenize();
 
+	// TODO: Validate permissions
+
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{

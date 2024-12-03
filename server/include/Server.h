@@ -4,6 +4,7 @@
 #include <chrono>
 #include <climits>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <set>
@@ -145,6 +146,7 @@ public:
 	CSettings& getAdminSettings() { return m_adminSettings; }
 	CSocketManager& getSocketManager() { return m_sockManager; }
 	CString getServerPath() const { return m_serverPath; }
+	CString getServerPath(const std::string& path) const;
 	const CString& getServerMessage() const { return m_serverMessage; }
 	const CString& getAllowedVersionString() const { return m_allowedVersionString; }
 	CTranslationManager& getTranslationManager() { return m_translationManager; }
@@ -359,6 +361,11 @@ inline ScriptClass* Server::getClass(const std::string& className) const
 		return classIter->second.get();
 
 	return nullptr;
+}
+
+inline CString Server::getServerPath(const std::string& path) const
+{
+	return getServerPath() << std::filesystem::weakly_canonical(path).string();
 }
 
 #ifdef V8NPCSERVER

@@ -246,6 +246,68 @@ void Server_Function_FindPlayer(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
+
+// Server Method: server.loadstring(str filename);
+void Server_Function_LoadString(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	Server* serverObject = unwrapObject<Server>(args.This());
+
+	PlayerPtr npcServer = serverObject->getNPCServer();
+	if (npcServer && args[0]->IsString())
+	{
+		v8::String::Utf8Value filePath(isolate, args[0]->ToString(context).ToLocalChecked());
+		const auto& folderRights = npcServer->getFolderRights();
+		
+		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
+		{
+			CString fileData;
+			if (fileData.load(serverObject->getServerPath(*filePath)))
+			{
+				auto result = v8::String::NewFromUtf8(isolate, fileData.text(), v8::NewStringType::kNormal, fileData.length());
+				args.GetReturnValue().Set(result.ToLocalChecked());
+			}
+		}
+	}
+}
+
+// Server Method: server.savestring(str filename, str filedata, bool append = false);
+void Server_Function_SaveString(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 2);
+
+	v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+	Server* serverObject = unwrapObject<Server>(args.This());
+
+	PlayerPtr npcServer = serverObject->getNPCServer();
+	if (npcServer && args[0]->IsString() && args[1]->IsString())
+	{
+		v8::String::Utf8Value filePath(isolate, args[0]->ToString(context).ToLocalChecked());
+		v8::String::Utf8Value fileData(isolate, args[1]->ToString(context).ToLocalChecked());
+		const auto& folderRights = npcServer->getFolderRights();
+
+		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
+		{
+			auto path = serverObject->getServerPath(*filePath);
+
+			CString data;
+			if (args.Length() > 2 && args[2]->BooleanValue(isolate))
+				data.load(path);
+
+			data.write(*fileData, fileData.length(), false);
+			args.GetReturnValue().Set(data.save(path));
+		}
+	}
+}
+
 // Server Method: server.setshootparams(str shootparams);
 void Server_Function_SetShootParams(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
@@ -540,6 +602,8 @@ void bindClass_Server(ScriptEngine* scriptEngine)
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "createlevel"), v8::FunctionTemplate::New(isolate, Server_Function_CreateLevel, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findnpc"), v8::FunctionTemplate::New(isolate, Server_Function_FindNPC, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "findplayer"), v8::FunctionTemplate::New(isolate, Server_Function_FindPlayer, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "loadstring"), v8::FunctionTemplate::New(isolate, Server_Function_LoadString, engine_ref));
+	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savestring"), v8::FunctionTemplate::New(isolate, Server_Function_SaveString, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setshootparams"), v8::FunctionTemplate::New(isolate, Server_Function_SetShootParams, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "savelog"), v8::FunctionTemplate::New(isolate, Server_Function_SaveLog, engine_ref));
 	server_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtonc"), v8::FunctionTemplate::New(isolate, Server_Function_SendToNC, engine_ref));
