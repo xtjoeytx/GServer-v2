@@ -114,6 +114,8 @@ else()
 	message("Disabling built-in V8 NPC-Server")
 endif()
 
+option(TESTS "Compile tests" ON)
+
 option(UPNP "Compile with UPNP support" OFF)
 if(UPNP)
 	message("Enabling UPNP support")
@@ -302,7 +304,9 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 
-enable_testing()
-add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
+if (TESTS)
+	enable_testing()
+	add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
+endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
