@@ -79,5 +79,7 @@ bool Player::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 		this->sendFile(wantFile);
 
 	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << packageName);
+
+	m_fileQueue.sendCompress(true);
 	return true;
 }
