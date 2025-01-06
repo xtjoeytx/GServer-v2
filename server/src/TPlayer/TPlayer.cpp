@@ -398,7 +398,7 @@ void TPlayer::cleanup()
 bool TPlayer::onRecv()
 {
 	// If our socket is gone, delete ourself.
-	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (playerSock == nullptr || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
 	// Grab the data from the socket and put it into our receive buffer.
@@ -421,7 +421,7 @@ bool TPlayer::onRecv()
 
 bool TPlayer::onSend()
 {
-	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (playerSock == nullptr || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
 	// Send data.
@@ -558,7 +558,7 @@ bool TPlayer::doTimedEvents()
 	time_t currTime = time(0);
 
 	// If we are disconnected, delete ourself!
-	if (playerSock == 0 || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (playerSock == nullptr || playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 	{
 		server->deletePlayer(shared_from_this());
 		return false;
@@ -638,6 +638,8 @@ bool TPlayer::doTimedEvents()
 		last1m = currTime;
 		invalidPackets = 0;
 	}
+
+	fileQueue.sendCompress();
 
 	return true;
 }

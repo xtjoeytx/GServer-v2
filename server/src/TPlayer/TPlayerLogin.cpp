@@ -93,10 +93,10 @@ bool TPlayer::sendLogin()
 	// players will be playing.
 	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
 
-	//if(loginserver) {
-	//	sendPacket(CString() >> (char)PLO_FULLSTOP);
-	//	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
-	//}
+	if (server->getName().findi("login") > -1) {
+		sendPacket(CString() >> (char)PLO_FULLSTOP);
+		sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
+	}
 
 	if (isClient())
 	{
@@ -107,7 +107,6 @@ bool TPlayer::sendLogin()
 		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
 		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 #endif
-
 		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	}
 
@@ -349,8 +348,7 @@ bool TPlayer::sendLoginClient()
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	bool warpSuccess = warp(levelName, x, y);
-	if (!warpSuccess && curlevel.expired())
+	if (!warp(levelName, x, y) && curlevel.expired())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		serverlog.out(CString() << "[" << server->getName() << "] " << "Cannot find level for " << accountName << "\n");
@@ -390,6 +388,8 @@ bool TPlayer::sendLoginClient()
 
 	// This will allow serverwarp and some other things, for some reason.
 	sendPacket(CString() >> (char)PLO_SERVERTEXT);
+
+	fileQueue.sendCompress(true);
 
 	return true;
 }

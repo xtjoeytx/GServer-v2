@@ -2144,6 +2144,8 @@ void updateFile(TPlayer* player, TServer* server, CString& dir, CString& file)
 		auto l = TLevel::findLevel(file, server);
 		if (l) l->reload();
 	}
+	else if (ext == ".gupd")
+		server->getPackageManager().findOrAddResource(file.text())->reload(server);
 	else if (ext == ".dump" || dir.findi(CString("weapons")) > -1)
 		server->loadWeapons(true);
 	else if (file == "serveroptions.txt")

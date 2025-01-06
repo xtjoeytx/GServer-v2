@@ -701,7 +701,7 @@ void TServer::loadFileSystem()
 
 	for (auto &[file, path] : filesystem[0].getFileList()) {
 		if (getExtension(file) == ".gupd") {
-			getPackageManager().findOrAddResource(file.toString());
+			getPackageManager().findOrAddResource(file.toString())->reload(this);
 		}
 	}
 }

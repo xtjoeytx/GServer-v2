@@ -42,17 +42,8 @@ bool TPlayer::msgPLI_REQUESTTEXT(CString& pPacket)
 		remPMServer(option);
 	else if (type == "irc") {
 	} else if (type == "packageinfo") {
-		std::vector<CString> updatePackage = server->getFileSystem()->load(option).tokenize("\n");
-		int files = 0;
-		int totalFileSize = 0;
-		for (const auto& line : updatePackage) {
-			if (line.findi("FILE") > -1) {
-				CString file = line.subString(line.findi("FILE") + 5);
-				totalFileSize += server->getFileSystem()->getFileSize(file.trimI());
-				files++;
-			}
-		}
-		sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << option << "\n" << /* File count */ CString(files) << "\n" << /* Total size in bytes */ CString(totalFileSize) << "\n").gtokenizeI());
+		if (const auto updatePackage = server->getPackageManager().findOrAddResource(option.text()))
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n" << type << "\n" << option << "\n" << /* File count */ CString(updatePackage->getFileList().size()) << "\n" << /* Total size in bytes */ CString(updatePackage->getPackageSize()) << "\n").gtokenizeI());
 	}
 
 

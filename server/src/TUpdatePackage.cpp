@@ -1,10 +1,9 @@
-#include <filesystem>
 #include "TUpdatePackage.h"
 #include "CFileSystem.h"
 #include "TServer.h"
+#include <filesystem>
 
-std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const std::string& name)
-{
+std::optional<TUpdatePackage> TUpdatePackage::load(TServer *const server, const std::string &name) {
 	auto fileSystem = server->getFileSystem();
 
 	// Search for the file in the filesystem, and load the contents
@@ -14,17 +13,30 @@ std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const 
 
 	// Calculate the checksum for the gupd file
 	TUpdatePackage updatePackage(name);
-	updatePackage.checksum = calculateCrc32Checksum(fileContents);
+	updatePackage.reload(server);
+
+	return updatePackage;
+}
+
+void TUpdatePackage::reload(TServer *const server) {
+	this->checksum = 0;
+	this->packageSize = 0;
+	this->fileList.clear();
+
+	auto fileSystem = server->getFileSystem();
+
+	// Search for the file in the filesystem, and load the contents
+	auto fileContents = fileSystem->load(this->packageName.c_str());
+	if (fileContents.isEmpty())
+		return;
+
+	// Calculate the checksum for the gupd file
+	this->checksum = calculateCrc32Checksum(fileContents);
 
 	// Calculate the checksum and filesize for each file referenced in the package
-	auto packageLines = fileContents.tokenize("\n");
-	for (const auto& line : packageLines)
-	{
-		auto startPos = line.findi("FILE");
-
+	for (const auto packageLines = fileContents.tokenize("\n"); const auto &line: packageLines) {
 		// Line should be in the format of FILE levels/body.png
-		if (startPos == 0)
-		{
+		if (const auto startPos = line.findi("FILE"); startPos == 0) {
 			std::string filePath = line.subString(4).trim().toString();
 			std::string baseFileName = std::filesystem::path(filePath).filename().string();
 
@@ -32,20 +44,17 @@ std::optional<TUpdatePackage> TUpdatePackage::load(TServer* const server, const 
 
 			// File was not found in the filesystem
 			if (updateFileData.isEmpty()) {
-				server->sendToRC(CString() << "[Server]: Unable to find file '" << baseFileName << "' in package '" << name << "'");
+				server->sendToRC(CString() << "[Server]: Unable to find file '" << baseFileName << "' in package '" << packageName << "'");
 				continue;
 			}
 
 			uint32_t fileLength(updateFileData.length());
 
-			updatePackage.fileList.emplace(baseFileName, FileEntry{
-				.size = fileLength,
-				.checksum = calculateCrc32Checksum(updateFileData)
-			});
+			this->fileList.emplace(baseFileName, FileEntry{
+															 .size = fileLength,
+															 .checksum = calculateCrc32Checksum(updateFileData)});
 
-			updatePackage.packageSize += fileLength;
+			this->packageSize += fileLength;
 		}
 	}
-
-	return updatePackage;
 }
