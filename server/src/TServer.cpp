@@ -698,6 +698,12 @@ void TServer::loadFileSystem()
 		loadAllFolders();
 	else
 		loadFolderConfig();
+
+	for (auto &[file, path] : filesystem[0].getFileList()) {
+		if (getExtension(file) == ".gupd") {
+			getPackageManager().findOrAddResource(file.toString());
+		}
+	}
 }
 
 void TServer::loadServerFlags()
