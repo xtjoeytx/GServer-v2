@@ -52,7 +52,7 @@ public:
 	int apply(const Player* player, CString& chat, int check);
 
 private:
-	Server* m_server;
+	Server* m_server = nullptr;
 
 	bool m_showWordsToRC = false;
 	CString m_defaultWarnMessage;

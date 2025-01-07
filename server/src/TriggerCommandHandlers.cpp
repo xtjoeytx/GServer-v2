@@ -3,6 +3,7 @@
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Player.h"
+#include "object/PlayerClient.h"
 #include "object/Weapon.h"
 #include "level/Level.h"
 #include "utilities/StringUtils.h"
@@ -158,7 +159,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										{
 											if (p->getGuild() == guild)
 											{
-												CString nick = p->getNickname();
+												CString nick = p->account.character.nickName;
 												p->setNick(nick.readString("(").trimI());
 												p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
 												sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), { pid });
@@ -184,10 +185,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										if (!account.isEmpty()) p = getPlayer(account, PLTYPE_ANYCLIENT).get();
 										if (p)
 										{
-											CString nick = p->getNickname();
+											CString nick = p->account.character.nickName;
 											p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
-											p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname());
-											sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->getNickname().length() << p->getNickname(), { p->getId() });
+											p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName);
+											sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName, { p->getId() });
 										}
 									}
 								}
@@ -198,9 +199,9 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Group levels
 	builder.registerCommand("gr.setgroup", [&](Player* player, std::vector<CString>& triggerData)
 							{
-								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
+								if (auto client = dynamic_cast<PlayerClient*>(player); getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2 && client != nullptr)
 								{
-									player->setGroup(triggerData[1]);
+									client->setGroup(triggerData[1]);
 								}
 
 								return true;
@@ -208,13 +209,13 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setlevelgroup", [&](Player* player, std::vector<CString>& triggerData)
 							{
-								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2)
+								if (auto client = dynamic_cast<PlayerClient*>(player); getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2 && client != nullptr)
 								{
-									const auto& playerList = player->getLevel()->getPlayers();
+									const auto& playerList = client->getLevel()->getPlayers();
 									for (auto& id: playerList)
 									{
 										auto pl = getPlayer(id);
-										pl->setGroup(triggerData[1]);
+										client->setGroup(triggerData[1]);
 									}
 								}
 
@@ -225,8 +226,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 							{
 								if (getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 3)
 								{
-									auto player = getPlayer(triggerData[1], PLTYPE_ANYCLIENT);
-									player->setGroup(triggerData[2]);
+									if (auto client = getPlayer<PlayerClient>(triggerData[1], PLTYPE_ANYCLIENT); client != nullptr)
+										client->setGroup(triggerData[2]);
 								}
 
 								return true;
@@ -267,7 +268,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 										packet >> (short)(duration / 0.05f);
 										packet >> (char)options;
-										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer(player->getId()));
+										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 
 										npc->setX(npc->getX() + dx * 16);
 										npc->setY(npc->getY() + dy * 16);
@@ -296,7 +297,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 										CString packet;
 										packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
 										packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
-										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer(player->getId()));
+										sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 									}
 								}
 

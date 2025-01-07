@@ -1,6 +1,7 @@
 #include "FileSystem.h"
 #include "Server.h"
 #include "object/Player.h"
+#include "utilities/StringUtils.h"
 
 std::vector<CString> Player::getPMServerList()
 {
@@ -92,7 +93,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 				CString tmpPlyr = p2.guntokenize();
 				CString account = tmpPlyr.readString("\n");
 				CString nick = tmpPlyr.readString("\n");
-				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
+				if (servername == externalPlayer->getServerName() && account == externalPlayer->account.name)
 				{
 					exist2 = true;
 					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
@@ -128,7 +129,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			for (auto& [externalId, externalPlayer]: m_externalPlayers)
 			{
-				if (servername == externalPlayer->getServerName() && account == externalPlayer->getAccountName())
+				if (servername == externalPlayer->getServerName() && account == externalPlayer->account.name)
 				{
 					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
 					exist = true;
@@ -142,8 +143,8 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 			auto newId = m_externalPlayerIdGenerator.getAvailableId();
 			auto tmpPlyr2 = std::make_shared<Player>(nullptr, newId);
 			m_externalPlayers[newId] = tmpPlyr2;
-			tmpPlyr2->loadAccount(account);
-			tmpPlyr2->setAccountName(account);
+			m_server->getAccountLoader().loadAccount(account.toString(), tmpPlyr2->account);
+			tmpPlyr2->account.name = account.toString();
 			tmpPlyr2->setServerName(servername);
 			tmpPlyr2->setExternal(true);
 			tmpPlyr2->setNick(CString() << nick << " (on " << servername << ")");
@@ -157,11 +158,11 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			if (isRC())
 			{
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)1);
+				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 			else
 			{
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_UNKNOWN81 >> (char)(1));
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 		}
 	}
@@ -173,8 +174,8 @@ bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMe
 {
 	auto& list = m_server->getServerList();
 	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)m_id << CString(CString() << servername << "\n"
-																						<< m_accountName << "\n"
-																						<< m_character.nickName << "\n"
+																						<< this->account.name << "\n"
+																						<< this->account.character.nickName << "\n"
 																						<< "GraalEngine"
 																						<< "\n"
 																						<< "pmplayer"
@@ -206,7 +207,7 @@ PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) cons
 			continue;
 
 		// Compare account names.
-		if (externalPlayer->getAccountName().toLower() == account.toLower())
+		if (graal::utilities::string::comparei(externalPlayer->account.name, account.toString()) == 0)
 			return externalPlayer;
 	}
 	return nullptr;

@@ -27,9 +27,9 @@ void Player_GetStr_Account(v8::Local<v8::String> prop, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	CString accountName = playerObject->getAccountName();
+	const std::string& accountName = playerObject->account.name;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), accountName.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), accountName.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -38,9 +38,9 @@ void Player_GetStr_Ani(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& animation = playerObject->getAnimation();
+	const std::string& animation = playerObject->account.character.gani;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), animation.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), animation.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -64,7 +64,7 @@ void Player_GetInt_Alignment(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getAlignment());
+	info.GetReturnValue().Set(playerObject->account.character.ap);
 }
 
 void Player_SetInt_Alignment(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -80,9 +80,9 @@ void Player_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getBodyImage();
+	const std::string& propValue = playerObject->account.character.bodyImage;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -106,7 +106,7 @@ void Player_GetInt_Bombs(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getBombCount());
+	info.GetReturnValue().Set(playerObject->account.character.bombs);
 }
 
 void Player_SetInt_Bombs(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -122,9 +122,9 @@ void Player_GetStr_Chat(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getChatMsg();
+	const std::string& propValue = playerObject->account.character.chatMessage;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -148,7 +148,7 @@ void Player_GetInt_Darts(v8::Local<v8::String> prop, const v8::PropertyCallbackI
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getArrowCount());
+	info.GetReturnValue().Set(playerObject->account.character.arrows);
 }
 
 void Player_SetInt_Darts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -164,7 +164,7 @@ void Player_GetInt_Dir(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getSprite() % 4);
+	info.GetReturnValue().Set(playerObject->account.character.sprite % 4);
 }
 
 void Player_SetInt_Dir(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -180,7 +180,7 @@ void Player_GetInt_Fullhearts(v8::Local<v8::String> prop, const v8::PropertyCall
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getMaxPower());
+	info.GetReturnValue().Set(playerObject->account.maxHitpoints);
 }
 
 void Player_SetInt_Fullhearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -196,7 +196,7 @@ void Player_GetInt_GlovePower(v8::Local<v8::String> prop, const v8::PropertyCall
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getGlovePower());
+	info.GetReturnValue().Set(playerObject->account.character.glovePower);
 }
 
 void Player_SetInt_GlovePower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -224,7 +224,7 @@ void Player_SetStr_Guild(v8::Local<v8::String> props, v8::Local<v8::Value> value
 
 	v8::String::Utf8Value newValue = v8::String::Utf8Value(info.GetIsolate(), value);
 
-	CString playerNick = playerObject->getNickname();
+	CString playerNick = playerObject->account.character.nickName;
 	int pos = playerNick.find("(", 0);
 	if (pos != -1)
 		playerNick = playerNick.readChars(pos).trimRight();
@@ -246,7 +246,7 @@ void Player_GetNum_Hearts(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getPower());
+	info.GetReturnValue().Set(playerObject->account.character.hitpointsInHalves / 2.0f);
 }
 
 void Player_SetNum_Hearts(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -262,9 +262,9 @@ void Player_GetStr_HeadImage(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getHeadImage();
+	const std::string& propValue = playerObject->account.character.headImage;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -312,12 +312,14 @@ void Player_GetObject_Level(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	auto levelObject = playerObject->getLevel();
-	if (levelObject != nullptr)
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
 	{
-		V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
-		info.GetReturnValue().Set(v8_wrapped->handle(info.GetIsolate()));
-		return;
+		if (auto levelObject = client->getLevel(); levelObject != nullptr)
+		{
+			V8ScriptObject<Level>* v8_wrapped = static_cast<V8ScriptObject<Level>*>(levelObject->getScriptObject());
+			info.GetReturnValue().Set(v8_wrapped->handle(info.GetIsolate()));
+			return;
+		}
 	}
 
 	info.GetReturnValue().SetNull();
@@ -328,11 +330,13 @@ void Player_GetStr_LevelName(v8::Local<v8::String> prop, const v8::PropertyCallb
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	auto levelObject = playerObject->getLevel();
-
 	CString levelName;
-	if (levelObject != nullptr)
-		levelName = levelObject->getLevelName();
+
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+	{
+		if (auto levelObject = client->getLevel(); levelObject != nullptr)
+			levelName = levelObject->getLevelName();
+	}
 
 	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), levelName.text()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
@@ -343,7 +347,7 @@ void Player_GetInt_MagicPower(v8::Local<v8::String> prop, const v8::PropertyCall
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getMagicPower());
+	info.GetReturnValue().Set(playerObject->account.character.mp);
 }
 
 void Player_SetInt_MagicPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -359,9 +363,9 @@ void Player_GetStr_Nickname(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getNickname();
+	const std::string& propValue = playerObject->account.character.nickName;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -396,7 +400,7 @@ void Player_GetInt_Rupees(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getRupees());
+	info.GetReturnValue().Set(playerObject->account.character.gralats);
 }
 
 void Player_SetInt_Rupees(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -412,9 +416,9 @@ void Player_GetStr_ShieldImage(v8::Local<v8::String> prop, const v8::PropertyCal
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getShieldImage();
+	const std::string& propValue = playerObject->account.character.shieldImage;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -428,7 +432,7 @@ void Player_SetStr_ShieldImage(v8::Local<v8::String> prop, v8::Local<v8::Value> 
 		len = 223;
 
 	CString propPackage;
-	propPackage >> (char)PLPROP_SHIELDPOWER >> (char)(playerObject->getShieldPower() + 10) >> (char)len;
+	propPackage >> (char)PLPROP_SHIELDPOWER >> (char)(playerObject->account.character.shieldPower + 10) >> (char)len;
 	propPackage.write(*newValue, len);
 	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
@@ -438,7 +442,7 @@ void Player_GetInt_ShieldPower(v8::Local<v8::String> prop, const v8::PropertyCal
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getShieldPower());
+	info.GetReturnValue().Set(playerObject->account.character.shieldPower);
 }
 
 void Player_SetInt_ShieldPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -446,7 +450,7 @@ void Player_SetInt_ShieldPower(v8::Local<v8::String> prop, v8::Local<v8::Value> 
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	const CString& shieldImg = playerObject->getShieldImage();
+	const std::string& shieldImg = playerObject->account.character.shieldImage;
 
 	CString propPackage;
 	propPackage >> (char)PLPROP_SHIELDPOWER >> (char)(newValue + 10);
@@ -459,9 +463,9 @@ void Player_GetStr_SwordImage(v8::Local<v8::String> prop, const v8::PropertyCall
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	const CString& propValue = playerObject->getSwordImage();
+	const std::string& propValue = playerObject->account.character.swordImage;
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -475,7 +479,7 @@ void Player_SetStr_SwordImage(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 		len = 223;
 
 	CString propPackage;
-	propPackage >> (char)PLPROP_SWORDPOWER >> (char)(playerObject->getSwordPower() + 30) >> (char)len;
+	propPackage >> (char)PLPROP_SWORDPOWER >> (char)(playerObject->account.character.swordPower + 30) >> (char)len;
 	propPackage.write(*newValue, len);
 	playerObject->setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 }
@@ -485,7 +489,7 @@ void Player_GetInt_SwordPower(v8::Local<v8::String> prop, const v8::PropertyCall
 {
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	info.GetReturnValue().Set(playerObject->getSwordPower());
+	info.GetReturnValue().Set(playerObject->account.character.swordPower);
 }
 
 void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info)
@@ -493,7 +497,7 @@ void Player_SetInt_SwordPower(v8::Local<v8::String> prop, v8::Local<v8::Value> v
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
 	char newValue = (char)value->Int32Value(info.GetIsolate()->GetCurrentContext()).ToChecked();
-	const CString& swordImg = playerObject->getSwordImage();
+	const std::string& swordImg = playerObject->account.character.swordImage;
 
 	CString propPackage;
 	propPackage >> (char)PLPROP_SWORDPOWER >> (char)(newValue + 30);
@@ -677,7 +681,7 @@ void Player_Colors_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Val
 
 	V8ENV_SAFE_UNWRAP(info, Player, playerObject);
 
-	int colorValue = playerObject->getColorId(index);
+	int colorValue = playerObject->account.character.colors[index];
 	info.GetReturnValue().Set(colorValue);
 }
 
@@ -807,7 +811,7 @@ void Player_Flags_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get flags list
-	auto& flagList = playerObject->getFlagList();
+	auto& flagList = playerObject->account.flags;
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)flagList.size());
 
@@ -826,7 +830,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 	// Get npcs list
-	auto& weaponList = playerObject->getWeaponList();
+	auto& weaponList = playerObject->account.weapons;
 
 	v8::Local<v8::Array> result = v8::Array::New(isolate, (int)weaponList.size());
 
@@ -836,7 +840,7 @@ void Player_GetArray_Weapons(v8::Local<v8::String> prop, const v8::PropertyCallb
 	for (auto& weapon: weaponList)
 	{
 		//V8ScriptObject<Weapon> *v8_wrapped = static_cast<V8ScriptObject<Weapon> *>((*it)->getScriptObject());
-		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), weapon.text()).ToLocalChecked();
+		v8::Local<v8::String> weaponName = v8::String::NewFromUtf8(info.GetIsolate(), weapon.c_str()).ToLocalChecked();
 		result->Set(context, idx++, weaponName).Check();
 	}
 
@@ -881,7 +885,7 @@ void Player_Function_HasWeapon(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
-		bool result = playerObject->hasWeapon(*newValue);
+		bool result = playerObject->account.hasWeapon(*newValue);
 		args.GetReturnValue().Set(result);
 		return;
 	}
@@ -920,7 +924,8 @@ void Player_Function_DisableWeapons(const v8::FunctionCallbackInfo<v8::Value>& a
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-	playerObject->disableWeapons();
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+		client->disableWeapons();
 }
 
 // Player Function: player.enableweapons();
@@ -931,7 +936,8 @@ void Player_Function_EnableWeapons(const v8::FunctionCallbackInfo<v8::Value>& ar
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-	playerObject->enableWeapons();
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+		client->enableWeapons();
 }
 
 // Player Function: player.freezeplayer();
@@ -942,7 +948,8 @@ void Player_Function_FreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& arg
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-	playerObject->freezePlayer();
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+		client->freezePlayer();
 }
 
 // Player Function: player.unfreezeplayer();
@@ -953,7 +960,8 @@ void Player_Function_UnfreezePlayer(const v8::FunctionCallbackInfo<v8::Value>& a
 	V8ENV_THROW_CONSTRUCTOR(args, isolate);
 	V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
-	playerObject->unfreezePlayer();
+	if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+		client->unfreezePlayer();
 }
 
 // Player Function: player.say("message"); or player.say(index) for signs in a level
@@ -970,7 +978,9 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 		V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-		playerObject->sendSignMessage(*newValue);
+
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+			client->sendSignMessage(*newValue);
 	}
 	else if (args[0]->IsInt32())
 	{
@@ -978,12 +988,14 @@ void Player_Function_Say(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		int signIndex = args[0]->Int32Value(isolate->GetCurrentContext()).ToChecked();
 
-		auto level = playerObject->getLevel();
-		if (level != nullptr)
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
 		{
-			auto& signs = level->getSigns();
-			if (signIndex < signs.size())
-				playerObject->sendSignMessage(signs[signIndex]->getUText().replaceAll("\n", "#b"));
+			if (auto level = client->getLevel(); level != nullptr)
+			{
+				auto& signs = level->getSigns();
+				if (signIndex < signs.size())
+					client->sendSignMessage(signs[signIndex]->getUText().replaceAll("\n", "#b"));
+			}
 		}
 	}
 }
@@ -1035,7 +1047,9 @@ void Player_Function_SendRPGMessage(const v8::FunctionCallbackInfo<v8::Value>& a
 		V8ENV_SAFE_UNWRAP(args, Player, playerObject);
 
 		v8::String::Utf8Value newValue(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
-		playerObject->sendRPGMessage(*newValue);
+
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+			client->sendRPGMessage(*newValue);
 	}
 }
 
@@ -1064,7 +1078,8 @@ void Player_Function_SetAni(const v8::FunctionCallbackInfo<v8::Value>& args)
 			}
 		}
 
-		playerObject->setAni(animation);
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+			client->setProps(CString() >> (char)PLPROP_GANI >> (char)animation.length() << animation, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 	}
 }
 
@@ -1087,9 +1102,12 @@ void Player_Function_SetLevel2(const v8::FunctionCallbackInfo<v8::Value>& args)
 		double newX = args[1]->NumberValue(context).ToChecked();
 		double newY = args[2]->NumberValue(context).ToChecked();
 
-		bool result = playerObject->warp(*levelName, (float)newX, (float)newY);
-		args.GetReturnValue().Set(result);
-		return;
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+		{
+			bool result = client->warp(*levelName, (float)newX, (float)newY);
+			args.GetReturnValue().Set(result);
+			return;
+		}
 	}
 
 	args.GetReturnValue().Set(false);
@@ -1129,7 +1147,8 @@ void Player_Function_Attached(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (npcId > 0)
 	{
 		V8ENV_SAFE_UNWRAP(args, Player, playerObject);
-		args.GetReturnValue().Set(playerObject->getAttachedNPC() == npcId);
+		if (auto client = dynamic_cast<PlayerClient*>(playerObject); client != nullptr)
+			args.GetReturnValue().Set(client->getAttachedNPC() == npcId);
 		return;
 	}
 

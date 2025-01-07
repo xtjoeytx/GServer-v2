@@ -19,12 +19,12 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.15)
 
 # Make it easier for Windows users to get the required packages.
 # This needs to go before the project() call.
 if(WIN32)
-	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+	set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 	set(VCPKG_TARGET_TRIPLET "x64-windows-static")
 	if(V8NPCSERVER)
 		set(VCPKG_MANIFEST_FEATURES "npcserver")

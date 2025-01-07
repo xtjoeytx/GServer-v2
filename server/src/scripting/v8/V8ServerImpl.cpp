@@ -262,7 +262,7 @@ void Server_Function_LoadString(const v8::FunctionCallbackInfo<v8::Value>& args)
 	if (npcServer && args[0]->IsString())
 	{
 		v8::String::Utf8Value filePath(isolate, args[0]->ToString(context).ToLocalChecked());
-		const auto& folderRights = npcServer->getFolderRights();
+		const auto& folderRights = npcServer->account.folderRights;
 		
 		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
 		{
@@ -292,7 +292,7 @@ void Server_Function_SaveString(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		v8::String::Utf8Value filePath(isolate, args[0]->ToString(context).ToLocalChecked());
 		v8::String::Utf8Value fileData(isolate, args[1]->ToString(context).ToLocalChecked());
-		const auto& folderRights = npcServer->getFolderRights();
+		const auto& folderRights = npcServer->account.folderRights;
 
 		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
 		{

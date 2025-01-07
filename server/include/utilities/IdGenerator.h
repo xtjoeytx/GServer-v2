@@ -3,6 +3,10 @@
 
 #include <concepts>
 #include <set>
+#include <cstdint>
+
+using PlayerID = uint16_t;
+using NPCID = uint32_t;
 
 template <std::integral T>
 class IdGenerator

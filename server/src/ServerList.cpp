@@ -427,7 +427,7 @@ void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
 
 void ServerList::sendLoginPacketForPlayer(PlayerPtr player, const CString& password, const CString& identity)
 {
-	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->getAccountName().length() << player->getAccountName() >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
+	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->account.name.length() << player->account.name >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
 }
 
 void ServerList::sendServerHQ()
@@ -542,10 +542,10 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	profile << p2->getProp(PLPROP_ACCOUNTNAME) << pPacket.readString("");
 
 	// Add the time to the profile string.
-	int time = p2->getOnlineTime();
-	CString line = CString() << CString((int)time / 3600) << " hrs "
-							 << CString((int)(time / 60) % 60) << " mins "
-							 << CString((int)time % 60) << " secs";
+	auto time = p2->account.onlineSeconds;
+	CString line = CString() << CString((uint32_t)time / 3600) << " hrs "
+							 << CString((uint32_t)(time / 60) % 60) << " mins "
+							 << CString((uint32_t)time % 60) << " secs";
 	profile >> (char)line.length() << line;
 
 	// Do the old profile method for the old clients.
@@ -553,10 +553,10 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	{
 		CString val;
 
-		val = CString((int)p2->getKills());
+		val = CString((int)p2->account.kills);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getDeaths());
+		val = CString((int)p2->account.deaths);
 		profile >> (char)val.length() << val;
 
 		val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
@@ -595,9 +595,9 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 				// Built-in values.
 				if (val == "playerkills")
-					val = CString((unsigned int)(p2->getKills()));
+					val = CString((unsigned int)(p2->account.kills));
 				else if (val == "playerdeaths")
-					val = CString((unsigned int)(p2->getDeaths()));
+					val = CString((unsigned int)(p2->account.deaths));
 				else if (val == "playerfullhearts")
 					val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
 				else if (val == "playerrating")
@@ -685,13 +685,13 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
-	player->setAccountName(account);
+	player->account.name = account.toString();
 
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
-		player->setLoadOnly(true); // Prevent saving of the account.
+		player->account.loadOnly = true;	// Prevent saving of the account.
 		player->disconnect();
 		return;
 	}
@@ -700,7 +700,7 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player->sendLogin() == false)
 	{
 		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
-		player->setLoadOnly(true); // Prevent saving of the account.
+		player->account.loadOnly = true;	// Prevent saving of the account.
 		player->disconnect();
 	}
 }

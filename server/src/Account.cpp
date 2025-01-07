@@ -1,6 +1,10 @@
 #include <IDebug.h>
 
 #include <algorithm>
+#include <concepts>
+#include <ranges>
+#include <format>
+
 #include <memory.h>
 #include <time.h>
 
@@ -9,248 +13,232 @@
 #include "Account.h"
 #include "FileSystem.h"
 #include "Server.h"
+#include "utilities/StringUtils.h"
 
-/*
-	Account: Constructor - Deconstructor
-*/
-Account::Account() = default;
+///////////////////////////////////////////////////////////////////////////////
 
-Account::~Account() = default;
+using namespace graal::utilities;
+using namespace std::string_view_literals;
+using system_clock = std::chrono::system_clock;
 
-/*
-	Account: Load/Save Account
-*/
-void Account::reset()
+///////////////////////////////////////////////////////////////////////////////
+
+// Helper to avoid having to write uint8_t everywhere.
+const auto& toByte = static_cast<uint8_t(*)(const std::string&)>(string::toNumber);
+
+static bool setIfEmpty(std::string& str, std::string_view value, std::string_view defaultValue = {})
 {
-	if (!m_accountName.isEmpty())
-	{
-		CString acc(m_accountName);
-		loadAccount("defaultaccount");
-		m_accountName = acc;
-		saveAccount();
-	}
+	if (!str.empty())
+		return false;
+	str = value.empty() ? defaultValue : value;
+	return true;
 }
 
-bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
+static void writeLine(std::string& output, const std::string& section, const auto& value)
 {
-	// Just in case this account was loaded offline through RC.
-	m_accountName = pAccount;
+	output += section + " " + std::format("{}", value) + "\r\n";
+}
 
-	bool loadedFromDefault = false;
-	FileSystem* accfs = m_server->getAccountsFileSystem();
-	std::vector<CString> fileData;
+static void writeLine(std::string& output, const std::string& section, const auto& value, const auto& defaultValue)
+{
+	if (value != defaultValue)
+		writeLine(output, section, value);
+}
 
-	// Find the account in the file system.
-	CString accpath(accfs->findi(CString() << pAccount << ".txt"));
-	if (accpath.length() == 0)
+///////////////////////////////////////////////////////////////////////////////
+
+bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
+{
+	auto range = savedChests.equal_range(level.data());
+	for (auto& i = range.first; i != range.second; ++i)
 	{
-		accpath = m_server->getServerPath() << "accounts/defaultaccount.txt";
-		FileSystem::fixPathSeparators(accpath);
+		if (i->second.first == x && i->second.second == y)
+			return true;
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+flagPair PlainTextAccountLoader::decomposeFlag(const std::string& flag) const
+{
+	flagPair result;
+	auto sep = flag.find('=');
+	result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
+	if (m_server->getSettings().getBool("cropflags", true))
+	{
+		// If cropflags is enabled, crop the flag to 223 characters.
+		// Subtract the length of the flag name and the = character from 223 to determine the space left for the flag value.
+		int fixedLength = result.first.length() < 223 ? static_cast<size_t>(223 - 1) - result.first.length() : 0;
+		result.second = result.second.substr(0, fixedLength);
+	}
+	return result;
+}
+
+chestPair PlainTextAccountLoader::decomposeChest(const std::string& chest) const
+{
+	chestPair result;
+	auto tokens = string::splitHard(chest, ":"sv);
+	if (tokens.size() == 3)
+	{
+		result.second.first = string::toNumber<int8_t>(tokens[0]);
+		result.second.second = string::toNumber<int8_t>(tokens[1]);
+		result.first = tokens[2];
+	}
+	return result;
+}
+
+bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& account)
+{
+	// Find the account to load.
+	bool loadedFromDefault = false;
+	auto accountFS = m_server->getAccountsFileSystem();
+	auto path = accountFS->findi(std::format("{}.txt", accountName));
+	if (path.length() == 0)
+	{
+		path = m_server->getServerPath() << "accounts/defaultaccount.txt";
+		FileSystem::fixPathSeparators(path);
 		loadedFromDefault = true;
 	}
 
-	// Load file.
-	fileData = CString::loadToken(accpath, "\n");
+	// Load the account data.
+	auto fileData = CString::loadToken(path, "\n");
 	if (fileData.empty() || fileData[0].trim() != "GRACC001")
 		return false;
 
-	// Clear Lists
-	for (auto& i: m_character.ganiAttributes) i.clear();
-	m_chestList.clear();
-	m_flagList.clear();
-	m_weaponList.clear();
-	m_privateMessageServerList.clear();
-	std::vector<CString> folderList;
+	// Set the account name.
+	account.name = accountName;
 
 	// Parse File
-	for (auto& i: fileData)
+	for (auto& i : fileData)
 	{
 		// Trim Line
 		i.trimI();
 
-		// Declare Variables;
-		CString section, val;
-		int sep;
-
-		// Seperate Section & Value
-		sep = i.find(' ');
-		section = i.subString(0, sep);
+		// Get the section and value.
+		auto sep = i.find(' ');
+		std::string section = i.subString(0, sep).toString();
+		std::string val;
 		if (sep != -1)
-			val = i.subString(sep + 1);
+			val = i.subString(sep + 1).toString();
 
-		if (section == "NAME") continue;
+		if (section == "NAME")
+			continue;
 		else if (section == "NICK")
-		{
-			if (!ignoreNickname) m_character.nickName = val.subString(0, 223).toString();
-		}
+			account.character.nickName = val.substr(0, 223);
 		else if (section == "COMMUNITYNAME")
-			m_communityName = val;
+			account.communityName = val;
 		else if (section == "LEVEL")
-			m_levelName = val;
-		else if (section == "X") { setX(strtofloat(val)); }
-		else if (section == "Y") { setY(strtofloat(val)); }
-		else if (section == "Z") { setZ(strtofloat(val)); }
+			account.level = val;
+		else if (section == "X")
+			account.character.pixelX = static_cast<int16_t>(string::toFloat(val) * 16);
+		else if (section == "Y")
+			account.character.pixelY = static_cast<int16_t>(string::toFloat(val) * 16);
+		else if (section == "Z")
+			account.character.pixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "MAXHP")
-			setMaxPower(strtoint(val));
+			account.maxHitpoints = toByte(val);
 		else if (section == "HP")
-			setPower((float)strtofloat(val));
-		else if (section == "RUPEES")
-			m_character.gralats = strtoint(val);
+			account.character.hitpointsInHalves = static_cast<uint8_t>(string::toFloat(val) * 2);
+		else if (section == "GRALATS" || section == "RUPEES")
+			account.character.gralats = string::toNumber<uint32_t>(val);
 		else if (section == "ANI")
-			setGani(val);
+			account.character.gani = val;
 		else if (section == "ARROWS")
-			m_character.arrows = strtoint(val);
+			account.character.arrows = toByte(val);
 		else if (section == "BOMBS")
-			m_character.bombs = strtoint(val);
+			account.character.bombs = toByte(val);
 		else if (section == "GLOVEP")
-			m_character.glovePower = strtoint(val);
+			account.character.glovePower = toByte(val);
 		else if (section == "SHIELDP")
-			setShieldPower(strtoint(val));
+			account.character.shieldPower = toByte(val);
 		else if (section == "SWORDP")
-			setSwordPower(strtoint(val));
+			account.character.swordPower = toByte(val);
+		else if (section == "BOMBP")
+			account.character.bombPower = toByte(val);
 		else if (section == "BOWP")
-			m_character.bowPower = strtoint(val);
+			account.character.bowPower = toByte(val);
 		else if (section == "BOW")
-			m_character.bowImage = val;
+			account.character.bowImage = val;
 		else if (section == "HEAD")
-			setHeadImage(val);
+			account.character.headImage = val;
 		else if (section == "BODY")
-			setBodyImage(val);
+			account.character.bodyImage = val;
 		else if (section == "SWORD")
-			setSwordImage(val);
+			account.character.swordImage = val;
 		else if (section == "SHIELD")
-			setShieldImage(val);
+			account.character.shieldImage = val;
 		else if (section == "COLORS")
 		{
-			std::vector<CString> t = val.tokenize(",");
-			for (int i = 0; i < (int)t.size() && i < 5; i++) m_character.colors[i] = (unsigned char)strtoint(t[i]);
+			auto tokensAsNumbers = string::splitHard(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string& token) { return toByte(token); });
+			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
-			m_character.sprite = strtoint(val);
+			account.character.sprite = toByte(val);
 		else if (section == "STATUS")
-			m_status = strtoint(val);
+			account.status = toByte(val);
 		else if (section == "MP")
-			m_mp = strtoint(val);
+			account.character.mp = toByte(val);
 		else if (section == "AP")
-			m_character.ap = strtoint(val);
+			account.character.ap = toByte(val);
 		else if (section == "APCOUNTER")
-			m_apCounter = strtoint(val);
+			account.apCounter = toByte(val);
 		else if (section == "ONSECS")
-			m_onlineTime = strtoint(val);
+			account.onlineSeconds = string::toNumber<uint32_t>(val);
 		else if (section == "IP")
-		{
-			if (m_accountIp == 0) m_accountIp = strtolong(val);
-		}
+			setIfEmpty(account.ipAddress, val);
 		else if (section == "LANGUAGE")
-		{
-			m_language = val;
-			if (m_language.isEmpty()) m_language = "English";
-		}
+			setIfEmpty(account.language, val, "English"sv);
 		else if (section == "KILLS")
-			m_kills = strtoint(val);
+			account.kills = string::toNumber<uint32_t>(val);
 		else if (section == "DEATHS")
-			m_deaths = strtoint(val);
+			account.deaths = string::toNumber<uint32_t>(val);
 		else if (section == "RATING")
-			m_eloRating = (float)strtofloat(val);
+			account.eloRating = string::toFloat(val);
 		else if (section == "DEVIATION")
-			m_eloDeviation = (float)strtofloat(val);
+			account.eloDeviation = string::toFloat(val);
 		else if (section == "LASTSPARTIME")
-			m_lastSparTime = strtolong(val);
+			account.lastSparTime = system_clock::from_time_t(string::toNumber<time_t>(val));
 		else if (section == "FLAG")
-			setFlag(val);
-		else if (section == "ATTR1")
-			m_character.ganiAttributes[0] = val;
-		else if (section == "ATTR2")
-			m_character.ganiAttributes[1] = val;
-		else if (section == "ATTR3")
-			m_character.ganiAttributes[2] = val;
-		else if (section == "ATTR4")
-			m_character.ganiAttributes[3] = val;
-		else if (section == "ATTR5")
-			m_character.ganiAttributes[4] = val;
-		else if (section == "ATTR6")
-			m_character.ganiAttributes[5] = val;
-		else if (section == "ATTR7")
-			m_character.ganiAttributes[6] = val;
-		else if (section == "ATTR8")
-			m_character.ganiAttributes[7] = val;
-		else if (section == "ATTR9")
-			m_character.ganiAttributes[8] = val;
-		else if (section == "ATTR10")
-			m_character.ganiAttributes[9] = val;
-		else if (section == "ATTR11")
-			m_character.ganiAttributes[10] = val;
-		else if (section == "ATTR12")
-			m_character.ganiAttributes[11] = val;
-		else if (section == "ATTR13")
-			m_character.ganiAttributes[12] = val;
-		else if (section == "ATTR14")
-			m_character.ganiAttributes[13] = val;
-		else if (section == "ATTR15")
-			m_character.ganiAttributes[14] = val;
-		else if (section == "ATTR16")
-			m_character.ganiAttributes[15] = val;
-		else if (section == "ATTR17")
-			m_character.ganiAttributes[16] = val;
-		else if (section == "ATTR18")
-			m_character.ganiAttributes[17] = val;
-		else if (section == "ATTR19")
-			m_character.ganiAttributes[18] = val;
-		else if (section == "ATTR20")
-			m_character.ganiAttributes[19] = val;
-		else if (section == "ATTR21")
-			m_character.ganiAttributes[20] = val;
-		else if (section == "ATTR22")
-			m_character.ganiAttributes[21] = val;
-		else if (section == "ATTR23")
-			m_character.ganiAttributes[22] = val;
-		else if (section == "ATTR24")
-			m_character.ganiAttributes[23] = val;
-		else if (section == "ATTR25")
-			m_character.ganiAttributes[24] = val;
-		else if (section == "ATTR26")
-			m_character.ganiAttributes[25] = val;
-		else if (section == "ATTR27")
-			m_character.ganiAttributes[26] = val;
-		else if (section == "ATTR28")
-			m_character.ganiAttributes[27] = val;
-		else if (section == "ATTR29")
-			m_character.ganiAttributes[28] = val;
-		else if (section == "ATTR30")
-			m_character.ganiAttributes[29] = val;
+			account.flags.insert(decomposeFlag(val));
+		else if (section.starts_with("ATTR"))
+		{
+			if (auto idx = toByte(section.substr(4)); idx > 0 && idx <= 30)
+				account.character.ganiAttributes[idx - 1] = val;
+		}
 		else if (section == "WEAPON")
-			m_weaponList.push_back(val);
+			account.weapons.push_back(val);
 		else if (section == "CHEST")
-			m_chestList.push_back(val);
+			account.savedChests.insert(decomposeChest(val));
 		else if (section == "BANNED")
-			m_isBanned = (strtoint(val) == 0 ? false : true);
+			account.banned = toByte(val) != 0;
 		else if (section == "BANREASON")
-			m_banReason = val;
+			account.banReason = val;
 		else if (section == "BANLENGTH")
-			m_banLength = val;
+			account.banLength = val;
 		else if (section == "COMMENTS")
-			m_accountComments = val;
+			account.comments = val;
 		else if (section == "EMAIL")
-			m_email = val;
+			account.email = val;
 		else if (section == "LOCALRIGHTS")
-			m_adminRights = strtoint(val);
+			account.adminRights = string::toNumber<uint32_t>(val);
 		else if (section == "IPRANGE")
-			m_adminIp = val;
+			account.adminIpRange = string::splitHard(val, ","sv);
 		else if (section == "LOADONLY")
-			m_isLoadOnly = (strtoint(val) == 0 ? false : true);
+			account.loadOnly = toByte(val) != 0;
 		else if (section == "FOLDERRIGHT")
-			folderList.push_back(val);
+		{
+			account.folderList.push_back(val);
+			account.folderRights.addPermission(val);
+		}
 		else if (section == "LASTFOLDER")
-			m_lastFolder = val;
+			account.lastFolderAccessed = val;
 	}
 
-	setFolderRights(folderList);
-
 	// If this is a guest account, loadonly is set to true.
-	if (pAccount.toLower() == "guest")
+	if (string::comparei(accountName, "guest"sv) == 0)
 	{
-		m_isLoadOnly = true;
-		m_isGuest = true;
+		account.loadOnly = true;
 		srand((unsigned int)time(0));
 
 		// Try to create a unique account number.
@@ -259,426 +247,257 @@ bool Account::loadAccount(const CString& pAccount, bool ignoreNickname)
 			int v = (rand() * rand()) % 9999999;
 			if (m_server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
 			{
-				m_communityName = "pc:" + CString(v).subString(0, 6);
+				account.name = std::format("pc:{:6}", v);
 				break;
 			}
 		}
+
+		account.communityName = "guest";
 	}
 
-	// Comment out this line if you are actually going to use community names.
-	if (pAccount.toLower() == "guest")
-	{
-		// The PC:123123123 should only be sent to other players, the logged in player should see it as guest.
-		// Setting it back to only show as guest to everyone until that's fixed.
-		m_accountName = m_communityName;
-		m_communityName = "guest";
-	}
-	else
-		m_communityName = m_accountName;
+	// Default community name to account name if not set.
+	if (account.communityName.empty())
+		account.communityName = account.name;
 
-	// If we loaded from the default account...
+	// If we loaded from the default account, check if the settings is overriding the start level and position.
+	// Also, save the account and add it to the file system.
 	if (loadedFromDefault)
 	{
 		auto& settings = m_server->getSettings();
 
 		// Check to see if we are overriding our start level and position.
 		if (settings.exists("startlevel"))
-			m_levelName = settings.getStr("startlevel", "onlinestartlocal.nw");
+			account.level = settings.getStr("startlevel", "onlinestartlocal.nw").toString();
+
 		if (settings.exists("startx"))
-		{
-			setX(settings.getFloat("startx", 30.0f));
-		}
+			account.character.pixelX = static_cast<int16_t>(settings.getFloat("startx", 30.0f) * 16);
+
 		if (settings.exists("starty"))
-		{
-			setY(settings.getFloat("starty", 30.5f));
-		}
+			account.character.pixelY = static_cast<int16_t>(settings.getFloat("starty", 30.5f) * 16);
 
 		// Save our account now and add it to the file system.
-		if (!m_isLoadOnly)
+		if (!account.loadOnly)
 		{
-			saveAccount();
-			accfs->addFile(CString() << "accounts/" << pAccount << ".txt");
+			saveAccount(account);
+			accountFS->addFile(CString() << "accounts/" << accountName << ".txt");
 		}
 	}
 
 	return true;
 }
 
-bool Account::saveAccount()
+bool PlainTextAccountLoader::saveAccount(const Account& account)
 {
-	// Don't save 'Load Only' or RC Accounts
-	if (m_isLoadOnly)
+	// Don't save 'Load Only' or RC accounts.
+	if (account.loadOnly)
 		return false;
 
-	CString newFile = "GRACC001\r\n";
-	newFile << "NAME " << m_accountName << "\r\n";
-	newFile << "NICK " << m_character.nickName << "\r\n";
-	newFile << "COMMUNITYNAME " << m_accountName /*m_communityName*/ << "\r\n";
-	newFile << "LEVEL " << m_levelName << "\r\n";
-	newFile << "X " << CString(getX()) << "\r\n";
-	newFile << "Y " << CString(getY()) << "\r\n";
-	newFile << "Z " << CString(getZ()) << "\r\n";
-	newFile << "MAXHP " << CString(m_maxHitpoints) << "\r\n";
-	newFile << "HP " << CString(m_character.hitpoints) << "\r\n";
-	newFile << "RUPEES " << CString(m_character.gralats) << "\r\n";
-	newFile << "ANI " << m_character.gani << "\r\n";
-	newFile << "ARROWS " << CString(m_character.arrows) << "\r\n";
-	newFile << "BOMBS " << CString(m_character.bombs) << "\r\n";
-	newFile << "GLOVEP " << CString(m_character.glovePower) << "\r\n";
-	newFile << "SHIELDP " << CString(m_character.shieldPower) << "\r\n";
-	newFile << "SWORDP " << CString(m_character.swordPower) << "\r\n";
-	newFile << "BOWP " << CString(m_character.bowPower) << "\r\n";
-	newFile << "BOW " << m_character.bowImage << "\r\n";
-	newFile << "HEAD " << m_character.headImage << "\r\n";
-	newFile << "BODY " << m_character.bodyImage << "\r\n";
-	newFile << "SWORD " << m_character.swordImage << "\r\n";
-	newFile << "SHIELD " << m_character.shieldImage << "\r\n";
-	newFile << "COLORS " << CString(m_character.colors[0]) << "," << CString(m_character.colors[1]) << "," << CString(m_character.colors[2]) << "," << CString(m_character.colors[3]) << "," << CString(m_character.colors[4]) << "\r\n";
-	newFile << "SPRITE " << CString(m_character.sprite) << "\r\n";
-	newFile << "STATUS " << CString(m_status) << "\r\n";
-	newFile << "MP " << CString(m_mp) << "\r\n";
-	newFile << "AP " << CString(m_character.ap) << "\r\n";
-	newFile << "APCOUNTER " << CString(m_apCounter) << "\r\n";
-	newFile << "ONSECS " << CString(m_onlineTime) << "\r\n";
-	newFile << "IP " << CString(m_accountIp) << "\r\n";
-	newFile << "LANGUAGE " << m_language << "\r\n";
-	newFile << "KILLS " << CString(m_kills) << "\r\n";
-	newFile << "DEATHS " << CString(m_deaths) << "\r\n";
-	newFile << "RATING " << CString(m_eloRating) << "\r\n";
-	newFile << "DEVIATION " << CString(m_eloDeviation) << "\r\n";
-	newFile << "LASTSPARTIME " << CString((unsigned long)m_lastSparTime) << "\r\n";
+	std::string colorStr = std::format("{},{},{},{},{}", account.character.colors[0], account.character.colors[1], account.character.colors[2], account.character.colors[3], account.character.colors[4]);
+	std::string defaultColorStr = "2,0,10,4,18";
+
+	std::string newFile = "GRACC001\r\n";
+	writeLine(newFile, "NAME", account.name);
+	writeLine(newFile, "NICK", account.character.nickName);
+	writeLine(newFile, "COMMUNITYNAME", account.communityName, account.name);
+	writeLine(newFile, "LEVEL", account.level);
+	writeLine(newFile, "X", account.character.pixelX / 16.0f);
+	writeLine(newFile, "Y", account.character.pixelY / 16.0f);
+	writeLine(newFile, "Z", account.character.pixelZ / 16.0f, 0.0f);
+	writeLine(newFile, "MAXHP", account.maxHitpoints);
+	writeLine(newFile, "HP", account.character.hitpointsInHalves / 2.0f);
+	writeLine(newFile, "ANI", account.character.gani);
+	writeLine(newFile, "SPRITE", account.character.sprite, 2);
+	writeLine(newFile, "GRALATS", account.character.gralats);
+	writeLine(newFile, "ARROWS", account.character.arrows);
+	writeLine(newFile, "BOMBS", account.character.bombs);
+	writeLine(newFile, "GLOVEP", account.character.glovePower);
+	writeLine(newFile, "SWORDP", account.character.swordPower);
+	writeLine(newFile, "SHIELDP", account.character.shieldPower);
+	writeLine(newFile, "BOMBP", account.character.bombPower, 1);
+	writeLine(newFile, "BOWP", account.character.bowPower, 1);
+	writeLine(newFile, "BOW", account.character.bowImage, "");
+	writeLine(newFile, "HEAD", account.character.headImage);
+	writeLine(newFile, "BODY", account.character.bodyImage);
+	writeLine(newFile, "SWORD", account.character.swordImage);
+	writeLine(newFile, "SHIELD", account.character.shieldImage);
+	writeLine(newFile, "COLORS", colorStr, defaultColorStr);
+	writeLine(newFile, "STATUS", account.status);
+	writeLine(newFile, "MP", account.character.mp, 0);
+	writeLine(newFile, "AP", account.character.ap);
+	writeLine(newFile, "APCOUNTER", account.apCounter, 0);
+	writeLine(newFile, "ONSECS", account.onlineSeconds, 0);
+	writeLine(newFile, "IP", account.ipAddress);
+	writeLine(newFile, "LANGUAGE", account.language, "English"sv);
+	writeLine(newFile, "KILLS", account.kills, 0);
+	writeLine(newFile, "DEATHS", account.deaths, 0);
+	writeLine(newFile, "RATING", account.eloRating, 1500.0f);
+	writeLine(newFile, "DEVIATION", account.eloDeviation, 350.0f);
+	writeLine(newFile, "LASTSPARTIME", std::chrono::system_clock::to_time_t(account.lastSparTime), 0);
 
 	// Attributes
-	for (unsigned int i = 0; i < 30; i++)
-	{
-		if (m_character.ganiAttributes[i].length() > 0)
-			newFile << "ATTR" << CString(i + 1) << " " << m_character.ganiAttributes[i] << "\r\n";
-	}
+	for (size_t i = 0; i < 30; i++)
+		writeLine(newFile, "ATTR" + std::to_string(i + 1), account.character.ganiAttributes[i], "");
 
 	// Chests
-	for (unsigned int i = 0; i < m_chestList.size(); i++)
-		newFile << "CHEST " << m_chestList[i] << "\r\n";
+	for (const auto& [level, pos]: account.savedChests)
+		writeLine(newFile, "CHEST", std::format("{}:{}:{}", pos.first, pos.second, level));
 
 	// Weapons
-	for (unsigned int i = 0; i < m_weaponList.size(); i++)
-		newFile << "WEAPON " << m_weaponList[i] << "\r\n";
+	for (const auto& weapon: account.weapons)
+		writeLine(newFile, "WEAPON", weapon);
 
 	// Flags
-	for (auto i = m_flagList.begin(); i != m_flagList.end(); ++i)
+	for (const auto& [flag, value] : account.flags)
 	{
-		newFile << "FLAG " << i->first.c_str();
-		if (!i->second.isEmpty()) newFile << "=" << i->second;
-		newFile << "\r\n";
+		if (value.empty())
+			writeLine(newFile, "FLAG", flag);
+		else
+			writeLine(newFile, "FLAG", flag + "=" + value);
 	}
 
 	// Account Settings
-	newFile << "\r\n";
-	newFile << "BANNED " << CString((int)(m_isBanned == true ? 1 : 0)) << "\r\n";
-	newFile << "BANREASON " << m_banReason << "\r\n";
-	newFile << "BANLENGTH " << m_banLength << "\r\n";
-	newFile << "COMMENTS " << m_accountComments << "\r\n";
-	newFile << "EMAIL " << m_email << "\r\n";
-	newFile << "LOCALRIGHTS " << CString(m_adminRights) << "\r\n";
-	newFile << "IPRANGE " << m_adminIp << "\r\n";
-	newFile << "LOADONLY " << CString((int)(m_isLoadOnly == true ? 1 : 0)) << "\r\n";
+	newFile += "\r\n";
+	writeLine(newFile, "BANNED", account.banned ? 1 : 0, 0);
+	writeLine(newFile, "BANREASON", account.banReason, "");
+	writeLine(newFile, "BANLENGTH", account.banLength, "");
+	writeLine(newFile, "COMMENTS", account.comments, "");
+	writeLine(newFile, "EMAIL", account.email, "");
+	writeLine(newFile, "LOCALRIGHTS", account.adminRights, 0);
+	writeLine(newFile, "IPRANGE", string::join(account.adminIpRange), "");
+	writeLine(newFile, "LOADONLY", account.loadOnly ? 1 : 0, 0);
 
 	// Folder Rights
-	for (unsigned int i = 0; i < m_folderList.size(); i++)
-		newFile << "FOLDERRIGHT " << m_folderList[i] << "\r\n";
-	newFile << "LASTFOLDER " << m_lastFolder << "\r\n";
+	for (const auto& perm: account.folderList)
+		writeLine(newFile, "FOLDERRIGHT", perm);
+
+	// Last Folder Accessed
+	writeLine(newFile, "LASTFOLDER", account.lastFolderAccessed, "");
 
 	// Get the file name for the account.
-	CString accountFileName = m_server->getAccountsFileSystem()->fileExistsAs(CString() << m_accountName << ".txt");
-	if (accountFileName.isEmpty()) accountFileName = CString() << m_accountName << ".txt";
+	CString accountFileName = m_server->getAccountsFileSystem()->fileExistsAs(CString() << account.name << ".txt");
+	if (accountFileName.isEmpty())
+		accountFileName = CString() << account.name << ".txt";
 
 	// Save the account now.
 	CString accpath = m_server->getServerPath() << "accounts/" << accountFileName;
 	FileSystem::fixPathSeparators(accpath);
-	if (!newFile.save(accpath))
-		m_server->getRCLog().out("** Error saving account: %s\n", m_accountName.text());
+	if (!CString(newFile).save(accpath))
+		m_server->getRCLog().out("** Error saving account: %s\n", account.name.c_str());
 
 	return true;
 }
 
-/*
-	Account: Account Management
-*/
-bool Account::meetsConditions(CString fileName, CString conditions)
+bool PlainTextAccountLoader::checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const
 {
-	const char* conditional[] = { ">=", "<=", "!=", "=", ">", "<" };
+	constexpr std::array<std::string_view, 6> conditions = { ">=", "<=", "!=", "=", ">", "<" };
 
-	// Load and check if the file is valid.
-	std::vector<CString> file;
-	file = CString::loadToken(fileName, "\n", true);
-	if (file.size() == 0 || (file.size() != 0 && file[0] != "GRACC001"))
-		return false;
-
-	// Load the conditions into a string list.
-	std::vector<CString> cond;
-	conditions.removeAllI("'");
-	conditions.replaceAllI("%", "*");
-	cond = conditions.tokenize(",");
-	bool* conditionsMet = new bool[cond.size()];
-	memset((void*)conditionsMet, 0, sizeof(bool) * cond.size());
-
-	// Go through each line of the loaded file.
-	for (std::vector<CString>::iterator i = file.begin(); i != file.end(); ++i)
+	// Load the account data.
+	std::string file;
 	{
-		int sep = (*i).find(' ');
-		CString section = (*i).subString(0, sep);
-		CString val = (*i).subString(sep + 1).removeAll("\r");
-		section.trimI();
-		val.trimI();
+		CString fileData;
+		fileData.load(account);
+		if (fileData.isEmpty() || fileData.subString(0, 8) != "GRACC001")
+			return false;
+		file = fileData.toString();
+	}
 
-		// Check each line against the conditions specified.
-		for (unsigned int j = 0; j < cond.size(); ++j)
+	// Go through each search and check if the conditions are met.
+	for (const auto& search : searches)
+	{
+		// Find the condition.
+		int condition = -1;
+		for (int i = 0; i < conditions.size(); ++i)
 		{
-			int cond_num = -1;
-
-			// Read out the name and value.
-			cond[j].setRead(0);
-
-			// Find out what conditional we are using.
-			for (int k = 0; k < 6; ++k)
+			if (search.find(conditions[i]) != std::string::npos)
 			{
-				if (cond[j].find(conditional[k]) != -1)
-				{
-					cond_num = k;
-					k = 6;
-				}
-			}
-			if (cond_num == -1) continue;
-
-			CString cname = cond[j].readString(conditional[cond_num]);
-			CString cvalue = cond[j].readString("");
-			cname.trimI();
-			cvalue.trimI();
-			cond[j].setRead(0);
-
-			// Now, do a case-insensitive comparison of the section name.
-#ifdef WIN32
-			if (_stricmp(section.text(), cname.text()) == 0)
-#else
-			if (strcasecmp(section.text(), cname.text()) == 0)
-#endif
-			{
-				switch (cond_num)
-				{
-					case 0:
-					case 1:
-					{
-						// 0: >=
-						// 1: <=
-						// Check if it is a number.  If so, do a number comparison.
-						bool condmet = false;
-						if (val.isNumber())
-						{
-							double vNum[2] = { atof(val.text()), atof(cvalue.text()) };
-							if (((cond_num == 1) ? (vNum[0] <= vNum[1]) : (vNum[0] >= vNum[1])))
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-						else
-						{
-							// If not a number, do a string comparison.
-							int ret = strcmp(val.text(), cvalue.text());
-							if (((cond_num == 1) ? (ret <= 0) : (ret >= 0)))
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-
-						// No conditions met means we see if we can fail.
-						if (condmet == false)
-						{
-							CString cnameUp = cname.toUpper();
-							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
-								goto condAbort;
-						}
-						break;
-					}
-
-					case 4:
-					case 5:
-					{
-						// 4: >
-						// 5: <
-						bool condmet = false;
-						if (val.isNumber())
-						{
-							double vNum[2] = { atof(val.text()), atof(cvalue.text()) };
-							if (((cond_num == 5) ? (vNum[0] < vNum[1]) : (vNum[0] > vNum[1])))
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-						else
-						{
-							int ret = strcmp(val.text(), cvalue.text());
-							if (((cond_num == 5) ? (ret < 0) : (ret > 0)))
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-
-						if (condmet == false)
-						{
-							CString cnameUp = cname.toUpper();
-							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
-								goto condAbort;
-						}
-						break;
-					}
-
-					case 2:
-					{
-						// 2: !=
-						// If we find a match, return false.
-						if (val.isNumber())
-						{
-							double vNum[2] = { atof(val.text()), atof(cvalue.text()) };
-							if (vNum[0] == vNum[1]) goto condAbort;
-							conditionsMet[j] = true;
-						}
-						else
-						{
-							if (val.match(cvalue.text()) == true) goto condAbort;
-							conditionsMet[j] = true;
-						}
-						break;
-					}
-
-					case 3:
-					default:
-					{
-						// 0 - equals
-						// If it returns false, don't include this account in the search.
-						bool condmet = false;
-						if (val.isNumber())
-						{
-							double vNum[2] = { atof(val.text()), atof(cvalue.text()) };
-							if (vNum[0] == vNum[1])
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-						else
-						{
-							if (val.match(cvalue.text()) == true)
-							{
-								conditionsMet[j] = true;
-								condmet = true;
-							}
-						}
-
-						if (condmet == false)
-						{
-							CString cnameUp = cname.toUpper();
-							if (!(cnameUp == "CHEST" || cnameUp == "WEAPON" ||
-								  cnameUp == "FLAG" || cnameUp == "FOLDERRIGHT"))
-								goto condAbort;
-						}
-						break;
-					}
-				}
+				condition = i;
+				break;
 			}
 		}
+
+		// If we didn't find a condition, fail out completely.
+		if (condition == -1)
+			return false;
+
+		// Split the search up into the components.
+		std::string searchSection = search.substr(0, search.find(conditions[condition]));
+		std::string searchValue = search.substr(search.find(conditions[condition]) + conditions[condition].size());
+
+		// Check if the search value is a number.
+		float searchValueNumber = 0.0f;
+		bool searchValueIsNumber = string::toFloat(searchValue, searchValueNumber);
+
+		// Search for all matching sections.
+		bool matched = false;
+		size_t pos = 0;
+		while (pos < file.length() && (pos = string::findi(file, searchSection, pos)) != std::string::npos)
+		{
+			// Get the value for this line.
+			auto start = file.find(' ', pos);
+			auto end = file.find('\n', start);
+			std::string fileValue;
+			{
+				std::string_view value_view(file.data() + start + 1, end - start - 1);
+				fileValue = string::trim(value_view);
+			}
+
+			// Check if the value is a number.
+			float valueNum = 0.0f;
+			if (string::toFloat(fileValue, valueNum) && searchValueIsNumber)
+			{
+				switch (condition)
+				{
+					case 0:
+						matched |= valueNum >= searchValueNumber;
+						break;
+					case 1:
+						matched |= valueNum <= searchValueNumber;
+						break;
+					case 2:
+						matched |= valueNum != searchValueNumber;
+						break;
+					case 3:
+						matched |= valueNum == searchValueNumber;
+						break;
+					case 4:
+						matched |= valueNum > searchValueNumber;
+						break;
+					case 5:
+						matched |= valueNum < searchValueNumber;
+						break;
+				}
+			}
+			else
+			{
+				switch (condition)
+				{
+					case 0:
+						matched |= string::comparei(fileValue, searchValue) >= 0;
+						break;
+					case 1:
+						matched |= string::comparei(fileValue, searchValue) <= 0;
+						break;
+					case 2:
+						matched |= string::comparei(fileValue, searchValue) != 0;
+						break;
+					case 3:
+						matched |= string::comparei(fileValue, searchValue) == 0;
+						break;
+					case 4:
+						matched |= string::comparei(fileValue, searchValue) > 0;
+						break;
+					case 5:
+						matched |= string::comparei(fileValue, searchValue) < 0;
+						break;
+				}
+			}
+
+			pos = end + 1;
+		}
+
+		if (!matched)
+			return false;
 	}
 
-	// Check if all the conditions were met.
-	for (unsigned int i = 0; i < cond.size(); ++i)
-		if (conditionsMet[i] == false) goto condAbort;
-
-	// Clean up.
-	delete[] conditionsMet;
 	return true;
-
-condAbort:
-	delete[] conditionsMet;
-	return false;
-}
-
-/*
-	Account: Attribute-Managing
-*/
-bool Account::hasChest(const CString& pChest)
-{
-	auto it = std::find(m_chestList.begin(), m_chestList.end(), pChest);
-	return (it != m_chestList.end());
-}
-
-bool Account::hasWeapon(const CString& pWeapon)
-{
-	auto it = std::find(m_weaponList.begin(), m_weaponList.end(), pWeapon);
-	return (it != m_weaponList.end());
-}
-
-/*
-	Account: Flag Management
-*/
-void Account::setFlag(CString pFlag)
-{
-	CString flagName = pFlag.readString("=");
-	CString flagValue = pFlag.readString("");
-	this->setFlag(flagName.text(), flagValue);
-}
-
-void Account::setFlag(const std::string& pFlagName, const CString& pFlagValue)
-{
-	if (m_server->getSettings().getBool("cropflags", true))
-	{
-		int fixedLength = 223 - 1 - pFlagName.length();
-		m_flagList[pFlagName] = pFlagValue.subString(0, fixedLength);
-	}
-	else
-		m_flagList[pFlagName] = pFlagValue;
-}
-
-/*
-	Translation Functionality
-*/
-CString Account::translate(const CString& pKey) const
-{
-	return m_server->TS_Translate(m_language, pKey);
-}
-
-void Account::setMaxPower(int newMaxPower)
-{
-	const auto& settings = m_server->getSettings();
-
-	auto heartLimit = std::min(settings.getInt("heartlimit", 3), 20);
-	m_maxHitpoints = clip(newMaxPower, 0, heartLimit);
-}
-
-void Account::setShieldPower(int newPower)
-{
-	const auto& settings = m_server->getSettings();
-
-	m_character.shieldPower = clip(newPower, 0, settings.getInt("shieldlimit", 3));
-}
-
-void Account::setSwordPower(int newPower)
-{
-	const auto& settings = m_server->getSettings();
-
-	m_character.swordPower = clip(newPower, ((settings.getBool("healswords", false) == true) ? -(settings.getInt("swordlimit", 3)) : 0), settings.getInt("swordlimit", 3));
-}
-
-void Account::setFolderRights(const std::vector<CString>& folderRights)
-{
-	m_folderList = folderRights;
-	m_folderRights = {};
-
-	for (const auto& folder : folderRights)
-	{
-		m_folderRights.addPermission(folder.text());
-	}
 }
