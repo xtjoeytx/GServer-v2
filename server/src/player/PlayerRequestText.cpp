@@ -1,8 +1,11 @@
 #include "FileSystem.h"
 #include "Server.h"
 #include "object/Player.h"
+#include "utilities/StringUtils.h"
 
-bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
+using namespace graal::utilities;
+
+HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 {
 	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
 
@@ -47,7 +50,7 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 																		   << type << "\n"
 																		   << "globalitems"
 																		   << "\n"
-																		   << m_accountName.text() << "\n"
+																		   << account.name << "\n"
 																		   << CString(CString(CString() << "autobill=1"
 																										<< "\n"
 																										<< "autobillmine=1"
@@ -118,11 +121,11 @@ bool Player::msgPLI_REQUESTTEXT(CString& pPacket)
 															.gtokenizeI());
 	}
 
-	m_server->getServerLog().out("[ IN] [RequestText] from %s -> %s\n", m_accountName.gtokenize().text(), packet.text());
-	return true;
+	m_server->getServerLog().out("[ IN] [RequestText] from %s -> %s\n", string::toCSV(account.name).c_str(), packet.text());
+	return HandlePacketResult::Handled;
 }
 
-bool Player::msgPLI_SENDTEXT(CString& pPacket)
+HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 {
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
@@ -151,10 +154,10 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 				if (isRC())
 				{
 					// Irc players start at 16k
-					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
+					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
 				}
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_UNKNOWN81 >> (char)3);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
 			}
 			else if (params.size() > 3)
 			{
@@ -189,7 +192,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-							m_server->getServerLog().out("[ IN] [SVO_SERVERINFO] %s,%s\n", m_accountName.gtokenize().text(), packet.text());
+							m_server->getServerLog().out("[ IN] [SVO_SERVERINFO] %s,%s\n", string::toCSV(account.name).c_str(), packet.text());
 							//list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
 
 							// I believe the following data is what it's looking for:
@@ -199,7 +202,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 					else
 					{
 						CString sendMsg = "GraalEngine,irc,privmsg,";
-						sendMsg << m_accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
+						sendMsg << account.name << "," << channel.gtokenize() << "," << msg.gtokenize();
 						list.handleText(sendMsg);
 						list.sendTextForPlayer(shared_from_this(), sendMsg);
 					}
@@ -211,7 +214,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 			if (option == "serverinfo")
 				list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)m_id << packet);
 
-			if (!getGuest())
+			if (!isGuest())
 			{
 				if (option == "verifybuddies" || option == "addbuddy" || option == "deletebuddy")
 					list.sendTextForPlayer(shared_from_this(), packet);
@@ -236,7 +239,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 		}
 	}
 
-	m_server->getServerLog().out("[ IN] [SendText] %s: %s\n", m_accountName.gtokenize().text(), packet.text());
+	m_server->getServerLog().out("[ IN] [SendText] %s: %s\n", string::toCSV(account.name).c_str(), packet.text());
 
-	return true;
+	return HandlePacketResult::Handled;
 }

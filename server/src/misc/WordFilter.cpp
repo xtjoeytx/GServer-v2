@@ -359,7 +359,7 @@ WordFilterActions:
 		CLog wordfilter;
 		wordfilter.setFilename(m_server->getServerPath() << "logs/serverlog.txt");
 		wordfilter.setEnabled(true);
-		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->getAccountName().text(), badwords.text());
+		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->account.name, badwords.text());
 	}
 
 	// Graal doesn't implement.  Should we?
@@ -375,7 +375,7 @@ WordFilterActions:
 	// Tell RC what happened.
 	if (m_showWordsToRC || actionsFound & FILTER_ACTION_TELLRC)
 	{
-		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Word Filter: Player " << player->getAccountName() << " was caught using these words: " << badwords);
+		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Word Filter: Player " << player->account.name << " was caught using these words: " << badwords);
 	}
 
 	// If it is a warning rule, we are altering the message.

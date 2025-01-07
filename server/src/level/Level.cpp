@@ -9,6 +9,7 @@
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Player.h"
+#include "object/PlayerClient.h"
 #include "level/tiletypes.h"
 #include "level/Level.h"
 #include "level/Map.h"
@@ -31,7 +32,7 @@ short respawningTiles[] = {
 	0x72a,
 };
 
-constexpr int getBase64Position(char c)
+static constexpr int getBase64Position(char c)
 {
 	if (c >= 'a')
 		return 26 + (c - 'a');
@@ -184,7 +185,7 @@ CString Level::getChestPacket(Player* pPlayer)
 	{
 		for (auto& chest: m_chests)
 		{
-			bool hasChest = pPlayer->hasChest(getChestStr(chest.get()));
+			bool hasChest = pPlayer->account.hasChest(m_levelName.toStringView(), chest->getX(), chest->getY());
 
 			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
 			if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
@@ -329,13 +330,13 @@ bool Level::reload()
 	std::deque<uint16_t> oldplayers = m_players;
 	for (auto& id: oldplayers)
 	{
-		if (auto p = m_server->getPlayer(id); p)
+		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
 			p->leaveLevel(true);
 	}
 
 	// Reset the level cache for all the players on the server.
 	auto& playerList = m_server->getPlayerList();
-	for (auto& [id, p]: playerList)
+	for (const auto& [id, p]: players_of_type<PlayerClient>(playerList))
 	{
 		p->resetLevelCache(this);
 	}
@@ -349,7 +350,7 @@ bool Level::reload()
 	float uY = m_server->getSettings().getFloat("unstickmey", 35.0f);
 	for (auto& id: oldplayers)
 	{
-		if (auto p = m_server->getPlayer(id); p)
+		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
 			p->warp((ret ? m_levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
 	}
 

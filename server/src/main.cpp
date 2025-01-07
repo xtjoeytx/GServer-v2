@@ -186,12 +186,12 @@ int main(int argc, char* argv[])
 				}
 
 				Account accfs;
-				accfs.loadAccount(overrideStaff, false);
-				if (accfs.getOnlineTime() == 0)
+				server->getAccountLoader().loadAccount(overrideStaff.toStringView(), accfs);
+				if (accfs.onlineSeconds == 0)
 				{
-					accfs.loadAccount("YOURACCOUNT");
-					accfs.setAccountName(overrideStaff);
-					accfs.saveAccount();
+					server->getAccountLoader().loadAccount("YOURACCOUNT", accfs);
+					accfs.name = overrideStaff.toStringView();
+					server->getAccountLoader().saveAccount(accfs);
 				}
 			}
 

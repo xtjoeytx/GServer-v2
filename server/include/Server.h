@@ -21,11 +21,14 @@
 #include <CTranslationManager.h>
 #include <IEnums.h>
 
+#include "Account.h"
 #include "FileSystem.h"
 #include "ServerList.h"
+#include "object/Player.h"
 #include "misc/WordFilter.h"
 #include "utilities/CommandDispatcher.h"
 #include "utilities/IdGenerator.h"
+#include "utilities/StringUtils.h"
 
 #ifdef UPNP
 	#include "misc/UPNP.h"
@@ -43,7 +46,8 @@
 #include "utilities/ResourceManager.h"
 #include "UpdatePackage.h"
 
-class Player;
+//class Player;
+class PlayerClient;
 class Level;
 class NPC;
 class ScriptClass;
@@ -66,7 +70,7 @@ enum
 	FS_SWORD = 5,
 	FS_SHIELD = 6,
 };
-#define FS_COUNT 7
+constexpr int FS_COUNT = 7;
 
 // Player ids 0 and 1 break things.  NPC id 0 breaks things.
 // Don't allow anything to have one of those ids.
@@ -168,6 +172,7 @@ public:
 	const std::vector<CString>& getStatusList() const { return m_statusList; }
 	const std::vector<CString>& getAllowedVersions() const { return m_allowedVersions; }
 	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
+	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
 
 #ifdef V8NPCSERVER
 	ScriptEngine* getScriptEngine() { return &m_scriptEngine; }
@@ -179,9 +184,10 @@ public:
 	CString getFlag(const std::string& pFlagName);
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
 	std::shared_ptr<NPC> getNPC(const uint32_t id) const;
-	std::shared_ptr<Player> getPlayer(const uint16_t id) const;
-	std::shared_ptr<Player> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
-	std::shared_ptr<Player> getPlayer(const CString& account, int type) const;
+
+	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
 #ifdef V8NPCSERVER
 	void assignNPCName(std::shared_ptr<NPC> npc, const std::string& name);
@@ -215,9 +221,9 @@ public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
 	void sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
@@ -228,6 +234,7 @@ public:
 	// Player Management
 	bool addPlayer(std::shared_ptr<Player> player, uint16_t id = USHRT_MAX);
 	bool deletePlayer(std::shared_ptr<Player> player);
+	bool swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Player> new_player);
 	void playerLoggedIn(std::shared_ptr<Player> player);
 	bool warpPlayerToSafePlace(uint16_t playerId);
 
@@ -327,6 +334,8 @@ private:
 
 	std::string m_shootParams;
 
+	std::unique_ptr<IAccountLoader> m_accountLoader;
+
 #ifdef V8NPCSERVER
 	ScriptEngine m_scriptEngine;
 	int m_ncPort;
@@ -381,8 +390,6 @@ inline std::shared_ptr<NPC> Server::getNPCByName(const std::string& name) const
 
 #endif
 
-#include "IEnums.h"
-
 inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
 {
 	int len = pMessage.find("\n");
@@ -399,6 +406,53 @@ inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSen
 		len = pMessage.length();
 
 	sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+}
+
+template<class T>
+inline std::shared_ptr<T> Server::getPlayer(const uint16_t id) const
+{
+	auto iter = m_playerList.find(id);
+	if (iter == std::end(m_playerList))
+		return nullptr;
+
+	if constexpr (std::same_as<T, Player>)
+		return iter->second;
+
+	return std::dynamic_pointer_cast<T>(iter->second);
+}
+
+template<class T>
+inline std::shared_ptr<T> Server::getPlayer(const uint16_t id, int type) const
+{
+	auto player = getPlayer<T>(id);
+	if (player == nullptr || !(player->getType() & type))
+		return nullptr;
+
+	return player;
+}
+
+template<class T>
+inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) const
+{
+	using namespace graal::utilities;
+
+	for (const auto& [id, player] : m_playerList)
+	{
+		// Check if its the type of player we are looking for
+		if (!player || !(player->getType() & type))
+			continue;
+
+		// Compare account names.
+		if (string::comparei(player->account.name, account.toStringView()) == 0)
+		{
+			if constexpr (std::same_as<T, Player>)
+				return player;
+
+			return std::dynamic_pointer_cast<T>(player);
+		}
+	}
+
+	return nullptr;
 }
 
 #endif

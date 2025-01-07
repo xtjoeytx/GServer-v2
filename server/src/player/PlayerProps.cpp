@@ -1,4 +1,7 @@
 #include <vector>
+#include <ranges>
+#include <algorithm>
+#include <format>
 
 #include <IDebug.h>
 #include <IEnums.h>
@@ -6,228 +9,225 @@
 
 #include "Server.h"
 #include "object/Player.h"
+#include "object/PlayerClient.h"
 #include "level/Level.h"
 #include "level/Map.h"
 
 #define serverlog m_server->getServerLog()
 #define rclog m_server->getRCLog()
-extern bool __sendLocal[propscount];
-extern int __attrPackets[30];
+
+
+uint8_t PropLimits::applyMaxHitpoints(uint8_t maxHitpoints)
+{
+	auto heartLimit = std::min(m_server->getSettings().getInt("heartlimit", 3), 20);
+	return std::clamp(maxHitpoints, static_cast<uint8_t>(0), static_cast<uint8_t>(heartLimit));
+}
+
+int8_t PropLimits::applySwordPower(int8_t swordPower)
+{
+	auto& settings = m_server->getSettings();
+	int8_t minimum = (settings.getBool("healswords", false) ? -(settings.getInt("swordlimit", 3)) : 0);
+	int8_t maximum = settings.getInt("swordlimit", 3);
+	return std::clamp(swordPower, minimum, maximum);
+}
+
+uint8_t PropLimits::applyShieldPower(uint8_t shieldPower)
+{
+	return std::clamp(shieldPower, static_cast<uint8_t>(0), static_cast<uint8_t>(m_server->getSettings().getInt("shieldlimit", 3)));
+}
 
 /*
 	Player: Prop-Manipulation
 */
-void Player::getProp(CString& buffer, int pPropId) const
+bool Player::getProp(CString& buffer, int pPropId) const
 {
-	auto level = m_currentLevel.lock();
-	auto map = m_pmap.lock();
-
 	switch (pPropId)
 	{
 		case PLPROP_NICKNAME:
-			buffer >> (char)m_character.nickName.length() << m_character.nickName;
-			return;
+			buffer >> (char)account.character.nickName.length() << account.character.nickName;
+			return true;
 
 		case PLPROP_MAXPOWER:
-			buffer >> (char)m_maxHitpoints;
-			return;
+			buffer >> (char)account.maxHitpoints;
+			return true;
 
 		case PLPROP_CURPOWER:
-			buffer >> (char)(m_character.hitpoints * 2);
-			return;
+			buffer >> (char)(account.character.hitpointsInHalves);
+			return true;
 
 		case PLPROP_RUPEESCOUNT:
-			buffer >> (int)m_character.gralats;
-			return;
+			buffer >> (int)account.character.gralats;
+			return true;
 
 		case PLPROP_ARROWSCOUNT:
-			buffer >> (char)m_character.arrows;
-			return;
+			buffer >> (char)account.character.arrows;
+			return true;
 
 		case PLPROP_BOMBSCOUNT:
-			buffer >> (char)m_character.bombs;
-			return;
+			buffer >> (char)account.character.bombs;
+			return true;
 
 		case PLPROP_GLOVEPOWER:
-			buffer >> (char)m_character.glovePower;
-			return;
+			buffer >> (char)account.character.glovePower;
+			return true;
 
 		case PLPROP_BOMBPOWER:
-			buffer >> (char)m_character.bombPower;
-			return;
+			buffer >> (char)account.character.bombPower;
+			return true;
 
 		case PLPROP_SWORDPOWER:
-			buffer >> (char)(m_character.swordPower + 30) >> (char)m_character.swordImage.length() << m_character.swordImage;
-			return;
+			buffer >> (char)(account.character.swordPower + 30) >> (char)account.character.swordImage.length() << account.character.swordImage;
+			return true;
 
 		case PLPROP_SHIELDPOWER:
-			buffer >> (char)(m_character.shieldPower + 10) >> (char)m_character.shieldImage.length() << m_character.shieldImage;
-			return;
+			buffer >> (char)(account.character.shieldPower + 10) >> (char)account.character.shieldImage.length() << account.character.shieldImage;
+			return true;
 
 		case PLPROP_GANI:
 		{
 			if (isClient() && m_versionId < CLVER_2_1)
 			{
-				if (!m_character.bowImage.isEmpty())
-					buffer >> (char)(10 + m_character.bowImage.length()) << m_character.bowImage;
+				if (!account.character.bowImage.empty())
+					buffer >> (char)(10 + account.character.bowImage.length()) << account.character.bowImage;
 				else
-					buffer >> (char)m_character.bowPower;
-				return;
+					buffer >> (char)account.character.bowPower;
+				return true;
 			}
 
-			buffer >> (char)m_character.gani.length() << m_character.gani;
-			return;
+			buffer >> (char)account.character.gani.length() << account.character.gani;
+			return true;
 		}
 
 		case PLPROP_HEADGIF:
-			buffer >> (char)(m_character.headImage.length() + 100) << m_character.headImage;
-			return;
+			buffer >> (char)(account.character.headImage.length() + 100) << account.character.headImage;
+			return true;
 
 		case PLPROP_CURCHAT:
-			buffer >> (char)m_character.chatMessage.length() << m_character.chatMessage;
-			return;
+			buffer >> (char)account.character.chatMessage.length() << account.character.chatMessage;
+			return true;
 
 		case PLPROP_COLORS:
-			buffer >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4];
-			return;
+			buffer >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4];
+			return true;
 
 		case PLPROP_ID:
 			buffer >> (short)m_id;
-			return;
+			return true;
 
 		case PLPROP_X:
-			buffer >> (char)(m_x / 8);
-			return;
+			buffer >> (char)(account.character.pixelX / 8);
+			return true;
 
 		case PLPROP_Y:
-			buffer >> (char)(m_y / 8);
-			return;
+			buffer >> (char)(account.character.pixelY / 8);
+			return true;
 
 		case PLPROP_Z:
 			// range: -25 to 85
-			buffer >> (char)(std::min(85 * 2, std::max(-25 * 2, (m_z / 8))) + 50);
-			return;
+			buffer >> (char)(std::min(85 * 2, std::max(-25 * 2, (account.character.pixelZ / 8))) + 50);
+			return true;
 
 		case PLPROP_SPRITE:
-			buffer >> (char)m_character.sprite;
-			return;
+			buffer >> (char)account.character.sprite;
+			return true;
 
 		case PLPROP_STATUS:
-			buffer >> (char)m_status;
-			return;
+			buffer >> (char)account.status;
+			return true;
 
 		case PLPROP_CARRYSPRITE:
-			buffer >> (char)m_carrySprite;
-			return;
+			buffer >> (char)-1;
+			return true;
 
 		case PLPROP_CURLEVEL:
-		{
-			if (isClient()) // || type == PLTYPE_AWAIT)
-			{
-				if (map && map->getType() == MapType::GMAP)
-					buffer >> (char)map->getMapName().length() << map->getMapName();
-				else
-				{
-					if (level != nullptr && level->isSingleplayer())
-						buffer >> (char)(m_levelName.length() + 13) << m_levelName << ".singleplayer";
-					else
-						buffer >> (char)m_levelName.length() << m_levelName;
-				}
-				return;
-			}
-			else
-				buffer >> (char)1 << " ";
-			return;
-		}
+			buffer >> (char)1 << " ";
+			return true;
 
 		case PLPROP_HORSEGIF:
-			buffer >> (char)m_character.horseImage.length() << m_character.horseImage;
-			return;
+			buffer >> (char)account.character.horseImage.length() << account.character.horseImage;
+			return true;
 
 		case PLPROP_HORSEBUSHES:
-			buffer >> (char)m_horseBombCount;
-			return;
+			buffer >> (char)0;
+			return true;
 
 		case PLPROP_EFFECTCOLORS:
 			buffer >> (char)0;
-			return;
+			return true;
 
 		case PLPROP_CARRYNPC:
-			buffer >> (int)m_carryNpcId;
-			return;
+			buffer >> (int)0;
+			return true;
 
 		case PLPROP_APCOUNTER:
-			buffer >> (short)(m_apCounter + 1);
-			return;
+			buffer >> (short)(account.apCounter + 1);
+			return true;
 
 		case PLPROP_MAGICPOINTS:
-			buffer >> (char)m_mp;
-			return;
+			buffer >> (char)account.character.mp;
+			return true;
 
 		case PLPROP_KILLSCOUNT:
-			buffer >> (int)m_kills;
-			return;
+			buffer >> (int)account.kills;
+			return true;
 
 		case PLPROP_DEATHSCOUNT:
-			buffer >> (int)m_deaths;
-			return;
+			buffer >> (int)account.deaths;
+			return true;
 
 		case PLPROP_ONLINESECS:
-			buffer >> (int)m_onlineTime;
-			return;
+			buffer >> (int)account.onlineSeconds;
+			return true;
 
 		case PLPROP_IPADDR:
 			buffer.writeGInt5(m_accountIp);
-			return;
+			return true;
 
 		case PLPROP_UDPPORT:
-			buffer >> (int)m_udpport;
-			return;
+			buffer >> (int)0;
+			return true;
 
 		case PLPROP_ALIGNMENT:
-			buffer >> (char)m_character.ap;
-			return;
+			buffer >> (char)account.character.ap;
+			return true;
 
 		case PLPROP_ADDITFLAGS:
-			buffer >> (char)m_additionalFlags;
-			return;
+			buffer >> (char)0; // m_additionalFlags;
+			return true;
 
 		case PLPROP_ACCOUNTNAME:
-			buffer >> (char)m_accountName.length() << m_accountName;
-			return;
+			buffer >> (char)account.name.length() << account.name;
+			return true;
 
 		case PLPROP_BODYIMG:
-			buffer >> (char)m_character.bodyImage.length() << m_character.bodyImage;
-			return;
+			buffer >> (char)account.character.bodyImage.length() << account.character.bodyImage;
+			return true;
 
 		case PLPROP_RATING:
 		{
-			int temp = (((int)m_eloRating & 0xFFF) << 9) | ((int)m_eloDeviation & 0x1FF);
+			int temp = (((int)account.eloRating & 0xFFF) << 9) | ((int)account.eloDeviation & 0x1FF);
 			buffer >> (int)temp;
-			return;
+			return true;
 		}
 
 		case PLPROP_ATTACHNPC:
-		{
-			// Only attach type 0 (NPC) supported.
-			buffer >> (char)0 >> (int)m_attachNPC;
-			return;
-		}
+			buffer >> (char)0 >> (int)0;
+			return true;
 
 		// Simplifies login.
 		// Manually send prop if you are leaving the level.
 		// 1 = join level, 0 = leave level.
 		case PLPROP_JOINLEAVELVL:
 			buffer >> (char)1;
-			return;
+			return true;
 
 		case PLPROP_PCONNECTED:
-			//return CString();
-			return;
+			//return true CString();
+			return true;
 
 		case PLPROP_PLANGUAGE:
-			buffer >> (char)m_language.length() << m_language;
-			return;
+			buffer >> (char)account.language.length() << account.language;
+			return true;
 
 		case PLPROP_PSTATUSMSG:
 		{
@@ -238,90 +238,149 @@ void Player::getProp(CString& buffer, int pPropId) const
 				buffer >> (char)0;
 			else
 				buffer >> (char)m_statusMsg;
-			return;
+			return true;
 		}
 
 		// OS type.
 		// Windows: wind
 		case PLPROP_OSTYPE:
 			buffer >> (char)m_os.length() << m_os;
-			return;
+			return true;
 
 			// Text codepage.
 			// Example: 1252
 		case PLPROP_TEXTCODEPAGE:
 			buffer.writeGInt(m_envCodePage);
-			return;
+			return true;
+
+		case PLPROP_ONLINESECS2:
+			//buffer.writeGInt5(m_onlineTime);
+			return true;
 
 		case PLPROP_X2:
 		{
-			uint16_t val = (uint16_t)std::abs(m_x) << 1;
-			if (m_x < 0)
+			uint16_t val = (uint16_t)std::abs(account.character.pixelX) << 1;
+			if (account.character.pixelX < 0)
 				val |= 0x0001;
 			buffer.writeGShort(val);
-			return;
+			return true;
 		}
 
 		case PLPROP_Y2:
 		{
-			uint16_t val = (uint16_t)std::abs(m_y) << 1;
-			if (m_y < 0)
+			uint16_t val = (uint16_t)std::abs(account.character.pixelY) << 1;
+			if (account.character.pixelY < 0)
 				val |= 0x0001;
 			buffer.writeGShort(val);
-			return;
+			return true;
 		}
 
 		case PLPROP_Z2:
 		{
 			// range: -25 to 85
-			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, m_z));
+			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, account.character.pixelZ));
 			val = std::abs(val) << 1;
-			if (m_z < 0)
+			if (account.character.pixelZ < 0)
 				val |= 0x0001;
 			buffer.writeGShort(val);
-			return;
+			return true;
 		}
 
+		// TODO: Better level handling.  We should be able to find this from the level name.
 		case PLPROP_GMAPLEVELX:
-			buffer >> (char)(level ? level->getGmapX() : 0);
-			return;
+			buffer >> (char)0;
+			return true;
 
 		case PLPROP_GMAPLEVELY:
-			buffer >> (char)(level ? level->getGmapY() : 0);
-			return;
+			buffer >> (char)0;
+			return true;
 
 			// TODO(joey): figure this out. Something to do with guilds? irc-related
 			//	(char)(some bitflag for something, uses the first 3 bits im not sure)
 			//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
-		case PLPROP_UNKNOWN81:
+		case PLPROP_PLAYERLISTCATEGORY:
 			//return CString();
-			return;
+			return true;
 
 		case PLPROP_COMMUNITYNAME:
-			buffer >> (char)m_communityName.length() << m_communityName;
-			return;
+			buffer >> (char)account.communityName.length() << account.communityName;
+			return true;
 
 		default:
 			break;
 	}
 
-	if (inrange(pPropId, 37, 41) || inrange(pPropId, 46, 49) || inrange(pPropId, 54, 74))
+	if (auto iter = std::ranges::find(GaniAttributePropList, pPropId); iter != GaniAttributePropList.end())
 	{
-		for (auto i = 0; i < sizeof(__attrPackets) / sizeof(int); i++)
-		{
-			if (__attrPackets[i] == pPropId)
-			{
-				char len = std::min(m_character.ganiAttributes[i].length(), 223);
-				buffer >> (char)len << m_character.ganiAttributes[i].subString(0, len);
-				return;
-			}
-		}
+		auto propIndex = std::distance(GaniAttributePropList.begin(), iter);
+		buffer >> (char)account.character.ganiAttributes[propIndex].length() << account.character.ganiAttributes[propIndex];
+		return true;
 	}
+
+	return false;
+}
+
+bool PlayerClient::getProp(CString& buffer, int pPropId) const
+{
+	auto level = m_currentLevel.lock();
+	auto map = m_pmap.lock();
+
+	switch (pPropId)
+	{
+		case PLPROP_CARRYSPRITE:
+			buffer >> (char)m_carrySprite;
+			return true;
+
+		case PLPROP_CURLEVEL:
+		{
+			if (map && map->getType() == MapType::GMAP)
+				buffer >> (char)map->getMapName().length() << map->getMapName();
+			else
+			{
+				if (level != nullptr && level->isSingleplayer())
+					buffer >> (char)(account.level.length() + 13) << account.level << ".singleplayer";
+				else
+					buffer >> (char)account.level.length() << account.level;
+			}
+			return true;
+		}
+
+		case PLPROP_HORSEBUSHES:
+			buffer >> (char)m_horseBombCount;
+			return true;
+
+		case PLPROP_CARRYNPC:
+			buffer >> (int)m_carryNpcId;
+			return true;
+
+		case PLPROP_UDPPORT:
+			buffer >> (int)m_udpport;
+			return true;
+
+		case PLPROP_ATTACHNPC:
+			// Only attach type 0 (NPC) supported.
+			buffer >> (char)0 >> (int)m_attachNPC;
+			return true;
+
+		case PLPROP_GMAPLEVELX:
+			buffer >> (char)(level ? level->getGmapX() : 0);
+			return true;
+
+		case PLPROP_GMAPLEVELY:
+			buffer >> (char)(level ? level->getGmapY() : 0);
+			return true;
+
+		default:
+			return Player::getProp(buffer, pPropId);
+	}
+
+	return false;
 }
 
 void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 {
-	auto level = getLevel();
+	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
+	auto level = player ? player->getLevel() : nullptr;
 
 	CString globalBuff, levelBuff, levelBuff2, selfBuff;
 	bool doTouchTest = false;
@@ -342,7 +401,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			int filter = m_server->getWordFilter().apply(this, nick, FILTER_CHECK_NICK);
 			if (filter & FILTER_ACTION_WARN)
 			{
-				if (m_character.nickName.empty())
+				if (account.character.nickName.empty())
 					setNick("unknown");
 			}
 			else
@@ -367,8 +426,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				setMaxPower(newMaxPower);
-				setPower((float)m_maxHitpoints);
+				account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
+				account.character.hitpointsInHalves = newMaxPower * 2;
 
 #ifdef V8NPCSERVER
 				levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
@@ -385,11 +444,9 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_CURPOWER:
 		{
-			float p = (float)pPacket.readGUChar() / 2.0f;
-			if (m_character.ap < 40 && p > m_character.hitpoints) break;
-			//if ((status & PLSTATUS_HIDESWORD) != 0)
-			//	break;
-			setPower(p);
+			uint8_t power = pPacket.readGUChar();
+			if (account.character.ap < 40 && power > account.character.hitpointsInHalves) break;
+			account.character.hitpointsInHalves = PropLimits::apply(power, 0, account.maxHitpoints * 2);
 			break;
 		}
 
@@ -403,12 +460,12 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 #endif
 				if (rc != nullptr)
 				{
-					if (m_server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->hasRight(PLPERM_SETRIGHTS)))
-						m_character.gralats = newGralatCount;
+					if (m_server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->account.hasRight(PLPERM_SETRIGHTS)))
+						account.character.gralats = newGralatCount;
 				}
 				else
 				{
-					m_character.gralats = newGralatCount;
+					account.character.gralats = newGralatCount;
 				}
 #ifdef V8NPCSERVER
 			}
@@ -417,13 +474,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		}
 
 		case PLPROP_ARROWSCOUNT:
-			m_character.arrows = pPacket.readGUChar();
-			m_character.arrows = clip(m_character.arrows, 0, 99);
+			account.character.arrows = PropLimits::apply(pPacket.readGUChar(), PropLimits::MaxArrows);
 			break;
 
 		case PLPROP_BOMBSCOUNT:
-			m_character.bombs = pPacket.readGUChar();
-			m_character.bombs = clip(m_character.bombs, 0, 99);
+			account.character.bombs = PropLimits::apply(pPacket.readGUChar(), PropLimits::MaxBombs);
 			break;
 
 		case PLPROP_GLOVEPOWER:
@@ -433,7 +488,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				m_character.glovePower = std::min<uint8_t>(newGlovePower, 3);
+				account.character.glovePower = PropLimits::apply(newGlovePower, PropLimits::MaxGlovePower);
 #ifdef V8NPCSERVER
 			}
 #endif
@@ -441,8 +496,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		}
 
 		case PLPROP_BOMBPOWER:
-			m_character.bombPower = pPacket.readGUChar();
-			m_character.bombPower = clip(m_character.bombPower, 0, 3);
+			account.character.bombPower = PropLimits::apply(pPacket.readGUChar(), PropLimits::MaxBombPower);
 			break;
 
 		case PLPROP_SWORDPOWER:
@@ -453,12 +507,12 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (sp <= 4)
 			{
 				auto& settings = m_server->getSettings();
-				sp = clip(sp, 0, settings.getInt("swordlimit", 3));
+				sp = PropLimits::applySwordPower(sp);
 				img = CString() << "sword" << CString(sp) << (m_versionId < CLVER_2_1 ? ".gif" : ".png");
 			}
 			else
 			{
-				sp -= 30;
+				sp = PropLimits::applySwordPower(sp - 30);
 				len = pPacket.readGUChar();
 				if (len > 0)
 				{
@@ -474,11 +528,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				setSwordPower(sp);
+				account.character.swordPower = sp;
 #ifdef V8NPCSERVER
 			}
 #endif
-			setSwordImage(img);
+			account.character.swordImage = PropLimits::apply(img.toString(), PropLimits::SwordImageLength);
 		}
 		break;
 
@@ -490,7 +544,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (sp <= 3)
 			{
 				auto& settings = m_server->getSettings();
-				sp = clip(sp, 0, settings.getInt("shieldlimit", 3));
+				sp = PropLimits::applyShieldPower(sp);
 				img = CString() << "shield" << CString(sp) << (m_versionId < CLVER_2_1 ? ".gif" : ".png");
 			}
 			else
@@ -498,8 +552,9 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				// This fixes an odd bug with the 1.41 client.
 				if (pPacket.bytesLeft() == 0) continue;
 
-				sp -= 10;
+				sp = PropLimits::applyShieldPower(sp - 10);
 				if (sp < 0) break;
+
 				len = pPacket.readGUChar();
 				if (len > 0)
 				{
@@ -515,11 +570,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				setShieldPower(sp);
+				account.character.shieldPower = sp;
 #ifdef V8NPCSERVER
 			}
 #endif
-			setShieldImage(img);
+			account.character.shieldImage = PropLimits::apply(img.toString(), PropLimits::ShieldImageLength);
 		}
 		break;
 
@@ -530,32 +585,33 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				int sp = pPacket.readGUChar();
 				if (sp < 10)
 				{
-					m_character.bowPower = sp;
-					m_character.bowImage.clear();
+					account.character.bowPower = PropLimits::apply(sp, PropLimits::MaxBowPower);
+					account.character.bowImage.clear();
 				}
 				else
 				{
-					m_character.bowPower = 10;
+					account.character.bowPower = 10;
 					sp -= 10;
 					if (sp < 0) break;
-					m_character.bowImage = CString() << pPacket.readChars(sp);
-					if (!m_character.bowImage.isEmpty() && m_versionId < CLVER_2_1 && getExtension(m_character.bowImage).isEmpty())
-						m_character.bowImage << ".gif";
+					account.character.bowImage = pPacket.readChars(sp).toString();
+					if (!account.character.bowImage.empty() && m_versionId < CLVER_2_1 && getExtension(account.character.bowImage).isEmpty())
+						account.character.bowImage += ".gif";
 				}
 				break;
 			}
 
-			setGani(pPacket.readChars(pPacket.readGUChar()));
-			if (m_character.gani == "spin")
+			account.character.gani = PropLimits::apply(pPacket.readChars(pPacket.readGUChar()).toString(), PropLimits::GaniLength);
+			if (account.character.gani == "spin" && player != nullptr)
 			{
+				auto curlevel = player->getLevel();
 				CString nPacket;
-				nPacket >> (char)PLO_HITOBJECTS >> (short)m_id >> (char)m_character.swordPower;
+				nPacket >> (char)PLO_HITOBJECTS >> (short)m_id >> (char)account.character.swordPower;
 				char hx = (char)((getX() + 1.5f) * 2);
 				char hy = (char)((getY() + 2.0f) * 2);
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy - 4), m_currentLevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy + 4), m_currentLevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx - 4) >> (char)(hy), m_currentLevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx + 4) >> (char)(hy), m_currentLevel, { m_id });
+				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy - 4), curlevel, { m_id });
+				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy + 4), curlevel, { m_id });
+				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx - 4) >> (char)(hy), curlevel, { m_id });
+				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx + 4) >> (char)(hy), curlevel, { m_id });
 			}
 		}
 		break;
@@ -584,7 +640,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 			if (len != 100)
 			{
-				setHeadImage(img);
+				account.character.headImage = PropLimits::apply(img.toString(), PropLimits::HeadImageLength);
 				globalBuff >> (char)propId << getProp(propId);
 			}
 
@@ -593,34 +649,41 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_CURCHAT:
 		{
-			len = pPacket.readGUChar();
-			m_character.chatMessage = pPacket.readChars(std::min(len, 223));
-			m_lastChat = time(0);
+			len = PropLimits::apply(pPacket.readGUChar(), PropLimits::ChatMessageLength);
+			account.character.chatMessage = pPacket.readChars(len).toString();
 
-			// Try to process the chat.  If it wasn't processed, apply the word filter to it.
-			if (!processChat(m_character.chatMessage))
+			if (player != nullptr)
 			{
-				int found = m_server->getWordFilter().apply(this, m_character.chatMessage, FILTER_CHECK_CHAT);
-				if (!(options & PLSETPROPS_FORWARDSELF))
+				player->setLastChatTime(time(0));
+
+				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
+				if (!player->processChat(account.character.chatMessage))
 				{
-					if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
-						selfBuff >> (char)propId << getProp(propId);
+					CString chat = account.character.chatMessage;
+					int found = m_server->getWordFilter().apply(this, chat, FILTER_CHECK_CHAT);
+					account.character.chatMessage = chat.toString();
+
+					if (!(options & PLSETPROPS_FORWARDSELF))
+					{
+						if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
+							selfBuff >> (char)propId << getProp(propId);
+					}
 				}
-			}
 
 #ifdef V8NPCSERVER
-			// Send chat to npcs if this wasn't changed by the npcserver
-			if (!rc && !m_character.chatMessage.isEmpty())
-			{
-				if (level != nullptr)
-					level->sendChatToLevel(this, m_character.chatMessage.text());
-			}
+				// Send chat to npcs if this wasn't changed by the npcserver
+				if (!rc && !account.character.chatMessage.isEmpty())
+				{
+					if (level != nullptr)
+						level->sendChatToLevel(this, account.character.chatMessage.text());
+				}
 #endif
+			}
 		}
 		break;
 
 		case PLPROP_COLORS:
-			for (unsigned char& color : m_character.colors)
+			for (unsigned char& color : account.character.colors)
 				color = pPacket.readGUChar();
 			break;
 
@@ -629,10 +692,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_X:
-			m_x = (pPacket.readGUChar() * 8);
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.character.pixelX = (pPacket.readGUChar() * 8);
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
 
 			// Do collision testing.
 			doTouchTest = true;
@@ -642,10 +706,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_Y:
-			m_y = (pPacket.readGUChar() * 8);
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.character.pixelY = (pPacket.readGUChar() * 8);
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
 
 			// Do collision testing.
 			doTouchTest = true;
@@ -655,10 +720,13 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_Z:
-			m_z = (pPacket.readGUChar() - 50) * 8;
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.character.pixelZ = (pPacket.readGUChar() - 50) * 8;
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
+
+			// Do collision testing.
 			doTouchTest = true;
 
 			// Let 2.30+ clients see pre-2.30 movement.
@@ -666,7 +734,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_SPRITE:
-			m_character.sprite = pPacket.readGUChar();
+			account.character.sprite = pPacket.readGUChar();
 
 #ifndef V8NPCSERVER
 			// Do collision testing.
@@ -676,20 +744,21 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_STATUS:
 		{
-			int oldStatus = m_status;
-			m_status = pPacket.readGUChar();
+			int oldStatus = account.status;
+			account.status = pPacket.readGUChar();
 			//printf("%s: status: %d, oldStatus: %d\n", m_accountName.text(), status, oldStatus );
 
 			if (m_id == -1) break;
 
 			// When they come back to life, give them hearts.
-			if ((oldStatus & PLSTATUS_DEAD) > 0 && (m_status & PLSTATUS_DEAD) == 0)
+			if ((oldStatus & PLSTATUS_DEAD) > 0 && (account.status & PLSTATUS_DEAD) == 0)
 			{
-				auto newPower = clip((m_character.ap < 20 ? 3 : (m_character.ap < 40 ? 5 : m_maxHitpoints)), 0.5f, m_maxHitpoints);
-				setPower(newPower);
+				// Give them full hearts.  If they have less than 20 AP, give them 3 hearts.  If they have less than 40 AP, give them 5 hearts.
+				auto newPower = PropLimits::applyMaxHitpoints(account.character.ap < 20 ? 3 : (account.character.ap < 40 ? 5 : account.maxHitpoints)) * 2;
+				account.character.hitpointsInHalves = newPower;
 
-				selfBuff >> (char)PLPROP_CURPOWER >> (char)(m_character.hitpoints * 2.0f);
-				levelBuff >> (char)PLPROP_CURPOWER >> (char)(m_character.hitpoints * 2.0f);
+				selfBuff >> (char)PLPROP_CURPOWER >> (char)(account.character.hitpointsInHalves);
+				levelBuff >> (char)PLPROP_CURPOWER >> (char)(account.character.hitpointsInHalves);
 
 				if (level != nullptr && level->isPlayerLeader(m_id))
 					sendPacket(CString() >> (char)PLO_ISLEADER);
@@ -703,12 +772,12 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			}
 
 			// When they die, increase deaths and make somebody else level leader.
-			if ((oldStatus & PLSTATUS_DEAD) == 0 && (m_status & PLSTATUS_DEAD) > 0)
+			if ((oldStatus & PLSTATUS_DEAD) == 0 && (account.status & PLSTATUS_DEAD) > 0 && level != nullptr)
 			{
 				if (level->isSparringZone() == false)
 				{
-					m_deaths++;
-					dropItemsOnDeath();
+					++account.deaths;
+					player->dropItemsOnDeath();
 				}
 
 				// If we are the leader and there are more players on the level, we want to remove
@@ -726,28 +795,36 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		break;
 
 		case PLPROP_CARRYSPRITE:
-			m_carrySprite = pPacket.readGUChar();
+		{
+			uint8_t sprite = pPacket.readGUChar();
+			if (player == nullptr) break;
+			player->m_carrySprite = sprite;
 			break;
+		}
 
 		case PLPROP_CURLEVEL:
 			len = pPacket.readGUChar();
 #ifdef V8NPCSERVER
 			pPacket.readChars(len);
 #else
-			m_levelName = pPacket.readChars(len);
+			account.level = pPacket.readChars(len).toString();
 #endif
 			break;
 
 		case PLPROP_HORSEGIF:
-			len = pPacket.readGUChar();
-			m_character.horseImage = pPacket.readChars(std::min(len, 219)); // limit is 219 in case it appends .gif
-			if (!m_character.horseImage.isEmpty() && m_versionId < CLVER_2_1 && getExtension(m_character.horseImage).isEmpty())
-				m_character.horseImage << ".gif";
+			len = PropLimits::apply(pPacket.readGUChar(), PropLimits::HorseImageLength);
+			account.character.horseImage = pPacket.readChars(len).toString();
+			if (!account.character.horseImage.empty() && m_versionId < CLVER_2_1 && getExtension(account.character.horseImage).isEmpty())
+				account.character.horseImage += ".gif";
 			break;
 
 		case PLPROP_HORSEBUSHES:
-			m_horseBombCount = pPacket.readGUChar();
+		{
+			uint8_t count = pPacket.readGUChar();
+			if (player == nullptr) break;
+			player->m_horseBombCount = count;
 			break;
+		}
 
 		case PLPROP_EFFECTCOLORS:
 			len = pPacket.readGUChar();
@@ -759,51 +836,53 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			uint32_t newNpcId = pPacket.readGUInt();
 
-			// Thrown.
-			if (m_carryNpcId != 0 && newNpcId == 0)
+			if (player != nullptr)
 			{
-				// TODO: Thrown
-			}
-			else
-			{
-				// TODO: Remove when an npcserver is created.
-				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
+				// Thrown.
+				if (player->getCarryNpcId() != 0 && newNpcId == 0)
 				{
-					bool isOwner = true;
+					// TODO: Thrown
+				}
+				else
+				{
+					// TODO: Remove when an npcserver is created.
+					if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
 					{
-						auto& playerList = m_server->getPlayerList();
-						for (auto& [otherId, other] : playerList)
+						bool isOwner = true;
 						{
-							if (other.get() == this) continue;
-							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
+							auto& playerList = m_server->getPlayerList();
+							for (auto& [otherId, other] : playerList)
 							{
-								// Somebody else got this NPC first.  Force the player to throw his down
-								// and tell the player to remove the NPC from memory.
-								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
-								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
-								m_server->sendPacketToOneLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, level, { m_id });
-								isOwner = false;
-								newNpcId = 0;
-								break;
+								if (other.get() == this) continue;
+								if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
+								{
+									// Somebody else got this NPC first.  Force the player to throw his down
+									// and tell the player to remove the NPC from memory.
+									sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
+									sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
+									m_server->sendPacketToOneLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, level, { m_id });
+									isOwner = false;
+									newNpcId = 0;
+									break;
+								}
 							}
 						}
-					}
-					if (isOwner)
-					{
-						// We own this NPC now so remove it from the level and have everybody else delete it.
-						auto npc = m_server->getNPC(newNpcId);
-						level->removeNPC(npc);
-						m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId, { m_id });
+						if (isOwner)
+						{
+							// We own this NPC now so remove it from the level and have everybody else delete it.
+							auto npc = m_server->getNPC(newNpcId);
+							level->removeNPC(npc);
+							m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId, { m_id });
+						}
 					}
 				}
+				player->setCarryNpcId(newNpcId);
 			}
-
-			m_carryNpcId = newNpcId;
 		}
 		break;
 
 		case PLPROP_APCOUNTER:
-			m_apCounter = pPacket.readGUShort();
+			account.apCounter = pPacket.readGUShort();
 			break;
 
 		case PLPROP_MAGICPOINTS:
@@ -813,7 +892,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				m_mp = std::min<uint8_t>(newMP, 100);
+				account.character.mp = PropLimits::apply(newMP, PropLimits::MaxMP);
 #ifdef V8NPCSERVER
 			}
 #endif
@@ -837,11 +916,15 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_UDPPORT:
-			m_udpport = pPacket.readGInt();
+		{
+			uint16_t udpPort = static_cast<uint16_t>(pPacket.readGInt());
+			if (player == nullptr) break;
+			player->m_udpport = udpPort;
 			if (m_id != -1 && m_loaded)
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_UDPPORT >> (int)m_udpport, this);
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_UDPPORT >> (int)player->m_udpport, this);
 			// TODO: udp support.
 			break;
+		}
 
 		case PLPROP_ALIGNMENT:
 		{
@@ -850,7 +933,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (!(options & PLSETPROPS_SETBYPLAYER))
 			{
 #endif
-				m_character.ap = std::min<uint8_t>(newAlignment, 100);
+				account.character.ap = std::min<uint8_t>(newAlignment, 100);
 #ifdef V8NPCSERVER
 			}
 #endif
@@ -858,7 +941,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		}
 
 		case PLPROP_ADDITFLAGS:
-			m_additionalFlags = pPacket.readGUChar();
+			pPacket.readGUChar();
+			// m_additionalFlags = pPacket.readGUChar();
 			break;
 
 		case PLPROP_ACCOUNTNAME:
@@ -868,7 +952,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_BODYIMG:
 			len = pPacket.readGUChar();
-			setBodyImage(pPacket.readChars(len));
+			account.character.bodyImage = PropLimits::apply(pPacket.readChars(len).toString(), PropLimits::BodyImageLength);
 			break;
 
 		case PLPROP_RATING:
@@ -881,7 +965,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			// Only supports object_type 0 (NPC).
 			unsigned char object_type = pPacket.readGUChar();
 			unsigned int npcID = pPacket.readGUInt();
-			m_attachNPC = npcID;
+			if (player == nullptr) break;
+			player->m_attachNPC = npcID;
 			levelBuff >> (char)PLPROP_ATTACHNPC << getProp(PLPROP_ATTACHNPC);
 			break;
 		}
@@ -893,7 +978,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(mx, level->getMapY());
-				leaveLevel();
 				setLevel(newLevelName, -1);
 			}
 #ifdef DEBUG
@@ -909,7 +993,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), my);
-				leaveLevel();
 				setLevel(newLevelName, -1);
 			}
 #ifdef DEBUG
@@ -927,7 +1010,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_PLANGUAGE:
 			len = pPacket.readGUChar();
-			m_language = pPacket.readChars(len);
+			account.language = pPacket.readChars(len).toString();
 			break;
 
 		case PLPROP_PSTATUSMSG:
@@ -939,142 +1022,94 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_GATTRIB1:
-			m_character.ganiAttributes[0] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB2:
-			m_character.ganiAttributes[1] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB3:
-			m_character.ganiAttributes[2] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB4:
-			m_character.ganiAttributes[3] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB5:
-			m_character.ganiAttributes[4] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB6:
-			m_character.ganiAttributes[5] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB7:
-			m_character.ganiAttributes[6] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB8:
-			m_character.ganiAttributes[7] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB9:
-			m_character.ganiAttributes[8] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB10:
-			m_character.ganiAttributes[9] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB11:
-			m_character.ganiAttributes[10] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB12:
-			m_character.ganiAttributes[11] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB13:
-			m_character.ganiAttributes[12] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB14:
-			m_character.ganiAttributes[13] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB15:
-			m_character.ganiAttributes[14] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB16:
-			m_character.ganiAttributes[15] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB17:
-			m_character.ganiAttributes[16] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB18:
-			m_character.ganiAttributes[17] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB19:
-			m_character.ganiAttributes[18] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB20:
-			m_character.ganiAttributes[19] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB21:
-			m_character.ganiAttributes[20] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB22:
-			m_character.ganiAttributes[21] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB23:
-			m_character.ganiAttributes[22] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB24:
-			m_character.ganiAttributes[23] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB25:
-			m_character.ganiAttributes[24] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB26:
-			m_character.ganiAttributes[25] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB27:
-			m_character.ganiAttributes[26] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB28:
-			m_character.ganiAttributes[27] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB29:
-			m_character.ganiAttributes[28] = pPacket.readChars(pPacket.readGUChar());
-			break;
 		case PLPROP_GATTRIB30:
-			m_character.ganiAttributes[29] = pPacket.readChars(pPacket.readGUChar());
+		{
+			int index = propId - PLPROP_GATTRIB1;
+			account.character.ganiAttributes[index] = pPacket.readChars(pPacket.readGUChar()).toString();
 			break;
+		}
 
-			// OS type.
-			// Windows: wind
+		// OS type.
+		// Windows: wind
 		case PLPROP_OSTYPE:
 			m_os = pPacket.readChars(pPacket.readGUChar());
 			break;
 
-			// Text codepage.
-			// Example: 1252
+		// Text codepage.
+		// Example: 1252
 		case PLPROP_TEXTCODEPAGE:
 			m_envCodePage = pPacket.readGInt();
 			break;
 
-			// Location, in pixels, of the player on the level in 2.30+ clients.
-			// Bit 0x0001 controls if it is negative or not.
-			// Bits 0xFFFE are the actual value.
+		case PLPROP_ONLINESECS2:
+			//m_onlineTime = pPacket.readGUInt5();
+			break;
+
+		// Location, in pixels, of the player on the level in 2.30+ clients.
+		// Bit 0x0001 controls if it is negative or not.
+		// Bits 0xFFFE are the actual value.
 		case PLPROP_X2:
 			len = pPacket.readGUShort();
-			m_x = (len >> 1);
+			account.character.pixelX = (len >> 1);
 
 			// If the first bit is 1, our position is negative.
 			if ((uint16_t)len & 0x0001)
-				m_x = -m_x;
+				account.character.pixelX = -account.character.pixelX;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
 			levelBuff2 >> (char)PLPROP_X << getProp(PLPROP_X);
 
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
+
 			doTouchTest = true;
 			break;
 
 		case PLPROP_Y2:
 			len = pPacket.readGUShort();
-			m_y = (len >> 1);
+			account.character.pixelY = (len >> 1);
 
 			// If the first bit is 1, our position is negative.
 			if ((uint16_t)len & 0x0001)
-				m_y = -m_y;
+				account.character.pixelY = -account.character.pixelY;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
 			levelBuff2 >> (char)PLPROP_Y << getProp(PLPROP_Y);
 
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
 
 			// Do collision testing.
 			doTouchTest = true;
@@ -1082,28 +1117,27 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_Z2:
 			len = pPacket.readGUShort();
-			m_z = (len >> 1);
+			account.character.pixelZ = (len >> 1);
 
 			// If the first bit is 1, our position is negative.
 			if ((uint16_t)len & 0x0001)
-				m_z = -m_z;
+				account.character.pixelZ = -account.character.pixelZ;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
 			levelBuff2 >> (char)PLPROP_Z << getProp(PLPROP_Z);
 
-			m_status &= (~PLSTATUS_PAUSED);
-			m_lastMovement = time(0);
-			m_grMovementUpdated = true;
+			account.status &= (~PLSTATUS_PAUSED);
+
+			if (player != nullptr)
+				player->setLastMovementTime(time(0));
 
 			// Do collision testing.
 			doTouchTest = true;
 			break;
 
-		case PLPROP_UNKNOWN81:
-		{
-			auto val = pPacket.readGUChar();
+		case PLPROP_PLAYERLISTCATEGORY:
+			(void)pPacket.readGUChar();
 			break;
-		}
 
 		case PLPROP_COMMUNITYNAME:
 			pPacket.readChars(pPacket.readGUChar());
@@ -1116,11 +1150,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				printf("%02x ", (unsigned char)pPacket[i]);
 			printf("\n");
 			sentInvalid = true;
+			return;
 		}
-		return;
 		}
 
-		if ((options & PLSETPROPS_FORWARD) && __sendLocal[propId])
+		if ((options & PLSETPROPS_FORWARD) && clientPropsSharedLocal[propId])
 			levelBuff >> (char)propId << getProp(propId);
 
 		if ((options & PLSETPROPS_FORWARDSELF))
@@ -1140,7 +1174,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			bool MOVE_PRECISE = false;
 			if (m_versionId >= CLVER_2_3) MOVE_PRECISE = true;
 
-			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), shared_from_this(), { m_id });
+			if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client)
+				m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), client, { m_id });
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
@@ -1152,7 +1187,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			if (doTouchTest)
 			{
-				if (m_character.sprite % 4 == 0)
+				if (account.character.sprite % 4 == 0)
 					testSign();
 				testTouch();
 			}
@@ -1163,26 +1198,25 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 	if (sentInvalid)
 	{
 		// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
-		m_invalidPackets++;
-		if (m_invalidPackets > 5)
+		InvalidPackets++;
+		if (InvalidPackets > 5)
 		{
-			serverlog.out("Player %s is sending invalid packets.\n", m_character.nickName.c_str());
+			serverlog.out("Player %s is sending invalid packets.\n", account.character.nickName.c_str());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 			m_server->deletePlayer(shared_from_this());
 		}
 	}
 }
 
-void Player::sendProps(const bool* pProps, int pCount)
+void Player::sendProps(const PropList& props)
 {
 	// Definition
 	CString propPacket;
 
-	// Create Props
-	if (isClient() && m_versionId < CLVER_2_1) pCount = 37;
-	for (int i = 0; i < pCount; ++i)
+	int propCount = (isClient() && m_versionId < CLVER_2_1 ? 37 : props.size());
+	for (int i = 0; i < propCount; ++i)
 	{
-		if (pProps[i])
+		if (props[i])
 			propPacket >> (char)i << getProp(i);
 	}
 
@@ -1190,41 +1224,201 @@ void Player::sendProps(const bool* pProps, int pCount)
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString Player::getProps(const bool* pProps, int pCount)
+CString Player::getProps(const PropList& props)
 {
 	CString propPacket;
 
 	// Start the prop packet.
-	propPacket >> (char)PLO_OTHERPLPROPS >> (short)this->m_id;
+	propPacket >> (char)PLO_OTHERPLPROPS >> (short)m_id;
 
-	if (pCount > 0)
+	// Check if PLPROP_JOINLEAVELVL is set.
+	if (isClient() && props[PLPROP_JOINLEAVELVL])
+		propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
+
+	// Create Props
+	int propCount = (isClient() && m_versionId < CLVER_2_1 ? 37 : props.size());
+	for (int i = 0; i < propCount; ++i)
 	{
-		// Check if PLPROP_JOINLEAVELVL is set.
-		if (isClient() && pProps[PLPROP_JOINLEAVELVL])
-			propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
+		if (i == PLPROP_JOINLEAVELVL) continue;
 
-		// Create Props
-		if (isClient() && m_versionId < CLVER_2_1) pCount = 37;
-		for (int i = 0; i < pCount; ++i)
+		if (i == PLPROP_ATTACHNPC)
 		{
-			if (i == PLPROP_JOINLEAVELVL) continue;
-
-			if (i == PLPROP_ATTACHNPC && m_attachNPC != 0)
-			{
-				propPacket >> (char)i;
-				getProp(propPacket, i);
-			}
-
-			if (pProps[i])
+			if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client != nullptr && client->m_attachNPC != 0)
 			{
 				propPacket >> (char)i;
 				getProp(propPacket, i);
 			}
 		}
+
+		if (props[i])
+		{
+			propPacket >> (char)i;
+			getProp(propPacket, i);
+		}
 	}
 
 	if (m_isExternal)
-		propPacket >> (char)81 << "!";
+		propPacket >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS;
 
 	return propPacket;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Player::setPropsRC(CString& pPacket, Player* rc)
+{
+	bool hadBomb = false, hadBow = false;
+	CString outPacket;
+
+	// Skip playerworld
+	pPacket.readChars(pPacket.readGUChar());
+
+	// Read props from the packet.
+	CString props = pPacket.readChars(pPacket.readGUChar());
+
+	// Send props out.
+	setProps(props, (m_id != -1 ? PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF : 0), rc);
+
+	// Clear flags
+	for (const auto& [flag, value] : account.flags)
+	{
+		outPacket >> (char)PLO_FLAGDEL << flag;
+		if (!value.empty()) outPacket << "=" << value;
+		outPacket << "\n";
+	}
+	account.flags.clear();
+
+	// Clear Weapons
+	for (const auto& weapon : account.weapons)
+	{
+		outPacket >> (char)PLO_NPCWEAPONDEL << weapon << "\n";
+
+		// Attempt to fix the funky client bomb capitalization issue.
+		// Also fix the bomb coming back when you set the player props through RC.
+		if (weapon == "bomb")
+		{
+			outPacket >> (char)PLO_NPCWEAPONDEL << "Bomb\n";
+			hadBomb = true;
+		}
+		if (weapon == "Bomb")
+			hadBomb = true;
+
+		// Do the same thing with the bow.
+		if (weapon == "bow")
+		{
+			outPacket >> (char)PLO_NPCWEAPONDEL << "Bow\n";
+			hadBow = true;
+		}
+		if (weapon == "Bow")
+			hadBow = true;
+	}
+	account.weapons.clear();
+
+	// Send the packet to clear the flags and weapons from the client.
+	if (m_id != -1)
+		sendPacket(outPacket);
+
+	// Re-populate the flag list.
+	auto flagCount = pPacket.readGUShort();
+	while (flagCount > 0)
+	{
+		CString flag = pPacket.readChars(pPacket.readGUChar());
+		std::string name = flag.readString("=").text();
+		CString val = flag.readString("");
+
+		setFlag(name, val, (m_id != -1));
+		--flagCount;
+	}
+
+	// Clear the chests and re-populate the chest list.
+	account.savedChests.clear();
+	auto chestCount = pPacket.readGUShort();
+	while (chestCount > 0)
+	{
+		unsigned char len = pPacket.readGUChar();
+		char loc[2] = { pPacket.readGChar(), pPacket.readGChar() };
+		std::string level = pPacket.readChars(len - 2).toString();
+
+		account.savedChests.insert(std::make_pair(level, std::make_pair(loc[0], loc[1])));
+		--chestCount;
+	}
+
+	// Re-populate the weapons list.
+	auto weaponCount = pPacket.readGUChar();
+	while (weaponCount > 0)
+	{
+		unsigned char len = pPacket.readGUChar();
+		if (len == 0) continue;
+		CString wpn = pPacket.readChars(len);
+
+		// Allow the bomb through if we are actually adding it.
+		if (wpn == "bomb" || wpn == "Bomb")
+			hadBomb = true;
+
+		// Allow the bow through if we are actually adding it.
+		if (wpn == "bow" || wpn == "Bow")
+			hadBow = true;
+
+		// Send the weapon to the player.
+		this->addWeapon(wpn.toString());
+		--weaponCount;
+	}
+
+	// KILL THE BOMB DEAD
+	if (m_id != -1)
+	{
+		if (!hadBomb)
+			sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+	}
+
+	// Warp the player to his new location now.
+	if (m_id != -1 && isClient())
+	{
+		if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
+			player->warp(account.level, getX(), getY(), 0);
+	}
+}
+
+CString Player::getPropsRC()
+{
+	CString ret, props;
+	ret >> (char)account.name.length() << account.name;
+	ret >> (char)4 << "main"; // worldName
+
+	// Add the props.
+	for (int i = 0; i < PROPSCOUNT; ++i)
+	{
+		if (clientPropsForRCView[i])
+			props >> (char)i << getProp(i);
+	}
+	ret >> (char)props.length() << props;
+
+	// Add the player's flags.
+	ret >> (short)account.flags.size();
+	for (const auto& [flag, value] : account.flags)
+	{
+		std::string computedFlag{ flag };
+		if (!value.empty())
+			computedFlag += std::format("={}", value);
+
+		// Truncate the flag if it is too long.
+		if (computedFlag.length() > 223)
+			computedFlag.erase(223);
+
+		ret >> (char)computedFlag.length() << computedFlag;
+	}
+
+	// Add the player's chests.
+	ret >> (short)account.savedChests.size();
+	for (const auto& [level, loc] : account.savedChests)
+	{
+		ret >> (char)(level.length() + 2) >> (char)loc.first >> (char)loc.second << level;
+	}
+
+	// Add the player's weapons.
+	ret >> (char)account.weapons.size();
+	for (const auto& weapon : account.weapons)
+		ret >> (char)weapon.length() << weapon;
+
+	return ret;
 }

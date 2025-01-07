@@ -5,7 +5,7 @@
 const char FOLDER_SEPARATOR = '/';
 const std::regex WILDCARD_REGEX(R"(\*)");
 
-std::vector<std::string> splitInput(const std::string& input, const char delimiter = FOLDER_SEPARATOR)
+static std::vector<std::string> splitInput(const std::string& input, const char delimiter = FOLDER_SEPARATOR)
 {
 	std::istringstream stream(input);
 	std::string line;

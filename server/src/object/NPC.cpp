@@ -245,7 +245,7 @@ CString NPC::getProp(unsigned char pId, int clientVersion) const
 			return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (m_z / 8))) + 50);
 
 		case NPCPROP_POWER:
-			return CString() >> (char)(m_character.hitpoints * 2);
+			return CString() >> (char)(m_character.hitpointsInHalves);
 
 		case NPCPROP_RUPEES:
 			return CString() >> (int)m_character.gralats;
@@ -506,7 +506,7 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_POWER:
-				m_character.hitpoints = (pProps.readGUChar() / 2.0f);
+				m_character.hitpointsInHalves = pProps.readGUChar();
 				break;
 
 			case NPCPROP_RUPEES:
@@ -533,16 +533,16 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 4)
-					m_character.swordImage = CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.swordImage = (CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
 				else
 				{
 					sp -= 30;
 					len = pProps.readGUChar();
 					if (len > 0)
 					{
-						m_character.swordImage = pProps.readChars(len);
-						if (!m_character.swordImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.swordImage).isEmpty())
-							m_character.swordImage << ".gif";
+						m_character.swordImage = pProps.readChars(len).toString();
+						if (!m_character.swordImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.swordImage).isEmpty())
+							m_character.swordImage += ".gif";
 					}
 					else
 						m_character.swordImage = "";
@@ -556,16 +556,16 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 			{
 				int sp = pProps.readGUChar();
 				if (sp <= 3)
-					m_character.shieldImage = CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.shieldImage = (CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
 				else
 				{
 					sp -= 10;
 					len = pProps.readGUChar();
 					if (len > 0)
 					{
-						m_character.shieldImage = pProps.readChars(len);
-						if (!m_character.shieldImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.shieldImage).isEmpty())
-							m_character.shieldImage << ".gif";
+						m_character.shieldImage = pProps.readChars(len).toString();
+						if (!m_character.shieldImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.shieldImage).isEmpty())
+							m_character.shieldImage += ".gif";
 					}
 					else
 						m_character.shieldImage = "";
@@ -582,9 +582,9 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 					m_character.bowPower = pProps.readGUChar();
 					if (m_character.bowPower >= 10)
 					{
-						m_character.bowImage = pProps.readChars(m_character.bowPower - 10);
-						if (!m_character.bowImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.bowImage).isEmpty())
-							m_character.bowImage << ".gif";
+						m_character.bowImage = pProps.readChars(m_character.bowPower - 10).toString();
+						if (!m_character.bowImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.bowImage).isEmpty())
+							m_character.bowImage += ".gif";
 					}
 					break;
 				}
@@ -627,20 +627,20 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_HORSEIMAGE:
-				m_character.horseImage = pProps.readChars(pProps.readGUChar());
-				if (!m_character.horseImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.horseImage).isEmpty())
-					m_character.horseImage << ".gif";
+				m_character.horseImage = pProps.readChars(pProps.readGUChar()).toString();
+				if (!m_character.horseImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.horseImage).isEmpty())
+					m_character.horseImage += ".gif";
 				break;
 
 			case NPCPROP_HEADIMAGE:
 				len = pProps.readGUChar();
 				if (len < 100)
-					m_character.headImage = CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png");
+					m_character.headImage = (CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
 				else
 				{
-					m_character.headImage = pProps.readChars(len - 100);
-					if (!m_character.headImage.isEmpty() && clientVersion < CLVER_2_1 && getExtension(m_character.headImage).isEmpty())
-						m_character.headImage << ".gif";
+					m_character.headImage = pProps.readChars(len - 100).toString();
+					if (!m_character.headImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.headImage).isEmpty())
+						m_character.headImage += ".gif";
 				}
 				break;
 
@@ -654,7 +654,7 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_BODYIMAGE:
-				m_character.bodyImage = pProps.readChars(pProps.readGUChar());
+				m_character.bodyImage = pProps.readChars(pProps.readGUChar()).toString();
 				break;
 
 			case NPCPROP_GMAPLEVELX:
@@ -771,95 +771,40 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_GATTRIB1:
-				m_character.ganiAttributes[0] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB2:
-				m_character.ganiAttributes[1] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB3:
-				m_character.ganiAttributes[2] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB4:
-				m_character.ganiAttributes[3] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB5:
-				m_character.ganiAttributes[4] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB6:
-				m_character.ganiAttributes[5] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB7:
-				m_character.ganiAttributes[6] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB8:
-				m_character.ganiAttributes[7] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB9:
-				m_character.ganiAttributes[8] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB10:
-				m_character.ganiAttributes[9] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB11:
-				m_character.ganiAttributes[10] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB12:
-				m_character.ganiAttributes[11] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB13:
-				m_character.ganiAttributes[12] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB14:
-				m_character.ganiAttributes[13] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB15:
-				m_character.ganiAttributes[14] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB16:
-				m_character.ganiAttributes[15] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB17:
-				m_character.ganiAttributes[16] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB18:
-				m_character.ganiAttributes[17] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB19:
-				m_character.ganiAttributes[18] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB20:
-				m_character.ganiAttributes[19] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB21:
-				m_character.ganiAttributes[20] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB22:
-				m_character.ganiAttributes[21] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB23:
-				m_character.ganiAttributes[22] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB24:
-				m_character.ganiAttributes[23] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB25:
-				m_character.ganiAttributes[24] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB26:
-				m_character.ganiAttributes[25] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB27:
-				m_character.ganiAttributes[26] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB28:
-				m_character.ganiAttributes[27] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB29:
-				m_character.ganiAttributes[28] = pProps.readChars(pProps.readGUChar());
-				break;
 			case NPCPROP_GATTRIB30:
-				m_character.ganiAttributes[29] = pProps.readChars(pProps.readGUChar());
+			{
+				int index = propId - NPCPROP_GATTRIB1;
+				m_character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
 				break;
+			}
 
 			default:
 			{

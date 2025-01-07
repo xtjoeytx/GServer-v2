@@ -17,6 +17,8 @@
 #include "level/Map.h"
 #include "object/NPC.h"
 #include "object/Player.h"
+#include "object/PlayerLogin.h"
+#include "object/PlayerClient.h"
 #include "object/Weapon.h"
 #include "scripting/ScriptClass.h"
 #include "scripting/ScriptOrigin.h"
@@ -44,7 +46,7 @@ auto methodstub(T* t, R (T::*m)(Args...))
 }
 
 // I don't want to deal with adding this to the gs2lib.
-CString operator<<(const CString& first, const CString& second)
+static CString operator<<(const CString& first, const CString& second)
 {
 	CString result{ first };
 	return result << second;
@@ -73,6 +75,8 @@ Server::Server(const CString& pName)
 	m_npcLog.setFilename(npcPath);
 	m_rcLog.setFilename(rcPath);
 	m_serverLog.setFilename(serverPath);
+
+	m_accountLoader = std::make_unique<PlainTextAccountLoader>();
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
@@ -472,7 +476,7 @@ bool Server::onRecv()
 		return true;
 
 	// Create the new player.
-	auto newPlayer = std::make_shared<Player>(newSock, 0);
+	auto newPlayer = std::make_shared<PlayerLogin>(newSock, 0);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))
@@ -801,7 +805,7 @@ void Server::loadMapLevels()
 void Server::loadMaps(bool print)
 {
 	// Remove players off all maps
-	for (auto& [id, player]: m_playerList)
+	for (const auto& [id, player]: players_of_type<PlayerClient>(m_playerList))
 		player->setMap(nullptr);
 
 	// Remove existing maps.
@@ -1043,7 +1047,7 @@ std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
 }
 #endif
 
-std::string transformString(const std::string& str)
+static std::string transformString(const std::string& str)
 {
 	std::string newStr;
 	for (char ch: str)
@@ -1078,40 +1082,6 @@ void Server::reportScriptException(const std::string& error_message)
 }
 
 /////////////////////////////////////////////////////
-
-std::shared_ptr<Player> Server::getPlayer(unsigned short id) const
-{
-	auto iter = m_playerList.find(id);
-	if (iter == std::end(m_playerList))
-		return nullptr;
-
-	return iter->second;
-}
-
-std::shared_ptr<Player> Server::getPlayer(unsigned short id, int type) const
-{
-	auto player = getPlayer(id);
-	if (player == nullptr || !(player->getType() & type))
-		return nullptr;
-
-	return player;
-}
-
-std::shared_ptr<Player> Server::getPlayer(const CString& account, int type) const
-{
-	for (auto& [id, player]: m_playerList)
-	{
-		// Check if its the type of player we are looking for
-		if (!player || !(player->getType() & type))
-			continue;
-
-		// Compare account names.
-		if (player->getAccountName().toLower() == account.toLower())
-			return player;
-	}
-
-	return nullptr;
-}
 
 std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
 {
@@ -1390,6 +1360,27 @@ bool Server::deletePlayer(PlayerPtr player)
 	return true;
 }
 
+bool Server::swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Player> new_player)
+{
+	if (old_player == nullptr || new_player == nullptr)
+		return false;
+
+	auto id = old_player->getId();
+
+	// Swap the player in the player list.
+	m_playerList.erase(id);
+	m_playerList[id] = new_player;
+
+	// Set the id on the new player.
+	new_player->setId(id);
+
+	// Update the socket manager.
+	m_sockManager.unregisterSocket(old_player.get());
+	m_sockManager.registerSocket(new_player.get());
+
+	return true;
+}
+
 void Server::playerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
@@ -1408,7 +1399,7 @@ void Server::playerLoggedIn(PlayerPtr player)
 
 bool Server::warpPlayerToSafePlace(uint16_t playerId)
 {
-	auto player = getPlayer(playerId);
+	auto player = getPlayer<PlayerClient>(playerId);
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
@@ -1555,7 +1546,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	{
 		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
 
-		for (auto& [id, other]: m_playerList)
+		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1572,7 +1563,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1596,7 +1587,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Player> 
 		auto isGroupMap = map->isGroupMap();
 		auto sgmap{ playerp->getMapPosition() };
 
-		for (auto& [id, other]: m_playerList)
+		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1624,7 +1615,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	auto map = levelp->getMap();
 	if (!map || map->getType() == MapType::BIGMAP)
 	{
-		for (auto id : levelp->getPlayers())
+		for (auto id: levelp->getPlayers())
 		{
 			if (exclude.contains(id)) continue;
 			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
@@ -1635,7 +1626,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	{
 		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
 
-		for (auto& [id, other] : m_playerList)
+		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1652,7 +1643,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	}
 }
 
-void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Player> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1664,7 +1655,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	auto map = level->getMap();
 	if (!map || map->getType() == MapType::BIGMAP)
 	{
-		for (auto id : level->getPlayers())
+		for (auto id: level->getPlayers())
 		{
 			if (exclude.contains(id)) continue;
 			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
@@ -1676,7 +1667,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 		auto isGroupMap = map->isGroupMap();
 		auto sgmap{ playerp->getMapPosition() };
 
-		for (auto& [id, other] : m_playerList)
+		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
 		{
 			if (exclude.contains(id)) continue;
 			if (!other->isClient()) continue;
@@ -1771,7 +1762,7 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 		if (!player->isClient())
 			continue;
 
-		if (player->hasWeapon(pWeapon->getName()))
+		if (player->account.hasWeapon(pWeapon->getName()))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
 			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));

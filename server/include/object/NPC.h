@@ -460,7 +460,7 @@ inline const CString& NPC::getChat() const
 
 inline void NPC::setChat(const CString& msg)
 {
-	m_character.chatMessage = msg.subString(0, std::min<size_t>(msg.length(), 223));
+	m_character.chatMessage = msg.subString(0, std::min<size_t>(msg.length(), 223)).toString();
 }
 
 //////////
@@ -472,7 +472,7 @@ inline const CString& NPC::getGani() const
 
 inline void NPC::setGani(const CString& gani)
 {
-	m_character.gani = gani.subString(0, std::min<size_t>(gani.length(), 223));
+	m_character.gani = gani.subString(0, std::min<size_t>(gani.length(), 223)).toString();
 }
 
 //////////
