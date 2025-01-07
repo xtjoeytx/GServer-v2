@@ -29,6 +29,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 		autoconf \
 		ninja \
 		openssl-dev \
+		openssl-libs-static \
 	&& cd /tmp/gserver \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build -DCMAKE_BUILD_TYPE=Release -DV8NPCSERVER=${NPCSERVER} -DVER_EXTRA=${VER_EXTRA} -DTESTS=ON -DWOLFSSL=ON -DUPNP=OFF -DSTATIC=ON -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --config Release --target clean \
