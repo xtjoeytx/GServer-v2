@@ -252,7 +252,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
 
 add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
-target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
+target_link_libraries(${TARGET_NAME_OLD} PRIVATE ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 

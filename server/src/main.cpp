@@ -152,11 +152,11 @@ extern "C" {
 			}
 		}
 
-		return new TServer(overrideServer);
+		return new Server(overrideServer);
 	}
 
 	DLL_EXPORT int initialize_server_instance(void* serverPtr, const char* overrideServerIp, const char* overridePort, const char* overrideLocalIp, const char* overrideServerInterface, const char* overrideName, const char* overrideStaff, const char* overrideListIp, const char* overrideListPort) {
-		const auto server = static_cast<TServer*>(serverPtr);
+		const auto server = static_cast<Server*>(serverPtr);
 
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface ) != 0)
 		{
@@ -185,7 +185,7 @@ extern "C" {
 					settings.addKey("staff", staff << "," << overrideStaff);
 				}
 
-				TAccount accfs(server);
+				Account accfs{};
 				accfs.loadAccount(overrideStaff, false);
 				if (accfs.getOnlineTime() == 0)
 				{
@@ -202,7 +202,7 @@ extern "C" {
 	}
 
 	DLL_EXPORT void start_server_instance(void* serverPtr) {
-		const auto server = static_cast<TServer*>(serverPtr);
+		const auto server = static_cast<Server*>(serverPtr);
 		// Run the server.
 		(*server)();
 
@@ -211,7 +211,7 @@ extern "C" {
 	}
 
 	DLL_EXPORT void restart_server_instance(void* serverPtr) {
-		const auto server = static_cast<TServer*>(serverPtr);
+		const auto server = static_cast<Server*>(serverPtr);
 		server->restart();
 	}
 

@@ -180,7 +180,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	
+
 	return 0;
 }
 
@@ -692,6 +692,12 @@ void Server::loadFileSystem()
 		loadAllFolders();
 	else
 		loadFolderConfig();
+
+	for (auto &[file, path] : m_filesystem[0].getFileList()) {
+		if (getExtension(file) == ".gupd") {
+			getPackageManager().findOrAddResource(file.toString())->reload(this);
+		}
+	}
 }
 
 void Server::loadServerFlags()

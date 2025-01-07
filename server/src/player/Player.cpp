@@ -631,6 +631,8 @@ bool Player::doTimedEvents()
 		m_invalidPackets = 0;
 	}
 
+	m_fileQueue.sendCompress();
+
 	return true;
 }
 

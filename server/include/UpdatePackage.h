@@ -53,6 +53,11 @@ public:
 	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
 	static std::optional<UpdatePackage> load(Server* const server, const std::string& name);
 
+	//! Reload the UpdatePackage from the filesystem
+	//! \param fileSystem CFileSystem where the package file could be located
+	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
+	void reload(Server* const server);
+
 private:
 	std::string m_packageName;
 	std::unordered_map<std::string, FileEntry> m_fileList;
