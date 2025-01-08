@@ -158,11 +158,13 @@ endif()
 
 set(TARGET_NAME_OLD ${TARGET_NAME})
 set(TARGET_NAME "lib${TARGET_NAME}")
+
 if(STATIC)
 	set(LIBRARY_TYPE STATIC)
 else()
 	set(LIBRARY_TYPE SHARED)
 endif()
+
 
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)

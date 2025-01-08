@@ -70,13 +70,17 @@ Server::Server(const CString& pName)
 	FileSystem::fixPathSeparators(npcPath);
 	FileSystem::fixPathSeparators(rcPath);
 	FileSystem::fixPathSeparators(serverPath);
+	m_npcLog.setLogToCliEnabled(true);
 	m_npcLog.setFilename(npcPath);
+	m_rcLog.setLogToCliEnabled(true);
 	m_rcLog.setFilename(rcPath);
+	m_serverLog.setLogToCliEnabled(true);
 	m_serverLog.setFilename(serverPath);
 
 #ifdef V8NPCSERVER
 	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
 	FileSystem::fixPathSeparators(scriptPath);
+	m_scriptLog.setLogToCliEnabled(true);
 	m_scriptLog.setFilename(scriptPath);
 #endif
 }
