@@ -1086,7 +1086,7 @@ void NPC::setTimeout(int newTimeout)
 		m_server->getScriptEngine()->unregisterNpcTimer(this);
 }
 
-void NPC::queueNpcAction(const std::string& action, Player* player, bool registerAction)
+void TNPC::queueNpcAction(const std::string& action, TPlayer *player, bool registerAction)
 {
 	assert(m_scriptObject);
 

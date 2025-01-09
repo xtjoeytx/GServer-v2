@@ -990,54 +990,59 @@ void NPC_Function_Join(const v8::FunctionCallbackInfo<v8::Value>& args)
 				v8::MaybeLocal<v8::Value> scriptTableRet = localFunction->Call(context, args.This(), 1, newArgs);
 				if (!scriptTableRet.IsEmpty())
 				{
-					args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
+					auto joinClassCb = scriptEngine->getCallBack("npc.joinclass");
+					V8ScriptFunction* v8_function2 = static_cast<V8ScriptFunction*>(joinClassCb);
+					v8::Local<v8::Value> newArgs2[] = { args.This(), args[0], scriptTableRet.ToLocalChecked() };
+					v8::Local<v8::Function> localFunction2 = v8_function2->Function();
+					v8::MaybeLocal<v8::Value> scriptTableRet2 = localFunction2->Call(context, args.This(), 3, newArgs2);
+					if (scriptTableRet2.IsEmpty()) {
+						// Failed to execute callback, should we leave this class.
+						// Bootstrap shouldnt fail, generally...
+						printf("---------FAILED to execute joinclass");
+					}
+					args.GetReturnValue().Set(args.This());
 					return;
 				}
 			}
 		}
+	}
+}
 
-		//Server *server = scriptEngine->getServer();
-		//auto classObj = server->getClass(className);
+// NPC Function: NPC.leave("class");
+void NPC_Function_Leave(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	v8::Isolate* isolate = args.GetIsolate();
 
-		//if (classObj && !classObj->source().empty())
-		//{
-		//	V8ENV_SAFE_UNWRAP(args, NPC, npcObject);
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_ARGCOUNT(args, isolate, 1);
 
-		//	// Split the code
-		//	std::string serverCode = classObj->serverCode();
-		//	std::string clientCode = classObj->clientCode();
+	if (args[0]->IsString())
+	{
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::Local<v8::External> data = args.Data().As<v8::External>();
+		CScriptEngine *scriptEngine = static_cast<CScriptEngine *>(data->Value());
 
-		//	//auto currentClass = server->getClassObject(className);
-		//	//if (currentClass == nullptr)
-		//	//	currentClass = server->addClass(className, clientCode);
-		//	//npcObject->addClassCode(className, clientCode);
-		//	// Add class to npc
-		//	//npcObject->addClassCode(className, clientCode);
-		//
-		//	// Wrap code
-		//	std::string classCodeWrap = ScriptEngine::wrapScript<NPC>(serverCode);
+		std::string className = *v8::String::Utf8Value(isolate, args[0]->ToString(context).ToLocalChecked());
+//		printf("Leaving class: %s\n", className.c_str());
+		V8ENV_SAFE_UNWRAP(args, TNPC, npcObject);
 
-		//	// TODO(joey): maybe we shouldn't cache this using this method, since classes can be used with
-		//	// multiple wrappers.
-		//	IScriptFunction *function = scriptEngine->compileCache(classCodeWrap, false);
-		//	if (function == nullptr)
-		//		return;
+		if (npcObject->joinedClass(className)) {
+			// Execute
+			auto joinClassCb = scriptEngine->getCallBack("npc.leaveclass");
 
-		//	V8ScriptFunction *v8_function = static_cast<V8ScriptFunction *>(function);
-		//	v8::Local<v8::Value> newArgs[] = { args.This() };
-
-		//	// Execute
-		//	v8::TryCatch try_catch(isolate);
-		//	v8::Local<v8::Function> scriptFunction = v8_function->Function();
-		//	v8::MaybeLocal<v8::Value> scriptTableRet = scriptFunction->Call(context, args.This(), 1, newArgs);
-		//	if (!scriptTableRet.IsEmpty())
-		//	{
-		//		args.GetReturnValue().Set(scriptTableRet.ToLocalChecked());
-		//		return;
-		//	}
-
-		//	// TODO(joey): error handling
-		//}
+			v8::TryCatch try_catch(isolate);
+			V8ScriptFunction* v8_function = static_cast<V8ScriptFunction*>(joinClassCb);
+			v8::Local<v8::Value> newArgs[] = { args.This(), args[0] };
+			v8::Local<v8::Function> localFunction = v8_function->Function();
+			v8::MaybeLocal<v8::Value> scriptTableRet = localFunction->Call(context, args.This(), 2, newArgs);
+			if (scriptTableRet.IsEmpty()) {
+				// Failed to execute callback, should we leave this class.
+				// Bootstrap shouldnt fail, generally...
+				printf("---------FAILED to execute leaveclass\n");
+			}
+			args.GetReturnValue().Set(args.This());
+			return;
+		}
 	}
 }
 
@@ -1534,6 +1539,7 @@ void bindClass_NPC(ScriptEngine* scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "warpto"), v8::FunctionTemplate::New(isolate, NPC_Function_Warpto, engine_ref)); // warpto levelname,x,y;
 
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "join"), v8::FunctionTemplate::New(isolate, NPC_Function_Join, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "leave"), v8::FunctionTemplate::New(isolate, NPC_Function_Leave, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setpm"), v8::FunctionTemplate::New(isolate, NPC_Function_SetPM, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "scheduleevent"), v8::FunctionTemplate::New(isolate, NPC_Function_ScheduleEvent, engine_ref));
