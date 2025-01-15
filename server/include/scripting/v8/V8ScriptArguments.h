@@ -73,14 +73,14 @@ public:
 
 		if (!base::m_resolved)
 		{
-			V8ScriptFunction* v8_func = static_cast<V8ScriptFunction*>(func);
-			V8ScriptEnv* v8_env = static_cast<V8ScriptEnv*>(v8_func->env());
+			const auto* v8_func = dynamic_cast<V8ScriptFunction*>(func);
+			auto* v8_env = v8_func->env();
 
-			v8::Isolate* isolate = v8_env->isolate();
-			v8::Local<v8::Context> context = v8_env->context();
+			auto* isolate = v8_env->isolate();
+			const auto context = v8_env->context();
 
 			// get a v8 handle for the function to be executed
-			v8::Local<v8::Function> cbFunc = v8_func->function();
+			const auto cbFunc = v8_func->function();
 			assert(!cbFunc.IsEmpty());
 
 			// sort arguments into array
@@ -94,7 +94,7 @@ public:
 			if (catchExceptions)
 			{
 				v8::TryCatch try_catch(isolate);
-				v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::m_argc, m_args);
+				const v8::MaybeLocal<v8::Value> ret = cbFunc->Call(context, m_args[0], base::m_argc, m_args);
 				static_cast<void>(ret);
 
 				if (try_catch.HasCaught())

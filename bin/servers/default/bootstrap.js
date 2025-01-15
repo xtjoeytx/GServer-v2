@@ -16,7 +16,8 @@
 				(npc.onPlayerTouchsMe && 1 << 5) |
 				(npc.onPlayerLogin && 1 << 6) |
 				(npc.onPlayerLogout && 1 << 7) |
-				(npc.onNpcWarped && 1 << 8)
+				(npc.onNpcWarped && 1 << 8) |
+				(npc.onReceiveText && 1 << 9)
 			);
 
 			if (npc.onCreated)
@@ -119,6 +120,24 @@
 				npc.onNpcWarped.apply(npc, args);
 		} catch (e) {
 			env.reportException("NPC Warped Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
+	/**
+	 * Event -> onReceiveText(texttype, textoptions, textlines)
+	 */
+	env.setCallBack("npc.receivetext", function (npc, data) {
+		try {
+			if (npc.onReceiveText) {
+				const textlines = tokenize(data, ',');
+				let texttype = textlines[0];
+				let textoptions = textlines[1];
+				textlines.shift();
+				textlines.shift();
+				npc.onReceiveText(texttype, textoptions, textlines);
+			}
+		} catch (e) {
+			env.reportException(npc.name + " Exception at onReceiveText: " + e.name + " - " + e.message);
 		}
 	});
 
@@ -308,6 +327,10 @@
 
 		env.global.sendtorc = function(...args) {
 			return server.sendtorc(...args);
+		};
+
+		env.global.sendtext = function(...args) {
+			return serverlist.sendtext(...args);
 		};
 
 		env.global.sendtonc = function(...args) {

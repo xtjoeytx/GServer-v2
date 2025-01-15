@@ -8,9 +8,12 @@
 
 #include "IConfig.h"
 
+#include "NPC.h"
 #include "Player.h"
 #include "Server.h"
 #include "ServerList.h"
+
+
 
 /*
 	Pointer-Functions for Packets
@@ -336,6 +339,18 @@ void ServerList::handleText(const CString& data)
 {
 	CString dataTokenStr = data.guntokenize();
 	std::vector<CString> params = data.gCommaStrTokens();
+
+	#ifdef V8NPCSERVER
+	// Send event to server that player is logging in
+	for (const auto& [npcName, npcPtr]: m_server->getNPCNameList())
+	{
+		// TODO(joey): check if they have the event before queueing for them
+		if (const auto npcObject = npcPtr.lock(); npcObject)
+		{
+			npcObject->queueNpcEvent("npc.receivetext", true, data.toString());
+		}
+	}
+	#endif
 
 	if (params.size() >= 3)
 	{

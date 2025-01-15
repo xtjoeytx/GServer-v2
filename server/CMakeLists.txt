@@ -129,6 +129,7 @@ if(V8NPCSERVER)
 		"src/scripting/v8/V8PlayerImpl.cpp"
 		"src/scripting/v8/V8ScriptEnv.cpp"
 		"src/scripting/v8/V8ServerImpl.cpp"
+		"src/scripting/v8/V8ServerListImpl.cpp"
 		"src/scripting/v8/V8WeaponImpl.cpp"
 	)
 endif()

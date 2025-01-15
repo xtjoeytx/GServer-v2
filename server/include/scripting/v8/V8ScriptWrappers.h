@@ -79,7 +79,7 @@ inline std::string wrapScript<NPC>(const std::string_view& code)
 	// self.onCreated || onCreated, for first declared to take precedence
 	// if (onCreated) for latest function to override
 	static const char* prefixString = "(function(npc) {"
-									  "var onCreated, onTimeout, onNpcWarped, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onPlayerLogin, onPlayerLogout;"
+									  "var onCreated, onTimeout, onNpcWarped, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onPlayerLogin, onPlayerLogout, onReceiveText;"
 									  "const self = npc;"
 									  "if (onCreated) self.onCreated = onCreated;"
 									  "if (onTimeout) self.onTimeout = onTimeout;"
@@ -90,6 +90,7 @@ inline std::string wrapScript<NPC>(const std::string_view& code)
 									  "if (onPlayerTouchsMe) self.onPlayerTouchsMe = onPlayerTouchsMe;"
 									  "if (onPlayerLogin) self.onPlayerLogin = onPlayerLogin;"
 									  "if (onPlayerLogout) self.onPlayerLogout = onPlayerLogout;"
+									  "if (onReceiveText) self.onReceiveText = onReceiveText;"
 									  "\n";
 
 	std::string wrappedCode = std::string(prefixString);
