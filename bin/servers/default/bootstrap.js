@@ -333,6 +333,10 @@
 			return serverlist.sendtext(...args);
 		};
 
+		env.global.requesttext = function(...args) {
+			return serverlist.requesttext(...args);
+		};
+
 		env.global.sendtonc = function(...args) {
 			return server.sendtonc(...args);
 		};

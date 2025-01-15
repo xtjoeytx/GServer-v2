@@ -56,6 +56,28 @@ void ServerList_Function_SendText(const v8::FunctionCallbackInfo<v8::Value>& arg
 	}
 }
 
+void ServerList_Function_RequestText(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	auto* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	const auto context = args.GetIsolate()->GetCurrentContext();
+
+	auto serverText = CString("");
+	for (int i = 0; i < args.Length(); i++)
+	{
+		serverText << HandleServerTextObject(isolate, context, args[i]);
+	}
+
+	if (!serverText.isEmpty())
+	{
+		V8ENV_SAFE_UNWRAP(args, ServerList, serverListObject);
+		serverListObject->requestText(serverText.gtokenizeI());
+	}
+}
+
 void bindClass_ServerList(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
@@ -77,6 +99,7 @@ void bindClass_ServerList(ScriptEngine* scriptEngine)
 
 	// Method functions
 	serverList_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtext"), v8::FunctionTemplate::New(isolate, ServerList_Function_SendText, engine_ref));
+	serverList_proto->Set(v8::String::NewFromUtf8Literal(isolate, "requesttext"), v8::FunctionTemplate::New(isolate, ServerList_Function_RequestText, engine_ref));
 
 	// Properties
 

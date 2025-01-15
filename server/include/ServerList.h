@@ -54,7 +54,9 @@ public:
 	void handleText(const CString& data);
 	void sendText(const CString& data);
 	void sendText(const std::vector<CString>& stringList);
-	void sendTextForPlayer(std::shared_ptr<Player> player, const CString& data);
+	void requestText(const CString& data);
+	void requestText(const std::vector<CString>& stringList);
+	void requestTextForPlayer(std::shared_ptr<Player> player, const CString& data);
 
 	void sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity);
 

@@ -345,7 +345,7 @@ void ServerList::handleText(const CString& data)
 	for (const auto& [npcName, npcPtr]: m_server->getNPCNameList())
 	{
 		// TODO(joey): check if they have the event before queueing for them
-		if (const auto npcObject = npcPtr.lock(); npcObject)
+		if (const auto npcObject = npcPtr.lock(); npcObject && npcName == params[0])
 		{
 			npcObject->queueNpcEvent("npc.receivetext", true, data.toString());
 		}
@@ -430,7 +430,24 @@ void ServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
+void ServerList::requestText(const CString& data)
+{
+	CString dataPacket;
+	dataPacket.writeGChar(SVO_REQUESTLIST);
+	dataPacket >> (short)0 << data;
+	sendPacket(dataPacket);
+}
+
+void ServerList::requestText(const std::vector<CString>& stringList)
+{
+	CString dataPacket;
+	dataPacket.writeGChar(SVO_REQUESTLIST);
+	for (const auto& string: stringList)
+		dataPacket << string.gtokenize();
+	sendPacket(dataPacket);
+}
+
+void ServerList::requestTextForPlayer(PlayerPtr player, const CString& data)
 {
 	assert(player != nullptr);
 
@@ -891,75 +908,92 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 	CString option = data.readString("\n");
 	CString paramsData = data.readString("");
 
-	auto player = m_server->getPlayer(playerId);
-	if (player != nullptr)
+	if (playerId < 2)
 	{
-		if (params.size() > 3)
+		#ifdef V8NPCSERVER
+		// Send event to server that player is logging in
+		for (const auto& [npcName, npcPtr]: m_server->getNPCNameList())
 		{
-			if (params[0] == "GraalEngine")
+			// TODO(joey): check if they have the event before queueing for them
+			if (const auto npcObject = npcPtr.lock(); npcObject && npcName == params[0])
 			{
-				if (params[1] == "irc")
+				npcObject->queueNpcEvent("npc.receivetext", true, data.toString());
+			}
+		}
+		#endif
+	}
+	else
+	{
+		auto player = m_server->getPlayer(playerId);
+		if (player != nullptr)
+		{
+			if (params.size() > 3)
+			{
+				if (params[0] == "GraalEngine")
 				{
-					// Listserver can confirm this stuff, and use it for having a count of players in channels
-					weapon = player->isClient() ? "-Serverlist_Chat" : "GraalEngine";
+					if (params[1] == "irc")
+					{
+						// Listserver can confirm this stuff, and use it for having a count of players in channels
+						weapon = player->isClient() ? "-Serverlist_Chat" : "GraalEngine";
 
-					if (params[2] == "join")
-					{
-						CString channel = params[3].guntokenize();
-						if (player->addChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
-					}
-					else if (params[2] == "part")
-					{
-						CString channel = params[3].guntokenize();
-						if (player->inChatChannel(channel.text()))
-							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
+						if (params[2] == "join")
+						{
+							CString channel = params[3].guntokenize();
+							if (player->addChatChannel(channel.text()))
+								player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
+						}
+						else if (params[2] == "part")
+						{
+							CString channel = params[3].guntokenize();
+							if (player->inChatChannel(channel.text()))
+								player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
+						}
 					}
 				}
 			}
 		}
-	}
 
-	/*
-	if (type == "lister" && option == "simpleserverlist")
-	{
-		CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
-		int serverCount = 0;
-		while (paramsData.bytesLeft() > 0)
+		/*
+		if (type == "lister" && option == "simpleserverlist")
 		{
-			CString serverData = paramsData.readString("\n").guntokenizeI();
-			serverIds << serverData.readString("\n") << "\n";
-			serverNames << serverData.readString("\n") << "\n";
-			serverPCount << serverData.readString("\n") << "\n";
-			serverData.clear();
-			serverCount++;
+			CString serverIds = "updateservernames\n", serverNames = "", serverPCount = "updateserverplayers\n";
+			int serverCount = 0;
+			while (paramsData.bytesLeft() > 0)
+			{
+				CString serverData = paramsData.readString("\n").guntokenizeI();
+				serverIds << serverData.readString("\n") << "\n";
+				serverNames << serverData.readString("\n") << "\n";
+				serverPCount << serverData.readString("\n") << "\n";
+				serverData.clear();
+				serverCount++;
+			}
+
+			serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
+			serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
+
+			// TODO(joey): This is spamming clients non-stop!!!!!
+			m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
+			m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
+			serverIds.clear();
+			serverNames.clear();
+			serverPCount.clear();
 		}
+		*/
 
-		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
-		serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
-
-		// TODO(joey): This is spamming clients non-stop!!!!!
-		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
-		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
-		serverIds.clear();
-		serverNames.clear();
-		serverPCount.clear();
-	}
-	*/
-
-	player = m_server->getPlayer(playerId, PLTYPE_ANYPLAYER);
-	if (player)
-	{
-		if (type == "pmserverplayers")
+		player = m_server->getPlayer(playerId, PLTYPE_ANYPLAYER);
+		if (player)
 		{
-			player->updatePMPlayers(option, paramsData);
-		}
-		else
-		{
-			//m_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
+			if (type == "pmserverplayers")
+			{
+				player->updatePMPlayers(option, paramsData);
+			}
+			else
+			{
+				//m_server->getServerLog().out("[OUT] [RequestText] %s\n", message.text());
 
-			if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
-				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+				if (player->getVersion() >= CLVER_4_0211 || player->getVersion() > RCVER_1_1)
+					player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message);
+			}
 		}
 	}
 }

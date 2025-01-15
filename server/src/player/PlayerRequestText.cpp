@@ -163,14 +163,14 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 					CString channel = params[3];
 					CString sendMsg = "GraalEngine,irc,join,";
 					sendMsg << channel.gtokenize();
-					list.sendTextForPlayer(shared_from_this(), sendMsg);
+					list.requestTextForPlayer(shared_from_this(), sendMsg);
 				}
 				else if (option == "part")
 				{
 					CString channel = params[3];
 					CString sendMsg = "GraalEngine,irc,part,";
 					sendMsg << channel.gtokenize();
-					list.sendTextForPlayer(shared_from_this(), sendMsg);
+					list.requestTextForPlayer(shared_from_this(), sendMsg);
 				}
 				else if (option == "topic")
 				{
@@ -201,7 +201,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 						CString sendMsg = "GraalEngine,irc,privmsg,";
 						sendMsg << m_accountName << "," << channel.gtokenize() << "," << msg.gtokenize();
 						list.handleText(sendMsg);
-						list.sendTextForPlayer(shared_from_this(), sendMsg);
+						list.requestTextForPlayer(shared_from_this(), sendMsg);
 					}
 				}
 			}
@@ -214,7 +214,7 @@ bool Player::msgPLI_SENDTEXT(CString& pPacket)
 			if (!getGuest())
 			{
 				if (option == "verifybuddies" || option == "addbuddy" || option == "deletebuddy")
-					list.sendTextForPlayer(shared_from_this(), packet);
+					list.requestTextForPlayer(shared_from_this(), packet);
 			}
 
 			if (isRC())
