@@ -20,6 +20,14 @@
 				(npc.onReceiveText && 1 << 9)
 			);
 
+			env.global.sendtext = function(...args) {
+				return npc.sendtext(...args);
+			};
+
+			env.global.requesttext = function(...args) {
+				return npc.requesttext(...args);
+			};
+
 			if (npc.onCreated)
 				npc.onCreated.apply(npc, args);
 		} catch (e) {
@@ -130,6 +138,7 @@
 		try {
 			if (npc.onReceiveText) {
 				const textlines = tokenize(data, ',');
+				textlines.shift();
 				let texttype = textlines[0];
 				let textoptions = textlines[1];
 				textlines.shift();
@@ -327,14 +336,6 @@
 
 		env.global.sendtorc = function(...args) {
 			return server.sendtorc(...args);
-		};
-
-		env.global.sendtext = function(...args) {
-			return serverlist.sendtext(...args);
-		};
-
-		env.global.requesttext = function(...args) {
-			return serverlist.requesttext(...args);
 		};
 
 		env.global.sendtonc = function(...args) {

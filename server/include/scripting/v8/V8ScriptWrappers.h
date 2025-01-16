@@ -78,7 +78,7 @@ inline std::string wrapScript<NPC>(const std::string_view& code)
 {
 	// self.onCreated || onCreated, for first declared to take precedence
 	// if (onCreated) for latest function to override
-	static const char* prefixString = "(function(npc) {"
+	static auto* prefixString = "(function(npc) {"
 									  "var onCreated, onTimeout, onNpcWarped, onPlayerChats, onPlayerEnters, onPlayerLeaves, onPlayerTouchsMe, onPlayerLogin, onPlayerLogout, onReceiveText;"
 									  "const self = npc;"
 									  "if (onCreated) self.onCreated = onCreated;"
@@ -93,10 +93,10 @@ inline std::string wrapScript<NPC>(const std::string_view& code)
 									  "if (onReceiveText) self.onReceiveText = onReceiveText;"
 									  "\n";
 
-	std::string wrappedCode = std::string(prefixString);
+	auto wrappedCode = std::string(prefixString);
 
-	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
+	const auto publicFunctions = getPublicFunctions(code);
+	const auto fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);
@@ -108,13 +108,13 @@ class Player;
 template<>
 inline std::string wrapScript<Player>(const std::string_view& code)
 {
-	static const char* prefixString = "(function(player) {"
-									  "const self = player;\n";
+	static auto* prefixString = "(function(player) {"
+								"const self = player;\n";
 
-	std::string wrappedCode = std::string(prefixString);
+	auto wrappedCode = std::string(prefixString);
 
-	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
+	const auto publicFunctions = getPublicFunctions(code);
+	const auto fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);
@@ -126,16 +126,16 @@ class Weapon;
 template<>
 inline std::string wrapScript<Weapon>(const std::string_view& code)
 {
-	static const char* prefixString = "(function(weapon) {"
-									  "var onCreated, onActionServerSide;"
-									  "const self = weapon;"
-									  "self.onCreated = onCreated;"
-									  "self.onActionServerSide = onActionServerSide;\n";
+	static auto* prefixString = "(function(weapon) {"
+								"var onCreated, onActionServerSide;"
+								"const self = weapon;"
+								"self.onCreated = onCreated;"
+								"self.onActionServerSide = onActionServerSide;\n";
 
-	std::string wrappedCode = std::string(prefixString);
+	auto wrappedCode = std::string(prefixString);
 
-	std::string publicFunctions = getPublicFunctions(code);
-	std::string fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
+	const auto publicFunctions = getPublicFunctions(code);
+	const auto fixedCode = std::regex_replace(std::string(code), word_regex, "function $2(");
 
 	wrappedCode.append(fixedCode);
 	wrappedCode.append(publicFunctions);

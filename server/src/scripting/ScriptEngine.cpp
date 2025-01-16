@@ -21,7 +21,6 @@ extern void bindClass_LevelChest(ScriptEngine* scriptEngine);
 extern void bindClass_NPC(ScriptEngine* scriptEngine);
 extern void bindClass_Player(ScriptEngine* scriptEngine);
 extern void bindClass_Server(ScriptEngine* scriptEngine);
-extern void bindClass_ServerList(ScriptEngine* scriptEngine);
 extern void bindClass_Weapon(ScriptEngine* scriptEngine);
 
 ScriptEngine::~ScriptEngine()
@@ -54,7 +53,6 @@ bool ScriptEngine::initialize()
 								   // Bind classes to be used for scripts
 								   bindClass_Environment(engine);
 								   bindClass_Server(engine);
-								   bindClass_ServerList(engine);
 								   bindClass_Level(engine);
 								   bindClass_LevelLink(engine);
 								   bindClass_LevelSign(engine);
@@ -71,7 +69,6 @@ bool ScriptEngine::initialize()
 	// Bind the server into two separate objects
 	m_environmentObject = ScriptFactory::wrapObject(m_env, "environment", m_server);
 	m_serverObject = ScriptFactory::wrapObject(m_env, "server", m_server);
-	m_serverListObject = ScriptFactory::wrapObject(m_env, "serverlist", &m_server->getServerList());
 
 	// Execute the bootstrap function
 	m_env->callFunctionInScope([&]() -> void
@@ -163,11 +160,6 @@ void ScriptEngine::cleanup(bool shutDown)
 	if (m_serverObject)
 	{
 		m_serverObject.reset();
-	}
-
-	if (m_serverListObject)
-	{
-		m_serverListObject.reset();
 	}
 
 	// Cleanup the Script Environment

@@ -1486,6 +1486,77 @@ void NPC_Save_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Prope
 	info.GetReturnValue().Set(value);
 }
 
+
+CString HandleServerTextObject(v8::Isolate* isolate, const v8::Local<v8::Context>& context, const v8::Local<v8::Value>& object)
+{
+	CString ret;
+	if (object->IsString())
+	{
+		ret << CString(*v8::String::Utf8Value(isolate, object->ToString(context).ToLocalChecked())).gtokenizeI() << "\n";
+	}
+	else if (object->IsArray())
+	{
+		const auto subArray = object.As<v8::Array>();
+		auto subText = CString("");
+		for (int j = 0; j < subArray->Length(); j++)
+		{
+			v8::Local<v8::Value> item;
+			if (!subArray->Get(context, j).ToLocal(&item)) continue;
+
+			subText << HandleServerTextObject(isolate, context, item);
+		}
+		ret << subText.gtokenizeI() << "\n";
+	}
+
+	return ret;
+}
+
+void NPC_Function_SendText(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	auto* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	const auto context = args.GetIsolate()->GetCurrentContext();
+	const auto* npcObject = unwrapObject<NPC>(args.This());
+
+	auto sendText = CString() << npcObject->getName() << "\n";
+	for (int i = 1; i < args.Length(); i++)
+		sendText << HandleServerTextObject(isolate, context, args[i]);
+
+	if (!sendText.isEmpty())
+	{
+		const auto data = args.Data().As<v8::External>();
+		const auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
+		auto serverList = scriptEngine->getServer()->getServerList();
+		serverList.sendText(sendText.gtokenizeI());
+	}
+}
+
+void NPC_Function_RequestText(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+	auto* isolate = args.GetIsolate();
+
+	V8ENV_THROW_CONSTRUCTOR(args, isolate);
+	V8ENV_THROW_MINARGCOUNT(args, isolate, 1);
+
+	const auto context = args.GetIsolate()->GetCurrentContext();
+	const auto* npcObject = unwrapObject<NPC>(args.This());
+
+	auto requestText = CString() << npcObject->getName() << "\n";
+	for (int i = 0; i < args.Length(); i++)
+		requestText << HandleServerTextObject(isolate, context, args[i]);
+
+	if (!requestText.isEmpty())
+	{
+		const auto data = args.Data().As<v8::External>();
+		const auto* scriptEngine = static_cast<ScriptEngine*>(data->Value());
+		auto serverList = scriptEngine->getServer()->getServerList();
+		serverList.requestText(requestText.gtokenizeI());
+	}
+}
+
 void bindClass_NPC(ScriptEngine* scriptEngine)
 {
 	// Retrieve v8 environment
@@ -1537,6 +1608,8 @@ void bindClass_NPC(ScriptEngine* scriptEngine)
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "registerTrigger"), v8::FunctionTemplate::New(isolate, NPC_Function_RegisterTrigger, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "setpm"), v8::FunctionTemplate::New(isolate, NPC_Function_SetPM, engine_ref));
 	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "scheduleevent"), v8::FunctionTemplate::New(isolate, NPC_Function_ScheduleEvent, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "sendtext"), v8::FunctionTemplate::New(isolate, NPC_Function_SendText, engine_ref));
+	npc_proto->Set(v8::String::NewFromUtf8Literal(isolate, "requesttext"), v8::FunctionTemplate::New(isolate, NPC_Function_RequestText, engine_ref));
 
 	// Properties
 	npc_proto->SetAccessor(v8::String::NewFromUtf8Literal(isolate, "ani"), NPC_GetStr_Ani, NPC_SetStr_Ani);

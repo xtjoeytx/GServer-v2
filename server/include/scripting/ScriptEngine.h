@@ -47,7 +47,6 @@ public:
 	Server* getServer() const;
 	IScriptEnv* getScriptEnv() const;
 	IScriptObject<Server>* getServerObject() const;
-	IScriptObject<ServerList>* getServerListObject() const;
 
 	bool executeNpc(NPC* npc);
 	bool executeWeapon(Weapon* weapon);
@@ -98,7 +97,6 @@ private:
 	IScriptFunction* m_bootstrapFunction = nullptr;
 	std::unique_ptr<IScriptObject<Server>> m_environmentObject;
 	std::unique_ptr<IScriptObject<Server>> m_serverObject;
-	std::unique_ptr<IScriptObject<ServerList>> m_serverListObject;
 
 	std::chrono::high_resolution_clock::time_point m_lastScriptTimer = std::chrono::high_resolution_clock::now();
 	std::chrono::nanoseconds m_accumulator = std::chrono::nanoseconds(0);
@@ -152,10 +150,6 @@ inline IScriptObject<Server>* ScriptEngine::getServerObject() const
 	return m_serverObject.get();
 }
 
-inline IScriptObject<ServerList>* ScriptEngine::getServerListObject() const
-{
-	return m_serverListObject.get();
-}
 
 inline IScriptFunction* ScriptEngine::getCallBack(const std::string& callback) const
 {
