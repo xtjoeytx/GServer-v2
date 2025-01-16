@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "BabyDI.h"
+#include "ServerList.h"
 
 #include "scripting/ScriptAction.h"
 #include "scripting/ScriptFactory.h"
@@ -148,6 +149,7 @@ inline IScriptObject<Server>* ScriptEngine::getServerObject() const
 {
 	return m_serverObject.get();
 }
+
 
 inline IScriptFunction* ScriptEngine::getCallBack(const std::string& callback) const
 {
