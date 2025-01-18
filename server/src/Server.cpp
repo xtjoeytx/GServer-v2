@@ -17,9 +17,9 @@
 #include "level/Map.h"
 #include "object/NPC.h"
 #include "object/Player.h"
-#include "object/PlayerLogin.h"
-#include "object/PlayerClient.h"
 #include "object/Weapon.h"
+#include "player/PlayerLogin.h"
+#include "player/PlayerClient.h"
 #include "scripting/ScriptClass.h"
 #include "scripting/ScriptOrigin.h"
 

@@ -8,8 +8,8 @@
 #include "level/LevelItem.h"
 #include "level/Map.h"
 #include "object/Player.h"
-#include "object/PlayerClient.h"
 #include "object/Weapon.h"
+#include "player/PlayerClient.h"
 #include "player/PlayerProps.h"
 
 ///////////////////////////////////////////////////////////////////////////////

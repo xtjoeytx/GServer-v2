@@ -9,6 +9,8 @@
 	#include "Server.h"
 	#include "object/NPC.h"
 	#include "object/Player.h"
+	#include "player/PlayerProps.h"
+	#include "player/PlayerClient.h"
 	#include "level/Level.h"
 	#include "scripting/ScriptEngine.h"
 	#include "scripting/v8/V8ScriptFunction.h"

@@ -14,8 +14,8 @@
 
 #include "Server.h"
 #include "level/Level.h"
-#include "object/PlayerClient.h"
-#include "object/PlayerRC.h"
+#include "player/PlayerClient.h"
+#include "player/PlayerRC.h"
 #include "utilities/TimeUnits.h"
 #include "utilities/StringUtils.h"
 

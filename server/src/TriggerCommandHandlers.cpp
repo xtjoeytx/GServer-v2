@@ -3,8 +3,8 @@
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Player.h"
-#include "object/PlayerClient.h"
 #include "object/Weapon.h"
+#include "player/PlayerClient.h"
 #include "level/Level.h"
 #include "utilities/StringUtils.h"
 

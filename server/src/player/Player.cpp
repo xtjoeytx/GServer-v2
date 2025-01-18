@@ -16,8 +16,8 @@
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Player.h"
-#include "object/PlayerClient.h" // Need to remove once we don't need to use std::dynamic_pointer_cast.
 #include "object/Weapon.h"
+#include "player/PlayerClient.h" // Need to remove once we don't need to use std::dynamic_pointer_cast.
 #include "level/Level.h"
 #include "level/Map.h"
 #include "utilities/StringUtils.h"

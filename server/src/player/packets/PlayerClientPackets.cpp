@@ -14,8 +14,8 @@
 #include "level/LevelHorse.h"
 #include "level/Map.h"
 #include "object/NPC.h"
-#include "object/PlayerClient.h"
 #include "object/Weapon.h"
+#include "player/PlayerClient.h"
 #include "player/PlayerProps.h"
 #include "utilities/StringUtils.h"
 
