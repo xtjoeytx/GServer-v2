@@ -144,7 +144,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
 	packet << npc->setProps(npcProps, m_versionId);
-	m_server->sendPacketToLevelOnlyGmapArea(packet, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id });
+	m_server->sendPacketToLevelArea(packet, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), level, { m_id });
 
 	return HandlePacketResult::Handled;
 }

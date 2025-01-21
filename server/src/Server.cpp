@@ -1608,6 +1608,55 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerCl
 	}
 }
 
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+{
+	auto playerp = player.lock();
+	if (!playerp) return;
+
+	auto level = playerp->getLevel();
+	if (!level) return;
+
+	auto sourcelevel = source_level.lock();
+	if (!sourcelevel) return;
+
+	// If we have no map, just send to the level players.
+	auto map = level->getMap();
+	if (!map)
+	{
+		for (auto id: level->getPlayers())
+		{
+			if (exclude.contains(id)) continue;
+			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
+				other->sendPacket(packet);
+		}
+	}
+	else
+	{
+		auto isGroupMap = map->isGroupMap();
+		auto sgmap{ playerp->getMapPosition() };
+
+		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
+		{
+			if (exclude.contains(id)) continue;
+			if (!other->isClient()) continue;
+			if (sendIf != nullptr && !sendIf(other.get())) continue;
+
+			auto othermap = other->getMap().lock();
+			if (!othermap || othermap != map) continue;
+			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
+
+			// Check if they are nearby before sending the packet.
+			auto ogmap{ other->getMapPosition() };
+			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+			{
+				other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << sourcelevel->getLevelName());
+				other->sendPacket(packet);
+				other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->account.level);
+			}
+		}
+	}
+}
+
 void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
