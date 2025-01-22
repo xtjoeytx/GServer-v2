@@ -15,7 +15,7 @@
 	#include "scripting/v8/V8ScriptObject.h"
 
 // PROPERTY: level.issparringzone
-void Level_GetBool_IsSparringZone(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetBool_IsSparringZone(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -23,7 +23,7 @@ void Level_GetBool_IsSparringZone(v8::Local<v8::String> prop, const v8::Property
 }
 
 // PROPERTY: level.name
-void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -32,7 +32,7 @@ void Level_GetStr_Name(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 }
 
 // PROPERTY: level.mapname
-void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -48,7 +48,7 @@ void Level_GetStr_MapName(v8::Local<v8::String> prop, const v8::PropertyCallback
 }
 
 // PROPERTY: level.signs
-void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -86,7 +86,7 @@ void Level_GetObject_Signs(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set(new_instance);
 }
 
-void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -99,7 +99,7 @@ void Level_Sign_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
-void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -110,7 +110,7 @@ void Level_Sign_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, signSize));
 }
 
-void Level_Sign_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+static void Level_Sign_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -132,7 +132,7 @@ void Level_Sign_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Sign_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Sign_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -171,7 +171,7 @@ void Level_Sign_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -211,7 +211,7 @@ void Level_Sign_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 }
 
 // Level Method: level.signs.add(x, y, signText)
-void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -240,7 +240,7 @@ void Level_Function_AddLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args
 }
 
 // Level Method: level.signs.remove(index)
-void Level_Function_RemoveLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_RemoveLevelSign(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -265,7 +265,7 @@ void Level_Function_RemoveLevelSign(const v8::FunctionCallbackInfo<v8::Value>& a
 }
 
 // PROPERTY: level.chests
-void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -303,7 +303,7 @@ void Level_GetObject_Chests(v8::Local<v8::String> prop, const v8::PropertyCallba
 	info.GetReturnValue().Set(new_instance);
 }
 
-void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -316,7 +316,7 @@ void Level_Chest_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value
 	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
-void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -327,7 +327,7 @@ void Level_Chest_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, chestSize));
 }
 
-void Level_Chest_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+static void Level_Chest_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -349,7 +349,7 @@ void Level_Chest_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Chest_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Chest_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -388,7 +388,7 @@ void Level_Chest_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -428,7 +428,7 @@ void Level_Chest_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 }
 
 // Level Method: level.chests.add(x, y, itemType, signIndex)
-void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -458,7 +458,7 @@ void Level_Function_AddLevelChest(const v8::FunctionCallbackInfo<v8::Value>& arg
 }
 
 // Level Method: level.chests.remove(index)
-void Level_Function_RemoveLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_RemoveLevelChest(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -483,7 +483,7 @@ void Level_Function_RemoveLevelChest(const v8::FunctionCallbackInfo<v8::Value>& 
 }
 
 // PROPERTY: level.npcs
-void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -521,7 +521,7 @@ void Level_GetObject_Npcs(v8::Local<v8::String> prop, const v8::PropertyCallback
 	info.GetReturnValue().Set(new_instance);
 }
 
-void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -539,7 +539,7 @@ void Level_Npc_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>&
 	}
 }
 
-void Level_Npc_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Npc_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -550,7 +550,7 @@ void Level_Npc_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo
 	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, npcSize));
 }
 
-void Level_Npc_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+static void Level_Npc_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -572,7 +572,7 @@ void Level_Npc_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Npc_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Npc_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -611,7 +611,7 @@ void Level_Npc_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -653,7 +653,7 @@ void Level_Npc_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 }
 
 // Level Method: level.npcs.add(x, y, script, options);
-void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -695,7 +695,7 @@ void Level_Function_AddLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 }
 
 // Level Method: level.npcs.remove(index)
-void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -727,7 +727,7 @@ void Level_Function_RemoveLevelNpc(const v8::FunctionCallbackInfo<v8::Value>& ar
 }
 
 // PROPERTY: level.players
-void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -755,7 +755,7 @@ void Level_GetArray_Players(v8::Local<v8::String> prop, const v8::PropertyCallba
 }
 
 // PROPERTY: level.tiles
-void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -792,7 +792,7 @@ void Level_GetObject_Tiles(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set(new_instance);
 }
 
-void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -807,7 +807,7 @@ void Level_Tile_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 	info.GetReturnValue().Set(tileValue);
 }
 
-void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -830,7 +830,7 @@ void Level_Tile_Setter(uint32_t index, v8::Local<v8::Value> value, const v8::Pro
 }
 
 // PROPERTY: level.links
-void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -868,7 +868,7 @@ void Level_GetObject_Links(v8::Local<v8::String> prop, const v8::PropertyCallbac
 	info.GetReturnValue().Set(new_instance);
 }
 
-void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -886,7 +886,7 @@ void Level_Link_Getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>
 	info.GetReturnValue().Set(v8_wrapped->handle(isolate));
 }
 
-void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
+static void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -897,7 +897,7 @@ void Level_Link_Length(v8::Local<v8::String> prop, const v8::PropertyCallbackInf
 	info.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(isolate, linkSize));
 }
 
-void Level_Link_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
+static void Level_Link_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -919,7 +919,7 @@ void Level_Link_Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Link_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Link_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate* isolate = info.GetIsolate();
 	v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -958,7 +958,7 @@ void Level_Link_Next(const v8::FunctionCallbackInfo<v8::Value>& info)
 	info.GetReturnValue().Set(result);
 }
 
-void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
+static void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	V8ENV_SAFE_UNWRAP(info, Level, levelObject);
 
@@ -998,7 +998,7 @@ void Level_Link_Iterator(const v8::FunctionCallbackInfo<v8::Value>& info)
 }
 
 // Level Method: level.links.add("dest.nw", x, y, width, height, newX, newY)
-void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1038,7 +1038,7 @@ void Level_Function_AddLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args
 }
 
 // Level Method: level.links.remove(index)
-void Level_Function_RemoveLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_RemoveLevelLink(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1063,7 +1063,7 @@ void Level_Function_RemoveLevelLink(const v8::FunctionCallbackInfo<v8::Value>& a
 }
 
 // Level Method: level.savelevel(levelname);
-void Level_Function_SaveLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_SaveLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1086,7 +1086,7 @@ void Level_Function_SaveLevel(const v8::FunctionCallbackInfo<v8::Value>& args)
 }
 
 // Level Method: level.findareanpcs(x, y, width, height);
-void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1123,7 +1123,7 @@ void Level_Function_FindAreaNpcs(const v8::FunctionCallbackInfo<v8::Value>& args
 }
 
 // Level Method: level.findnearestplayers(x, y);
-void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1185,7 +1185,7 @@ void Level_Function_FindNearestPlayers(const v8::FunctionCallbackInfo<v8::Value>
 }
 
 // Level Method: level.shoot(float x, float y, float z, float angle, float zangle, float strength, str ani, str aniparams);
-void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1226,7 +1226,7 @@ void Level_Function_Shoot(const v8::FunctionCallbackInfo<v8::Value>& args)
 }
 
 // Level Method: level.putexplosion(radius, x, y);
-void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1261,7 +1261,7 @@ void Level_Function_PutExplosion(const v8::FunctionCallbackInfo<v8::Value>& args
 }
 
 // Level Method: level.putnpc(x, y, script, options);
-void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1303,7 +1303,7 @@ void Level_Function_PutNPC(const v8::FunctionCallbackInfo<v8::Value>& args)
 }
 
 // Level Method: level.onwall(x, y);
-void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1328,7 +1328,7 @@ void Level_Function_OnWall(const v8::FunctionCallbackInfo<v8::Value>& args)
 }
 
 // Level Method: level.onwall2(x, y, w, h);
-void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
+static void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
 	v8::Isolate* isolate = args.GetIsolate();
 
@@ -1364,7 +1364,7 @@ void Level_Function_OnWall2(const v8::FunctionCallbackInfo<v8::Value>& args)
 	}
 }
 
-void Setup_LevelTiles(V8ScriptEnv* env, v8::Isolate* isolate)
+static void Setup_LevelTiles(V8ScriptEnv* env, v8::Isolate* isolate)
 { // Create the level tiles template
 	v8::Local<v8::FunctionTemplate> level_tiles_ctor = v8::FunctionTemplate::New(isolate);
 	level_tiles_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "tiles"));
@@ -1381,7 +1381,7 @@ void Setup_LevelTiles(V8ScriptEnv* env, v8::Isolate* isolate)
 	env->setConstructor("level.tiles", level_tiles_ctor);
 }
 
-void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+static void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
 { // Create the level link template
 	v8::Local<v8::FunctionTemplate> level_links_ctor = v8::FunctionTemplate::New(isolate);
 	level_links_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "links"));
@@ -1410,7 +1410,7 @@ void Setup_LevelLinks(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	env->setConstructor("level.links", level_links_ctor);
 }
 
-void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+static void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
 { // Create the level signs template
 	v8::Local<v8::FunctionTemplate> level_signs_ctor = v8::FunctionTemplate::New(isolate);
 	level_signs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "signs"));
@@ -1439,7 +1439,7 @@ void Setup_LevelSigns(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Exte
 	env->setConstructor("level.signs", level_signs_ctor);
 }
 
-void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+static void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
 { // Create the level chests template
 	v8::Local<v8::FunctionTemplate> level_chests_ctor = v8::FunctionTemplate::New(isolate);
 	level_chests_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "chests"));
@@ -1468,7 +1468,7 @@ void Setup_LevelChests(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::Ext
 	env->setConstructor("level.chests", level_chests_ctor);
 }
 
-void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
+static void Setup_LevelNpcs(V8ScriptEnv* env, v8::Isolate* isolate, v8::Local<v8::External>& engine_ref)
 { // Create the level chests template
 	v8::Local<v8::FunctionTemplate> level_npcs_ctor = v8::FunctionTemplate::New(isolate);
 	level_npcs_ctor->SetClassName(v8::String::NewFromUtf8Literal(isolate, "npcs"));

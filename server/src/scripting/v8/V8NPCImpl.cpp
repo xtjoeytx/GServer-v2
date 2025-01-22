@@ -260,7 +260,7 @@ void NPC_GetStr_BodyImage(v8::Local<v8::String> prop, const v8::PropertyCallback
 
 	auto& message = npcObject->getBodyImage();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -279,7 +279,7 @@ void NPC_GetStr_HeadImage(v8::Local<v8::String> prop, const v8::PropertyCallback
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHeadImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHeadImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -298,7 +298,7 @@ void NPC_GetStr_HorseImage(v8::Local<v8::String> prop, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHorseImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getHorseImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -355,7 +355,7 @@ void NPC_GetStr_ShieldImage(v8::Local<v8::String> prop, const v8::PropertyCallba
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getShieldImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getShieldImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -374,7 +374,7 @@ void NPC_GetStr_SwordImage(v8::Local<v8::String> prop, const v8::PropertyCallbac
 {
 	V8ENV_SAFE_UNWRAP(info, NPC, npcObject);
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getSwordImage().text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), npcObject->getSwordImage().c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -395,7 +395,7 @@ void NPC_GetStr_Message(v8::Local<v8::String> prop, const v8::PropertyCallbackIn
 
 	auto& message = npcObject->getChat();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), message.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 
@@ -416,7 +416,7 @@ void NPC_GetStr_Ani(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v
 
 	auto& propValue = npcObject->getGani();
 
-	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.text()).ToLocalChecked();
+	v8::Local<v8::String> strText = v8::String::NewFromUtf8(info.GetIsolate(), propValue.c_str()).ToLocalChecked();
 	info.GetReturnValue().Set(strText);
 }
 

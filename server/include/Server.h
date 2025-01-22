@@ -207,7 +207,7 @@ public:
 	void updateClass(const std::string& className, const std::string& classCode);
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
-	void logToFile(const std::string& fileName, const std::string& message);
+	void logToFile(const std::string& fileName, const std::string& message) const;
 
 	bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
 	bool setFlag(CString pFlag, bool pSendToPlayers = true);

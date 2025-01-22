@@ -21,7 +21,6 @@
 #include "BabyDI.h"
 
 #include "Account.h"
-#include "Server.h"
 #include "player/PlayerProps.h"
 #include "network/IPacketHandler.h"
 #include "utilities/IdGenerator.h"
@@ -74,6 +73,7 @@ struct CachedLevel
 	time_t modTime;
 };
 
+class Server;
 class Player : public CSocketStub, public IPacketHandler, public std::enable_shared_from_this<Player>
 {
 public:
@@ -125,7 +125,7 @@ public:
 	// Prop-Manipulation
 	virtual CString getProp(int pPropId) const;
 	virtual bool getProp(CString& buffer, int pPropId) const;
-	CString getProps(const PropList& props);
+	CString getProps(const PropList& props) const;
 	CString getPropsRC();
 	void setProps(CString& pPacket, uint8_t options, Player* rc = 0);
 	void setPropsRC(CString& pPacket, Player* rc);
@@ -294,7 +294,9 @@ public:
 	//HandlePacketResult msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 
 protected:
-	BabyDI_INJECT(Server, m_server);
+	// Cyclic, we have to create in the constructor.
+	// BabyDI_INJECT(Server, m_server);
+	Server* m_server = nullptr;
 
 	// Login functions.
 	//bool sendLoginClient();

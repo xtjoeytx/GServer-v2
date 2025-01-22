@@ -1,3 +1,6 @@
+#include <sys/stat.h>
+#include <time.h>
+
 #if defined(_WIN32) || defined(_WIN64)
 #include <direct.h>
 #define mkdir _mkdir
@@ -693,7 +696,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	// Save RC stuff.
 	std::vector<std::string> adminip = p->account.adminIpRange;
 	uint32_t rights = p->account.adminRights;
-	std::vector<std::string> folders{ std::from_range, p->account.folderList };
+	std::vector<std::string> folders;
+	std::ranges::copy(p->account.folderList, std::back_inserter(folders));
 
 	// Reset the player.
 	m_server->getAccountLoader().loadAccount("defaultaccount", p->account);
@@ -1246,7 +1250,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	std::string adminIp = pPacket.readChars(pPacket.readGUChar()).toString();
 	p->account.adminIpRange.clear();
-	std::ranges::copy(string::split(adminIp, std::string_view{ "," }) | string::as_string, std::back_inserter(p->account.adminIpRange));
+	std::ranges::copy(string::splitHard(adminIp, std::string_view{ "," }), std::back_inserter(p->account.adminIpRange));
 
 	// Untokenize and load the directories.
 	std::vector<std::string> folders = string::fromCSV(pPacket.readChars(pPacket.readGUShort()).toString());
@@ -1788,7 +1792,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	if (wcsize != 0)
 	{
 		wcstr = new wchar_t[wcsize + 1];
-		memset((void*)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		memset((void*)wcstr, 0, (static_cast<size_t>(wcsize) + 1) * sizeof(wchar_t));
 		MultiByteToWideChar(CP_UTF8, 0, source.text(), source.length(), wcstr, wcsize);
 	}
 	else
@@ -1840,7 +1844,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	if (wcsize != 0)
 	{
 		wcstr = new wchar_t[wcsize + 1];
-		memset((void*)wcstr, 0, (wcsize + 1) * sizeof(wchar_t));
+		memset((void*)wcstr, 0, (static_cast<size_t>(wcsize) + 1) * sizeof(wchar_t));
 		MultiByteToWideChar(CP_UTF8, 0, filePath.text(), filePath.length(), wcstr, wcsize);
 	}
 	else
@@ -1910,7 +1914,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	if (f1_wcsize != 0)
 	{
 		f1_wcstr = new wchar_t[f1_wcsize + 1];
-		memset((void*)f1_wcstr, 0, (f1_wcsize + 1) * sizeof(wchar_t));
+		memset((void*)f1_wcstr, 0, (static_cast<size_t>(f1_wcsize) + 1) * sizeof(wchar_t));
 		MultiByteToWideChar(CP_UTF8, 0, f1path.text(), f1path.length(), f1_wcstr, f1_wcsize);
 	}
 	else
@@ -1926,7 +1930,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	if (f2_wcsize != 0)
 	{
 		f2_wcstr = new wchar_t[f2_wcsize + 1];
-		memset((void*)f2_wcstr, 0, (f2_wcsize + 1) * sizeof(wchar_t));
+		memset((void*)f2_wcstr, 0, (static_cast<size_t>(f2_wcsize) + 1) * sizeof(wchar_t));
 		MultiByteToWideChar(CP_UTF8, 0, f2path.text(), f2path.length(), f2_wcstr, f2_wcsize);
 	}
 	else

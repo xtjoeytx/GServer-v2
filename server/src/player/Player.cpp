@@ -131,6 +131,7 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 Player::Player(CSocket* pSocket, uint16_t pId)
 	: m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
+	m_server = BabyDI::Get<Server>();
 	m_lastData = time(0);
 	m_serverName = m_server->getName();
 

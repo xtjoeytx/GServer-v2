@@ -1,3 +1,4 @@
+#include <cmath>
 #include <IDebug.h>
 #include <IEnums.h>
 
@@ -424,7 +425,7 @@ bool PlayerClient::sendLogin()
 		if (days != 0)
 		{
 			// Find the new deviation.
-			float deviate = std::min(350.0f, sqrt((account.eloDeviation * account.eloDeviation) + (c * c) * days));
+			float deviate = std::min(350.0f, static_cast<float>(sqrt((account.eloDeviation * account.eloDeviation) + (c * c) * days)));
 
 			// Set the new rating.
 			account.eloDeviation = deviate;

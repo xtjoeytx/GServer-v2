@@ -203,11 +203,11 @@ public:
 
 	// NPCPROP functions begin
 
-	const CString& getChat() const;
-	void setChat(const CString& msg);
+	const std::string& getChat() const;
+	void setChat(const std::string& msg);
 
-	const CString& getGani() const;
-	void setGani(const CString& gani);
+	const std::string& getGani() const;
+	void setGani(const std::string& gani);
 
 	const std::string& getImage() const;
 	void setImage(const std::string& image);
@@ -225,19 +225,19 @@ public:
 	int getDarts() const;
 	void setDarts(int val);
 
-	const CString& getBodyImage() const;
+	const std::string& getBodyImage() const;
 	void setBodyImage(const std::string& pBodyImage);
 
-	const CString& getHeadImage() const;
+	const std::string& getHeadImage() const;
 	void setHeadImage(const std::string& pHeadImage);
 
-	const CString& getHorseImage() const;
+	const std::string& getHorseImage() const;
 	void setHorseImage(const std::string& pHeadImage);
 
-	const CString& getShieldImage() const;
+	const std::string& getShieldImage() const;
 	void setShieldImage(const std::string& pShieldImage);
 
-	const CString& getSwordImage() const;
+	const std::string& getSwordImage() const;
 	void setSwordImage(const std::string& pSwordImage);
 
 	// NPCPROP functions end
@@ -453,26 +453,26 @@ inline void NPC::setSave(unsigned int idx, unsigned char val)
 
 //////////
 
-inline const CString& NPC::getChat() const
+inline const std::string& NPC::getChat() const
 {
 	return m_character.chatMessage;
 }
 
-inline void NPC::setChat(const CString& msg)
+inline void NPC::setChat(const std::string& msg)
 {
-	m_character.chatMessage = msg.subString(0, std::min<size_t>(msg.length(), 223)).toString();
+	m_character.chatMessage = msg.substr(0, std::min<size_t>(msg.length(), 223));
 }
 
 //////////
 
-inline const CString& NPC::getGani() const
+inline const std::string& NPC::getGani() const
 {
 	return m_character.gani;
 }
 
-inline void NPC::setGani(const CString& gani)
+inline void NPC::setGani(const std::string& gani)
 {
-	m_character.gani = gani.subString(0, std::min<size_t>(gani.length(), 223)).toString();
+	m_character.gani = gani.substr(0, std::min<size_t>(gani.length(), 223));
 }
 
 //////////
@@ -535,7 +535,7 @@ inline void NPC::setNickname(const std::string& pNick)
 
 //////////
 
-inline const CString& NPC::getBodyImage() const
+inline const std::string& NPC::getBodyImage() const
 {
 	return m_character.bodyImage;
 }
@@ -547,7 +547,7 @@ inline void NPC::setBodyImage(const std::string& pBodyImage)
 
 //////////
 
-inline const CString& NPC::getHeadImage() const
+inline const std::string& NPC::getHeadImage() const
 {
 	return m_character.headImage;
 }
@@ -559,7 +559,7 @@ inline void NPC::setHeadImage(const std::string& pHeadImage)
 
 //////////
 
-inline const CString& NPC::getHorseImage() const
+inline const std::string& NPC::getHorseImage() const
 {
 	return m_character.horseImage;
 }
@@ -571,7 +571,7 @@ inline void NPC::setHorseImage(const std::string& pHorseImage)
 
 //////////
 
-inline const CString& NPC::getShieldImage() const
+inline const std::string& NPC::getShieldImage() const
 {
 	return m_character.shieldImage;
 }
@@ -583,7 +583,7 @@ inline void NPC::setShieldImage(const std::string& pShieldImage)
 
 //////////
 
-inline const CString& NPC::getSwordImage() const
+inline const std::string& NPC::getSwordImage() const
 {
 	return m_character.swordImage;
 }

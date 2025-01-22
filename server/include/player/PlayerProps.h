@@ -8,8 +8,6 @@
 
 #include "BabyDI.h"
 
-class Server;
-
 enum PlayerProp : int
 {
 	PLPROP_NICKNAME = 0,
@@ -159,8 +157,6 @@ struct PropLimits
 	static uint8_t applyMaxHitpoints(uint8_t maxHitpoints);
 	static int8_t applySwordPower(int8_t swordPower);
 	static uint8_t applyShieldPower(uint8_t shieldPower);
-
-	BabyDI_INJECT(Server, m_server);
 };
 
 // Gani attributes in order of their property number.

@@ -148,12 +148,14 @@ auto unescapeQuotes(StringVariant auto const& str)
 ///////////////////////////////////////////////////////////////////////////////
 
 // Splits a string on the specified delimiter, returning a range.
+/* GCC hates this.
 auto split(std::string_view str, std::string_view delim = "\n"sv)
 {
 	return str
 		| std::views::split(delim)
 		| std::views::transform([](auto r) { return std::string_view{ r }; });
 }
+*/
 
 // Splits a string on the specified delimiter from a list, returning a vector of strings.
 auto splitHard(StringViewVariant auto const& str, StringViewVariant auto delims = " \t\n\r"sv)
@@ -253,7 +255,7 @@ auto toCSV(ForwardRangeNotString auto&& range)
 // Converts a string to a CSV string, splitting on the specified delimiter.
 auto toCSV(StringViewVariant auto const& str, char delim = '\n')
 {
-	auto s = split(str, std::string_view(&delim, 1));
+	auto s = splitHard(str, std::string_view(&delim, 1));
 	return toCSV(s);
 }
 

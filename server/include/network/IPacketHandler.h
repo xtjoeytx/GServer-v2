@@ -42,7 +42,7 @@ public:
 	uint32_t InvalidPackets = 0;
 
 public:
-	PacketHandleMode PacketHandleMode = PacketHandleMode::OLDPROTOCOL;
+	PacketHandleMode HandleMode = PacketHandleMode::OLDPROTOCOL;
 	bool RemoveNewlinesFromRawPacket = false;
 	bool RemoveNewlineFromFileUpload = false;
 

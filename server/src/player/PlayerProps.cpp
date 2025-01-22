@@ -7,6 +7,7 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
+#include "BabyDI.h"
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Player.h"
@@ -20,13 +21,15 @@
 
 uint8_t PropLimits::applyMaxHitpoints(uint8_t maxHitpoints)
 {
-	auto heartLimit = std::min(m_server->getSettings().getInt("heartlimit", 3), 20);
+	auto server = BabyDI::Get<Server>();
+	auto heartLimit = std::min(server->getSettings().getInt("heartlimit", 3), 20);
 	return std::clamp(maxHitpoints, static_cast<uint8_t>(0), static_cast<uint8_t>(heartLimit));
 }
 
 int8_t PropLimits::applySwordPower(int8_t swordPower)
 {
-	auto& settings = m_server->getSettings();
+	auto server = BabyDI::Get<Server>();
+	auto& settings = server->getSettings();
 	int8_t minimum = (settings.getBool("healswords", false) ? -(settings.getInt("swordlimit", 3)) : 0);
 	int8_t maximum = settings.getInt("swordlimit", 3);
 	return std::clamp(swordPower, minimum, maximum);
@@ -34,7 +37,8 @@ int8_t PropLimits::applySwordPower(int8_t swordPower)
 
 uint8_t PropLimits::applyShieldPower(uint8_t shieldPower)
 {
-	return std::clamp(shieldPower, static_cast<uint8_t>(0), static_cast<uint8_t>(m_server->getSettings().getInt("shieldlimit", 3)));
+	auto server = BabyDI::Get<Server>();
+	return std::clamp(shieldPower, static_cast<uint8_t>(0), static_cast<uint8_t>(server->getSettings().getInt("shieldlimit", 3)));
 }
 
 /*
@@ -1232,7 +1236,7 @@ void Player::sendProps(const PropList& props)
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString Player::getProps(const PropList& props)
+CString Player::getProps(const PropList& props) const
 {
 	CString propPacket;
 
@@ -1251,7 +1255,7 @@ CString Player::getProps(const PropList& props)
 
 		if (i == PLPROP_ATTACHNPC)
 		{
-			if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client != nullptr && client->m_attachNPC != 0)
+			if (auto client = std::dynamic_pointer_cast<const PlayerClient>(shared_from_this()); client != nullptr && client->m_attachNPC != 0)
 			{
 				propPacket >> (char)i;
 				getProp(propPacket, i);

@@ -62,10 +62,11 @@ bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
 
 flagPair PlainTextAccountLoader::decomposeFlag(const std::string& flag) const
 {
+	auto server = BabyDI::Get<Server>();
 	flagPair result;
 	auto sep = flag.find('=');
 	result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
-	if (m_server->getSettings().getBool("cropflags", true))
+	if (server->getSettings().getBool("cropflags", true))
 	{
 		// If cropflags is enabled, crop the flag to 223 characters.
 		// Subtract the length of the flag name and the = character from 223 to determine the space left for the flag value.
@@ -90,13 +91,15 @@ chestPair PlainTextAccountLoader::decomposeChest(const std::string& chest) const
 
 bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& account)
 {
+	auto server = BabyDI::Get<Server>();
+
 	// Find the account to load.
 	bool loadedFromDefault = false;
-	auto accountFS = m_server->getAccountsFileSystem();
+	auto accountFS = server->getAccountsFileSystem();
 	auto path = accountFS->findi(std::format("{}.txt", accountName));
 	if (path.length() == 0)
 	{
-		path = m_server->getServerPath() << "accounts/defaultaccount.txt";
+		path = server->getServerPath() << "accounts/defaultaccount.txt";
 		FileSystem::fixPathSeparators(path);
 		loadedFromDefault = true;
 	}
@@ -245,7 +248,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (m_server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
+			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
 			{
 				account.name = std::format("pc:{:6}", v);
 				break;
@@ -263,7 +266,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 	// Also, save the account and add it to the file system.
 	if (loadedFromDefault)
 	{
-		auto& settings = m_server->getSettings();
+		auto& settings = server->getSettings();
 
 		// Check to see if we are overriding our start level and position.
 		if (settings.exists("startlevel"))
@@ -288,6 +291,8 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 
 bool PlainTextAccountLoader::saveAccount(const Account& account)
 {
+	auto server = BabyDI::Get<Server>();
+
 	// Don't save 'Load Only' or RC accounts.
 	if (account.loadOnly)
 		return false;
@@ -374,15 +379,15 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "LASTFOLDER", account.lastFolderAccessed, "");
 
 	// Get the file name for the account.
-	CString accountFileName = m_server->getAccountsFileSystem()->fileExistsAs(CString() << account.name << ".txt");
+	CString accountFileName = server->getAccountsFileSystem()->fileExistsAs(CString() << account.name << ".txt");
 	if (accountFileName.isEmpty())
 		accountFileName = CString() << account.name << ".txt";
 
 	// Save the account now.
-	CString accpath = m_server->getServerPath() << "accounts/" << accountFileName;
+	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
 	FileSystem::fixPathSeparators(accpath);
 	if (!CString(newFile).save(accpath))
-		m_server->getRCLog().out("** Error saving account: %s\n", account.name.c_str());
+		server->getRCLog().out("** Error saving account: %s\n", account.name.c_str());
 
 	return true;
 }

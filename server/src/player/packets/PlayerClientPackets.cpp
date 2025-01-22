@@ -1,5 +1,6 @@
 #include <chrono>
 #include <ranges>
+#include <cmath>
 
 #include <CString.h>
 
@@ -804,7 +805,7 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 		}
 
 		// Send the weapon to the player now.
-		if (!std::ranges::contains(account.weapons, weapon->getName()))
+		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->getName()) != std::ranges::end(account.weapons))
 			this->addWeapon(weapon);
 	}
 
@@ -1120,7 +1121,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setProps(CString() >> (char)(GaniAttributePropList[attrNum - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+						setProps(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
 					}
 				}
 			}

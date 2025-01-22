@@ -86,7 +86,7 @@ struct Account
 
 	bool hasRight(uint32_t right) const { return (adminRights & right); }
 	bool hasChest(std::string_view level, int8_t x, int8_t y) const;
-	bool hasWeapon(std::string_view weapon) const { return std::ranges::contains(weapons, weapon); }
+	bool hasWeapon(std::string_view weapon) const { return std::ranges::find(std::ranges::begin(weapons), std::ranges::end(weapons), weapon) != std::ranges::end(weapons); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,7 +94,6 @@ struct Account
 using flagPair = std::pair<std::string, std::string>;
 using chestPair = std::pair<std::string, std::pair<int8_t, int8_t>>;
 
-class Server;
 class IAccountLoader
 {
 public:
@@ -103,9 +102,6 @@ public:
 
 public:
 	virtual bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const = 0;
-
-protected:
-	BabyDI_INJECT(Server, m_server);
 };
 
 class PlainTextAccountLoader : public IAccountLoader

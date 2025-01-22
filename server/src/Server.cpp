@@ -1443,7 +1443,7 @@ bool Server::isStaff(const CString& accountName)
 	return false;
 }
 
-void Server::logToFile(const std::string& fileName, const std::string& message)
+void Server::logToFile(const std::string& fileName, const std::string& message) const
 {
 	CString fileNamePath = CString() << getServerPath().remove(0, static_cast<int>(getBaseHomePath().length())) << "logs/";
 
