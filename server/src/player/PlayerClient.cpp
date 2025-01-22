@@ -1129,10 +1129,14 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 	auto pLevel = m_currentLevel.lock();
 	if (pLevel) return pLevel;
 
+	/*
+	// TODO: This is causing problems with update level.  The old level is gone, so everybody will hit this during
+	// the level send when we try to tell other players we left the level.
 	if (isClient() && m_server->warpPlayerToSafePlace(m_id))
 	{
 		return m_currentLevel.lock();
 	}
+	*/
 
 	return {};
 }
