@@ -98,7 +98,7 @@ enum PlayerProp : int
 	// In Graal v5, where players have the Graal######## accounts, this is their chosen account alias (community name.)
 	PLPROP_COMMUNITYNAME = 82,
 };
-constexpr int PROPSCOUNT = 83;
+inline constexpr int PROPSCOUNT = 83;
 
 enum class PlayerListCategory : uint8_t
 {
@@ -128,8 +128,8 @@ struct PropLimits
 	// Shield, mirrorshield, lizardshield.
 	static constexpr uint8_t MaxShieldPower = 3;
 
-	// Glove1, glove2.
-	static constexpr uint8_t MaxGlovePower = 2;
+	// None?, ?, glove1, glove2.
+	static constexpr uint8_t MaxGlovePower = 3;
 
 	// Bomb, joltbomb, superbomb.
 	static constexpr uint8_t MaxBombPower = 3;
@@ -164,12 +164,12 @@ struct PropLimits
 };
 
 // Gani attributes in order of their property number.
-constexpr std::array<int, 30> GaniAttributePropList = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
+inline constexpr std::array<int, 30> GaniAttributePropList = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
 
 using PropList = std::array<bool, PROPSCOUNT>;
 
 // Sent to the player on login.
-constexpr PropList loginPropsClientSelf = // bool __sendLogin[PROPSCOUNT] = {
+inline constexpr PropList loginPropsClientSelf =
 {
 	false, true, true, true, true, true,    // 0-5
 	true, false, true, true, true, true,    // 6-11
@@ -188,7 +188,7 @@ constexpr PropList loginPropsClientSelf = // bool __sendLogin[PROPSCOUNT] = {
 };
 
 // Sent to nearby players when a player logs in.
-constexpr PropList loginPropsClientOthers = // bool __getLogin[PROPSCOUNT] = {
+inline constexpr PropList loginPropsClientOthers =
 {
 	true, false, false, false, false, false, // 0-5
 	false, false, true, true, true, true,    // 6-11
@@ -207,7 +207,7 @@ constexpr PropList loginPropsClientOthers = // bool __getLogin[PROPSCOUNT] = {
 };
 
 // Login props for NC that get sent to other players (currently unused, most likely incorrect).
-constexpr PropList loginPropsNC =
+inline constexpr PropList loginPropsNC =
 {
 	true, true, true, true, true, true,   // 0-5
 	true, true, true, true, true, true,   // 6-11
@@ -226,7 +226,7 @@ constexpr PropList loginPropsNC =
 };
 
 // Login props for RC that get sent to other players.
-constexpr PropList loginPropsRC = // bool __getRCLogin[PROPSCOUNT] = {
+inline constexpr PropList loginPropsRC =
 {
 	true, false, false, false, false, false,  // 0-5
 	false, false, false, false, false, true,  // 6-11
@@ -245,7 +245,7 @@ constexpr PropList loginPropsRC = // bool __getRCLogin[PROPSCOUNT] = {
 };
 
 // When one of these props change, they are sent to nearby players.
-constexpr PropList clientPropsSharedLocal = // bool __sendLocal[PROPSCOUNT] = {
+inline constexpr PropList clientPropsSharedLocal =
 {
 	false, false, true, false, false, false, // 0-5
 	false, false, true, true, true, true,    // 6-11
@@ -264,7 +264,7 @@ constexpr PropList clientPropsSharedLocal = // bool __sendLocal[PROPSCOUNT] = {
 };
 
 // When the RC views a player's account, these props are sent.
-constexpr PropList clientPropsForRCView = //bool __playerPropsRC[PROPSCOUNT] = {
+inline constexpr PropList clientPropsForRCView =
 {
 	true, true, true, true, true, true,       // 0-5
 	true, false, true, true, true, true,      // 6-11

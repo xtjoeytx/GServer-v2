@@ -614,8 +614,13 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 				break;
 
 			case NPCPROP_SPRITE:
-				m_character.sprite = pProps.readGUChar();
+			{
+				auto sprite = pProps.readGUChar();
+				if (clientVersion < CLVER_2_1)
+					m_character.sprite = sprite;
+				else m_character.sprite = sprite % 4;
 				break;
+			}
 
 			case NPCPROP_COLORS:
 				for (int i = 0; i < 5; i++)

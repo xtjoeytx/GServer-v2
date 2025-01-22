@@ -1624,16 +1624,6 @@ void PlayerClient::sendSignMessage(const CString& message)
 	sendPacket(CString() >> (char)PLO_SAY2 << message.replaceAll("\n", "#b"));
 }
 
-void PlayerClient::setAni(CString gani)
-{
-	if (gani.length() > 223)
-		gani.remove(223);
-
-	CString propPackage;
-	propPackage >> (char)PLPROP_GANI >> (char)gani.length() << gani;
-	setProps(propPackage, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PlayerClient::testSign()

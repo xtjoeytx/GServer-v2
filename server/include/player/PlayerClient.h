@@ -84,7 +84,6 @@ public:
 	void unfreezePlayer();
 	void sendRPGMessage(const CString& message);
 	void sendSignMessage(const CString& message);
-	void setAni(CString gani);
 	void setLastChatTime(time_t time) { m_lastChat = time; }
 	void setLastMovementTime(time_t time);
 	void dropItemsOnDeath();
