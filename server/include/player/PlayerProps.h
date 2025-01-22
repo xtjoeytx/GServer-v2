@@ -247,20 +247,20 @@ inline constexpr PropList loginPropsRC =
 // When one of these props change, they are sent to nearby players.
 inline constexpr PropList clientPropsSharedLocal =
 {
-	false, false, true, false, false, false, // 0-5
-	false, false, true, true, true, true,    // 6-11
-	true, true, false, true, true, true,     // 12-17
-	true, true, true, true, false, false,    // 18-23
-	true, true, false, false, false, false,  // 24-29
-	true, true, true, false, true, true,     // 30-35
-	true, true, true, true, true, true,      // 36-41
-	false, true, true, true, true, true,     // 42-47
-	true, true, true, false, false, true,    // 48-53
-	true, true, true, true, true, true,      // 54-59
-	true, true, true, true, true, true,      // 60-65
-	true, true, true, true, true, true,      // 66-71
-	true, true, true, false, false, false,   // 72-77
-	true, true, true, false, true,           // 78-82
+	true, false, true, false, false, false,   // 0-5
+	false, false, true, true, true, true,     // 6-11
+	true, true, false, true, true, true,      // 12-17
+	true, true, true, true, false, true,      // 18-23
+	true, false, false, false, false, false,  // 24-29
+	true, true, true, false, true, true,      // 30-35
+	true, true, true, true, true, true,       // 36-41
+	true, true, true, true, true, true,       // 42-47
+	true, true, true, false, false, true,     // 48-53
+	true, true, true, true, true, true,       // 54-59
+	true, true, true, true, true, true,       // 60-65
+	true, true, true, true, true, true,       // 66-71
+	true, true, true, false, false, false,    // 72-77
+	false, false, false, true, true,          // 78-82
 };
 
 // When the RC views a player's account, these props are sent.

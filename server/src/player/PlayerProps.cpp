@@ -116,12 +116,20 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 
 		case PLPROP_X:
-			buffer >> (char)(account.character.pixelX / 8);
+		{
+			auto val = static_cast<uint8_t>(account.character.pixelX / 8);
+			if (val == 233) val = 232;
+			buffer.writeGCharUnsafe(val);
 			return true;
+		}
 
 		case PLPROP_Y:
-			buffer >> (char)(account.character.pixelY / 8);
+		{
+			auto val = static_cast<uint8_t>(account.character.pixelY / 8);
+			if (val == 233) val = 232;
+			buffer.writeGCharUnsafe(val);
 			return true;
+		}
 
 		case PLPROP_Z:
 			// range: -25 to 85
@@ -693,7 +701,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_X:
-			account.character.pixelX = (pPacket.readGUChar() * 8);
+			account.character.pixelX = (pPacket.readGChar() * 8);
 			account.status &= (~PLSTATUS_PAUSED);
 
 			if (player != nullptr)
@@ -707,7 +715,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			break;
 
 		case PLPROP_Y:
-			account.character.pixelY = (pPacket.readGUChar() * 8);
+			account.character.pixelY = (pPacket.readGChar() * 8);
 			account.status &= (~PLSTATUS_PAUSED);
 
 			if (player != nullptr)
@@ -850,37 +858,37 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 				// It would also permanently hide the NPC when thrown and I couldn't bring it back.
 				// There are probably race conditions with how long it takes for the pick up and throw animations to fully play out.
 				break;
-				}
+			}
 
 			// Picked up.
 			if (player->getCarryNpcId() == 0 && newNpcId != 0)
+			{
+				// TODO: Remove when an npcserver is created.
+				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
 				{
-					// TODO: Remove when an npcserver is created.
-					if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
+					bool isOwner = true;
 					{
-						bool isOwner = true;
+						auto& playerList = m_server->getPlayerList();
+						for (auto& [otherId, other] : playerList)
 						{
-							auto& playerList = m_server->getPlayerList();
-							for (auto& [otherId, other] : playerList)
+							if (other.get() == this) continue;
+							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
 							{
-								if (other.get() == this) continue;
-								if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
-								{
-									// Somebody else got this NPC first.  Force the player to throw his down
-									// and tell the player to remove the NPC from memory.
-									sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
-									sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
+								// Somebody else got this NPC first.  Force the player to throw his down
+								// and tell the player to remove the NPC from memory.
+								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
+								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
 								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, player, { m_id });
-									isOwner = false;
-									newNpcId = 0;
-									break;
-								}
+								isOwner = false;
+								newNpcId = 0;
+								break;
 							}
 						}
 					}
 				}
-				player->setCarryNpcId(newNpcId);
 			}
+			player->setCarryNpcId(newNpcId);
+		}
 		break;
 
 		case PLPROP_APCOUNTER:
@@ -1003,7 +1011,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		/*
 	case PLPROP_UNKNOWN50:
 		break;
-*/
+		*/
 
 		case PLPROP_PCONNECTED:
 			break;

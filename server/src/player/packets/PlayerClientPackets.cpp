@@ -433,7 +433,13 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
 				if (pos != getX())
-					m_grMovementPackets >> (char)PLPROP_X >> (char)(pos * 2.0f) << "\n";
+				{
+					if (pos == -22) pos = -21.5f;
+					if (pos == 116) pos = 115.5f;
+					m_grMovementPackets >> (char)PLPROP_X;
+					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
+					m_grMovementPackets << "\n";
+				}
 				return HandlePacketResult::Handled;
 			}
 			else if (flagName == "gr.y")
@@ -441,7 +447,13 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
 				if (pos != getY())
-					m_grMovementPackets >> (char)PLPROP_Y >> (char)(pos * 2.0f) << "\n";
+				{
+					if (pos == -22) pos = -21.5f;
+					if (pos == 116) pos = 115.5f;
+					m_grMovementPackets >> (char)PLPROP_Y;
+					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
+					m_grMovementPackets << "\n";
+				}
 				return HandlePacketResult::Handled;
 			}
 			else if (flagName == "gr.z")

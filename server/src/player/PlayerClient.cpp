@@ -1216,11 +1216,9 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 	if (modTime == 0 || m_versionId < CLVER_2_1)
 	{
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
-		{
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 >> (char)(getX() * 2) >> (char)(getY() * 2) >> (char)(getZ() * 2 + 50) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
-		}
+			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp(PLPROP_X) << getProp(PLPROP_Y) << getProp(PLPROP_Z) >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
 		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP >> (char)(getX() * 2) >> (char)(getY() * 2) << account.level);
+			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp(PLPROP_X) << getProp(PLPROP_Y) << account.level);
 	}
 
 	// Send the level now.
@@ -1288,9 +1286,9 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		}
 
 		// Send links, signs, and mod time.
-		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
 		sendPacket(CString() << pLevel->getLinksPacket());
 		sendPacket(CString() << pLevel->getSignsPacket(this));
+		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
 	}
 
 	// Send board changes, chests, horses, and baddies.
@@ -1319,32 +1317,16 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
+
+	// Send NPCs.
 	if (!fromAdjacent || !m_pmap.expired())
 	{
-		// Send NPCs.
 		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP)
-		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
-
-			auto val = pLevel->getNpcsPacket(l_time, m_versionId);
-			sendPacket(val);
-
-			/*sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << m_pmap->getMapName());
-			CString pmapLevels = m_pmap->getLevels();
-			Level* tmpLvl;
-			while (pmapLevels.bytesLeft() > 0)
-			{
-				CString tmpLvlName = pmapLevels.readString("\n");
-				tmpLvl = Level::findLevel(tmpLvlName.guntokenizeI(), server);
-				if (tmpLvl != NULL)
-					sendPacket(CString() << tmpLvl->getNpcsPacket(l_time, m_versionId));
-			}*/
-		}
 		else
-		{
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
-			sendPacket(CString() << pLevel->getNpcsPacket(l_time, m_versionId));
-		}
+
+		sendPacket(CString() << pLevel->getNpcsPacket(l_time, m_versionId));
 	}
 
 	// Move the carry NPC to the new level.
