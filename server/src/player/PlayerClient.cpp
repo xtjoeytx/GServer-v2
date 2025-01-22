@@ -7,6 +7,7 @@
 #include "level/Level.h"
 #include "level/LevelItem.h"
 #include "level/Map.h"
+#include "object/NPC.h"
 #include "object/Player.h"
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
@@ -126,8 +127,27 @@ void PlayerClient::cleanup()
 {
 	if (m_id >= 0 && m_server != nullptr && m_loaded)
 	{
+		auto level = m_currentLevel.lock();
+
+		// Adjust carried NPC location.
+		if (m_carryNpcId != 0)
+		{
+			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+			{
+				auto curtime = time(0);
+				npc->setPixelX(account.character.pixelX + 8);
+				npc->setPixelY(account.character.pixelY + 16);
+				npc->setPropModTime(NPCPROP_X, curtime);
+				npc->setPropModTime(NPCPROP_Y, curtime);
+				npc->setPropModTime(NPCPROP_X2, curtime);
+				npc->setPropModTime(NPCPROP_Y2, curtime);
+				m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getProps(curtime), self(), level, {m_id});
+			}
+			m_carryNpcId = 0;
+		}
+
 		// Remove from the level.
-		if (!m_currentLevel.expired()) leaveLevel();
+		if (level != nullptr) leaveLevel();
 	}
 
 	// Clean up.
@@ -1323,13 +1343,29 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		}
 	}
 
-	// Send connecting player props to players in nearby levels.
-	if (auto level = m_currentLevel.lock(); level && !level->isSingleplayer())
+	// Move the carry NPC to the new level.
+	if (m_carryNpcId != 0)
 	{
+		pLevel->addNPC(m_carryNpcId);
+		if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+			npc->setLevel(pLevel);
+	}
+
+	// Send connecting player props to players in nearby levels.
+	if (!pLevel->isSingleplayer())
+	{
+		// If we are carrying an NPC, send the data.
+		if (m_carryNpcId != 0)
+		{
+			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+			{
+				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getProps(0);
+				m_server->sendPacketToLevelArea(carryNpcProps, self(), {m_id});
+			}
+		}
+
 		// Send my props.
-		// TODO: This really is a hack.  The packet sending functions should take a pointer.
-		if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client)
-			m_server->sendPacketToLevelArea(this->getProps(loginPropsClientOthers), client, { m_id });
+		m_server->sendPacketToLevelArea(this->getProps(loginPropsClientOthers), self(), {m_id});
 
 		// Get other player props.
 		if (auto map = m_pmap.lock(); map)
@@ -1354,7 +1390,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		}
 		else
 		{
-			for (auto otherid : level->getPlayers())
+			for (auto otherid : pLevel->getPlayers())
 			{
 				if (m_id == otherid) continue;
 				auto other = m_server->getPlayer(otherid);
@@ -1430,9 +1466,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)
 	{
-		// TODO: Remove hack.
-		if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client)
-			m_server->sendPacketToLevelArea(getProps(loginPropsClientOthers), client, { m_id });
+		m_server->sendPacketToLevelArea(getProps(loginPropsClientOthers), self(), {m_id});
 
 		for (auto id : pLevel->getPlayers())
 		{
@@ -1476,13 +1510,22 @@ bool PlayerClient::leaveLevel(bool resetCache)
 		leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
+	// If I am carrying an NPC, tell others the NPC left the level.
+	if (m_carryNpcId != 0)
+	{
+		if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+		{
+			levelp->removeNPC(m_carryNpcId);
+			CString deletePacket = CString() >> (char)PLO_NPCDEL << (short)m_carryNpcId;
+			m_server->sendPacketToOneLevel(deletePacket, levelp, { m_id });
+		}
+	}
+
 	// Tell everyone I left.
 	// This prop isn't used at all???  Maybe it is required for 1.41?
 	//	if (m_pmap && m_pmap->getType() != MAPTYPE_GMAP)
 	{
-		// TODO: Remove hack.
-		if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client)
-			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_JOINLEAVELVL >> (char)0, client, { m_id });
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_JOINLEAVELVL >> (char)0, self(), { m_id });
 
 		for (const auto& [pid, player] : players_of_type<PlayerClient>(m_server->getPlayerList()))
 		{

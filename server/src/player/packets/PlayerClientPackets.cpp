@@ -144,7 +144,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
 	packet << npc->setProps(npcProps, m_versionId);
-	m_server->sendPacketToLevelArea(packet, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), level, { m_id });
+	m_server->sendPacketToLevelArea(packet, self(), level, { m_id });
 
 	return HandlePacketResult::Handled;
 }
@@ -219,21 +219,7 @@ HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 {
-	// TODO: Remove when an npcserver is created.
-	if (!m_server->getSettings().getBool("duplicatecanbecarried", false) && m_carryNpcId != 0)
-	{
-		auto npc = m_server->getNPC(m_carryNpcId);
-		if (npc)
-		{
-			m_carryNpcThrown = true;
-
-			// Add the NPC back to the level if it never left.
-			auto level = getLevel();
-			if (npc->getLevel() == level)
-				level->addNPC(npc);
-		}
-	}
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_THROWCARRIED >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevel(CString() >> (char)PLO_THROWCARRIED >> (short)m_id, m_currentLevel, { m_id });
 	return HandlePacketResult::Handled;
 }
 
@@ -602,7 +588,7 @@ HandlePacketResult PlayerClient::msgPLI_WANTFILE(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOWIMG(CString& pPacket)
 {
-	m_server->sendPacketToLevelArea(CString() >> (char)PLO_SHOWIMG >> (short)m_id << (pPacket.text() + 1), std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id });
+	m_server->sendPacketToLevelArea(CString() >> (char)PLO_SHOWIMG >> (short)m_id << (pPacket.text() + 1), self(), { m_id });
 	return HandlePacketResult::Handled;
 }
 
@@ -911,7 +897,7 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
-	m_server->sendPacketToLevelOnlyGmapArea(nPacket, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id });
+	m_server->sendPacketToLevelOnlyGmapArea(nPacket, self(), {m_id});
 	return HandlePacketResult::Handled;
 }
 
@@ -1223,14 +1209,8 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
 
-	m_server->sendPacketToLevelArea(oldPacketBuf, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id }, [](const auto pl)
-									{
-										return pl->getVersion() < CLVER_5_07;
-									});
-	m_server->sendPacketToLevelArea(newPacketBuf, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id }, [](const auto pl)
-									{
-										return pl->getVersion() >= CLVER_5_07;
-									});
+	m_server->sendPacketToLevelArea(oldPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	m_server->sendPacketToLevelArea(newPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 
 	// ActionProjectile on server.
 	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
@@ -1272,14 +1252,8 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
 
-	m_server->sendPacketToLevelArea(oldPacketBuf, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id }, [](const auto pl)
-									{
-										return pl->getVersion() < CLVER_5_07;
-									});
-	m_server->sendPacketToLevelArea(newPacketBuf, std::dynamic_pointer_cast<PlayerClient>(shared_from_this()), { m_id }, [](const auto pl)
-									{
-										return pl->getVersion() >= CLVER_5_07;
-									});
+	m_server->sendPacketToLevelArea(oldPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	m_server->sendPacketToLevelArea(newPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 
 	return HandlePacketResult::Handled;
 }

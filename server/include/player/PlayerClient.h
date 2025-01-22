@@ -45,6 +45,9 @@ public:
 	virtual void cleanup() override;
 
 public:
+	std::shared_ptr<PlayerClient> self() { return std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); }
+
+public:
 	// Main methods.
 	virtual void doMain() override;
 	virtual bool doTimedEvents() override;
@@ -163,7 +166,6 @@ protected:
 	uint8_t m_carrySprite = -1;		// TODO: Make sure this is correct.
 	NPCID m_attachNPC = 0;
 	NPCID m_carryNpcId = 0;
-	bool m_carryNpcThrown = false;
 	std::unordered_set<std::string> m_knownFiles;
 
 	bool m_grMovementUpdated = false;

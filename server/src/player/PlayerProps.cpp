@@ -8,6 +8,7 @@
 #include <IUtil.h>
 
 #include "Server.h"
+#include "object/NPC.h"
 #include "object/Player.h"
 #include "player/PlayerClient.h"
 #include "level/Level.h"
@@ -836,14 +837,23 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			uint32_t newNpcId = pPacket.readGUInt();
 
-			if (player != nullptr)
+			if (player == nullptr)
+				break;
+
+			// Not supported on gmaps.
+			// If we want carry npcs to work with database npcs, a lot of work would be required.
+			// The throw range is 9 tiles.  We could probably send a move2 command on a throw.
+			if (auto map = player->getMap().lock(); map && map->getType() == MapType::GMAP)
 			{
-				// Thrown.
-				if (player->getCarryNpcId() != 0 && newNpcId == 0)
-				{
-					// TODO: Thrown
+				// I tried to throw the NPC and make it visible again, but there seems to be a race condition with the client.
+				// The client wasn't throwing the NPC automatically when setting the PLPROP_CARRYNPC to 0.
+				// It would also permanently hide the NPC when thrown and I couldn't bring it back.
+				// There are probably race conditions with how long it takes for the pick up and throw animations to fully play out.
+				break;
 				}
-				else
+
+			// Picked up.
+			if (player->getCarryNpcId() == 0 && newNpcId != 0)
 				{
 					// TODO: Remove when an npcserver is created.
 					if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
@@ -860,25 +870,17 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 									// and tell the player to remove the NPC from memory.
 									sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
 									sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
-									m_server->sendPacketToOneLevel(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, level, { m_id });
+								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, player, { m_id });
 									isOwner = false;
 									newNpcId = 0;
 									break;
 								}
 							}
 						}
-						if (isOwner)
-						{
-							// We own this NPC now so remove it from the level and have everybody else delete it.
-							auto npc = m_server->getNPC(newNpcId);
-							level->removeNPC(npc);
-							m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId, { m_id });
-						}
 					}
 				}
 				player->setCarryNpcId(newNpcId);
 			}
-		}
 		break;
 
 		case PLPROP_APCOUNTER:
@@ -920,9 +922,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			uint16_t udpPort = static_cast<uint16_t>(pPacket.readGInt());
 			if (player == nullptr) break;
 			player->m_udpport = udpPort;
-			if (m_id != -1 && m_loaded)
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_UDPPORT >> (int)player->m_udpport, this);
-			// TODO: udp support.
 			break;
 		}
 
@@ -966,7 +965,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			unsigned int npcID = pPacket.readGUInt();
 			if (player == nullptr) break;
 			player->m_attachNPC = npcID;
-			levelBuff >> (char)PLPROP_ATTACHNPC << getProp(PLPROP_ATTACHNPC);
 			break;
 		}
 
@@ -1168,7 +1166,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 	{
 		if (globalBuff.length() > 0)
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << globalBuff, { m_id });
-		if (levelBuff.length() > 0)
+		if (levelBuff.length() > 0 && player != nullptr)
 		{
 			// We need to arrange the props packet in a certain way depending
 			// on if our client supports precise movement or not.  Versions 2.3+
@@ -1176,8 +1174,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 			bool MOVE_PRECISE = false;
 			if (m_versionId >= CLVER_2_3) MOVE_PRECISE = true;
 
-			if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); client)
-				m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), client, { m_id });
+			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << (!MOVE_PRECISE ? levelBuff : levelBuff2) << (!MOVE_PRECISE ? levelBuff2 : levelBuff), player, { m_id });
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
