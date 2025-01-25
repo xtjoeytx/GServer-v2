@@ -26,6 +26,7 @@ Install [Visual Studio 2022](https://learn.microsoft.com/en-us/visualstudio/inst
 - Install the "C++ CMake tools for Windows" component.
 - Install the "NuGet package manager" component.
 - Install the "Windows SDK" component.
+- Install and configure [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell) (follow step 1, then set up the `VCPKG_ROOT` environment variable).
 
 #### Building the server with NPC-server support enabled
 A folder called GServer-v2 will be created. Remember to update the Visual Studio installation path to your Visual Studio installation path.
@@ -33,8 +34,6 @@ A folder called GServer-v2 will be created. Remember to update the Visual Studio
 git clone https://github.com/xtjoeytx/GServer-v2
 cd GServer-v2
 git submodule update --init --recursive
-
-.\vcpkg\bootstrap-vcpkg.bat
 
 "%programfiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 
