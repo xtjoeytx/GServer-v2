@@ -6,7 +6,6 @@
 #include <array>
 #include <type_traits>
 
-#include <IDebug.h>
 #include <IEnums.h>
 
 #include "IConfig.h"

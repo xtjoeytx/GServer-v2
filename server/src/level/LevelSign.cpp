@@ -1,5 +1,3 @@
-#include <IDebug.h>
-
 #include "object/Player.h"
 #include "level/LevelSign.h"
 

@@ -1,5 +1,3 @@
-#include <IDebug.h>
-
 #include <atomic>
 #include <csignal>
 #include <cstdlib>
@@ -94,12 +92,6 @@ int main(int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))
 		return 1;
-
-	#if (defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)) && defined(_MSC_VER)
-		#if defined(DEBUG) || defined(_DEBUG)
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-		#endif
-	#endif
 
 	{
 		// Shut down the server if we get a kill signal.
