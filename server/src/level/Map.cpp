@@ -10,6 +10,22 @@ Map::Map(MapType pType, bool pGroupMap)
 {
 }
 
+Map::Map(Map&& other) noexcept
+{
+	m_type = other.m_type;
+	m_modTime = other.m_modTime;
+	m_width = other.m_width;
+	m_height = other.m_height;
+	m_groupMap = other.m_groupMap;
+	m_loadFullMap = other.m_loadFullMap;
+	m_mapName = std::move(other.m_mapName);
+	m_mapImage = std::move(other.m_mapImage);
+	m_miniMapImage = std::move(other.m_miniMapImage);
+	m_levels = std::move(other.m_levels);
+	m_levelList = std::move(other.m_levelList);
+	m_preloadLevelList = std::move(other.m_preloadLevelList);
+}
+
 bool Map::load(const CString& pFileName)
 {
 	if (m_type == MapType::BIGMAP)

@@ -18,16 +18,10 @@
 #include "player/PlayerClient.h" // Need to remove once we don't need to use std::dynamic_pointer_cast.
 #include "level/Level.h"
 #include "level/Map.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
 using namespace graal::utilities;
-
-/*
-	Logs
-*/
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
-
 
 void ShootPacketNew::debug()
 {
@@ -172,11 +166,11 @@ void Player::cleanup()
 
 		// Log.
 		if (isClient())
-			serverlog.out(":: Client disconnected: %s\n", account.name.c_str());
+			log::printLine(log::server, ":: Client disconnected: {}", account.name);
 		else if (isRC())
-			serverlog.out(":: RC disconnected: %s\n", account.name.c_str());
+			log::printLine(log::server, ":: RC disconnected: {}", account.name);
 		else if (isNC())
-			serverlog.out(":: NC disconnected: %s\n", account.name.c_str());
+			log::printLine(log::server, ":: NC disconnected: {}", account.name);
 	}
 
 	if (m_playerSock)
@@ -354,7 +348,7 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 
 	// Warn for very large files.  These are the cause of many bug reports.
 	if (fileData.length() > 3145728) // 3MB
-		serverlog.out("[WARNING] Sending a large file (over 3MB): %s\n", pFile.text());
+		log::printLine(log::server, "[WARNING] Sending a large file (over 3MB): {}", pFile);
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
@@ -443,7 +437,7 @@ bool Player::sendLogin()
 		// Check and see if we are allowed in.
 		if (!isStaff() || !isAdminIp())
 		{
-			rclog.out("Attempted RC login by %s.\n", account.name.c_str());
+			log::printLine(log::rc, "Attempted RC login by {}.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 			return false;
 		}
@@ -862,7 +856,7 @@ HandlePacketResult Player::msgPLI_NULL(CString& pPacket)
 	InvalidPackets++;
 	if (InvalidPackets > 5)
 	{
-		serverlog.out("Player %s is sending invalid packets.\n", account.character.nickName.c_str());
+		log::printLine(log::server, "Player {} is sending invalid packets.", account.character.nickName);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 		return HandlePacketResult::Failed;
 	}
@@ -1017,7 +1011,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			auto pmPlayer = getExternalPlayer(pmPlayerId);
 			if (pmPlayer != nullptr)
 			{
-				serverlog.out("Sending PM to global player: %s.\n", pmPlayer->account.nickname.c_str());
+				log::printLine(log::server, "Sending PM to global player: {}.", pmPlayer->account.nickname);
 				pmMessage.guntokenizeI();
 				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->account.name, pmMessage);
 				pmMessage.gtokenizeI();
@@ -1053,7 +1047,7 @@ HandlePacketResult Player::msgPLI_PACKETCOUNT(CString& pPacket)
 	unsigned short count = pPacket.readGUShort();
 	if (count != PacketCount || PacketCount > 10000)
 	{
-		serverlog.out(":: Warning - Player %s had an invalid packet count.\n", account.name.c_str());
+		log::printLine(log::server, ":: Warning - Player {} had an invalid packet count.", account.name);
 	}
 	PacketCount = 0;
 

@@ -8,17 +8,16 @@
 #include "object/Player.h"
 #include "object/Weapon.h"
 #include "level/Level.h"
+#include "utilities/Log.h"
 
-#define serverlog m_server->getServerLog()
-#define npclog m_server->getNPCLog()
-#define rclog m_server->getRCLog()
+using namespace graal::utilities;
 
 #ifdef V8NPCSERVER
 HandlePacketResult Player::msgPLI_NC_NPCGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to get a database npc.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -44,7 +43,7 @@ HandlePacketResult Player::msgPLI_NC_NPCDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a database npc.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to delete a database npc.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -61,7 +60,7 @@ HandlePacketResult Player::msgPLI_NC_NPCDELETE(CString& pPacket)
 
 			CString logMsg;
 			logMsg << "NPC " << npcName << " deleted by " << account.name << "\n";
-			npclog.out(logMsg);
+			log::print(log::npc, logMsg.toString());
 			m_server->sendToNC(logMsg);
 		}
 	}
@@ -73,7 +72,7 @@ HandlePacketResult Player::msgPLI_NC_NPCRESET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to reset a database npc.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to reset a database npc.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -86,7 +85,7 @@ HandlePacketResult Player::msgPLI_NC_NPCRESET(CString& pPacket)
 
 		CString logMsg;
 		logMsg << "NPC script of " << npc->getName() << " reset by " << account.name << "\n";
-		npclog.out(logMsg);
+		log::print(log::npc, logMsg.toString());
 		m_server->sendToNC(logMsg);
 	}
 
@@ -97,7 +96,7 @@ HandlePacketResult Player::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc script.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to get a database npc script.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -118,7 +117,7 @@ HandlePacketResult Player::msgPLI_NC_NPCWARP(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to warp a database npc.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to warp a database npc.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -142,7 +141,7 @@ HandlePacketResult Player::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to get a database npc flags.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to get a database npc flags.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -166,7 +165,7 @@ HandlePacketResult Player::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to set a database npc script.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to set a database npc script.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -183,7 +182,7 @@ HandlePacketResult Player::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 
 		CString logMsg;
 		logMsg << "NPC script of " << npc->getName() << " updated by " << account.name << "\n";
-		npclog.out(logMsg);
+		log::print(log::npc, logMsg.toString());
 		m_server->sendToNC(logMsg);
 	}
 
@@ -194,7 +193,7 @@ HandlePacketResult Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to set a database npc flags.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to set a database npc flags.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -248,7 +247,7 @@ HandlePacketResult Player::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		updateMsg << "NPC flags of " << npc->getName() << " updated by " << account.name;
 		logMsg << updateMsg << "\n"
 			   << addedFlagMsg << deletedFlagMsg;
-		npclog.out(logMsg);
+		log::print(log::npc, logMsg.toString());
 		m_server->sendToNC(updateMsg);
 	}
 
@@ -259,7 +258,7 @@ HandlePacketResult Player::msgPLI_NC_NPCADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a database npc.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to add a database npc.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -302,7 +301,7 @@ HandlePacketResult Player::msgPLI_NC_NPCADD(CString& pPacket)
 		// Logging
 		CString logMsg;
 		logMsg << "NPC " << newNpc->getName() << " added by " << account.name << "\n";
-		npclog.out(logMsg);
+		log::print(log::npc, logMsg.toString());
 		m_server->sendToNC(logMsg);
 	}
 
@@ -315,7 +314,7 @@ HandlePacketResult Player::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to edit a class.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to edit a class.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -339,7 +338,7 @@ HandlePacketResult Player::msgPLI_NC_CLASSADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a class.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to add a class.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -363,7 +362,7 @@ HandlePacketResult Player::msgPLI_NC_CLASSADD(CString& pPacket)
 	// Logging
 	CString logMsg;
 	logMsg << "Script " << className << " " << (!hasClass ? "added" : "updated") << " by " << account.name << "\n";
-	npclog.out(logMsg);
+	log::print(log::npc, logMsg.toString());
 	m_server->sendToNC(logMsg);
 	return HandlePacketResult::Handled;
 }
@@ -372,7 +371,7 @@ HandlePacketResult Player::msgPLI_NC_CLASSDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a class.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to delete a class.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -390,7 +389,7 @@ HandlePacketResult Player::msgPLI_NC_CLASSDELETE(CString& pPacket)
 		logMsg << "error: " << className << " does not exist on this server!\n";
 
 	// Logging
-	npclog.out(logMsg);
+	log::print(log::npc, logMsg.toString());
 	m_server->sendToNC(logMsg);
 	return HandlePacketResult::Handled;
 }
@@ -399,7 +398,7 @@ HandlePacketResult Player::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view level npcs.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to view level npcs.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -432,7 +431,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view the weapon list.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to view the weapon list.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -457,7 +456,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view a weapon.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to view a weapon.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -491,7 +490,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to add a weapon.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to add a weapon.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -534,7 +533,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONADD(CString& pPacket)
 	{
 		CString logMsg;
 		logMsg << "Weapon/GUI-script " << weaponName << " " << actionTaken << " by " << account.name << "\n";
-		npclog.out(logMsg);
+		log::print(log::npc, logMsg.toString());
 		m_server->sendToNC(logMsg);
 	}
 
@@ -545,7 +544,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to delete a weapon.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to delete a weapon.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -559,7 +558,7 @@ HandlePacketResult Player::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 		logMsg << account.name << " prob: weapon " << weaponName << " doesn't exist\n";
 
 	// Logging
-	npclog.out(logMsg);
+	log::print(log::npc, logMsg.toString());
 	m_server->sendToNC(logMsg);
 	return HandlePacketResult::Handled;
 }
@@ -568,7 +567,7 @@ HandlePacketResult Player::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 {
 	if (!isNC())
 	{
-		npclog.out("[Hack] %s attempted to view the level list.\n", account.name.c_str());
+		log::printLine(log::npc, "[Hack] {} attempted to view the level list.", account.name);
 		return HandlePacketResult::Handled;
 	}
 

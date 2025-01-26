@@ -13,10 +13,9 @@
 #include "player/PlayerClient.h"
 #include "level/Level.h"
 #include "level/Map.h"
+#include "utilities/Log.h"
 
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
-
+using namespace graal::utilities;
 
 uint8_t PropLimits::applyMaxHitpoints(uint8_t maxHitpoints)
 {
@@ -1212,7 +1211,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		InvalidPackets++;
 		if (InvalidPackets > 5)
 		{
-			serverlog.out("Player %s is sending invalid packets.\n", account.character.nickName.c_str());
+			log::printLine(log::server, "Player {} is sending invalid packets.", account.character.nickName);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
 			m_server->deletePlayer(shared_from_this());
 		}

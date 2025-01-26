@@ -10,11 +10,14 @@
 #include "level/Level.h"
 #include "level/Map.h"
 #include "scripting/SourceCode.h"
+#include "utilities/Log.h"
 
 #ifdef V8NPCSERVER
 	#include "scripting/ScriptEngine.h"
 	#include "object/Player.h"
 #endif
+
+using namespace graal::utilities;
 
 const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
@@ -22,7 +25,7 @@ const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55
 static CString toWeaponName(const CString& code);
 static CString doJoins(const CString& code, FileSystem* fs);
 
-std::string minifyClientCode(const CString& src)
+static std::string minifyClientCode(const CString& src)
 {
 	std::string minified;
 	if (!src.isEmpty())
@@ -168,7 +171,7 @@ void NPC::setScriptCode(std::string pScript)
 
 	// Just a little warning for people who don't know.
 	if (m_clientScriptFormatted.length() > 0x705F)
-		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (m_weaponName.length() != 0 ? m_weaponName.text() : m_image.c_str()));
+		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (m_weaponName.length() != 0 ? m_weaponName : m_image));
 #endif
 
 #ifdef V8NPCSERVER
@@ -999,7 +1002,7 @@ void NPC::updateClientCode()
 
 	// Just a little warning for people who don't know.
 	if (m_clientScriptFormatted.length() > 0x705F)
-		printf("WARNING: Clientside script of NPC (%s) exceeds the limit of 28767 bytes.\n", (m_weaponName.length() != 0 ? m_weaponName.text() : m_image.c_str()));
+		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (m_weaponName.length() != 0 ? m_weaponName : m_image));
 
 	// Compile gs2
 	if (!m_npcScript.getClientGS2().empty())

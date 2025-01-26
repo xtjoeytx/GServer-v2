@@ -16,16 +16,10 @@
 #include "player/PlayerProps.h"
 #include "level/Level.h"
 #include "level/Map.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
 using namespace graal::utilities;
-
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
-//extern bool __sendLogin[propscount];
-//extern bool __getLogin[propscount];
-//extern bool __getLoginNC[propscount];
-//extern bool __getRCLogin[propscount];
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +68,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 		;
 	else
 	{
-		serverlog.out(":: New login, but unknown player type: %d\n", m_type);
+		log::printLine(log::server, ":: New login, but unknown player type: {}", m_type);
 		return HandlePacketResult::Failed;
 	}
 

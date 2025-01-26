@@ -9,10 +9,13 @@
 #include "object/Weapon.h"
 #include "level/LevelItem.h"
 #include "scripting/SourceCode.h"
+#include "utilities/Log.h"
 
 #ifdef V8NPCSERVER
 	#include "object/Player.h"
 #endif
+
+using namespace graal::utilities;
 
 // -- Constructor: Default Weapons -- //
 Weapon::Weapon(LevelItemType pId)
@@ -114,14 +117,14 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	// Give a warning if our weapon was malformed.
 	if (has_scriptend && !found_scriptend)
 	{
-		m_server->getServerLog().out("WARNING: Weapon %s is malformed.\n", weaponName.c_str());
-		m_server->getServerLog().out("SCRIPTEND needs to be on its own line.\n");
+		log::printLine(log::server, "WARNING: Weapon {} is malformed.", weaponName);
+		log::printLine(log::server, "SCRIPTEND needs to be on its own line.");
 	}
 
 	// Give a warning if both a script and a bytecode was found.
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 	{
-		m_server->getServerLog().out("WARNING: Weapon %s includes both script and bytecode.  Using bytecode.\n", weaponName.c_str());
+		log::printLine(log::server, "WARNING: Weapon {} includes both script and bytecode.  Using bytecode.", weaponName);
 		weaponScript.clear();
 	}
 

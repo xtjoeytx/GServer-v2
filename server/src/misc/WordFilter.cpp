@@ -1,9 +1,11 @@
-#include <CLog.h>
 #include <IEnums.h>
 
 #include "Server.h"
 #include "object/Player.h"
 #include "misc/WordFilter.h"
+#include "utilities/Log.h"
+
+using namespace graal::utilities;
 
 char bypass[] = {
 	' ',
@@ -355,10 +357,7 @@ WordFilterActions:
 	// Apply an action based on the word.
 	if (actionsFound & FILTER_ACTION_LOG)
 	{
-		CLog wordfilter;
-		wordfilter.setFilename(m_server->getServerPath() << "logs/serverlog.txt");
-		wordfilter.setEnabled(true);
-		wordfilter.out("[Word Filter] Player %s was caught using these words: %s\n", player->account.name, badwords.text());
+		log::printLine(log::server, "[Word Filter] Player {} was caught using these words: {}", player->account.name, badwords);
 	}
 
 	// Graal doesn't implement.  Should we?

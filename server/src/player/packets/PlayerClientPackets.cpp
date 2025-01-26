@@ -18,12 +18,12 @@
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
 #include "player/PlayerProps.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
+using namespace graal::utilities;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	short h = pPacket.readGShort();
 
 	// TODO: What to return?
-	serverlog.out(":: Received PLI_REQUESTUPDATEBOARD - level: %s - x: %d - y: %d - w: %d - h: %d - modtime: %d\n", level.text(), x, y, w, h, modTime);
+	log::printLine(log::server, ":: Received PLI_REQUESTUPDATEBOARD - level: {} - x: {} - y: {} - w: {} - h: {} - modtime: {}", level, x, y, w, h, modTime);
 
 	return HandlePacketResult::Handled;
 }
@@ -273,8 +273,8 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 
 		float gSpar[2] = { static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),   //Winner
 						   static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f)) }; //Loser
-		float ESpar[2] = { 1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f))),                                           //Winner
-						   1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f))) };                                         //Loser
+		float ESpar[2] = { static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f)))),                       //Winner
+						   static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f)))) };                     //Loser
 		float dSpar[2] = { static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                        //Winner
 						   static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1]))) };                      //Loser
 
@@ -709,7 +709,7 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			auto pmPlayer = getExternalPlayer(pmPlayerId);
 			if (pmPlayer != nullptr)
 			{
-				serverlog.out("Sending PM to global player: %s.\n", pmPlayer->account.character.nickName.c_str());
+				log::printLine(log::server, "Sending PM to global player: {}.", pmPlayer->account.character.nickName);
 				pmMessage.guntokenizeI();
 				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->account.name, pmMessage);
 				pmMessage.gtokenizeI();
@@ -985,7 +985,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
 					{
-						serverlog.out("Error: Player %s tried to load execscript %s, but the script was not found.\n", this->account.name.c_str(), actionParts[2].text());
+						log::printLine(log::server, "Error: Player {} tried to load execscript {}, but the script was not found.", this->account.name, actionParts[2]);
 						return HandlePacketResult::Handled;
 					}
 
@@ -1274,7 +1274,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_SERVERWARP(CString& pPacket)
 {
 	CString servername = pPacket.readString("");
-	m_server->getServerLog().out("%s is requesting serverwarp to %s", account.name.c_str(), servername.text());
+	log::printLine(log::server, "{} is requesting serverwarp to {}", account.name, servername);
 	m_server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)m_id << servername);
 	return HandlePacketResult::Handled;
 }
@@ -1359,7 +1359,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
 	CString weaponName = pPacket.readString("");
 
-	m_server->getServerLog().out("PLI_UPDATESCRIPT: \"%s\"\n", weaponName.text());
+	log::printLine(log::server, "PLI_UPDATESCRIPT: \"{}\"\n", weaponName);
 
 	CString out;
 
@@ -1382,7 +1382,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 	time_t modTime = pPacket.readGInt5();
 	std::string className = pPacket.readString("").toString();
 
-	m_server->getServerLog().out("PLI_UPDATECLASS: \"%s\"\n", className.c_str());
+	log::printLine(log::server, "PLI_UPDATECLASS: \"{}\"\n", className);
 
 	ScriptClass* classObj = m_server->getClass(className);
 

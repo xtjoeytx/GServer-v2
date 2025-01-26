@@ -136,7 +136,7 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 		else if (pType == COMPRESS_BZ2)
 			bundle.bzuncompressI();
 		else if (pType != COMPRESS_UNCOMPRESSED)
-			; // serverlog.out("** [ERROR] Client gave incorrect packet compression type! [%d]\n", pType);
+			; // log::printLine(log::server, "** [ERROR] Client gave incorrect packet compression type! [{}]", pType);
 	}
 }
 

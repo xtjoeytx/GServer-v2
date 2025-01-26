@@ -1,4 +1,3 @@
-#include <fmt/format.h>
 #include <map>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -14,12 +13,10 @@
 #include "level/Level.h"
 #include "player/PlayerRC.h"
 #include "network/IPacketHandler.h"
+#include "utilities/Log.h"
 #include "utilities/TimeUnits.h"
 
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
-#define nclog m_server->getNPCLog()
-//extern bool __playerPropsRC[propscount];
+using namespace graal::utilities;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -124,23 +121,23 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	m_type = (1 << pPacket.readGChar());
 
 	// Set the encryptions.
-	serverlog.out(":: New login:   ");
+	log::print(log::server, ":: New login:   ");
 	switch (m_type)
 	{
 	case PLTYPE_RC:
-		serverlog.append("RC\n");
+		log::printLine(log::server, "RC");
 		Encryption.setGen(ENCRYPT_GEN_2);
 		break;
 	case PLTYPE_NC:
-		serverlog.append("NC\n");
+		log::printLine(log::server, "NC");
 		Encryption.setGen(ENCRYPT_GEN_2);
 		break;
 	case PLTYPE_RC2:
-		serverlog.append("New RC (2.22+)\n");
+		log::printLine(log::server, "New RC (2.22+)");
 		Encryption.setGen(ENCRYPT_GEN_5);
 		break;
 	default:
-		serverlog.append("Unknown (%d)\n", m_type);
+		log::printLine(log::server, "Unknown ({})", m_type);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
 		return false;
 	}
@@ -167,12 +164,12 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");
 
-	//serverlog.out("   Key: %d\n", key);
-	serverlog.out("   Version:     %s (%s)\n", m_version.text(), getVersionString(m_version, m_type));
-	serverlog.out("   Account:     %s\n", account.name.c_str());
+	//log::printLine(log::server, "   Key: {}", key);
+	log::printLine(log::server, "   Version:     {} ({})", m_version, getVersionString(m_version, m_type));
+	log::printLine(log::server, "   Account:     {}", account.name);
 	if (!identity.isEmpty())
 	{
-		serverlog.out("   Identity:    %s\n", identity.text());
+		log::printLine(log::server, "   Identity:    {}", identity);
 		auto identityTokens = identity.tokenize(",", true);
 		m_os = identityTokens[0];
 	}

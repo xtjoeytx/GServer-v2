@@ -41,7 +41,7 @@ void UPNP::discover()
 		if (!device)
 			device = device_list;
 
-		// m_server->getServerLog().out(":: [UPnP] Device desc: %s, st: %s\n", device->descURL, device->st);
+		// log::printLine(log::server, ":: [UPnP] Device desc: {}, st: {}", device->descURL, device->st);
 
 		// Get the XML description of the UPNP device.
 		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode);
@@ -59,7 +59,7 @@ void UPNP::discover()
 	}
 	else
 	{
-		m_server->getServerLog().out("** [UPnP] No devices found.\n");
+		log::printLine(log::server, "** [UPnP] No devices found.");
 	}
 }
 
@@ -68,31 +68,30 @@ void UPNP::addPortForward(const CString& addr, const CString& port)
 	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;
 
-	CLog& serverlog = m_server->getServerLog();
 	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), port.text(), addr.text(), "Graal GServer", "TCP", 0, 0);
 	if (r != 0)
 	{
-		serverlog.out("** [UPnP] Failed to forward port %s to %s: ", port.text(), addr.text());
+		log::print(log::server, "** [UPnP] Failed to forward port {} to {}: ", port, addr);
 		switch (r)
 		{
 			case UPNPCOMMAND_INVALID_ARGS:
-				serverlog.out("Invalid arguments.\n");
+				log::printLine(log::server, "Invalid arguments.");
 				break;
 			case UPNPCOMMAND_HTTP_ERROR:
-				serverlog.out("HTTP error.\n");
+				log::printLine(log::server, "HTTP error.");
 				break;
 			case UPNPCOMMAND_CONFLICTING_MAPPING:
-				serverlog.out("Port mapping already exists.\n");
+				log::printLine(log::server, "Port mapping already exists.");
 				break;
 			default:
 			case UPNPCOMMAND_UNKNOWN_ERROR:
-				serverlog.out("Unknown error.\n");
+				log::printLine(log::server, "Unknown error.");
 				break;
 		}
 	}
 	else
 	{
-		m_server->getServerLog().out(":: [UPnP] Forwarded port %s to %s.\n", port.text(), addr.text());
+		log::printLine(log::server, ":: [UPnP] Forwarded port {} to {}.", port, addr);
 		m_portsForwarded.insert(port);
 	}
 }
@@ -103,7 +102,7 @@ void UPNP::removePortForward(const CString& port)
 		return;
 
 	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.text(), "TCP", 0);
-	m_server->getServerLog().out(":: [UPnP] Removing forward on port %s.\n", port.text());
+	log::printLine(log::server, ":: [UPnP] Removing forward on port {}.", port);
 	m_portsForwarded.erase(port);
 }
 #endif

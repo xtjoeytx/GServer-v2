@@ -43,6 +43,7 @@ class Map
 {
 public:
 	Map(MapType pType, bool pGroupMap = false);
+	Map(Map&& other) noexcept;
 
 	bool load(const CString& filename);
 	void loadMapLevels() const;

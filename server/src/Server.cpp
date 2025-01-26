@@ -2,8 +2,7 @@
 #include <chrono>
 #include <functional>
 #include <thread>
-
-#include <fmt/format.h>
+#include <format>
 
 #include <CString.h>
 #include <IUtil.h>
@@ -20,6 +19,8 @@
 #include "player/PlayerClient.h"
 #include "scripting/ScriptClass.h"
 #include "scripting/ScriptOrigin.h"
+
+using namespace graal::utilities;
 
 static const char* const filesystemTypes[] = {
 	"all",
@@ -62,25 +63,13 @@ Server::Server(const CString& pName)
 	m_serverPath = CString() << getBaseHomePath() << "servers/" << m_name << "/";
 	FileSystem::fixPathSeparators(m_serverPath);
 
-	// Set up the log files.
-	CString logpath = m_serverPath.remove(0, static_cast<int>(getBaseHomePath().length()));
-	CString npcPath = CString() << logpath << "logs/npclog.txt";
-	CString rcPath = CString() << logpath << "logs/rclog.txt";
-	CString serverPath = CString() << logpath << "logs/serverlog.txt";
-	FileSystem::fixPathSeparators(npcPath);
-	FileSystem::fixPathSeparators(rcPath);
-	FileSystem::fixPathSeparators(serverPath);
-	m_npcLog.setFilename(npcPath);
-	m_rcLog.setFilename(rcPath);
-	m_serverLog.setFilename(serverPath);
+	// Point the logs to the correct server path.
+	log::server.filename = std::filesystem::path{ "servers" } / m_name.text() / log::server.filename;
+	log::rc.filename = std::filesystem::path{ "servers" } / m_name.text() / log::rc.filename;
+	log::npc.filename = std::filesystem::path{ "servers" } / m_name.text() / log::npc.filename;
+	log::script.filename = std::filesystem::path{ "servers" } / m_name.text() / log::script.filename;
 
 	m_accountLoader = std::make_unique<PlainTextAccountLoader>();
-
-#ifdef V8NPCSERVER
-	CString scriptPath = CString() << logpath << "logs/scriptlog.txt";
-	FileSystem::fixPathSeparators(scriptPath);
-	m_scriptLog.setFilename(scriptPath);
-#endif
 }
 
 Server::~Server()
@@ -94,7 +83,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	// Initialize the Script Engine
 	if (!m_scriptEngine.initialize())
 	{
-		m_serverLog.out("** [Error] Could not initialize script engine.\n");
+		log::printLine(log::server, "** [Error] Could not initialize script engine.");
 		// TODO(joey): new error number? log is probably enough
 		return ERR_SETTINGS;
 	}
@@ -132,21 +121,21 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	m_serverLog.out(":: Initializing player listen socket.\n");
+	log::printLine(log::server, ":: Initializing player listen socket.");
 	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
 	{
-		m_serverLog.out("** [Error] Could not initialize listening socket...\n");
+		log::printLine(log::server, "** [Error] Could not initialize listening socket...");
 		return ERR_LISTEN;
 	}
 	if (m_playerSock.connect())
 	{
-		m_serverLog.out("** [Error] Could not connect listening socket...\n");
+		log::printLine(log::server, "** [Error] Could not connect listening socket...");
 		return ERR_LISTEN;
 	}
 
 #ifdef UPNP
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
-	serverlog.out(":: Starting UPnP discovery thread.\n");
+	log::printLine(log::server, ":: Starting UPnP discovery thread.");
 	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
@@ -291,6 +280,10 @@ void Server::cleanup()
 	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
 	m_npcServer = nullptr;
 #endif
+#ifdef V8NPCSERVER
+	// Clean up the script engine
+	m_scriptEngine.cleanup();
+#endif
 
 	for (auto& [id, player]: m_playerList)
 		player->cleanup();
@@ -303,23 +296,24 @@ void Server::cleanup()
 	m_mapList.clear();
 	m_groupLevels.clear();
 
+	m_serverFlags.clear();
+
 	m_npcList.clear();
 	m_npcNameList.clear();
 	m_npcIdGenerator.resetAndSetNext(NPCID_INIT);
 
 	saveWeapons();
 	m_weaponList.clear();
-
-#ifdef V8NPCSERVER
-	// Clean up the script engine
-	m_scriptEngine.cleanup();
-#endif
+	m_classList.clear();
 
 	m_playerSock.disconnect();
 	m_serverlist.getSocket().disconnect();
 
 	// Clean up the socket manager.  Pass false so we don't cause a crash.
 	m_sockManager.cleanup(false);
+
+	m_accountLoader.reset();
+	m_adminSettings.clear();
 }
 
 void Server::restart()
@@ -507,6 +501,8 @@ void Server::loadAllFolders()
 
 void Server::loadFolderConfig()
 {
+	auto indent = log::server.indent();
+
 	for (auto& i: m_filesystem)
 		i.clear();
 
@@ -542,7 +538,7 @@ void Server::loadFolderConfig()
 		if (fs != nullptr)
 		{
 			fs->addDir(dir, wildcard);
-			m_serverLog.out("       adding %s [%s] to %s\n", dir.text(), wildcard.text(), type.text());
+			log::printLine(log::server, "adding {} [{}] to {}", dir, wildcard, type);
 		}
 		m_filesystem[0].addDir(dir, wildcard);
 	}
@@ -552,73 +548,75 @@ int Server::loadConfigFiles()
 {
 	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
 	//	Move them out of here?
-	m_serverLog.out(":: Loading server configuration...\n");
+	log::printLine(log::server, ":: Loading server configuration...");
 
-	// Load Settings
-	m_serverLog.out("     Loading settings...\n");
-	loadSettings();
-
-	// Load Admin Settings
-	m_serverLog.out("     Loading admin settings...\n");
-	loadAdminSettings();
-
-	// Load allowed versions.
-	m_serverLog.out("     Loading allowed client versions...\n");
-	loadAllowedVersions();
-
-	// Load folders config and file system.
-	m_serverLog.out("     Folder config: ");
-	if (!m_settings.getBool("nofoldersconfig", false))
 	{
-		m_serverLog.append("ENABLED\n");
-	}
-	else
-		m_serverLog.append("disabled\n");
+		auto indent = log::server.indent();
 
-	m_serverLog.out("     Loading file system...\n");
-	loadFileSystem();
+		// Load Settings
+		log::printLine(log::server, "Loading settings...");
+		loadSettings();
 
-	// Load server flags.
-	m_serverLog.out("     Loading serverflags.txt...\n");
-	loadServerFlags();
+		// Load Admin Settings
+		log::printLine(log::server, "Loading admin settings...");
+		loadAdminSettings();
 
-	// Load server message.
-	m_serverLog.out("     Loading config/servermessage.html...\n");
-	loadServerMessage();
+		// Load allowed versions.
+		log::printLine(log::server, "Loading allowed client versions...");
+		loadAllowedVersions();
 
-	// Load IP bans.
-	m_serverLog.out("     Loading config/ipbans.txt...\n");
-	loadIPBans();
+		// Load folders config and file system.
+		log::print(log::server, "Folder config: ");
+		if (!m_settings.getBool("nofoldersconfig", false))
+			log::printLine(log::server, "ENABLED");
+		else
+			log::printLine(log::server, "disabled");
 
-	// Load weapons.
-	m_serverLog.out("     Loading weapons...\n");
-	loadWeapons(true);
+		log::printLine(log::server, "Loading file system...");
+		loadFileSystem();
 
-	// Load classes.
-	m_serverLog.out("     Loading classes...\n");
-	loadClasses(true);
+		// Load server flags.
+		log::printLine(log::server, "Loading serverflags.txt...");
+		loadServerFlags();
 
-	// Load maps.
-	m_serverLog.out("     Loading maps...\n");
-	loadMaps(true);
+		// Load server message.
+		log::printLine(log::server, "Loading config/servermessage.html...");
+		loadServerMessage();
+
+		// Load IP bans.
+		log::printLine(log::server, "Loading config/ipbans.txt...");
+		loadIPBans();
+
+		// Load weapons.
+		log::printLine(log::server, "Loading weapons...");
+		loadWeapons(true);
+
+		// Load classes.
+		log::printLine(log::server, "Loading classes...");
+		loadClasses(true);
+
+		// Load maps.
+		log::printLine(log::server, "Loading maps...");
+		loadMaps(true);
 
 #ifdef V8NPCSERVER
-	// Load database npcs.
-	m_serverLog.out("     Loading npcs...\n");
-	loadNpcs(true);
+		// Load database npcs.
+		log::printLine(log::server, "Loading npcs...");
+		loadNpcs(true);
 #endif
 
-	// Load map levels - doing this after db npcs are loaded incase
-	// some level scripts may require access to the databases.
-	loadMapLevels();
+		// Load map levels - doing this after db npcs are loaded incase
+		// some level scripts may require access to the databases.
+		loadMapLevels();
 
-	// Load translations.
-	m_serverLog.out("     Loading translations...\n");
-	loadTranslations();
+		// Load translations.
+		log::printLine(log::server, "Loading translations...");
+		loadTranslations();
 
-	// Load word filter.
-	m_serverLog.out("     Loading word filter...\n");
-	loadWordFilter();
+		// Load word filter.
+		log::printLine(log::server, "Loading word filter...");
+		loadWordFilter();
+	}
 
 	return 0;
 }
@@ -630,7 +628,7 @@ void Server::loadSettings()
 		m_settings.setSeparator("=");
 		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
 		if (!m_settings.isOpened())
-			m_serverLog.out("** [Error] Could not open config/serveroptions.txt.  Will use default config.\n");
+			log::printLine(log::server, "** [Error] Could not open config/serveroptions.txt.  Will use default config.");
 	}
 
 	// Load status list.
@@ -648,7 +646,7 @@ void Server::loadAdminSettings()
 	m_adminSettings.setSeparator("=");
 	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
 	if (!m_adminSettings.isOpened())
-		m_serverLog.out("** [Error] Could not open config/adminconfig.txt.  Will use default config.\n");
+		log::printLine(log::server, "** [Error] Could not open config/adminconfig.txt.  Will use default config.");
 	else
 		getServerList().sendServerHQ();
 }
@@ -739,6 +737,8 @@ void Server::loadClasses(bool print)
 
 void Server::loadWeapons(bool print)
 {
+	auto indent = log::server.indent();
+
 	FileSystem weaponFS;
 	weaponFS.addDir("weapons", "weapon*.txt");
 	FileSystem bcweaponFS;
@@ -758,7 +758,7 @@ void Server::loadWeapons(bool print)
 		if (m_weaponList.find(weapon->getName()) == m_weaponList.end())
 		{
 			m_weaponList[weapon->getName()] = weapon;
-			if (print) m_serverLog.out("       %s\n", weapon->getName().c_str());
+			if (print) log::printLine(log::server, weapon->getName());
 		}
 		else
 		{
@@ -770,7 +770,7 @@ void Server::loadWeapons(bool print)
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					m_serverLog.out("       %s [updated]\n", weapon->getName().c_str());
+					log::printLine(log::server, "{} [updated]", weapon->getName());
 					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
 				}
 			}
@@ -778,7 +778,7 @@ void Server::loadWeapons(bool print)
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) m_serverLog.out("       %s [skipped]\n", weapon->getName().c_str());
+				if (print) log::printLine(log::server, "{} [skipped]", weapon->getName());
 			}
 		}
 	}
@@ -805,6 +805,8 @@ void Server::loadMapLevels()
 
 void Server::loadMaps(bool print)
 {
+	auto indent = log::server.indent();
+
 	// Remove players off all maps
 	for (const auto& [id, player]: players_of_type<PlayerClient>(m_playerList))
 		player->setMap(nullptr);
@@ -829,13 +831,12 @@ void Server::loadMaps(bool print)
 		auto gmap = std::make_unique<Map>(MapType::GMAP);
 		if (!gmap->load(CString() << gmapName))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << gmapName
-												 << "\n");
+			auto inerr = log::server.indent_absolute(0);
+			if (print) log::printLine(log::server, "** [Error] Could not load {}.", gmapName);
 			continue;
 		}
 
-		if (print) m_serverLog.out("       [gmap] %s\n", gmapName.text());
+		if (print) log::printLine(log::server, "[gmap] {}", gmapName);
 		m_mapList.push_back(std::move(gmap));
 	}
 
@@ -850,12 +851,12 @@ void Server::loadMaps(bool print)
 		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
 		if (!bigmap->load(i.trim()))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << i << "\n");
+			auto inerr = log::server.indent_absolute(0);
+			if (print) log::printLine(log::server, "** [Error] Could not load {}.", i);
 			continue;
 		}
 
-		if (print) m_serverLog.out("       [bigmap] %s\n", i.text());
+		if (print) log::printLine(log::server, "[bigmap] {}", i);
 		m_mapList.push_back(std::move(bigmap));
 	}
 
@@ -882,12 +883,12 @@ void Server::loadMaps(bool print)
 		// Load the map.
 		if (!gmap->load(CString() << groupmap))
 		{
-			if (print) m_serverLog.out(CString() << "[" << m_name << "] "
-												 << "** [Error] Could not load " << groupmap << "\n");
+			auto inerr = log::server.indent_absolute(0);
+			if (print) log::printLine(log::server, "** [Error] Could not load {}.", groupmap);
 			continue;
 		}
 
-		if (print) m_serverLog.out("       [group map] %s\n", groupmap.text());
+		if (print) log::printLine(log::server, "[group map] {}", groupmap);
 		m_mapList.push_back(std::move(gmap));
 	}
 
@@ -1067,8 +1068,7 @@ void Server::reportScriptException(const ScriptRunError& error)
 {
 	std::string error_message = transformString(error.getErrorString());
 	sendToNC(error_message);
-	error_message += "\n";
-	getScriptLog().out(error_message);
+	log::printLine(log::script, error_message);
 }
 
 void Server::reportScriptException(const std::string& error_message)
@@ -1078,7 +1078,7 @@ void Server::reportScriptException(const std::string& error_message)
 	for (const auto& line: lines)
 	{
 		sendToNC(line);
-		getScriptLog().out(line + "\n");
+		log::printLine(log::script, line.toStringView());
 	}
 }
 
@@ -1443,17 +1443,11 @@ bool Server::isStaff(const CString& accountName)
 
 void Server::logToFile(const std::string& fileName, const std::string& message) const
 {
-	CString fileNamePath = CString() << getServerPath().remove(0, static_cast<int>(getBaseHomePath().length())) << "logs/";
+	std::filesystem::path file{ fileName };
+	log::Log logFile{ .filename = std::filesystem::path{ "servers" } / m_name.text() / "logs" / file.filename() };
 
-	// Remove leading characters that may try to go up a directory
-	int idx = 0;
-	while (fileName[idx] == '.' || fileName[idx] == '/' || fileName[idx] == '\\')
-		idx++;
-	fileNamePath << fileName.substr(idx);
-
-	CLog logFile(fileNamePath, true);
-	logFile.open();
-	logFile.out("\n%s\n", message.c_str());
+	log::printLine(logFile, "\n{}", message);
+	logFile.close();
 }
 
 /*
@@ -1916,19 +1910,19 @@ void Server::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const 
 		switch (err.level())
 		{
 			case ErrorLevel::E_INFO:
-				errorMsg += fmt::format("info: {}\n", err.msg());
+				errorMsg += std::format("info: {}\n", err.msg());
 				break;
 			case ErrorLevel::E_WARNING:
-				errorMsg += fmt::format("warning: {}\n", err.msg());
+				errorMsg += std::format("warning: {}\n", err.msg());
 				break;
 			default:
-				errorMsg += fmt::format("error: {}\n", err.msg());
+				errorMsg += std::format("error: {}\n", err.msg());
 				break;
 		}
 	}
 
 	if (!errorMsg.empty())
-		reportScriptException(fmt::format("Script compiler output for {}:\n{}", origin, errorMsg));
+		reportScriptException(std::format("Script compiler output for {}:\n{}", origin, errorMsg));
 }
 
 /*

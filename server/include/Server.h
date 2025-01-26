@@ -14,7 +14,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include <CLog.h>
 #include <CSettings.h>
 #include <CSocket.h>
 #include <CString.h>
@@ -28,6 +27,7 @@
 #include "misc/WordFilter.h"
 #include "utilities/CommandDispatcher.h"
 #include "utilities/IdGenerator.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
 #ifdef UPNP
@@ -142,10 +142,6 @@ public:
 	const CString& getName() const { return m_name; }
 	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
 	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
-	CLog& getNPCLog() { return m_npcLog; }
-	CLog& getServerLog() { return m_serverLog; }
-	CLog& getRCLog() { return m_rcLog; }
-	CLog& getScriptLog() { return m_scriptLog; }
 	CSettings& getSettings() { return m_settings; }
 	CSettings& getAdminSettings() { return m_adminSettings; }
 	CSocketManager& getSocketManager() { return m_sockManager; }
@@ -295,7 +291,6 @@ private:
 	bool m_doRestart;
 
 	FileSystem m_filesystem[FS_COUNT], m_filesystemAccounts;
-	CLog m_npcLog, m_rcLog, m_serverLog, m_scriptLog; //("logs/npclog|rclog|serverlog|scriptlog.txt");
 	CSettings m_adminSettings, m_settings;
 	CSocket m_playerSock;
 	CSocketManager m_sockManager;

@@ -1,6 +1,7 @@
 #include "FileSystem.h"
 #include "Server.h"
 #include "object/Player.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
 using namespace graal::utilities;
@@ -121,7 +122,7 @@ HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 															.gtokenizeI());
 	}
 
-	m_server->getServerLog().out("[ IN] [RequestText] from %s -> %s\n", string::toCSV(account.name).c_str(), packet.text());
+	log::printLine(log::server, "[ IN] [RequestText] from {} -> {}", string::toCSV(account.name), packet);
 	return HandlePacketResult::Handled;
 }
 
@@ -192,7 +193,7 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-							m_server->getServerLog().out("[ IN] [SVO_SERVERINFO] %s,%s\n", string::toCSV(account.name).c_str(), packet.text());
+							log::printLine(log::server, "[ IN] [SVO_SERVERINFO] {},{}", string::toCSV(account.name), packet);
 							//list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
 
 							// I believe the following data is what it's looking for:
@@ -239,7 +240,7 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 		}
 	}
 
-	m_server->getServerLog().out("[ IN] [SendText] %s: %s\n", string::toCSV(account.name).c_str(), packet.text());
+	log::printLine(log::server, "[ IN] [SendText] {}: {}", string::toCSV(account.name), packet);
 
 	return HandlePacketResult::Handled;
 }

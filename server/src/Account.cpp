@@ -385,7 +385,7 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
 	FileSystem::fixPathSeparators(accpath);
 	if (!CString(newFile).save(accpath))
-		server->getRCLog().out("** Error saving account: %s\n", account.name.c_str());
+		log::printLine(log::rc, "** Error saving account: {}", account.name);
 
 	return true;
 }

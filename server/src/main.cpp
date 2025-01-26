@@ -4,8 +4,9 @@
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <iostream>
+#include <string_view>
 
-#include <CLog.h>
 #include <CSocket.h>
 #include <CString.h>
 #include <IUtil.h>
@@ -16,6 +17,10 @@
 #include "Account.h"
 #include "Server.h"
 #include "main.h"
+
+#include "utilities/Log.h"
+
+using namespace graal::utilities;
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
@@ -76,7 +81,6 @@ void getBasePath()
 #endif
 }
 
-CLog serverlog("startuplog.txt");
 CString overrideServer;
 CString overridePort;
 CString overrideServerIp = nullptr;
@@ -106,18 +110,14 @@ int main(int argc, char* argv[])
 		// Grab the base path to the server executable.
 		getBasePath();
 
-		// Program announcements.
-		serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
-		serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
-
 		// Load Server Settings
 		if (overrideServer.isEmpty())
 		{
-			serverlog.out(":: Determining the server to start... ");
+			std::cout << ":: Determining the server to start... ";
 
-			auto found_server = [](const std::string& why, const std::string& server)
+			auto found_server = [](const std::string& why, std::string_view server)
 			{
-				serverlog.append("success! %s\n", why.c_str());
+				std::cout << "success! " << why << std::endl;
 				overrideServer = server;
 			};
 
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 				CString startup;
 				startup.load(CString(homePath) << "startupserver.txt");
 				if (!startup.isEmpty())
-					found_server("(startupserver.txt)", std::string{ startup.text() });
+					found_server("(startupserver.txt)", startup.text());
 			}
 
 			// Number of directories.
@@ -148,17 +148,25 @@ int main(int argc, char* argv[])
 			// Failure.
 			if (overrideServer.isEmpty())
 			{
-				serverlog.append("FAILED!\n");
+				std::cout << "FAILED!" << std::endl;
+				std::cerr << "Failed to start server: no server specified and no default server found." << std::endl;
 				return ERR_SETTINGS;
 			}
 		}
 
-		// Initialize the server.
+		// Create the server.
 		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
-		serverlog.out(":: Starting server: %s.\n", overrideServer.text());
+
+		// Program announcements.
+		log::printLine(log::server, "{} {} version {}", APP_VENDOR, APP_NAME, APP_VERSION);
+		log::printLine(log::server, "Programmed by {}.", APP_CREDITS);
+		log::printLine(log::server, "");
+
+		// Initialize the server.
+		log::printLine(log::server, ":: Starting server: {}.", overrideServer);
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
-			serverlog.out("** [Error] Failed to start server: %s\n", overrideServer.text());
+			log::printLine(log::server, "** [Error] Failed to start server: {}", overrideServer);
 			return 1;
 		}
 
@@ -192,13 +200,13 @@ int main(int argc, char* argv[])
 		}
 
 		// Announce that the program is now running.
-		serverlog.out(":: Started server %s", server->getName().text());
+		log::print(log::server, ":: Started server {}", server->getName());
 		if (server->getSettings().exists("name"))
-			serverlog.append(" (%s)\n", server->getSettings().getStr("name").text());
-		else serverlog.append("\n");
+			log::printLine(log::server, " ({})", server->getSettings().getStr("name"));
+		else log::printLine(log::server, "");
 
 	#if defined(WIN32) || defined(WIN64)
-		serverlog.out(":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!\n");
+		log::printLine(log::server, ":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!");
 	#endif
 
 		// Run the server.
@@ -219,7 +227,8 @@ int main(int argc, char* argv[])
 
 void shutdownServer(int signal)
 {
-	serverlog.out(":: The server is now shutting down...\n-------------------------------------\n\n");
+	log::printLine(log::server, ":: The server is now shutting down...");
+	log::printLine(log::server, "-------------------------------------");
 
 	shutdownProgram = true;
 }
@@ -330,16 +339,16 @@ bool parseArgs(int argc, char* argv[])
 
 void printHelp(const char* pname)
 {
-	serverlog.out("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
-	serverlog.out("Programmed by %s.\n\n", APP_CREDITS);
-	serverlog.out("USAGE: %s [options]\n\n", pname);
-	serverlog.out("Commands:\n\n");
-	serverlog.out(" -h, --help\t\tPrints out this help text.\n");
-	serverlog.out(" -s, --server DIR\tOverride the servers.txt by specifying which server directory to use.\n");
-	serverlog.out(" -p, --port PORT\tSpecify which port to use when using servers.txt override.\n");
-	serverlog.out(" --localip IP\tSpecify which IP to retrieve when on the same network as the server.\n");
-	serverlog.out(" --serverip IP\tSpecify which IP that the listserver should deliver to clients.\n");
-	serverlog.out(" --interface IP\tSpecify which IP to bind the server to.\n");
+	printf("%s %s version %s\n", APP_VENDOR, APP_NAME, APP_VERSION);
+	printf("Programmed by %s.\n\n", APP_CREDITS);
+	printf("USAGE: %s [options]\n\n", pname);
+	printf("Commands:\n\n");
+	printf(" -h, --help\t\tPrints out this help text.\n");
+	printf(" -s, --server DIR\tOverride the servers.txt by specifying which server directory to use.\n");
+	printf(" -p, --port PORT\tSpecify which port to use when using servers.txt override.\n");
+	printf(" --localip IP\tSpecify which IP to retrieve when on the same network as the server.\n");
+	printf(" --serverip IP\tSpecify which IP that the listserver should deliver to clients.\n");
+	printf(" --interface IP\tSpecify which IP to bind the server to.\n");
 
-	serverlog.out("\n");
+	printf("\n");
 }

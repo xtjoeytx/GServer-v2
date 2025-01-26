@@ -12,6 +12,7 @@
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
 #include "player/PlayerProps.h"
+#include "utilities/Log.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -36,8 +37,7 @@ CString _zlibFix(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
+using namespace graal::utilities;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -190,7 +190,7 @@ bool PlayerClient::doTimedEvents()
 	// Disconnect if no data has been received in 5 minutes.
 	if ((int)difftime(currTime, m_lastData) > 300)
 	{
-		serverlog.out("Client %s has timed out.\n", account.name.c_str());
+		log::printLine(log::server, "Client {} has timed out.", account.name);
 		return false;
 	}
 
@@ -201,7 +201,7 @@ bool PlayerClient::doTimedEvents()
 		int maxnomovement = settings.getInt("maxnomovement", 1200);
 		if (((int)difftime(currTime, m_lastMovement) > maxnomovement) && ((int)difftime(currTime, m_lastChat) > maxnomovement))
 		{
-			serverlog.out("Client %s has been disconnected due to inactivity.\n", account.name.c_str());
+			log::printLine(log::server, "Client {} has been disconnected due to inactivity.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
 			return false;
 		}
@@ -280,28 +280,28 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	m_type = (1 << pPacket.readGChar());
 
 	// Set the encryptions.
-	serverlog.out(":: New login:   ");
+	log::print(log::server, ":: New login:   ");
 	switch (m_type)
 	{
 	case PLTYPE_CLIENT:
-		serverlog.append("Client\n");
+		log::printLine(log::server, "Client");
 		Encryption.setGen(ENCRYPT_GEN_2);
 		break;
 	case PLTYPE_CLIENT2:
-		serverlog.append("New Client (2.19 - 2.21, 3 - 3.01)\n");
+		log::printLine(log::server, "New Client (2.19 - 2.21, 3 - 3.01)");
 		Encryption.setGen(ENCRYPT_GEN_4);
 		break;
 	case PLTYPE_CLIENT3:
-		serverlog.append("New Client (2.22+)\n");
+		log::printLine(log::server, "New Client (2.22+)");
 		Encryption.setGen(ENCRYPT_GEN_5);
 		break;
 	case PLTYPE_WEB:
-		serverlog.append("Web\n");
+		log::printLine(log::server, "Web");
 		Encryption.setGen(ENCRYPT_GEN_1);
 		m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 		break;
 	default:
-		serverlog.append("Unknown (%d)\n", m_type);
+		log::printLine(log::server, "Unknown ({})", m_type);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
 		return false;
 	}
@@ -342,12 +342,12 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");
 
-	//serverlog.out("   Key: %d\n", key);
-	serverlog.out("   Version:     %s (%s)\n", m_version.text(), getVersionString(m_version, m_type));
-	serverlog.out("   Account:     %s\n", account.name.c_str());
+	//log::printLine(log::server, "   Key: {}", key);
+	log::printLine(log::server, "   Version:     {} ({})", m_version, getVersionString(m_version, m_type));
+	log::printLine(log::server, "   Account:     {}", account.name);
 	if (!identity.isEmpty())
 	{
-		serverlog.out("   Identity:    %s\n", identity.text());
+		log::printLine(log::server, "   Identity:    {}", identity);
 		auto identityTokens = identity.tokenize(",", true);
 		m_os = identityTokens[0];
 	}
@@ -531,8 +531,7 @@ bool PlayerClient::sendLogin()
 	if (!warp(account.level, getX(), getY()) && m_currentLevel.expired())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		serverlog.out(CString() << "[" << m_server->getName() << "] "
-								<< "Cannot find level for " << account.name << "\n");
+		log::printLine(log::server, "** Cannot find level for {}.", account.name);
 		return false;
 	}
 

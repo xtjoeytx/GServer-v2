@@ -1,7 +1,7 @@
 #ifndef SCRIPTORIGIN_H
 #define SCRIPTORIGIN_H
 
-#include <fmt/format.h>
+#include <format>
 #include <string>
 
 #include "object/NPC.h"
@@ -32,23 +32,23 @@ namespace scripting
 		}
 
 		// Compiling before its assigned an npc id, so this requires some reworking to make work
-		// origin.append(fmt::format("[{}]", npc.getId()));
+		// origin.append(std::format("[{}]", npc.getId()));
 
 		auto level = npc.getLevel();
 		if (level)
-			origin.append(fmt::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
+			origin.append(std::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
 
 		return origin;
 	}
 
 	std::string getErrorOrigin(const ScriptClass& cls)
 	{
-		return fmt::format("Class {}", cls.getName());
+		return std::format("Class {}", cls.getName());
 	}
 
 	std::string getErrorOrigin(const Weapon& npc)
 	{
-		return fmt::format("Weapon {}", npc.getName());
+		return std::format("Weapon {}", npc.getName());
 	}
 } // namespace scripting
 

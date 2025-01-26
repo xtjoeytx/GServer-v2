@@ -9,7 +9,7 @@
 #include <unistd.h>
 #endif
 
-#include <fmt/format.h>
+#include <format>
 
 #include <CString.h>
 
@@ -19,14 +19,13 @@
 #include "level/Level.h"
 #include "player/PlayerClient.h"
 #include "player/PlayerRC.h"
-#include "utilities/TimeUnits.h"
+#include "utilities/Log.h"
 #include "utilities/StringUtils.h"
+#include "utilities/TimeUnits.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define serverlog m_server->getServerLog()
-#define rclog m_server->getRCLog()
-#define nclog m_server->getNPCLog()
+using namespace graal::utilities;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -63,7 +62,7 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 	// If folder config is on, try to find which file system to add it to.
 	else
 	{
-		std::vector<CString> foldersConfig = CString::loadToken(server->getServerPath() << "config/foldersconfig.txt", "\n", true);
+		std::vector<CString> foldersConfig = CString::loadToken(server->getServerPath() << "config/foldersconfig.txt", "", true);
 		for (auto& folderConfig : foldersConfig)
 		{
 			CString type = folderConfig.readString(" ").trim();
@@ -83,7 +82,7 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 
 					fs->addFile(fullPath);
 					isNewFile = true;
-					//printf("adding %s to %s\n", file.text(), type.text());
+					//printf("adding {} to {}", file.text(), type.text());
 					break;
 				}
 			}
@@ -172,7 +171,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to view the server options.", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to view the server options.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -186,9 +185,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_SETSERVEROPTIONS))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the server options.", account.name.c_str());
+		if (isClient())
+			log::printLine(log::rc, "[Hack] {} attempted to set the server options.", account.name);
 		else
-			rclog.out("%s attempted to set the server options.", account.name.c_str());
+			log::printLine(log::rc, "{} attempted to set the server options.", account.name);
+
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to change the server options.");
 		return HandlePacketResult::Handled;
 	}
@@ -227,7 +228,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	// Reload settings.
 	m_server->loadSettings();
 	m_server->loadMaps();
-	rclog.out("%s has updated the server options.\n", account.name.c_str());
+	log::printLine(log::rc, "{} has updated the server options.", account.name);
 
 	// Send RC Information
 	CString outPacket = CString() >> (char)PLO_RC_CHAT << account.name << " has updated the server options.";
@@ -251,7 +252,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to get the folder config.", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to get the folder config.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -267,9 +268,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_SETFOLDEROPTIONS))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the folder config.", account.name.c_str());
+		if (isClient())
+			log::printLine(log::rc, "[Hack] {} attempted to set the folder config.", account.name);
 		else
-			rclog.out("%s attempted to set the folder config.", account.name.c_str());
+			log::printLine(log::rc, "{} attempted to set the folder config.", account.name);
+
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to change the folder config.");
 		return HandlePacketResult::Handled;
 	}
@@ -277,13 +280,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 	// Save the folder config back to disk
 	CString folders = pPacket.readString("");
 	folders.guntokenizeI();
-	folders.replaceAllI("\n", "\r\n");
+	folders.replaceAllI("", "\r\n");
 	folders.save(m_server->getServerPath() << "config/foldersconfig.txt");
 
 	// Update file system.
 	m_server->loadFileSystem();
 
-	rclog.out("%s updated the folder config.\n", account.name.c_str());
+	log::printLine(log::rc, "{} updated the folder config.", account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " updated the folder config.");
 	return HandlePacketResult::Handled;
 }
@@ -327,9 +330,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 
 	if (isClient() || (p->account.name != account.name && !account.hasRight(PLPERM_SETATTRIBUTES)) || (p->account.name == account.name && !account.hasRight(PLPERM_SETSELFATTRIBUTES)))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set a player's properties.", account.name.c_str());
+		if (isClient())
+			log::printLine(log::rc, "[Hack] {} attempted to set a player's properties.", account.name);
 		else
-			rclog.out("%s attempted to set a player's properties.", account.name.c_str());
+			log::printLine(log::rc, "{} attempted to set a player's properties.", account.name);
+
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to set the properties of " << p->account.name);
 		return HandlePacketResult::Handled;
 	}
@@ -337,7 +342,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 	p->setPropsRC(pPacket, this);
 	m_server->getAccountLoader().saveAccount(p->account);
 
-	rclog.out("%s set the attributes of player %s\n", account.name.c_str(), p->account.name.c_str());
+	log::printLine(log::rc, "{} set the attributes of player {}", account.name, p->account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " set the attributes of player " << p->account.name);
 
 	return HandlePacketResult::Handled;
@@ -350,16 +355,17 @@ HandlePacketResult PlayerRC::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_DISCONNECT))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to disconnect %s.\n", account.name.c_str(), p->account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to disconnect {}.", account.name, p->account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to disconnect players.");
 		return HandlePacketResult::Handled;
 	}
 
 	CString reason = pPacket.readString("");
 	if (!reason.isEmpty())
-		rclog.out("%s disconnected %s: %s\n", account.name.c_str(), p->account.name.c_str(), reason.text());
+		log::printLine(log::rc, "{} disconnected {}: {}", account.name, p->account.name, reason.text());
 	else
-		rclog.out("%s disconnected %s.\n", account.name.c_str(), p->account.name.c_str());
+		log::printLine(log::rc, "{} disconnected {}.", account.name, p->account.name);
+
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " disconnected " << p->account.name);
 
 	CString disconnectMessage = CString() << "One of the server administrators, " << account.name << ", has disconnected you";
@@ -376,7 +382,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_UPDATELEVEL))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to update levels.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to update levels.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to update levels.");
 		return HandlePacketResult::Handled;
 	}
@@ -394,7 +400,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_ADMINMSG))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to send an admin message.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to send an admin message.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to send an admin message.");
 		return HandlePacketResult::Handled;
 	}
@@ -407,7 +413,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_ADMINMSG))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to send an admin message.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to send an admin message.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to send an admin message.");
 		return HandlePacketResult::Handled;
 	}
@@ -441,7 +447,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to view the server flags.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to view the server flags.", account.name);
 		return HandlePacketResult::Handled;
 	}
 	CString ret;
@@ -459,7 +465,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_SETSERVERFLAGS))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the server flags.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to set the server flags.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set the server flags.");
 		return HandlePacketResult::Handled;
 	}
@@ -511,7 +517,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	for (auto i = oldFlags.begin(); i != oldFlags.end(); ++i)
 		m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << i->first);
 
-	rclog.out("%s has updated the server flags.\n", account.name.c_str());
+	log::printLine(log::rc, "{} has updated the server flags.", account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has updated the server flags.");
 	return HandlePacketResult::Handled;
 }
@@ -520,7 +526,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to add a new account.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to add a new account.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to create new accounts.");
 		return HandlePacketResult::Handled;
 	}
@@ -539,7 +545,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	newAccount.loadOnly = onlyLoad;
 	m_server->getAccountLoader().saveAccount(newAccount);
 
-	rclog.out("%s has created a new account: %s\n", account.name.c_str(), acc.c_str());
+	log::printLine(log::rc, "{} has created a new account: {}", account.name, acc.c_str());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has created a new account: " << acc);
 	return HandlePacketResult::Handled;
 }
@@ -548,7 +554,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to delete an account.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to delete an account.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to delete accounts.");
 		return HandlePacketResult::Handled;
 	}
@@ -577,7 +583,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 
 	// Delete the file now.
 	remove(accpath.text());
-	rclog.out("%s has deleted the account: %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has deleted the account: {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has deleted the account: " << acc);
 	return HandlePacketResult::Handled;
 }
@@ -588,7 +594,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to view the account listing.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to view the account listing.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -631,7 +637,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_VIEWATTRIBUTES))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", account.name.c_str(), p->account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to view the props of player {}.", account.name, p->account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view player props.");
 		return HandlePacketResult::Handled;
 	}
@@ -659,7 +665,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_VIEWATTRIBUTES))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to view the props of player %s.\n", account.name.c_str(), p->account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to view the props of player {}.", account.name, p->account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view player props.");
 		return HandlePacketResult::Handled;
 	}
@@ -676,7 +682,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_RESETATTRIBUTES))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to reset the account: %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to reset the account: {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to reset accounts.\n");
 		return HandlePacketResult::Handled;
 	}
@@ -721,7 +727,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	}
 
 	// Log it.
-	rclog.out("%s has reset the attributes of account: %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has reset the attributes of account: {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has reset the attributes of account: " << acc);
 
 	return HandlePacketResult::Handled;
@@ -746,9 +752,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 
 	if (isClient() || (p->account.name != account.name && !account.hasRight(PLPERM_SETATTRIBUTES)) || (p->account.name == account.name && !account.hasRight(PLPERM_SETSELFATTRIBUTES)))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set a player's properties.", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to set a player's properties.", account.name);
 		else
-			rclog.out("%s attempted to set a player's properties.", account.name.c_str());
+			log::printLine(log::rc, "{} attempted to set a player's properties.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is not authorized to set the properties of " << p->account.name);
 		return HandlePacketResult::Handled;
 	}
@@ -762,7 +768,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 
 	p->setPropsRC(pPacket, this);
 	m_server->getAccountLoader().saveAccount(p->account);
-	rclog.out("%s set the attributes of player %s\n", account.name.c_str(), p->account.name.c_str());
+	log::printLine(log::rc, "{} set the attributes of player {}", account.name, p->account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " set the attributes of player " << p->account.name);
 
 	return HandlePacketResult::Handled;
@@ -776,7 +782,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to view the account: %s\n", account.name.c_str(), acc.text());
+		log::printLine(log::rc, "[Hack] {} attempted to view the account: {}", account.name, acc.text());
 		return HandlePacketResult::Handled;
 	}
 
@@ -810,7 +816,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to edit the account: %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to edit the account: {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to edit accounts.\n");
 		return HandlePacketResult::Handled;
 	}
@@ -861,7 +867,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 		m_server->deletePlayer(p);
 	}
 
-	rclog.out("%s has modified the account: %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has modified the account: {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has modified the account: " << acc);
 
 	return HandlePacketResult::Handled;
@@ -871,7 +877,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to send a message to RC.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to send a message to RC.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -905,7 +911,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 #endif
 			if (words[0] == "/help" && words.size() == 1)
 			{
-				std::vector<CString> commands = CString::loadToken(m_server->getServerPath() << "config/rchelp.txt", "\n", true);
+				std::vector<CString> commands = CString::loadToken(m_server->getServerPath() << "config/rchelp.txt", "", true);
 				for (auto& command : commands)
 					sendPacket(CString() >> (char)PLO_RC_CHAT << command);
 			}
@@ -977,14 +983,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				m_server->loadServerMessage();
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " refreshed the server message.");
-				rclog.out("%s refreshed the server message.\n", account.name.c_str());
+				log::printLine(log::rc, "{} refreshed the server message.", account.name);
 			}
 
 			else if (words[0] == "/refreshfilesystem" && words.size() == 1)
 			{
 				m_server->loadFileSystem();
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " refreshed the server file list.");
-				rclog.out("%s refreshed the server file list.\n", account.name.c_str());
+				log::printLine(log::rc, "{} refreshed the server file list.", account.name);
 			}
 			else if (words[0] == "/updatelevel" && words.size() != 1 && account.hasRight(PLPERM_UPDATELEVEL))
 			{
@@ -995,14 +1001,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 					if (level)
 					{
 						m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated level: " << level->getLevelName());
-						rclog.out("%s updated level: %s\n", account.name.c_str(), level->getLevelName().text());
+						log::printLine(log::rc, "{} updated level: {}", account.name, level->getLevelName().text());
 						level->reload();
 					}
 				}
 			}
 			else if (words[0] == "/updatelevelall" && words.size() == 1 && account.hasRight(PLPERM_UPDATELEVEL))
 			{
-				rclog.out("%s updated all the levels", account.name.c_str());
+				log::print(log::rc, "{} updated all the levels", account.name);
 				int count = 0;
 				auto& levels = m_server->getLevelList();
 				for (auto& level : levels)
@@ -1011,24 +1017,24 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 					++count;
 				}
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated all the levels (" << CString((int)count) << " levels updated).");
-				rclog.out(" (%d levels updated).\n", count);
+				log::printLine(log::rc, " ({} levels updated).", count);
 			}
 			else if (words[0] == "/restartserver" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " restarted the server.");
-				rclog.out("%s restarted the server.\n", account.name.c_str());
+				log::printLine(log::rc, "{} restarted the server.", account.name);
 				m_server->restart();
 			}
 			else if (words[0] == "/reloadserver" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the server configuration files.");
-				rclog.out("%s reloaded the server configuration files.\n", account.name.c_str());
+				log::printLine(log::rc, "{} reloaded the server configuration files.", account.name);
 				m_server->loadConfigFiles();
 			}
 			else if (words[0] == "/updateserverhq" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " sent ServerHQ updates.");
-				rclog.out("%s sent ServerHQ updates.\n", account.name.c_str());
+				log::printLine(log::rc, "{} sent ServerHQ updates.", account.name);
 				m_server->loadAdminSettings();
 				m_server->getServerList().sendServerHQ();
 			}
@@ -1040,7 +1046,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 					{
 						if (t > 0)
 						{
-							m.append(fmt::format(" {} {}", t, fmtStr));
+							m.append(std::format(" {} {}", t, fmtStr));
 							if (t > 1)
 								m.append("s");
 						}
@@ -1058,26 +1064,26 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			else if (words[0] == "/reloadwordfilter" && words.size() == 1)
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the word filter.");
-				rclog.out("%s reloaded the word filter.\n", account.name.c_str());
+				log::printLine(log::rc, "{} reloaded the word filter.", account.name);
 				m_server->loadWordFilter();
 			}
 			else if (words[0] == "/reloadipbans" && words.size() == 1)
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the ip bans.");
-				rclog.out("%s reloaded the ip bans.\n", account.name.c_str());
+				log::printLine(log::rc, "{} reloaded the ip bans.", account.name);
 				m_server->loadIPBans();
 			}
 			else if (words[0] == "/reloadweapons" && words.size() == 1)
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the weapons.");
-				rclog.out("%s reloaded the weapons.\n", account.name.c_str());
+				log::printLine(log::rc, "{} reloaded the weapons.", account.name);
 				m_server->loadWeapons(true);
 			}
 #ifdef V8NPCSERVER
 			else if (words[0] == "/savenpcs" && words.size() == 1)
 			{
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
-				nclog.out("%s saved the npcs to disk.\n", account.name.c_str());
+				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
 				m_server->saveNpcs();
 			}
 			else if (words[0] == "/stats" && words.size() == 1)
@@ -1144,7 +1150,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 {
 	if (isClient() || !account.hasRight(PLPERM_WARPTOPLAYER))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to warp a player.\n", account.name.c_str());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to warp a player.", account.name);
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to warp players.\n");
 		return HandlePacketResult::Handled;
 	}
@@ -1156,7 +1162,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	CString wLevel = pPacket.readString("");
 	p->warp(wLevel, loc[0], loc[1]);
 
-	rclog.out("%s has warped %s to %s (%.2f, %.2f)\n", account.name.c_str(), p->account.name.c_str(), wLevel.text(), loc[0], loc[1]);
+	log::printLine(log::rc, "{} has warped {} to {} (:.2f, :.2f)", account.name, p->account.name, wLevel.text(), loc[0], loc[1]);
 	return HandlePacketResult::Handled;
 }
 
@@ -1170,7 +1176,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 
 	if (isClient() || (acc != account.name && !account.hasRight(PLPERM_SETRIGHTS)))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to get the rights of %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to get the rights of {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to view that player's rights.");
 		return HandlePacketResult::Handled;
 	}
@@ -1207,7 +1213,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_SETRIGHTS))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the rights of %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to set the rights of {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player rights.");
 		return HandlePacketResult::Handled;
 	}
@@ -1295,7 +1301,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 			pRC->msgPLI_RC_FILEBROWSER_START(CString() << "");
 	}
 
-	rclog.out("%s has set the rights of %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has set the rights of {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has set the rights of " << acc);
 
 	return HandlePacketResult::Handled;
@@ -1309,7 +1315,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to get the comments of %s\n", account.name.c_str(), acc.text());
+		log::printLine(log::rc, "[Hack] {} attempted to get the comments of {}", account.name, acc.text());
 		return HandlePacketResult::Handled;
 	}
 
@@ -1338,7 +1344,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_SETCOMMENTS))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the comments of %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to set the comments of {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player comments.");
 		return HandlePacketResult::Handled;
 	}
@@ -1365,7 +1371,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
 	}
 
-	rclog.out("%s has set the comments of %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has set the comments of {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has set the comments of " << acc);
 
 	return HandlePacketResult::Handled;
@@ -1379,7 +1385,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to view the ban of %s\n", account.name.c_str(), acc.text());
+		log::printLine(log::rc, "[Hack] {} attempted to view the ban of {}", account.name, acc.text());
 		return HandlePacketResult::Handled;
 	}
 
@@ -1408,7 +1414,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 	if (isClient() || !account.hasRight(PLPERM_BAN))
 	{
-		if (isClient()) rclog.out("[Hack] %s attempted to set the ban of %s\n", account.name.c_str(), acc.text());
+		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to set the ban of {}", account.name, acc.text());
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to set player bans.");
 		return HandlePacketResult::Handled;
 	}
@@ -1440,11 +1446,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	// If the player was just now banned, kick him off the server.
 	if (banned && p->getId() != 0)
 	{
-		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << account.name << " has banned you.  Reason: " << reason.guntokenize().replaceAll("\n", "\r"));
+		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << account.name << " has banned you.  Reason: " << reason.guntokenize().replaceAll("", "\r"));
 		m_server->deletePlayer(p);
 	}
 
-	rclog.out("%s has set the ban of %s\n", account.name.c_str(), acc.text());
+	log::printLine(log::rc, "{} has set the ban of {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has set the ban of " << acc);
 
 	return HandlePacketResult::Handled;
@@ -1456,7 +1462,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to open the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to open the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1639,7 +1645,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to download a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to download a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1663,7 +1669,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 
 	this->sendFile(account.lastFolderAccessed, file);
 
-	rclog.out("%s downloaded file %s\n", account.name.c_str(), file.text());
+	log::printLine(log::rc, "{} downloaded file {}", account.name, file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file);
 
 	return HandlePacketResult::Handled;
@@ -1673,7 +1679,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to upload a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1720,7 +1726,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		// Normal file. Save it and display our message.
 		fileData.save(filepath << file);
 
-		rclog.out("%s uploaded file %s\n", account.name.c_str(), file.text());
+		log::printLine(log::rc, "{} uploaded file {}", account.name, file.text());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
 
 		// Update file.
@@ -1739,7 +1745,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to move a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to move a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1769,7 +1775,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		}
 	}
 
-	rclog.out("%s moved file %s to %s\n", account.name.c_str(), source.text(), destination.text());
+	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.text(), destination.text());
 
 	// Add working directory.
 	source = CString(m_server->getServerPath()) << source;
@@ -1817,7 +1823,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to delete a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to delete a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1862,7 +1868,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	remove(filePath.text());
 #endif
 
-	rclog.out("%s deleted file %s\n", account.name.c_str(), file.text());
+	log::printLine(log::rc, "{} deleted file {}", account.name, file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Deleted file " << file);
 
 	return HandlePacketResult::Handled;
@@ -1872,7 +1878,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to rename a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to rename a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1898,9 +1904,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	// Renaming our logs?  First, we need to close them.
 	if (account.lastFolderAccessed == "logs/")
 	{
-		if (f1 == "rclog.txt") rclog.close();
+		if (f1 == "rclog.txt") log::rc.close();
 		else if (f1 == "serverlog.txt")
-			serverlog.close();
+			log::server.close();
 	}
 
 	// Do the renaming.
@@ -1953,12 +1959,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	// Renaming our logs?  We can open them now.
 	if (account.lastFolderAccessed == "logs/")
 	{
-		if (f1 == "rclog.txt") rclog.open();
+		if (f1 == "rclog.txt") log::rc.reload();
 		else if (f1 == "serverlog.txt")
-			serverlog.open();
+			log::server.reload();
 	}
 
-	rclog.out("%s renamed file %s to %s\n", account.name.c_str(), f1.text(), f2.text());
+	log::printLine(log::rc, "{} renamed file {} to {}", account.name, f1.text(), f2.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);
 
 	return HandlePacketResult::Handled;
@@ -1968,7 +1974,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s is attempting to upload a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} is attempting to upload a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -1982,7 +1988,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 {
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to upload a file through the File Browser.\n", account.name.c_str());
+		log::printLine(log::rc, "[Hack] {} attempted to upload a file through the File Browser.", account.name);
 		return HandlePacketResult::Handled;
 	}
 
@@ -2005,7 +2011,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 	// Update file.
 	updateFile(this, m_server, account.lastFolderAccessed, file);
 
-	rclog.out("%s uploaded large file %s\n", account.name.c_str(), file.text());
+	log::printLine(log::rc, "{} uploaded large file {}", account.name, file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file);
 
 	return HandlePacketResult::Handled;
@@ -2019,7 +2025,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	folderpath.removeI(folderpath.length() - 1);
 	if (isClient())
 	{
-		rclog.out("[Hack] %s attempted to delete a folder through the File Browser: %s\n", account.name.c_str(), folder.text());
+		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.text());
 		return HandlePacketResult::Handled;
 	}
 
@@ -2031,7 +2037,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	rclog.out("%s removed folder %s\n", account.name.c_str(), folder.text());
+	log::printLine(log::rc, "{} removed folder {}", account.name, folder.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder << " has been removed.\n");
 	msgPLI_RC_FILEBROWSER_START(CString() << "");
 
