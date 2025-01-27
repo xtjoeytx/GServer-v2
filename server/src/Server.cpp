@@ -59,10 +59,6 @@ Server::Server(const CString& pName)
 	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
-	// This has the full path to the server directory.
-	m_serverPath = CString() << getBaseHomePath() << "servers/" << m_name << "/";
-	FileSystem::fixPathSeparators(m_serverPath);
-
 	// Point the logs to the correct server path.
 	log::server.filename = std::filesystem::path{ "servers" } / m_name.text() / log::server.filename;
 	log::rc.filename = std::filesystem::path{ "servers" } / m_name.text() / log::rc.filename;
@@ -506,7 +502,7 @@ void Server::loadFolderConfig()
 	for (auto& i: m_filesystem)
 		i.clear();
 
-	m_foldersConfig = CString::loadToken(CString() << m_serverPath << "config/foldersconfig.txt", "\n", true);
+	m_foldersConfig = CString::loadToken(CString() << "config/foldersconfig.txt", "\n", true);
 	for (auto& configLine: m_foldersConfig)
 	{
 		// No comments.
@@ -626,7 +622,7 @@ void Server::loadSettings()
 	if (!m_settings.isOpened())
 	{
 		m_settings.setSeparator("=");
-		m_settings.loadFile(CString() << m_serverPath << "config/serveroptions.txt");
+		m_settings.loadFile(CString() << "config/serveroptions.txt");
 		if (!m_settings.isOpened())
 			log::printLine(log::server, "** [Error] Could not open config/serveroptions.txt.  Will use default config.");
 	}
@@ -644,7 +640,7 @@ void Server::loadSettings()
 void Server::loadAdminSettings()
 {
 	m_adminSettings.setSeparator("=");
-	m_adminSettings.loadFile(CString() << m_serverPath << "config/adminconfig.txt");
+	m_adminSettings.loadFile(CString() << "config/adminconfig.txt");
 	if (!m_adminSettings.isOpened())
 		log::printLine(log::server, "** [Error] Could not open config/adminconfig.txt.  Will use default config.");
 	else
@@ -654,7 +650,7 @@ void Server::loadAdminSettings()
 void Server::loadAllowedVersions()
 {
 	CString versions;
-	versions.load(CString() << m_serverPath << "config/allowedversions.txt");
+	versions.load(CString() << "config/allowedversions.txt");
 	versions = removeComments(versions);
 	versions.removeAllI("\r");
 	versions.removeAllI("\t");
@@ -701,21 +697,21 @@ void Server::loadFileSystem()
 
 void Server::loadServerFlags()
 {
-	std::vector<CString> lines = CString::loadToken(CString() << m_serverPath << "serverflags.txt", "\n", true);
+	std::vector<CString> lines = CString::loadToken(CString() << "serverflags.txt", "\n", true);
 	for (auto& line: lines)
 		this->setFlag(line, false);
 }
 
 void Server::loadServerMessage()
 {
-	m_serverMessage.load(CString() << m_serverPath << "config/servermessage.html");
+	m_serverMessage.load(CString() << "config/servermessage.html");
 	m_serverMessage.removeAllI("\r");
 	m_serverMessage.replaceAllI("\n", " ");
 }
 
 void Server::loadIPBans()
 {
-	m_ipBans = CString::loadToken(CString() << m_serverPath << "config/ipbans.txt", "\n", true);
+	m_ipBans = CString::loadToken(CString() << "config/ipbans.txt", "\n", true);
 }
 
 void Server::loadClasses(bool print)
@@ -961,7 +957,7 @@ void Server::loadTranslations()
 
 void Server::loadWordFilter()
 {
-	m_wordFilter.load(CString() << m_serverPath << "config/rules.txt");
+	m_wordFilter.load(CString() << "config/rules.txt");
 }
 
 void Server::saveServerFlags()
@@ -969,7 +965,7 @@ void Server::saveServerFlags()
 	CString out;
 	for (auto& mServerFlag: m_serverFlags)
 		out << mServerFlag.first << "=" << mServerFlag.second << "\r\n";
-	out.save(CString() << m_serverPath << "serverflags.txt");
+	out.save(CString() << "serverflags.txt");
 }
 
 void Server::saveWeapons()
@@ -1281,7 +1277,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
 	if (npc->getType() == NPCType::DBNPC)
 	{
-		CString filePath = getServerPath() << "npcs/npc" << npc->getName() << ".txt";
+		CString filePath = CString() << "npcs/npc" << npc->getName() << ".txt";
 		FileSystem::fixPathSeparators(filePath);
 		remove(filePath.text());
 	}
@@ -1308,7 +1304,7 @@ bool Server::deleteClass(const std::string& className)
 		return false;
 
 	m_classList.erase(classIter);
-	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CString filePath = CString() << "scripts/" << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
@@ -1319,7 +1315,7 @@ void Server::updateClass(const std::string& className, const std::string& classC
 {
 	m_classList[className] = std::make_unique<ScriptClass>(className, classCode);
 
-	CString filePath = getServerPath() << "scripts/" << className << ".txt";
+	CString filePath = CString() << "scripts/" << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
 
 	CString fileData(classCode);
@@ -1786,7 +1782,7 @@ bool Server::NC_DelWeapon(const std::string& pWeaponName)
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filePath = getServerPath() << "weapons/weapon" << name << ".txt";
+	CString filePath = CString() << "weapons/weapon" << name << ".txt";
 	FileSystem::fixPathSeparators(filePath);
 	remove(filePath.text());
 
@@ -2040,7 +2036,7 @@ void Server::TS_Save()
 		}
 
 		// Save File
-		output.trimRight().save(getServerPath() << "translations/" << language.first.c_str() << ".po");
+		output.trimRight().save(CString() << "translations/" << language.first.c_str() << ".po");
 	}
 }
 

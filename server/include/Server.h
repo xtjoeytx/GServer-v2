@@ -145,8 +145,6 @@ public:
 	CSettings& getSettings() { return m_settings; }
 	CSettings& getAdminSettings() { return m_adminSettings; }
 	CSocketManager& getSocketManager() { return m_sockManager; }
-	CString getServerPath() const { return m_serverPath; }
-	CString getServerPath(const std::string& path) const;
 	const CString& getServerMessage() const { return m_serverMessage; }
 	const CString& getAllowedVersionString() const { return m_allowedVersionString; }
 	CTranslationManager& getTranslationManager() { return m_translationManager; }
@@ -298,7 +296,7 @@ private:
 	WordFilter m_wordFilter;
 	AnimationManager m_animationManager;
 	PackageManager m_packageManager;
-	CString m_allowedVersionString, m_name, m_serverMessage, m_serverPath;
+	CString m_allowedVersionString, m_name, m_serverMessage;
 	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
 
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
@@ -368,10 +366,6 @@ inline ScriptClass* Server::getClass(const std::string& className) const
 	return nullptr;
 }
 
-inline CString Server::getServerPath(const std::string& path) const
-{
-	return getServerPath() << std::filesystem::weakly_canonical(path).string();
-}
 
 #ifdef V8NPCSERVER
 

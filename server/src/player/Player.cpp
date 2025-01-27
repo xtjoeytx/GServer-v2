@@ -320,8 +320,9 @@ bool Player::sendFile(const CString& pFile)
 
 	// Strip filename from the path.
 	path.removeI(path.findl(FileSystem::getPathSeparator()) + 1);
-	if (path.find(m_server->getServerPath()) != -1)
-		path.removeI(0, m_server->getServerPath().length());
+	auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
+	if (path.find(current_path.c_str()) != -1)
+		path.removeI(0, current_path.length());
 
 	// Send the file now.
 	return this->sendFile(path, pFile);
@@ -329,7 +330,7 @@ bool Player::sendFile(const CString& pFile)
 
 bool Player::sendFile(const CString& pPath, const CString& pFile)
 {
-	CString filepath = m_server->getServerPath() << pPath << pFile;
+	CString filepath = CString() << pPath << pFile;
 	CString fileData;
 	fileData.load(filepath);
 

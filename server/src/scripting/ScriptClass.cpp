@@ -41,7 +41,7 @@ void ScriptClass::parseScripts(const std::string& classSource)
 
 										 // temp: save bytecode to file
 										 //CString bytecodeFile;
-										 //bytecodeFile << server->getServerPath() << "bytecode/classes/";
+										 //bytecodeFile << "bytecode/classes/";
 										 //std::filesystem::create_directories(bytecodeFile.text());
 										 //bytecodeFile << "class_" << m_className << ".gs2bc";
 

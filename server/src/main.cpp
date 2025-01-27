@@ -33,54 +33,6 @@ using namespace graal::utilities;
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
 
-// Home path of the gserver.
-CString homePath;
-static void getBasePath();
-std::string getBaseHomePath()
-{
-	return homePath.text();
-}
-
-void getBasePath()
-{
-#if defined(_WIN32) || defined(_WIN64)
-	// Get the path.
-	char path[MAX_PATH];
-	GetCurrentDirectoryA(MAX_PATH, path);
-
-	// Find the program exe and remove it from the path.
-	// Assign the path to homepath.
-	homePath = path;
-	homePath += "\\";
-	int pos = homePath.findl('\\');
-	if (pos == -1) homePath.clear();
-	else if (pos != (homePath.length() - 1))
-		homePath.removeI(++pos, homePath.length());
-#elif __APPLE__
-	char path[255];
-	if (!getcwd(path, sizeof(path)))
-		printf("Error getting CWD\n");
-
-	homePath = path;
-	if (homePath[homePath.length() - 1] != '/')
-		homePath << '/';
-#else
-	// Get the path to the program.
-	char path[260];
-	memset((void*)path, 0, 260);
-	readlink("/proc/self/exe", path, sizeof(path));
-
-	// Assign the path to homepath.
-	char* end = strrchr(path, '/');
-	if (end != 0)
-	{
-		end++;
-		if (end != 0) *end = '\0';
-		homePath = path;
-	}
-#endif
-}
-
 CString overrideServer;
 CString overridePort;
 CString overrideServerIp = nullptr;
@@ -107,26 +59,34 @@ int main(int argc, char* argv[])
 		// Seed the random number generator with the current time.
 		srand((unsigned int)time(0));
 
-		// Grab the base path to the server executable.
-		getBasePath();
-
 		// Load Server Settings
 		if (overrideServer.isEmpty())
 		{
 			std::cout << ":: Determining the server to start... ";
 
-			auto found_server = [](const std::string& why, std::string_view server)
+			auto found_server = [](const std::string& why, std::string_view server, const std::filesystem::path& working_directory)
 			{
 				std::cout << "success! " << why << std::endl;
 				overrideServer = server;
+				if (!working_directory.empty())
+					std::filesystem::current_path(working_directory);
 			};
 
+			// Current working directory.
+			if (overrideServer.isEmpty())
+			{
+				std::filesystem::path cwd = std::filesystem::current_path();
+				if (std::filesystem::exists(cwd / "config" / "serveroptions.txt"))
+					found_server("(current working directory)", cwd.filename().string(), {});
+			}
+
 			// startupserver.txt
+			if (overrideServer.isEmpty())
 			{
 				CString startup;
-				startup.load(CString(homePath) << "startupserver.txt");
+				startup.load("startupserver.txt");
 				if (!startup.isEmpty())
-					found_server("(startupserver.txt)", startup.text());
+					found_server("(startupserver.txt)", startup.text(), std::filesystem::path{ "servers" } / startup.text());
 			}
 
 			// Number of directories.
@@ -134,15 +94,14 @@ int main(int argc, char* argv[])
 			{
 				std::vector<std::filesystem::path> servers;
 
-				std::filesystem::path base_dir{ homePath.text() };
-				for (const auto& p: std::filesystem::directory_iterator{ base_dir / "servers" })
+				for (const auto& p: std::filesystem::directory_iterator{ "servers" })
 				{
 					if (p.is_directory())
 						servers.push_back(p.path().filename());
 				}
 
 				if (servers.size() == 1)
-					found_server("(directory search)", servers.front().string());
+					found_server("(directory search)", servers.front().string(), std::filesystem::path{ "servers" } / servers.front());
 			}
 
 			// Failure.

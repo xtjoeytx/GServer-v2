@@ -55,7 +55,7 @@ void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceR
 	}
 
 	// Add the directory to the directory list.
-	CString ndir = m_server->getServerPath() << newDir << wildcard;
+	CString ndir = CString() << newDir << wildcard;
 	if (vecSearch<CString>(m_directoryList, ndir) != -1) // Already exists?  Resync.
 		resync();
 	else
@@ -77,11 +77,12 @@ void FileSystem::addFile(CString file)
 	CString directory(getPath(file, fSep));
 
 	// Fix directory path separators.
-	if (directory.find(m_server->getServerPath()) != -1)
-		directory.removeI(0, m_server->getServerPath().length());
+	auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
+	if (directory.find(current_path.c_str()) != -1)
+		directory.removeI(0, current_path.length());
 
 	// Add to the map.
-	m_fileList[filename] = m_server->getServerPath() << directory << filename;
+	m_fileList[filename] = CString() << directory << filename;
 }
 
 void FileSystem::removeFile(const CString& file)
@@ -155,7 +156,8 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				{
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << dir << filedata.cFileName << fSep;
-					newDir.removeI(0, m_server->getServerPath().length());
+					auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
+					newDir.removeI(0, current_path.length());
 					addDir(newDir, "*", true);
 				}
 			}
@@ -198,7 +200,8 @@ void FileSystem::loadAllDirectories(const CString& directory, bool recursive)
 				{
 					// We need to add the directory to the directory list.
 					CString newDir = CString() << path << ent->d_name << fSep;
-					newDir.removeI(0, m_server->getServerPath().length());
+					auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
+					newDir.removeI(0, current_path.length());
 					addDir(newDir, "*", true);
 				}
 				continue;

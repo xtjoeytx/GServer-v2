@@ -267,7 +267,8 @@ void Server_Function_LoadString(const v8::FunctionCallbackInfo<v8::Value>& args)
 		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
 		{
 			CString fileData;
-			if (fileData.load(serverObject->getServerPath(*filePath)))
+			auto file_path = std::filesystem::current_path() / std::filesystem::weakly_canonical(*filePath);
+			if (fileData.load(file_path.string()))
 			{
 				auto result = v8::String::NewFromUtf8(isolate, fileData.text(), v8::NewStringType::kNormal, fileData.length());
 				args.GetReturnValue().Set(result.ToLocalChecked());
@@ -296,7 +297,8 @@ void Server_Function_SaveString(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 		if (folderRights.hasPermission(*filePath, FilePermissions::Read))
 		{
-			auto path = serverObject->getServerPath(*filePath);
+			auto current_path = std::filesystem::current_path() / std::filesystem::weakly_canonical(*filePath);
+			auto path = current_path.string();
 
 			CString data;
 			if (args.Length() > 2 && args[2]->BooleanValue(isolate))

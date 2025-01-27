@@ -95,7 +95,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 											guildList << account;
 											if (!nick.isEmpty()) guildList << ":" << nick;
 
-											guildList.save(CString() << getServerPath() << "guilds/guild" << guild << ".txt");
+											guildList.save(CString() << "guilds/guild" << guild << ".txt");
 										}
 									}
 								}
@@ -127,7 +127,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 												++length;
 
 											guildList.removeI(pos, length);
-											guildList.save(CString() << getServerPath() << "guilds/guild" << guild << ".txt");
+											guildList.save(CString() << "guilds/guild" << guild << ".txt");
 										}
 									}
 								}

@@ -51,7 +51,7 @@ Weapon::~Weapon()
 std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 {
 	// File Path
-	CString fileName = m_server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
+	CString fileName = CString() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
 
 	// Load File
 	CString fileData;
@@ -90,7 +90,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 		{
 			CString fileName = curLine.readString("");
 
-			byteCodeData.load(m_server->getServerPath() << "weapon_bytecode/" << fileName);
+			byteCodeData.load(CString() << "weapon_bytecode/" << fileName);
 			if (!byteCodeData.isEmpty())
 				byteCodeFile = fileName.toString();
 		}
@@ -156,7 +156,7 @@ bool Weapon::saveWeapon()
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filename = m_server->getServerPath() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
+	CString filename = CString() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";

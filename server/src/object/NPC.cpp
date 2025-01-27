@@ -1521,7 +1521,7 @@ void NPC::saveNPC()
 	auto level = getLevel();
 
 	static const char* NL = "\r\n";
-	CString fileName = m_server->getServerPath() << "npcs/npc" << m_npcName << ".txt";
+	CString fileName = CString() << "npcs/npc" << m_npcName << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
 	fileData << "NAME " << m_npcName << NL;
 	fileData << "ID " << CString(m_id) << NL;

@@ -62,7 +62,7 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 	// If folder config is on, try to find which file system to add it to.
 	else
 	{
-		std::vector<CString> foldersConfig = CString::loadToken(server->getServerPath() << "config/foldersconfig.txt", "", true);
+		std::vector<CString> foldersConfig = CString::loadToken("config/foldersconfig.txt", "", true);
 		for (auto& folderConfig : foldersConfig)
 		{
 			CString type = folderConfig.readString(" ").trim();
@@ -257,7 +257,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 	}
 
 	CString foldersConfig;
-	foldersConfig.load(m_server->getServerPath() << "config/foldersconfig.txt");
+	foldersConfig.load("config/foldersconfig.txt");
 	foldersConfig.removeAllI("\r");
 
 	sendPacket(CString() >> (char)PLO_RC_FOLDERCONFIGGET << foldersConfig.gtokenize());
@@ -281,7 +281,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 	CString folders = pPacket.readString("");
 	folders.guntokenizeI();
 	folders.replaceAllI("", "\r\n");
-	folders.save(m_server->getServerPath() << "config/foldersconfig.txt");
+	folders.save("config/foldersconfig.txt");
 
 	// Update file system.
 	m_server->loadFileSystem();
@@ -911,7 +911,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 #endif
 			if (words[0] == "/help" && words.size() == 1)
 			{
-				std::vector<CString> commands = CString::loadToken(m_server->getServerPath() << "config/rchelp.txt", "", true);
+				std::vector<CString> commands = CString::loadToken("config/rchelp.txt", "", true);
 				for (auto& command : commands)
 					sendPacket(CString() >> (char)PLO_RC_CHAT << command);
 			}
@@ -1124,10 +1124,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 					if (i == 5) fs = "sword";
 					if (i == 6) fs = "shield";
 
+					auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
 					for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
 					{
 						if (i->first.match(search))
-							found[i->second.removeAll(m_server->getServerPath())] = fs;
+							found[i->second.removeAll(current_path)] = fs;
 					}
 				}
 
@@ -1585,7 +1586,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	fs.addDir(account.lastFolderAccessed);
 
 	// Make sure our folder exists.
-	CString mkdir_path = m_server->getServerPath();
+	CString mkdir_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
 	auto f = string::splitHard(account.lastFolderAccessed, std::string_view{ "/" });
 	for (auto i = f.begin(); i != f.end(); ++i)
 	{
@@ -1651,7 +1652,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 
 	// Send file.
 	CString file = pPacket.readString("");
-	CString filepath = m_server->getServerPath() << account.lastFolderAccessed << file;
+	CString filepath = CString() << account.lastFolderAccessed << file;
 	CString checkFile = CString() << account.lastFolderAccessed << file;
 
 	// Don't let us download/view important files.
@@ -1684,7 +1685,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	}
 
 	CString file = pPacket.readChars(pPacket.readGUChar());
-	CString filepath = m_server->getServerPath() << account.lastFolderAccessed;
+	CString filepath = account.lastFolderAccessed;
 	CString fileData = pPacket.subString(pPacket.readPos());
 	CString checkFile = CString() << account.lastFolderAccessed << file;
 
@@ -1777,12 +1778,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 
 	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.text(), destination.text());
 
-	// Add working directory.
-	source = CString(m_server->getServerPath()) << source;
-	destination = CString(m_server->getServerPath()) << destination;
-	FileSystem::fixPathSeparators(source);
-	FileSystem::fixPathSeparators(destination);
-
 	// Save the new file now.
 	CString temp;
 	temp.load(source);
@@ -1828,7 +1823,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	CString filePath = m_server->getServerPath() << account.lastFolderAccessed << file;
+	CString filePath = CString() << account.lastFolderAccessed << file;
 	CString checkFile = CString() << account.lastFolderAccessed << file;
 	FileSystem::fixPathSeparators(filePath);
 
@@ -1884,8 +1879,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 
 	CString f1 = pPacket.readChars(pPacket.readGUChar());
 	CString f2 = pPacket.readChars(pPacket.readGUChar());
-	CString f1path = m_server->getServerPath() << account.lastFolderAccessed << f1;
-	CString f2path = m_server->getServerPath() << account.lastFolderAccessed << f2;
+	CString f1path = CString() << account.lastFolderAccessed << f1;
+	CString f2path = CString() << account.lastFolderAccessed << f2;
 	CString checkFile1 = CString() << account.lastFolderAccessed << f1;
 	CString checkFile2 = CString() << account.lastFolderAccessed << f2;
 	FileSystem::fixPathSeparators(f1path);
@@ -1993,7 +1988,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	CString filepath = m_server->getServerPath() << account.lastFolderAccessed << file;
+	CString filepath = CString() << account.lastFolderAccessed << file;
 
 	// Save the file.
 	m_rcLargeFiles[file].save(filepath);
@@ -2020,7 +2015,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
 	CString folder = pPacket.readString("");
-	CString folderpath = m_server->getServerPath() << folder;
+	CString folderpath = folder;
 	FileSystem::fixPathSeparators(folderpath);
 	folderpath.removeI(folderpath.length() - 1);
 	if (isClient())

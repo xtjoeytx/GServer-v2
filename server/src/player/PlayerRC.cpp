@@ -213,7 +213,7 @@ bool PlayerRC::sendLogin()
 	account.character.headImage = m_server->getSettings().getStr("staffhead", "head25.png").toStringView();
 
 	// Send the RC join message to the RC.
-	std::vector<CString> rcmessage = CString::loadToken(m_server->getServerPath() << "config/rcmessage.txt", "\n", true);
+	std::vector<CString> rcmessage = CString::loadToken("config/rcmessage.txt", "\n", true);
 	for (const auto& i : rcmessage)
 		sendPacket(CString() >> (char)PLO_RC_CHAT << i);
 

@@ -97,7 +97,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 	auto path = accountFS->findi(std::format("{}.txt", accountName));
 	if (path.length() == 0)
 	{
-		path = server->getServerPath() << "accounts/defaultaccount.txt";
+		path = "accounts/defaultaccount.txt";
 		FileSystem::fixPathSeparators(path);
 		loadedFromDefault = true;
 	}
@@ -382,7 +382,7 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 		accountFileName = CString() << account.name << ".txt";
 
 	// Save the account now.
-	CString accpath = server->getServerPath() << "accounts/" << accountFileName;
+	CString accpath = CString() << "accounts/" << accountFileName;
 	FileSystem::fixPathSeparators(accpath);
 	if (!CString(newFile).save(accpath))
 		log::printLine(log::rc, "** Error saving account: {}", account.name);

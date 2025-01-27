@@ -1041,11 +1041,11 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 				// Load the file.
 				CString file;
-				file.load(m_server->getServerPath() << "logs/" << filename);
+				file.load(CString() << "logs/" << filename);
 
 				// Save the file.
 				file << action.subString(finish) << "\r\n";
-				file.save(m_server->getServerPath() << "logs/" << filename);
+				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
 			else if (action.find("gr.writefile") == 0)
@@ -1062,7 +1062,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 				// Save the file.
 				CString file = action.subString(finish) << "\r\n";
-				file.save(m_server->getServerPath() << "logs/" << filename);
+				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
 			else if (action.find("gr.readfile") == 0)
@@ -1079,7 +1079,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 				// Load the file.
 				CString filedata;
-				filedata.load(m_server->getServerPath() << "logs/" << filename);
+				filedata.load(CString() << "logs/" << filename);
 				filedata.removeAllI("\r");
 
 				// Tokenize it.
