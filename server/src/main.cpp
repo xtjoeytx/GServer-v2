@@ -60,13 +60,15 @@ int main(int argc, char* argv[])
 		srand((unsigned int)time(0));
 
 		// Load Server Settings
+		std::string discovery_mode;
 		if (overrideServer.isEmpty())
 		{
 			std::cout << ":: Determining the server to start... ";
 
-			auto found_server = [](const std::string& why, std::string_view server, const std::filesystem::path& working_directory)
+			auto found_server = [&discovery_mode](const std::string& why, std::string_view server, const std::filesystem::path& working_directory)
 			{
 				std::cout << "success! " << why << std::endl;
+				discovery_mode = why;
 				overrideServer = server;
 				if (!working_directory.empty())
 					std::filesystem::current_path(working_directory);
@@ -123,6 +125,7 @@ int main(int argc, char* argv[])
 
 		// Initialize the server.
 		log::printLine(log::server, ":: Starting server: {}.", overrideServer);
+		log::printLine(log::server, "     {}: {}", discovery_mode, std::filesystem::current_path().string());
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
 			log::printLine(log::server, "** [Error] Failed to start server: {}", overrideServer);
