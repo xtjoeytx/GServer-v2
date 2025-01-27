@@ -110,16 +110,16 @@ struct Log
 };
 
 // The serverlog.txt file.
-inline static Log server{ .filename = std::filesystem::path{ "logs" } / "serverlog.txt" };
+inline Log server{ .filename = std::filesystem::path{ "logs" } / "serverlog.txt" };
 
 // The rclog.txt file.
-inline static Log rc{ .filename = std::filesystem::path{ "logs" } / "rclog.txt" };
+inline Log rc{ .filename = std::filesystem::path{ "logs" } / "rclog.txt" };
 
 // The npclog.txt file.
-inline static Log npc{ .filename = std::filesystem::path{ "logs" } / "npclog.txt" };
+inline Log npc{ .filename = std::filesystem::path{ "logs" } / "npclog.txt" };
 
 // The scriptlog.txt file.
-inline static Log script{ .filename = std::filesystem::path{ "logs" } / "scriptlog.txt" };
+inline Log script{ .filename = std::filesystem::path{ "logs" } / "scriptlog.txt" };
 
 ///////////////////////////////////////////////////////////////////////////////
 

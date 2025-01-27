@@ -1785,31 +1785,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Remove the old file.
-#if defined(WIN32) || defined(WIN64)
-	wchar_t* wcstr = 0;
-
-	// Determine if the filename is UTF-8 encoded.
-	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, source.text(), source.length(), 0, 0);
-	if (wcsize != 0)
-	{
-		wcstr = new wchar_t[wcsize + 1];
-		memset((void*)wcstr, 0, (static_cast<size_t>(wcsize) + 1) * sizeof(wchar_t));
-		MultiByteToWideChar(CP_UTF8, 0, source.text(), source.length(), wcstr, wcsize);
-	}
-	else
-	{
-		wcstr = new wchar_t[source.length() + 1];
-		for (int i = 0; i < source.length(); ++i)
-			wcstr[i] = (unsigned char)source[i];
-		wcstr[source.length()] = 0;
-	}
-
-	// Remove the file now.
-	_wremove(wcstr);
-	delete[] wcstr;
-#else
-	remove(source.text());
-#endif
+	std::filesystem::remove(source.toStringView());
 
 	return HandlePacketResult::Handled;
 }
@@ -1823,11 +1799,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	CString filePath = CString() << account.lastFolderAccessed << file;
-	CString checkFile = CString() << account.lastFolderAccessed << file;
-	FileSystem::fixPathSeparators(filePath);
+	std::filesystem::path filePath = std::filesystem::path{ account.lastFolderAccessed } / file.toStringView();
 
 	// Don't let us delete important files.
+	CString checkFile = filePath.string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile == file)
@@ -1837,31 +1812,41 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 		}
 	}
 
-#if defined(WIN32) || defined(WIN64)
-	wchar_t* wcstr = 0;
-
-	// Determine if the filename is UTF-8 encoded.
-	int wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filePath.text(), filePath.length(), 0, 0);
-	if (wcsize != 0)
+	// Deleting our logs?  First, we need to close them.
+	if (account.lastFolderAccessed == "logs/")
 	{
-		wcstr = new wchar_t[wcsize + 1];
-		memset((void*)wcstr, 0, (static_cast<size_t>(wcsize) + 1) * sizeof(wchar_t));
-		MultiByteToWideChar(CP_UTF8, 0, filePath.text(), filePath.length(), wcstr, wcsize);
-	}
-	else
-	{
-		wcstr = new wchar_t[filePath.length() + 1];
-		for (int i = 0; i < filePath.length(); ++i)
-			wcstr[i] = (unsigned char)filePath[i];
-		wcstr[filePath.length()] = 0;
+		if (file == "rclog.txt") log::rc.close();
+		else if (file == "serverlog.txt")
+			log::server.close();
+		else if (file == "npclog.txt")
+			log::npc.close();
+		else if (file == "scriptlog.txt")
+			log::script.close();
 	}
 
-	// Remove the file now.
-	_wremove(wcstr);
-	delete[] wcstr;
-#else
-	remove(filePath.text());
-#endif
+	// Do the deleting.
+	std::error_code ec;
+	std::filesystem::remove(filePath, ec);
+
+	// Deleting our logs?  We can open them now.
+	if (account.lastFolderAccessed == "logs/")
+	{
+		if (file == "rclog.txt") log::rc.reload();
+		else if (file == "serverlog.txt")
+			log::server.reload();
+		else if (file == "npclog.txt")
+			log::npc.reload();
+		else if (file == "scriptlog.txt")
+			log::script.reload();
+	}
+
+	// If we got an error, record it now.
+	if (ec)
+	{
+		log::printLine(log::rc, "Error deleting file: {}", ec.message());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error deleting file: " << ec.message());
+		return HandlePacketResult::Handled;
+	}
 
 	log::printLine(log::rc, "{} deleted file {}", account.name, file.text());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Deleted file " << file);
@@ -1879,17 +1864,16 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 
 	CString f1 = pPacket.readChars(pPacket.readGUChar());
 	CString f2 = pPacket.readChars(pPacket.readGUChar());
-	CString f1path = CString() << account.lastFolderAccessed << f1;
-	CString f2path = CString() << account.lastFolderAccessed << f2;
-	CString checkFile1 = CString() << account.lastFolderAccessed << f1;
-	CString checkFile2 = CString() << account.lastFolderAccessed << f2;
-	FileSystem::fixPathSeparators(f1path);
-	FileSystem::fixPathSeparators(f2path);
+
+	std::filesystem::path oldPath = std::filesystem::path{ account.lastFolderAccessed } / f1.toStringView();
+	std::filesystem::path newPath = std::filesystem::path{ account.lastFolderAccessed } / f2.toStringView();
 
 	// Don't let us rename/overwrite important files.
+	CString checkFile1 = oldPath.string();
+	CString checkFile2 = newPath.string();
 	for (const auto& file : ImportantFiles)
 	{
-		if (checkFile1 == file)
+		if (checkFile1 == file || checkFile2 == file)
 		{
 			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to rename/overwrite file " << checkFile1 << " or " << checkFile2);
 			return HandlePacketResult::Handled;
@@ -1902,54 +1886,15 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 		if (f1 == "rclog.txt") log::rc.close();
 		else if (f1 == "serverlog.txt")
 			log::server.close();
+		else if (f1 == "npclog.txt")
+			log::npc.close();
+		else if (f1 == "scriptlog.txt")
+			log::script.close();
 	}
 
 	// Do the renaming.
-#if defined(WIN32) || defined(WIN64)
-	// Convert to wchar_t because the filename might be UTF-8 encoded.
-	wchar_t* f1_wcstr = 0;
-	wchar_t* f2_wcstr = 0;
-
-	// Test f1path.
-	int f1_wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, f1path.text(), f1path.length(), 0, 0);
-	if (f1_wcsize != 0)
-	{
-		f1_wcstr = new wchar_t[f1_wcsize + 1];
-		memset((void*)f1_wcstr, 0, (static_cast<size_t>(f1_wcsize) + 1) * sizeof(wchar_t));
-		MultiByteToWideChar(CP_UTF8, 0, f1path.text(), f1path.length(), f1_wcstr, f1_wcsize);
-	}
-	else
-	{
-		f1_wcstr = new wchar_t[f1path.length() + 1];
-		for (int i = 0; i < f1path.length(); ++i)
-			f1_wcstr[i] = (unsigned char)f1path[i];
-		f1_wcstr[f1path.length()] = 0;
-	}
-
-	// Test f2path.
-	int f2_wcsize = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, f2path.text(), f2path.length(), 0, 0);
-	if (f2_wcsize != 0)
-	{
-		f2_wcstr = new wchar_t[f2_wcsize + 1];
-		memset((void*)f2_wcstr, 0, (static_cast<size_t>(f2_wcsize) + 1) * sizeof(wchar_t));
-		MultiByteToWideChar(CP_UTF8, 0, f2path.text(), f2path.length(), f2_wcstr, f2_wcsize);
-	}
-	else
-	{
-		f2_wcstr = new wchar_t[f2path.length() + 1];
-		for (int i = 0; i < f2path.length(); ++i)
-			f2_wcstr[i] = f2path[i];
-		f2_wcstr[f2path.length()] = 0;
-	}
-
-	// Rename.
-	_wrename(f1_wcstr, f2_wcstr);
-	delete[] f1_wcstr;
-	delete[] f2_wcstr;
-#else
-	// Linux uses UTF-8 filenames.
-	rename(f1path.text(), f2path.text());
-#endif
+	std::error_code ec;
+	std::filesystem::rename(oldPath, newPath, ec);
 
 	// Renaming our logs?  We can open them now.
 	if (account.lastFolderAccessed == "logs/")
@@ -1957,6 +1902,18 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 		if (f1 == "rclog.txt") log::rc.reload();
 		else if (f1 == "serverlog.txt")
 			log::server.reload();
+		else if (f1 == "npclog.txt")
+			log::npc.reload();
+		else if (f1 == "scriptlog.txt")
+			log::script.reload();
+	}
+
+	// If we got an error, record it now.
+	if (ec)
+	{
+		log::printLine(log::rc, "Error renaming file: {}", ec.message());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error renaming file: " << ec.message());
+		return HandlePacketResult::Handled;
 	}
 
 	log::printLine(log::rc, "{} renamed file {} to {}", account.name, f1.text(), f2.text());
