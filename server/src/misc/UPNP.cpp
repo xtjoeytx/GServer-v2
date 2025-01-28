@@ -1,19 +1,21 @@
 #ifdef UPNP
-	#define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
-	#if defined(_WIN32) || defined(_WIN64)
-		#ifndef WIN32_LEAN_AND_MEAN
-			#define WIN32_LEAN_AND_MEAN
-		#endif
+#define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
-		#ifndef __GNUC__ // rain
-			#pragma comment(lib, "ws2_32.lib")
-		#endif
+#include "Server.h"
 
-		#include <windows.h>
+#if defined(_WIN32) || defined(_WIN64)
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
 	#endif
-	#include "Server.h"
-	#include "misc/UPNP.h"
+
+	#ifndef __GNUC__ // rain
+		#pragma comment(lib, "ws2_32.lib")
+	#endif
+
+	#include <windows.h>
+#endif
+#include "misc/UPNP.h"
 
 void UPNP::discover()
 {

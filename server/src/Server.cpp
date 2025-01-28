@@ -243,7 +243,8 @@ void Server::cleanupDeletedPlayers()
 
 		// Get rid of the player now.
 		m_playerIdGenerator.freeId(player->getId());
-		m_sockManager.unregisterSocket(player.get());
+		if (player->getSocket() != nullptr)
+			m_sockManager.unregisterSocket(player.get());
 		m_playerList.erase(player->getId());
 		player->cleanup();
 
@@ -1374,6 +1375,12 @@ bool Server::swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Play
 	// Update the socket manager.
 	m_sockManager.unregisterSocket(old_player.get());
 	m_sockManager.registerSocket(new_player.get());
+
+#ifdef V8NPCSERVER
+	// Create script object for player
+	old_player->setScriptObject(nullptr);
+	m_scriptEngine.wrapScriptObject(new_player.get());
+#endif
 
 	return true;
 }

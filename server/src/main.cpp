@@ -33,6 +33,50 @@ using namespace graal::utilities;
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
 
+// Home path of the gserver.
+static CString getBasePath()
+{
+	CString homePath;
+#if defined(_WIN32) || defined(_WIN64)
+	// Get the path.
+	char path[MAX_PATH];
+	DWORD length = GetModuleFileNameA(NULL, path, MAX_PATH);
+	std::string_view path_view{ path, length };
+	if (auto pos = path_view.find_last_of("\\"); pos != std::string_view::npos)
+		path_view = path_view.substr(0, pos);
+	homePath = path_view;
+#elif __APPLE__
+	char path[1024];
+	uint32_t size = sizeof(path);
+	int result = _NSGetExecutablePath(&path[0], &size);
+	if (result == -1)
+		printf("Error getting executable path\n");
+
+	std::string_view path_view{ path, size };
+	homePath = path_view;
+#else
+	// Get the path to the program.
+	char path[1024];
+	memset((void*)path, 0, 1024);
+	readlink("/proc/self/exe", path, sizeof(path));
+
+	// Assign the path to homepath.
+	char* end = strrchr(path, '/');
+	if (end != 0)
+	{
+		*end = '\0';
+		homePath = path;
+	}
+#endif
+	printf("Calculated home path: %s\n", homePath.text());
+	return homePath;
+}
+std::filesystem::path getBaseHomePath()
+{
+	static std::filesystem::path homePath{ getBasePath().toString() };
+	return homePath;
+}
+
 CString overrideServer;
 CString overridePort;
 CString overrideServerIp = nullptr;
@@ -70,7 +114,7 @@ int main(int argc, char* argv[])
 				std::cout << "success! " << why << std::endl;
 				discovery_mode = why;
 				overrideServer = server;
-				if (!working_directory.empty())
+				if (!working_directory.empty() && std::filesystem::exists(working_directory))
 					std::filesystem::current_path(working_directory);
 			};
 

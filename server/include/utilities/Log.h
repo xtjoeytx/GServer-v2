@@ -139,7 +139,10 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 	}
 
 	// Output the message.
-	text << std::vformat(fmt, std::make_format_args(args...));
+	if constexpr(sizeof...(args) == 0)
+		text << fmt;
+	else
+		text << std::vformat(fmt, std::make_format_args(args...));
 
 	// Get the resultant string.
 	// If empty, don't log anything.

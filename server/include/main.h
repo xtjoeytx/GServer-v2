@@ -1,11 +1,11 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <string>
+#include <filesystem>
 
 bool parseArgs(int argc, char* argv[]);
 void printHelp(const char* pname);
-std::string getBaseHomePath();
+std::filesystem::path getBaseHomePath();
 void shutdownServer(int signal);
 
 #endif // MAIN_H

@@ -10,8 +10,9 @@
 #include "Server.h"
 #include "object/NPC.h"
 #include "object/Weapon.h"
-#include "player/PlayerLogin.h"
 #include "player/PlayerClient.h"
+#include "player/PlayerLogin.h"
+#include "player/PlayerNC.h"
 #include "player/PlayerRC.h"
 #include "player/PlayerProps.h"
 #include "level/Level.h"
@@ -46,8 +47,7 @@ HandlePacketResult PlayerLogin::handlePacket(std::optional<uint8_t> id, CString&
 {
 	// TODO: Websocket stuff somewhere.
 	// TODO: We should find a way to make sure our outgoing packets get sent before the disconnect.
-	if (msgLoginPacket(packet) == HandlePacketResult::Failed)
-		disconnect();
+	msgLoginPacket(packet);
 	return HandlePacketResult::Handled;
 }
 
@@ -63,7 +63,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	else if (m_type & PLTYPE_ANYRC)
 		player = std::make_shared<PlayerRC>(m_playerSock, m_id);
 	else if (m_type & PLTYPE_ANYNC)
-		;
+		player = std::make_shared<PlayerNC>(m_playerSock, m_id);
 	else if (m_type & PLTYPE_NPCSERVER)
 		;
 	else
@@ -85,46 +85,11 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	// Pass the login to the new player.
 	pPacket.setRead(0);
 	if (player != nullptr && !player->handleLogin(pPacket))
+	{
+		m_fileQueue.sendCompress(true);
+		player->disconnect();
 		return HandlePacketResult::Failed;
+	}
 
 	return HandlePacketResult::Handled;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Player::sendLoginNC()
-{
-#if V8NPCSERVER
-	// Send database npcs
-	auto& npcList = m_server->getNPCNameList();
-	for (auto& [npcName, npcPtr]: npcList)
-	{
-		auto npc = npcPtr.lock();
-		if (npc == nullptr) continue;
-
-		CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->getId() >> (char)NPCPROP_NAME << npc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE << npc->getProp(NPCPROP_TYPE) >> (char)NPCPROP_CURLEVEL << npc->getProp(NPCPROP_CURLEVEL);
-		sendPacket(npcPacket);
-	}
-
-	// Send classes
-	CString classPacket;
-	auto& classList = m_server->getClassList();
-	for (auto it = classList.begin(); it != classList.end(); ++it)
-		classPacket >> (char)PLO_NC_CLASSADD << it->first << "\n";
-	sendPacket(classPacket);
-
-	// Send list of currently connected NC's
-	auto& playerList = m_server->getPlayerList();
-	for (auto& [playerId, player]: playerList)
-	{
-		if (player.get() != this && player->isNC())
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "New NC: " << player->account.name);
-	}
-
-	// Announce to other nc's that we logged in
-	m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << "New NC: " << account.name, this);
-
-	m_loaded = true;
-#endif
-	return true;
 }

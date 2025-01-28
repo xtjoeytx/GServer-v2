@@ -406,6 +406,33 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 	return true;
 }
 
+#ifdef V8NPCSERVER
+// Send's NC Address/Port to Player (RC Only)
+void Player::sendNCAddr()
+{
+	// RC's only!
+	if (!isRC() || !account.hasRight(PLPERM_NPCCONTROL))
+		return;
+
+	auto npcServer = m_server->getNPCServer();
+	if (npcServer != nullptr)
+	{
+		// Grab NPCServer & Send
+		CString npcServerIp = m_server->getAdminSettings().getStr("ns_ip", "auto").toLower();
+		if (npcServerIp == "auto")
+		{
+			npcServerIp = m_server->getServerList().getServerIP();
+
+			// Fix for localhost setups
+			if (account.ipAddress == m_playerSock->getLocalIp())
+				npcServerIp = account.ipAddress;
+		}
+
+		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(m_server->getNCPort()));
+	}
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Player::handleLogin(CString& pPacket)
@@ -443,10 +470,6 @@ bool Player::sendLogin()
 			return false;
 		}
 	}
-
-	// NPC-Control login, then return.
-	if (isNC())
-		return sendLoginNC();
 
 	// Check to see if we can log in if we are a client.
 	if (isClient())
@@ -526,9 +549,6 @@ bool Player::sendLogin()
 	// Set loaded to true so our account is saved when we leave.
 	// This also lets us send data.
 	m_loaded = true;
-
-	if (isNC())
-		return sendLoginNC();
 
 	return true;
 }

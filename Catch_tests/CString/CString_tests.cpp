@@ -225,7 +225,7 @@ SCENARIO( "CString", "[string]" ) {
 			test << "hello world";
 			CString test2 = "HeLlO wOrLd";
 
-			int retVal = test.comparei(test2);
+			bool retVal = test.comparei(test2);
 
 			THEN( "return should be true") {
 				REQUIRE( retVal == true );
@@ -236,7 +236,7 @@ SCENARIO( "CString", "[string]" ) {
 			test << "hello world";
 			CString test2 = "HeLlO wOrZd";
 
-			int retVal = test.comparei(test2);
+			bool retVal = test.comparei(test2);
 
 			THEN( "return should not be true") {
 				REQUIRE( retVal != true );

@@ -1,6 +1,8 @@
 #include <cstring>
 #include <libplatform/libplatform.h>
 
+#include "main.h"
+
 #include "scripting/interface/ScriptBindings.h"
 #include "scripting/v8/V8ScriptEnv.h"
 #include "scripting/v8/V8ScriptArguments.h"
@@ -29,9 +31,12 @@ void V8ScriptEnv::initialize()
 	const char* flags = "--use_strict";
 	v8::V8::SetFlagsFromString(flags, strlen(flags));
 
+	// Get base path of executable.
+	auto home_path = getBaseHomePath().string() + (char)std::filesystem::path::preferred_separator;
+
 	// Initialize V8.
-	v8::V8::InitializeICUDefaultLocation(".");
-	v8::V8::InitializeExternalStartupData(".");
+	v8::V8::InitializeICUDefaultLocation(home_path.c_str());
+	v8::V8::InitializeExternalStartupData(home_path.c_str());
 
 	// Initialize v8 if this is the first vm
 	if (!_v8_initialized)

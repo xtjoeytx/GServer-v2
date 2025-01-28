@@ -1472,7 +1472,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Get folder list to send to the client.
-	auto folders = string::toCSV(account.folderList);
+	auto folders = string::toCSV(account.folderList, true);
 
 	// Send the folder list and the welcome message.
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_DIRLIST << folders);

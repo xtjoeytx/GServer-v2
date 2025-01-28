@@ -672,7 +672,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	log::printLine(log::server, ":: %s - [Error] %s\n", m_socket.getDescription(), pPacket.readString("").text());
+	log::printLine(log::server, ":: {} - [Error] {}", m_socket.getDescription(), pPacket.readString("").text());
 }
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)

@@ -265,27 +265,6 @@ public:
 	
 	//HandlePacketResult msgPLI_NPCSERVERQUERY(CString& pPacket);
 
-#ifdef V8NPCSERVER
-	HandlePacketResult msgPLI_NC_NPCGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCDELETE(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCRESET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCSCRIPTGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCWARP(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCFLAGSGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCSCRIPTSET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCFLAGSSET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_NPCADD(CString& pPacket);
-	HandlePacketResult msgPLI_NC_CLASSEDIT(CString& pPacket);
-	HandlePacketResult msgPLI_NC_CLASSADD(CString& pPacket);
-	HandlePacketResult msgPLI_NC_LOCALNPCSGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_WEAPONLISTGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_WEAPONGET(CString& pPacket);
-	HandlePacketResult msgPLI_NC_WEAPONADD(CString& pPacket);
-	HandlePacketResult msgPLI_NC_WEAPONDELETE(CString& pPacket);
-	HandlePacketResult msgPLI_NC_CLASSDELETE(CString& pPacket);
-	HandlePacketResult msgPLI_NC_LEVELLISTGET(CString& pPacket);
-#endif
-
 	HandlePacketResult msgPLI_REQUESTTEXT(CString& pPacket);
 	HandlePacketResult msgPLI_SENDTEXT(CString& pPacket);
 
@@ -297,11 +276,6 @@ protected:
 	// Cyclic, we have to create in the constructor.
 	// BabyDI_INJECT(Server, m_server);
 	Server* m_server = nullptr;
-
-	// Login functions.
-	//bool sendLoginClient();
-	bool sendLoginNC();
-	//bool sendLoginRC();
 
 	// Socket Variables
 	CSocket* m_playerSock;

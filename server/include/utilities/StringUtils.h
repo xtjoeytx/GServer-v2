@@ -208,7 +208,7 @@ std::string join(std::ranges::forward_range auto&& range, std::string_view delim
 ///////////////////////////////////////////////////////////////////////////////
 
 // Converts a range of strings to a CSV string.
-auto toCSV(ForwardRangeNotString auto&& range)
+auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 {
 	constexpr std::array<char, 3> complexChars = { '"', ',', '\\' };
 	std::ostringstream oss;
@@ -224,7 +224,7 @@ auto toCSV(ForwardRangeNotString auto&& range)
 			[&complexChars](const auto& c) { return std::ranges::find(complexChars, c) != complexChars.end(); });
 
 		// Output the word.
-		if (!complex)
+		if (!complex && !force_quoted)
 		{
 			oss << word << ',';
 			continue;
@@ -253,10 +253,10 @@ auto toCSV(ForwardRangeNotString auto&& range)
 }
 
 // Converts a string to a CSV string, splitting on the specified delimiter.
-auto toCSV(StringViewVariant auto const& str, char delim = '\n')
+auto toCSV(StringViewVariant auto const& str, char delim = '\n', bool force_quoted = false)
 {
 	auto s = splitHard(str, std::string_view(&delim, 1));
-	return toCSV(s);
+	return toCSV(s, force_quoted);
 }
 
 // Converts a CSV string to a vector of strings.
