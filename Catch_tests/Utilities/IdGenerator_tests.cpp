@@ -2,6 +2,8 @@
 #include "catch2/catch_all.hpp"
 #include <utilities/IdGenerator.h>
 
+using namespace preagonal;
+
 SCENARIO("IdGenerator")
 {
 	GIVEN("A default int generator")

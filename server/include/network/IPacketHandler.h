@@ -8,6 +8,13 @@
 #include <CEncryption.h>
 #include <IEnums.h>
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 enum class HandlePacketResult
 {
 	Handled,
@@ -202,5 +209,9 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 	auto packet = buffer.readString("\n");
 	handlePacket(std::nullopt, packet);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
 
 #endif // IPACKETHANDLER_H

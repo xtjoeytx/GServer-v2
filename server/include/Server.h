@@ -1,5 +1,5 @@
-#ifndef TSERVER_H
-#define TSERVER_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #include <chrono>
 #include <climits>
@@ -41,6 +41,13 @@
 #include "animation/GameAni.h"
 #include "utilities/ResourceManager.h"
 #include "UpdatePackage.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 //class Player;
 class PlayerClient;
@@ -377,8 +384,6 @@ inline std::shared_ptr<T> Server::getPlayer(const uint16_t id, int type) const
 template<class T>
 inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) const
 {
-	using namespace graal::utilities;
-
 	for (const auto& [id, player] : m_playerList)
 	{
 		// Check if its the type of player we are looking for
@@ -398,4 +403,8 @@ inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) co
 	return nullptr;
 }
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // SERVER_H

@@ -4,6 +4,13 @@
 #include "Server.h"
 #include "UpdatePackage.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
 {
 	auto fileSystem = server->getFileSystem();
@@ -37,7 +44,7 @@ void UpdatePackage::reload(Server* const server)
 	this->m_checksum = calculateCrc32Checksum(fileContents);
 
 	// Calculate the checksum and filesize for each file referenced in the package
-	for (const auto packageLines = fileContents.tokenize("\n"); const auto& line: packageLines)
+	for (const auto packageLines = fileContents.tokenize("\n"); const auto & line: packageLines)
 	{
 		// Line should be in the format of FILE levels/body.png
 		if (const auto startPos = line.findi("FILE"); startPos == 0)
@@ -58,9 +65,13 @@ void UpdatePackage::reload(Server* const server)
 
 			this->m_fileList.emplace(baseFileName, FileEntry{
 															 .size = fileLength,
-															 .checksum = calculateCrc32Checksum(updateFileData)});
+															 .checksum = calculateCrc32Checksum(updateFileData) });
 
 			this->m_packageSize += fileLength;
 		}
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

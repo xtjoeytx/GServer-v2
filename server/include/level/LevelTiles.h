@@ -1,7 +1,15 @@
-#ifndef GS2EMU_TLEVELTILES_H
-#define GS2EMU_TLEVELTILES_H
+#ifndef LEVELTILES_H
+#define LEVELTILES_H
 
+#include <cstdint>
 #include <cstring>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class LevelTiles
 {
@@ -12,10 +20,14 @@ public:
 	}
 
 	short& operator[](uint32_t index) { return m_tiles[index]; }
-	explicit operator char*() const { return (char*)m_tiles; };
+	explicit operator char* () const { return (char*)m_tiles; };
 
 private:
 	short m_tiles[4096];
 };
 
-#endif //GS2EMU_TLEVELTILES_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELTILES_H

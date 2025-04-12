@@ -3,6 +3,13 @@
 
 #include "object/Player.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 // Admin-only server options.  They are protected from being changed by people without the
 // 'change staff account' right.
 constexpr std::array<std::string_view, 22> AdminServerOptions = {
@@ -121,5 +128,9 @@ protected:
 	bool m_isFtp = false;
 	std::map<CString, CString> m_rcLargeFiles;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
 
 #endif // PLAYERRC_H

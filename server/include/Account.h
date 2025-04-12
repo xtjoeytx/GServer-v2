@@ -1,5 +1,5 @@
-#ifndef TACCOUNT_H
-#define TACCOUNT_H
+#ifndef ACCOUNT_H
+#define ACCOUNT_H
 
 #include <chrono>
 #include <cstdint>
@@ -16,6 +16,13 @@
 #include "level/LevelChest.h"
 #include "player/PlayerProps.h"
 #include "utilities/FilePermissions.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum PlayerPermissions
 {
@@ -118,4 +125,8 @@ protected:
 	chestPair decomposeChest(const std::string& chest) const;
 };
 
-#endif // TACCOUNT_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // ACCOUNT_H

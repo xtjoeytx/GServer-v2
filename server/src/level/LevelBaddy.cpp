@@ -5,6 +5,13 @@
 #include "level/Level.h"
 #include "level/LevelBaddy.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 const int baddytypes = 10;
 const char* baddyImages[baddytypes] = {
 	"baddygray.png", "baddyblue.png", "baddyred.png", "baddyblue.png", "baddygray.png",
@@ -21,7 +28,7 @@ const int baddyPower[baddytypes] = {
 
 LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel)
 	: m_level(pLevel), m_type(pType),
-	  m_startX(pX), m_startY(pY)
+	m_startX(pX), m_startY(pY)
 {
 	if (pType > baddytypes) m_type = 0;
 	m_verses.resize(3);
@@ -231,3 +238,7 @@ void LevelBaddy::setProps(CString& pProps)
 		}
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

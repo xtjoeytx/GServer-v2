@@ -1,10 +1,17 @@
-#ifndef TLEVELCHEST_H
-#define TLEVELCHEST_H
+#ifndef LEVELCHEST_H
+#define LEVELCHEST_H
 
 #include <memory>
 #include <vector>
 
 #include <CString.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum class LevelItemType;
 
@@ -63,4 +70,8 @@ private:
 
 using LevelChestPtr = std::shared_ptr<LevelChest>;
 
-#endif // TLEVELCHEST_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELCHEST_H

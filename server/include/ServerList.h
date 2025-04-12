@@ -1,5 +1,5 @@
-#ifndef TSERVERLIST_H
-#define TSERVERLIST_H
+#ifndef SERVERLIST_H
+#define SERVERLIST_H
 
 #include <assert.h>
 #include <map>
@@ -10,6 +10,13 @@
 #include <CSocket.h>
 #include <CString.h>
 #include "BabyDI.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum
 {
@@ -118,4 +125,8 @@ protected:
 	std::string m_serverRemoteIp{ "127.0.0.1" };
 };
 
-#endif // TSERVERLIST_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // SERVERLIST_H

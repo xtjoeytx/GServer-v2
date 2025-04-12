@@ -5,7 +5,12 @@
 #include "misc/WordFilter.h"
 #include "utilities/Log.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 char bypass[] = {
 	' ',
@@ -165,7 +170,7 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 	std::vector<CString> wordsFound;
 	int actionsFound = 0;
 
-	for (WordFilterRulePtr& rule: m_rules)
+	for (WordFilterRulePtr& rule : m_rules)
 	{
 		// Check if we should use this rule.
 		if ((check & rule->check) == 0) continue;
@@ -389,3 +394,7 @@ WordFilterActions:
 
 	return actionsFound;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

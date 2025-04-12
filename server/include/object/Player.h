@@ -1,5 +1,5 @@
-#ifndef TPLAYER_H
-#define TPLAYER_H
+#ifndef PLAYER_H
+#define PLAYER_H
 
 #include <map>
 #include <memory>
@@ -24,6 +24,13 @@
 #include "player/PlayerProps.h"
 #include "network/IPacketHandler.h"
 #include "utilities/IdGenerator.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Level;
 class Map;
@@ -240,7 +247,7 @@ public:
 
 	HandlePacketResult msgPLI_PROFILEGET(CString& pPacket);
 	HandlePacketResult msgPLI_PROFILESET(CString& pPacket);
-	
+
 	//HandlePacketResult msgPLI_NPCSERVERQUERY(CString& pPacket);
 
 	HandlePacketResult msgPLI_REQUESTTEXT(CString& pPacket);
@@ -338,4 +345,8 @@ inline bool Player::removeChatChannel(const std::string& channel)
 	return false;
 }
 
-#endif // TPLAYER_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // PLAYER_H

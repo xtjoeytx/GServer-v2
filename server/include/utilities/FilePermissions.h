@@ -1,12 +1,17 @@
-#ifndef GS2EMU_FILEPERMISSIONS_H
-#define GS2EMU_FILEPERMISSIONS_H
-
-#pragma once
+#ifndef FILEPERMISSIONS_H
+#define FILEPERMISSIONS_H
 
 #include <bitset>
 #include <regex>
 #include <string>
 #include <vector>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class FilePermissions
 {
@@ -23,10 +28,10 @@ public:
 	};
 
 	/**
-     * @brief Adds a new permission to the manager.
-     *
-     * @param permissionString The permission string (e.g., "rw accounts/*").
-     */
+	 * @brief Adds a new permission to the manager.
+	 *
+	 * @param permissionString The permission string (e.g., "rw accounts/*").
+	 */
 	void addPermission(const std::string& permissionString);
 
 	/**
@@ -62,4 +67,8 @@ private:
 	static bool match(const std::string& path, const Permission& permission);
 };
 
-#endif //GS2EMU_FILEPERMISSIONS_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // FILEPERMISSIONS_H

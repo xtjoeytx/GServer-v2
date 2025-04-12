@@ -1,12 +1,19 @@
 #include "object/Player.h"
 #include "level/LevelSign.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 static CString encodeSignCode(CString& pText);
 static CString encodeSign(const CString& pSignText);
 static CString decodeSignCode(CString pText);
 
 const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-						 "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
+"0123456789!?-.,#>()#####\"####':/~&### <####;\n";
 const CString signSymbols = "ABXYudlrhxyz#4.";
 const int ctablen[] = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1 };
 const int ctabindex[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17 };
@@ -146,3 +153,7 @@ void LevelSign::setUText(const CString& value)
 	m_text = encodeSign(value);
 	m_unformattedText = value;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

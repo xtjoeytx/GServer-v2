@@ -17,6 +17,13 @@
 #endif
 #include "misc/UPNP.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 void UPNP::discover()
 {
 	struct UPNPDev* device_list;
@@ -107,4 +114,9 @@ void UPNP::removePortForward(const CString& port)
 	log::printLine(log::server, ":: [UPnP] Removing forward on port {}.", port);
 	m_portsForwarded.erase(port);
 }
-#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // UPNP

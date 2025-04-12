@@ -1,5 +1,5 @@
-#ifndef TNPC_H
-#define TNPC_H
+#ifndef NPC_H
+#define NPC_H
 
 #include <algorithm>
 #include <ctime>
@@ -11,6 +11,13 @@
 
 #include "object/Character.h"
 #include "scripting/SourceCode.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum
 {
@@ -459,4 +466,8 @@ inline void NPC::setSwordImage(const std::string& pSwordImage)
 	m_character.swordImage = pSwordImage.substr(0, 120);
 }
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // NPC_H

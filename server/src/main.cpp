@@ -20,7 +20,7 @@
 
 #include "utilities/Log.h"
 
-using namespace graal::utilities;
+using namespace preagonal;
 
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))

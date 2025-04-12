@@ -1,17 +1,24 @@
-#ifndef CUPNP_H
-#define CUPNP_H
+#ifndef UPNP_H
+#define UPNP_H
 
 #ifdef UPNP
 
-	#include <memory.h>
-	#include <set>
+#include <memory.h>
+#include <set>
 
-	#include <CString.h>
-	#include "BabyDI.h"
+#include <CString.h>
+#include "BabyDI.h"
 
-	#include <miniupnpc.h>
-	#include <miniwget.h>
-	#include <upnpcommands.h>
+#include <miniupnpc.h>
+#include <miniwget.h>
+#include <upnpcommands.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 
@@ -64,5 +71,9 @@ private:
 	struct IGDdatas m_data;
 };
 
-#endif
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // UPNP
+#endif // UPNP_H

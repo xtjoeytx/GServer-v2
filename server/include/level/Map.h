@@ -1,5 +1,5 @@
-#ifndef TGMAP_H
-#define TGMAP_H
+#ifndef MAP_H
+#define MAP_H
 
 #include <ctime>
 #include <map>
@@ -9,6 +9,13 @@
 
 #include <CString.h>
 #include "BabyDI.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum class MapType
 {
@@ -82,4 +89,8 @@ private:
 	std::vector<std::string> m_preloadLevelList;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // MAP_H

@@ -15,9 +15,11 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using namespace graal::utilities;
 using namespace std::string_view_literals;
 using system_clock = std::chrono::system_clock;
+
+namespace preagonal
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -342,11 +344,11 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 		writeLine(newFile, "ATTR" + std::to_string(i + 1), account.character.ganiAttributes[i], "");
 
 	// Chests
-	for (const auto& [level, pos]: account.savedChests)
+	for (const auto& [level, pos] : account.savedChests)
 		writeLine(newFile, "CHEST", std::format("{}:{}:{}", pos.first, pos.second, level));
 
 	// Weapons
-	for (const auto& weapon: account.weapons)
+	for (const auto& weapon : account.weapons)
 		writeLine(newFile, "WEAPON", weapon);
 
 	// Flags
@@ -370,7 +372,7 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "LOADONLY", account.loadOnly ? 1 : 0, 0);
 
 	// Folder Rights
-	for (const auto& perm: account.folderList)
+	for (const auto& perm : account.folderList)
 		writeLine(newFile, "FOLDERRIGHT", perm);
 
 	// Last Folder Accessed
@@ -504,3 +506,7 @@ bool PlainTextAccountLoader::checkSearchConditions(std::string_view account, con
 
 	return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

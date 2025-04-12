@@ -1,11 +1,18 @@
-#ifndef TSCRIPTCLASS_H
-#define TSCRIPTCLASS_H
+#ifndef SCRIPTCLASS_H
+#define SCRIPTCLASS_H
 
 #include <string>
 
 #include <CString.h>
 
 #include "scripting/SourceCode.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class ScriptClass
 {
@@ -39,4 +46,8 @@ private:
 	CString m_bytecode;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // SCRIPTCLASS_H

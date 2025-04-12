@@ -1,5 +1,5 @@
-#ifndef UTILITIES_STRINGUTILS_H
-#define UTILITIES_STRINGUTILS_H
+#ifndef STRINGUTILS_H
+#define STRINGUTILS_H
 
 #include <string>
 #include <string_view>
@@ -13,10 +13,14 @@
 
 #include <CString.h>
 
+///////////////////////////////////////////////////////////////////////////////
+
 using namespace std::literals::string_view_literals;
 
-namespace graal::utilities::string
+namespace preagonal::string
 {
+
+///////////////////////////////////////////////////////////////////////////////
 
 // A concept that checks if a type is a string.
 template <typename T>
@@ -462,8 +466,7 @@ inline float toFloat(const std::string& str)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // end namespace graal::utilities::string
-
+} // end namespace preagonal::string
 
 namespace utilities
 {
@@ -471,4 +474,4 @@ namespace utilities
 	CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx = 0);
 } // namespace utilities
 
-#endif
+#endif // STRINGUTILS_H

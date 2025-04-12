@@ -1,10 +1,17 @@
-#ifndef GS2EMU_RESOURCEMANAGER_H
-#define GS2EMU_RESOURCEMANAGER_H
+#ifndef RESOURCEMANAGER_H
+#define RESOURCEMANAGER_H
 
 #include <memory>
 #include <string>
 #include <tuple>
 #include <unordered_map>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 template<class ResourceCls, typename... PassArgs>
 class ResourceManager
@@ -88,4 +95,8 @@ private:
 	ResourceMap m_resourceMap;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // RESOURCEMANAGER_H

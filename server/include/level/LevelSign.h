@@ -1,10 +1,17 @@
-#ifndef TLEVELSIGN_H
-#define TLEVELSIGN_H
+#ifndef LEVELSIGN_H
+#define LEVELSIGN_H
 
 #include <memory>
 #include <vector>
 
 #include <CString.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Player;
 
@@ -35,4 +42,8 @@ private:
 
 using LevelSignPtr = std::shared_ptr<LevelSign>;
 
-#endif // TLEVELSIGN_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELSIGN_H

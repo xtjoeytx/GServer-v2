@@ -21,7 +21,12 @@
 #include "utilities/Log.h"
 #include "utilities/StringUtils.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 void ShootPacketNew::debug()
 {
@@ -1052,3 +1057,7 @@ HandlePacketResult Player::msgPLI_PROFILESET(CString& pPacket)
 	m_server->getServerList().sendPacket(CString() >> (char)SVO_SETPROF << pPacket);
 	return HandlePacketResult::Handled;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

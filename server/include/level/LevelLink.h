@@ -1,10 +1,17 @@
-#ifndef TLEVELLINK_H
-#define TLEVELLINK_H
+#ifndef LEVELLINK_H
+#define LEVELLINK_H
 
 #include <memory>
 #include <vector>
 
 #include <CString.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class LevelLink : public std::enable_shared_from_this<LevelLink>
 {
@@ -121,4 +128,8 @@ inline void LevelLink::setHeight(int _height)
 	m_height = _height;
 }
 
-#endif // TLEVELLINK_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELLINK_H

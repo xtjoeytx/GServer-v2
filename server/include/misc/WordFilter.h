@@ -1,10 +1,17 @@
-#ifndef CWORDFILTER_H
-#define CWORDFILTER_H
+#ifndef WORDFILTER_H
+#define WORDFILTER_H
 
 #include <memory>
 #include <vector>
 
 #include <CString.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 enum
 {
@@ -59,4 +66,8 @@ private:
 	std::vector<WordFilterRulePtr> m_rules;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // WORDFILTER_H

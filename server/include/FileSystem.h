@@ -1,11 +1,18 @@
-#ifndef CFILESYSTEM_H
-#define CFILESYSTEM_H
+#ifndef FILESYSTEM_H
+#define FILESYSTEM_H
 
 #include <map>
 #include <mutex>
 
 #include <CString.h>
 #include "BabyDI.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 class FileSystem
@@ -65,4 +72,8 @@ constexpr char FileSystem::getPathSeparator()
 	return fSep;
 }
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // FILESYSTEM_H

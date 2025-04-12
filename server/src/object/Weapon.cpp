@@ -11,7 +11,12 @@
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 // -- Constructor: Default Weapons -- //
 Weapon::Weapon(LevelItemType pId)
@@ -256,3 +261,7 @@ void Weapon::setClientScript(const CString& pScript)
 	for (auto& it: code)
 		m_formattedClientGS1 << it.trim() << "\xa7";
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

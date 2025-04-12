@@ -1,10 +1,17 @@
-#ifndef GS2EMU_UPDATEPACKAGE_H
-#define GS2EMU_UPDATEPACKAGE_H
+#ifndef UPDATEPACKAGE_H
+#define UPDATEPACKAGE_H
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 
@@ -72,7 +79,7 @@ inline UpdatePackage::UpdatePackage(std::string packageName)
 
 inline UpdatePackage::UpdatePackage(UpdatePackage&& o) noexcept
 	: m_packageName(std::move(o.m_packageName)), m_fileList(std::move(o.m_fileList)),
-	  m_checksum(o.m_checksum), m_packageSize(o.m_packageSize)
+	m_checksum(o.m_checksum), m_packageSize(o.m_packageSize)
 {
 }
 
@@ -105,4 +112,8 @@ inline bool UpdatePackage::compareChecksum(uint32_t check) const
 	return m_checksum == check;
 }
 
-#endif //GS2EMU_UPDATEPACKAGE_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // UPDATEPACKAGE_H

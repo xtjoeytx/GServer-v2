@@ -4,6 +4,8 @@
 #include <Server.h>
 #include <object/Player.h>
 
+using namespace preagonal;
+
 SCENARIO( "Player", "[object]" ) {
 
 	GIVEN( "Player" ) {

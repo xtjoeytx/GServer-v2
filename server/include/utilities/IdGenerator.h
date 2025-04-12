@@ -1,9 +1,16 @@
-#ifndef UTILITIES_ID_GENERATOR_H
-#define UTILITIES_ID_GENERATOR_H
+#ifndef IDGENERATOR_H
+#define IDGENERATOR_H
 
 #include <concepts>
 #include <set>
 #include <cstdint>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 using PlayerID = uint16_t;
 using NPCID = uint32_t;
@@ -57,4 +64,8 @@ protected:
 	std::set<T> m_freeIds;
 };
 
-#endif // UTILITIES_ID_GENERATOR_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // IDGENERATOR_H

@@ -21,6 +21,13 @@
 	#endif
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 FileSystem::FileSystem()
 {
 	m_preventChange = new std::recursive_mutex();
@@ -108,7 +115,7 @@ void FileSystem::resync()
 	m_fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
-	for (const auto& directory: m_directoryList)
+	for (const auto& directory : m_directoryList)
 		loadAllDirectories(directory, m_server->getSettings().getBool("nofoldersconfig", false));
 }
 
@@ -125,7 +132,7 @@ CString FileSystem::findi(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& fileIter: m_fileList)
+	for (const auto& fileIter : m_fileList)
 		if (fileIter.first.comparei(file)) return { fileIter.second };
 	return {};
 }
@@ -134,7 +141,7 @@ CString FileSystem::fileExistsAs(const CString& file) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& fileIter: m_fileList)
+	for (const auto& fileIter : m_fileList)
 		if (fileIter.first.comparei(file)) return { fileIter.first };
 	return {};
 }
@@ -289,7 +296,7 @@ CString FileSystem::getDirByExtension(const std::string& extension) const
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	for (const auto& directory: m_directoryList)
+	for (const auto& directory : m_directoryList)
 	{
 		if (getExtension(directory) == extension)
 		{
@@ -299,3 +306,7 @@ CString FileSystem::getDirByExtension(const std::string& extension) const
 
 	return {};
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

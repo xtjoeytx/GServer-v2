@@ -1,5 +1,5 @@
-#ifndef GS2SCRIPTMANAGER_H
-#define GS2SCRIPTMANAGER_H
+#ifndef SCRIPTMANAGER_H
+#define SCRIPTMANAGER_H
 
 #include <mutex>
 #include <queue>
@@ -7,6 +7,13 @@
 #include <CompilerThreadJob.h>
 #include <GS2Context.h>
 #include <utils/ContextThreadPool.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class GS2ScriptManager
 {
@@ -41,4 +48,8 @@ private:
 	std::mutex m_cbQueueLock;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // SCRIPTMANAGER_H

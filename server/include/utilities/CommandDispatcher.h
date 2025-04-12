@@ -1,9 +1,16 @@
-#ifndef GS2EMU_COMMANDDISPATCHER_H
-#define GS2EMU_COMMANDDISPATCHER_H
+#ifndef COMMANDDISPATCHER_H
+#define COMMANDDISPATCHER_H
 
 #include <functional>
 #include <string>
 #include <unordered_map>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 template<typename key_type, typename... Ts>
 class CommandDispatcher
@@ -46,4 +53,8 @@ private:
 	cmd_map_type m_commands;
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // COMMANDDISPATCHER_H

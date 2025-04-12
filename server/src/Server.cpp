@@ -20,7 +20,16 @@
 #include "scripting/ScriptClass.h"
 #include "scripting/ScriptOrigin.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+extern std::atomic_bool shutdownProgram;
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 static const char* const filesystemTypes[] = {
 	"all",
@@ -32,8 +41,6 @@ static const char* const filesystemTypes[] = {
 	"shield",
 	0
 };
-
-extern std::atomic_bool shutdownProgram;
 
 template<class T, class R, class... Args>
 auto methodstub(T* t, R (T::*m)(Args...))
@@ -1739,3 +1746,7 @@ void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, flo
 							  return pl->getVersion() >= CLVER_5_07;
 						  });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

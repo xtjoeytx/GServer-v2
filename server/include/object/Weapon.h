@@ -1,5 +1,5 @@
-#ifndef TWEAPON_H
-#define TWEAPON_H
+#ifndef WEAPON_H
+#define WEAPON_H
 
 #include <memory>
 #include <time.h>
@@ -11,6 +11,13 @@
 
 #include "level/LevelItem.h"
 #include "scripting/SourceCode.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 class Weapon
@@ -65,4 +72,8 @@ protected:
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // WEAPON_H

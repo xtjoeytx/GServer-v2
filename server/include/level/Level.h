@@ -1,5 +1,5 @@
-#ifndef TLEVEL_H
-#define TLEVEL_H
+#ifndef LEVEL_H
+#define LEVEL_H
 
 #include <deque>
 #include <map>
@@ -23,6 +23,12 @@
 #include "level/LevelTiles.h"
 #include "utilities/IdGenerator.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 // Starting baddy id.  Baddy id 0 breaks the client so always start here.
 constexpr uint8_t BADDYID_INIT = 1;
@@ -325,4 +331,8 @@ private:
 
 using LevelPtr = std::shared_ptr<Level>;
 
-#endif // TLEVEL_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVEL_H

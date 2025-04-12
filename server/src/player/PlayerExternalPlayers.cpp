@@ -3,6 +3,13 @@
 #include "object/Player.h"
 #include "utilities/StringUtils.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::vector<CString> Player::getPMServerList()
 {
 	return m_privateMessageServerList;
@@ -13,7 +20,7 @@ bool Player::addPMServer(CString& option)
 	auto& list = m_server->getServerList();
 
 	bool PMSrvExist = false;
-	for (auto& pmServer: m_privateMessageServerList)
+	for (auto& pmServer : m_privateMessageServerList)
 	{
 		if (pmServer.text() == option)
 		{
@@ -26,11 +33,11 @@ bool Player::addPMServer(CString& option)
 	{
 		m_privateMessageServerList.push_back(option);
 		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << CString(CString() << "GraalEngine"
-																							   << "\n"
-																							   << "pmserverplayers"
-																							   << "\n"
-																							   << option << "\n")
-																				 .gtokenizeI());
+			<< "\n"
+			<< "pmserverplayers"
+			<< "\n"
+			<< option << "\n")
+			.gtokenizeI());
 		return true;
 	}
 	else
@@ -46,7 +53,7 @@ bool Player::remPMServer(CString& option)
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (const auto& [externalId, externalPlayer]: m_externalPlayers)
+		for (const auto& [externalId, externalPlayer] : m_externalPlayers)
 		{
 			if (option == externalPlayer->getServerName())
 			{
@@ -85,10 +92,10 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 	{
 		// Check if a player has disconnected
 		// By value to keep a hold of the shared_ptr until the next iteration.
-		for (const auto& [externalId, externalPlayer]: m_externalPlayers)
+		for (const auto& [externalId, externalPlayer] : m_externalPlayers)
 		{
 			bool exist2 = false;
-			for (auto& p2: players2)
+			for (auto& p2 : players2)
 			{
 				CString tmpPlyr = p2.guntokenize();
 				CString account = tmpPlyr.readString("\n");
@@ -127,7 +134,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		bool exist = false;
 		if (!m_externalPlayers.empty())
 		{
-			for (auto& [externalId, externalPlayer]: m_externalPlayers)
+			for (auto& [externalId, externalPlayer] : m_externalPlayers)
 			{
 				if (servername == externalPlayer->getServerName() && account == externalPlayer->account.name)
 				{
@@ -154,7 +161,7 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 
 	if (!m_externalPlayers.empty())
 	{
-		for (auto& [externalId, externalPlayer]: m_externalPlayers)
+		for (auto& [externalId, externalPlayer] : m_externalPlayers)
 		{
 			if (isRC())
 			{
@@ -174,15 +181,15 @@ bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMe
 {
 	auto& list = m_server->getServerList();
 	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)m_id << CString(CString() << servername << "\n"
-																						<< this->account.name << "\n"
-																						<< this->account.character.nickName << "\n"
-																						<< "GraalEngine"
-																						<< "\n"
-																						<< "pmplayer"
-																						<< "\n"
-																						<< account << "\n"
-																						<< pmMessage)
-																		  .gtokenizeI());
+		<< this->account.name << "\n"
+		<< this->account.character.nickName << "\n"
+		<< "GraalEngine"
+		<< "\n"
+		<< "pmplayer"
+		<< "\n"
+		<< account << "\n"
+		<< pmMessage)
+		.gtokenizeI());
 	return true;
 }
 
@@ -198,7 +205,7 @@ PlayerPtr Player::getExternalPlayer(const uint16_t id, bool includeRC) const
 
 PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) const
 {
-	for (auto& [externalId, externalPlayer]: m_externalPlayers)
+	for (auto& [externalId, externalPlayer] : m_externalPlayers)
 	{
 		if (externalPlayer == 0)
 			continue;
@@ -207,8 +214,12 @@ PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) cons
 			continue;
 
 		// Compare account names.
-		if (graal::utilities::string::comparei(externalPlayer->account.name, account.toString()) == 0)
+		if (string::comparei(externalPlayer->account.name, account.toString()) == 0)
 			return externalPlayer;
 	}
 	return nullptr;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

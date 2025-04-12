@@ -1,5 +1,5 @@
-#ifndef TLEVELBADDY_H
-#define TLEVELBADDY_H
+#ifndef LEVELBADDY_H
+#define LEVELBADDY_H
 
 #include <memory>
 #include <vector>
@@ -8,6 +8,13 @@
 #include <CTimeout.h>
 #include <IUtil.h>
 #include "BabyDI.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 // Baddy props
 enum
@@ -90,4 +97,8 @@ private:
 
 using LevelBaddyPtr = std::unique_ptr<LevelBaddy>;
 
-#endif // TLEVELBADDY_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELBADDY_H

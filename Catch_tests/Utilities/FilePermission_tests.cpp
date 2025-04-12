@@ -2,6 +2,8 @@
 #include "catch2/catch_all.hpp"
 #include <utilities/FilePermissions.h>
 
+using namespace preagonal;
+
 SCENARIO("FilePermissions") {
 
 	GIVEN("Some folder rights") {

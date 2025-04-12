@@ -1,10 +1,17 @@
-#ifndef TGAMEANI_H
-#define TGAMEANI_H
+#ifndef GAMEANI_H
+#define GAMEANI_H
 
 #include <optional>
 #include <string>
 
 #include <CString.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 
@@ -102,7 +109,7 @@ inline GameAni::GameAni(std::string aniName)
 
 inline GameAni::GameAni(GameAni&& o) noexcept
 	: m_aniName(std::move(o.m_aniName)), m_script(std::move(o.m_script)),
-	  m_setBackTo(std::move(o.m_setBackTo)), m_bytecode(std::move(o.m_bytecode)), m_aniFlags(o.m_aniFlags)
+	m_setBackTo(std::move(o.m_setBackTo)), m_bytecode(std::move(o.m_bytecode)), m_aniFlags(o.m_aniFlags)
 {
 }
 
@@ -116,4 +123,8 @@ inline GameAni& GameAni::operator=(GameAni&& o) noexcept
 	return *this;
 }
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // GAMEANI_H

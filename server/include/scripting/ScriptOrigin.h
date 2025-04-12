@@ -9,47 +9,55 @@
 #include "level/Level.h"
 #include "scripting/ScriptClass.h"
 
-namespace scripting
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal::scripting
 {
-	std::string getErrorOrigin(const NPC& npc)
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string getErrorOrigin(const NPC& npc)
+{
+	std::string origin;
+
+	switch (npc.getType())
 	{
-		std::string origin;
+		// Database npcs don't need to include their location, so we are returning here
+		// while the other two cases will append the level to the origin.
+		case NPCType::DBNPC:
+			return npc.getName();
 
-		switch (npc.getType())
-		{
-			// Database npcs don't need to include their location, so we are returning here
-			// while the other two cases will append the level to the origin.
-			case NPCType::DBNPC:
-				return npc.getName();
+		case NPCType::LEVELNPC:
+			origin = "level npc";
+			break;
 
-			case NPCType::LEVELNPC:
-				origin = "level npc";
-				break;
-
-			case NPCType::PUTNPC:
-				origin = "local npc";
-				break;
-		}
-
-		// Compiling before its assigned an npc id, so this requires some reworking to make work
-		// origin.append(std::format("[{}]", npc.getId()));
-
-		auto level = npc.getLevel();
-		if (level)
-			origin.append(std::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
-
-		return origin;
+		case NPCType::PUTNPC:
+			origin = "local npc";
+			break;
 	}
 
-	std::string getErrorOrigin(const ScriptClass& cls)
-	{
-		return std::format("Class {}", cls.getName());
-	}
+	// Compiling before its assigned an npc id, so this requires some reworking to make work
+	// origin.append(std::format("[{}]", npc.getId()));
 
-	std::string getErrorOrigin(const Weapon& npc)
-	{
-		return std::format("Weapon {}", npc.getName());
-	}
-} // namespace scripting
+	auto level = npc.getLevel();
+	if (level)
+		origin.append(std::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
 
-#endif
+	return origin;
+}
+
+std::string getErrorOrigin(const ScriptClass& cls)
+{
+	return std::format("Class {}", cls.getName());
+}
+
+std::string getErrorOrigin(const Weapon& npc)
+{
+	return std::format("Weapon {}", npc.getName());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // namespace preagonal::scripting
+
+#endif // SCRIPTORIGIN_H

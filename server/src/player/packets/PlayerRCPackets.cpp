@@ -25,7 +25,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using namespace graal::utilities;
+namespace preagonal
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -586,8 +587,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	if (isClient())
 	{
 		log::printLine(log::rc, "[Hack] {} attempted to view the account listing.", account.name);
@@ -803,8 +802,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.length() == 0) return HandlePacketResult::Handled;
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
@@ -1132,8 +1129,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
@@ -1169,8 +1164,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	CString acc = pPacket.readChars(pPacket.readGUChar());
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
@@ -1409,8 +1402,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	if (isClient())
 	{
 		log::printLine(log::rc, "[Hack] {} attempted to open the File Browser.", account.name);
@@ -1493,8 +1484,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 {
-	using namespace graal::utilities;
-
 	if (isClient()) return HandlePacketResult::Handled;
 
 	CString newFolder = pPacket.readString("");
@@ -1956,3 +1945,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_UNKNOWN162(CString& pPacket)
 	// Stub.
 	return HandlePacketResult::Handled;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

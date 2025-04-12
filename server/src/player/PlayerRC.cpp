@@ -16,7 +16,10 @@
 #include "utilities/Log.h"
 #include "utilities/TimeUnits.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -124,22 +127,22 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	log::print(log::server, ":: New login:   ");
 	switch (m_type)
 	{
-	case PLTYPE_RC:
-		log::printLine(log::server, "RC");
-		Encryption.setGen(ENCRYPT_GEN_2);
-		break;
-	case PLTYPE_NC:
-		log::printLine(log::server, "NC");
-		Encryption.setGen(ENCRYPT_GEN_2);
-		break;
-	case PLTYPE_RC2:
-		log::printLine(log::server, "New RC (2.22+)");
-		Encryption.setGen(ENCRYPT_GEN_5);
-		break;
-	default:
-		log::printLine(log::server, "Unknown ({})", m_type);
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
-		return false;
+		case PLTYPE_RC:
+			log::printLine(log::server, "RC");
+			Encryption.setGen(ENCRYPT_GEN_2);
+			break;
+		case PLTYPE_NC:
+			log::printLine(log::server, "NC");
+			Encryption.setGen(ENCRYPT_GEN_2);
+			break;
+		case PLTYPE_RC2:
+			log::printLine(log::server, "New RC (2.22+)");
+			Encryption.setGen(ENCRYPT_GEN_5);
+			break;
+		default:
+			log::printLine(log::server, "Unknown ({})", m_type);
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
+			return false;
 	}
 
 	// Newer RC clients have an encryption key.
@@ -256,3 +259,7 @@ bool PlayerRC::sendLogin()
 
 	return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

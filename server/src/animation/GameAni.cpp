@@ -5,6 +5,13 @@
 #include "animation/GameAni.h"
 #include "Server.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
 {
 	auto fileSystem = server->getFileSystem(FS_FILE);
@@ -107,3 +114,7 @@ CString GameAni::getBytecodePacket() const
 
 	return out;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

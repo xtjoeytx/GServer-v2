@@ -15,13 +15,18 @@
 #include "object/Player.h"
 #include "utilities/Log.h"
 
-using namespace graal::utilities;
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 /*
 	Pointer-Functions for Packets
 */
 bool ServerList::created = false;
-typedef void (ServerList::*TSLSock)(CString&);
+typedef void (ServerList::* TSLSock)(CString&);
 std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
 
 void ServerList::createFunctions()
@@ -266,7 +271,7 @@ void ServerList::sendVersionConfig()
 	// Send allowed versions to the listserver
 	CString versionNames;
 	auto& versionList = m_server->getAllowedVersions();
-	for (const auto& version: versionList)
+	for (const auto& version : versionList)
 	{
 		if (!versionNames.isEmpty())
 			versionNames << ",";
@@ -328,7 +333,7 @@ void ServerList::sendPlayers()
 
 	// Adds the players to the serverlist
 	auto& playerList = m_server->getPlayerList();
-	for (auto& [id, player]: playerList)
+	for (auto& [id, player] : playerList)
 	{
 		if (!player->isNC())
 			addPlayer(player);
@@ -352,7 +357,7 @@ void ServerList::handleText(const CString& data)
 					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
 
 					auto& playerList = m_server->getPlayerList();
-					for (auto& [id, pl]: playerList)
+					for (auto& [id, pl] : playerList)
 					{
 						if (pl->inChatChannel(channel))
 						{
@@ -413,7 +418,7 @@ void ServerList::sendText(const std::vector<CString>& stringList)
 {
 	CString dataPacket;
 	dataPacket.writeGChar(SVO_SENDTEXT);
-	for (const auto& string: stringList)
+	for (const auto& string : stringList)
 		dataPacket << string.gtokenize();
 	sendPacket(dataPacket);
 }
@@ -546,8 +551,8 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	// Add the time to the profile string.
 	auto time = p2->account.onlineSeconds;
 	CString line = CString() << CString((uint32_t)time / 3600) << " hrs "
-							 << CString((uint32_t)(time / 60) % 60) << " mins "
-							 << CString((uint32_t)time % 60) << " secs";
+		<< CString((uint32_t)(time / 60) % 60) << " mins "
+		<< CString((uint32_t)time % 60) << " secs";
 	profile >> (char)line.length() << line;
 
 	// Do the old profile method for the old clients.
@@ -973,9 +978,9 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString message3 = message2.gtokenizeI();
 
 	CString player = CString(CString() << account << "\n"
-									   << nick << "\n")
-						 .gtokenizeI()
-					 << "\n";
+		<< nick << "\n")
+		.gtokenizeI()
+		<< "\n";
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 
@@ -1004,3 +1009,7 @@ void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 
 	player->setDeviceId(std::stoll(pcId.text()));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

@@ -1,5 +1,6 @@
-#ifndef GS2EMU_TILETYPES_H
-#define GS2EMU_TILETYPES_H
+#ifndef TILETYPES_H
+#define TILETYPES_H
+
 static const unsigned char tiletypes[] = {
 		0x00, 0x00, 0x14, 0x14, 0x16, 0x16, 0x16, 0x16, 0x00, 0x16, 0x16, 0x16,
 		0x16, 0x16, 0x16, 0x00, 0x00, 0x14, 0x14, 0x14, 0x16, 0x16, 0x16, 0x16,
@@ -346,4 +347,4 @@ static const unsigned char tiletypes[] = {
 };
 static const unsigned int tiletypes_len = 4096;
 
-#endif //GS2EMU_TILETYPES_H
+#endif // TILETYPES_H

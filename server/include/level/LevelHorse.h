@@ -1,8 +1,15 @@
-#ifndef TLEVELHORSE_H
-#define TLEVELHORSE_H
+#ifndef LEVELHORSE_H
+#define LEVELHORSE_H
 
 #include <CString.h>
 #include <CTimeout.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Server;
 class LevelHorse
@@ -44,4 +51,8 @@ inline CString LevelHorse::getHorseStr()
 	return m_horsePacket;
 }
 
-#endif // TLEVELHORSE_H
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal
+
+#endif // LEVELHORSE_H
