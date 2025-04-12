@@ -16,7 +16,7 @@ using namespace graal::utilities;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef V8NPCSERVER
+/*
 HandlePacketResult PlayerNC::msgPLI_NC_NPCGET(CString& pPacket)
 {
 	if (!isNC())
@@ -588,4 +588,4 @@ HandlePacketResult PlayerNC::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());
 	return HandlePacketResult::Handled;
 }
-#endif
+*/

@@ -12,13 +12,6 @@
 #include "level/LevelItem.h"
 #include "scripting/SourceCode.h"
 
-#ifdef V8NPCSERVER
-	#include "scripting/interface/ScriptBindings.h"
-	#include "scripting/ScriptExecutionContext.h"
-
-class Player;
-#endif
-
 class Server;
 class Weapon
 {
@@ -51,15 +44,6 @@ public:
 	// Functions -> Set Variables
 	void setModTime(time_t pModTime) { m_modTime = pModTime; }
 
-#ifdef V8NPCSERVER
-	ScriptExecutionContext& getExecutionContext();
-	IScriptObject<Weapon>* getScriptObject() const;
-
-	void freeScriptResources();
-	void queueWeaponAction(Player* player, const std::string& args);
-	void runScriptEvents();
-	void setScriptObject(std::unique_ptr<IScriptObject<Weapon>> object);
-#endif
 protected:
 	BabyDI_INJECT(Server, m_server);
 
@@ -78,37 +62,7 @@ protected:
 	std::string m_weaponImage;
 	std::string m_weaponName;
 	std::vector<std::string> m_joinedClasses;
-
-private:
-#ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<Weapon>> m_scriptObject;
-	ScriptExecutionContext m_scriptExecutionContext;
-#endif
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
-
-#ifdef V8NPCSERVER
-
-inline ScriptExecutionContext& Weapon::getExecutionContext()
-{
-	return m_scriptExecutionContext;
-}
-
-inline IScriptObject<Weapon>* Weapon::getScriptObject() const
-{
-	return m_scriptObject.get();
-}
-
-inline void Weapon::runScriptEvents()
-{
-	m_scriptExecutionContext.runExecution();
-}
-
-inline void Weapon::setScriptObject(std::unique_ptr<IScriptObject<Weapon>> object)
-{
-	m_scriptObject = std::move(object);
-}
-
-#endif
 
 #endif

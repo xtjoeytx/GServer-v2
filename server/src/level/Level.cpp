@@ -102,13 +102,6 @@ Level::~Level()
 	m_boardChanges.clear();
 
 	// TODO: Warp players out?
-
-#ifdef V8NPCSERVER
-	if (m_scriptObject)
-	{
-		m_scriptObject.reset();
-	}
-#endif
 }
 
 /*
@@ -285,9 +278,6 @@ bool Level::reload()
 			}
 			else
 			{
-#ifdef V8NPCSERVER
-				npc->reloadNPC();
-#endif
 				it++;
 			}
 		}
@@ -369,10 +359,6 @@ std::shared_ptr<Level> Level::clone() const
 
 bool Level::loadLevel(const CString& pLevelName)
 {
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(this);
-#endif
-
 	CString ext(getExtension(pLevelName));
 	if (ext == ".nw") return loadNW(pLevelName);
 	else if (ext == ".graal")
@@ -1060,10 +1046,6 @@ std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& lev
 	auto level = std::shared_ptr<Level>(new Level(fillTile));
 	level->setLevelName(levelName);
 
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(level.get());
-#endif
-
 	// Return Level
 	levelList.push_back(level);
 	return level;
@@ -1294,89 +1276,6 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 
 bool Level::addItem(float pX, float pY, LevelItemType pItem)
 {
-#ifdef V8NPCSERVER
-	#ifdef GRALATNPC
-	if (LevelItem::isRupeeType(pItem))
-	{
-		if (m_server->getClass("gralats") == nullptr)
-			return true;
-
-		NPC* gralatNPC = nullptr;
-
-		// Find existing rupees, and add to the npc
-		auto pixelX = static_cast<int>((pX - 0.5) * 16);
-		auto pixelY = static_cast<int>((pY - 0.5) * 16);
-
-		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
-		for (auto& npc: npcList)
-		{
-			if (npc->joinedClass("gralats"))
-			{
-				gralatNPC = npc;
-				break;
-			}
-		}
-
-		// Create a new gralat npc for these rupees
-		if (!gralatNPC)
-		{
-			auto npc = m_server->addNPC("", "npc.join(\"gralats\");", pX, pY, shared_from_this(), false, true);
-			addNPC(npc);
-
-			gralatNPC = npc.get();
-			gralatNPC->setScriptType("LOCALN");
-		}
-
-		// Update rupees
-		gralatNPC->setRupees(gralatNPC->getRupees() + LevelItem::GetRupeeCount(pItem));
-		gralatNPC->updatePropModTime(NPCPROP_RUPEES);
-		gralatNPC->queueNpcTrigger("update", nullptr, "");
-
-		return false;
-	}
-
-	//TODO: Make a super-class to handle all drops?
-	if (LevelItemType::DARTS == pItem)
-	{
-		if (m_server->getClass("darts") == nullptr)
-			return true;
-
-		NPC* dartNPC = nullptr;
-
-		// Find existing rupees, and add to the npc
-		auto pixelX = static_cast<int>((pX - 0.5) * 16);
-		auto pixelY = static_cast<int>((pY - 0.5) * 16);
-
-		auto npcList = findAreaNpcs(pixelX, pixelY, 32, 32);
-		for (auto& npc: npcList)
-		{
-			if (npc->joinedClass("darts"))
-			{
-				dartNPC = npc;
-				break;
-			}
-		}
-
-		// Create a new darts npc for these darts
-		if (!dartNPC)
-		{
-			auto npc = m_server->addNPC("", "npc.join(\"darts\");", pX, pY, shared_from_this(), false, true);
-			addNPC(npc);
-
-			dartNPC = npc.get();
-			dartNPC->setScriptType("LOCALN");
-		}
-
-		// Update darts
-		dartNPC->setDarts(dartNPC->getDarts() + 1);
-		dartNPC->updatePropModTime(NPCPROP_ARROWS);
-		dartNPC->queueNpcTrigger("update", nullptr, "");
-
-		return false;
-	}
-	#endif
-#endif
-
 	m_items.push_back(LevelItem(pX, pY, pItem));
 	return true;
 }
@@ -1464,37 +1363,12 @@ LevelBaddy* Level::getBaddy(uint8_t id)
 int Level::addPlayer(uint16_t id)
 {
 	m_players.push_back(id);
-
-#ifdef V8NPCSERVER
-	for (auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERENTERS))
-		{
-			auto player = m_server->getPlayer(id);
-			npc->queueNpcAction("npc.playerenters", player.get());
-		}
-	}
-#endif
-
 	return static_cast<int>(m_players.size() - 1);
 }
 
 void Level::removePlayer(uint16_t id)
 {
 	std::erase(m_players, id);
-
-#ifdef V8NPCSERVER
-	for (auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERLEAVES))
-		{
-			auto player = m_server->getPlayer(id);
-			npc->queueNpcAction("npc.playerleaves", player.get());
-		}
-	}
-#endif
 }
 
 bool Level::isPlayerLeader(uint16_t id)
@@ -1714,11 +1588,6 @@ LevelLink* Level::addLink()
 {
 	// New level link
 	auto newLink = std::make_shared<LevelLink>();
-
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(newLink.get());
-#endif
-
 	auto* link = newLink.get();
 
 	m_links.push_back(std::move(newLink));
@@ -1730,11 +1599,6 @@ LevelLink* Level::addLink(const std::vector<CString>& pLink)
 {
 	// New level link
 	auto newLink = std::make_unique<LevelLink>(pLink);
-
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(newLink.get());
-#endif
-
 	auto* link = newLink.get();
 
 	m_links.push_back(std::move(newLink));
@@ -1763,11 +1627,6 @@ LevelSign* Level::addSign(const int pX, const int pY, const CString& pSign, bool
 {
 	// New level link
 	auto newSign = std::make_unique<LevelSign>(pX, pY, pSign, encoded);
-
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(newSign.get());
-#endif
-
 	auto* sign = newSign.get();
 
 	m_signs.push_back(std::move(newSign));
@@ -1798,11 +1657,6 @@ LevelChest* Level::addChest(const int pX, const int pY, const LevelItemType item
 {
 	// New level link
 	auto newChest = std::make_unique<LevelChest>(pX, pY, itemType, signIndex);
-
-#ifdef V8NPCSERVER
-	m_server->getScriptEngine()->wrapScriptObject(newChest.get());
-#endif
-
 	auto* chest = newChest.get();
 
 	m_chests.push_back(std::move(newChest));
@@ -1828,94 +1682,3 @@ bool Level::removeChest(uint32_t index)
 
 	return false;
 }
-
-#ifdef V8NPCSERVER
-
-std::vector<NPC*> Level::findAreaNpcs(int pX, int pY, int pWidth, int pHeight)
-{
-	int testEndX = pX + pWidth;
-	int testEndY = pY + pHeight;
-
-	std::vector<NPC*> npcList;
-	for (const auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (pX < npc->getPixelX() + npc->getWidth() && testEndX > npc->getPixelX() &&
-			pY < npc->getPixelY() + npc->getHeight() && testEndY > npc->getPixelY())
-		{
-			npcList.push_back(npc.get());
-		}
-	}
-
-	return npcList;
-}
-
-std::vector<NPC*> Level::testTouch(int pX, int pY)
-{
-	std::vector<NPC*> npcList;
-	for (const auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME) && (npc->getVisibleFlags() & NPCVISFLAG_VISIBLE) != 0)
-		{
-			if (npc->getPixelX() <= pX && npc->getPixelX() + npc->getWidth() >= pX &&
-				npc->getPixelY() <= pY && npc->getPixelY() + npc->getHeight() >= pY)
-			{
-				npcList.push_back(npc.get());
-			}
-		}
-	}
-
-	return npcList;
-}
-
-NPC* Level::isOnNPC(float pX, float pY, bool checkEventFlag)
-{
-	for (const auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (checkEventFlag && !npc->hasScriptEvent(NPCEVENTFLAG_PLAYERTOUCHSME))
-			continue;
-
-		//if (!npc->getImage().isEmpty())
-		{
-			if ((npc->getVisibleFlags() & 1) != 0)
-			{
-				if ((pX >= npc->getX() && pX <= npc->getX() + (float)(npc->getWidth() / 16.0f)) &&
-					(pY >= npc->getY() && pY <= npc->getY() + (float)(npc->getHeight() / 16.0f)))
-				{
-					// what if it touches multiple npcs? hm. not sure how graal did it.
-					return npc.get();
-				}
-			}
-		}
-	}
-
-	return nullptr;
-}
-
-void Level::sendChatToLevel(const Player* player, const std::string& message)
-{
-	for (const auto& npcId: m_npcs)
-	{
-		auto npc = m_server->getNPC(npcId);
-		if (npc->hasScriptEvent(NPCEVENTFLAG_PLAYERCHATS))
-			npc->queueNpcEvent("npc.playerchats", true, player->getScriptObject(), message);
-	}
-}
-
-void Level::modifyBoardDirect(uint32_t index, short tile)
-{
-	int pX = index % 64;
-	int pY = index / 64;
-
-	short oldTile = m_tiles[0][index];
-	m_tiles[0][index] = tile;
-
-	auto change = LevelBoardChange(pX, pY, 1, 1, CString() >> tile, CString() >> oldTile, -1);
-
-	m_boardChanges.push_back(change);
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), shared_from_this());
-}
-
-#endif

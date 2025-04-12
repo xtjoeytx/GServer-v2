@@ -37,7 +37,7 @@ git submodule update --init --recursive
 
 "%programfiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 
-cmake .. -G "Visual Studio 17 2022" -A x64 -DV8NPCSERVER=TRUE
+cmake .. -G "Visual Studio 17 2022" -A x64
 cmake --build .
 ```
 

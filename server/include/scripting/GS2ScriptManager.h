@@ -8,8 +8,6 @@
 #include <GS2Context.h>
 #include <utils/ContextThreadPool.h>
 
-#include "scripting/interface/ScriptUtils.h"
-
 class GS2ScriptManager
 {
 	using BytecodeCache = std::unordered_map<std::string, CompilerResponse>;

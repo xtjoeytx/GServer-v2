@@ -34,10 +34,6 @@
 	#include "misc/UPNP.h"
 #endif
 
-#ifdef V8NPCSERVER
-	#include "scripting/ScriptEngine.h"
-#endif
-
 #include "scripting/GS2ScriptManager.h"
 #include "scripting/ScriptClass.h"
 
@@ -119,9 +115,6 @@ public:
 	void loadWeapons(bool print = false);
 	void loadMaps(bool print = false);
 	void loadMapLevels();
-#ifdef V8NPCSERVER
-	void loadNpcs(bool print = false);
-#endif
 	void loadTranslations();
 	void loadWordFilter();
 
@@ -130,12 +123,7 @@ public:
 
 	void saveServerFlags();
 	void saveWeapons();
-#ifdef V8NPCSERVER
-	void saveNpcs();
-	std::vector<std::pair<double, std::string>> calculateNpcStats();
-#endif
 
-	void reportScriptException(const ScriptRunError& error);
 	void reportScriptException(const std::string& error_message);
 
 	// Get functions.
@@ -168,12 +156,6 @@ public:
 	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
 	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
 
-#ifdef V8NPCSERVER
-	ScriptEngine* getScriptEngine() { return &m_scriptEngine; }
-	int getNCPort() const { return m_ncPort; }
-	std::shared_ptr<Player> getNPCServer() const { return m_npcServer; }
-#endif
-
 	FileSystem* getFileSystemByType(CString& type);
 	CString getFlag(const std::string& pFlagName);
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
@@ -183,15 +165,6 @@ public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
-#ifdef V8NPCSERVER
-	void assignNPCName(std::shared_ptr<NPC> npc, const std::string& name);
-	void removeNPCName(std::shared_ptr<NPC> npc);
-	std::shared_ptr<NPC> getNPCByName(const std::string& name) const;
-	std::shared_ptr<NPC> addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers = false);
-
-	void handlePM(Player* player, const CString& message);
-	void setPMFunction(uint32_t npcId, IScriptFunction* function = nullptr);
-#endif
 	std::shared_ptr<NPC> addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
@@ -330,12 +303,6 @@ private:
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 
-#ifdef V8NPCSERVER
-	ScriptEngine m_scriptEngine;
-	int m_ncPort;
-	std::shared_ptr<Player> m_npcServer;
-	std::shared_ptr<NPC> m_pmHandlerNpc;
-#endif
 
 #ifdef UPNP
 	UPNP m_upnp;
@@ -365,20 +332,6 @@ inline ScriptClass* Server::getClass(const std::string& className) const
 
 	return nullptr;
 }
-
-
-#ifdef V8NPCSERVER
-
-inline std::shared_ptr<NPC> Server::getNPCByName(const std::string& name) const
-{
-	auto npcIter = m_npcNameList.find(name);
-	if (npcIter != m_npcNameList.end())
-		return npcIter->second.lock();
-
-	return nullptr;
-}
-
-#endif
 
 inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
 {

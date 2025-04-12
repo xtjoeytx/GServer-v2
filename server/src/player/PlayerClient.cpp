@@ -505,18 +505,6 @@ bool PlayerClient::sendLogin()
 	for (auto& weaponName : protectedWeapons)
 		this->addWeapon(weaponName.toString());
 
-#if V8NPCSERVER
-	if (m_versionId >= CLVER_4_0211)
-	{
-		// Send the player's weapons.
-		for (auto& i : m_server->getClassList())
-		{
-			if (i.second != nullptr)
-				sendPacket(i.second->getClassPacket());
-		}
-	}
-#endif
-
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
 	{
@@ -1634,19 +1622,6 @@ bool PlayerClient::testSign()
 
 void PlayerClient::testTouch()
 {
-#if V8NPCSERVER
-	static const int touchtestd[] = { 24, 16, 0, 32, 24, 56, 48, 32 };
-	int dir = account.character.sprite % 4;
-
-	auto level = getLevel();
-	auto npcList = level->testTouch(account.character.pixelX + touchtestd[dir * 2], account.character.pixelY + touchtestd[dir * 2 + 1]);
-	/*
-	for (const auto& npc : npcList)
-	{
-		npc->queueNpcAction("npc.playertouchsme", this);
-	}
-	*/
-#endif
 }
 
 void PlayerClient::dropItemsOnDeath()
@@ -1747,23 +1722,15 @@ bool PlayerClient::spawnLevelItem(CString& pPacket, bool playerDrop)
 	LevelItemType itemType = LevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
-#ifdef V8NPCSERVER
-		if (removeItem(itemType) || !playerDrop)
+		auto level = getLevel();
+		if (level->addItem(loc[0], loc[1], itemType))
 		{
-#endif
-			auto level = getLevel();
-			if (level->addItem(loc[0], loc[1], itemType))
-			{
-				m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
-			}
-			else
-			{
-				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
-			}
-
-#ifdef V8NPCSERVER
+			m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
 		}
-#endif
+		else
+		{
+			sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+		}
 	}
 
 	return true;
@@ -1826,7 +1793,6 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 		return false;
 	}
 
-#ifndef V8NPCSERVER
 	// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
 	// same is true for sword/shield. assuming its true for the weapon-items, but
 	// its currently not tested.
@@ -1840,7 +1806,6 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 		}
 		return false;
 	}
-#endif
 
 	/*
 case LevelItemType::BOW:		// bow

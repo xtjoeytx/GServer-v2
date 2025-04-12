@@ -433,22 +433,11 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			uint8_t newMaxPower = pPacket.readGUChar();
 
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
-				account.character.hitpointsInHalves = newMaxPower * 2;
+			account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
+			account.character.hitpointsInHalves = newMaxPower * 2;
 
-#ifdef V8NPCSERVER
-				levelBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
-				selfBuff >> (char)PLPROP_MAXPOWER << getProp(PLPROP_MAXPOWER);
-#endif
-				levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
-				selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
-#ifdef V8NPCSERVER
-			}
-#endif
+			levelBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
+			selfBuff >> (char)PLPROP_CURPOWER << getProp(PLPROP_CURPOWER);
 
 			break;
 		}
@@ -465,22 +454,15 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		{
 			unsigned int newGralatCount = std::min(pPacket.readGUInt(), 9999999u);
 
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
+			if (rc != nullptr)
 			{
-#endif
-				if (rc != nullptr)
-				{
-					if (m_server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->account.hasRight(PLPERM_SETRIGHTS)))
-						account.character.gralats = newGralatCount;
-				}
-				else
-				{
+				if (m_server->getSettings().getBool("normaladminscanchangegralats", true) || (rc->isStaff() && rc->account.hasRight(PLPERM_SETRIGHTS)))
 					account.character.gralats = newGralatCount;
-				}
-#ifdef V8NPCSERVER
 			}
-#endif
+			else
+			{
+				account.character.gralats = newGralatCount;
+			}
 			break;
 		}
 
@@ -495,14 +477,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		case PLPROP_GLOVEPOWER:
 		{
 			uint8_t newGlovePower = pPacket.readGUChar();
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.character.glovePower = PropLimits::apply(newGlovePower, PropLimits::MaxGlovePower);
-#ifdef V8NPCSERVER
-			}
-#endif
+			account.character.glovePower = PropLimits::apply(newGlovePower, PropLimits::MaxGlovePower);
 			break;
 		}
 
@@ -535,14 +510,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 					img = "";
 			}
 
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.character.swordPower = sp;
-#ifdef V8NPCSERVER
-			}
-#endif
+			account.character.swordPower = sp;
 			account.character.swordImage = PropLimits::apply(img.toString(), PropLimits::SwordImageLength);
 		}
 		break;
@@ -577,14 +545,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 					img = "";
 			}
 
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.character.shieldPower = sp;
-#ifdef V8NPCSERVER
-			}
-#endif
+			account.character.shieldPower = sp;
 			account.character.shieldImage = PropLimits::apply(img.toString(), PropLimits::ShieldImageLength);
 		}
 		break;
@@ -680,15 +641,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 							selfBuff >> (char)propId << getProp(propId);
 					}
 				}
-
-#ifdef V8NPCSERVER
-				// Send chat to npcs if this wasn't changed by the npcserver
-				if (!rc && !account.character.chatMessage.empty())
-				{
-					if (level != nullptr)
-						level->sendChatToLevel(this, account.character.chatMessage);
-				}
-#endif
 			}
 		}
 		break;
@@ -747,10 +699,8 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		case PLPROP_SPRITE:
 			account.character.sprite = pPacket.readGUChar();
 
-#ifndef V8NPCSERVER
 			// Do collision testing.
 			doTouchTest = true;
-#endif
 			break;
 
 		case PLPROP_STATUS:
@@ -815,11 +765,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_CURLEVEL:
 			len = pPacket.readGUChar();
-#ifdef V8NPCSERVER
-			pPacket.readChars(len);
-#else
 			account.level = pPacket.readChars(len).toString();
-#endif
 			break;
 
 		case PLPROP_HORSEGIF:
@@ -900,14 +846,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		case PLPROP_MAGICPOINTS:
 		{
 			uint8_t newMP = pPacket.readGUChar();
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.character.mp = PropLimits::apply(newMP, PropLimits::MaxMP);
-#ifdef V8NPCSERVER
-			}
-#endif
+			account.character.mp = PropLimits::apply(newMP, PropLimits::MaxMP);
 			break;
 		}
 
@@ -938,14 +877,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		case PLPROP_ALIGNMENT:
 		{
 			uint8_t newAlignment = pPacket.readGUChar();
-#ifdef V8NPCSERVER
-			if (!(options & PLSETPROPS_SETBYPLAYER))
-			{
-#endif
-				account.character.ap = std::min<uint8_t>(newAlignment, 100);
-#ifdef V8NPCSERVER
-			}
-#endif
+			account.character.ap = std::min<uint8_t>(newAlignment, 100);
 			break;
 		}
 
@@ -1188,21 +1120,6 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 		}
 		if (selfBuff.length() > 0)
 			this->sendPacket(CString() >> (char)PLO_PLAYERPROPS << selfBuff);
-
-#ifdef V8NPCSERVER
-		// Movement check.
-		//if (options & PLSETPROPS_SETBYPLAYER)
-		if (!rc && player != nullptr)
-		{
-			if (doTouchTest)
-			{
-				if (account.character.sprite % 4 == 0)
-					player->testSign();
-
-				player->testTouch();
-			}
-		}
-#endif
 	}
 
 	if (sentInvalid)

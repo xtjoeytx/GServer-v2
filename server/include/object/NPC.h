@@ -12,16 +12,6 @@
 #include "object/Character.h"
 #include "scripting/SourceCode.h"
 
-#ifdef V8NPCSERVER
-	#include <queue>
-	#include <unordered_map>
-	#include <unordered_set>
-
-	#include "scripting/ScriptAction.h"
-	#include "scripting/ScriptExecutionContext.h"
-	#include "scripting/interface/ScriptBindings.h"
-#endif
-
 enum
 {
 	NPCPROP_IMAGE = 0,
@@ -144,44 +134,6 @@ enum class NPCType
 	DBNPC     // npcs created in RC (Database-NPCs)
 };
 
-#ifdef V8NPCSERVER
-
-enum class NPCEventResponse
-{
-	NoEvents,
-	PendingEvents,
-	Delete
-};
-
-enum class NPCWarpType
-{
-	None,
-	AllLinks,
-	OverworldLinks
-};
-
-//! NPC Event Flags
-enum
-{
-	NPCEVENTFLAG_CREATED = (int)(1 << 0),
-	NPCEVENTFLAG_TIMEOUT = (int)(1 << 1),
-	NPCEVENTFLAG_PLAYERCHATS = (int)(1 << 2),
-	NPCEVENTFLAG_PLAYERENTERS = (int)(1 << 3),
-	NPCEVENTFLAG_PLAYERLEAVES = (int)(1 << 4),
-	NPCEVENTFLAG_PLAYERTOUCHSME = (int)(1 << 5),
-	NPCEVENTFLAG_PLAYERLOGIN = (int)(1 << 6),
-	NPCEVENTFLAG_PLAYERLOGOUT = (int)(1 << 7),
-	NPCEVENTFLAG_NPCWARPED = (int)(1 << 8),
-};
-
-struct ScriptEventTimer
-{
-	unsigned int timer;
-	ScriptAction action;
-};
-
-#endif
-
 class Server;
 class Level;
 class Player;
@@ -291,63 +243,6 @@ public:
 		return m_npcBytecode;
 	}
 
-#ifdef V8NPCSERVER
-	bool getIsNpcDeleteRequested() const { return m_npcDeleteRequested; }
-
-	bool joinedClass(const std::string& name)
-	{
-		auto it = m_classMap.find(name); // std::find(m_classMap.begin(), m_classMap.end(), name);
-		return (it != m_classMap.end());
-	}
-
-	ScriptClass* joinClass(const std::string& className);
-	void setTimeout(int val);
-	void updatePropModTime(unsigned char propId);
-
-	//
-	bool hasScriptEvent(int flag) const;
-	void setScriptEvents(int mask);
-
-	ScriptExecutionContext& getExecutionContext();
-	IScriptObject<NPC>* getScriptObject() const;
-	void setScriptObject(std::unique_ptr<IScriptObject<NPC>> object);
-
-	// -- flags
-	CString getFlag(const std::string& pFlagName) const;
-	void setFlag(const std::string& pFlagName, const CString& pFlagValue);
-	void deleteFlag(const std::string& pFlagName);
-	std::unordered_map<std::string, CString>& getFlagList() { return m_flagList; }
-
-	bool deleteNPC();
-	void reloadNPC();
-	void resetNPC();
-
-	bool isWarpable() const;
-	void allowNpcWarping(NPCWarpType m_canWarp);
-	void moveNPC(int dx, int dy, double time, int options);
-	void warpNPC(std::shared_ptr<Level> pLevel, int pX, int pY);
-
-	// file
-	bool loadNPC(const CString& fileName);
-	void saveNPC();
-
-	void queueNpcAction(const std::string& action, Player* player = nullptr, bool registerAction = true);
-	void queueNpcTrigger(const std::string& action, Player* player = nullptr, const std::string& data = "");
-
-	template<class... Args>
-	void queueNpcEvent(const std::string& action, bool registerAction, Args&&... An);
-
-	void registerNpcUpdates();
-	void registerTriggerAction(const std::string& action, IScriptFunction* cbFunc);
-	void scheduleEvent(unsigned int timeout, ScriptAction& action);
-
-	bool runScriptTimer();
-	NPCEventResponse runScriptEvents();
-
-	CString getVariableDump();
-
-#endif
-
 private:
 	BabyDI_INJECT(Server, m_server);
 
@@ -383,35 +278,6 @@ private:
 	std::string m_clientScriptFormatted;
 
 	CString m_npcBytecode;
-
-#ifdef V8NPCSERVER
-	bool hasTimerUpdates() const;
-	void freeScriptResources();
-	void testTouch();
-	void testForLinks();
-	void updateClientCode();
-
-	std::map<std::string, std::string> m_classMap;
-	std::unordered_set<unsigned char> m_propModified;
-	std::vector<std::string> m_joinedClasses;
-
-	// Defaults
-	CString m_origImage, m_origLevel;
-	int16_t m_origX;
-	int16_t m_origY;
-	int16_t m_origZ;
-
-	// npc-server
-	NPCWarpType m_canWarp = NPCWarpType::None;
-	bool m_npcDeleteRequested = false;
-	std::unordered_map<std::string, CString> m_flagList;
-
-	unsigned int m_scriptEventsMask = 0xFF;
-	std::unique_ptr<IScriptObject<NPC>> m_scriptObject;
-	ScriptExecutionContext m_scriptExecutionContext;
-	std::unordered_map<std::string, IScriptFunction*> m_triggerActions;
-	std::vector<ScriptEventTimer> m_scriptTimers;
-#endif
 };
 
 using NPCPtr = std::shared_ptr<NPC>;
@@ -592,105 +458,5 @@ inline void NPC::setSwordImage(const std::string& pSwordImage)
 {
 	m_character.swordImage = pSwordImage.substr(0, 120);
 }
-
-#ifdef V8NPCSERVER
-
-inline void NPC::updatePropModTime(unsigned char propId)
-{
-	if (propId < NPCPROP_COUNT)
-	{
-		m_propModified.insert(propId);
-		registerNpcUpdates();
-	}
-}
-
-inline bool NPC::isWarpable() const
-{
-	return m_canWarp != NPCWarpType::None;
-}
-
-inline void NPC::allowNpcWarping(NPCWarpType m_canWarp)
-{
-	if (m_npcType != NPCType::LEVELNPC)
-		this->m_canWarp = m_canWarp;
-}
-
-/**
- * Script Engine
- */
-inline bool NPC::hasTimerUpdates() const
-{
-	return (m_timeout > 0 || !m_scriptTimers.empty());
-}
-
-inline bool NPC::hasScriptEvent(int flag) const
-{
-	return ((m_scriptEventsMask & flag) == flag);
-}
-
-inline void NPC::setScriptEvents(int mask)
-{
-	m_scriptEventsMask = mask;
-}
-
-inline ScriptExecutionContext& NPC::getExecutionContext()
-{
-	return m_scriptExecutionContext;
-}
-
-inline IScriptObject<NPC>* NPC::getScriptObject() const
-{
-	return m_scriptObject.get();
-}
-
-inline void NPC::setScriptObject(std::unique_ptr<IScriptObject<NPC>> object)
-{
-	m_scriptObject = std::move(object);
-}
-
-inline CString NPC::getFlag(const std::string& pFlagName) const
-{
-	auto it = m_flagList.find(pFlagName);
-	if (it != m_flagList.end())
-		return it->second;
-	return "";
-}
-
-inline void NPC::setFlag(const std::string& pFlagName, const CString& pFlagValue)
-{
-	m_flagList[pFlagName] = pFlagValue;
-}
-
-inline void NPC::deleteFlag(const std::string& pFlagName)
-{
-	m_flagList.erase(pFlagName);
-}
-
-	// TODO(joey): hm
-	#include "Server.h"
-
-template<class... Args>
-inline void NPC::queueNpcEvent(const std::string& action, bool registerAction, Args&&... An)
-{
-	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	ScriptAction scriptAction = scriptEngine->createAction(action, getScriptObject(), std::forward<Args>(An)...);
-
-	m_scriptExecutionContext.addAction(scriptAction);
-	if (registerAction)
-		scriptEngine->registerNpcUpdate(this);
-}
-
-inline void NPC::registerNpcUpdates()
-{
-	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	scriptEngine->registerNpcUpdate(this);
-}
-
-inline void NPC::scheduleEvent(unsigned int timeout, ScriptAction& action)
-{
-	m_scriptTimers.push_back({ timeout, std::move(action) });
-}
-
-#endif
 
 #endif

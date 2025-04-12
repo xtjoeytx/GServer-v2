@@ -238,10 +238,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		if (player->getType() & PLTYPE_ANYRC)
 		{
 			player->sendPacket(outPacket);
-#ifdef V8NPCSERVER
-			if (account.hasRight(PLPERM_NPCCONTROL))
-				player->sendNCAddr();
-#endif
 		}
 	}
 
@@ -885,16 +881,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 	if (message.isEmpty()) return HandlePacketResult::Handled;
 	std::vector<CString> words = message.tokenize();
 
-#ifdef V8NPCSERVER
-	if (isNC())
-	{
-		// TODO(joey): All RC's with NC support are sending two messages at a time.
-		//  Can use this section for npc-server related commands though.
-		//m_server->sendToNC(CString(account.character.nickName) << ": " << message);
-		return HandlePacketResult::Handled;
-	}
-#endif
-
 	if (words[0].text()[0] != '/')
 	{
 		m_server->sendToRC(CString(account.character.nickName) << ": " << message);
@@ -1079,29 +1065,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 				log::printLine(log::rc, "{} reloaded the weapons.", account.name);
 				m_server->loadWeapons(true);
 			}
-#ifdef V8NPCSERVER
-			else if (words[0] == "/savenpcs" && words.size() == 1)
-			{
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
-				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
-				m_server->saveNpcs();
-			}
-			else if (words[0] == "/stats" && words.size() == 1)
-			{
-				auto npcStats = m_server->calculateNpcStats();
-
-				sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
-
-				int idx = 0;
-				for (auto it = npcStats.begin(); it != npcStats.end(); ++it)
-				{
-					idx++;
-					sendPacket(CString() >> (char)PLO_RC_CHAT << CString(idx) << ". 	" << CString((*it).first) << "	" << (*it).second);
-					if (idx == 50)
-						break;
-				}
-			}
-#endif
 			else if (words[0] == "/find" && words.size() > 1)
 			{
 				std::map<CString, CString> found;
@@ -1283,19 +1246,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		std::string nickname = pRC->account.character.nickName;
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
 		pRC->account.character.nickName = nickname;
-
-#ifdef V8NPCSERVER
-		if (changed_rights & PLPERM_NPCCONTROL)
-		{
-			if (!(n_adminRights & PLPERM_NPCCONTROL))
-			{
-				if (auto pNC = m_server->getPlayer(acc, PLTYPE_ANYNC); pNC)
-					pNC->disconnect();
-			}
-			else
-				pRC->sendNCAddr();
-		}
-#endif
 
 		// If they are using the File Browser, reload it.
 		if (pRC->isUsingFileBrowser())
@@ -1998,16 +1948,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_NPCSERVERQUERY(CString& pPacket)
 {
-#ifdef V8NPCSERVER
-	// Read Packet Data
-	unsigned short pid = pPacket.readGUShort();
-	CString message = pPacket.readString("");
-
-	// Enact upon the message.
-	if (message == "location")
-		sendNCAddr();
-#endif
-
 	return HandlePacketResult::Handled;
 }
 

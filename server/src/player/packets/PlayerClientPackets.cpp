@@ -122,11 +122,6 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 {
-	// Dont accept npc-properties from clients when an npc-server is present
-#ifdef V8NPCSERVER
-	return HandlePacketResult::Handled;
-#endif
-
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcProps = pPacket.readString("");
 
@@ -542,11 +537,6 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 {
-#ifdef V8NPCSERVER
-	// Disable if we have an NPC-Server.
-	return HandlePacketResult::Handled;
-#endif
-
 	CSettings& settings = m_server->getSettings();
 
 	CString nimage = pPacket.readChars(pPacket.readGUChar());
@@ -569,11 +559,6 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_NPCDEL(CString& pPacket)
 {
-#ifdef V8NPCSERVER
-	// Disable if we have an NPC-Server.
-	return HandlePacketResult::Handled;
-#endif
-
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
@@ -720,14 +705,6 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			auto pmPlayer = m_server->getPlayer(pmPlayerId, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
 
-#ifdef V8NPCSERVER
-			if (pmPlayer->isNPCServer())
-			{
-				m_server->handlePM(this, pmMessage.guntokenize());
-				continue;
-			}
-#endif
-
 			// Don't send to people who don't want mass messages.
 			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 				continue;
@@ -757,11 +734,6 @@ HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 {
-#ifdef V8NPCSERVER
-	// Disable if we have an NPC-Server.
-	return HandlePacketResult::Handled;
-#endif
-
 	unsigned char type = pPacket.readGUChar();
 
 	// Type 0 means it is a default weapon.
@@ -1172,13 +1144,6 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	{
 		if (auto level = getLevel(); level)
 		{
-#ifdef V8NPCSERVER
-			// Send to server scripts
-			auto npcList = level->findAreaNpcs(int(loc[0] * 16.0), int(loc[1] * 16.0), 8, 8);
-			for (auto npcTouched : npcList)
-				npcTouched->queueNpcTrigger(actualActionName, this, utilities::retokenizeArray(triggerActionData, 1));
-#endif
-
 			// Send to the level.
 			m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
 		}

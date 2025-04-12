@@ -75,16 +75,6 @@ Server::~Server()
 
 int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
 {
-#ifdef V8NPCSERVER
-	// Initialize the Script Engine
-	if (!m_scriptEngine.initialize())
-	{
-		log::printLine(log::server, "** [Error] Could not initialize script engine.");
-		// TODO(joey): new error number? log is probably enough
-		return ERR_SETTINGS;
-	}
-#endif
-
 	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
@@ -136,27 +126,6 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
 
-#ifdef V8NPCSERVER
-	// Setup NPC Control port
-	m_ncPort = strtoint(m_settings.getStr("serverport"));
-
-	m_npcServer = std::make_shared<Player>(nullptr, 0);
-	m_accountLoader->loadAccount("(npcserver)", m_npcServer->account);
-	m_npcServer->account.character.headImage = m_settings.getStr("staffhead", "head25.png").toString();
-	m_npcServer->setType(PLTYPE_NPCSERVER);
-	m_npcServer->setLoaded(true); // can't guarantee this, so forcing it
-
-	// TODO(joey): Update this when server options is changed?
-	// Set nickname, and append (Server) - required!
-	CString nickName = m_settings.getStr("nickname");
-	if (nickName.isEmpty())
-		nickName = "NPC-Server";
-	nickName << " (Server)";
-	m_npcServer->setNick(nickName, true);
-
-	// Add npc-server to playerlist
-	addPlayer(m_npcServer);
-#endif
 
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
@@ -203,44 +172,6 @@ void Server::cleanupDeletedPlayers()
 		// Value copy so the shared_ptr exists until the end.
 		PlayerPtr player = *i;
 
-#ifdef V8NPCSERVER
-		IScriptObject<Player>* playerObject = player->getScriptObject();
-		if (playerObject != nullptr)
-		{
-			// Process last script events for this player
-			if (!player->isProcessed())
-			{
-				if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client)
-				{
-					// Leave the level now while the player object is still alive
-					if (client->getLevel() != nullptr)
-						client->leaveLevel();
-
-					// Send event to server that player is logging out
-					if (player->isLoaded() && (player->getType() & PLTYPE_ANYPLAYER))
-					{
-						for (const auto& [npcName, npcPtr] : m_npcNameList)
-						{
-							if (auto npcObject = npcPtr.lock(); npcObject)
-								npcObject->queueNpcAction("npc.playerlogout", player.get());
-						}
-					}
-				}
-
-				// Set processed
-				player->setProcessed();
-			}
-
-			// If we just added events to the player, we will have to wait for them to run before removing player.
-			if (playerObject->isReferenced())
-			{
-				SCRIPTENV_D("Reference count: %d\n", playerObject->getReferenceCount());
-				++i;
-				continue;
-			}
-		}
-#endif
-
 		// Get rid of the player now.
 		m_playerIdGenerator.freeId(player->getId());
 		if (player->getSocket() != nullptr)
@@ -269,18 +200,6 @@ void Server::cleanup()
 
 	// Save server flags.
 	saveServerFlags();
-
-#ifdef V8NPCSERVER
-	// Save npcs
-	saveNpcs();
-
-	// npc-server will be cleared from playerlist, so lets invalidate the pointer here
-	m_npcServer = nullptr;
-#endif
-#ifdef V8NPCSERVER
-	// Clean up the script engine
-	m_scriptEngine.cleanup();
-#endif
 
 	for (auto& [id, player]: m_playerList)
 		player->cleanup();
@@ -325,13 +244,6 @@ bool Server::doMain()
 
 	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
-
-#ifdef V8NPCSERVER
-	m_scriptEngine.runScripts(currentTimer);
-
-	// enable when we switch to async compiling
-	//m_gs2ScriptManager.runQueue();
-#endif
 
 	// Every second, do some events.
 	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastTimer);
@@ -426,9 +338,6 @@ bool Server::doTimedEvents()
 		// Save some stuff.
 		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
 		saveWeapons();
-#ifdef V8NPCSERVER
-		saveNpcs();
-#endif
 
 		// Check all of the instanced maps to see if the players have left.
 		if (!m_groupLevels.empty())
@@ -595,12 +504,6 @@ int Server::loadConfigFiles()
 		// Load maps.
 		log::printLine(log::server, "Loading maps...");
 		loadMaps(true);
-
-#ifdef V8NPCSERVER
-		// Load database npcs.
-		log::printLine(log::server, "Loading npcs...");
-		loadNpcs(true);
-#endif
 
 		// Load map levels - doing this after db npcs are loaded incase
 		// some level scripts may require access to the databases.
@@ -911,46 +814,6 @@ void Server::loadMaps(bool print)
 	}
 }
 
-#ifdef V8NPCSERVER
-void Server::loadNpcs(bool print)
-{
-	FileSystem npcFS;
-	npcFS.addDir("npcs", "npc*.txt");
-
-	auto& npcFileList = npcFS.getFileList();
-	for (const auto& [npcName, fileName]: npcFileList)
-	{
-		bool loaded = false;
-
-		// Create the npc
-		auto newNPC = std::make_shared<NPC>("", "", 30.f, 30.5f, nullptr, NPCType::DBNPC);
-		if (newNPC->loadNPC(fileName))
-		{
-			int npcId = newNPC->getId();
-			if (npcId < 1000)
-			{
-				printf("Database npcs must be greater than 1000\n");
-			}
-			else if (auto existing = m_npcList.find(npcId); existing != std::end(m_npcList))
-			{
-				printf("Error creating database npc: Id is in use!\n");
-			}
-			else
-			{
-				m_npcList.insert(std::make_pair(npcId, newNPC));
-				assignNPCName(newNPC, newNPC->getName());
-
-				// Add npc to level
-				if (auto level = newNPC->getLevel(); level)
-					level->addNPC(newNPC);
-
-				loaded = true;
-			}
-		}
-	}
-}
-#endif
-
 void Server::loadTranslations()
 {
 	this->TS_Reload();
@@ -992,60 +855,6 @@ void Server::saveWeapons()
 	}
 }
 
-#ifdef V8NPCSERVER
-void Server::saveNpcs()
-{
-	for (const auto& [npcId, npc]: m_npcList)
-	{
-		if (npc->getType() != NPCType::LEVELNPC)
-			npc->saveNPC();
-	}
-}
-
-std::vector<std::pair<double, std::string>> Server::calculateNpcStats()
-{
-	std::vector<std::pair<double, std::string>> script_profiles;
-
-	// Iterate npcs
-	for (const auto& [npcId, npc]: m_npcList)
-	{
-		ScriptExecutionContext& context = npc->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context.getExecutionData();
-		if (executionData.second > 0.0)
-		{
-			std::string npcName = npc->getName();
-			if (npcName.empty())
-				npcName = "Level npc " + std::to_string(npc->getId());
-
-			auto npcLevel = npc->getLevel();
-			if (npcLevel != nullptr)
-			{
-				npcName.append(" (in level ").append(npcLevel->getLevelName().text()).append(" at pos (").append(CString(npc->getY() / 16.0).text()).append(", ").append(CString(npc->getX() / 16.0).text()).append(")");
-			}
-
-			script_profiles.push_back(std::make_pair(executionData.second, npcName));
-		}
-	}
-
-	// Iterate weapons
-	for (const auto& [weaponName, weapon]: m_weaponList)
-	{
-		ScriptExecutionContext& context = weapon->getExecutionContext();
-		std::pair<unsigned int, double> executionData = context.getExecutionData();
-
-		if (executionData.second > 0.0)
-		{
-			std::string weaponName("Weapon ");
-			weaponName.append(weaponName);
-			script_profiles.push_back(std::make_pair(executionData.second, weaponName));
-		}
-	}
-
-	std::sort(script_profiles.rbegin(), script_profiles.rend());
-	return script_profiles;
-}
-#endif
-
 static std::string transformString(const std::string& str)
 {
 	std::string newStr;
@@ -1059,13 +868,6 @@ static std::string transformString(const std::string& str)
 	}
 
 	return newStr;
-}
-
-void Server::reportScriptException(const ScriptRunError& error)
-{
-	std::string error_message = transformString(error.getErrorString());
-	sendToNC(error_message);
-	log::printLine(log::script, error_message);
 }
 
 void Server::reportScriptException(const std::string& error_message)
@@ -1096,13 +898,7 @@ std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 
 CString Server::getFlag(const std::string& pFlagName)
 {
-#ifdef V8NPCSERVER
-	if (m_serverFlags.find(pFlagName) != m_serverFlags.end())
-		return m_serverFlags[pFlagName];
-	return "";
-#else
 	return m_serverFlags[pFlagName];
-#endif
 }
 
 FileSystem* Server::getFileSystemByType(CString& type)
@@ -1123,95 +919,6 @@ FileSystem* Server::getFileSystemByType(CString& type)
 	if (fs == -1) return 0;
 	return &m_filesystem[fs];
 }
-
-#ifdef V8NPCSERVER
-void Server::assignNPCName(std::shared_ptr<NPC> npc, const std::string& name)
-{
-	std::string newName = name;
-	int num = 0;
-	while (m_npcNameList.find(newName) != m_npcNameList.end())
-		newName = name + std::to_string(++num);
-
-	npc->setName(newName);
-	m_npcNameList[newName] = npc;
-}
-
-void Server::removeNPCName(std::shared_ptr<NPC> npc)
-{
-	auto npcIter = m_npcNameList.find(npc->getName());
-	if (npcIter != m_npcNameList.end())
-		m_npcNameList.erase(npcIter);
-}
-
-std::shared_ptr<NPC> Server::addServerNpc(int npcId, float pX, float pY, std::shared_ptr<Level> pLevel, bool sendToPlayers)
-{
-	// Force database npc ids to be >= 1000
-	if (npcId < 1000)
-	{
-		printf("Database npcs need to be greater than 1000\n");
-		return nullptr;
-	}
-
-	// Make sure the npc id isn't in use
-	auto existing = m_npcList.find(npcId);
-	if (existing != std::end(m_npcList))
-	{
-		printf("Error creating database npc: Id is in use!\n");
-		return nullptr;
-	}
-
-	// Create the npc
-	auto newNPC = std::make_shared<NPC>("", "", pX, pY, pLevel, NPCType::DBNPC);
-	newNPC->setId(npcId);
-	m_npcList.insert(std::make_pair(npcId, newNPC));
-
-	// Add the npc to the level
-	if (pLevel)
-	{
-		pLevel->addNPC(npcId);
-
-		// Send the NPC's props to everybody in range.
-		if (sendToPlayers)
-		{
-			CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-			sendPacketToLevelOnlyGmapArea(packet, pLevel);
-		}
-	}
-
-	return newNPC;
-}
-
-void Server::handlePM(Player* player, const CString& message)
-{
-	if (!m_pmHandlerNpc)
-	{
-		CString npcServerMsg;
-		npcServerMsg = "I am the npcserver for\nthis game server. Almost\nall npc actions are controlled\nby me.";
-		player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_npcServer->getId() << "\"\"," << npcServerMsg.gtokenize());
-		return;
-	}
-
-	// TODO(joey): This sets the first argument as the npc object, so we can't use it here for now.
-	//m_pmHandlerNpc->queueNpcEvent("npcserver.playerpm", true, player->getScriptObject(), std::string(message.text()));
-
-	m_pmHandlerNpc->getExecutionContext().addAction(m_scriptEngine.createAction("npcserver.playerpm", player->getScriptObject(), message.toString()));
-	m_scriptEngine.registerNpcUpdate(m_pmHandlerNpc.get());
-}
-
-void Server::setPMFunction(uint32_t npcId, IScriptFunction* function)
-{
-	auto npc = getNPC(npcId);
-	if (npc == nullptr || function == nullptr)
-	{
-		m_pmHandlerNpc = nullptr;
-		m_scriptEngine.removeCallBack("npcserver.playerpm");
-		return;
-	}
-
-	m_scriptEngine.setCallBack("npcserver.playerpm", function);
-	m_pmHandlerNpc = npc;
-}
-#endif
 
 std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers)
 {
@@ -1272,29 +979,6 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		}
 	}
 
-#ifdef V8NPCSERVER
-	// TODO(joey): Need to deal with illegal characters
-	// TODO(joey): add putnpc storage
-	// If we persist this npc, delete the file  [ maybe should add a parameter if we should remove the npc from disk ]
-	if (npc->getType() == NPCType::DBNPC)
-	{
-		CString filePath = CString() << "npcs/npc" << npc->getName() << ".txt";
-		FileSystem::fixPathSeparators(filePath);
-		remove(filePath.text());
-	}
-
-	if (npc->getType() == NPCType::DBNPC)
-	{
-		// Remove npc name assignment
-		if (!npc->getName().empty())
-			removeNPCName(npc);
-
-		// If this is the npc that handles pms, clear it
-		if (m_pmHandlerNpc == npc)
-			m_pmHandlerNpc = nullptr;
-	}
-#endif
-
 	return true;
 }
 
@@ -1335,11 +1019,6 @@ bool Server::addPlayer(PlayerPtr player, uint16_t id)
 	player->setId(id);
 	m_playerList[id] = player;
 
-#ifdef V8NPCSERVER
-	// Create script object for player
-	m_scriptEngine.wrapScriptObject(player.get());
-#endif
-
 	return true;
 }
 
@@ -1376,12 +1055,6 @@ bool Server::swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Play
 	m_sockManager.unregisterSocket(old_player.get());
 	m_sockManager.registerSocket(new_player.get());
 
-#ifdef V8NPCSERVER
-	// Create script object for player
-	old_player->setScriptObject(nullptr);
-	m_scriptEngine.wrapScriptObject(new_player.get());
-#endif
-
 	return true;
 }
 
@@ -1389,16 +1062,6 @@ void Server::playerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
-
-#ifdef V8NPCSERVER
-	// Send event to server that player is logging in
-	for (const auto& [npcName, npcPtr]: m_npcNameList)
-	{
-		// TODO(joey): check if they have the event before queueing for them
-		if (auto npcObject = npcPtr.lock(); npcObject)
-			npcObject->queueNpcAction("npc.playerlogin", player.get());
-	}
-#endif
 }
 
 bool Server::warpPlayerToSafePlace(uint16_t playerId)

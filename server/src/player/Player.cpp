@@ -176,13 +176,6 @@ void Player::cleanup()
 	if (m_playerSock)
 		delete m_playerSock;
 	m_playerSock = nullptr;
-
-#ifdef V8NPCSERVER
-	if (m_scriptObject)
-	{
-		m_scriptObject.reset();
-	}
-#endif
 }
 
 bool Player::onRecv()
@@ -406,33 +399,6 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 	return true;
 }
 
-#ifdef V8NPCSERVER
-// Send's NC Address/Port to Player (RC Only)
-void Player::sendNCAddr()
-{
-	// RC's only!
-	if (!isRC() || !account.hasRight(PLPERM_NPCCONTROL))
-		return;
-
-	auto npcServer = m_server->getNPCServer();
-	if (npcServer != nullptr)
-	{
-		// Grab NPCServer & Send
-		CString npcServerIp = m_server->getAdminSettings().getStr("ns_ip", "auto").toLower();
-		if (npcServerIp == "auto")
-		{
-			npcServerIp = m_server->getServerList().getServerIP();
-
-			// Fix for localhost setups
-			if (account.ipAddress == m_playerSock->getLocalIp())
-				npcServerIp = account.ipAddress;
-		}
-
-		sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)npcServer->getId() << npcServerIp << "," << CString(m_server->getNCPort()));
-	}
-}
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Player::handleLogin(CString& pPacket)
@@ -503,13 +469,6 @@ bool Player::sendLogin()
 
 	if (isClient())
 	{
-#ifdef V8NPCSERVER
-		// If we have an NPC Server, send this to prevent clients from sending
-		// npc props it modifies.
-		//
-		// NOTE: This may have been deprecated after v5/v6, don't see it in iLogs
-		sendPacket(CString() >> (char)PLO_HASNPCSERVER);
-#endif
 		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	}
 
@@ -1042,14 +1001,6 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		{
 			auto pmPlayer = m_server->getPlayer(pmPlayerId, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
-
-#ifdef V8NPCSERVER
-			if (pmPlayer->isNPCServer())
-			{
-				m_server->handlePM(this, pmMessage.guntokenize());
-				continue;
-			}
-#endif
 
 			// Don't send to people who don't want mass messages.
 			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))

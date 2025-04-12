@@ -6,10 +6,6 @@
 
 #include <CString.h>
 
-#ifdef V8NPCSERVER
-	#include "scripting/interface/ScriptBindings.h"
-#endif
-
 class LevelLink : public std::enable_shared_from_this<LevelLink>
 {
 public:
@@ -39,28 +35,12 @@ public:
 	inline void setWidth(int _width = 0);
 	inline void setHeight(int _height = 0);
 
-#ifdef V8NPCSERVER
-	inline IScriptObject<LevelLink>* getScriptObject() const
-	{
-		return m_scriptObject.get();
-	}
-
-	inline void setScriptObject(std::unique_ptr<IScriptObject<LevelLink>> object)
-	{
-		m_scriptObject = std::move(object);
-	}
-#endif
-
 private:
 	CString m_newLevel, m_newX, m_newY;
 	int m_x = 0;
 	int m_y = 0;
 	int m_width = 0;
 	int m_height = 0;
-
-#ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<LevelLink>> m_scriptObject;
-#endif
 };
 
 using LevelLinkPtr = std::shared_ptr<LevelLink>;

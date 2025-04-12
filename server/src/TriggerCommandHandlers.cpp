@@ -10,32 +10,6 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
 	auto& dispatcher = m_triggerActionDispatcher;
 
-#ifdef V8NPCSERVER
-	builder.registerCommand("serverside", [&](Player* player, std::vector<CString>& triggerData)
-							{
-								if (triggerData.size() > 1)
-								{
-									auto weaponObject = this->getWeapon(triggerData[1].toString());
-									if (weaponObject != nullptr)
-										weaponObject->queueWeaponAction(player, utilities::retokenizeArray(triggerData, 2));
-								}
-
-								return true;
-							});
-
-	builder.registerCommand("servernpc", [&](Player* player, std::vector<CString>& triggerData)
-							{
-								if (triggerData.size() > 2)
-								{
-									auto npcObject = this->getNPCByName(triggerData[1].toString());
-									if (npcObject != nullptr)
-										npcObject->queueNpcTrigger(triggerData[2].toString(), player, utilities::retokenizeArray(triggerData, 3));
-								}
-
-								return true;
-							});
-#endif
-
 	builder.registerCommand("gr.serverlist", [&](Player* player, std::vector<CString>& triggerData)
 							{
 								auto& listServer = getServerList();

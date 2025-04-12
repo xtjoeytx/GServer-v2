@@ -69,20 +69,8 @@ private:
 	{
 		m_clientside = m_serverside = m_clientGS1 = m_clientGS2 = {};
 
-#ifdef V8NPCSERVER
-		auto clientSep = m_src.find("//#CLIENTSIDE");
-		if (clientSep != std::string::npos)
-		{
-			// Separate clientside and serverside
-			m_clientside = std::string_view{ m_src }.substr(clientSep);
-			m_serverside = std::string_view{ m_src }.substr(0, clientSep);
-		}
-		else
-			m_serverside = std::string_view{ m_src };
-#else
 		// For non-npcserver builds all code is considered clientside
 		m_clientside = std::string_view{ m_src };
-#endif
 
 		if (!m_clientside.empty())
 		{

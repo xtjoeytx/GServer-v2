@@ -286,16 +286,6 @@ public:
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
 
-#ifdef V8NPCSERVER
-	std::vector<NPC*> findAreaNpcs(int pX, int pY, int pWidth, int pHeight);
-	std::vector<NPC*> testTouch(int pX, int pY);
-	NPC* isOnNPC(float pX, float pY, bool checkEventFlag = false);
-	void sendChatToLevel(const Player* player, const std::string& message);
-
-	IScriptObject<Level>* getScriptObject() const;
-	void setScriptObject(std::unique_ptr<IScriptObject<Level>> object);
-#endif
-
 	void modifyBoardDirect(uint32_t index, short tile);
 
 private:
@@ -331,26 +321,8 @@ private:
 	std::vector<LevelSignPtr> m_signs;
 	std::set<uint32_t> m_npcs;
 	std::deque<uint16_t> m_players;
-
-#ifdef V8NPCSERVER
-	std::unique_ptr<IScriptObject<Level>> m_scriptObject;
-#endif
 };
 
 using LevelPtr = std::shared_ptr<Level>;
-
-#ifdef V8NPCSERVER
-
-inline IScriptObject<Level>* Level::getScriptObject() const
-{
-	return m_scriptObject.get();
-}
-
-inline void Level::setScriptObject(std::unique_ptr<IScriptObject<Level>> object)
-{
-	m_scriptObject = std::move(object);
-}
-
-#endif
 
 #endif // TLEVEL_H

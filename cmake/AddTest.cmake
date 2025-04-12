@@ -24,10 +24,6 @@ function(add_test_og TARGET_NAME TARGET_PATH)
 
   add_dependencies(${TARGET_NAME} ${APP_LIBRARY_NAME})
 
-  if(V8NPCSERVER)
-    include_directories(${V8_INCLUDE_DIR})
-  endif()
-
   list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
   include(CTest)

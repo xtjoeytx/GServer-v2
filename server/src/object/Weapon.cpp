@@ -11,19 +11,11 @@
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
-#ifdef V8NPCSERVER
-	#include "object/Player.h"
-#endif
-
 using namespace graal::utilities;
 
 // -- Constructor: Default Weapons -- //
 Weapon::Weapon(LevelItemType pId)
 	: m_modTime(0), m_weaponDefault(pId)
-#ifdef V8NPCSERVER
-	  ,
-	  m_scriptExecutionContext(m_server->getScriptEngine())
-#endif
 {
 	m_weaponName = LevelItem::getItemName(m_weaponDefault);
 }
@@ -31,10 +23,6 @@ Weapon::Weapon(LevelItemType pId)
 // -- Constructor: Weapon Script -- //
 Weapon::Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
 	: m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
-#ifdef V8NPCSERVER
-	  ,
-	  m_scriptExecutionContext(m_server->getScriptEngine())
-#endif
 {
 	// Update Weapon
 	this->updateWeapon(std::move(pImage), std::move(pScript), pModTime, pSaveWeapon);
@@ -42,9 +30,6 @@ Weapon::Weapon(std::string pName, std::string pImage, std::string pScript, const
 
 Weapon::~Weapon()
 {
-#ifdef V8NPCSERVER
-	freeScriptResources();
-#endif
 }
 
 // -- Function: Load Weapon -- //
@@ -215,35 +200,11 @@ CString Weapon::getWeaponPacket(int clientVersion) const
 // -- Function: Update Weapon Image/Script -- //
 void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
 {
-#ifdef V8NPCSERVER
-	// Clear script function
-	if (m_source || m_scriptExecutionContext.hasActions())
-		freeScriptResources();
-#endif
-
 	bool gs2default = m_server->getSettings().getBool("gs2default", false);
 
 	m_source = SourceCode{ std::move(pCode), gs2default };
 	m_weaponImage = std::move(pImage);
 	setModTime(pModTime == 0 ? time(0) : pModTime);
-
-#ifdef V8NPCSERVER
-	// Compile and execute the script.
-	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-	bool executed = scriptEngine->executeWeapon(this);
-	if (executed)
-	{
-		SCRIPTENV_D("WEAPON SCRIPT COMPILED\n");
-
-		if (!m_source.getServerSide().empty())
-		{
-			m_scriptExecutionContext.addAction(scriptEngine->createAction("weapon.created", getScriptObject()));
-			scriptEngine->registerWeaponUpdate(this);
-		}
-	}
-	else
-		SCRIPTENV_D("Could not compile weapon script\n");
-#endif
 
 	// Clear any GS1 scripts/GS2 bytecode
 	m_bytecode.clear();
@@ -295,39 +256,3 @@ void Weapon::setClientScript(const CString& pScript)
 	for (auto& it: code)
 		m_formattedClientGS1 << it.trim() << "\xa7";
 }
-
-#ifdef V8NPCSERVER
-
-void Weapon::freeScriptResources()
-{
-	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-
-	scriptEngine->clearCache<Weapon>(m_source.getServerSide());
-
-	// Clear any queued actions
-	if (m_scriptExecutionContext.hasActions())
-	{
-		// Unregister npc from any queued event calls
-		scriptEngine->unregisterWeaponUpdate(this);
-
-		// Reset execution
-		m_scriptExecutionContext.resetExecution();
-	}
-
-	// Delete script object
-	if (m_scriptObject)
-	{
-		m_scriptObject.reset();
-	}
-}
-
-void Weapon::queueWeaponAction(Player* player, const std::string& args)
-{
-	ScriptEngine* scriptEngine = m_server->getScriptEngine();
-
-	ScriptAction scriptAction = scriptEngine->createAction("weapon.serverside", getScriptObject(), player->getScriptObject(), args);
-	m_scriptExecutionContext.addAction(scriptAction);
-	scriptEngine->registerWeaponUpdate(this);
-}
-
-#endif

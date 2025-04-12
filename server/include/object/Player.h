@@ -25,10 +25,6 @@
 #include "network/IPacketHandler.h"
 #include "utilities/IdGenerator.h"
 
-#ifdef V8NPCSERVER
-	#include "scripting/interface/ScriptBindings.h"
-#endif
-
 class Level;
 class Map;
 class Weapon;
@@ -182,24 +178,6 @@ public:
 	std::shared_ptr<Player> getExternalPlayer(const uint16_t id, bool includeRC = true) const;
 	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
-#ifdef V8NPCSERVER
-	bool isProcessed() const { return m_processRemoval; }
-	void setProcessed() { m_processRemoval = true; }
-
-	// NPC-Server Functionality
-	void sendNCAddr();
-
-	inline IScriptObject<Player>* getScriptObject() const
-	{
-		return m_scriptObject.get();
-	}
-
-	inline void setScriptObject(std::unique_ptr<IScriptObject<Player>> object)
-	{
-		m_scriptObject = std::move(object);
-	}
-#endif
-
 public:
 	Account account;
 
@@ -308,11 +286,6 @@ protected:
 
 	// File queue.
 	CFileQueue m_fileQueue;
-
-#ifdef V8NPCSERVER
-	bool m_processRemoval = false;
-	std::unique_ptr<IScriptObject<Player>> m_scriptObject;
-#endif
 
 	int getVersionIDByVersion(const CString& versionInput) const;
 };
