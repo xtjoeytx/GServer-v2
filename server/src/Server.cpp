@@ -66,12 +66,6 @@ Server::Server(const CString& pName)
 	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
-	// Point the logs to the correct server path.
-	log::server.filename = std::filesystem::path{ "servers" } / m_name.text() / log::server.filename;
-	log::rc.filename = std::filesystem::path{ "servers" } / m_name.text() / log::rc.filename;
-	log::npc.filename = std::filesystem::path{ "servers" } / m_name.text() / log::npc.filename;
-	log::script.filename = std::filesystem::path{ "servers" } / m_name.text() / log::script.filename;
-
 	m_accountLoader = std::make_unique<PlainTextAccountLoader>();
 }
 
