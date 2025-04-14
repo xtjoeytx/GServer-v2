@@ -1309,10 +1309,13 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	// Send NPCs.
 	if (!fromAdjacent || !m_pmap.expired())
 	{
-		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP)
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
-		else
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+		if (auto map = m_pmap.lock(); map)
+		{
+			if (map->getType() == MapType::GMAP)
+				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
+			else
+				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+		}
 
 		sendPacket(CString() << pLevel->getNpcsPacket(l_time, m_versionId));
 	}
