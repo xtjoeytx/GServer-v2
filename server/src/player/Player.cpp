@@ -22,9 +22,174 @@
 #include "utilities/StringUtils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef PACKETLOGGING
+#define FOR_OUTPUT_PACKETS(DO) \
+	DO(PLO_LEVELBOARD) \
+	DO(PLO_LEVELLINK) \
+	DO(PLO_BADDYPROPS) \
+	DO(PLO_NPCPROPS) \
+	DO(PLO_LEVELCHEST) \
+	DO(PLO_LEVELSIGN) \
+	DO(PLO_LEVELNAME) \
+	DO(PLO_BOARDMODIFY) \
+	DO(PLO_OTHERPLPROPS) \
+	DO(PLO_PLAYERPROPS) \
+	DO(PLO_ISLEADER) \
+	DO(PLO_BOMBADD) \
+	DO(PLO_BOMBDEL) \
+	DO(PLO_TOALL) \
+	DO(PLO_PLAYERWARP) \
+	DO(PLO_WARPFAILED) \
+	DO(PLO_DISCMESSAGE) \
+	DO(PLO_HORSEADD) \
+	DO(PLO_HORSEDEL) \
+	DO(PLO_ARROWADD) \
+	DO(PLO_FIRESPY) \
+	DO(PLO_THROWCARRIED) \
+	DO(PLO_ITEMADD) \
+	DO(PLO_ITEMDEL) \
+	DO(PLO_NPCMOVED) \
+	DO(PLO_SIGNATURE) \
+	DO(PLO_NPCACTION) \
+	DO(PLO_BADDYHURT) \
+	DO(PLO_FLAGSET) \
+	DO(PLO_NPCDEL) \
+	DO(PLO_FILESENDFAILED) \
+	DO(PLO_FLAGDEL) \
+	DO(PLO_SHOWIMG) \
+	DO(PLO_NPCWEAPONADD) \
+	DO(PLO_NPCWEAPONDEL) \
+	DO(PLO_RC_ADMINMESSAGE) \
+	DO(PLO_EXPLOSION) \
+	DO(PLO_PRIVATEMESSAGE) \
+	DO(PLO_PUSHAWAY) \
+	DO(PLO_LEVELMODTIME) \
+	DO(PLO_HURTPLAYER) \
+	DO(PLO_STARTMESSAGE) \
+	DO(PLO_NEWWORLDTIME) \
+	DO(PLO_DEFAULTWEAPON) \
+	DO(PLO_HASNPCSERVER) \
+	DO(PLO_FILEUPTODATE) \
+	DO(PLO_HITOBJECTS) \
+	DO(PLO_STAFFGUILDS) \
+	DO(PLO_TRIGGERACTION) \
+	DO(PLO_PLAYERWARP2) \
+	DO(PLO_RC_ACCOUNTADD) \
+	DO(PLO_RC_ACCOUNTSTATUS) \
+	DO(PLO_RC_ACCOUNTNAME) \
+	DO(PLO_RC_ACCOUNTDEL) \
+	DO(PLO_RC_ACCOUNTPROPS) \
+	DO(PLO_ADDPLAYER) \
+	DO(PLO_DELPLAYER) \
+	DO(PLO_RC_ACCOUNTPROPSGET) \
+	DO(PLO_RC_ACCOUNTCHANGE) \
+	DO(PLO_RC_PLAYERPROPSCHANGE) \
+	DO(PLO_UNKNOWN60) \
+	DO(PLO_RC_SERVERFLAGSGET) \
+	DO(PLO_RC_PLAYERRIGHTSGET) \
+	DO(PLO_RC_PLAYERCOMMENTSGET) \
+	DO(PLO_RC_PLAYERBANGET) \
+	DO(PLO_RC_FILEBROWSER_DIRLIST) \
+	DO(PLO_RC_FILEBROWSER_DIR) \
+	DO(PLO_RC_FILEBROWSER_MESSAGE) \
+	DO(PLO_LARGEFILESTART) \
+	DO(PLO_LARGEFILEEND) \
+	DO(PLO_RC_ACCOUNTLISTGET) \
+	DO(PLO_RC_PLAYERPROPS) \
+	DO(PLO_RC_PLAYERPROPSGET) \
+	DO(PLO_RC_ACCOUNTGET) \
+	DO(PLO_RC_CHAT) \
+	DO(PLO_PROFILE) \
+	DO(PLO_RC_SERVEROPTIONSGET) \
+	DO(PLO_RC_FOLDERCONFIGGET) \
+	DO(PLO_NC_CONTROL) \
+	DO(PLO_NPCSERVERADDR) \
+	DO(PLO_NC_LEVELLIST) \
+	DO(PLO_UNKNOWN81) \
+	DO(PLO_SERVERTEXT) \
+	DO(PLO_UNKNOWN83) \
+	DO(PLO_LARGEFILESIZE) \
+	DO(PLO_RAWDATA) \
+	DO(PLO_BOARDPACKET) \
+	DO(PLO_FILE) \
+	DO(PLO_RC_MAXUPLOADFILESIZE) \
+	DO(PLO_UNKNOWN104) \
+	DO(PLO_UPDATEPACKAGESIZE) \
+	DO(PLO_UPDATEPACKAGEDONE) \
+	DO(PLO_BOARDLAYER) \
+	DO(PLO_UNKNOWN109) \
+	DO(PLO_UNKNOWN111) \
+	DO(PLO_UNKNOWN124) \
+	DO(PLO_NPCBYTECODE) \
+	DO(PLO_UNKNOWN132) \
+	DO(PLO_UNKNOWN133) \
+	DO(PLO_GANISCRIPT) \
+	DO(PLO_NPCWEAPONSCRIPT) \
+	DO(PLO_NPCDEL2) \
+	DO(PLO_HIDENPCS) \
+	DO(PLO_SAY2) \
+	DO(PLO_FREEZEPLAYER2) \
+	DO(PLO_UNFREEZEPLAYER) \
+	DO(PLO_SETACTIVELEVEL) \
+	DO(PLO_NC_NPCATTRIBUTES) \
+	DO(PLO_NC_NPCADD) \
+	DO(PLO_NC_NPCDELETE) \
+	DO(PLO_NC_NPCSCRIPT) \
+	DO(PLO_NC_NPCFLAGS) \
+	DO(PLO_NC_CLASSGET) \
+	DO(PLO_NC_CLASSADD) \
+	DO(PLO_NC_LEVELDUMP) \
+	DO(PLO_MOVE) \
+	DO(PLO_UNKNOWN166) \
+	DO(PLO_NC_WEAPONLISTGET) \
+	DO(PLO_UNKNOWN168) \
+	DO(PLO_UNKNOWN169) \
+	DO(PLO_GHOSTMODE) \
+	DO(PLO_BIGMAP) \
+	DO(PLO_MINIMAP) \
+	DO(PLO_GHOSTTEXT) \
+	DO(PLO_GHOSTICON) \
+	DO(PLO_SHOOT) \
+	DO(PLO_FULLSTOP) \
+	DO(PLO_FULLSTOP2) \
+	DO(PLO_SERVERWARP) \
+	DO(PLO_RPGWINDOW) \
+	DO(PLO_STATUSLIST) \
+	DO(PLO_UNKNOWN181) \
+	DO(PLO_LISTPROCESSES) \
+	DO(PLO_UNKNOWN183) \
+	DO(PLO_UNKNOWN184) \
+	DO(PLO_UNKNOWN185) \
+	DO(PLO_UNKNOWN186) \
+	DO(PLO_UPDATEPACKAGEISUPDATED) \
+	DO(PLO_NC_CLASSDELETE) \
+	DO(PLO_MOVE2) \
+	DO(PLO_UNKNOWN190) \
+	DO(PLO_SHOOT2) \
+	DO(PLO_NC_WEAPONGET) \
+	DO(PLO_UNKNOWN193) \
+	DO(PLO_CLEARWEAPONS) \
+	DO(PLO_UNKNOWN195) \
+	DO(PLO_UNKNOWN197) \
+	DO(PLO_UNKNOWN198) \
+	DO(PLO_SET_ENC_KEY) \
+	DO(PLO_BUNDLE)
+#define FILL_OUTPUT_ARRAY(name) names[(uint8_t)name] = #name;
+
+constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
+{
+	std::array<std::string, 255> names;
+	names.fill("(unknown packet)");
+	FOR_OUTPUT_PACKETS(FILL_OUTPUT_ARRAY)
+	return names;
+}
+
+std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray();
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -285,6 +450,18 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 	// empty buffer?
 	if (pPacket.isEmpty())
 		return;
+
+#ifdef PACKETLOGGING
+	// This will suck as long as we have gs2lib.
+	uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
+	log::printLine(log::networkdump, "< Out Packet: [{}] {} ({} bytes)", pid, OutputPacketNamesArray[pid], pPacket.length());
+	log::print(log::networkdump, "{}", pPacket.text());
+	if (pPacket[pPacket.length() - 1] != '\n')
+		log::print(log::networkdump, "\n");
+	for (int i = 0; i < pPacket.length(); ++i)
+		log::print(log::networkdump, "{:02x} ", (unsigned char)((pPacket.text())[i]));
+	log::print(log::networkdump, "\n\n");
+#endif
 
 	// append '\n'
 	if (appendNL)

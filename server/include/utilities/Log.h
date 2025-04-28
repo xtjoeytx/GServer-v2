@@ -121,6 +121,9 @@ inline Log npc{ .filename = std::filesystem::path{ "logs" } / "npclog.txt" };
 // The scriptlog.txt file.
 inline Log script{ .filename = std::filesystem::path{ "logs" } / "scriptlog.txt" };
 
+// The networkdump.txt file.
+inline Log networkdump{ .filename = std::filesystem::path{ "logs" } / "networkdump.txt", .mirrorToCli = false };
+
 ///////////////////////////////////////////////////////////////////////////////
 
 // Prints a message to the log file and console.

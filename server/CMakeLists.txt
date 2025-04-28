@@ -131,6 +131,12 @@ target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PRO
 # Configure our compiler options.
 set_default_compiler_options(${TARGET_NAME})
 
+# Packet logging.
+option(PACKET_LOGGING "Enable debug packet logging." OFF)
+if(PACKET_LOGGING)
+	target_compile_definitions(${TARGET_NAME} PUBLIC PACKETLOGGING)
+endif()
+
 # Dependency: antlr4.
 find_package(antlr4-runtime CONFIG REQUIRED)
 target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static)
