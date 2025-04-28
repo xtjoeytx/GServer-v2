@@ -8,6 +8,13 @@
 #include <vector>
 #include <unordered_map>
 #include <ranges>
+#include <optional>
+#include <variant>
+#include <numeric>
+
+#include <typeinfo>
+#include <typeindex>
+#include <tuple>
 
 #include <CString.h>
 #include "BabyDI.h"
@@ -16,6 +23,7 @@
 #include "level/LevelChest.h"
 #include "player/PlayerProps.h"
 #include "utilities/FilePermissions.h"
+#include "utilities/FlagContainer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -78,7 +86,7 @@ struct Account
 	std::array<std::string, 30> ganiAttributes;
 	std::vector<std::string> weapons;
 	std::unordered_multimap<std::string, std::pair<int8_t, int8_t>> savedChests;
-	std::unordered_map<std::string, std::string> flags;
+	FlagContainer flags;
 	bool banned = false;
 	std::string banReason;
 	std::string banLength;

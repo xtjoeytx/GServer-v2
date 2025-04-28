@@ -455,7 +455,7 @@ bool PlayerClient::sendLogin()
 		this->setFlag("gr.ip", account.ipAddress, true);
 
 	// Send the player's flags.
-	for (const auto& [flag, value] : account.flags)
+	for (const auto& [flag, value] : account.flags.container)
 	{
 		if (value.empty())
 			sendPacket(CString() >> (char)PLO_FLAGSET << flag);

@@ -1212,7 +1212,7 @@ void Player::setPropsRC(CString& pPacket, Player* rc)
 	setProps(props, (m_id != -1 ? PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF : 0), rc);
 
 	// Clear flags
-	for (const auto& [flag, value] : account.flags)
+	for (const auto& [flag, value] : account.flags.container)
 	{
 		outPacket >> (char)PLO_FLAGDEL << flag;
 		if (!value.empty()) outPacket << "=" << value;
@@ -1326,8 +1326,8 @@ CString Player::getPropsRC()
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
-	ret >> (short)account.flags.size();
-	for (const auto& [flag, value] : account.flags)
+	ret >> (short)account.flags.container.size();
+	for (const auto& [flag, value] : account.flags.container)
 	{
 		std::string computedFlag{ flag };
 		if (!value.empty())

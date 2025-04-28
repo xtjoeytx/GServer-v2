@@ -710,7 +710,7 @@ void Player::setChat(const CString& pChat)
 
 void Player::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
 {
-	account.flags.erase(pFlagName);
+	account.flags.remove(pFlagName);
 
 	if (sendToPlayer)
 	{
@@ -721,7 +721,7 @@ void Player::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
 void Player::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
 {
 	// Call Default Set Flag
-	account.flags.insert(std::make_pair(pFlagName, pFlagValue.toString()));
+	account.flags.set(std::make_pair(pFlagName, pFlagValue.toString()));
 
 	// Send to Player
 	if (sendToPlayer)
@@ -735,8 +735,8 @@ void Player::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 
 CString Player::getFlag(const std::string& pFlagName) const
 {
-	auto it = account.flags.find(pFlagName);
-	if (it == account.flags.end())
+	auto it = account.flags.container.find(pFlagName);
+	if (it == account.flags.container.end())
 		return CString();
 	return it->second;
 }

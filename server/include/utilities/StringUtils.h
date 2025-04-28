@@ -36,31 +36,59 @@ concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringVariant<
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Trims whitespace from the start of the string.
-auto trimLeft(StringViewVariant auto str)
+// A hash function for strings that can be used with heterogenous lookups.
+struct string_hash
 {
-	auto s = str.size();
-	for (size_t i = 0; i < str.size(); ++i)
+	using hash_type = std::hash<std::string_view>;
+	using is_transparent = void;
+
+	size_t operator()(const char* str) const noexcept
 	{
-		if (!std::isspace(static_cast<unsigned char>(str[i])))
-			return str.substr(i, s - i);
+		return hash_type{}(str);
 	}
-	return decltype(str)();
+	size_t operator()(const std::string_view& str) const noexcept
+	{
+		return hash_type{}(str);
+	}
+	size_t operator()(const std::string& str) const noexcept
+	{
+		return hash_type{}(str);
+	}
+	size_t operator()(const CString& str) const noexcept
+	{
+		return hash_type{}(str.toStringView());
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Trims whitespace from the start of the string.
+std::string_view trimLeft(StringViewVariant auto const& str)
+{
+	std::string_view view{ str };
+	auto size = str.size();
+	for (size_t i = 0; i < size; ++i)
+	{
+		if (!std::isspace(static_cast<unsigned char>(view[i])))
+			return view.substr(i, size - i);
+	}
+	return {};
 }
 
 // Trims whitespace from the end of the string.
-auto trimRight(StringViewVariant auto str)
+std::string_view trimRight(StringViewVariant auto const& str)
 {
-	for (size_t i = str.size(); i > 0; --i)
+	std::string_view view{ str };
+	for (size_t i = view.size(); i > 0; --i)
 	{
-		if (!std::isspace(static_cast<unsigned char>(str[i - 1])))
-			return str.substr(0, i);
+		if (!std::isspace(static_cast<unsigned char>(view[i - 1])))
+			return view.substr(0, i);
 	}
-	return decltype(str)();
+	return {};
 }
 
 // Trims whitespace from the start and end of the string.
-auto trim(StringViewVariant auto str) -> decltype(str)
+std::string_view trim(StringViewVariant auto const& str)
 {
 	return trimLeft(trimRight(str));
 }
@@ -161,31 +189,37 @@ auto split(std::string_view str, std::string_view delim = "\n"sv)
 }
 */
 
-// Splits a string on the specified delimiter from a list, returning a vector of strings.
-auto splitHard(StringViewVariant auto const& str, StringViewVariant auto delims = " \t\n\r"sv)
+// Splits a string on the specified delimiter from a list, returning a vector of string_views.
+template <typename T = std::string>
+std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims = " \t\n\r"sv)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 
-	std::vector<std::basic_string<Elem, Traits>> tokens{};
-	auto token = std::basic_string<Elem, Traits>{};
-	for (const auto& c : str)
+	//std::vector<std::basic_string_view<Elem, Traits>> tokens{};
+	std::vector<T> tokens{};
+	std::basic_string_view<Elem, Traits> strview{ str };
+
+	// Collect the tokens.
+	size_t start = 0, end = 0;
+	while (start < str.length())
 	{
-		if (delims.find(c) != std::string::npos)
+		// Find the next delimiter.
+		end = strview.find_first_of(delims, start);
+
+		// None found, so add the rest of the string.
+		if (end == std::string_view::npos)
 		{
-			if (!token.empty())
-			{
-				tokens.push_back(token);
-				token.clear();
-			}
+			tokens.push_back(T{ strview.substr(start) });
+			break;
 		}
-		else
-		{
-			token += c;
-		}
+
+		// Add the token to the vector.
+		if (end > start)
+			tokens.push_back(T{ strview.substr(start, end - start) });
+
+		start = end + 1;
 	}
-	if (!token.empty())
-		tokens.push_back(token);
 
 	return tokens;
 }
@@ -462,6 +496,23 @@ inline float toFloat(const std::string& str)
 		return result;
 
 	return 0.0f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline std::string extractLine(std::string_view& str, char delim = '\n')
+{
+	auto pos = str.find(delim);
+	if (pos == std::string::npos)
+	{
+		auto line = str;
+		str = {};
+		return std::string(line);
+	}
+
+	auto line = str.substr(0, pos);
+	str.remove_prefix(pos + 1);
+	return std::string(line);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

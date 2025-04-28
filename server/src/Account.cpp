@@ -5,8 +5,10 @@
 
 #include <memory.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include "BabyDI.h"
+#include "IEnums.h"
 
 #include "Account.h"
 #include "FileSystem.h"
@@ -173,7 +175,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 			account.character.shieldImage = val;
 		else if (section == "COLORS")
 		{
-			auto tokensAsNumbers = string::splitHard(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string& token) { return toByte(token); });
+			auto tokensAsNumbers = string::splitHard<std::string_view>(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
@@ -203,7 +205,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 		else if (section == "LASTSPARTIME")
 			account.lastSparTime = system_clock::from_time_t(string::toNumber<time_t>(val));
 		else if (section == "FLAG")
-			account.flags.insert(decomposeFlag(val));
+			account.flags.set(decomposeFlag(val));
 		else if (section.starts_with("ATTR"))
 		{
 			if (auto idx = toByte(section.substr(4)); idx > 0 && idx <= 30)
@@ -352,7 +354,7 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 		writeLine(newFile, "WEAPON", weapon);
 
 	// Flags
-	for (const auto& [flag, value] : account.flags)
+	for (const auto& [flag, value] : account.flags.container)
 	{
 		if (value.empty())
 			writeLine(newFile, "FLAG", flag);
