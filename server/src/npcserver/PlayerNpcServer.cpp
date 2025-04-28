@@ -1,0 +1,46 @@
+#include <cstdint>
+#include <optional>
+
+#include "CString.h"
+#include "CSocket.h"
+
+#include "network/IPacketHandler.h"
+#include "npcserver/PlayerNpcServer.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace preagonal
+{
+
+///////////////////////////////////////////////////////////////////////////////
+
+PlayerNpcServer::PlayerNpcServer(CSocket* pSocket, uint16_t pId)
+	: Player(pSocket, pId)
+{
+}
+
+PlayerNpcServer::~PlayerNpcServer()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool PlayerNpcServer::onRecv()
+{
+	return false;
+}
+
+void PlayerNpcServer::onUnregister()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+HandlePacketResult PlayerNpcServer::handlePacket(std::optional<uint8_t> id, CString& packet)
+{
+	return HandlePacketResult::Failed;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+} // end namespace preagonal

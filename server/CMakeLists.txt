@@ -31,8 +31,6 @@ set(
 	"src/ServerList.cpp"
 	"src/TriggerCommandHandlers.cpp"
 	"src/UpdatePackage.cpp"
-	"src/scripting/GS2ScriptManager.cpp"
-	"src/scripting/ScriptClass.cpp"
 	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
@@ -45,6 +43,9 @@ list(APPEND SOURCES ${LEVEL_SOURCES})
 file(GLOB MISC_SOURCES src/misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
+file(GLOB NPCSERVER_SOURCES src/npcserver/**.cpp)
+list(APPEND SOURCES ${NPCSERVER_SOURCES})
+
 file(GLOB OBJECT_SOURCES src/object/**.cpp)
 list(APPEND SOURCES ${OBJECT_SOURCES})
 
@@ -53,6 +54,9 @@ list(APPEND SOURCES ${PLAYER_SOURCES})
 
 file(GLOB PLAYER_PACKET_SOURCES src/player/packets/**.cpp)
 list(APPEND SOURCES ${PLAYER_PACKET_SOURCES})
+
+file(GLOB_RECURSE SCRIPTING_SOURCES src/scripting/**.cpp)
+list(APPEND SOURCES ${SCRIPTING_SOURCES})
 
 file(GLOB UTILITIES_SOURCES src/utilities/**.cpp)
 list(APPEND SOURCES ${UTILITIES_SOURCES})
@@ -64,15 +68,13 @@ set(
 	HEADERS
 	"${PROJECT_BINARY_DIR}/server/include/IConfig.h"
 	"include/Account.h"
+	"include/BabyDI.h"
+	"include/common.h"
 	"include/FileSystem.h"
 	"include/main.h"
 	"include/Server.h"
 	"include/ServerList.h"
 	"include/UpdatePackage.h"
-	"include/scripting/GS2ScriptManager.h"
-	"include/scripting/ScriptClass.h"
-	"include/scripting/ScriptOrigin.h"
-	"include/scripting/SourceCode.h"
 )
 
 file(GLOB ANIMATION_HEADERS include/animation/**.h)
@@ -84,13 +86,16 @@ list(APPEND HEADERS ${LEVEL_HEADERS})
 file(GLOB MISC_HEADERS include/misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
 
+file(GLOB NPCSERVER_HEADERS include/npcserver/**.h)
+list(APPEND HEADERS ${NPCSERVER_HEADERS})
+
 file(GLOB OBJECT_HEADERS include/object/**.h)
 list(APPEND HEADERS ${OBJECT_HEADERS})
 
 file(GLOB PLAYER_HEADERS include/player/**.h)
 list(APPEND HEADERS ${PLAYER_HEADERS})
 
-file(GLOB SCRIPT_ENGINE_HEADERS include/scripting/**.h)
+file(GLOB_RECURSE SCRIPT_ENGINE_HEADERS include/scripting/**.h)
 list(APPEND HEADERS ${SCRIPT_ENGINE_HEADERS})
 
 file(GLOB UTILITIES_HEADERS include/utilities/**.h)

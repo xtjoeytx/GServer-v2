@@ -243,14 +243,14 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			if (npc)
 			{
 				CString packet;
-				packet >> (char)(npc->getX() / 8.0f) >> (char)(npc->getY() / 8.0f);
+				packet >> (char)(npc->character.pixelX / 8.0f) >> (char)(npc->character.pixelY / 8.0f);
 				packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 				packet >> (short)(duration / 0.05f);
 				packet >> (char)options;
 				sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 
-				npc->setX(npc->getX() + dx * 16);
-				npc->setY(npc->getY() + dy * 16);
+				npc->character.pixelX += dx * 16;
+				npc->character.pixelY += dy * 16;
 				//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
 			}
 		}
@@ -269,13 +269,13 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			auto npc = getNPC(id);
 			if (npc)
 			{
-				npc->setX(int(x * 16.0));
-				npc->setY(int(y * 16.0));
+				npc->character.pixelX = static_cast<int16_t>(x * 16.0);
+				npc->character.pixelY = static_cast<int16_t>(y * 16.0);
 
 				// Send the prop packet to the level.
 				CString packet;
-				packet >> (char)NPCPROP_X >> (char)(x * 2.0f);
-				packet >> (char)NPCPROP_Y >> (char)(y * 2.0f);
+				packet >> (char)NPCProp::X >> (char)(x * 2.0f);
+				packet >> (char)NPCProp::Y >> (char)(y * 2.0f);
 				sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 			}
 		}

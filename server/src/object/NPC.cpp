@@ -1,14 +1,13 @@
-#include <math.h>
-#include <time.h>
-#include <vector>
+#include "object/NPC.h"
 
+#include <math.h>
 #include <IEnums.h>
 
 #include "FileSystem.h"
 #include "Server.h"
-#include "object/NPC.h"
 #include "level/Level.h"
 #include "level/Map.h"
+#include "npcserver/NPCServer.h"
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
@@ -19,317 +18,322 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const char __nSavePackets[10] = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
-const char __nAttrPackets[30] = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
+static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+static constexpr std::array<uint8_t, 30> attrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
-static CString toWeaponName(const CString& code);
-static CString doJoins(const CString& code, FileSystem* fs);
+static std::string_view toWeaponName(std::string_view code);
+static std::string doJoins(std::string_view code, FileSystem* fs);
 
-static std::string minifyClientCode(const CString& src)
+NPC::NPC(NPCID id, NPCType type)
+	: id(id), type(type)
 {
-	std::string minified;
-	if (!src.isEmpty())
-	{
-		auto tmp = removeComments(src, "\n");
-
-		// Scripts should start with //#CLIENTSIDE since this is client code
-		if (tmp.find("//#CLIENTSIDE") != 0)
-			minified.append("//#CLIENTSIDE").append("\xa7");
-
-		std::vector<CString> codeLines = tmp.tokenize("\n");
-		for (const auto& line : codeLines)
-			minified.append(line.trim().toString()).append("\xa7");
-	}
-
-	return minified;
-}
-
-NPC::NPC(const CString& pImage, std::string pScript, float pX, float pY, std::shared_ptr<Level> pLevel, NPCType type)
-	: NPC(type)
-{
-	setX(pX);
-	setY(pY);
-	m_image = pImage.text();
-	m_curlevel = pLevel;
-
-	// TODO: Create plugin hook so NPCServer can acquire/format code.
-
-	// Needs to be called so it creates a script-object
-	//if (!pScript.isEmpty())
-	setScriptCode(std::move(pScript));
-}
-
-NPC::NPC(NPCType type)
-	: m_npcType(type)
-{
-	memset((void*)m_saves, 0, sizeof(m_saves));
-	memset((void*)m_modTime, 0, sizeof(m_modTime));
-
-	// imagePart needs to be Graal-packed.
-	for (int i = 0; i < 6; i++)
-		m_imagePart.writeGChar(0);
+	saves.fill(0);
+	modTime.fill(0);
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	m_modTime[NPCPROP_IMAGE] = m_modTime[NPCPROP_SCRIPT] = m_modTime[NPCPROP_X] = m_modTime[NPCPROP_Y] = m_modTime[NPCPROP_VISFLAGS] = m_modTime[NPCPROP_ID] = m_modTime[NPCPROP_SPRITE] = m_modTime[NPCPROP_MESSAGE] = m_modTime[NPCPROP_GMAPLEVELX] = m_modTime[NPCPROP_GMAPLEVELY] = m_modTime[NPCPROP_X2] = m_modTime[NPCPROP_Y2] = time(0);
-
-	// Needs to be called so it creates a script-object
-	setScriptCode("");
+	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2 });
+	std::ranges::for_each(props, [this, now = time(0)](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 }
 
-NPC::~NPC()
+void NPC::setScript(std::string_view script)
 {
-}
+	m_script = std::move(SourceCode{ script });
 
-void NPC::setScriptCode(std::string pScript)
-{
-	bool firstExecution = m_npcScript.empty();
-	bool gs2default = m_server->getSettings().getBool("gs2default", false);
+	auto clientside = m_script.getClientSide();
 
-	m_npcScript = SourceCode{ std::move(pScript), gs2default };
-
-	bool levelModificationNPCHack = false;
-
-	// NOTE: since we are not removing comments from the source, any comments at the start of the script
-	// interferes with the starts_with check, so a temporary workaround is to check for it within the first 100 characters
-
-	// All code is stored in clientside when building without an npc-server, and split as-expected with the npc-server
-	std::string_view npcScriptSearch = m_npcScript.getClientSide();
-
-	// See if the NPC sets the level as a sparring zone.
-	if (auto level = getLevel(); level)
-	{
-		if (npcScriptSearch.starts_with("sparringzone") || npcScriptSearch.find("sparringzone\n") < 100)
-		{
-			level->setSparringZone(true);
-			levelModificationNPCHack = true;
-		}
-		// See if the NPC sets the level as singleplayer.
-		else if (npcScriptSearch.starts_with("singleplayer") || npcScriptSearch.find("singleplayer\n") < 100)
-		{
-			level->setSingleplayer(true);
-			levelModificationNPCHack = true;
-		}
-	}
-
-	// Remove sparringzone / singleplayer from the server script
-	if (levelModificationNPCHack)
-	{
-		// Clearing the entire script
-		m_npcScript.clearServerSide();
-	}
-
-	// See if the NPC should block position updates from the level leader.
-	if (m_npcScript.getClientGS1().find("//#BLOCKPOSITIONUPDATES") != std::string::npos)
+	// Check for position update blocking.
+	if (m_server->isNpcServerEnabled() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
 
-	// Search for toweapons in the clientside code and extract the name of the weapon.
-	m_weaponName = toWeaponName(std::string{ m_npcScript.getClientGS1() });
+	// If there is no npc-server, emulate script joins.
+	if (!m_server->isNpcServerEnabled() && m_server->Generation == ServerGeneration::CLASSIC)
+	{
+		auto joinedScript = doJoins(clientside, m_server->getFileSystem());
+		m_script.setModifiedSource(joinedScript);
+		clientside = m_script.getClientSide();
+	}
 
-	// Remove comments and trim the code if specified. Also changes line-endings
-	auto tmpScript = doJoins(std::string{ m_npcScript.getClientGS1() }, m_server->getFileSystem());
-	m_clientScriptFormatted = minifyClientCode(tmpScript);
+	// If we have no npc-server, we support toweapons, so extract the weapon name.
+	if (!m_server->isNpcServerEnabled())
+	{
+		m_weaponName = toWeaponName(clientside);
+	}
+
+	// If we have an npc-server, compile the scripts.
+	if (m_server->isNpcServerEnabled())
+	{
+		auto npcServer = m_server->getNpcServer();
+		if (m_server->Generation == ServerGeneration::CLASSIC)
+		{
+			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()); serverResults != nullptr && serverResults->success)
+			{
+				m_script.setServerByteCode(serverResults->bytecode);
+				m_script.addServerJoinedClasses(serverResults->joinedClasses);
+			}
+		}
+		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
+		{
+			if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, name, m_script.getClientSide()); clientResults != nullptr && clientResults->success)
+			{
+				m_script.setClientByteCode(clientResults->bytecode);
+				m_script.addClientJoinedClasses(clientResults->joinedClasses);
+			}
+			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()); serverResults != nullptr && serverResults->success)
+			{
+				m_script.setServerByteCode(serverResults->bytecode);
+				m_script.addServerJoinedClasses(serverResults->joinedClasses);
+			}
+		}
+	}
 
 	// Just a little warning for people who don't know.
-	if (m_clientScriptFormatted.length() > 0x705F)
-		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (m_weaponName.length() != 0 ? m_weaponName : m_image));
+	if (m_script.getClientByteCode() == nullptr && m_script.getClientSide().length() > 0x705F)
+		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
 }
 
-std::shared_ptr<Level> NPC::getLevel() const
+CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 {
-	// TODO: Handle deleted level.
-	// Delete level NPCs.
-
-	return m_curlevel.lock();
-}
-
-CString NPC::getProp(unsigned char pId, int clientVersion) const
-{
-	auto level = getLevel();
 	switch (pId)
 	{
-	case NPCPROP_IMAGE:
-		return CString() >> (char)m_image.length() << m_image;
+		case NPCProp::IMAGE:
+			return CString() >> (char)image.length() << image;
 
-	case NPCPROP_SCRIPT:
-		// GS2 support
-		if (clientVersion >= CLVER_4_0211)
+		case NPCProp::SCRIPT:
 		{
-			// GS1 was disabled after this client version
-			if (clientVersion > CLVER_5_07)
+			// Modern sends scripts in a different way.
+			if (m_server->Generation == ServerGeneration::MODERN)
 				return CString() >> (short)0;
 
-			// If we have bytecode, don't send gs1 script
-			if (!m_npcBytecode.isEmpty())
-				return CString() >> (short)0;
+			// We have bytecode set so send it.
+			if (auto client = m_script.getClientByteCode(); client != nullptr)
+			{
+				// TODO: Proper handling of bytecode that is too large.
+				assert(client->size() <= 0x705F);
+				return CString() >> (short)client->size() << std::string_view{ reinterpret_cast<const char*>(client->data()), client->size() };
+			}
+
+			// Fallback to sending the script itself.
+			auto clientside = m_script.getClientSide();
+			return CString() >> (short)(clientside.length() > 0x705F ? 0x705F : clientside.length()) << clientside.substr(0, 0x705F);
 		}
 
-		return CString() >> (short)(m_clientScriptFormatted.length() > 0x3FFF ? 0x3FFF : m_clientScriptFormatted.length()) << m_clientScriptFormatted.substr(0, 0x3FFF);
+		case NPCProp::X:
+			return CString() >> (char)(character.pixelX / 8);
 
-	case NPCPROP_X:
-		return CString() >> (char)(m_x / 8);
+		case NPCProp::Y:
+			return CString() >> (char)(character.pixelY / 8);
 
-	case NPCPROP_Y:
-		return CString() >> (char)(m_y / 8);
+		case NPCProp::Z:
+			// range: -25 to 85
+			return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (character.pixelZ / 8))) + 50);
 
-	case NPCPROP_Z:
-		// range: -25 to 85
-		return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (m_z / 8))) + 50);
+		case NPCProp::POWER:
+			return CString() >> (char)(character.hitpointsInHalves);
 
-	case NPCPROP_POWER:
-		return CString() >> (char)(m_character.hitpointsInHalves);
+		case NPCProp::RUPEES:
+			return CString() >> (int)character.gralats;
 
-	case NPCPROP_RUPEES:
-		return CString() >> (int)m_character.gralats;
+		case NPCProp::ARROWS:
+			return CString() >> (char)character.arrows;
 
-	case NPCPROP_ARROWS:
-		return CString() >> (char)m_character.arrows;
+		case NPCProp::BOMBS:
+			return CString() >> (char)character.bombs;
 
-	case NPCPROP_BOMBS:
-		return CString() >> (char)m_character.bombs;
+		case NPCProp::GLOVEPOWER:
+			return CString() >> (char)character.glovePower;
 
-	case NPCPROP_GLOVEPOWER:
-		return CString() >> (char)m_character.glovePower;
+		case NPCProp::BOMBPOWER:
+			return CString() >> (char)character.bombPower;
 
-	case NPCPROP_BOMBPOWER:
-		return CString() >> (char)m_character.bombPower;
-
-	case NPCPROP_SWORDIMAGE:
-		if (m_character.swordPower == 0)
-			return CString() >> (char)0;
-		else
-			return CString() >> (char)(m_character.swordPower + 30) >> (char)m_character.swordImage.length() << m_character.swordImage;
-
-	case NPCPROP_SHIELDIMAGE:
-		if (m_character.shieldPower + 10 > 10)
-			return CString() >> (char)(m_character.shieldPower + 10) >> (char)m_character.shieldImage.length() << m_character.shieldImage;
-		else
-			return CString() >> (char)0;
-
-	case NPCPROP_GANI:
-		if (clientVersion < CLVER_2_1)
-		{
-			if (m_character.bowPower < 10)
-				return CString() >> (char)m_character.bowPower;
+		case NPCProp::SWORDIMAGE:
+			if (character.swordPower == 0)
+				return CString() >> (char)0;
 			else
-				return CString() >> (char)(m_character.bowImage.length() + 10) << m_character.bowImage;
-		}
-		return CString() >> (char)m_character.gani.length() << m_character.gani;
+				return CString() >> (char)(character.swordPower + 30) >> (char)character.swordImage.length() << character.swordImage;
 
-	case NPCPROP_VISFLAGS:
-		return CString() >> (char)m_visFlags;
+		case NPCProp::SHIELDIMAGE:
+			if (character.shieldPower + 10 > 10)
+				return CString() >> (char)(character.shieldPower + 10) >> (char)character.shieldImage.length() << character.shieldImage;
+			else
+				return CString() >> (char)0;
 
-	case NPCPROP_BLOCKFLAGS:
-		return CString() >> (char)m_blockFlags;
+		case NPCProp::GANI:
+			if (clientVersion < CLVER_2_1)
+			{
+				if (character.bowPower < 10)
+					return CString() >> (char)character.bowPower;
+				else
+					return CString() >> (char)(character.bowImage.length() + 10) << character.bowImage;
+			}
+			if (isCharacter())
+				return CString() >> (char)character.gani.length() << character.gani;
+			else return CString() >> (char)0;
 
-	case NPCPROP_MESSAGE:
-		return CString() >> (char)m_character.chatMessage.length() << m_character.chatMessage;
+		case NPCProp::VISFLAGS:
+			return CString() >> (char)visFlags;
 
-	case NPCPROP_HURTDXDY:
-		return CString() >> (char)((m_hurtX * 32) + 32) >> (char)((m_hurtY * 32) + 32);
+		case NPCProp::BLOCKFLAGS:
+			return CString() >> (char)blockFlags;
 
-	case NPCPROP_ID:
-		return CString() >> (int)m_id;
+		case NPCProp::MESSAGE:
+			return CString() >> (char)character.chatMessage.length() << character.chatMessage;
+
+		case NPCProp::HURTDXDY:
+			return CString() >> (char)((hurtX * 32) + 32) >> (char)((hurtY * 32) + 32);
+
+		case NPCProp::ID:
+			return CString() >> (int)id;
 
 		// Sprite is deprecated and has been replaced by def.gani.
 		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
-	case NPCPROP_SPRITE:
-	{
-		if (clientVersion < CLVER_2_1)
-			return CString() >> (char)m_character.sprite;
-		else
-			return CString() >> (char)(m_character.sprite % 4);
-	}
-
-	case NPCPROP_COLORS:
-		return CString() >> (char)m_character.colors[0] >> (char)m_character.colors[1] >> (char)m_character.colors[2] >> (char)m_character.colors[3] >> (char)m_character.colors[4];
-
-	case NPCPROP_NICKNAME:
-		return CString() >> (char)m_character.nickName.length() << m_character.nickName;
-
-	case NPCPROP_HORSEIMAGE:
-		return CString() >> (char)m_character.horseImage.length() << m_character.horseImage;
-
-	case NPCPROP_HEADIMAGE:
-		return CString() >> (char)(m_character.headImage.length() + 100) << m_character.headImage;
-
-	case NPCPROP_SAVE0:
-	case NPCPROP_SAVE1:
-	case NPCPROP_SAVE2:
-	case NPCPROP_SAVE3:
-	case NPCPROP_SAVE4:
-	case NPCPROP_SAVE5:
-	case NPCPROP_SAVE6:
-	case NPCPROP_SAVE7:
-	case NPCPROP_SAVE8:
-	case NPCPROP_SAVE9:
-		return CString() >> (char)m_saves[pId - NPCPROP_SAVE0];
-
-	case NPCPROP_ALIGNMENT:
-		return CString() >> (char)m_character.ap;
-
-	case NPCPROP_IMAGEPART:
-		return CString() << m_imagePart;
-
-	case NPCPROP_BODYIMAGE:
-		return CString() >> (char)m_character.bodyImage.length() << m_character.bodyImage;
-
-	case NPCPROP_GMAPLEVELX:
-		return CString() >> (char)(level ? level->getGmapX() : 0);
-
-	case NPCPROP_GMAPLEVELY:
-		return CString() >> (char)(level ? level->getGmapY() : 0);
-
-	case NPCPROP_CLASS:
-	{
-		CString classList;
-		if (!classList.isEmpty())
-			classList.removeI(classList.length() - 1);
-		return CString() >> (short)classList.length() << classList;
-	}
-
-	case NPCPROP_X2:
-	{
-		uint16_t val = ((uint16_t)std::abs(m_x)) << 1;
-		if (m_x < 0)
-			val |= 0x0001;
-		return CString().writeGShort(val);
-	}
-
-	case NPCPROP_Y2:
-	{
-		uint16_t val = ((uint16_t)std::abs(m_y)) << 1;
-		if (m_y < 0)
-			val |= 0x0001;
-		return CString().writeGShort(val);
-	}
-
-	case NPCPROP_Z2:
-	{
-		// range: -25 to 85
-		uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, m_z));
-		val = std::abs(val) << 1;
-		if (m_z < 0)
-			val |= 0x0001;
-		return CString().writeGShort(val);
-	}
-	}
-
-	// Gani attributes.
-	if (inrange(pId, NPCPROP_GATTRIB1, NPCPROP_GATTRIB5) || inrange(pId, NPCPROP_GATTRIB6, NPCPROP_GATTRIB9) || inrange(pId, NPCPROP_GATTRIB10, NPCPROP_GATTRIB30))
-	{
-		// TODO(joey): Are we really looping every single possible attribute to find the one we want....??
-		for (unsigned int i = 0; i < sizeof(__nAttrPackets); i++)
+		case NPCProp::SPRITE:
 		{
-			if (__nAttrPackets[i] == pId)
-				return CString() >> (char)m_character.ganiAttributes[i].length() << m_character.ganiAttributes[i];
+			if (clientVersion < CLVER_2_1)
+				return CString() >> (char)character.sprite;
+			else
+				return CString() >> (char)(character.sprite % 4);
+		}
+
+		case NPCProp::COLORS:
+			return CString() >> (char)character.colors[0] >> (char)character.colors[1] >> (char)character.colors[2] >> (char)character.colors[3] >> (char)character.colors[4];
+
+		case NPCProp::NICKNAME:
+			return CString() >> (char)character.nickName.length() << character.nickName;
+
+		case NPCProp::HORSEIMAGE:
+			return CString() >> (char)character.horseImage.length() << character.horseImage;
+
+		case NPCProp::HEADIMAGE:
+			return CString() >> (char)(character.headImage.length() + 100) << character.headImage;
+
+		case NPCProp::SAVE0:
+		case NPCProp::SAVE1:
+		case NPCProp::SAVE2:
+		case NPCProp::SAVE3:
+		case NPCProp::SAVE4:
+		case NPCProp::SAVE5:
+		case NPCProp::SAVE6:
+		case NPCProp::SAVE7:
+		case NPCProp::SAVE8:
+		case NPCProp::SAVE9:
+		{
+			auto index = static_cast<size_t>(PROPID(pId)) - PROPID(NPCProp::SAVE0);
+			return CString() >> (char)saves[index];
+		}
+
+		case NPCProp::ALIGNMENT:
+			return CString() >> (char)character.ap;
+
+		case NPCProp::IMAGEPART:
+			return CString() >> (short)imagePart.position.x() >> (short)imagePart.position.y() >> (char)imagePart.size.width() >> (char)imagePart.size.height();
+
+		case NPCProp::BODYIMAGE:
+			return CString() >> (char)character.bodyImage.length() << character.bodyImage;
+
+		case NPCProp::GMAPLEVELX:
+		{
+			auto lvl = level.lock();
+			return CString() >> (char)(lvl ? lvl->getGmapX() : 0);
+		}
+
+		case NPCProp::GMAPLEVELY:
+		{
+			auto lvl = level.lock();
+			return CString() >> (char)(lvl ? lvl->getGmapY() : 0);
+		}
+
+		case NPCProp::SCRIPTER:
+			return CString() >> (char)m_npcScripter.length() << m_npcScripter;
+
+		case NPCProp::NAME:
+			return CString() >> (char)name.length() << name;
+
+		case NPCProp::TYPE:
+			return CString() >> (char)m_npcScriptType.length() << m_npcScriptType;
+
+		case NPCProp::CURLEVEL:
+		{
+			auto lvl = level.lock();
+			CString tmpLevelName = (lvl ? lvl->getLevelName() : "");
+			return CString() >> (char)tmpLevelName.length() << tmpLevelName;
+		}
+
+		case NPCProp::CLASS:
+		{
+			CString classList;
+
+			if (!classList.isEmpty())
+				classList.removeI(classList.length() - 1);
+			return CString() >> (short)classList.length() << classList;
+		}
+
+		case NPCProp::X2:
+		{
+			uint16_t val = ((uint16_t)std::abs(character.pixelX)) << 1;
+			if (character.pixelX < 0)
+				val |= 0x0001;
+			return CString().writeGShort(val);
+		}
+
+		case NPCProp::Y2:
+		{
+			uint16_t val = ((uint16_t)std::abs(character.pixelY)) << 1;
+			if (character.pixelY < 0)
+				val |= 0x0001;
+			return CString().writeGShort(val);
+		}
+
+		case NPCProp::Z2:
+		{
+			// range: -25 to 85
+			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, character.pixelZ));
+			val = std::abs(val) << 1;
+			if (character.pixelZ < 0)
+				val |= 0x0001;
+			return CString().writeGShort(val);
+		}
+
+		case NPCProp::GATTRIB1:
+		case NPCProp::GATTRIB2:
+		case NPCProp::GATTRIB3:
+		case NPCProp::GATTRIB4:
+		case NPCProp::GATTRIB5:
+		case NPCProp::GATTRIB6:
+		case NPCProp::GATTRIB7:
+		case NPCProp::GATTRIB8:
+		case NPCProp::GATTRIB9:
+		case NPCProp::GATTRIB10:
+		case NPCProp::GATTRIB11:
+		case NPCProp::GATTRIB12:
+		case NPCProp::GATTRIB13:
+		case NPCProp::GATTRIB14:
+		case NPCProp::GATTRIB15:
+		case NPCProp::GATTRIB16:
+		case NPCProp::GATTRIB17:
+		case NPCProp::GATTRIB18:
+		case NPCProp::GATTRIB19:
+		case NPCProp::GATTRIB20:
+		case NPCProp::GATTRIB21:
+		case NPCProp::GATTRIB22:
+		case NPCProp::GATTRIB23:
+		case NPCProp::GATTRIB24:
+		case NPCProp::GATTRIB25:
+		case NPCProp::GATTRIB26:
+		case NPCProp::GATTRIB27:
+		case NPCProp::GATTRIB28:
+		case NPCProp::GATTRIB29:
+		case NPCProp::GATTRIB30:
+		{
+			auto index = std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(pId)));
+			return CString() >> (char)character.ganiAttributes[index].length() << character.ganiAttributes[index];
 		}
 	}
 
 	return CString();
 }
 
-CString NPC::getProps(time_t newTime, int clientVersion) const
+CString NPC::getAllPropsPacket(time_t newTime, int clientVersion) const
 {
 	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
 	CString retVal;
@@ -338,24 +342,24 @@ CString NPC::getProps(time_t newTime, int clientVersion) const
 
 	for (int i = 0; i < pmax; i++)
 	{
-		if (m_modTime[i] != 0 && m_modTime[i] >= newTime)
+		if (modTime[i] != 0 && modTime[i] >= newTime)
 		{
-			if (oldcreated && i == NPCPROP_VISFLAGS && newTime == 0)
-				retVal >> (char)i >> (char)(m_visFlags | NPCVISFLAG_VISIBLE);
+			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == 0)
+				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
 			else
-				retVal >> (char)i << getProp(i, clientVersion);
+				retVal >> (char)i << getPropPacket((NPCProp)i, clientVersion);
 		}
 	}
 	if (clientVersion > CLVER_1_411)
 	{
-		if (m_modTime[NPCPROP_GANI] == 0 && m_image == "#c#")
-			retVal >> (char)NPCPROP_GANI >> (char)4 << "idle";
+		if (modTime[PROPID(NPCProp::GANI)] == 0 && image == "#c#")
+			retVal >> (char)NPCProp::GANI >> (char)4 << "idle";
 	}
 
 	return retVal;
 }
 
-CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
+CString NPC::setPropsFromPacket(CString& pProps, int clientVersion, bool pForward)
 {
 	bool hasMoved = false;
 
@@ -365,439 +369,459 @@ CString NPC::setProps(CString& pProps, int clientVersion, bool pForward)
 	int len = 0;
 	while (pProps.bytesLeft() > 0)
 	{
-		unsigned char propId = pProps.readGUChar();
-		CString oldProp = getProp(propId);
+		NPCProp propId = (NPCProp)pProps.readGUChar();
+		CString oldProp = getPropPacket(propId);
 		//printf( "propId: %d\n", propId );
 		switch (propId)
 		{
-		case NPCPROP_IMAGE:
-			m_visFlags |= NPCVISFLAG_VISIBLE;
-			m_image = pProps.readChars(pProps.readGUChar()).text();
-			if (!m_image.empty() && clientVersion < CLVER_2_1 && getExtension(m_image).isEmpty())
-				m_image.append(".gif");
-			break;
+			case NPCProp::IMAGE:
+				visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
+				image = pProps.readChars(pProps.readGUChar()).text();
+				if (!image.empty() && clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
+					image.append(".gif");
+				break;
 
-		case NPCPROP_SCRIPT:
-			pProps.readChars(pProps.readGUShort());
+			case NPCProp::SCRIPT:
+				pProps.readChars(pProps.readGUShort());
 
-			// TODO(joey): is this used for putnpcs?
-			//clientScript = pProps.readChars(pProps.readGUShort());
-			break;
+				// TODO(joey): is this used for putnpcs?
+				//clientScript = pProps.readChars(pProps.readGUShort());
+				break;
 
-		case NPCPROP_X:
-			if (m_blockPositionUpdates)
-			{
-				pProps.readGChar();
-				continue;
-			}
-			m_x = pProps.readGChar() * 8;
-			hasMoved = true;
-			break;
-
-		case NPCPROP_Y:
-			if (m_blockPositionUpdates)
-			{
-				pProps.readGChar();
-				continue;
-			}
-			m_y = pProps.readGChar() * 8;
-			hasMoved = true;
-			break;
-
-		case NPCPROP_Z:
-			if (m_blockPositionUpdates)
-			{
-				pProps.readGChar();
-				continue;
-			}
-			m_z = (pProps.readGChar() - 50) * 8;
-			hasMoved = true;
-			break;
-
-		case NPCPROP_POWER:
-			m_character.hitpointsInHalves = pProps.readGUChar();
-			break;
-
-		case NPCPROP_RUPEES:
-			m_character.gralats = pProps.readGUInt();
-			break;
-
-		case NPCPROP_ARROWS:
-			m_character.arrows = pProps.readGUChar();
-			break;
-
-		case NPCPROP_BOMBS:
-			m_character.bombs = pProps.readGUChar();
-			break;
-
-		case NPCPROP_GLOVEPOWER:
-			m_character.glovePower = pProps.readGUChar();
-			break;
-
-		case NPCPROP_BOMBPOWER:
-			m_character.bombPower = pProps.readGUChar();
-			break;
-
-		case NPCPROP_SWORDIMAGE:
-		{
-			int sp = pProps.readGUChar();
-			if (sp <= 4)
-				m_character.swordImage = (CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-			else
-			{
-				sp -= 30;
-				len = pProps.readGUChar();
-				if (len > 0)
+			case NPCProp::X:
+				if (m_blockPositionUpdates)
 				{
-					m_character.swordImage = pProps.readChars(len).toString();
-					if (!m_character.swordImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.swordImage).isEmpty())
-						m_character.swordImage += ".gif";
+					pProps.readGChar();
+					continue;
 				}
+				character.pixelX = pProps.readGChar() * 8;
+				hasMoved = true;
+				break;
+
+			case NPCProp::Y:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGChar();
+					continue;
+				}
+				character.pixelY = pProps.readGChar() * 8;
+				hasMoved = true;
+				break;
+				
+			case NPCProp::Z:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGChar();
+					continue;
+				}
+				character.pixelZ = (pProps.readGChar() - 50) * 8;
+				hasMoved = true;
+				break;
+
+			case NPCProp::POWER:
+				character.hitpointsInHalves = pProps.readGUChar();
+				break;
+
+			case NPCProp::RUPEES:
+				character.gralats = pProps.readGUInt();
+				break;
+
+			case NPCProp::ARROWS:
+				character.arrows = pProps.readGUChar();
+				break;
+
+			case NPCProp::BOMBS:
+				character.bombs = pProps.readGUChar();
+				break;
+
+			case NPCProp::GLOVEPOWER:
+				character.glovePower = pProps.readGUChar();
+				break;
+
+			case NPCProp::BOMBPOWER:
+				character.bombPower = pProps.readGUChar();
+				break;
+
+			case NPCProp::SWORDIMAGE:
+			{
+				int sp = pProps.readGUChar();
+				if (sp <= 4)
+					character.swordImage = (CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
 				else
-					m_character.swordImage = "";
-				//m_character.swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
-			}
-			m_character.swordPower = sp;
-			break;
-		}
-
-		case NPCPROP_SHIELDIMAGE:
-		{
-			int sp = pProps.readGUChar();
-			if (sp <= 3)
-				m_character.shieldImage = (CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-			else
-			{
-				sp -= 10;
-				len = pProps.readGUChar();
-				if (len > 0)
 				{
-					m_character.shieldImage = pProps.readChars(len).toString();
-					if (!m_character.shieldImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.shieldImage).isEmpty())
-						m_character.shieldImage += ".gif";
+					sp -= 30;
+					len = pProps.readGUChar();
+					if (len > 0)
+					{
+						character.swordImage = pProps.readChars(len).toString();
+						if (!character.swordImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.swordImage).isEmpty())
+							character.swordImage += ".gif";
+					}
+					else
+						character.swordImage = "";
+					//character.swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
 				}
-				else
-					m_character.shieldImage = "";
-			}
-			m_character.shieldPower = std::min<uint8_t>(sp, 3);
-			break;
-		}
-
-		case NPCPROP_GANI:
-		{
-			if (clientVersion < CLVER_2_1)
-			{
-				// Older clients don't use ganis.  This is the bow power and image instead.
-				m_character.bowPower = pProps.readGUChar();
-				if (m_character.bowPower >= 10)
-				{
-					m_character.bowImage = pProps.readChars(m_character.bowPower - 10).toString();
-					if (!m_character.bowImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.bowImage).isEmpty())
-						m_character.bowImage += ".gif";
-				}
+				character.swordPower = sp;
 				break;
 			}
-			m_character.gani = pProps.readChars(pProps.readGUChar()).text();
-			break;
-		}
 
-		case NPCPROP_VISFLAGS:
-			m_visFlags = pProps.readGUChar();
-			break;
-
-		case NPCPROP_BLOCKFLAGS:
-			m_blockFlags = pProps.readGUChar();
-			break;
-
-		case NPCPROP_MESSAGE:
-			m_character.chatMessage = pProps.readChars(pProps.readGUChar()).text();
-			break;
-
-		case NPCPROP_HURTDXDY:
-			m_hurtX = ((float)(pProps.readGUChar() - 32)) / 32;
-			m_hurtY = ((float)(pProps.readGUChar() - 32)) / 32;
-			break;
-
-		case NPCPROP_ID:
-			pProps.readGUInt();
-			break;
-
-		case NPCPROP_SPRITE:
-		{
-			auto sprite = pProps.readGUChar();
-			if (clientVersion < CLVER_2_1)
-				m_character.sprite = sprite;
-			else m_character.sprite = sprite % 4;
-			break;
-		}
-
-		case NPCPROP_COLORS:
-			for (int i = 0; i < 5; i++)
-				m_character.colors[i] = pProps.readGUChar();
-			break;
-
-		case NPCPROP_NICKNAME:
-			m_character.nickName = pProps.readChars(pProps.readGUChar()).text();
-			break;
-
-		case NPCPROP_HORSEIMAGE:
-			m_character.horseImage = pProps.readChars(pProps.readGUChar()).toString();
-			if (!m_character.horseImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.horseImage).isEmpty())
-				m_character.horseImage += ".gif";
-			break;
-
-		case NPCPROP_HEADIMAGE:
-			len = pProps.readGUChar();
-			if (len < 100)
-				m_character.headImage = (CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-			else
+			case NPCProp::SHIELDIMAGE:
 			{
-				m_character.headImage = pProps.readChars(len - 100).toString();
-				if (!m_character.headImage.empty() && clientVersion < CLVER_2_1 && getExtension(m_character.headImage).isEmpty())
-					m_character.headImage += ".gif";
-			}
-			break;
-
-		case NPCPROP_ALIGNMENT:
-			m_character.ap = pProps.readGUChar();
-			m_character.ap = clip(m_character.ap, 0, 100);
-			break;
-
-		case NPCPROP_IMAGEPART:
-			m_imagePart = pProps.readChars(6);
-			break;
-
-		case NPCPROP_BODYIMAGE:
-			m_character.bodyImage = pProps.readChars(pProps.readGUChar()).toString();
-			break;
-
-		case NPCPROP_GMAPLEVELX:
-			pProps.readGUChar();
-			break;
-
-		case NPCPROP_GMAPLEVELY:
-			pProps.readGUChar();
-			break;
-
-		case NPCPROP_SCRIPTER:
-			m_npcScripter = pProps.readChars(pProps.readGUChar());
-			break;
-
-		case NPCPROP_NAME:
-			m_npcName = pProps.readChars(pProps.readGUChar()).text();
-			break;
-
-		case NPCPROP_TYPE:
-			m_npcScriptType = pProps.readChars(pProps.readGUChar());
-			break;
-
-		case NPCPROP_CURLEVEL:
-			pProps.readChars(pProps.readGUChar());
-			break;
-
-		case NPCPROP_CLASS:
-			pProps.readChars(pProps.readGShort());
-			break;
-
-			// Location, in pixels, of the npc on the level in 2.3+ clients.
-			// Bit 0x0001 controls if it is negative or not.
-			// Bits 0xFFFE are the actual value.
-		case NPCPROP_X2:
-			if (m_blockPositionUpdates)
-			{
-				pProps.readGUShort();
-				continue;
+				int sp = pProps.readGUChar();
+				if (sp <= 3)
+					character.shieldImage = (CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
+				else
+				{
+					sp -= 10;
+					len = pProps.readGUChar();
+					if (len > 0)
+					{
+						character.shieldImage = pProps.readChars(len).toString();
+						if (!character.shieldImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.shieldImage).isEmpty())
+							character.shieldImage += ".gif";
+					}
+					else
+						character.shieldImage = "";
+				}
+				character.shieldPower = std::min<uint8_t>(sp, 3);
+				break;
 			}
 
-			len = pProps.readGUShort();
-			m_x = (len >> 1);
-
-			// If the first bit is 1, our position is negative.
-			if ((uint16_t)len & 0x0001)
-				m_x = -m_x;
-
-			hasMoved = true;
-			break;
-
-		case NPCPROP_Y2:
-			if (m_blockPositionUpdates)
+			case NPCProp::GANI:
 			{
-				pProps.readGUShort();
-				continue;
+				if (clientVersion < CLVER_2_1)
+				{
+					// Older clients don't use ganis.  This is the bow power and image instead.
+					character.bowPower = pProps.readGUChar();
+					if (character.bowPower >= 10)
+					{
+						character.bowImage = pProps.readChars(character.bowPower - 10).toString();
+						if (!character.bowImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.bowImage).isEmpty())
+							character.bowImage += ".gif";
+					}
+					break;
+				}
+				character.gani = pProps.readChars(pProps.readGUChar()).text();
+				break;
 			}
 
-			len = pProps.readGUShort();
-			m_y = (len >> 1);
+			case NPCProp::VISFLAGS:
+				visFlags = pProps.readGUChar();
+				break;
 
-			// If the first bit is 1, our position is negative.
-			if ((uint16_t)len & 0x0001)
-				m_y = -m_y;
+			case NPCProp::BLOCKFLAGS:
+				blockFlags = pProps.readGUChar();
+				break;
 
-			hasMoved = true;
-			break;
+			case NPCProp::MESSAGE:
+				character.chatMessage = pProps.readChars(pProps.readGUChar()).text();
+				break;
 
-		case NPCPROP_Z2:
-			if (m_blockPositionUpdates)
+			case NPCProp::HURTDXDY:
+				hurtX = ((float)(pProps.readGUChar() - 32)) / 32;
+				hurtY = ((float)(pProps.readGUChar() - 32)) / 32;
+				break;
+
+			case NPCProp::ID:
+				pProps.readGUInt();
+				break;
+
+			case NPCProp::SPRITE:
 			{
-				pProps.readGUShort();
-				continue;
+				auto sprite = pProps.readGUChar();
+				if (clientVersion < CLVER_2_1)
+					character.sprite = sprite;
+				else character.sprite = sprite % 4;
+				break;
 			}
 
-			len = pProps.readGUShort();
-			m_z = (len >> 1);
+			case NPCProp::COLORS:
+				for (int i = 0; i < 5; i++)
+					character.colors[i] = pProps.readGUChar();
+				break;
 
-			// If the first bit is 1, our position is negative.
-			if ((uint16_t)len & 0x0001)
-				m_z = -m_z;
+			case NPCProp::NICKNAME:
+				character.nickName = pProps.readChars(pProps.readGUChar()).text();
+				break;
 
-			hasMoved = true;
-			break;
+			case NPCProp::HORSEIMAGE:
+				character.horseImage = pProps.readChars(pProps.readGUChar()).toString();
+				if (!character.horseImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.horseImage).isEmpty())
+					character.horseImage += ".gif";
+				break;
 
-		case NPCPROP_SAVE0:
-		case NPCPROP_SAVE1:
-		case NPCPROP_SAVE2:
-		case NPCPROP_SAVE3:
-		case NPCPROP_SAVE4:
-		case NPCPROP_SAVE5:
-		case NPCPROP_SAVE6:
-		case NPCPROP_SAVE7:
-		case NPCPROP_SAVE8:
-		case NPCPROP_SAVE9:
-		{
-			int index = propId - NPCPROP_SAVE0;
-			m_saves[index] = pProps.readGUChar();
-			break;
-		}
+			case NPCProp::HEADIMAGE:
+				len = pProps.readGUChar();
+				if (len < 100)
+					character.headImage = (CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
+				else
+				{
+					character.headImage = pProps.readChars(len - 100).toString();
+					if (!character.headImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.headImage).isEmpty())
+						character.headImage += ".gif";
+				}
+				break;
 
-		case NPCPROP_GATTRIB1:
-		case NPCPROP_GATTRIB2:
-		case NPCPROP_GATTRIB3:
-		case NPCPROP_GATTRIB4:
-		case NPCPROP_GATTRIB5:
-		{
-			int index = propId - NPCPROP_GATTRIB1;
-			m_character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
-			break;
-		}
+			case NPCProp::ALIGNMENT:
+				character.ap = pProps.readGUChar();
+				character.ap = clip(character.ap, 0, 100);
+				break;
 
-		case NPCPROP_GATTRIB6:
-		case NPCPROP_GATTRIB7:
-		case NPCPROP_GATTRIB8:
-		case NPCPROP_GATTRIB9:
-		{
-			int index = 5 + propId - NPCPROP_GATTRIB6;
-			m_character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
-			break;
-		}
+			case NPCProp::IMAGEPART:
+			{
+				Position<uint16_t> pos = { pProps.readGUShort(), pProps.readGUShort() };
+				Dimension<uint8_t> size = { pProps.readGUChar(), pProps.readGUChar() };
+				imagePart = Rectangle<uint16_t, uint8_t>(pos, size);
+				break;
+			}
 
-		case NPCPROP_GATTRIB10:
-		case NPCPROP_GATTRIB11:
-		case NPCPROP_GATTRIB12:
-		case NPCPROP_GATTRIB13:
-		case NPCPROP_GATTRIB14:
-		case NPCPROP_GATTRIB15:
-		case NPCPROP_GATTRIB16:
-		case NPCPROP_GATTRIB17:
-		case NPCPROP_GATTRIB18:
-		case NPCPROP_GATTRIB19:
-		case NPCPROP_GATTRIB20:
-		case NPCPROP_GATTRIB21:
-		case NPCPROP_GATTRIB22:
-		case NPCPROP_GATTRIB23:
-		case NPCPROP_GATTRIB24:
-		case NPCPROP_GATTRIB25:
-		case NPCPROP_GATTRIB26:
-		case NPCPROP_GATTRIB27:
-		case NPCPROP_GATTRIB28:
-		case NPCPROP_GATTRIB29:
-		case NPCPROP_GATTRIB30:
-		{
-			int index = 9 + propId - NPCPROP_GATTRIB10;
-			m_character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
-			break;
-		}
+			case NPCProp::BODYIMAGE:
+				character.bodyImage = pProps.readChars(pProps.readGUChar()).toString();
+				break;
 
-		default:
-		{
-			printf("NPC %ud (%.2f, %.2f): ", m_id, (float)m_x / 16.0f, (float)m_y / 16.0f);
-			printf("Unknown prop: %ud, readPos: %d\n", propId, pProps.readPos());
-			for (int i = 0; i < pProps.length(); ++i)
-				printf("%02x ", (unsigned char)pProps[i]);
-			printf("\n");
-			return ret;
-		}
+			case NPCProp::GMAPLEVELX:
+				pProps.readGUChar();
+				break;
+
+			case NPCProp::GMAPLEVELY:
+				pProps.readGUChar();
+				break;
+
+			case NPCProp::SCRIPTER:
+				m_npcScripter = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCProp::NAME:
+				name = pProps.readChars(pProps.readGUChar()).text();
+				break;
+
+			case NPCProp::TYPE:
+				m_npcScriptType = pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCProp::CURLEVEL:
+				pProps.readChars(pProps.readGUChar());
+				break;
+
+			case NPCProp::CLASS:
+				pProps.readChars(pProps.readGShort());
+				break;
+
+				// Location, in pixels, of the npc on the level in 2.3+ clients.
+				// Bit 0x0001 controls if it is negative or not.
+				// Bits 0xFFFE are the actual value.
+			case NPCProp::X2:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
+				len = pProps.readGUShort();
+				character.pixelX = (len >> 1);
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					character.pixelX = -character.pixelX;
+
+				hasMoved = true;
+				break;
+
+			case NPCProp::Y2:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
+				len = pProps.readGUShort();
+				character.pixelY = (len >> 1);
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					character.pixelY = -character.pixelY;
+
+				hasMoved = true;
+				break;
+
+			case NPCProp::Z2:
+				if (m_blockPositionUpdates)
+				{
+					pProps.readGUShort();
+					continue;
+				}
+
+				len = pProps.readGUShort();
+				character.pixelZ = (len >> 1);
+
+				// If the first bit is 1, our position is negative.
+				if ((uint16_t)len & 0x0001)
+					character.pixelZ = -character.pixelZ;
+
+				hasMoved = true;
+				break;
+
+			case NPCProp::SAVE0:
+			case NPCProp::SAVE1:
+			case NPCProp::SAVE2:
+			case NPCProp::SAVE3:
+			case NPCProp::SAVE4:
+			case NPCProp::SAVE5:
+			case NPCProp::SAVE6:
+			case NPCProp::SAVE7:
+			case NPCProp::SAVE8:
+			case NPCProp::SAVE9:
+			{
+				int index = PROPID(propId) - PROPID(NPCProp::SAVE0);
+				saves[index] = pProps.readGUChar();
+				break;
+			}
+
+			case NPCProp::GATTRIB1:
+			case NPCProp::GATTRIB2:
+			case NPCProp::GATTRIB3:
+			case NPCProp::GATTRIB4:
+			case NPCProp::GATTRIB5:
+			case NPCProp::GATTRIB6:
+			case NPCProp::GATTRIB7:
+			case NPCProp::GATTRIB8:
+			case NPCProp::GATTRIB9:
+			case NPCProp::GATTRIB10:
+			case NPCProp::GATTRIB11:
+			case NPCProp::GATTRIB12:
+			case NPCProp::GATTRIB13:
+			case NPCProp::GATTRIB14:
+			case NPCProp::GATTRIB15:
+			case NPCProp::GATTRIB16:
+			case NPCProp::GATTRIB17:
+			case NPCProp::GATTRIB18:
+			case NPCProp::GATTRIB19:
+			case NPCProp::GATTRIB20:
+			case NPCProp::GATTRIB21:
+			case NPCProp::GATTRIB22:
+			case NPCProp::GATTRIB23:
+			case NPCProp::GATTRIB24:
+			case NPCProp::GATTRIB25:
+			case NPCProp::GATTRIB26:
+			case NPCProp::GATTRIB27:
+			case NPCProp::GATTRIB28:
+			case NPCProp::GATTRIB29:
+			case NPCProp::GATTRIB30:
+			{
+				auto index = std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(propId)));
+				character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
+				break;
+			}
+
+			default:
+			{
+				printf("NPC %ud (%.2f, %.2f): ", id, (float)character.pixelX / 16.0f, (float)character.pixelY / 16.0f);
+				printf("Unknown prop: %ud, readPos: %d\n", propId, pProps.readPos());
+				for (int i = 0; i < pProps.length(); ++i)
+					printf("%02x ", (unsigned char)pProps[i]);
+				printf("\n");
+				return ret;
+			}
 		}
 
 		// If a prop changed, adjust its mod time.
-		if (propId < NPCPROP_COUNT)
+		if ((int)propId < NPCPROP_COUNT)
 		{
-			if (oldProp != getProp(propId))
-				m_modTime[propId] = time(0);
+			if (oldProp != getPropPacket(propId))
+				modTime[PROPID(propId)] = time(0);
 		}
 
 		// Add to ret.
-		ret >> (char)propId << getProp(propId, clientVersion);
+		ret >> (char)propId << getPropPacket(propId, clientVersion);
 	}
 
 	if (pForward)
 	{
 		// Send the props.
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_id << ret, m_curlevel);
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, level);
 	}
 
 	return ret;
 }
 
-CString toWeaponName(const CString& code)
+void NPC::setPropModTime(NPCProp pid, time_t time)
 {
-	int name_start = code.find("toweapons ");
-	if (name_start == -1) return CString();
-	name_start += 10; // 10 = strlen("toweapons ")
-
-	int name_end[2] = { code.find(";", name_start), code.find("}", name_start) };
-	if (name_end[0] == -1 && name_end[1] == -1) return CString();
-
-	int name_pos = -1;
-	if (name_end[0] == -1) name_pos = name_end[1];
-	if (name_end[1] == -1) name_pos = name_end[0];
-	if (name_pos == -1) name_pos = (name_end[0] < name_end[1]) ? name_end[0] : name_end[1];
-
-	return code.subString(name_start, name_pos - name_start).trim();
+	if (PROPID(pid) >= NPCPROP_COUNT)
+		return;
+	modTime[PROPID(pid)] = time;
 }
 
-CString doJoins(const CString& code, FileSystem* fs)
+std::string_view toWeaponName(std::string_view code)
 {
-	CString ret;
-	CString c(code);
-	std::vector<CString> joinList;
+	constexpr size_t notFound = std::string_view::npos;
 
-	// Parse out all the joins.
-	while (c.bytesLeft())
+	size_t name_start = code.find("toweapons");
+	if (name_start == notFound)
+		return {};
+
+	name_start += 9; // 9 = strlen("toweapons")
+
+	size_t name_end[2] = { code.find(";", name_start), code.find("}", name_start) };
+	if (name_end[0] == notFound && name_end[1] == notFound)
+		return {};
+
+	size_t name_pos = name_end[0];
+	if (name_end[1] != notFound && name_end[1] < name_end[0])
+		name_pos = name_end[1];
+
+	if (name_pos == notFound)
+		return {};
+
+	return string::trim(code.substr(name_start, name_pos - name_start));
+}
+
+std::string doJoins(std::string_view code, FileSystem* fs)
+{
+	std::string result;
+	std::vector<std::string_view> joins;
+
+	size_t start = 0, end = 0;
+	while (start < code.length())
 	{
-		ret << c.readString("join ");
-
-		int pos = c.readPos();
-		int loc = c.find(";", pos);
-		if (loc != -1)
+		// Find the next join.
+		// If we don't find one, copy the rest of the code and break.
+		end = code.find("join ", start);
+		if (end == std::string_view::npos)
 		{
-			CString spacecheck = c.subString(pos, loc - pos);
-			if (!spacecheck.contains(" \t") && c.bytesLeft())
-			{
-				ret << ";\n";
-				joinList.push_back(CString() << c.readString(";") << ".txt");
-			}
+			result += code.substr(start);
+			break;
 		}
+
+		// Copy the code before the join.
+		// Then, add a semi-colon.  We are going to remove the join entirely.
+		result += code.substr(start, end - start);
+		result += ";";
+
+		// Get the name of the join.
+		start = end + 5; // 5 = strlen("join ")
+		end = code.find(";", start);
+		if (end == std::string_view::npos)
+			break;
+
+		// Save the join to the list of joins.
+		std::string_view join = string::trim(code.substr(start, end - start));
+		if (!join.empty())
+			joins.push_back(join);
+
+		start = end + 1;
 	}
 
-	// Add the files now.
-	for (auto& fileName : joinList)
+	// Load the files and append them to the result.
+	CString c;
+	for (const auto& fileName : joins)
 	{
-		c = fs->load(fileName);
+		c = removeComments(fs->load(std::format("{}.txt", fileName)));
 		c.removeAllI("\r");
-		ret << removeComments(c);
+		result += "\n";
+		result += c.toStringView();
 	}
 
-	return ret;
+	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

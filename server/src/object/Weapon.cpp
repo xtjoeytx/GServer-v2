@@ -8,6 +8,7 @@
 #include "object/NPC.h"
 #include "object/Weapon.h"
 #include "level/LevelItem.h"
+#include "npcserver/NPCServer.h"
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
@@ -121,8 +122,11 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript, 0);
 	if (!byteCodeData.isEmpty())
 	{
-		weapon->m_bytecode = CString(std::move(byteCodeData));
-		weapon->m_bytecodeFile = std::move(byteCodeFile);
+		auto byteCodeDataPtr = reinterpret_cast<uint8_t*>(byteCodeData.text());
+		std::vector<uint8_t> bytecode{ byteCodeDataPtr, byteCodeDataPtr + byteCodeData.length() };
+		auto clientByteCode = std::make_shared<ScriptByteCode>(std::move(bytecode));
+		weapon->m_source.setClientByteCode(clientByteCode);
+		weapon->m_bytecodeFile = byteCodeFile;
 	}
 
 	return weapon;
@@ -153,13 +157,14 @@ bool Weapon::saveWeapon()
 	output << "REALNAME " << m_weaponName << "\r\n";
 	output << "IMAGE " << m_weaponImage << "\r\n";
 
-	if (m_source)
+	const auto& originalSource = m_source.getOriginalSource();
+	if (!originalSource.empty())
 	{
 		output << "SCRIPT\r\n";
-		output << CString(m_source.getSource()).replaceAll("\n", "\r\n");
+		output << CString(originalSource).replaceAll("\n", "\r\n");
 
 		// Append a new line to the end of the script if one doesn't exist.
-		if (m_source.getSource().back() != '\n')
+		if (originalSource.back() != '\n')
 			output << "\r\n";
 
 		output << "SCRIPTEND\r\n";
@@ -176,90 +181,67 @@ CString Weapon::getWeaponPacket(int clientVersion) const
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)m_weaponDefault;
 
 	CString weaponPacket;
-	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)m_weaponName.length() << m_weaponName >> (char)NPCPROP_IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
+	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)m_weaponName.length() << m_weaponName >> (char)NPCProp::IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
 
-	// GS2 is available for v4+
-	if (clientVersion >= CLVER_4_0211)
+	// Classic weapons.
+	if (m_source.getClientByteCode() == nullptr)
 	{
-		if (!m_bytecode.isEmpty())
-		{
-			weaponPacket >> (char)NPCPROP_CLASS >> (short)0 << "\n";
-
-			CString b = m_bytecode;
-			CString header = b.readChars(b.readGUShort());
-
-			// Get the mod time and send packet 197.
-			weaponPacket >> (char)PLO_UNKNOWN197 << header << "," >> (long long)time(0) << "\n";
-			return weaponPacket;
-		}
-
-		// GS1 is disabled for > 5.0.0.7
-		if (clientVersion > CLVER_5_07)
-			return weaponPacket;
+		weaponPacket >> (char)NPCProp::SCRIPT >> (short)m_source.getClientSide().length() << m_source.getClientSide();
+		return weaponPacket;
 	}
 
-	weaponPacket >> (char)NPCPROP_SCRIPT >> (short)m_formattedClientGS1.length() << m_formattedClientGS1;
+	// If we have bytecode, send the weapon headers.
+	if (auto bytecode = m_source.getClientByteCode(); bytecode != nullptr && !bytecode->empty())
+	{
+		// Weapons don't have a class.
+		// Maybe?  Confused about this.
+		weaponPacket >> (char)NPCProp::CLASS >> (short)0 << "\n";
+
+		// Extract the header and send it.
+		CString header = std::string_view{ reinterpret_cast<const char*>(bytecode->data()), bytecode->size() };
+		weaponPacket >> (char)PLO_UNKNOWN197 << header.readChars(header.readGUShort()) << "," >> (long long)time(0) << "\n";
+	}
+
 	return weaponPacket;
 }
 
 // -- Function: Update Weapon Image/Script -- //
 void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
 {
-	bool gs2default = m_server->getSettings().getBool("gs2default", false);
-
-	m_source = SourceCode{ std::move(pCode), gs2default };
+	m_source = std::move(SourceCode{ std::move(pCode) });
 	m_weaponImage = std::move(pImage);
 	setModTime(pModTime == 0 ? time(0) : pModTime);
 
-	// Clear any GS1 scripts/GS2 bytecode
-	m_bytecode.clear();
-	m_formattedClientGS1.clear();
-
-	// Compile GS2 code
-	if (!m_source.getClientGS2().empty())
+	if (m_server->isNpcServerEnabled())
 	{
-		// Compile gs2 code
-		m_server->compileGS2Script(this, [this](const CompilerResponse& response)
-								   {
-									   if (response.success)
-									   {
-										   // these should be sent for compilation right after
-										   m_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
-
-										   auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "weapon", m_weaponName, true);
-										   m_bytecode.clear(bytecodeWithHeader.length());
-										   m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
-									   }
-								   });
+		// If we have an npc-server, compile the scripts.
+		auto npcServer = m_server->getNpcServer();
+		if (m_server->Generation == ServerGeneration::CLASSIC)
+		{
+			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
+			{
+				m_source.setServerByteCode(serverResults->bytecode);
+				m_source.addServerJoinedClasses(serverResults->joinedClasses);
+			}
+		}
+		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
+		{
+			if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::WEAPON, m_weaponName, m_source.getClientSide()); clientResults != nullptr && clientResults->success)
+			{
+				m_source.setClientByteCode(clientResults->bytecode);
+				m_source.addClientJoinedClasses(clientResults->joinedClasses);
+			}
+			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
+			{
+				m_source.setServerByteCode(serverResults->bytecode);
+				m_source.addServerJoinedClasses(serverResults->joinedClasses);
+			}
+		}
 	}
-
-	auto gs1Script = m_source.getClientGS1();
-	if (!gs1Script.empty())
-		setClientScript(std::string{ gs1Script });
 
 	// Save Weapon
 	if (pSaveWeapon)
 		saveWeapon();
-}
-
-void Weapon::setClientScript(const CString& pScript)
-{
-	// Remove any comments in the code
-	CString formattedScript = removeComments(pScript);
-
-	// Extra padding incase we need to add //#CLIENTSIDE to the script
-	m_formattedClientGS1.clear(static_cast<size_t>(formattedScript.length()) + 14);
-
-	if (formattedScript.find("//#CLIENTSIDE") != 0)
-	{
-		m_formattedClientGS1 << "//#CLIENTSIDE"
-							 << "\xa7";
-	}
-
-	// Split code into tokens, trim each line, and use the clientside line ending '\xa7'
-	std::vector<CString> code = formattedScript.tokenize("\n");
-	for (auto& it: code)
-		m_formattedClientGS1 << it.trim() << "\xa7";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

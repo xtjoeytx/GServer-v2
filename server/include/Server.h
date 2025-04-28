@@ -24,6 +24,7 @@
 #include "FileSystem.h"
 #include "ServerList.h"
 #include "object/Player.h"
+#include "object/NPC.h"
 #include "misc/WordFilter.h"
 #include "utilities/CommandDispatcher.h"
 #include "utilities/IdGenerator.h"
@@ -51,11 +52,12 @@ namespace preagonal
 
 //class Player;
 class PlayerClient;
+class PlayerNpcServer;
 class Level;
-class NPC;
 class ScriptClass;
 class Map;
 class Weapon;
+class NPCServer;
 
 enum // Socket Type
 {
@@ -74,6 +76,21 @@ enum
 	FS_SHIELD = 6,
 };
 constexpr int FS_COUNT = 7;
+
+enum class ServerGeneration
+{
+	// 1.x
+	ORIGINAL,
+
+	// 2.x/3.x
+	CLASSIC,
+
+	// 4.x to 5.007
+	NEWMAIN,
+
+	// 5.1 and up
+	MODERN
+};
 
 // Player ids 0 and 1 break things.  NPC id 0 breaks things.
 // Don't allow anything to have one of those ids.
@@ -109,7 +126,7 @@ public:
 	int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
 	bool doMain();
 
-	// Server Management
+	// Server Configuration
 	int loadConfigFiles();
 	void loadSettings();
 	void loadAdminSettings();
@@ -118,16 +135,20 @@ public:
 	void loadServerFlags();
 	void loadServerMessage();
 	void loadIPBans();
-	void loadClasses(bool print = false);
 	void loadWeapons(bool print = false);
 	void loadMaps(bool print = false);
 	void loadMapLevels();
 	void loadTranslations();
 	void loadWordFilter();
 
+	// Folder Configuration
 	void loadAllFolders();
 	void loadFolderConfig();
 
+	// NPC-Server
+	void loadNpcServer();
+
+	// Save Functions
 	void saveServerFlags();
 	void saveWeapons();
 
@@ -150,8 +171,8 @@ public:
 	unsigned int getNWTime() const { return m_serverTime; }
 	void calculateServerTime();
 
-	std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
-	std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
+	//std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
+	//std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
 	std::unordered_map<std::string, CString>& getServerFlags() { return m_serverFlags; }
 	std::unordered_map<std::string, std::shared_ptr<Weapon>>& getWeaponList() { return m_weaponList; }
 	std::unordered_map<uint16_t, std::shared_ptr<Player>>& getPlayerList() { return m_playerList; }
@@ -172,13 +193,16 @@ public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
-	std::shared_ptr<NPC> addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers = false);
-	bool deleteNPC(int id, bool eraseFromLevel = true);
-	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
+/*
 	bool deleteClass(const std::string& className);
 	bool hasClass(const std::string& className) const;
 	ScriptClass* getClass(const std::string& className) const;
 	void updateClass(const std::string& className, const std::string& classCode);
+*/
+	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
+	std::shared_ptr<NPC> addNPC(std::string_view file, NPCType type, bool sendToPlayers = false);
+	bool deleteNPC(int id, bool eraseFromLevel = true);
+	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
 	void logToFile(const std::string& fileName, const std::string& message) const;
@@ -224,15 +248,21 @@ public:
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
 	bool NC_DelWeapon(const std::string& pWeaponName);
 	void updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon);
-	void updateClassForPlayers(ScriptClass* pClass);
+	//void updateClassForPlayers(ScriptClass* pClass);
+
+	// NPC-Server Management
+	bool isNpcServerEnabled() const { return m_npcServerPlayer != nullptr; }
+	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
 
 	/*
 	 * GS2 Functionality
 	 */
+	/*
 	void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
 	void compileGS2Script(NPC* npc, GS2ScriptManager::user_callback_type cb);
 	void compileGS2Script(Weapon* weapon, GS2ScriptManager::user_callback_type cb);
 	void compileGS2Script(ScriptClass* cls, GS2ScriptManager::user_callback_type cb);
+	*/
 
 	std::time_t getServerStartTime() const
 	{
@@ -254,6 +284,7 @@ public:
 		return m_shootParams;
 	}
 
+/*
 private:
 	GS2ScriptManager m_gs2ScriptManager;
 
@@ -261,6 +292,10 @@ private:
 	void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
 
 	void handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin);
+*/
+
+public:
+	ServerGeneration Generation{ ServerGeneration::CLASSIC };
 
 private:
 	bool doTimedEvents();
@@ -283,10 +318,10 @@ private:
 
 	std::unordered_map<std::string, CString> m_serverFlags;
 	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
-	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
+	//std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
 
 	std::unordered_map<uint32_t, std::shared_ptr<NPC>> m_npcList;
-	std::unordered_map<std::string, std::weak_ptr<NPC>> m_npcNameList;
+	//std::unordered_map<std::string, std::weak_ptr<NPC>> m_npcNameList;
 	IdGenerator<uint32_t> m_npcIdGenerator{ NPCID_INIT };
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
@@ -310,6 +345,8 @@ private:
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 
+	std::shared_ptr<NPCServer> m_npcServer;
+	std::shared_ptr<PlayerNpcServer> m_npcServerPlayer;
 
 #ifdef UPNP
 	UPNP m_upnp;
@@ -326,6 +363,7 @@ inline std::shared_ptr<NPC> Server::getNPC(const uint32_t id) const
 	return nullptr;
 }
 
+/*
 inline bool Server::hasClass(const std::string& className) const
 {
 	return m_classList.find(className) != m_classList.end();
@@ -339,6 +377,7 @@ inline ScriptClass* Server::getClass(const std::string& className) const
 
 	return nullptr;
 }
+*/
 
 inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
 {

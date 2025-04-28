@@ -20,12 +20,12 @@ std::string getErrorOrigin(const NPC& npc)
 {
 	std::string origin;
 
-	switch (npc.getType())
+	switch (npc.type)
 	{
 		// Database npcs don't need to include their location, so we are returning here
 		// while the other two cases will append the level to the origin.
 		case NPCType::DBNPC:
-			return npc.getName();
+			return npc.name;
 
 		case NPCType::LEVELNPC:
 			origin = "level npc";
@@ -39,9 +39,9 @@ std::string getErrorOrigin(const NPC& npc)
 	// Compiling before its assigned an npc id, so this requires some reworking to make work
 	// origin.append(std::format("[{}]", npc.getId()));
 
-	auto level = npc.getLevel();
+	auto level = npc.level.lock();
 	if (level)
-		origin.append(std::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.getX() / 16.0, npc.getY() / 16.0));
+		origin.append(std::format(" at {}, {:.2f}, {:.2f}", level->getLevelName().text(), npc.character.pixelX / 16.0, npc.character.pixelY / 16.0));
 
 	return origin;
 }

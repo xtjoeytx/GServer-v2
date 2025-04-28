@@ -292,8 +292,6 @@ public:
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
 
-	void modifyBoardDirect(uint32_t index, short tile);
-
 private:
 	Level(short fillTile = 0);
 

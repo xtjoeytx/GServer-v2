@@ -136,13 +136,13 @@ void PlayerClient::cleanup()
 			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
 			{
 				auto curtime = time(0);
-				npc->setPixelX(account.character.pixelX + 8);
-				npc->setPixelY(account.character.pixelY + 16);
-				npc->setPropModTime(NPCPROP_X, curtime);
-				npc->setPropModTime(NPCPROP_Y, curtime);
-				npc->setPropModTime(NPCPROP_X2, curtime);
-				npc->setPropModTime(NPCPROP_Y2, curtime);
-				m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getProps(curtime), self(), level, {m_id});
+				npc->character.pixelX = account.character.pixelX + 8;
+				npc->character.pixelY = account.character.pixelY + 16;
+				npc->setPropModTime(NPCProp::X, curtime);
+				npc->setPropModTime(NPCProp::Y, curtime);
+				npc->setPropModTime(NPCProp::X2, curtime);
+				npc->setPropModTime(NPCProp::Y2, curtime);
+				m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket(curtime), self(), level, {m_id});
 			}
 			m_carryNpcId = 0;
 		}
@@ -1288,8 +1288,10 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
 
+	auto map = m_pmap.lock();
+
 	// If we are on a gmap, change our level back to the gmap.
-	if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP)
+	if (map && map->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << map->getMapName());
 
 	// Tell the client if there are any ghost players in the level.
@@ -1309,7 +1311,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	// Send NPCs.
 	if (!fromAdjacent || !m_pmap.expired())
 	{
-		if (auto map = m_pmap.lock(); map)
+		if (map != nullptr)
 		{
 			if (map->getType() == MapType::GMAP)
 				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
@@ -1325,22 +1327,21 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	{
 		pLevel->addNPC(m_carryNpcId);
 		if (auto npc = m_server->getNPC(m_carryNpcId); npc)
-			npc->setLevel(pLevel);
+		{
+			npc->level = pLevel;
+
+			// Send the carry NPC props to other players.
+			if (!pLevel->isSingleplayer())
+			{
+				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket(0);
+				m_server->sendPacketToLevelArea(carryNpcProps, self(), { m_id });
+			}
+		}
 	}
 
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer())
 	{
-		// If we are carrying an NPC, send the data.
-		if (m_carryNpcId != 0)
-		{
-			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
-			{
-				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getProps(0);
-				m_server->sendPacketToLevelArea(carryNpcProps, self(), {m_id});
-			}
-		}
-
 		// Send my props.
 		m_server->sendPacketToLevelArea(this->getProps(loginPropsClientOthers), self(), {m_id});
 

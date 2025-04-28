@@ -8,6 +8,7 @@
 #include "IConfig.h"
 
 #include "Server.h"
+#include "npcserver/PlayerNpcServer.h"
 #include "object/NPC.h"
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
@@ -68,7 +69,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	else if (m_type & PLTYPE_ANYNC)
 		player = std::make_shared<PlayerNC>(m_playerSock, m_id);
 	else if (m_type & PLTYPE_NPCSERVER)
-		;
+		player = std::make_shared<PlayerNpcServer>(m_playerSock, m_id);
 	else
 	{
 		log::printLine(log::server, ":: New login, but unknown player type: {}", m_type);

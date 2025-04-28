@@ -14,15 +14,9 @@ GS2ScriptManager::GS2ScriptManager()
 {
 }
 
-void GS2ScriptManager::compileScript(const std::string& script, user_callback_type finishedCb)
+std::future<CompilerResponse> GS2ScriptManager::compileScript(const std::string& script, user_callback_type finishedCb)
 {
-	// Check to see if we already compiled this code before
-	auto cacheSearch = m_bytecodeCache.find(script);
-	if (cacheSearch != m_bytecodeCache.end())
-	{
-		finishedCb(cacheSearch->second);
-		return;
-	}
+	return queueCompileJob(script, finishedCb);
 
 	// Disabling any async functionality for now, npcs should be compiled during level-loading
 	// and level should not be sent until all the npcs are finished compiling. Can't really
@@ -30,45 +24,35 @@ void GS2ScriptManager::compileScript(const std::string& script, user_callback_ty
 	// we can migrate to using the threadpool for script compilations and delay sending levels
 	// until we finish loading the level. We could also switch to some eager-level-loading method,
 	// preloading any levels that are links from other levels or listed in a loaded map etc..
-
-	// Queue a job to compile this script
-	// queueCompileJob(script, finishedCb);
-
-	// Synchronously compile script
-	syncCompileJob(script, finishedCb);
 }
 
-void GS2ScriptManager::syncCompileJob(const std::string& script, user_callback_type& finishedCb)
+std::future<CompilerResponse> GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_type& finishedCb)
 {
-	// Compile code
-	auto result = _context.compile(script); // , "weapon", "TestCode", true);
+	std::promise<CompilerResponse> promise;
 
-	// Insert into bytecode cache
-	auto ret = m_bytecodeCache.insert({ script, std::move(result) });
-
-	// Call the user-defined callback after we insert the bytecode into the cache
-	finishedCb(ret.first->second);
-}
-
-void GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_type& finishedCb)
-{
 	if constexpr (THREADPOOL_WORKERS == 0)
 	{
-		syncCompileJob(script, finishedCb);
-		return;
+		std::promise<CompilerResponse> promise;
+		auto response = _context.compile(script);
+
+		if (finishedCb)
+			finishedCb(response);
+
+		promise.set_value(std::move(response));
+		return promise.get_future();
 	}
 
 	// Worker job
-	auto threadFunction = [script, finishedCb, this](CallbackThreadJob::thread_context& context, auto& promise)
+	auto threadFunction = [&promise, script, finishedCb, this](CompiledWithCallbackThreadJob::thread_context& context, CompiledWithCallbackThreadJob::promise_type& badPromise)
 	{
 		// Compile code
-		auto result = context.gs2context.compile(script); // , "weapon", "TestCode", true);
+		auto result = context.gs2context.compile(script);
 
 		// Call the user-defined callback after we insert the bytecode into the cache
-		auto completedFunc = [this, script, finishedCb](CompilerResponse& response)
+		auto completedFunc = [this, &promise, &script, &finishedCb](CompilerResponse& response)
 		{
-			auto ret = m_bytecodeCache.insert({ script, std::move(response) });
-			finishedCb(ret.first->second);
+			finishedCb(response);
+			promise.set_value(std::move(response));
 		};
 
 		// Create a tuple with the callback, and arguments
@@ -78,8 +62,9 @@ void GS2ScriptManager::queueCompileJob(const std::string& script, user_callback_
 		m_cbQueue.push(std::move(fnData));
 	};
 
-	// Queue function into threadpool
-	m_compilerThreadPool.queue(CallbackThreadJob{ std::move(threadFunction) });
+	// Don't use the future returned by the compiler because it is bad and horrible.
+	m_compilerThreadPool.queue(CompiledWithCallbackThreadJob{ std::move(threadFunction) });
+	return promise.get_future();
 }
 
 void GS2ScriptManager::runQueue()

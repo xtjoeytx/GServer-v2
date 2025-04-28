@@ -82,6 +82,7 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 	// Attempt to compile the script in GS2
 	if (!gameAni.m_script.empty())
 	{
+		/*
 		// Synchronous callback
 		server->compileGS2Script(gameAni.m_script, [&gameAni](const CompilerResponse& response)
 								 {
@@ -93,6 +94,7 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 									 else
 										 gameAni.m_bytecode.clear();
 								 });
+		*/
 	}
 
 	return gameAni;

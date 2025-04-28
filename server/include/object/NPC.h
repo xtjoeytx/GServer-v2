@@ -1,16 +1,14 @@
 #ifndef NPC_H
 #define NPC_H
 
-#include <algorithm>
-#include <ctime>
-#include <memory>
-
-#include "BabyDI.h"
 #include <CString.h>
 #include <IUtil.h>
 
+#include "common.h"
+
 #include "object/Character.h"
 #include "scripting/SourceCode.h"
+#include "utilities/FlagContainer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -19,119 +17,126 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum
+class Server;
+class Level;
+class Player;
+class ScriptClass;
+
+enum class NPCProp : uint8_t
 {
-	NPCPROP_IMAGE = 0,
-	NPCPROP_SCRIPT = 1,
-	NPCPROP_X = 2,
-	NPCPROP_Y = 3,
-	NPCPROP_POWER = 4,
-	NPCPROP_RUPEES = 5,
-	NPCPROP_ARROWS = 6,
-	NPCPROP_BOMBS = 7,
-	NPCPROP_GLOVEPOWER = 8,
-	NPCPROP_BOMBPOWER = 9,
-	NPCPROP_SWORDIMAGE = 10,
-	NPCPROP_SHIELDIMAGE = 11,
-	NPCPROP_GANI = 12, // NPCPROP_BOWGIF in pre-2.x
-	NPCPROP_VISFLAGS = 13,
-	NPCPROP_BLOCKFLAGS = 14,
-	NPCPROP_MESSAGE = 15,
-	NPCPROP_HURTDXDY = 16,
-	NPCPROP_ID = 17,
-	NPCPROP_SPRITE = 18,
-	NPCPROP_COLORS = 19,
-	NPCPROP_NICKNAME = 20,
-	NPCPROP_HORSEIMAGE = 21,
-	NPCPROP_HEADIMAGE = 22,
-	NPCPROP_SAVE0 = 23,
-	NPCPROP_SAVE1 = 24,
-	NPCPROP_SAVE2 = 25,
-	NPCPROP_SAVE3 = 26,
-	NPCPROP_SAVE4 = 27,
-	NPCPROP_SAVE5 = 28,
-	NPCPROP_SAVE6 = 29,
-	NPCPROP_SAVE7 = 30,
-	NPCPROP_SAVE8 = 31,
-	NPCPROP_SAVE9 = 32,
-	NPCPROP_ALIGNMENT = 33,
-	NPCPROP_IMAGEPART = 34,
-	NPCPROP_BODYIMAGE = 35,
-	NPCPROP_GATTRIB1 = 36,
-	NPCPROP_GATTRIB2 = 37,
-	NPCPROP_GATTRIB3 = 38,
-	NPCPROP_GATTRIB4 = 39,
-	NPCPROP_GATTRIB5 = 40,
-	NPCPROP_GMAPLEVELX = 41,
-	NPCPROP_GMAPLEVELY = 42,
+	IMAGE = 0,
+	SCRIPT = 1,
+	X = 2,
+	Y = 3,
+	POWER = 4,
+	RUPEES = 5,
+	ARROWS = 6,
+	BOMBS = 7,
+	GLOVEPOWER = 8,
+	BOMBPOWER = 9,
+	SWORDIMAGE = 10,
+	SHIELDIMAGE = 11,
+	GANI = 12, // NPCPROP_BOWGIF in pre-2.x
+	VISFLAGS = 13,
+	BLOCKFLAGS = 14,
+	MESSAGE = 15,
+	HURTDXDY = 16,
+	ID = 17,
+	SPRITE = 18,
+	COLORS = 19,
+	NICKNAME = 20,
+	HORSEIMAGE = 21,
+	HEADIMAGE = 22,
+	SAVE0 = 23,
+	SAVE1 = 24,
+	SAVE2 = 25,
+	SAVE3 = 26,
+	SAVE4 = 27,
+	SAVE5 = 28,
+	SAVE6 = 29,
+	SAVE7 = 30,
+	SAVE8 = 31,
+	SAVE9 = 32,
+	ALIGNMENT = 33,
+	IMAGEPART = 34,
+	BODYIMAGE = 35,
+	GATTRIB1 = 36,
+	GATTRIB2 = 37,
+	GATTRIB3 = 38,
+	GATTRIB4 = 39,
+	GATTRIB5 = 40,
+	GMAPLEVELX = 41,
+	GMAPLEVELY = 42,
 
-	NPCPROP_Z = 43,
+	Z = 43,
 
-	NPCPROP_GATTRIB6 = 44,
-	NPCPROP_GATTRIB7 = 45,
-	NPCPROP_GATTRIB8 = 46,
-	NPCPROP_GATTRIB9 = 47,
+	GATTRIB6 = 44,
+	GATTRIB7 = 45,
+	GATTRIB8 = 46,
+	GATTRIB9 = 47,
 
-	NPCPROP_UNKNOWN48 = 48,
-	NPCPROP_SCRIPTER = 49, // My guess is UNKNOWN48 or this is the scripter's name
-	NPCPROP_NAME = 50,
-	NPCPROP_TYPE = 51,
-	NPCPROP_CURLEVEL = 52,
+	UNKNOWN48 = 48,
+	SCRIPTER = 49, // My guess is UNKNOWN48 or this is the scripter's name
+	NAME = 50,
+	TYPE = 51,
+	CURLEVEL = 52,
 
-	NPCPROP_GATTRIB10 = 53,
-	NPCPROP_GATTRIB11 = 54,
-	NPCPROP_GATTRIB12 = 55,
-	NPCPROP_GATTRIB13 = 56,
-	NPCPROP_GATTRIB14 = 57,
-	NPCPROP_GATTRIB15 = 58,
-	NPCPROP_GATTRIB16 = 59,
-	NPCPROP_GATTRIB17 = 60,
-	NPCPROP_GATTRIB18 = 61,
-	NPCPROP_GATTRIB19 = 62,
-	NPCPROP_GATTRIB20 = 63,
-	NPCPROP_GATTRIB21 = 64,
-	NPCPROP_GATTRIB22 = 65,
-	NPCPROP_GATTRIB23 = 66,
-	NPCPROP_GATTRIB24 = 67,
-	NPCPROP_GATTRIB25 = 68,
-	NPCPROP_GATTRIB26 = 69,
-	NPCPROP_GATTRIB27 = 70,
-	NPCPROP_GATTRIB28 = 71,
-	NPCPROP_GATTRIB29 = 72,
-	NPCPROP_GATTRIB30 = 73,
+	GATTRIB10 = 53,
+	GATTRIB11 = 54,
+	GATTRIB12 = 55,
+	GATTRIB13 = 56,
+	GATTRIB14 = 57,
+	GATTRIB15 = 58,
+	GATTRIB16 = 59,
+	GATTRIB17 = 60,
+	GATTRIB18 = 61,
+	GATTRIB19 = 62,
+	GATTRIB20 = 63,
+	GATTRIB21 = 64,
+	GATTRIB22 = 65,
+	GATTRIB23 = 66,
+	GATTRIB24 = 67,
+	GATTRIB25 = 68,
+	GATTRIB26 = 69,
+	GATTRIB27 = 70,
+	GATTRIB28 = 71,
+	GATTRIB29 = 72,
+	GATTRIB30 = 73,
 
-	NPCPROP_CLASS = 74, // NPC-Server class.  Possibly also join scripts.
-	NPCPROP_X2 = 75,
-	NPCPROP_Y2 = 76,
-	NPCPROP_Z2 = 77,
+	CLASS = 74, // NPC-Server class.  Possibly also join scripts.
+	X2 = 75,
+	Y2 = 76,
+	Z2 = 77,
 
 	NPCPROP_COUNT
 };
+constexpr int NPCPROP_COUNT = static_cast<int>(NPCProp::NPCPROP_COUNT);
 
 //! NPCPROP_VISFLAGS values.
-enum
+enum class NPCVisFlags : uint8_t
 {
-	NPCVISFLAG_VISIBLE = 0x01,
-	NPCVISFLAG_DRAWOVERPLAYER = 0x02,
-	NPCVISFLAG_DRAWUNDERPLAYER = 0x04,
+	HIDDEN			= 0b0000'0000,
+	VISIBLE			= 0b0000'0001,
+	DRAWOVERPLAYER	= 0b0000'0010,
+	DRAWUNDERPLAYER	= 0b0000'0100,
 };
 
 //! NPCPROP_BLOCKFLAGS values.
-enum
+enum class NPCBlockFlags : uint8_t
 {
-	NPCBLOCKFLAG_BLOCK = 0x00,
-	NPCBLOCKFLAG_NOBLOCK = 0x01,
+	BLOCK	= 0b0000'0000,
+	NOBLOCK	= 0b0000'0001,
 };
 
 //! NPCMOVE_FLAGS values
-enum
+enum class NPCMoveFlags : uint8_t
 {
-	NPCMOVEFLAG_NOCACHE = 0x00,
-	NPCMOVEFLAG_CACHE = 0x01,
-	NPCMOVEFLAG_APPEND = 0x02,
-	NPCMOVEFLAG_BLOCKCHECK = 0x04,
-	NPCMOVEFLAG_EVENTWHENDONE = 0x08,
-	NPCMOVEFLAG_APPLYDIR = 0x10
+	NOCACHE			= 0b0000'0000,
+	CACHE			= 0b0000'0001,
+	APPEND			= 0b0000'0010,
+	BLOCKCHECK		= 0b0000'0100,
+	EVENTWHENDONE	= 0b0000'1000,
+	APPLYDIR		= 0b0001'0000,
 };
 
 enum class NPCType
@@ -141,330 +146,68 @@ enum class NPCType
 	DBNPC     // npcs created in RC (Database-NPCs)
 };
 
-class Server;
-class Level;
-class Player;
-class ScriptClass;
 class NPC
 {
 public:
-	NPC(NPCType type);
-	NPC(const CString& pImage, std::string pScript, float pX, float pY, std::shared_ptr<Level> pLevel, NPCType type);
-	~NPC();
-
-	void setScriptCode(std::string pScript);
+	NPC(NPCID id, NPCType type);
+	~NPC() = default;
 
 	// prop functions
-	CString getProp(unsigned char pId, int clientVersion = CLVER_2_17) const;
-	CString getProps(time_t newTime, int clientVersion = CLVER_2_17) const;
-	CString setProps(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
-	void setPropModTime(unsigned char pid, time_t time);
+	CString getPropPacket(NPCProp pId, int clientVersion = CLVER_2_17) const;
+	CString getAllPropsPacket(time_t newTime, int clientVersion = CLVER_2_17) const;
+	CString setPropsFromPacket(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
+	void setPropModTime(NPCProp pid, time_t time);
 
-	// NPCPROP functions begin
+	void setScript(std::string_view script);
+	const SourceCode& getScript() const noexcept { return m_script; }
 
-	const std::string& getChat() const;
-	void setChat(const std::string& msg);
+	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 
-	const std::string& getGani() const;
-	void setGani(const std::string& gani);
-
-	const std::string& getImage() const;
-	void setImage(const std::string& image);
-	void setImage(const std::string& image, int offsetx, int offsety, int widt, int height);
-
-	const std::string& getNickname() const;
-	void setNickname(const std::string& nick);
-
-	unsigned char getSave(unsigned int idx) const;
-	void setSave(unsigned int idx, unsigned char val);
-
-	int getRupees() const;
-	void setRupees(int val);
-
-	int getDarts() const;
-	void setDarts(int val);
-
-	const std::string& getBodyImage() const;
-	void setBodyImage(const std::string& pBodyImage);
-
-	const std::string& getHeadImage() const;
-	void setHeadImage(const std::string& pHeadImage);
-
-	const std::string& getHorseImage() const;
-	void setHorseImage(const std::string& pHeadImage);
-
-	const std::string& getShieldImage() const;
-	void setShieldImage(const std::string& pShieldImage);
-
-	const std::string& getSwordImage() const;
-	void setSwordImage(const std::string& pSwordImage);
-
-	// NPCPROP functions end
-
-	// set functions
-	void setId(unsigned int pId) { m_id = pId; }
-	void setLevel(std::shared_ptr<Level> pLevel) { m_curlevel = pLevel; }
-	void setX(float val) { m_x = static_cast<int16_t>(val * 16); }
-	void setY(float val) { m_y = static_cast<int16_t>(val * 16); }
-	void setZ(float val) { m_z = static_cast<int16_t>(val * 16); }
-	void setPixelX(int16_t val) { m_x = val; }
-	void setPixelY(int16_t val) { m_y = val; }
-	void setPixelZ(int16_t val) { m_z = val; }
-	void setHeight(int val) { m_height = val; }
-	void setWidth(int val) { m_width = val; }
-	void setName(const std::string& name) { m_npcName = name; }
-	void setScripter(const CString& name) { m_npcScripter = name; }
-	void setScriptType(const CString& type) { m_npcScriptType = type; }
-	void setBlockingFlags(int val) { m_blockFlags = val; }
-	void setVisibleFlags(int val) { m_visFlags = val; }
-	void setColorId(unsigned int idx, unsigned char val);
-	void setSprite(int val) { m_character.sprite = val; }
-
-	// get functions
-	unsigned int getId() const { return m_id; }
-	NPCType getType() const { return m_npcType; }
-	float getX() const { return m_x / 16.0f; }
-	float getY() const { return m_y / 16.0f; }
-	float getZ() const { return m_z / 16.0f; }
-	int16_t getPixelX() const { return m_x; }
-	int16_t getPixelY() const { return m_y; }
-	int16_t getPixelZ() const { return m_z; }
-	int getHeight() const { return m_height; }
-	int getWidth() const { return m_width; }
-	unsigned char getSprite() const { return m_character.sprite; }
-	int getBlockFlags() const { return m_blockFlags; }
-	int getVisibleFlags() const { return m_visFlags; }
-	int getTimeout() const { return m_timeout; }
-
-	const SourceCode& getSource() const { return m_npcScript; }
-	const std::string& getName() const { return m_npcName; }
-	const CString& getScriptType() const { return m_npcScriptType; }
-	const CString& getScripter() const { return m_npcScripter; }
-	const CString& getWeaponName() const { return m_weaponName; }
-	std::shared_ptr<Level> getLevel() const;
-	time_t getPropModTime(unsigned char pId) const;
-	unsigned char getColorId(unsigned int idx) const;
-
-	const CString& getByteCode() const
+	// Records the current state as the initial state of the NPC.
+	void recordInitialState()
 	{
-		return m_npcBytecode;
+		m_initialImage = image;
+		m_initialLevel = level;
+		m_initialCharacter = character;
 	}
+
+	bool isCharacter() const noexcept { return image == "#c#"; }
+
+public:
+	const NPCID id;
+	const NPCType type;
+	std::string name;
+	std::string image;
+	std::weak_ptr<Level> level;
+	Dimension<uint16_t> imageSize;
+	Rectangle<uint16_t, uint8_t> imagePart;
+	uint8_t visFlags = 1;
+	uint8_t blockFlags = 0;
+	float hurtX = 0.0f;
+	float hurtY = 0.0f;
+	int timeout = 0;
+	Character character;
+	std::array<uint8_t, 10> saves;
+	std::array<time_t, NPCPROP_COUNT> modTime;
+	FlagContainer flags;
 
 private:
 	BabyDI_INJECT(Server, m_server);
 
-	NPCType m_npcType;
-	SourceCode m_npcScript;
+	SourceCode m_script;
 
-	unsigned int m_id = 0;
-	int16_t m_x = (30 * 16);
-	int16_t m_y = (30.5 * 16);
-	int16_t m_z = 0;
-	unsigned char m_visFlags = 1;
-	unsigned char m_blockFlags = 0;
-	float m_hurtX = 32.0f;
-	float m_hurtY = 32.0f;
-	unsigned char m_saves[10];
-	int m_timeout = 0;
-	time_t m_modTime[NPCPROP_COUNT];
-
-	Character m_character;
-	bool m_isCharacter = false;
-
-	std::string m_image;
-	int m_width = 32;
-	int m_height = 32;
-	CString m_imagePart;
+	std::string m_initialImage;
+	std::weak_ptr<Level> m_initialLevel;
+	Character m_initialCharacter;
 
 	bool m_blockPositionUpdates = false;
-	std::weak_ptr<Level> m_curlevel;
-	CString m_weaponName;
+	std::string m_weaponName;
 
 	CString m_npcScripter, m_npcScriptType;
-	std::string m_npcName;
-	std::string m_clientScriptFormatted;
-
-	CString m_npcBytecode;
 };
 
 using NPCPtr = std::shared_ptr<NPC>;
 using NPCWeakPtr = std::weak_ptr<NPC>;
-
-inline time_t NPC::getPropModTime(unsigned char pId) const
-{
-	if (pId < NPCPROP_COUNT) return m_modTime[pId];
-	return 0;
-}
-
-inline void NPC::setPropModTime(unsigned char pId, time_t time)
-{
-	if (pId < NPCPROP_COUNT)
-		m_modTime[pId] = time;
-}
-
-inline unsigned char NPC::getColorId(unsigned int idx) const
-{
-	if (idx < 5) return m_character.colors[idx];
-	return 0;
-}
-
-inline void NPC::setColorId(unsigned int idx, unsigned char val)
-{
-	if (idx < 5) m_character.colors[idx] = val;
-}
-
-inline unsigned char NPC::getSave(unsigned int idx) const
-{
-	if (idx < 10) return m_saves[idx];
-	return 0;
-}
-
-inline void NPC::setSave(unsigned int idx, unsigned char val)
-{
-	if (idx < 10) m_saves[idx] = val;
-}
-
-//////////
-
-inline const std::string& NPC::getChat() const
-{
-	return m_character.chatMessage;
-}
-
-inline void NPC::setChat(const std::string& msg)
-{
-	m_character.chatMessage = msg.substr(0, std::min<size_t>(msg.length(), 223));
-}
-
-//////////
-
-inline const std::string& NPC::getGani() const
-{
-	return m_character.gani;
-}
-
-inline void NPC::setGani(const std::string& gani)
-{
-	m_character.gani = gani.substr(0, std::min<size_t>(gani.length(), 223));
-}
-
-//////////
-
-inline int NPC::getRupees() const
-{
-	return m_character.gralats;
-}
-
-inline void NPC::setRupees(int val)
-{
-	m_character.gralats = val;
-}
-
-//////////
-
-inline int NPC::getDarts() const
-{
-	return m_character.arrows;
-}
-
-inline void NPC::setDarts(int val)
-{
-	setProps(CString() >> (char)NPCPROP_ARROWS >> (char)clip(val, 0, 99), CLVER_2_17, true);
-}
-
-/////////
-
-inline const std::string& NPC::getImage() const
-{
-	return m_image;
-}
-
-inline void NPC::setImage(const std::string& pImage)
-{
-	m_image = pImage.substr(0, std::min<size_t>(pImage.length(), 223));
-}
-
-inline void NPC::setImage(const std::string& pImage, int offsetx, int offsety, int pwidth, int pheight)
-{
-	setImage(pImage);
-	m_imagePart.clear();
-	m_imagePart.writeGShort(offsetx);
-	m_imagePart.writeGShort(offsety);
-	m_imagePart.writeGChar(pwidth);
-	m_imagePart.writeGChar(pheight);
-}
-
-//////////
-
-inline const std::string& NPC::getNickname() const
-{
-	return m_character.nickName;
-}
-
-inline void NPC::setNickname(const std::string& pNick)
-{
-	m_character.nickName = pNick.substr(0, std::min<size_t>(pNick.length(), 223));
-}
-
-//////////
-
-inline const std::string& NPC::getBodyImage() const
-{
-	return m_character.bodyImage;
-}
-
-inline void NPC::setBodyImage(const std::string& pBodyImage)
-{
-	m_character.bodyImage = pBodyImage.substr(0, 200);
-}
-
-//////////
-
-inline const std::string& NPC::getHeadImage() const
-{
-	return m_character.headImage;
-}
-
-inline void NPC::setHeadImage(const std::string& pHeadImage)
-{
-	m_character.headImage = pHeadImage.substr(0, 123);
-}
-
-//////////
-
-inline const std::string& NPC::getHorseImage() const
-{
-	return m_character.horseImage;
-}
-
-inline void NPC::setHorseImage(const std::string& pHorseImage)
-{
-	m_character.horseImage = pHorseImage.substr(0, 200);
-}
-
-//////////
-
-inline const std::string& NPC::getShieldImage() const
-{
-	return m_character.shieldImage;
-}
-
-inline void NPC::setShieldImage(const std::string& pShieldImage)
-{
-	m_character.shieldImage = pShieldImage.substr(0, 200);
-}
-
-//////////
-
-inline const std::string& NPC::getSwordImage() const
-{
-	return m_character.swordImage;
-}
-
-inline void NPC::setSwordImage(const std::string& pSwordImage)
-{
-	m_character.swordImage = pSwordImage.substr(0, 120);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

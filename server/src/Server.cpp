@@ -12,6 +12,8 @@
 #include "Server.h"
 #include "level/Level.h"
 #include "level/Map.h"
+#include "npcserver/NPCServer.h"
+#include "npcserver/PlayerNpcServer.h"
 #include "object/NPC.h"
 #include "object/Player.h"
 #include "object/Weapon.h"
@@ -19,6 +21,8 @@
 #include "player/PlayerClient.h"
 #include "scripting/ScriptClass.h"
 #include "scripting/ScriptOrigin.h"
+#include "scripting/gs1/ScriptEngineGS1.h"
+#include "scripting/gs2/ScriptEngineGS2.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -80,6 +84,9 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	int ret = loadConfigFiles();
 	if (ret) return ret;
 
+	// Load the NPC-Server.
+	loadNpcServer();
+
 	// If an override serverip and serverport were specified, fix the options now.
 	if (!serverip.isEmpty())
 		m_settings.addKey("serverip", serverip);
@@ -127,6 +134,12 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
 
+	// If the npc-server is enabled, add the npc-server player to the player list.
+	// It should be the first player registered to the server.
+	if (isNpcServerEnabled())
+	{
+		addPlayer(m_npcServer->getPlayer());
+	}
 
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
@@ -216,12 +229,10 @@ void Server::cleanup()
 	m_serverFlags.clear();
 
 	m_npcList.clear();
-	m_npcNameList.clear();
 	m_npcIdGenerator.resetAndSetNext(NPCID_INIT);
 
 	saveWeapons();
 	m_weaponList.clear();
-	m_classList.clear();
 
 	m_playerSock.disconnect();
 	m_serverlist.getSocket().disconnect();
@@ -498,10 +509,6 @@ int Server::loadConfigFiles()
 		log::printLine(log::server, "Loading weapons...");
 		loadWeapons(true);
 
-		// Load classes.
-		log::printLine(log::server, "Loading classes...");
-		loadClasses(true);
-
 		// Load maps.
 		log::printLine(log::server, "Loading maps...");
 		loadMaps(true);
@@ -619,23 +626,6 @@ void Server::loadIPBans()
 	m_ipBans = CString::loadToken(CString() << "config/ipbans.txt", "\n", true);
 }
 
-void Server::loadClasses(bool print)
-{
-	FileSystem scriptFS;
-	scriptFS.addDir("scripts", "*.txt");
-	const std::map<CString, CString>& scriptFileList = scriptFS.getFileList();
-	for (auto& scriptFile: scriptFileList)
-	{
-		std::string className = scriptFile.first.subString(0, scriptFile.first.length() - 4).text();
-
-		CString scriptData;
-		scriptData.load(scriptFile.second);
-		m_classList[className] = std::make_unique<ScriptClass>(className, scriptData.text());
-
-		updateClassForPlayers(getClass(className));
-	}
-}
-
 void Server::loadWeapons(bool print)
 {
 	auto indent = log::server.indent();
@@ -650,6 +640,7 @@ void Server::loadWeapons(bool print)
 	{
 		auto weapon = Weapon::loadWeapon(weaponFile.first);
 		if (weapon == nullptr) continue;
+
 		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
@@ -815,6 +806,27 @@ void Server::loadMaps(bool print)
 	}
 }
 
+void Server::loadNpcServer()
+{
+	if (m_settings.getBool("serverside", true))
+	{
+		log::printLine(log::server, ":: Loading NPC server...");
+		{
+			auto indent = log::server.indent();
+			m_npcServer = std::make_shared<NPCServer>();
+			m_npcServer->initialize();
+		}
+
+		// Pre-load map levels.
+		// TODO: Move into the npc-server?
+		log::printLine(log::server, ":: Pre-loading map levels...");
+		{
+			auto indent = log::server.indent();
+			loadMapLevels();
+		}
+	}
+}
+
 void Server::loadTranslations()
 {
 	this->TS_Reload();
@@ -871,17 +883,6 @@ static std::string transformString(const std::string& str)
 	return newStr;
 }
 
-void Server::reportScriptException(const std::string& error_message)
-{
-	auto lines = CString{ error_message }.tokenize("\n");
-
-	for (const auto& line: lines)
-	{
-		sendToNC(line);
-		log::printLine(log::script, line.toStringView());
-	}
-}
-
 /////////////////////////////////////////////////////
 
 std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
@@ -921,27 +922,38 @@ FileSystem* Server::getFileSystemByType(CString& type)
 	return &m_filesystem[fs];
 }
 
-std::shared_ptr<NPC> Server::addNPC(const CString& pImage, const CString& pScript, float pX, float pY, std::weak_ptr<Level> pLevel, bool pLevelNPC, bool sendToPlayers)
+std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers)
 {
-	// New Npc
-	auto level = pLevel.lock();
-	auto newNPC = std::make_shared<NPC>(pImage, pScript.toString(), pX, pY, level, (pLevelNPC ? NPCType::LEVELNPC : NPCType::PUTNPC));
-
 	// Get available NPC Id.
 	uint32_t newId = m_npcIdGenerator.getAvailableId();
 
+	// New Npc
+	auto newNPC = std::make_shared<NPC>(newId, type);
+
 	// Assign NPC Id and add to list.
-	newNPC->setId(newId);
 	m_npcList.insert(std::make_pair(newId, newNPC));
+
+	// Set NPC props.
+	newNPC->level = level;
+	newNPC->character.pixelX = x * 16;
+	newNPC->character.pixelY = y * 16;
+	newNPC->image = image;
+	newNPC->setScript(script);
+	newNPC->recordInitialState();
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->getId() << newNPC->getProps(0);
-		sendPacketToLevelOnlyGmapArea(packet, level);
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket(0);
+		sendPacketToLevelOnlyGmapArea(packet, level.lock());
 	}
 
 	return newNPC;
+}
+
+std::shared_ptr<NPC> Server::addNPC(std::string_view file, NPCType type, bool sendToPlayers)
+{
+	return nullptr;
 }
 
 bool Server::deleteNPC(int id, bool eraseFromLevel)
@@ -955,9 +967,9 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	assert(npc);
 
 	// Erase NPC from the list.
-	m_npcList.erase(npc->getId());
+	m_npcList.erase(npc->id);
 
-	if (auto level = npc->getLevel(); level)
+	if (auto level = npc->level.lock(); level)
 	{
 		// Remove the NPC from the level
 		if (eraseFromLevel)
@@ -973,39 +985,14 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			if (p->isClient())
 			{
 				if (isOnMap || p->getVersion() < CLVER_2_1)
-					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->getId());
+					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->id);
 				else
-					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->getId());
+					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->id);
 			}
 		}
 	}
 
 	return true;
-}
-
-bool Server::deleteClass(const std::string& className)
-{
-	auto classIter = m_classList.find(className);
-	if (classIter == m_classList.end())
-		return false;
-
-	m_classList.erase(classIter);
-	CString filePath = CString() << "scripts/" << className << ".txt";
-	FileSystem::fixPathSeparators(filePath);
-	remove(filePath.text());
-
-	return true;
-}
-
-void Server::updateClass(const std::string& className, const std::string& classCode)
-{
-	m_classList[className] = std::make_unique<ScriptClass>(className, classCode);
-
-	CString filePath = CString() << "scripts/" << className << ".txt";
-	FileSystem::fixPathSeparators(filePath);
-
-	CString fileData(classCode);
-	fileData.save(filePath);
 }
 
 bool Server::addPlayer(PlayerPtr player, uint16_t id)
@@ -1055,6 +1042,10 @@ bool Server::swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Play
 	// Update the socket manager.
 	m_sockManager.unregisterSocket(old_player.get());
 	m_sockManager.registerSocket(new_player.get());
+
+	// If we are an npc-server, record that now.
+	if (new_player->isNPCServer())
+		m_npcServerPlayer = std::dynamic_pointer_cast<PlayerNpcServer>(new_player);
 
 	return true;
 }
@@ -1479,117 +1470,6 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
 			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));
 		}
 	}
-}
-
-void Server::updateClassForPlayers(ScriptClass* pClass)
-{
-	// Update Weapons
-	for (auto& [id, player]: m_playerList)
-	{
-		if (!player->isClient())
-			continue;
-
-		if (player->getVersion() >= CLVER_4_0211)
-		{
-			if (pClass != nullptr)
-			{
-				CString out;
-				CString b = pClass->getByteCode();
-				out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-				out >> (char)PLO_NPCWEAPONSCRIPT << b;
-
-				player->sendPacket(out);
-			}
-		}
-	}
-}
-
-/*
-	GS2 Functionality
-*/
-template<typename ScriptObjType>
-void Server::compileScript(ScriptObjType& scriptObject, GS2ScriptManager::user_callback_type& cb)
-{
-	std::string script{ scriptObject.getSource().getClientGS2() };
-
-	m_gs2ScriptManager.compileScript(script, [cb, &scriptObject, this](const CompilerResponse& resp)
-									 {
-										 if (!resp.errors.empty())
-										 {
-											 handleGS2Errors(resp.errors, scripting::getErrorOrigin(scriptObject));
-										 }
-
-										 // Compile any referenced joined classes, disabled for now as all classes should be compiled immediately
-										 //if (resp.success)
-										 //{
-										 //	for (auto& joinedClass : resp.joinedClasses)
-										 //	{
-										 //		auto cls = getClass(joinedClass);
-										 //		if (cls && cls->getByteCode().isEmpty())
-										 //		{
-										 //			GS2ScriptManager::user_callback_type fn = [](const auto& resp) {};
-										 //			compileScript(*cls, fn);
-										 //		}
-										 //	}
-										 //}
-
-										 if (cb)
-										 {
-											 cb(resp);
-										 }
-									 });
-}
-
-void Server::compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb)
-{
-	m_gs2ScriptManager.compileScript(source, cb);
-}
-
-void Server::compileGS2Script(NPC* scriptObject, GS2ScriptManager::user_callback_type cb)
-{
-	if (scriptObject)
-	{
-		compileScript(*scriptObject, cb);
-	}
-}
-
-void Server::compileGS2Script(ScriptClass* scriptObject, GS2ScriptManager::user_callback_type cb)
-{
-	if (scriptObject)
-	{
-		compileScript(*scriptObject, cb);
-	}
-}
-
-void Server::compileGS2Script(Weapon* scriptObject, GS2ScriptManager::user_callback_type cb)
-{
-	if (scriptObject)
-	{
-		compileScript(*scriptObject, cb);
-	}
-}
-
-void Server::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin)
-{
-	std::string errorMsg;
-	for (auto& err: errors)
-	{
-		switch (err.level())
-		{
-			case ErrorLevel::E_INFO:
-				errorMsg += std::format("info: {}\n", err.msg());
-				break;
-			case ErrorLevel::E_WARNING:
-				errorMsg += std::format("warning: {}\n", err.msg());
-				break;
-			default:
-				errorMsg += std::format("error: {}\n", err.msg());
-				break;
-		}
-	}
-
-	if (!errorMsg.empty())
-		reportScriptException(std::format("Script compiler output for {}:\n{}", origin, errorMsg));
 }
 
 /*

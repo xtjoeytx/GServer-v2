@@ -2,6 +2,7 @@
 #define SCRIPTCLASS_H
 
 #include <string>
+#include <string_view>
 
 #include <CString.h>
 
@@ -17,7 +18,7 @@ namespace preagonal
 class ScriptClass
 {
 public:
-	ScriptClass(const std::string& className, const std::string& classSource);
+	ScriptClass(std::string_view className, std::string_view classSource);
 	~ScriptClass();
 
 	// Functions -> Inline Get-Functions
@@ -28,22 +29,16 @@ public:
 		return m_className;
 	}
 
-	const CString& getByteCode() const
-	{
-		return m_bytecode;
-	}
-
 	const SourceCode& getSource() const
 	{
 		return m_source;
 	}
 
 private:
-	void parseScripts(const std::string& classSource);
+	void parseScripts(std::string_view classSource);
 
 	std::string m_className;
 	SourceCode m_source;
-	CString m_bytecode;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

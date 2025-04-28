@@ -74,7 +74,7 @@ Level::~Level()
 		for (auto& levelNPC: m_npcs)
 		{
 			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
-			if (auto npc = m_server->getNPC(levelNPC); npc && npc->getType() == NPCType::LEVELNPC)
+			if (auto npc = m_server->getNPC(levelNPC); npc && npc->type == NPCType::LEVELNPC)
 				m_server->deleteNPC(npc, false);
 		}
 		m_npcs.clear();
@@ -217,6 +217,7 @@ CString Level::getLinksPacket()
 	return retVal;
 }
 
+// TODO: Replace with a function in server that sends npc props from a list of ids.
 CString Level::getNpcsPacket(time_t time, int clientVersion)
 {
 	CString retVal;
@@ -225,11 +226,12 @@ CString Level::getNpcsPacket(time_t time, int clientVersion)
 		auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
 
-		retVal >> (char)PLO_NPCPROPS >> (int)npc->getId() << npc->getProps(time, clientVersion) << "\n";
+		retVal >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket(time, clientVersion) << "\n";
 
-		if (clientVersion >= CLVER_4_0211 && !npc->getByteCode().isEmpty())
+		if (clientVersion >= CLVER_4_0211 && npc->getScript().getClientByteCode() != nullptr)
 		{
-			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->getId() << npc->getByteCode();
+			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
+			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode()->data()), npc->getScript().getClientByteCode()->size());
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
 				byteCodePacket << "\n";
 
@@ -278,7 +280,7 @@ bool Level::reload()
 		for (auto it = m_npcs.begin(); it != m_npcs.end();)
 		{
 			auto npc = m_server->getNPC(*it);
-			if (!npc || npc->getType() == NPCType::LEVELNPC)
+			if (!npc || npc->type == NPCType::LEVELNPC)
 			{
 				m_server->deleteNPC(npc, false);
 				it = m_npcs.erase(it);
@@ -771,8 +773,8 @@ bool Level::loadGraal(const CString& pLevelName)
 			CString image = line.readString("#");
 			CString code = line.readString("").replaceAll("\xa7", "\n");
 
-			auto npc = m_server->addNPC(image, code, x, y, this->shared_from_this(), true, false);
-			m_npcs.insert(npc->getId());
+			auto npc = m_server->addNPC(image, code, x, y, this->shared_from_this(), NPCType::LEVELNPC, false);
+			m_npcs.insert(npc->id);
 		}
 	}
 
@@ -917,6 +919,10 @@ bool Level::loadNW(const CString& pLevelName)
 					image << " " << curLine[i + 2];
 			}
 
+			// If the image is just a hyphen, clear it.
+			if (image == "-")
+				image.clear();
+
 			// Grab the NPC location.
 			float x = (float)strtofloat(curLine[2 + offset]);
 			float y = (float)strtofloat(curLine[3 + offset]);
@@ -932,8 +938,8 @@ bool Level::loadNW(const CString& pLevelName)
 			}
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
 			// Add the new NPC.
-			auto npc = m_server->addNPC(image, code, x, y, this->shared_from_this(), true, false);
-			m_npcs.insert(npc->getId());
+			auto npc = m_server->addNPC(image, code, x, y, this->shared_from_this(), NPCType::LEVELNPC, false);
+			m_npcs.insert(npc->id);
 		}
 		else if (curLine[0] == "SIGN")
 		{
@@ -1164,15 +1170,18 @@ void Level::saveLevel(const std::string& filename)
 	for (const auto& npcId: getNPCs())
 	{
 		auto npc = m_server->getNPC(npcId);
-		if (npc->getType() != NPCType::LEVELNPC)
-			continue; // Don't save PUTNPC's or DBNPC's in the level file
-		std::string image = npc->getImage();
+
+		// Don't save PUTNPC's or DBNPC's in the level file
+		if (npc->type != NPCType::LEVELNPC)
+			continue;
+
+		std::string image = npc->image;
 
 		if (image.empty())
 			image = "-"; // No image is represented by "-"
 
-		fileStream << "NPC" << s << image << s << npc->getX() << s << npc->getY() << std::endl;
-		fileStream << npc->getSource().getSource() << std::endl;
+		fileStream << "NPC" << s << image << s << (npc->character.pixelX / 16.0f) << s << (npc->character.pixelY / 16.0f) << std::endl;
+		fileStream << npc->getScript().getOriginalSource() << std::endl;
 		fileStream << "NPCEND" << std::endl;
 	}
 }
@@ -1387,19 +1396,28 @@ bool Level::isPlayerLeader(uint16_t id)
 
 bool Level::addNPC(std::shared_ptr<NPC> npc)
 {
-	[[maybe_unused]] auto [iter, inserted] = m_npcs.insert(npc->getId());
+	[[maybe_unused]] auto [iter, inserted] = m_npcs.insert(npc->id);
+
+	auto script = npc->getScript().getClientSide();
+
+	if (script.contains("sparringzone"))
+		setSparringZone(true);
+
+	if (script.contains("singleplayer"))
+		setSingleplayer(true);
+
 	return inserted;
 }
 
 bool Level::addNPC(uint32_t npcId)
 {
-	[[maybe_unused]] auto [iter, inserted] = m_npcs.insert(npcId);
-	return inserted;
+	auto npc = m_server->getNPC(npcId);
+	return addNPC(npc);
 }
 
 void Level::removeNPC(std::shared_ptr<NPC> npc)
 {
-	m_npcs.erase(npc->getId());
+	m_npcs.erase(npc->id);
 }
 
 void Level::removeNPC(uint32_t npcId)

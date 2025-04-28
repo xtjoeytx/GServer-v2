@@ -2,9 +2,9 @@
 
 #include <GS2Context.h>
 
-#include "scripting/ScriptClass.h"
-
 #include "Server.h"
+#include "npcserver/NPCServer.h"
+#include "scripting/ScriptClass.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptClass::ScriptClass(const std::string& className, const std::string& classSource)
+ScriptClass::ScriptClass(std::string_view className, std::string_view classSource)
 	: m_className(className)
 {
 	parseScripts(classSource);
@@ -23,62 +23,43 @@ ScriptClass::~ScriptClass()
 {
 }
 
-void ScriptClass::parseScripts(const std::string& classSource)
+void ScriptClass::parseScripts(std::string_view classSource)
 {
 	auto* server = BabyDI::Get<Server>();
-	bool gs2default = server->getSettings().getBool("gs2default", false);
 
-	m_source = { classSource, gs2default };
+	m_source = { classSource };
 
-	// Compile GS2 code
-	auto gs2Script = m_source.getClientGS2();
-	if (!gs2Script.empty())
+	// Compile GS2 code.
+	auto npcServer = server->getNpcServer();
+	if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, m_className, m_source.getClientSide()); clientResults != nullptr && clientResults->success)
 	{
-		server->compileGS2Script(this, [this](const CompilerResponse& response)
-								 {
-									 if (response.success)
-									 {
-										 auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, "class", m_className, true);
-
-										 // these should be sent for compilation right after
-										 //m_joinedClasses = { response.joinedClasses.begin(), response.joinedClasses.end() };
-
-										 m_bytecode.clear(bytecodeWithHeader.length());
-										 m_bytecode.write((const char*)bytecodeWithHeader.buffer(), static_cast<int>(bytecodeWithHeader.length()));
-
-										 // temp: save bytecode to file
-										 //CString bytecodeFile;
-										 //bytecodeFile << "bytecode/classes/";
-										 //std::filesystem::create_directories(bytecodeFile.text());
-										 //bytecodeFile << "class_" << m_className << ".gs2bc";
-
-										 //CString bytecodeDump;
-										 //bytecodeDump.writeInt(1);
-										 //bytecodeDump.write((const char*)bytecodeWithHeader.buffer(), bytecodeWithHeader.length());
-										 //bytecodeDump.save(bytecodeFile);
-									 }
-								 });
+		m_source.setClientByteCode(clientResults->bytecode);
+		m_source.addClientJoinedClasses(clientResults->joinedClasses);
+	}
+	if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, m_className, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
+	{
+		m_source.setServerByteCode(serverResults->bytecode);
+		m_source.addServerJoinedClasses(serverResults->joinedClasses);
 	}
 }
 
 // -- Function: Get Player Packet -- //
 CString ScriptClass::getClassPacket() const
 {
-	CString out;
-
-	if (!m_bytecode.isEmpty())
+	if (auto bytecode = m_source.getClientByteCode(); bytecode != nullptr && !bytecode->empty())
 	{
-		CString b = m_bytecode;
+		CString b;
+		b.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
 
 		CString header = b.readChars(b.readGUShort());
 
 		// Get the mod time and send packet 197.
 		CString smod = CString() >> (long long)time(0);
 		smod.gtokenizeI();
-		out >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
+		return CString() >> (char)PLO_UNKNOWN197 << header << "," << smod << "\n";
 	}
 
-	return out;
+	return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

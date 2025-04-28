@@ -14,6 +14,7 @@
 #include "level/LevelChest.h"
 #include "level/LevelHorse.h"
 #include "level/Map.h"
+#include "npcserver/NPCServer.h"
 #include "object/NPC.h"
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
@@ -136,11 +137,11 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	if (!npc)
 		return HandlePacketResult::Handled;
 
-	if (npc->getLevel() != level)
+	if (npc->level.lock() != level)
 		return HandlePacketResult::Handled;
 
 	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
-	packet << npc->setProps(npcProps, m_versionId);
+	packet << npc->setPropsFromPacket(npcProps, m_versionId);
 	m_server->sendPacketToLevelArea(packet, self(), level, { m_id });
 
 	return HandlePacketResult::Handled;
@@ -553,7 +554,7 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 	code.removeAllI("\r");
 
 	// Add NPC to level
-	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, false, true);
+	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, NPCType::PUTNPC, true);
 
 	return HandlePacketResult::Handled;
 }
@@ -748,37 +749,42 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 		// Get the NPC id.
 		unsigned int npcId = pPacket.readGUInt();
 		auto npc = m_server->getNPC(npcId);
-		if (npc == nullptr || npc->getLevel() == nullptr)
+		if (npc == nullptr)
+			return HandlePacketResult::Handled;
+
+		// Get the level.
+		auto level = npc->level.lock();
+		if (level == nullptr)
 			return HandlePacketResult::Handled;
 
 		// Get the name of the weapon.
-		CString name = npc->getWeaponName();
+		const auto& name = npc->getWeaponName();
 		if (name.length() == 0)
 			return HandlePacketResult::Handled;
 
 		// See if we can find the weapon in the server weapon list.
-		auto weapon = m_server->getWeapon(name.toString());
+		auto weapon = m_server->getWeapon(name);
 
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(name.toString(), npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime(), true);
+			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getClientSide() }, level->getModTime(), true);
 			m_server->NC_AddWeapon(weapon);
 		}
 
 		// Check and see if the weapon has changed recently.  If it has, we should
 		// send the new NPC to everybody on the server.  After updating the script, of course.
-		if (weapon->getModTime() < npc->getLevel()->getModTime())
+		if (weapon->getModTime() < level->getModTime())
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->getImage(), std::string{ npc->getSource().getClientGS1() }, npc->getLevel()->getModTime());
+			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getClientSide() }, level->getModTime());
 
 			// Send to Players
 			m_server->updateWeaponForPlayers(weapon);
 		}
 
 		// Send the weapon to the player now.
-		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->getName()) != std::ranges::end(account.weapons))
+		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->getName()) == std::ranges::end(account.weapons))
 			this->addWeapon(weapon);
 	}
 
@@ -1327,16 +1333,19 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 
 	log::printLine(log::server, "PLI_UPDATESCRIPT: \"{}\"\n", weaponName);
 
-	CString out;
-
-	auto weaponObj = m_server->getWeapon(weaponName.toString());
-	if (weaponObj != nullptr)
+	if (auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
 	{
-		CString b = weaponObj->getByteCode();
-		out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << b;
+		if (auto bytecode = weaponObj->getSource().getClientByteCode(); bytecode != nullptr)
+		{
+			CString b;
+			b.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
 
-		sendPacket(out);
+			CString out;
+			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
+			out >> (char)PLO_NPCWEAPONSCRIPT << b;
+
+			sendPacket(out);
+		}
 	}
 
 	return HandlePacketResult::Handled;
@@ -1350,13 +1359,20 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 
 	log::printLine(log::server, "PLI_UPDATECLASS: \"{}\"\n", className);
 
-	ScriptClass* classObj = m_server->getClass(className);
+	if (!m_server->isNpcServerEnabled())
+		return HandlePacketResult::Handled;
 
-	if (classObj != nullptr)
+	auto npcServer = m_server->getNpcServer();
+	if (auto classObj = npcServer->getClass(className); classObj != nullptr)
 	{
+		auto bytecode = classObj->getSource().getClientByteCode();
+		if (bytecode == nullptr)
+			return HandlePacketResult::Handled;
+
 		CString out;
-		out >> (char)PLO_RAWDATA >> (int)classObj->getByteCode().length() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT << classObj->getByteCode();
+		out >> (char)PLO_RAWDATA >> (int)bytecode->size() << "\n";
+		out >> (char)PLO_NPCWEAPONSCRIPT;
+		out.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
 		sendPacket(out);
 	}
 	else
