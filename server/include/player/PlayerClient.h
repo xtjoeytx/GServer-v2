@@ -1,8 +1,6 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
-#include <string_view>
-
 #include "object/Player.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +45,7 @@ class PlayerClient : public Player
 	friend class Player;
 
 public:
-	PlayerClient(CSocket* pSocket, uint16_t pId);
+	PlayerClient(CSocket* pSocket, PlayerID pId);
 	virtual ~PlayerClient() {}
 	virtual void cleanup() override;
 

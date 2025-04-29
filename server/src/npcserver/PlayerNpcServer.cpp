@@ -14,7 +14,7 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerNpcServer::PlayerNpcServer(CSocket* pSocket, uint16_t pId)
+PlayerNpcServer::PlayerNpcServer(CSocket* pSocket, PlayerID pId)
 	: Player(pSocket, pId)
 {
 }

@@ -13,7 +13,7 @@ namespace preagonal
 class PlayerLogin : public Player
 {
 public:
-	PlayerLogin(CSocket* pSocket, uint16_t pId);
+	PlayerLogin(CSocket* pSocket, PlayerID pId);
 	virtual ~PlayerLogin() override;
 
 public:

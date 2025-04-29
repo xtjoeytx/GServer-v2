@@ -1,24 +1,14 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <map>
-#include <memory>
-#include <set>
-#include <time.h>
-#include <unordered_set>
-#include <unordered_map>
-#include <vector>
-#include <cstdint>
-#include <ranges>
-#include <optional>
-
 #include <CEncryption.h>
 #include <CFileQueue.h>
 #include <CSocket.h>
 #include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
-#include "BabyDI.h"
+
+#include "common.h"
 
 #include "Account.h"
 #include "player/PlayerProps.h"
@@ -36,7 +26,7 @@ class Level;
 class Map;
 class Weapon;
 
-constexpr uint16_t EXTERNALPLAYERID_INIT = 16000;
+constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
 
 enum class LevelItemType;
 
@@ -90,7 +80,7 @@ public:
 	virtual bool canSend() override;
 
 	// Constructor - Deconstructor
-	Player(CSocket* pSocket, uint16_t pId);
+	Player(CSocket* pSocket, PlayerID pId);
 	virtual ~Player();
 	virtual void cleanup();
 
@@ -105,7 +95,7 @@ public:
 
 	// Get Properties
 	CSocket* getSocket() { return m_playerSock; }
-	uint16_t getId() const;
+	PlayerID getId() const;
 	time_t getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
@@ -119,7 +109,7 @@ public:
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
-	void setId(uint16_t pId);
+	void setId(PlayerID pId);
 	void setLoaded(bool loaded) { this->m_loaded = loaded; }
 	void setServerName(CString& tmpServerName) { m_serverName = tmpServerName; }
 	void setChat(const CString& pChat);
@@ -182,7 +172,7 @@ public:
 	bool updatePMPlayers(CString& servername, CString& players);
 	bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
 	std::vector<CString> getPMServerList();
-	std::shared_ptr<Player> getExternalPlayer(const uint16_t id, bool includeRC = true) const;
+	std::shared_ptr<Player> getExternalPlayer(const PlayerID id, bool includeRC = true) const;
 	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 public:
@@ -267,7 +257,7 @@ protected:
 	CString m_recvBuffer;
 
 	// Variables
-	uint16_t m_id = 0;
+	PlayerID m_id = 0;
 	int m_type = PLTYPE_AWAIT;
 	int m_versionId = CLVER_UNKNOWN;
 	CString m_version;
@@ -304,10 +294,10 @@ template<typename T>
 concept DerivedFromPlayer = std::is_base_of_v<Player, T>;
 
 template<DerivedFromPlayer P>
-auto players_of_type(const std::unordered_map<uint16_t, PlayerPtr>& range)
+auto players_of_type(const std::unordered_map<PlayerID, PlayerPtr>& range)
 {
-	using oldpair = std::unordered_map<uint16_t, PlayerPtr>::value_type;
-	using newpair = std::pair<const uint16_t, std::shared_ptr<P>>;
+	using oldpair = std::unordered_map<PlayerID, PlayerPtr>::value_type;
+	using newpair = std::pair<const PlayerID, std::shared_ptr<P>>;
 	return range
 		| std::views::filter([](auto& kvp) { return dynamic_cast<P*>(kvp.second.get()) != nullptr; })
 		| std::views::transform([](auto& kvp) { return newpair(kvp.first, std::dynamic_pointer_cast<P>(kvp.second)); });
@@ -318,12 +308,12 @@ inline bool Player::isLoggedIn() const
 	return (m_type != PLTYPE_AWAIT && m_id > 0);
 }
 
-inline uint16_t Player::getId() const
+inline PlayerID Player::getId() const
 {
 	return m_id;
 }
 
-inline void Player::setId(uint16_t pId)
+inline void Player::setId(PlayerID pId)
 {
 	m_id = pId;
 }

@@ -2,16 +2,11 @@
 #define LEVEL_H
 
 #include <deque>
-#include <map>
-#include <memory>
-#include <optional>
-#include <set>
-#include <unordered_map>
-#include <vector>
 
 #include <CString.h>
 #include <IUtil.h>
-#include "BabyDI.h"
+
+#include "common.h"
 
 #include "level/LevelBaddy.h"
 #include "level/LevelBoardChange.h"
@@ -99,7 +94,7 @@ public:
 
 	//! Gets a vector full of the level npc ids.
 	//! \return The level npcs.
-	std::set<uint32_t>& getNPCs() { return m_npcs; }
+	std::set<NPCID>& getNPCs() { return m_npcs; }
 
 	//! Gets a vector full of the level signs.
 	//! \return The level signs.
@@ -131,7 +126,7 @@ public:
 
 	//! Gets a vector full of the players on the level.
 	//! \return The players on the level.
-	std::deque<uint16_t>& getPlayers() { return m_players; }
+	std::deque<PlayerID>& getPlayers() { return m_players; }
 
 	//! Gets the tile data for all layers.
 	//! \return A map of all the layers and their tile data.
@@ -213,22 +208,22 @@ public:
 	//! Adds a player to the level.
 	//! \param player The player to add.
 	//! \return The id number of the player in the level.
-	int addPlayer(uint16_t id);
+	int addPlayer(PlayerID id);
 
 	//! Removes a player from the level.
 	//! \param player The player to remove.
-	void removePlayer(uint16_t id);
+	void removePlayer(PlayerID id);
 
 	//! Gets if the player is the current level leader.
 	//! \param id The player id to check.
 	//! \return True if the player is the leader.
-	bool isPlayerLeader(uint16_t id);
+	bool isPlayerLeader(PlayerID id);
 
 	//! Adds an NPC to the level.
 	//! \param npc NPC to add to the level.
 	//! \return True if the NPC was successfully added or false if it already exists in the level.
 	bool addNPC(std::shared_ptr<NPC> npc);
-	bool addNPC(uint32_t npcId);
+	bool addNPC(NPCID npcId);
 
 	//! Adds a level link to the level.
 	//! \return A pointer to the new LevelLink.
@@ -273,7 +268,7 @@ public:
 	//! Removes an NPC from the level.
 	//! \param npc The NPC to remove.
 	void removeNPC(std::shared_ptr<NPC> npc);
-	void removeNPC(uint32_t npcId);
+	void removeNPC(NPCID npcId);
 
 	//! Sets the map for the current level.
 	//! \param pMap Map the level is on.
@@ -323,8 +318,8 @@ private:
 	std::vector<LevelItem> m_items;
 	std::vector<LevelLinkPtr> m_links;
 	std::vector<LevelSignPtr> m_signs;
-	std::set<uint32_t> m_npcs;
-	std::deque<uint16_t> m_players;
+	std::set<NPCID> m_npcs;
+	std::deque<PlayerID> m_players;
 };
 
 using LevelPtr = std::shared_ptr<Level>;

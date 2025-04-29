@@ -1,24 +1,17 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <chrono>
 #include <climits>
-#include <cstdint>
 #include <filesystem>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
 #include <thread>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
 
 #include <CSettings.h>
 #include <CSocket.h>
 #include <CString.h>
 #include <CTranslationManager.h>
 #include <IEnums.h>
+
+#include "common.h"
 
 #include "Account.h"
 #include "FileSystem.h"
@@ -98,8 +91,8 @@ enum class ServerGeneration
 // Player ids 16000 and up is used for players on other servers and "IRC"-channels.
 // The players from other servers should be unique lists for each player as they are fetched depending on
 // what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-constexpr uint16_t PLAYERID_INIT = 2;
-constexpr uint32_t NPCID_INIT = 10001;
+constexpr PlayerID PLAYERID_INIT = 2;
+constexpr NPCID NPCID_INIT = 10001;
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
 using PackageManager = ResourceManager<UpdatePackage, Server*>;
@@ -188,10 +181,10 @@ public:
 	FileSystem* getFileSystemByType(CString& type);
 	std::string getFlag(std::string_view flagName) const;
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
-	std::shared_ptr<NPC> getNPC(const uint32_t id) const;
+	std::shared_ptr<NPC> getNPC(const NPCID id) const;
 
-	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const uint16_t id, int type) const; // = PLTYPE_ANYCLIENT) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const; // = PLTYPE_ANYCLIENT) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
 /*
@@ -218,13 +211,13 @@ public:
 
 	// Packet sending.
 	using PlayerPredicate = std::function<bool(const Player*)>;
-	void sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude = {}) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude = {}) const;
+	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}) const;
+	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 
@@ -232,11 +225,11 @@ public:
 	void sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
 
 	// Player Management
-	bool addPlayer(std::shared_ptr<Player> player, uint16_t id = USHRT_MAX);
-	bool deletePlayer(std::shared_ptr<Player> player);
-	bool swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Player> new_player);
-	void playerLoggedIn(std::shared_ptr<Player> player);
-	bool warpPlayerToSafePlace(uint16_t playerId);
+	bool addPlayer(PlayerPtr player, PlayerID id = USHRT_MAX);
+	bool deletePlayer(PlayerPtr player);
+	bool swapPlayer(PlayerPtr old_player, PlayerPtr new_player);
+	void playerLoggedIn(PlayerPtr player);
+	bool warpPlayerToSafePlace(PlayerID playerId);
 
 	// Translation Management
 	bool TS_Load(const CString& pLanguage, const CString& pFileName);
@@ -254,16 +247,6 @@ public:
 	// NPC-Server Management
 	bool isNpcServerEnabled() const { return m_npcServerPlayer != nullptr; }
 	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
-
-	/*
-	 * GS2 Functionality
-	 */
-	/*
-	void compileGS2Script(const std::string& source, GS2ScriptManager::user_callback_type cb);
-	void compileGS2Script(NPC* npc, GS2ScriptManager::user_callback_type cb);
-	void compileGS2Script(Weapon* weapon, GS2ScriptManager::user_callback_type cb);
-	void compileGS2Script(ScriptClass* cls, GS2ScriptManager::user_callback_type cb);
-	*/
 
 	std::time_t getServerStartTime() const
 	{
@@ -284,16 +267,6 @@ public:
 	{
 		return m_shootParams;
 	}
-
-/*
-private:
-	GS2ScriptManager m_gs2ScriptManager;
-
-	template<typename ScriptObjType>
-	void compileScript(ScriptObjType& obj, GS2ScriptManager::user_callback_type& cb);
-
-	void handleGS2Errors(const std::vector<GS2CompilerError>& errors, const std::string& origin);
-*/
 
 public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
@@ -319,16 +292,16 @@ private:
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
 
 	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
-	std::unordered_map<uint32_t, std::shared_ptr<NPC>> m_npcList;
-	IdGenerator<uint32_t> m_npcIdGenerator{ NPCID_INIT };
+	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
+	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_INIT };
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
 	std::vector<std::shared_ptr<Level>> m_levelList;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
-	std::unordered_map<uint16_t, std::shared_ptr<Player>> m_playerList;
+	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
-	IdGenerator<uint16_t> m_playerIdGenerator{ PLAYERID_INIT };
+	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
 
 	ServerList m_serverlist;
 	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
@@ -352,7 +325,7 @@ private:
 #endif
 };
 
-inline std::shared_ptr<NPC> Server::getNPC(const uint32_t id) const
+inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 {
 	auto iter = m_npcList.find(id);
 	if (iter != std::end(m_npcList))
@@ -360,22 +333,6 @@ inline std::shared_ptr<NPC> Server::getNPC(const uint32_t id) const
 
 	return nullptr;
 }
-
-/*
-inline bool Server::hasClass(const std::string& className) const
-{
-	return m_classList.find(className) != m_classList.end();
-}
-
-inline ScriptClass* Server::getClass(const std::string& className) const
-{
-	auto classIter = m_classList.find(className);
-	if (classIter != m_classList.end())
-		return classIter->second.get();
-
-	return nullptr;
-}
-*/
 
 inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
 {
@@ -396,7 +353,7 @@ inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSen
 }
 
 template<class T>
-inline std::shared_ptr<T> Server::getPlayer(const uint16_t id) const
+inline std::shared_ptr<T> Server::getPlayer(const PlayerID id) const
 {
 	auto iter = m_playerList.find(id);
 	if (iter == std::end(m_playerList))
@@ -409,7 +366,7 @@ inline std::shared_ptr<T> Server::getPlayer(const uint16_t id) const
 }
 
 template<class T>
-inline std::shared_ptr<T> Server::getPlayer(const uint16_t id, int type) const
+inline std::shared_ptr<T> Server::getPlayer(const PlayerID id, int type) const
 {
 	auto player = getPlayer<T>(id);
 	if (player == nullptr || !(player->getType() & type))

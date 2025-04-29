@@ -1,7 +1,5 @@
 #include <atomic>
-#include <chrono>
 #include <functional>
-#include <thread>
 #include <format>
 
 #include <CString.h>
@@ -923,7 +921,7 @@ FileSystem* Server::getFileSystemByType(CString& type)
 std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers)
 {
 	// Get available NPC Id.
-	uint32_t newId = m_npcIdGenerator.getAvailableId();
+	NPCID newId = m_npcIdGenerator.getAvailableId();
 
 	// New Npc
 	auto newNPC = std::make_shared<NPC>(newId, type);
@@ -993,7 +991,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	return true;
 }
 
-bool Server::addPlayer(PlayerPtr player, uint16_t id)
+bool Server::addPlayer(PlayerPtr player, PlayerID id)
 {
 	assert(player);
 
@@ -1054,7 +1052,7 @@ void Server::playerLoggedIn(PlayerPtr player)
 	getServerList().addPlayer(player);
 }
 
-bool Server::warpPlayerToSafePlace(uint16_t playerId)
+bool Server::warpPlayerToSafePlace(PlayerID playerId)
 {
 	auto player = getPlayer<PlayerClient>(playerId);
 	if (player == nullptr) return false;
@@ -1164,7 +1162,7 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 	Packet-Sending Functions
 */
 
-void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude) const
 {
 	for (auto& [id, player]: m_playerList)
 	{
@@ -1177,7 +1175,7 @@ void Server::sendPacketToAll(const CString& packet, const std::set<uint16_t>& ex
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1214,7 +1212,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1256,7 +1254,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerCl
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1305,7 +1303,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerCl
 	}
 }
 
-void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1343,7 +1341,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	}
 }
 
-void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<uint16_t>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;
@@ -1385,7 +1383,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	}
 }
 
-void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<uint16_t>& exclude) const
+void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;

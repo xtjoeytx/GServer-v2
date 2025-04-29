@@ -796,7 +796,7 @@ void Player::setProps(CString& pPacket, uint8_t options, Player* rc)
 
 		case PLPROP_CARRYNPC:
 		{
-			uint32_t newNpcId = pPacket.readGUInt();
+			NPCID newNpcId = pPacket.readGUInt();
 
 			if (player == nullptr)
 				break;

@@ -28,7 +28,7 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerLogin::PlayerLogin(CSocket* pSocket, uint16_t pId)
+PlayerLogin::PlayerLogin(CSocket* pSocket, PlayerID pId)
 	: Player(pSocket, pId)
 {
 }

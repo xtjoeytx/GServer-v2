@@ -125,7 +125,7 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Player::Player(CSocket* pSocket, uint16_t pId)
+Player::Player(CSocket* pSocket, PlayerID pId)
 	: m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
 	m_server = BabyDI::Get<Server>();
@@ -953,10 +953,10 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
 	// Get the players this message was addressed to.
-	std::vector<uint16_t> pmPlayers;
+	std::vector<PlayerID> pmPlayers;
 	auto pmPlayerCount = pPacket.readGUShort();
 	for (auto i = 0; i < pmPlayerCount; ++i)
-		pmPlayers.push_back(static_cast<uint16_t>(pPacket.readGUShort()));
+		pmPlayers.push_back(static_cast<PlayerID>(pPacket.readGUShort()));
 
 	// Start constructing the message based on if it is a mass message or a private message.
 	CString pmMessageType("\"\",");

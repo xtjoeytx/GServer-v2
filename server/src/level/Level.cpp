@@ -325,7 +325,7 @@ bool Level::reload()
 	m_isSingleplayer = false;
 
 	// Remove all the players from the level.
-	std::deque<uint16_t> oldplayers = m_players;
+	std::deque<PlayerID> oldplayers = m_players;
 	for (auto& id: oldplayers)
 	{
 		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
@@ -1376,18 +1376,18 @@ LevelBaddy* Level::getBaddy(uint8_t id)
 	return iter->second.get();
 }
 
-int Level::addPlayer(uint16_t id)
+int Level::addPlayer(PlayerID id)
 {
 	m_players.push_back(id);
 	return static_cast<int>(m_players.size() - 1);
 }
 
-void Level::removePlayer(uint16_t id)
+void Level::removePlayer(PlayerID id)
 {
 	std::erase(m_players, id);
 }
 
-bool Level::isPlayerLeader(uint16_t id)
+bool Level::isPlayerLeader(PlayerID id)
 {
 	if (m_players.empty())
 		return false;
@@ -1409,7 +1409,7 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	return inserted;
 }
 
-bool Level::addNPC(uint32_t npcId)
+bool Level::addNPC(NPCID npcId)
 {
 	auto npc = m_server->getNPC(npcId);
 	return addNPC(npc);
@@ -1420,7 +1420,7 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 	m_npcs.erase(npc->id);
 }
 
-void Level::removeNPC(uint32_t npcId)
+void Level::removeNPC(NPCID npcId)
 {
 	m_npcs.erase(npcId);
 }

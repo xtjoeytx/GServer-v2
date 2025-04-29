@@ -1,13 +1,7 @@
 #ifndef NPCSERVER_H
 #define NPCSERVER_H
 
-#include <cstdint>
-#include <string>
-#include <string_view>
-#include <memory>
-#include <unordered_map>
-
-#include "BabyDI.h"
+#include "common.h"
 
 #include "npcserver/PlayerNpcServer.h"
 #include "scripting/ScriptSystem.h"
@@ -50,7 +44,7 @@ public:
 	[[inline]] std::shared_ptr<PlayerNpcServer> getPlayerNpcServer() const;
 
 public:
-	[[inline]] const std::unordered_map<uint32_t, std::weak_ptr<NPC>>& getGlobalNpcList() const noexcept;
+	[[inline]] const std::unordered_map<NPCID, std::weak_ptr<NPC>>& getGlobalNpcList() const noexcept;
 	[[inline]] const std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() const noexcept;
 
 public:
@@ -72,7 +66,7 @@ private:
 
 	std::chrono::high_resolution_clock::time_point m_lastUpdate;
 
-	std::unordered_map<uint32_t, std::weak_ptr<NPC>> m_globalNpcList;
+	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNpcList;
 	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
 };
 
@@ -86,7 +80,7 @@ inline std::shared_ptr<PlayerNpcServer> NPCServer::getPlayerNpcServer() const
 	return m_npcServerPlayer;
 }
 
-inline const std::unordered_map<uint32_t, std::weak_ptr<NPC>>& NPCServer::getGlobalNpcList() const noexcept
+inline const std::unordered_map<NPCID, std::weak_ptr<NPC>>& NPCServer::getGlobalNpcList() const noexcept
 {
 	return m_globalNpcList;
 }

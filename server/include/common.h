@@ -2,17 +2,17 @@
 #define COMMON_H
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
-#include <concepts>
+#include <map>
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <set>
 #include <string>
 #include <string_view>
-#include <map>
-#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>

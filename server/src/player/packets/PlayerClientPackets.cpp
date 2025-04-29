@@ -653,10 +653,10 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 
 	// Get the players this message was addressed to.
-	std::vector<uint16_t> pmPlayers;
+	std::vector<PlayerID> pmPlayers;
 	auto pmPlayerCount = pPacket.readGUShort();
 	for (auto i = 0; i < pmPlayerCount; ++i)
-		pmPlayers.push_back(static_cast<uint16_t>(pPacket.readGUShort()));
+		pmPlayers.push_back(static_cast<PlayerID>(pPacket.readGUShort()));
 
 	// Start constructing the message based on if it is a mass message or a private message.
 	CString pmMessageType("\"\",");

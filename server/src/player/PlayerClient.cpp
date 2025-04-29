@@ -118,7 +118,7 @@ HandlePacketResult PlayerClient::handlePacket(std::optional<uint8_t> id, CString
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerClient::PlayerClient(CSocket* pSocket, uint16_t pId)
+PlayerClient::PlayerClient(CSocket* pSocket, PlayerID pId)
 	: Player(pSocket, pId)
 {
 	m_lastMovement = m_lastSave = m_last1m = time(0);

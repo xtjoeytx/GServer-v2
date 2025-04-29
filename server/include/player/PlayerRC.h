@@ -59,7 +59,7 @@ constexpr std::array<PlayerPermissions, 10> ImportantFileRights = {
 class PlayerRC : public Player
 {
 public:
-	PlayerRC(CSocket* pSocket, uint16_t pId) : Player(pSocket, pId) {}
+	PlayerRC(CSocket* pSocket, PlayerID pId) : Player(pSocket, pId) {}
 	virtual ~PlayerRC() {}
 	virtual void cleanup() override;
 

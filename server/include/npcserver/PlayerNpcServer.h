@@ -13,7 +13,7 @@ namespace preagonal
 class PlayerNpcServer : public Player
 {
 public:
-	PlayerNpcServer(CSocket* pSocket, uint16_t pId);
+	PlayerNpcServer(CSocket* pSocket, PlayerID pId);
 	virtual ~PlayerNpcServer() override;
 
 public:

@@ -13,7 +13,7 @@ namespace preagonal
 class PlayerNC : public Player
 {
 public:
-	PlayerNC(CSocket* pSocket, uint16_t pId) : Player(pSocket, pId) {}
+	PlayerNC(CSocket* pSocket, PlayerID pId) : Player(pSocket, pId) {}
 	virtual ~PlayerNC() {}
 	//virtual void cleanup() override;
 
