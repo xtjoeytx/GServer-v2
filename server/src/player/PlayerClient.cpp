@@ -464,10 +464,9 @@ bool PlayerClient::sendLogin()
 	}
 
 	// Send the server's flags to the player.
-	auto& serverFlags = m_server->getServerFlags();
-	for (const auto& [flag, value] : serverFlags)
+	for (const auto& [flag, value] : m_server->Flags.container)
 	{
-		if (value.isEmpty())
+		if (value.empty())
 			sendPacket(CString() >> (char)PLO_FLAGSET << flag);
 		else
 			sendPacket(CString() >> (char)PLO_FLAGSET << flag << "=" << value);

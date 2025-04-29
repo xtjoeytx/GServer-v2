@@ -448,8 +448,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 	CString ret;
-	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->getServerFlags().size();
-	for (const auto& [flag, value] : m_server->getServerFlags())
+	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Flags.container.size();
+	for (const auto& [flag, value] : m_server->Flags.container)
 	{
 		CString flagString = CString() << flag << "=" << value;
 		ret >> (char)flagString.length() << flagString;
@@ -468,10 +468,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	unsigned short count = pPacket.readGUShort();
-	auto& serverFlags = m_server->getServerFlags();
+	auto& serverFlags = m_server->Flags.container;
 
 	// Save server flags.
-	std::unordered_map<std::string, CString> oldFlags = serverFlags;
+	auto oldFlags = serverFlags;
 
 	// Delete server flags.
 	serverFlags.clear();
@@ -503,7 +503,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		// If we didn't find a match, this is either a new flag, or a changed flag.
 		if (!found)
 		{
-			if (i->second.isEmpty())
+			if (i->second.empty())
 				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first);
 			else
 				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);

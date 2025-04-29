@@ -226,8 +226,6 @@ void Server::cleanup()
 	m_mapList.clear();
 	m_groupLevels.clear();
 
-	m_serverFlags.clear();
-
 	m_npcList.clear();
 	m_npcIdGenerator.resetAndSetNext(NPCID_INIT);
 
@@ -840,8 +838,8 @@ void Server::loadWordFilter()
 void Server::saveServerFlags()
 {
 	CString out;
-	for (auto& mServerFlag: m_serverFlags)
-		out << mServerFlag.first << "=" << mServerFlag.second << "\r\n";
+	for (auto& [flag, value] : Flags.container)
+		out << flag << "=" << value << "\r\n";
 	out.save(CString() << "serverflags.txt");
 }
 
@@ -898,9 +896,9 @@ std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 	return iter->second;
 }
 
-CString Server::getFlag(const std::string& pFlagName)
+std::string Server::getFlag(std::string_view flagName) const
 {
-	return m_serverFlags[pFlagName];
+	return Flags.get(flagName);
 }
 
 FileSystem* Server::getFileSystemByType(CString& type)
@@ -1116,10 +1114,8 @@ bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
 	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
-	std::unordered_map<std::string, CString>::iterator mServerFlag;
-	if ((mServerFlag = m_serverFlags.find(pFlagName)) != m_serverFlags.end())
+	if (Flags.remove(pFlagName))
 	{
-		m_serverFlags.erase(mServerFlag);
 		if (pSendToPlayers)
 			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
 		return true;
@@ -1140,25 +1136,27 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
-	// delete flag
+	// If the value is empty, we are deleting the flag.
 	if (pFlagValue.isEmpty())
 		return deleteFlag(pFlagName);
 
-	// optimize
-	if (m_serverFlags[pFlagName] == pFlagValue)
+	// Make sure it changed.
+	if (Flags.get(pFlagName) == pFlagValue)
 		return true;
 
-	// set flag
-	if (m_settings.getBool("cropflags", true))
-	{
-		int fixedLength = 223 - 1 - (int)pFlagName.length();
-		m_serverFlags[pFlagName] = pFlagValue.subString(0, fixedLength);
-	}
-	else
-		m_serverFlags[pFlagName] = pFlagValue;
+	std::string_view value{ pFlagValue.toStringView() };
 
+	// Check if we should crop the value.
+	if (m_settings.getBool("cropflags", true))
+		value = value.substr(0, std::max(0, 223 - 1 - (int)pFlagName.length()));
+
+	// Set the flag.
+	Flags.set(pFlagName, value);
+
+	// And share it.
 	if (pSendToPlayers)
-		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << value);
+
 	return true;
 }
 

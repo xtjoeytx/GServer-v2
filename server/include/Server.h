@@ -27,6 +27,7 @@
 #include "object/NPC.h"
 #include "misc/WordFilter.h"
 #include "utilities/CommandDispatcher.h"
+#include "utilities/FlagContainer.h"
 #include "utilities/IdGenerator.h"
 #include "utilities/Log.h"
 #include "utilities/StringUtils.h"
@@ -173,19 +174,19 @@ public:
 
 	//std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
 	//std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
-	std::unordered_map<std::string, CString>& getServerFlags() { return m_serverFlags; }
-	std::unordered_map<std::string, std::shared_ptr<Weapon>>& getWeaponList() { return m_weaponList; }
-	std::unordered_map<uint16_t, std::shared_ptr<Player>>& getPlayerList() { return m_playerList; }
-	std::unordered_map<uint32_t, std::shared_ptr<NPC>>& getNPCList() { return m_npcList; }
-	std::vector<std::shared_ptr<Level>>& getLevelList() { return m_levelList; }
-	const std::vector<std::shared_ptr<Map>>& getMapList() const { return m_mapList; }
-	const std::vector<CString>& getStatusList() const { return m_statusList; }
-	const std::vector<CString>& getAllowedVersions() const { return m_allowedVersions; }
-	std::unordered_multimap<std::string, std::weak_ptr<Level>>& getGroupLevels() { return m_groupLevels; }
+	auto& getWeaponList() { return m_weaponList; }
+	auto& getPlayerList() { return m_playerList; }
+	auto& getNPCList() { return m_npcList; }
+	auto& getLevelList() { return m_levelList; }
+	const auto& getMapList() const { return m_mapList; }
+	const auto& getStatusList() const { return m_statusList; }
+	const auto& getAllowedVersions() const { return m_allowedVersions; }
+	auto& getGroupLevels() { return m_groupLevels; }
+
 	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
 
 	FileSystem* getFileSystemByType(CString& type);
-	CString getFlag(const std::string& pFlagName);
+	std::string getFlag(std::string_view flagName) const;
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
 	std::shared_ptr<NPC> getNPC(const uint32_t id) const;
 
@@ -296,6 +297,7 @@ private:
 
 public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
+	FlagContainer Flags;
 
 private:
 	bool doTimedEvents();
@@ -316,12 +318,8 @@ private:
 
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
 
-	std::unordered_map<std::string, CString> m_serverFlags;
 	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
-	//std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
-
 	std::unordered_map<uint32_t, std::shared_ptr<NPC>> m_npcList;
-	//std::unordered_map<std::string, std::weak_ptr<NPC>> m_npcNameList;
 	IdGenerator<uint32_t> m_npcIdGenerator{ NPCID_INIT };
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
