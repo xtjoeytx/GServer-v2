@@ -1,9 +1,9 @@
 #include "Server.h"
+#include "level/Level.h"
 #include "object/NPC.h"
 #include "object/Player.h"
 #include "object/Weapon.h"
 #include "player/PlayerClient.h"
-#include "level/Level.h"
 #include "utilities/StringUtils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -16,6 +16,35 @@ namespace preagonal
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
 	auto& dispatcher = m_triggerActionDispatcher;
+
+	builder.registerCommand("serverside", [&](Player* player, std::vector<CString>& triggerData)
+	{
+		if (triggerData.size() > 1)
+		{
+			// TODO(NPCSERVER): Implement triggeraction serverside.
+			/*
+			auto weaponObject = this->getWeapon(triggerData[1].toString());
+			if (weaponObject != nullptr)
+				weaponObject->queueWeaponAction(player, utilities::retokenizeArray(triggerData, 2));
+			*/
+		}
+
+		return true;
+	});
+
+	builder.registerCommand("servernpc", [&](Player* player, std::vector<CString>& triggerData)
+	{
+		if (triggerData.size() > 2)
+		{
+			// TODO(NPCSERVER): Implement triggeraction servernpc.
+			/*
+			auto npcObject = this->getNPCByName(triggerData[1].toString());
+			if (npcObject != nullptr)
+			npcObject->queueNpcTrigger(triggerData[2].toString(), player, utilities::retokenizeArray(triggerData, 3));
+			*/
+		}
+		return true;
+	});
 
 	builder.registerCommand("gr.serverlist", [&](Player* player, std::vector<CString>& triggerData)
 	{

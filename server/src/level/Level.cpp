@@ -1292,6 +1292,7 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 
 bool Level::addItem(float pX, float pY, LevelItemType pItem)
 {
+	// TODO(NPCSERVER): Gralat NPC.
 	m_items.push_back(LevelItem(pX, pY, pItem));
 	return true;
 }

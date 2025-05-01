@@ -124,6 +124,10 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 {
+	// Don't accept if we have an npc-server.
+	if (m_server->isNpcServerEnabled())
+		return HandlePacketResult::Handled;
+
 	unsigned int npcId = pPacket.readGUInt();
 	CString npcProps = pPacket.readString("");
 
@@ -539,6 +543,10 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 {
+	// Don't accept if we have an npc-server.
+	if (m_server->isNpcServerEnabled())
+		return HandlePacketResult::Handled;
+
 	CSettings& settings = m_server->getSettings();
 
 	CString nimage = pPacket.readChars(pPacket.readGUChar());
@@ -561,6 +569,10 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_NPCDEL(CString& pPacket)
 {
+	// Don't accept if we have an npc-server.
+	if (m_server->isNpcServerEnabled())
+		return HandlePacketResult::Handled;
+
 	unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
@@ -736,6 +748,10 @@ HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 {
+	// Don't accept if we have an npc-server.
+	if (m_server->isNpcServerEnabled())
+		return HandlePacketResult::Handled;
+
 	unsigned char type = pPacket.readGUChar();
 
 	// Type 0 means it is a default weapon.

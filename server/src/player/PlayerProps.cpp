@@ -392,6 +392,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 {
 	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
 	auto level = player ? player->getLevel() : nullptr;
+	bool restrictedPropAllowed = !m_server->isNpcServerEnabled() || setBy == PropSetBy::SERVER;
 
 	PropSetResults result{ .resultPropIds = {prop} };
 	result.resultFlags.set(PropSetResults::sendToLevel, clientPropsSharedLocal[prop]);
@@ -423,11 +424,14 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		{
 			uint8_t newMaxPower = packet.readGUChar();
 
-			account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
-			account.character.hitpointsInHalves = newMaxPower * 2;
+			if (restrictedPropAllowed)
+			{
+				account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
+				account.character.hitpointsInHalves = newMaxPower * 2;
 
-			result.resultPropIds.push_back(PLPROP_CURPOWER);
-			result.resultFlags.set(PropSetResults::sendToSelf);
+				result.resultPropIds.push_back(PLPROP_CURPOWER);
+				result.resultFlags.set(PropSetResults::sendToSelf);
+			}
 			break;
 		}
 
@@ -442,7 +446,8 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		case PLPROP_RUPEESCOUNT:
 		{
 			unsigned int newGralatCount = std::min(packet.readGUInt(), 9999999u);
-			account.character.gralats = newGralatCount;
+			if (restrictedPropAllowed)
+				account.character.gralats = newGralatCount;
 			break;
 		}
 
@@ -457,7 +462,8 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		case PLPROP_GLOVEPOWER:
 		{
 			uint8_t newGlovePower = packet.readGUChar();
-			account.character.glovePower = PropLimits::apply(newGlovePower, PropLimits::MaxGlovePower);
+			if (restrictedPropAllowed)
+				account.character.glovePower = PropLimits::apply(newGlovePower, PropLimits::MaxGlovePower);
 			break;
 		}
 
@@ -488,7 +494,9 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				}
 			}
 
-			account.character.swordPower = sp;
+			if (restrictedPropAllowed)
+				account.character.swordPower = sp;
+
 			account.character.swordImage = PropLimits::apply(img, PropLimits::SwordImageLength);
 			break;
 		}
@@ -521,7 +529,9 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				}
 			}
 
-			account.character.shieldPower = sp;
+			if (restrictedPropAllowed)
+				account.character.shieldPower = sp;
+
 			account.character.shieldImage = PropLimits::apply(img, PropLimits::ShieldImageLength);
 			break;
 		}
@@ -736,8 +746,12 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		}
 
 		case PLPROP_CURLEVEL:
-			account.level = packet.readChars(packet.readGUChar()).toString();
+		{
+			std::string level = packet.readChars(packet.readGUChar()).toString();
+			if (restrictedPropAllowed)
+				account.level = level;
 			break;
+		}
 
 		case PLPROP_HORSEGIF:
 		{
@@ -821,7 +835,8 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		case PLPROP_MAGICPOINTS:
 		{
 			uint8_t newMP = packet.readGUChar();
-			account.character.mp = PropLimits::apply(newMP, PropLimits::MaxMP);
+			if (restrictedPropAllowed)
+				account.character.mp = PropLimits::apply(newMP, PropLimits::MaxMP);
 			break;
 		}
 
@@ -852,7 +867,8 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 		case PLPROP_ALIGNMENT:
 		{
 			uint8_t newAlignment = packet.readGUChar();
-			account.character.ap = std::min<uint8_t>(newAlignment, 100);
+			if (restrictedPropAllowed)
+				account.character.ap = std::min<uint8_t>(newAlignment, 100);
 			break;
 		}
 
