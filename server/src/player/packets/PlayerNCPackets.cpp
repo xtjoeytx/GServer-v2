@@ -295,7 +295,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		CString npcProps = CString() >> (char)NPCPROP_NAME << newNpc->getProp(NPCPROP_NAME) >> (char)NPCPROP_TYPE >> (char)npcType.length() << npcType >> (char)NPCPROP_CURLEVEL << newNpc->getProp(NPCPROP_CURLEVEL);
 
 		// NOTE: This can't be sent to other clients, so rather than assemble the same packet twice just set the scripter separately.
-		newNpc->setProps(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
+		newNpc->setPropsFromPacket(CString() >> (char)NPCPROP_SCRIPTER >> (char)npcScripter.length() << npcScripter << npcProps);
 
 		// Send packet to npc controls about new npc
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNpc->getId() << npcProps);

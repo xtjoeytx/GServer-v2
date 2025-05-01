@@ -13,6 +13,7 @@
 #include "Server.h"
 #include "ServerList.h"
 #include "object/Player.h"
+#include "player/PlayerClient.h"
 #include "utilities/Log.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -829,33 +830,43 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
-	auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER);
-	if (p)
+	if (auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER); p)
 	{
+		PropSetResults result;
 		switch (type)
 		{
 			case SVF_HEAD:
-				p->setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(shortName.length() + 100) << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				result = p->setProp(PLPROP_HEADGIF, CString() >> (char)(shortName.length() + 100) << shortName, PropSetBy::SERVER);
 				break;
 
 			case SVF_BODY:
-				p->setProps(CString() >> (char)PLPROP_BODYIMG >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				result = p->setProp(PLPROP_BODYIMG, CString() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 
 			case SVF_SWORD:
 			{
 				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				result = p->setProp(PLPROP_SWORDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 			}
 
 			case SVF_SHIELD:
 			{
 				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				p->setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				result = p->setProp(PLPROP_SHIELDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 			}
 		}
+
+		// Send the prop.
+		uint8_t propId = result.resultPropIds.front();
+		CString prop = p->getProp(propId);
+		if (result.resultFlags.test(PropSetResults::sendToAll))
+			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
+		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(PropSetResults::sendToLevel))
+			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player, { pid });
+		if (result.resultFlags.test(PropSetResults::sendToSelf))
+			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}
 }
 

@@ -527,7 +527,7 @@ void Player::exchangeMyPropsWithOthers()
 	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PLPROP_CURLEVEL << getProp(PLPROP_CURLEVEL) >> (char)PLPROP_PSTATUSMSG << getProp(PLPROP_PSTATUSMSG) >> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME) >> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
 
 	// Get our client props.
-	CString myClientProps = (isClient() ? getProps(loginPropsClientOthers) : getProps(loginPropsRC));
+	CString myClientProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << (isClient() ? getProps(loginPropsClientOthers) : getProps(loginPropsRC));
 
 	CString rcsOnline;
 	auto& playerList = m_server->getPlayerList();
@@ -703,7 +703,7 @@ void Player::setNick(CString pNickName, bool force)
 
 void Player::setChat(const CString& pChat)
 {
-	setProps(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+	setPropsFromPacket(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PropSetBy::SERVER);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -774,7 +774,7 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 	if (!account.hasWeapon(weapon->getName()))
 	{
 		account.weapons.push_back(weapon->getName());
-		if (m_id == -1) return true;
+		if (m_id == 0) return true;
 
 		// Send weapon.
 		sendPacket(weapon->getWeaponPacket(m_versionId));
@@ -802,7 +802,7 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 	// Remove the weapon.
 	if (std::erase(account.weapons, weapon->getName()) != 0)
 	{
-		if (m_id == -1) return true;
+		if (m_id == 0) return true;
 
 		// Send delete notice.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
@@ -913,7 +913,7 @@ int Player::getVersionIDByVersion(const CString& versionInput) const
 
 HandlePacketResult Player::msgPLI_PLAYERPROPS(CString& pPacket)
 {
-	setProps(pPacket, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD);
+	setPropsFromPacket(pPacket, PropSetBy::CLIENT);
 	return HandlePacketResult::Handled;
 }
 

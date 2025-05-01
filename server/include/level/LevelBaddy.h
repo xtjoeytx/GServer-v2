@@ -75,7 +75,7 @@ public:
 	std::vector<CString> getVerses() const { return m_verses; };
 
 	// set functions
-	void setProps(CString& pProps);
+	void setPropsFromPacket(CString& pProps);
 	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
 	void setId(const char pId) { m_id = pId; }
 

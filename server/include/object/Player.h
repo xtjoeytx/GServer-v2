@@ -120,9 +120,10 @@ public:
 	virtual bool getProp(CString& buffer, int pPropId) const;
 	CString getProps(const PropList& props) const;
 	CString getPropsRC();
-	void setProps(CString& pPacket, uint8_t options, Player* rc = 0);
-	void setPropsRC(CString& pPacket, Player* rc);
-	void sendProps(const PropList& props);
+	PropSetResults setProp(uint8_t prop, CString& packet, PropSetBy setBy = PropSetBy::CLIENT);
+	void setPropsFromPacket(CString& packet, PropSetBy setBy, Player* originator = nullptr);
+	void setPropsFromRC(CString& packet, Player* rc = nullptr);
+	void sendPropsToClient(const PropList& props);
 	void exchangeMyPropsWithOthers();
 
 	void deleteFlag(const std::string& pFlagName, bool sendToPlayer = false);

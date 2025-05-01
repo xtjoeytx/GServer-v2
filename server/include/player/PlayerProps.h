@@ -1,12 +1,15 @@
 #ifndef PLAYERPROPS_H
 #define PLAYERPROPS_H
 
-#include <array>
-#include <cstdint>
-#include <concepts>
 #include <algorithm>
+#include <array>
+#include <bitset>
+#include <concepts>
+#include <cstdint>
 
 #include "BabyDI.h"
+
+#include "utilities/inplace_vector.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -15,7 +18,7 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum PlayerProp : int
+enum PlayerProp : uint8_t
 {
 	PLPROP_NICKNAME = 0,
 	PLPROP_MAXPOWER = 1,
@@ -110,6 +113,35 @@ enum class PlayerListCategory : uint8_t
 	PLAYERLIST = 0b0000,
 	SERVERS    = 0b0001,
 	CHANNELS   = 0b0011,
+};
+
+// Used to control how properties are forwarded to clients.
+// A property that is set by the server is generally forwarded to the client, while a prop that is set by the client is not sent back.
+enum class PropSetBy
+{
+	CLIENT,
+	SERVER
+};
+
+struct PropSetResults
+{
+	// The props to send back out as the result of setting this prop.
+	std::inplace_vector<uint8_t, 3> resultPropIds;
+
+	// The results of the prop set.
+	std::bitset<4> resultFlags;
+
+	// Pass the prop changes to everybody.
+	static const size_t sendToAll = 0;
+
+	// Pass the prop changes to the level.
+	static const size_t sendToLevel = 1;
+
+	// Pass the prop changes to the player.
+	static const size_t sendToSelf = 2;
+
+	// If true, the prop was invalid, so we should stop processing more props.
+	static const size_t wasInvalid = 3;
 };
 
 struct PropLimits

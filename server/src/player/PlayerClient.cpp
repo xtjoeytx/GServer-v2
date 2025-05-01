@@ -171,7 +171,7 @@ void PlayerClient::doMain()
 		{
 			std::vector<CString> pack = m_grMovementPackets.tokenize("\n");
 			for (auto& i : pack)
-				setProps(i, PLSETPROPS_FORWARD);
+				setPropsFromPacket(i, PropSetBy::CLIENT);
 		}
 		m_grMovementPackets.clear(42);
 	}
@@ -222,7 +222,7 @@ bool PlayerClient::doTimedEvents()
 				if (account.character.ap < 100)
 				{
 					account.character.ap++;
-					setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)account.character.ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+					setPropsFromPacket(CString() >> (char)PLPROP_ALIGNMENT >> (char)account.character.ap, PropSetBy::SERVER);
 				}
 				if (account.character.ap < 20) account.apCounter = settings.getInt("aptime0", 30);
 				else if (account.character.ap < 40)
@@ -434,7 +434,7 @@ bool PlayerClient::sendLogin()
 	}
 
 	// Send the player his login props.
-	sendProps(loginPropsClientSelf);
+	sendPropsToClient(loginPropsClientSelf);
 
 	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
 	// So, just send them all the maps loaded into the server.
@@ -612,7 +612,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_NICKNAME >> (char)newName.length() << newName, PropSetBy::SERVER);
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");
@@ -647,7 +647,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_HEADGIF >> (char)(chatParse[1].length() + 100) << chatParse[1], PropSetBy::SERVER);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -665,7 +665,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 			return false;
 		}
 
@@ -694,7 +694,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_BODYIMG >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -712,7 +712,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(account.character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_SWORDPOWER >> (char)(account.character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 			return false;
 		}
 
@@ -741,7 +741,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SWORDPOWER >> (char)(account.character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_SWORDPOWER >> (char)(account.character.swordPower + 30) >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -759,7 +759,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(account.character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(account.character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 			return false;
 		}
 
@@ -788,7 +788,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (file.length() != 0)
-			setProps(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(account.character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_SHIELDPOWER >> (char)(account.character.shieldPower + 10) >> (char)chatParse[1].length() << chatParse[1], PropSetBy::SERVER);
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -802,7 +802,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (color != -1)
 		{
 			account.character.colors[0] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PropSetBy::SERVER);
 		}
 	}
 	else if (chatParse[0] == "setcoat" && chatParse.size() == 2 && setcolorsallowed)
@@ -815,7 +815,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (color != -1)
 		{
 			account.character.colors[1] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PropSetBy::SERVER);
 		}
 	}
 	else if (chatParse[0] == "setsleeves" && chatParse.size() == 2 && setcolorsallowed)
@@ -828,7 +828,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (color != -1)
 		{
 			account.character.colors[2] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PropSetBy::SERVER);
 		}
 	}
 	else if (chatParse[0] == "setshoes" && chatParse.size() == 2 && setcolorsallowed)
@@ -841,7 +841,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (color != -1)
 		{
 			account.character.colors[3] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PropSetBy::SERVER);
 		}
 	}
 	else if (chatParse[0] == "setbelt" && chatParse.size() == 2 && setcolorsallowed)
@@ -854,7 +854,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (color != -1)
 		{
 			account.character.colors[4] = color;
-			setProps(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], PropSetBy::SERVER);
 		}
 	}
 	else if (chatParse[0] == "warpto")
@@ -885,7 +885,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				return true;
 			}
 
-			setProps(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), PLSETPROPS_SETBYPLAYER | PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			setPropsFromPacket(CString() >> (char)PLPROP_X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PLPROP_Y >> (char)(strtofloat(chatParse[2]) * 2), PropSetBy::SERVER);
 		}
 		// To x/y level
 		else if (chatParse.size() == 4)
@@ -1059,7 +1059,7 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		setProps(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		setPropsFromPacket(CString() >> (char)PLPROP_X >> (char)(pX * 2) >> (char)PLPROP_Y >> (char)(pY * 2), PropSetBy::SERVER);
 		return true;
 	}
 
@@ -1228,7 +1228,7 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 	{
 		account.character.ap = 99;
 		account.apCounter = 1;
-		setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)account.character.ap, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		setPropsFromPacket(CString() >> (char)PLPROP_ALIGNMENT >> (char)account.character.ap, PropSetBy::SERVER);
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
@@ -1242,7 +1242,6 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 
 		player->sendPacket(minimap);
 	}
-	//m_server->sendPacketToAll(this->getProps(0, 0) >> (char)PLPROP_CURLEVEL << this->getProp(PLPROP_CURLEVEL) >> (char)PLPROP_X << this->getProp(PLPROP_X) >> (char)PLPROP_Y << this->getProp(PLPROP_Y), this);
 
 	return true;
 }
@@ -1342,7 +1341,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	if (!pLevel->isSingleplayer())
 	{
 		// Send my props.
-		m_server->sendPacketToLevelArea(this->getProps(loginPropsClientOthers), self(), {m_id});
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << this->getProps(loginPropsClientOthers), self(), {m_id});
 
 		// Get other player props.
 		if (auto map = m_pmap.lock(); map)
@@ -1362,7 +1361,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 				// Check if they are nearby before sending the packet.
 				auto ogmap{ other->getMapPosition() };
 				if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-					this->sendPacket(other->getProps(loginPropsClientOthers));
+					this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)other->getId() << other->getProps(loginPropsClientOthers));
 			}
 		}
 		else
@@ -1371,7 +1370,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			{
 				if (m_id == otherid) continue;
 				auto other = m_server->getPlayer(otherid);
-				this->sendPacket(other->getProps(loginPropsClientOthers));
+				this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)other->getId() << other->getProps(loginPropsClientOthers));
 			}
 		}
 	}
@@ -1443,14 +1442,14 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)
 	{
-		m_server->sendPacketToLevelArea(getProps(loginPropsClientOthers), self(), {m_id});
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getProps(loginPropsClientOthers), self(), {m_id});
 
 		for (auto id : pLevel->getPlayers())
 		{
 			if (id == getId()) continue;
 
 			auto player = m_server->getPlayer(id);
-			this->sendPacket(player->getProps(loginPropsClientOthers));
+			this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << player->getProps(loginPropsClientOthers));
 		}
 	}
 

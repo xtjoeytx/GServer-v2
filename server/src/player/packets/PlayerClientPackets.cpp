@@ -240,7 +240,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setProps(CString() << LevelItem::getItemPlayerProp(item, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+		this->setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(item, this), PropSetBy::SERVER);
 
 	return HandlePacketResult::Handled;
 }
@@ -287,19 +287,19 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		tLoseDeviation = clip(tLoseDeviation, 50.0f, 350.0f);
 
 		// Update the Ratings.
-		// setProps will cause it to grab the new rating and send it to everybody in the level.
-		// Therefore, just pass a dummy value.  setProps doesn't alter your rating for packet hacking reasons.
+		// setPropsFromPacket will cause it to grab the new rating and send it to everybody in the level.
+		// Therefore, just pass a dummy value.  setPropsFromPacket doesn't alter your rating for packet hacking reasons.
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
 			account.eloRating = tLoseRating;
 			account.eloDeviation = tLoseDeviation;
-			this->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			this->setPropsFromPacket(CString() >> (char)PLPROP_RATING >> (int)0, PropSetBy::SERVER);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			killer->account.eloRating = tWinRating;
 			killer->account.eloRating = tWinDeviation;
-			killer->setProps(CString() >> (char)PLPROP_RATING >> (int)0, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+			killer->setPropsFromPacket(CString() >> (char)PLPROP_RATING >> (int)0, PropSetBy::SERVER);
 		}
 		this->account.lastSparTime = std::chrono::system_clock::now();
 		killer->account.lastSparTime = std::chrono::system_clock::now();
@@ -326,7 +326,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (account.character.ap / 20));
 				if (oAp < 0) oAp = 0;
 				killer->account.apCounter = (oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4]))));
-				killer->setProps(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				killer->setPropsFromPacket(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PropSetBy::SERVER);
 			}
 		}
 	}
@@ -352,7 +352,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 
 	// Set the props and send to everybody in the level, except the leader.
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, level, { leaderId });
-	baddy->setProps(props);
+	baddy->setPropsFromPacket(props);
 	return HandlePacketResult::Handled;
 }
 
@@ -389,7 +389,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 
 	// Set the baddy props.
 	baddy->setRespawn(false);
-	baddy->setProps(CString() >> (char)BDPROP_POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
+	baddy->setPropsFromPacket(CString() >> (char)BDPROP_POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
 
 	// Send the props to everybody in the level.
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), level);
@@ -527,7 +527,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 			if (!account.hasChest(levelName, cX, cY))
 			{
 				LevelItemType chestItem = chest.value()->getItemIndex();
-				setProps(CString() << LevelItem::getItemPlayerProp(chestItem, this), PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), PropSetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				account.savedChests.insert(std::make_pair(levelName, std::make_pair(cX, cY)));
 			}
@@ -1100,7 +1100,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setProps(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+						setPropsFromPacket(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, PropSetBy::SERVER);
 					}
 				}
 			}
@@ -1111,7 +1111,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setProps(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PLSETPROPS_FORWARD | PLSETPROPS_FORWARDSELF);
+					setPropsFromPacket(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PropSetBy::SERVER);
 				}
 			}
 		}

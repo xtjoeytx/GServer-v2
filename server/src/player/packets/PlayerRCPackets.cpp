@@ -336,7 +336,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	p->setPropsRC(pPacket, this);
+	p->setPropsFromRC(pPacket, this);
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	log::printLine(log::rc, "{} set the attributes of player {}", account.name, p->account.name);
@@ -761,7 +761,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	p->setPropsRC(pPacket, this);
+	p->setPropsFromRC(pPacket, this);
 	m_server->getAccountLoader().saveAccount(p->account);
 	log::printLine(log::rc, "{} set the attributes of player {}", account.name, p->account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " set the attributes of player " << p->account.name);

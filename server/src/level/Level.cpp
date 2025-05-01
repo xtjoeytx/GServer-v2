@@ -575,7 +575,7 @@ bool Level::loadZelda(const CString& pLevelName)
 				CString props;
 				for (char j = 0; j < (char)bverse.size(); ++j)
 					props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
-				if (props.length() != 0) baddy->setProps(props);
+				if (props.length() != 0) baddy->setPropsFromPacket(props);
 			}
 		}
 	}
@@ -757,7 +757,7 @@ bool Level::loadGraal(const CString& pLevelName)
 			CString props;
 			for (char j = 0; j < (char)bverse.size(); ++j)
 				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
-			if (props.length() != 0) baddy->setProps(props);
+			if (props.length() != 0) baddy->setPropsFromPacket(props);
 		}
 	}
 
@@ -988,7 +988,7 @@ bool Level::loadNW(const CString& pLevelName)
 			CString props;
 			for (char j = 0; j < (char)bverse.size(); ++j)
 				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
-			if (props.length() != 0) baddy->setProps(props);
+			if (props.length() != 0) baddy->setPropsFromPacket(props);
 		}
 		if (i == fileData.end()) break;
 	}
@@ -1500,7 +1500,7 @@ bool Level::doTimedEvents()
 				{
 					// Unset the hurt mode on the baddy.
 					CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_SWAMPSHOT;
-					baddy->setProps(props);
+					baddy->setPropsFromPacket(props);
 					for (unsigned int i = 1; i < m_players.size(); ++i)
 					{
 						auto player = m_server->getPlayer(m_players[i]);
@@ -1537,7 +1537,7 @@ bool Level::doTimedEvents()
 		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
 		for (auto& baddy: set_dead)
 		{
-			baddy->setProps(props);
+			baddy->setPropsFromPacket(props);
 		}
 	}
 

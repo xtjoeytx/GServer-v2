@@ -137,7 +137,7 @@ CString LevelBaddy::getProps(int clientVersion) const
 	return retVal;
 }
 
-void LevelBaddy::setProps(CString& pProps)
+void LevelBaddy::setPropsFromPacket(CString& pProps)
 {
 	int len = 0;
 	while (pProps.bytesLeft())

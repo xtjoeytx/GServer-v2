@@ -251,7 +251,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 				npc->character.pixelX += dx * 16;
 				npc->character.pixelY += dy * 16;
-				//npc->setProps(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
+				//npc->setPropsFromPacket(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
 			}
 		}
 
