@@ -62,7 +62,12 @@ struct FlagContainer
 
 	bool remove(std::string_view flag)
 	{
-		return container.erase(flag) != 0;
+		if (auto it = container.find(flag); it != container.end())
+		{
+			container.erase(it);
+			return true;
+		}
+		return false;
 	}
 
 	void clear()
