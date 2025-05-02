@@ -19,83 +19,96 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.27)
 
-# Make it easier for Windows users to get the required packages.
-# This needs to go before the project() call.
-if(WIN32)
-	set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-	set(VCPKG_TARGET_TRIPLET "x64-windows-static")
+# Add custom CMake modules path for external dependencies.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
+
+# Includes.
+include(FetchContent)
+include(utility)
+
+# Set build type.
+set(default_build_type "MinSizeRel")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+	message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+	set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+		STRING "Choose the type of build." FORCE)
+
+	# Set the possible values of build type for cmake-gui
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+		"Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-project(GS2Emu VERSION 3.0.9 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
+# Enable Hot Reload for MSVC compilers if supported.
+if(POLICY CMP0141)
+	set(CMAKE_POLICY_DEFAULT_CMP0141 NEW)	# CMP0141: MSVC debug information format.
+	set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
+endif()
 
-set(CMAKE_DEBUG_POSTFIX _d)
+# Policies.
+set(CMAKE_POLICY_DEFAULT_CMP0054 NEW)	# CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
+set(CMAKE_POLICY_DEFAULT_CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)	# CMP0077: option() honors normal variables.
+set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
 
-set(BIN_DIR "bin" CACHE STRING "Binary output directory")
+# Get submodules.
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+	# Update submodules as needed
+    option(GIT_SUBMODULE "Check submodules during build" ON)
+    if (GIT_SUBMODULE)
+        message(STATUS "Submodule update")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if (NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+        endif()
+    endif()
+endif()
 
-# specify the C++ standard
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+# vcpkg configuration.
+set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "vcpkg triplet")
+set(VCPKG_INSTALLED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
-set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
+# GS2 project.
+project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
 
-
-# Second, for multi-config builds (e.g. msvc)
-foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-	string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-	set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/lib )
-	set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/lib )
-	set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_SOURCE_DIR}/${BIN_DIR} )
-endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
-
-link_directories(${PROJECT_SOURCE_DIR}/lib)
-
-# Adhere to GNU filesystem layout conventions
-include(GNUInstallDirs)
-
-# Lowercase project name for binaries and packaging
+# Lowercase project name for binaries and packaging.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
-# Additional CMake modules
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+# Adhere to GNU filesystem layout conventions.
+include(GNUInstallDirs)
 
-# Version number in format X.YY.ZZ
-string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
-list(GET VERSION_LIST 0 VER_X)
-list(GET VERSION_LIST 1 VER_Y)
-list(GET VERSION_LIST 2 VER_Z)
-set(VER_EXTRA "-beta" CACHE STRING "Extra version")
+# Debug build postfix.
+set(CMAKE_DEBUG_POSTFIX _d)
+set(BUILD_SHARED_LIBS OFF)
 
-# Build date Information
-string(TIMESTAMP VER_YEAR "%Y")
-string(TIMESTAMP VER_MONTH "%m")
-string(TIMESTAMP VER_DAY "%d")
-string(TIMESTAMP VER_HOUR "%H")
-string(TIMESTAMP VER_MINUTE "%M")
+# Directories.
+set(CMAKE_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
+set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
 
-set(VER_EXTRA "${VER_EXTRA} (${VER_YEAR}-${VER_MONTH}-${VER_DAY} ${VER_HOUR}:${VER_MINUTE})")
+# Dependency and FetchContent setup.
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+set(DEPENDENCY_DIRECTORY "${PROJECT_SOURCE_DIR}/dependencies")
+set(FETCHCONTENT_BASE_DIR "${DEPENDENCY_DIRECTORY}/fc")
+set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 
+# System defines.
+if(MSVC)
+	add_compile_definitions(UNICODE)
+endif()
 
-set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}${VER_EXTRA}")
+# Generate the IConfig.h file.
+generate_iconfig()
 
-set(APP_CREDITS "Joey, Nalin, Codr, and Cadavre")
-set(APP_VENDOR "OpenGraal")
-
-STRING(REGEX REPLACE " " "-" VER_CPACK ${VER_FULL})
-STRING(REGEX REPLACE "[\(]" "" VER_CPACK ${VER_CPACK})
-STRING(REGEX REPLACE "[\)]" "" VER_CPACK ${VER_CPACK})
-STRING(REGEX REPLACE "(-[0-9]+:[0-9]+)" "" VER_CPACK ${VER_CPACK})
-
-# Generate version header from the above
-configure_file(
-		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
-		${PROJECT_BINARY_DIR}/server/include/IConfig.h
-)
-
+# Static runtime.
 option(STATIC "Compile as a static runtime." ON)
 if(STATIC)
 	message("Compile as static runtime")
@@ -106,32 +119,19 @@ else()
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 endif()
 
-option(UPNP "Compile with UPNP support" OFF)
-if(UPNP)
-	message("Enabling UPNP support")
-	add_definitions(-DUPNP)
-else()
-	message("Disabling UPNP support")
-endif()
-
-# Packaging
+# Packaging.
 if(APPLE)
 	set(CPACK_GENERATOR DragNDrop)
 	set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} ${VER_FULL}")
-	set(
-			CPACK_DMG_DS_STORE_SETUP_SCRIPT
-			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt
-	)
-	set(
-			CPACK_DMG_BACKGROUND_IMAGE
-			${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif
-	)
+	set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt)
+	set(CPACK_DMG_BACKGROUND_IMAGE ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif)
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP")
 else()
 	set(CPACK_GENERATOR TGZ)
 endif()
 
+# More packaging.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
 set(CPACK_PACKAGE_VENDOR "OpenGraal Team")
 set(CPACK_PACKAGE_CONTACT "opengraal")
@@ -148,144 +148,27 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
-# Generate version header from the above
-configure_file(
-		${PROJECT_SOURCE_DIR}/server/include/IConfig.h.in
-		${PROJECT_BINARY_DIR}/server/include/IConfig.h
-)
-
-if(APPLE)
-	set(MAKE_TESTS OFF)
-	# Set variables for generating the Info.plist file
-	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VER_FULL}")
-	set(MACOSX_BUNDLE_EXECUTABLE ${PROJECT_NAME})
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.OpenGraal.GS2Emu")
-	set(MACOSX_BUNDLE_NSMAIN_NIB_FILE "Application")
-	set(MACOSX_BUNDLE_ICON_FILE "carton")
-	set(MACOSX_BUNDLE_NAME ${PROJECT_NAME})
-	set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VER_FULL}")
-elseif(WIN32)
-	set(MAKE_TESTS OFF)
-	# Visual C++ Compiler options
-	if(MSVC)
-		set(MAKE_TESTS ON)
-
-		# Suppress secure string function warnings
-		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-
-		# Supress fmtlib warnings
-		add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
-
-		include(CheckCXXCompilerFlag)
-		CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
-		if (_cpp_latest_flag_supported)
-			set(CMAKE_CXX_STANDARD 23)
-			#add_compile_options("/std:c++latest")
-			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")
-		endif()
-
-		# Enable parallel compilation
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-
-		# Enable preprocessor conformance mode.
-		string(APPEND CMAKE_CXX_FLAGS " /Zc:preprocessor")
-
-		# Enable static linkage of the Microsoft Visual C/C++ Runtime
-		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
-		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
-		set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} /MTd")
-		set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} /MT")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-		set(
-				CMAKE_CXX_FLAGS_RELWITHDEBINFO
-				"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
-		)
-		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
-		cmake_policy(SET CMP0043 NEW)
-
-		# hack to fix clion + msvc together
-		#if (CLIONHAX)
-			set(CompilerFlags
-					CMAKE_CXX_FLAGS
-					CMAKE_CXX_FLAGS_DEBUG
-					CMAKE_CXX_FLAGS_RELEASE
-					CMAKE_C_FLAGS
-					CMAKE_C_FLAGS_DEBUG
-					CMAKE_C_FLAGS_RELEASE
-					)
-			foreach(CompilerFlag ${CompilerFlags})
-				string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-			endforeach()
-		#endif()
-	endif()
-
-	if( MINGW )
-		add_definitions(-D__STDC_FORMAT_MACROS)
-		add_definitions(-D__USE_MINGW_ANSI_STDIO=1 -D_BSD_SOURCE=1)
-		add_compile_options(-Wno-deprecated-declarations)
-	endif()
-
-	# Prevent Windows.h from clashing with the Standard Template Library so we
-	# can use std::min/std::max (see https://support.microsoft.com/kb/143208)
-	add_definitions(-DNOMINMAX)
-else()
-	set(MAKE_TESTS ON)
-	if(STATIC)
-		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
-	endif()
-
-	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1 -DNDEBUG=1 -DENABLE_SCRIPTENV_DEBUG=1)
-	add_compile_options(-Wno-error -Wno-dev)
-endif()
-
-# Prefer static linkage
-if(STATIC)
-	set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-endif()
-
-if(UPNP)
-	find_package(Miniupnpc)
-
-	if(NOT MINIUPNPC_FOUND)
-		message("MiniUPNPC not found in system. Compiling it ourselves.")
-
-		if(STATIC)
-			add_definitions(-DMINIUPNP_STATICLIB)
-			set(UPNPC_BUILD_STATIC TRUE CACHE BOOL "-" FORCE)
-			set(UPNPC_BUILD_SHARED FALSE CACHE BOOL "-" FORCE)
-		else()
-			set(UPNPC_BUILD_STATIC FALSE CACHE BOOL "-" FORCE)
-			set(UPNPC_BUILD_SHARED TRUE CACHE BOOL "-" FORCE)
-		endif()
-
-		set(UPNPC_BUILD_TESTS FALSE CACHE BOOL "-" FORCE)
-		set(UPNPC_BUILD_SAMPLE FALSE CACHE BOOL "-" FORCE)
-		set(NO_GETADDRINFO FALSE CACHE BOOL "-" FORCE)
-		set(UPNPC_NO_INSTALL TRUE CACHE BOOL "-" FORCE)
-
-		add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc EXCLUDE_FROM_ALL)
-	endif()
-endif()
-
+# Dependency: Threads.
 if(NOT WIN32)
+	# Prefer static linkage.
+	if(STATIC)
+		set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+		set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	endif()
+
 	find_package(Threads REQUIRED)
+
+	# Restore library suffixes.
+	if(STATIC)
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
+	endif()
 endif()
 
-# Restore library suffixes
-if(STATIC)
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
-endif()
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2lib EXCLUDE_FROM_ALL)
+# Fetch.
 add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
 
+# Server.
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 
-enable_testing()
-add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
-
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

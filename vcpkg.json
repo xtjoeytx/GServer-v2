@@ -1,8 +1,8 @@
 {
-	"features": {
-		"npcserver": {
-			"description": "Dependencies for the npc-server",
-			"dependencies": [ "openssl" ]
-		}
-	}
+  "dependencies": [
+    "antlr4",
+    "bzip2",
+    "miniupnpc",
+    "zlib"
+  ]
 }

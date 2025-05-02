@@ -1,5 +1,5 @@
 def notify(status){
-	emailext (
+	emailext(
 		body: '$DEFAULT_CONTENT',
 		recipientProviders: [
 			[$class: 'CulpritsRecipientProvider'],
@@ -36,6 +36,7 @@ def killall_jobs() {
 	if (killnums != "") {
 		discordSend description: "in favor of #${buildnum}, ignore following failed builds for ${killnums}", footer: "", link: env.BUILD_URL, result: "ABORTED", title: "[${split_job_name[0]}] Killing task(s) ${fixed_job_name} ${killnums}", webhookURL: env.GS2EMU_WEBHOOK;
 	}
+
 	echo "Done killing"
 }
 
@@ -64,7 +65,7 @@ def buildStepDocker(config) {
 			PUSH_ARTIFACT = BUILD_NEXT.equals('both');
 		}
 
-		if(env.TAG_NAME) {
+		if (env.TAG_NAME) {
 			sh(returnStdout: true, script: "echo '```' > RELEASE_DESCRIPTION.txt");
 			env.RELEASE_DESCRIPTION = sh(returnStdout: true, script: "git tag -l --format='%(contents)' ${env.TAG_NAME} >> RELEASE_DESCRIPTION.txt");
 			sh(returnStdout: true, script: "echo '```' >> RELEASE_DESCRIPTION.txt");
@@ -93,7 +94,7 @@ def buildStepDocker(config) {
 				customImage = docker.build("${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", "--build-arg BUILDENV=${buildenv} ${EXTRA_VER} ${BUILDENV} --network=host --pull -f ${DOCKERFILE} .");
 			}
 
-			def archive_date = sh (
+			def archive_date = sh(
 				script: 'date +"-%Y%m%d-%H%M"',
 				returnStdout: true
 			).trim();
@@ -112,7 +113,7 @@ def buildStepDocker(config) {
 			if (RUN_TESTS) {
 				stage("Run tests...") {
 					customImage.inside("") {
-						try{
+						try {
 							sh "cd /tmp/gserver/build && ctest -T test --no-compress-output --output-on-failure"
 						} catch(err) {
 							currentBuild.result = 'FAILURE'
@@ -161,11 +162,11 @@ def buildStepDocker(config) {
 							discordSend description: "Docker Image: ${DOCKER_ROOT}/${DOCKERIMAGE}:${tag}", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Artifact Successful: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK;
 						}
 					}
+
 					def dockerImageRef = docker.image("amigadev/docker-base:latest");
 					dockerImageRef.pull();
 
 					dockerImageRef.inside("") {
-
 						stage("Github Release") {
 							withCredentials([string(credentialsId: 'PREAGONAL_GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
 								dir("./dist") {
@@ -179,19 +180,17 @@ def buildStepDocker(config) {
 											release_type_tag = 'nightly';
 										}
 
-
 										if (!env.TAG_NAME) {
 											sh(returnStdout: true, script: "echo -e '${release_type_tag} releases' > ../RELEASE_DESCRIPTION.txt");
 										}
 
 										def files = sh(returnStdout: true, script: 'find . -name "*.zip" -o -name "*.tar.gz"');
-										files = sh (script: "basename ${files}",returnStdout:true).trim()
+										files = sh(script: "basename ${files}",returnStdout:true).trim()
 
 										try {
 											sh "cat ../RELEASE_DESCRIPTION.txt | github-release release --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"GS2Emu ${release_type_tag}\" ${pre_release} --description -"
-										} catch(err) {
+										} catch(err) {}
 
-										}
 										sh "github-release upload --user xtjoeytx --repo GServer-v2 --tag ${release_type_tag} --name \"${files}\" --file ${files} --replace"
 									}
 								}
@@ -207,7 +206,6 @@ def buildStepDocker(config) {
 		currentBuild.result = 'FAILURE'
 
 		discordSend description: "", footer: "", link: env.BUILD_URL, result: currentBuild.currentResult, title: "[${split_job_name[0]}] Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}", webhookURL: env.GS2EMU_WEBHOOK
-
 		notify("Build Failed: ${fixed_job_name} #${env.BUILD_NUMBER}")
 		throw err
 	}
@@ -219,7 +217,7 @@ node('master') {
 	def fixed_job_name = split_job_name[1].replace('%2F',' ');
 	checkout(scm);
 
-	env.COMMIT_MSG = sh (
+	env.COMMIT_MSG = sh(
 		script: 'git log -1 --pretty=%B ${GIT_COMMIT}',
 		returnStdout: true
 	).trim();
