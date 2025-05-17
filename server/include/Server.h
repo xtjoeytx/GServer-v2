@@ -86,13 +86,14 @@ enum class ServerGeneration
 	MODERN
 };
 
-// Player ids 0 and 1 break things.  NPC id 0 breaks things.
-// Don't allow anything to have one of those ids.
+// Player ids 0 and 1 break things.
+// NPC ids under 1000 can't be deleted, so start there.
 // Player ids 16000 and up is used for players on other servers and "IRC"-channels.
 // The players from other servers should be unique lists for each player as they are fetched depending on
 // what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 constexpr PlayerID PLAYERID_INIT = 2;
-constexpr NPCID NPCID_INIT = 10001;
+constexpr NPCID NPCID_INIT = 1000;
+constexpr NPCID NPCID_DATABASE_START = 10000;
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
 using PackageManager = ResourceManager<UpdatePackage, Server*>;
