@@ -1021,7 +1021,7 @@ bool Server::deletePlayer(PlayerPtr player)
 	return true;
 }
 
-bool Server::swapPlayer(std::shared_ptr<Player> old_player, std::shared_ptr<Player> new_player)
+bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 {
 	if (old_player == nullptr || new_player == nullptr)
 		return false;

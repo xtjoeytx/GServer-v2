@@ -5,13 +5,14 @@
 
 #include <IEnums.h>
 
-#include "Server.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "player/PlayerClient.h"
-#include "level/tiletypes.h"
-#include "level/Level.h"
-#include "level/Map.h"
+#include <Server.h>
+#include <level/tiletypes.h>
+#include <level/Level.h>
+#include <level/Map.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <player/PlayerClient.h>
+#include <scripting/ScriptTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -228,10 +229,10 @@ CString Level::getNpcsPacket(time_t time, int clientVersion)
 
 		retVal >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket(time, clientVersion) << "\n";
 
-		if (clientVersion >= CLVER_4_0211 && npc->getScript().getClientByteCode() != nullptr)
+		if (clientVersion >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
-			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode()->data()), npc->getScript().getClientByteCode()->size());
+			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
 			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
 				byteCodePacket << "\n";
 
@@ -1418,12 +1419,16 @@ bool Level::addNPC(NPCID npcId)
 
 void Level::removeNPC(std::shared_ptr<NPC> npc)
 {
+	if (npc == nullptr)
+		return;
+
 	m_npcs.erase(npc->id);
 }
 
 void Level::removeNPC(NPCID npcId)
 {
-	m_npcs.erase(npcId);
+	auto npc = m_server->getNPC(npcId);
+	removeNPC(npc);
 }
 
 void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)

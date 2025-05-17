@@ -8,7 +8,9 @@
 #include <vector>
 #include <utility>
 
-#include "utilities/StringUtils.h"
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,21 +47,18 @@ public:
 	[[inline]] const std::string& getModifiedSource() const noexcept;
 	[[inline]] std::string_view getClientSide() const noexcept;
 	[[inline]] std::string_view getServerSide() const noexcept;
-	[[inline]] ScriptByteCodePtr getClientByteCode() const noexcept;
-	[[inline]] ScriptByteCodePtr getServerByteCode() const noexcept;
+	const ScriptByteCode& getClientByteCode() const noexcept;
 
 public:
 	[[inline]] void setModifiedSource(const std::string& source) noexcept;
-	[[inline]] void setClientByteCode(ScriptByteCodePtr bytecode) noexcept;
-	[[inline]] void setServerByteCode(ScriptByteCodePtr bytecode) noexcept;
+	[[inline]] void setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
+	[[inline]] void setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
-	[[inline]] void addClientJoinedClasses(const std::set<std::string>& classes) noexcept;
-	[[inline]] void addServerJoinedClasses(const std::set<std::string>& classes) noexcept;
-	[[inline]] const std::set<std::string>& getClientJoinedClasses() const noexcept;
-	[[inline]] const std::set<std::string>& getServerJoinedClasses() const noexcept;
+	void executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables);
+	void executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables);
 
-public:
+private:
 	static std::string minify(const std::string& src) noexcept;
 
 private:
@@ -67,10 +66,8 @@ private:
 	std::string m_modified_source;
 	std::string_view m_clientside;
 	std::string_view m_serverside;
-	ScriptByteCodePtr m_client_bytecode;
-	ScriptByteCodePtr m_server_bytecode;
-	std::set<std::string> m_client_joined_classes;
-	std::set<std::string> m_server_joined_classes;
+	CompiledScriptResultPtr m_client_script;
+	CompiledScriptResultPtr m_server_script;
 
 	void split(std::string& source) noexcept;
 };
@@ -79,10 +76,8 @@ inline SourceCode& SourceCode::operator=(const SourceCode& o) noexcept
 {
 	m_original_source = o.m_original_source;
 	setModifiedSource(m_original_source);
-	m_client_bytecode = o.m_client_bytecode;
-	m_server_bytecode = o.m_server_bytecode;
-	m_client_joined_classes = o.m_client_joined_classes;
-	m_server_joined_classes = o.m_server_joined_classes;
+	m_client_script = o.m_client_script;
+	m_server_script = o.m_server_script;
 	return *this;
 }
 
@@ -92,10 +87,8 @@ inline SourceCode& SourceCode::operator=(SourceCode&& o) noexcept
 	m_modified_source = std::move(o.m_modified_source);
 	m_clientside = std::move(o.m_clientside);
 	m_serverside = std::move(o.m_serverside);
-	m_client_bytecode = std::move(o.m_client_bytecode);
-	m_server_bytecode = std::move(o.m_server_bytecode);
-	m_client_joined_classes = std::move(o.m_client_joined_classes);
-	m_server_joined_classes = std::move(o.m_server_joined_classes);
+	m_client_script = std::move(o.m_client_script);
+	m_server_script = std::move(o.m_server_script);
 	return *this;
 }
 
@@ -119,16 +112,6 @@ inline std::string_view SourceCode::getServerSide() const noexcept
 	return m_serverside;
 }
 
-inline ScriptByteCodePtr SourceCode::getClientByteCode() const noexcept
-{
-	return m_client_bytecode;
-}
-
-inline ScriptByteCodePtr SourceCode::getServerByteCode() const noexcept
-{
-	return m_server_bytecode;
-}
-
 inline void SourceCode::setModifiedSource(const std::string& source) noexcept
 {
 	m_modified_source = std::move(minify(source));
@@ -136,34 +119,14 @@ inline void SourceCode::setModifiedSource(const std::string& source) noexcept
 	split(m_modified_source);
 }
 
-inline void SourceCode::setClientByteCode(ScriptByteCodePtr bytecode) noexcept
+inline void SourceCode::setClientCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_client_bytecode = bytecode;
+	m_client_script = script;
 }
 
-inline void SourceCode::setServerByteCode(ScriptByteCodePtr bytecode) noexcept
+inline void SourceCode::setServerCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_server_bytecode = bytecode;
-}
-
-inline void SourceCode::addClientJoinedClasses(const std::set<std::string>& classes) noexcept
-{
-	m_client_joined_classes.insert(classes.begin(), classes.end());
-}
-
-inline void SourceCode::addServerJoinedClasses(const std::set<std::string>& classes) noexcept
-{
-	m_server_joined_classes.insert(classes.begin(), classes.end());
-}
-
-inline const std::set<std::string>& SourceCode::getClientJoinedClasses() const noexcept
-{
-	return m_client_joined_classes;
-}
-
-inline const std::set<std::string>& SourceCode::getServerJoinedClasses() const noexcept
-{
-	return m_server_joined_classes;
+	m_server_script = script;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -4,11 +4,12 @@
 #include <CString.h>
 #include <IUtil.h>
 
-#include "common.h"
+#include <common.h>
 
-#include "object/Character.h"
-#include "scripting/SourceCode.h"
-#include "utilities/FlagContainer.h"
+#include <object/Character.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/SourceCode.h>
+#include <utilities/FlagContainer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -190,6 +191,7 @@ public:
 	std::array<uint8_t, 10> saves;
 	std::array<time_t, NPCPROP_COUNT> modTime;
 	FlagContainer flags;
+	ScriptContainer scripting;
 
 private:
 	BabyDI_INJECT(Server, m_server);

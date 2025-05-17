@@ -6,17 +6,18 @@
 #include <CString.h>
 #include <IUtil.h>
 
-#include "common.h"
+#include <common.h>
 
-#include "level/LevelBaddy.h"
-#include "level/LevelBoardChange.h"
-#include "level/LevelChest.h"
-#include "level/LevelHorse.h"
-#include "level/LevelItem.h"
-#include "level/LevelLink.h"
-#include "level/LevelSign.h"
-#include "level/LevelTiles.h"
-#include "utilities/IdGenerator.h"
+#include <level/LevelBaddy.h>
+#include <level/LevelBoardChange.h>
+#include <level/LevelChest.h>
+#include <level/LevelHorse.h>
+#include <level/LevelItem.h>
+#include <level/LevelLink.h>
+#include <level/LevelSign.h>
+#include <level/LevelTiles.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/IdGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -286,6 +287,28 @@ public:
 	std::optional<LevelChest*> getChest(int x, int y) const;
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
+
+	ScriptVariableStore variables;
+
+public:
+	void queueNpcEvent(ScriptEventType type, ScriptEventSource source)
+	{
+		for (auto& npcid : m_npcs)
+		{
+			if (auto npc = m_server->getNPC(npcid); npc)
+				npc->scripting.events.addEvent(type, source);
+		}
+	}
+
+	template<class ...Args>
+	void queueNpcEvent(ScriptEventType type, ScriptEventSource source, Args... args)
+	{
+		for (auto& npcid : m_npcs)
+		{
+			if (auto npc = m_server->getNPC(npcid); npc)
+				npc->scripting.events.addEvent(type, source, std::forward<Args>(args)...);
+		}
+	}
 
 private:
 	Level(short fillTile = 0);

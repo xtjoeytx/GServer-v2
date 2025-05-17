@@ -29,27 +29,25 @@ void ScriptClass::parseScripts(std::string_view classSource)
 
 	m_source = { classSource };
 
-	// Compile GS2 code.
+	// Compile the scripts.
 	auto npcServer = server->getNpcServer();
-	if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, m_className, m_source.getClientSide()); clientResults != nullptr && clientResults->success)
+	if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, m_className, m_source.getClientSide()); clientResults != nullptr)
 	{
-		m_source.setClientByteCode(clientResults->bytecode);
-		m_source.addClientJoinedClasses(clientResults->joinedClasses);
+		m_source.setClientCompiledScript(clientResults);
 	}
-	if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, m_className, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
+	if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, m_className, m_source.getServerSide()); serverResults != nullptr)
 	{
-		m_source.setServerByteCode(serverResults->bytecode);
-		m_source.addServerJoinedClasses(serverResults->joinedClasses);
+		m_source.setServerCompiledScript(serverResults);
 	}
 }
 
 // -- Function: Get Player Packet -- //
 CString ScriptClass::getClassPacket() const
 {
-	if (auto bytecode = m_source.getClientByteCode(); bytecode != nullptr && !bytecode->empty())
+	if (const auto& bytecode = m_source.getClientByteCode(); !bytecode.empty())
 	{
 		CString b;
-		b.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
+		b.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
 
 		CString header = b.readChars(b.readGUShort());
 

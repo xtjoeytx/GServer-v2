@@ -20,18 +20,16 @@ class Server;
 class ScriptEngineGS2 : public IScriptEngine
 {
 public:
-	~ScriptEngineGS2() {}
+	virtual ~ScriptEngineGS2() override {}
 
 public:
-	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::CALLBACK; }
-	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
-
-	// executeAction
+	virtual ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::CALLBACK; }
+	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
 
 public:
-	ScriptCompilationResultPtr compileScript(ScriptType type, std::string_view name, const std::string& script) override;
-	bool execute(IScriptedObject& object, const SourceCode& source) override { return false; }
-	bool reset() override { return false; }
+	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
+	virtual bool execute(const ScriptEvent& event, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override { return false; }
+	virtual bool reset() override { return false; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);

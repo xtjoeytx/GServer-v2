@@ -1,9 +1,10 @@
-#include "scripting/gs2/ScriptEngineGS2.h"
+#include <scripting/gs2/ScriptEngineGS2.h>
 
-#include "common.h"
+#include <common.h>
 
-#include "Server.h"
-#include "utilities/StringUtils.h"
+#include <Server.h>
+#include <scripting/ScriptClass.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -18,28 +19,37 @@ inline constexpr std::array<std::string_view, SCRIPT_TYPE_COUNT> scriptTypeStrin
 	/* ScriptType::WEAPON */ "weapon"
 };
 
-std::shared_ptr<ScriptCompilationResult> ScriptEngineGS2::compileScript(ScriptType type, std::string_view name, const std::string& script)
+CompiledScriptResult ScriptEngineGS2::compileScript(ScriptType type, std::string_view name, const std::string& script)
 {
 	// Compile the script.
 	auto result = m_scriptManager.compileScript(script);
 	auto response = result.get();
 
+	// Error.
+	if (!response.success)
+		return CompiledScriptResult{ string::join(response.errors | std::views::transform([this](const GS2CompilerError& error) -> std::string { return handleGS2Error(error); }), "\n") };
+
 	// Construct the compilation result.
-	ScriptCompilationResult compilationResult;
-	compilationResult.success = response.success;
-	compilationResult.errorMessage = string::join(response.errors | std::views::transform([this](const GS2CompilerError& error) -> std::string { return handleGS2Error(error); }), "\n");
-	if (response.success)
+	ScriptExecutionContext scriptContext{ .engine = this };
+	for (const auto& joinedClass : response.joinedClasses)
 	{
-		compilationResult.joinedClasses.insert(response.joinedClasses.begin(), response.joinedClasses.end());
-		
-		auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, std::string{ scriptTypeStrings.at(static_cast<size_t>(type)) }, std::string{ name }, true);
-		auto bytecode = std::make_shared<std::vector<uint8_t>>();
-		bytecode->insert(bytecode->end(), bytecodeWithHeader.buffer(), bytecodeWithHeader.buffer() + bytecodeWithHeader.length());
-		bytecode->insert(bytecode->end(), response.bytecode.buffer(), response.bytecode.buffer() + response.bytecode.length());
-		compilationResult.bytecode = bytecode;
+		// TODO: Get class.
+		using p = decltype(scriptContext.joinedClasses)::value_type;
+		scriptContext.joinedClasses.insert(p(joinedClass, {}));
 	}
 
-	return std::make_shared<ScriptCompilationResult>(std::move(compilationResult));
+	// Generate the bytecode.
+	auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, std::string{ scriptTypeStrings.at(static_cast<size_t>(type)) }, std::string{ name }, true);
+	std::vector<uint8_t> bytecode;
+	bytecode.insert(bytecode.end(), bytecodeWithHeader.buffer(), bytecodeWithHeader.buffer() + bytecodeWithHeader.length());
+	bytecode.insert(bytecode.end(), response.bytecode.buffer(), response.bytecode.buffer() + response.bytecode.length());
+
+	// Wrap the bytecode.
+	auto wrapper = std::make_any<std::vector<uint8_t>>(std::move(bytecode));
+	scriptContext.script = std::make_shared<std::any>(std::move(wrapper));
+
+	// Return the context.
+	return CompiledScriptResult{ std::move(scriptContext) };
 }
 
 std::string ScriptEngineGS2::handleGS2Error(const GS2CompilerError& error)

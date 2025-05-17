@@ -52,6 +52,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0054 NEW)	# CMP0054: Only interpret if() arguments a
 set(CMAKE_POLICY_DEFAULT_CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)	# CMP0077: option() honors normal variables.
 set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
+set(CMAKE_POLICY_DEFAULT_CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
 
 # Get submodules.
 find_package(Git QUIET)

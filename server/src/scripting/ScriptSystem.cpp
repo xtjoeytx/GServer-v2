@@ -23,12 +23,7 @@ void ScriptSystem::registerScriptEngine(std::string_view name, std::shared_ptr<I
 	m_script_engines.insert_or_assign(std::string{ name }, engine);
 }
 
-bool ScriptSystem::queueEvent(std::shared_ptr<IScriptedObject>& script_object, std::string_view script_event)
-{
-	return false;
-}
-
-ScriptCompilationResultPtr ScriptSystem::getCompiledClientScript(ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(ScriptType type, std::string_view name, std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -44,7 +39,7 @@ ScriptCompilationResultPtr ScriptSystem::getCompiledClientScript(ScriptType type
 	return {};
 }
 
-ScriptCompilationResultPtr ScriptSystem::getCompiledServerScript(ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(ScriptType type, std::string_view name, std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -75,7 +70,7 @@ void ScriptSystem::runQueuedEvents()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptCompilationResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, ScriptType type, std::string_view name, std::string_view source)
 {
 	// Check for a cached script.
 	size_t script_hash = string::string_hash{}(source);
@@ -84,10 +79,15 @@ ScriptCompilationResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine
 
 	// Compile the script.
 	auto result = engine->compileScript(type, name, std::string{ source });
-	if (result->success)
-		m_script_cache.insert_or_assign(script_hash, result);
+	if (std::holds_alternative<ScriptExecutionContext>(result))
+	{
+		auto& context = std::get<ScriptExecutionContext>(result);
+		auto contextPtr = std::make_shared<ScriptExecutionContext>(std::move(context));
+		m_script_cache.insert_or_assign(script_hash, contextPtr);
+		return contextPtr;
+	}
 
-	return result;
+	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

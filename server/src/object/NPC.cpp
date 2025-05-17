@@ -66,29 +66,17 @@ void NPC::setScript(std::string_view script)
 		auto npcServer = m_server->getNpcServer();
 		if (m_server->Generation == ServerGeneration::CLASSIC)
 		{
-			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()); serverResults != nullptr && serverResults->success)
-			{
-				m_script.setServerByteCode(serverResults->bytecode);
-				m_script.addServerJoinedClasses(serverResults->joinedClasses);
-			}
+			m_script.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()));
 		}
 		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
 		{
-			if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, name, m_script.getClientSide()); clientResults != nullptr && clientResults->success)
-			{
-				m_script.setClientByteCode(clientResults->bytecode);
-				m_script.addClientJoinedClasses(clientResults->joinedClasses);
-			}
-			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()); serverResults != nullptr && serverResults->success)
-			{
-				m_script.setServerByteCode(serverResults->bytecode);
-				m_script.addServerJoinedClasses(serverResults->joinedClasses);
-			}
+			m_script.setClientCompiledScript(npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, name, m_script.getClientSide()));
+			m_script.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()));
 		}
 	}
 
 	// Just a little warning for people who don't know.
-	if (m_script.getClientByteCode() == nullptr && m_script.getClientSide().length() > 0x705F)
+	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
 }
 
@@ -106,11 +94,11 @@ CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 				return CString() >> (short)0;
 
 			// We have bytecode set so send it.
-			if (auto client = m_script.getClientByteCode(); client != nullptr)
+			if (const auto& client = m_script.getClientByteCode(); !client.empty())
 			{
 				// TODO: Proper handling of bytecode that is too large.
 				assert(client->size() <= 0x705F);
-				return CString() >> (short)client->size() << std::string_view{ reinterpret_cast<const char*>(client->data()), client->size() };
+				return CString() >> (short)client.size() << std::string_view{ reinterpret_cast<const char*>(client.data()), client.size() };
 			}
 
 			// Fallback to sending the script itself.

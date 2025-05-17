@@ -120,6 +120,8 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	}
 
 	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript, 0);
+	/*
+	* TODO(Nalin): Figure out how to reimplement this.
 	if (!byteCodeData.isEmpty())
 	{
 		auto byteCodeDataPtr = reinterpret_cast<uint8_t*>(byteCodeData.text());
@@ -128,6 +130,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 		weapon->m_source.setClientByteCode(clientByteCode);
 		weapon->m_bytecodeFile = byteCodeFile;
 	}
+	*/
 
 	return weapon;
 }
@@ -183,22 +186,22 @@ CString Weapon::getWeaponPacket(int clientVersion) const
 	CString weaponPacket;
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)m_weaponName.length() << m_weaponName >> (char)NPCProp::IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
 
+	const auto& bytecode = m_source.getClientByteCode();
+
 	// Classic weapons.
-	if (m_source.getClientByteCode() == nullptr)
+	if (m_source.getClientByteCode().empty())
 	{
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)m_source.getClientSide().length() << m_source.getClientSide();
-		return weaponPacket;
 	}
-
 	// If we have bytecode, send the weapon headers.
-	if (auto bytecode = m_source.getClientByteCode(); bytecode != nullptr && !bytecode->empty())
+	else
 	{
 		// Weapons don't have a class.
 		// Maybe?  Confused about this.
 		weaponPacket >> (char)NPCProp::CLASS >> (short)0 << "\n";
 
 		// Extract the header and send it.
-		CString header = std::string_view{ reinterpret_cast<const char*>(bytecode->data()), bytecode->size() };
+		CString header = std::string_view{ reinterpret_cast<const char*>(bytecode.data()), bytecode.size() };
 		weaponPacket >> (char)PLO_UNKNOWN197 << header.readChars(header.readGUShort()) << "," >> (long long)time(0) << "\n";
 	}
 
@@ -218,24 +221,12 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 		auto npcServer = m_server->getNpcServer();
 		if (m_server->Generation == ServerGeneration::CLASSIC)
 		{
-			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
-			{
-				m_source.setServerByteCode(serverResults->bytecode);
-				m_source.addServerJoinedClasses(serverResults->joinedClasses);
-			}
+			m_source.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()));
 		}
 		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
 		{
-			if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::WEAPON, m_weaponName, m_source.getClientSide()); clientResults != nullptr && clientResults->success)
-			{
-				m_source.setClientByteCode(clientResults->bytecode);
-				m_source.addClientJoinedClasses(clientResults->joinedClasses);
-			}
-			if (auto serverResults = npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()); serverResults != nullptr && serverResults->success)
-			{
-				m_source.setServerByteCode(serverResults->bytecode);
-				m_source.addServerJoinedClasses(serverResults->joinedClasses);
-			}
+			m_source.setClientCompiledScript(npcServer->scripting.getCompiledClientScript(ScriptType::WEAPON, m_weaponName, m_source.getClientSide()));
+			m_source.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()));
 		}
 	}
 

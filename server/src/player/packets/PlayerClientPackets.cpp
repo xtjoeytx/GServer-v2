@@ -1351,10 +1351,10 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 
 	if (auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
 	{
-		if (auto bytecode = weaponObj->getSource().getClientByteCode(); bytecode != nullptr)
+		if (auto bytecode = weaponObj->getSource().getClientByteCode(); !bytecode.empty())
 		{
 			CString b;
-			b.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
+			b.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
 
 			CString out;
 			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
@@ -1382,13 +1382,13 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 	if (auto classObj = npcServer->getClass(className); classObj != nullptr)
 	{
 		auto bytecode = classObj->getSource().getClientByteCode();
-		if (bytecode == nullptr)
+		if (bytecode.empty())
 			return HandlePacketResult::Handled;
 
 		CString out;
-		out >> (char)PLO_RAWDATA >> (int)bytecode->size() << "\n";
+		out >> (char)PLO_RAWDATA >> (int)bytecode.size() << "\n";
 		out >> (char)PLO_NPCWEAPONSCRIPT;
-		out.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
+		out.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
 		sendPacket(out);
 	}
 	else

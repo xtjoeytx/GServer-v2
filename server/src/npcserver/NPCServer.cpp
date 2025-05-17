@@ -170,14 +170,16 @@ void NPCServer::updateClass(const std::string& className, const std::string& cla
 		{
 			if (pClass != nullptr)
 			{
-				const auto& bytecode = pClass->getSource().getServerByteCode();
+				const auto& bytecode = pClass->getSource().getClientByteCode();
+				if (!bytecode.empty())
+				{
+					CString out;
+					out >> (char)PLO_RAWDATA >> (int)bytecode.size() << "\n";
+					out >> (char)PLO_NPCWEAPONSCRIPT;
+					out.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
 
-				CString out;
-				out >> (char)PLO_RAWDATA >> (int)bytecode->size() << "\n";
-				out >> (char)PLO_NPCWEAPONSCRIPT;
-				out.write(reinterpret_cast<const char*>(bytecode->data()), bytecode->size());
-
-				player->sendPacket(out);
+					player->sendPacket(out);
+				}
 			}
 		}
 	}

@@ -7,10 +7,10 @@
 #include <string_view>
 #include <vector>
 #include <unordered_set>
+#include <variant>
 
-#include "scripting/IScriptedObject.h"
-#include "scripting/SourceCode.h"
-#include "scripting/ScriptSystem.h"
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
 
 // Until CString is erased, we have to remove Windows.h includes.
 #undef CALLBACK
@@ -43,11 +43,9 @@ public:
 	virtual ScriptEngineMode getExecutionMode() = 0;
 	virtual ScriptExecutionType getExecutionType() = 0;
 
-	// executeAction
-
 public:
-	virtual ScriptCompilationResultPtr compileScript(ScriptType type, std::string_view name, const std::string& script) = 0;
-	virtual bool execute(IScriptedObject& object, const SourceCode& source) = 0;
+	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) = 0;
+	virtual bool execute(const ScriptEvent& event, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) = 0;
 	virtual bool reset() = 0;
 };
 

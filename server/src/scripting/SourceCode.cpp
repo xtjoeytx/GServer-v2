@@ -1,9 +1,10 @@
-#include "scripting/SourceCode.h"
+#include <scripting/SourceCode.h>
 
-#include "BabyDI.h"
+#include <BabyDI.h>
 
-#include "Server.h"
-#include "npcserver/NPCServer.h"
+#include <Server.h>
+#include <npcserver/NPCServer.h>
+#include <scripting/IScriptEngine.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -11,6 +12,37 @@ namespace preagonal
 {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
+{
+	static ScriptByteCode empty;
+
+	if (m_client_script == nullptr || !m_client_script->script->has_value())
+		return empty;
+
+	if (auto* bytecode = std::any_cast<ScriptByteCode*>(m_client_script->script); bytecode != nullptr)
+		return *bytecode;
+
+	return empty;
+}
+
+void SourceCode::executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables)
+{
+	return executeEvents(container.events, &container.variables, level_variables);
+}
+
+void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables)
+{
+	if (m_server_script == nullptr || m_server_script->engine == nullptr)
+		return;
+
+	for (; !events.queue().empty(); events.queue().pop())
+	{
+		auto& event = events.queue().front();
+		auto* engine = m_server_script->engine;
+		engine->execute(event, object_variables, level_variables);
+	}
+}
 
 std::string SourceCode::minify(const std::string& src) noexcept
 {
@@ -96,8 +128,8 @@ void SourceCode::split(std::string& source) noexcept
 		m_clientside = {};
 	}
 
-	m_client_bytecode.reset();
-	m_server_bytecode.reset();
+	m_client_script.reset();
+	m_server_script.reset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

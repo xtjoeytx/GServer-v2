@@ -1716,9 +1716,9 @@ void PlayerClient::dropItemsOnDeath()
 	}
 }
 
+// TODO(Nalin): This should be on the Level.  The client version should be something like dropItem.
 bool PlayerClient::spawnLevelItem(CString& pPacket, bool playerDrop)
 {
-	// TODO(joey): serverside item checking
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	unsigned char item = pPacket.readGUChar();
 
