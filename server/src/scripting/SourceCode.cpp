@@ -7,10 +7,8 @@
 #include <scripting/IScriptEngine.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
@@ -26,12 +24,12 @@ const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
 	return empty;
 }
 
-void SourceCode::executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables)
+void SourceCode::executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables) const
 {
 	return executeEvents(container.events, &container.variables, level_variables);
 }
 
-void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables)
+void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
@@ -40,7 +38,7 @@ void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* ob
 	{
 		auto& event = events.queue().front();
 		auto* engine = m_server_script->engine;
-		engine->execute(event, object_variables, level_variables);
+		engine->execute(event, m_server_script, object_variables, level_variables);
 	}
 }
 
@@ -107,9 +105,29 @@ void SourceCode::split(std::string& source) noexcept
 {
 	static constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
 
-	// If we don't have an npc-server, we don't support serverside code.
+	// Check if we have an npc-server or not.
+	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
 	auto server = BabyDI::Get<Server>();
+	bool hasServerSide = true;
 	if (server && !server->isNpcServerEnabled())
+		hasServerSide = false;
+
+	// If we have serverside code, find the start of the clientside terminator.
+	// We need to mangle the newlines on just the clientside code.
+	// The serverside code will be fed into a compiler so it should have normal line endings.
+	auto clientside = source.begin();
+	if (hasServerSide)
+	{
+		if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
+			std::advance(clientside, clientSep);
+		else clientside = source.end();
+	}
+
+	// Mangle the line terminators.
+	std::replace(clientside, source.end(), '\n', '\xa7');
+
+	// If we don't have an npc-server, we don't support serverside code.
+	if (!hasServerSide)
 	{
 		m_serverside = {};
 		m_clientside = string::trim(source);
@@ -133,5 +151,4 @@ void SourceCode::split(std::string& source) noexcept
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

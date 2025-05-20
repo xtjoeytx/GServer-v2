@@ -64,10 +64,6 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(ScriptType type, s
 	return {};
 }
 
-void ScriptSystem::runQueuedEvents()
-{
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, ScriptType type, std::string_view name, std::string_view source)

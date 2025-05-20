@@ -137,13 +137,6 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_upnpThread = std::thread(std::ref(m_upnp));
 #endif
 
-	// If the npc-server is enabled, add the npc-server player to the player list.
-	// It should be the first player registered to the server.
-	if (isNpcServerEnabled())
-	{
-		addPlayer(m_npcServer->getPlayer());
-	}
-
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
 
@@ -966,6 +959,21 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view file, NPCType type, bool se
 	return nullptr;
 }
 
+std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
+{
+	// Add the NPC to the list.
+	m_npcList.insert(std::make_pair(npc->id, npc));
+
+	// Send the NPC's props to everybody in range.
+	if (sendToPlayers)
+	{
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket(0);
+		sendPacketToLevelOnlyGmapArea(packet, npc->level);
+	}
+
+	return npc;
+}
+
 bool Server::deleteNPC(int id, bool eraseFromLevel)
 {
 	auto npc = getNPC(id);
@@ -1053,9 +1061,13 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 	m_sockManager.unregisterSocket(old_player.get());
 	m_sockManager.registerSocket(new_player.get());
 
-	// If we are an npc-server, record that now.
-	if (new_player->isNPCServer())
-		m_npcServerPlayer = std::dynamic_pointer_cast<PlayerNpcServer>(new_player);
+	// If we are an npc-server, fix our id.
+	if (new_player->isNPCServer() && id != NPCServerPlayerID)
+	{
+		m_playerList.erase(id);
+		new_player->setId(NPCServerPlayerID);
+		m_playerList[NPCServerPlayerID] = new_player;
+	}
 
 	return true;
 }

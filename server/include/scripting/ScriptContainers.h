@@ -25,6 +25,8 @@ enum class ScriptEventSourceType
 };
 using ScriptEventSource = std::pair<uint32_t, ScriptEventSourceType>;
 
+namespace source
+{
 constexpr ScriptEventSource FromPlayer(PlayerID id)
 {
 	return std::make_pair(id, ScriptEventSourceType::PLAYER);
@@ -34,6 +36,12 @@ constexpr ScriptEventSource FromNPC(NPCID id)
 {
 	return std::make_pair(id, ScriptEventSourceType::NPC);
 }
+
+constexpr ScriptEventSource FromServer()
+{
+	return std::make_pair(static_cast<uint32_t>(0), ScriptEventSourceType::SERVER);
+}
+} // end namespace source
 
 /////////////////////////////
 
@@ -106,19 +114,25 @@ using ScriptVariable = std::variant<double, std::string, std::vector<double>>;
 struct ScriptVariableStore
 {
 public:
-	[[inline]] void add(std::string_view name, ScriptVariable value) noexcept;
+	[[inline]] ScriptVariable& add(std::string_view name, ScriptVariable value) noexcept;
 	[[inline]] bool remove(std::string_view name) noexcept;
 	[[inline]] bool contains(std::string_view name) const noexcept;
 	[[inline]] ScriptVariable* get(std::string_view name) noexcept;
 	[[inline]] const ScriptVariable* get(std::string_view name) const noexcept;
 
 public:
-	std::unordered_map<std::string, ScriptVariable, string::string_hash, std::equal_to<>> store;
+	// Keep as a std::map as iterators/references are not invalidated when the map changes (like on insert or erase).
+	// If it must be changed, a refactor of the scripting languages are needed.
+	std::map<std::string, ScriptVariable, std::less<>> store;
 };
 
-inline void ScriptVariableStore::add(std::string_view name, ScriptVariable value) noexcept
+inline ScriptVariable& ScriptVariableStore::add(std::string_view name, ScriptVariable value) noexcept
 {
-	store.insert_or_assign(std::string{ name }, value);
+	auto [iter, was_inserted] = store.insert_or_assign(std::string{ name }, value);
+
+	// https://en.cppreference.com/w/cpp/container/map/insert_or_assign
+	// No iterators or references are invalidated.
+	return *&iter->second;
 }
 
 inline bool ScriptVariableStore::remove(std::string_view name) noexcept
@@ -147,6 +161,165 @@ inline const ScriptVariable* ScriptVariableStore::get(std::string_view name) con
 		return nullptr;
 
 	return &it->second;
+}
+
+/////////////////////////////
+
+using ScriptVariablePair = std::pair<ScriptVariable, ScriptVariable>;
+
+inline ScriptVariable operator+(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left) || !std::holds_alternative<double>(right)) return left;
+	return std::get<double>(left) + std::get<double>(right);
+}
+
+inline ScriptVariable operator-(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left) || !std::holds_alternative<double>(right)) return left;
+	return std::get<double>(left) - std::get<double>(right);
+}
+
+inline ScriptVariable operator*(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left) || !std::holds_alternative<double>(right)) return left;
+	return std::get<double>(left) * std::get<double>(right);
+}
+
+inline ScriptVariable operator/(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left) || !std::holds_alternative<double>(right)) return left;
+	return std::get<double>(left) / std::get<double>(right);
+}
+
+inline ScriptVariable operator%(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left) || !std::holds_alternative<double>(right)) return left;
+	return static_cast<double>(static_cast<int64_t>(std::get<double>(left)) % static_cast<int64_t>(std::get<double>(right)));
+}
+
+inline ScriptVariable operator-(const ScriptVariable& left)
+{
+	if (!std::holds_alternative<double>(left)) return left;
+	return -std::get<double>(left);
+}
+
+inline ScriptVariable operator!(const ScriptVariable& left)
+{
+	if (!std::holds_alternative<double>(left)) return left;
+	return (!std::get<double>(left)) ? 0.0 : 1.0;
+}
+
+inline std::partial_ordering operator<=>(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left)) return std::partial_ordering::unordered;
+	if (!std::holds_alternative<double>(right)) return std::partial_ordering::unordered;
+	return std::get<double>(left) <=> std::get<double>(right);
+}
+
+inline std::partial_ordering operator<=>(double left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(right)) return std::partial_ordering::unordered;
+	return left <=> std::get<double>(right);
+}
+
+inline std::partial_ordering operator<=>(const ScriptVariable& left, double right)
+{
+	if (!std::holds_alternative<double>(left)) return std::partial_ordering::unordered;
+	return std::get<double>(left) <=> right;
+}
+
+inline bool operator!=(const ScriptVariable& left, const ScriptVariable& right)
+{
+	if (!std::holds_alternative<double>(left)) return false;
+	if (!std::holds_alternative<double>(right)) return false;
+	return std::get<double>(left) != std::get<double>(right);
+}
+
+/////////////////////////////
+
+inline ScriptVariable* getScriptVariableUnsafe(std::any& anyval)
+{
+	auto* direct = std::any_cast<ScriptVariable>(&anyval);
+	if (direct != nullptr) return direct;
+	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);
+	if (indirect != nullptr && *indirect != nullptr) return *indirect;
+	return nullptr;
+}
+
+inline const ScriptVariable* getScriptVariableUnsafe(const std::any& anyval)
+{
+	const auto* direct = std::any_cast<ScriptVariable>(&anyval);
+	if (direct != nullptr) return direct;
+	auto* const* indirect = std::any_cast<ScriptVariable*>(&anyval);
+	if (indirect != nullptr && *indirect != nullptr) return *indirect;
+	return nullptr;
+}
+
+inline ScriptVariable& getScriptVariableOr(std::any& anyval, ScriptVariable& defaultValue)
+{
+	auto* direct = std::any_cast<ScriptVariable>(&anyval);
+	if (direct != nullptr) return *direct;
+	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);
+	if (indirect != nullptr && *indirect != nullptr) return **indirect;
+	return defaultValue;
+}
+
+///
+
+template<class T = ScriptVariable>
+inline std::optional<T> getScriptVariable(std::any& anyval)
+{
+	auto* variable = getScriptVariableUnsafe(anyval);
+	if (variable == nullptr)
+		return {};
+	if constexpr (std::same_as<T, ScriptVariable>)
+	{
+		return *variable;
+	}
+	else
+	{
+		if (std::holds_alternative<T>(*variable))
+			return std::get<T>(*variable);
+	}
+	return {};
+}
+
+template<>
+inline std::optional<bool> getScriptVariable<bool>(std::any& anyval)
+{
+	auto double_value = getScriptVariable<double>(anyval);
+	if (!double_value.has_value())
+		return {};
+	return double_value.value() != 0.0f;
+}
+
+///
+
+template<class T = ScriptVariable>
+inline const std::optional<T> getScriptVariable(const std::any& anyval)
+{
+	const auto* variable = getScriptVariableUnsafe(anyval);
+	if (variable == nullptr)
+		return {};
+	if constexpr (std::same_as<T, ScriptVariable>)
+	{
+		return *variable;
+	}
+	else
+	{
+		if (std::holds_alternative<T>(*variable))
+			return std::get<T>(*variable);
+	}
+	return {};
+}
+
+template<>
+inline const std::optional<bool> getScriptVariable<bool>(const std::any& anyval)
+{
+	const auto double_value = getScriptVariable<double>(anyval);
+	if (!double_value.has_value())
+		return {};
+	return double_value.value() != 0.0f;
 }
 
 /////////////////////////////

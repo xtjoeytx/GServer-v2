@@ -28,7 +28,7 @@ public:
 
 public:
 	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
-	virtual bool execute(const ScriptEvent& event, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override { return false; }
+	virtual bool execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override { return false; }
 	virtual bool reset() override { return false; }
 
 protected:

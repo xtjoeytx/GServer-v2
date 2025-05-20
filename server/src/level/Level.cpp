@@ -341,7 +341,7 @@ bool Level::reload()
 std::shared_ptr<Level> Level::clone() const
 {
 	return LevelLoader::loadLevel(std::filesystem::path{ m_levelName.toStringView() });
-			}
+}
 
 /*
 	Level: Find Level
@@ -727,12 +727,19 @@ LevelBaddy* Level::getBaddy(uint8_t id)
 int Level::addPlayer(PlayerID id)
 {
 	m_players.push_back(id);
+
+	// Set the player enters event on all the NPCs.
+	m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
+
 	return static_cast<int>(m_players.size() - 1);
 }
 
 void Level::removePlayer(PlayerID id)
 {
 	std::erase(m_players, id);
+
+	// Set the player leaves event on all the NPCs.
+	m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 }
 
 bool Level::isPlayerLeader(PlayerID id)
@@ -760,6 +767,13 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 bool Level::addNPC(NPCID npcId)
 {
 	auto npc = m_server->getNPC(npcId);
+
+	if (npc->isCharacter())
+	{
+		// Set the player enters event on all the NPCs.
+		m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromNPC(npc->id));
+	}
+
 	return addNPC(npc);
 }
 
@@ -769,6 +783,12 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 		return;
 
 	m_npcs.erase(npc->id);
+
+	if (npc->isCharacter())
+	{
+		// Set the player leaves event on all the NPCs.
+		m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromNPC(npc->id));
+	}
 }
 
 void Level::removeNPC(NPCID npcId)

@@ -1,13 +1,12 @@
-#include "BabyDI.h"
+#include <common.h>
 
-#include "Server.h"
-#include "npcserver/NPCServer.h"
-#include "npcserver/PlayerNpcServer.h"
-#include "scripting/gs1/ScriptEngineGS1.h"
-#include "scripting/gs2/ScriptEngineGS2.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <npcserver/NPCServer.h>
+#include <npcserver/PlayerNpcServer.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/gs2/ScriptEngineGS2.h>
+#include <object/NPC.h>
+#include <object/Player.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -18,16 +17,28 @@ namespace preagonal
 
 void NPCServer::initialize()
 {
-	m_npcServerPlayer = std::make_shared<PlayerNpcServer>(nullptr, 0);
+	// TODO(Nalin): This needs to be an option somewhere.
+	scripting.defaultScriptEngine = "GS1";
+
+	m_npcServerPlayer = std::make_shared<PlayerNpcServer>(nullptr, NPCServerPlayerID);
 	m_npcServerPlayer->setType(PLTYPE_NPCSERVER);
 
 	auto& settings = m_server->getSettings();
 	auto& account = m_npcServerPlayer->account;
 
+	// TODO(Nalin): The settings manager sees `NICK ` nodes as valid, so it doesn't get a default!  We need to redo settings.
+	auto nickname = settings.getStr("nickname", "NPC-Server");
+	if (nickname.isEmpty())
+		nickname = "NPC-Server";
+
+	// Load the npc-server account.
 	m_server->getAccountLoader().loadAccount("(npcserver)", account);
 	account.character.headImage = settings.getStr("staffhead", "head25.png").toString();
-	account.character.nickName = std::format("{} (Server)", settings.getStr("nickname", "NPC-Server"));
+	account.character.nickName = std::format("{} (Server)", nickname);
 	m_npcServerPlayer->setLoaded(true);
+
+	// Add the npc-server player to the player list.
+	m_server->addPlayer(m_npcServerPlayer, NPCServerPlayerID);
 
 	// Load the GS1 and GS2 engines.
 	// They must always be loaded as the client will only accept GS1 or GS2 scripts.
@@ -39,6 +50,14 @@ void NPCServer::initialize()
 
 	log::printLine(log::server, "Loading NPCs...");
 	loadNpcs();
+
+	log::printLine(log::server, "Executing initial NPC events...");
+	{
+		for (auto& [id, npc] : m_server->getNPCList())
+		{
+			npc->getScript().executeEvents(npc->scripting.events, &npc->scripting.variables, nullptr);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -70,39 +89,18 @@ void NPCServer::loadNpcs()
 	FileSystem npcFS;
 	npcFS.addDir("npcs", "npc*.txt");
 
+	auto& npcLoader = m_server->getNPCLoader();
+
 	auto& npcFileList = npcFS.getFileList();
 	for (const auto& [npcName, fileName] : npcFileList)
 	{
-		bool loaded = false;
+		auto npc = npcLoader.loadNPC(std::filesystem::path{ fileName.toString()});
 
-		// Create the npc
-		//auto newNPC = std::make_shared<NPC>("", "", 30.f, 30.5f, nullptr, NPCType::DBNPC);
-		/*
-		if (newNPC->loadNPC(fileName))
+		if (npc)
 		{
-			int npcId = newNPC->getId();
-			if (npcId < 1000)
-			{
-				log::printLine(log::server, "! NPC '{}' has an id of {}, skipping (under 1000).", newNPC->getName(), npcId);
-			}
-			/*
-			else if (auto existing = m_npcList.find(npcId); existing != std::end(m_npcList))
-			{
-				log::printLine(log::server, "! NPC '{}' has an id of {}, skipping (id in use).", newNPC->getName(), npcId);
-			}
-			else
-			{
-				m_npcList.insert(std::make_pair(npcId, newNPC));
-				assignNPCName(newNPC, newNPC->getName());
-
-				// Add npc to level
-				if (auto level = newNPC->getLevel(); level)
-					level->addNPC(newNPC);
-
-				loaded = true;
-			}
-			*/
-			//}
+			log::printLine(log::server, "[{}] {}", npc->id, npcName);
+			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
+		}
 	}
 }
 

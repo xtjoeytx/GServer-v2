@@ -12,6 +12,7 @@
 #include <variant>
 #include <any>
 
+#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
 
@@ -50,8 +51,6 @@ public:
 
 	// Gets the compiled server script.
 	CompiledScriptResultPtr getCompiledServerScript(ScriptType type, std::string_view name, std::string_view source);
-
-	void runQueuedEvents();
 
 public:
 	std::string defaultScriptEngine = "GS2";

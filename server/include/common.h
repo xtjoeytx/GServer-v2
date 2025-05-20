@@ -36,6 +36,8 @@ namespace preagonal
 using PlayerID = uint16_t;
 using NPCID = uint32_t;
 
+inline constexpr PlayerID NPCServerPlayerID = 0;
+
 inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);

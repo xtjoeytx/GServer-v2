@@ -1,13 +1,18 @@
 #ifndef SCRIPTENGINEGS1_H
 #define SCRIPTENGINEGS1_H
 
-#include "scripting/IScriptEngine.h"
+#include <scripting/IScriptEngine.h>
+
+// Stupid Windows.h defines
+#undef ERROR
+#include <antlr4-runtime.h>
+
+#include <GS1Lexer.h>
+#include <GS1Parser.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ScriptEventFlagNames
@@ -40,9 +45,21 @@ struct ScriptEventFlagNames
 	static constexpr std::string_view PLAYERTOUCHESOTHER = "playertouchesother"sv;
 };
 
+struct GS1ScriptWrapper
+{
+	GS1ScriptWrapper(std::string_view script);
+
+	std::shared_ptr<antlr4::ANTLRInputStream> input;
+	std::shared_ptr<preagonal::grammar::gs1::GS1Lexer> lexer;
+	std::shared_ptr<antlr4::CommonTokenStream> tokens;
+	std::shared_ptr<preagonal::grammar::gs1::GS1Parser> parser;
+	preagonal::grammar::gs1::GS1Parser::ProgramContext* program = nullptr;
+};
+
 class ScriptEngineGS1 : public IScriptEngine
 {
 public:
+	ScriptEngineGS1();
 	virtual ~ScriptEngineGS1() override {}
 
 public:
@@ -50,13 +67,12 @@ public:
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
 public:
-	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override { return {}; }
-	virtual bool execute(const ScriptEvent& event, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override { return false; }
+	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
+	virtual bool execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override;
 	virtual bool reset() override { return false; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // SCRIPTENGINEGS1_H

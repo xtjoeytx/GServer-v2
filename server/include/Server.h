@@ -202,6 +202,7 @@ public:
 */
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(std::string_view file, NPCType type, bool sendToPlayers = false);
+	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
 	bool isIpBanned(const CString& ip);
@@ -252,8 +253,29 @@ public:
 	//void updateClassForPlayers(ScriptClass* pClass);
 
 	// NPC-Server Management
-	bool isNpcServerEnabled() const { return m_npcServerPlayer != nullptr; }
+	bool isNpcServerEnabled() const { return m_playerList.find(0) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
+
+	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptEventSource source)
+	{
+		if (level == nullptr) return;
+		for (auto& npcid : level->getNPCs())
+		{
+			if (auto npc = getNPC(npcid); npc)
+				npc->scripting.events.addEvent(type, source);
+		}
+	}
+
+	template<class ...Args>
+	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptEventSource source, Args... args)
+	{
+		if (level == nullptr) return;
+		for (auto& npcid : level->getNPCs())
+		{
+			if (auto npc = getNPC(npcid); npc)
+				npc->scripting.events.addEvent(type, source, std::forward<Args>(args)...);
+		}
+	}
 
 	std::time_t getServerStartTime() const
 	{
@@ -325,7 +347,6 @@ private:
 	std::unique_ptr<INPCLoader> m_npcLoader;
 
 	std::shared_ptr<NPCServer> m_npcServer;
-	std::shared_ptr<PlayerNpcServer> m_npcServerPlayer;
 
 #ifdef UPNP
 	UPNP m_upnp;

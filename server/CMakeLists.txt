@@ -71,6 +71,7 @@ set(
 	"include/scripting/ScriptSystem.h"
 	"include/scripting/ScriptTypes.h"
 	"include/scripting/SourceCode.h"
+	"include/scripting/gs1/GS1Visitor.h"
 	"include/scripting/gs1/ScriptEngineGS1.h"
 	"include/scripting/gs2/ScriptEngineGS2.h"
 	"include/utilities/CommandDispatcher.h"
@@ -122,6 +123,8 @@ set(
 	"src/scripting/ScriptClass.cpp"
 	"src/scripting/ScriptSystem.cpp"
 	"src/scripting/SourceCode.cpp"
+	"src/scripting/gs1/GS1Visitor.cpp"
+	"src/scripting/gs1/ScriptEngineGS1.cpp"
 	"src/scripting/gs2/ScriptEngineGS2.cpp"
 	"src/utilities/FilePermissions.cpp"
 	"src/utilities/Log.cpp"
@@ -147,7 +150,18 @@ endif()
 
 # Dependency: antlr4.
 find_package(antlr4-runtime CONFIG REQUIRED)
+find_package(antlr4-generator CONFIG REQUIRED)
+target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIBRARY_DIR})
+target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR})
 target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static)
+FetchContent_Declare(AntlrJar
+	URL				https://www.antlr.org/download/antlr-4.13.2-complete.jar
+	DOWNLOAD_DIR	"${FETCHCONTENT_BASE_DIR}/antlr-jar"
+	DOWNLOAD_NAME	"antlr.jar"
+	DOWNLOAD_NO_EXTRACT TRUE
+)
+FetchContent_MakeAvailable(AntlrJar)
+set(ANTLR4_JAR_LOCATION "${FETCHCONTENT_BASE_DIR}/antlr-jar/antlr.jar")
 
 # Dependency: miniupnpc.
 option(UPNP "Enable UPNP support." ON)
@@ -280,3 +294,20 @@ endif()
 if(WIN32)
 	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
 endif()
+
+# Generate grammar.
+antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Lexer.g4" LEXER
+	FALSE						# 4: Generate listener
+	FALSE						# 5: Generate visitor
+	"preagonal::grammar::gs1"	# 6: Namespace
+)
+message("${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4")
+antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4" PARSER
+	FALSE						# 4: Generate listener
+	TRUE						# 5: Generate visitor
+	"preagonal::grammar::gs1"	# 6: Namespace
+	"${ANTLR4_TOKEN_FILES_GS1Lexer}"		# 7: Dependency - Token files
+	"${ANTLR4_TOKEN_DIRECTORY_GS1Lexer}"	# 8: Location of grammars - Token directory
+)
+target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
+target_sources(${TARGET_NAME} PRIVATE ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})

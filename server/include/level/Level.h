@@ -292,26 +292,6 @@ public:
 
 	ScriptVariableStore variables;
 
-public:
-	void queueNpcEvent(ScriptEventType type, ScriptEventSource source)
-	{
-		for (auto& npcid : m_npcs)
-		{
-			if (auto npc = m_server->getNPC(npcid); npc)
-				npc->scripting.events.addEvent(type, source);
-		}
-	}
-
-	template<class ...Args>
-	void queueNpcEvent(ScriptEventType type, ScriptEventSource source, Args... args)
-	{
-		for (auto& npcid : m_npcs)
-		{
-			if (auto npc = m_server->getNPC(npcid); npc)
-				npc->scripting.events.addEvent(type, source, std::forward<Args>(args)...);
-		}
-	}
-
 private:
 	Level(short fillTile = 0);
 

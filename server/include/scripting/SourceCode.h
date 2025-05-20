@@ -55,8 +55,8 @@ public:
 	[[inline]] void setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
-	void executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables);
-	void executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables);
+	void executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables) const;
+	void executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) const;
 
 private:
 	static std::string minify(const std::string& src) noexcept;
@@ -115,7 +115,6 @@ inline std::string_view SourceCode::getServerSide() const noexcept
 inline void SourceCode::setModifiedSource(const std::string& source) noexcept
 {
 	m_modified_source = std::move(minify(source));
-	std::replace(m_modified_source.begin(), m_modified_source.end(), '\n', '\xa7');
 	split(m_modified_source);
 }
 
