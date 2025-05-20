@@ -140,10 +140,19 @@ enum class NPCMoveFlags : uint8_t
 	APPLYDIR		= 0b0001'0000,
 };
 
+//! NPC warp restrictions
+enum class NPCWarpRestrictions
+{
+	ALLOWED,
+	NOTALLOWED,
+	ONLYOVERWORLD,
+};
+
+//! NPC type
 enum class NPCType
 {
 	LEVELNPC, // npcs found in a level
-	PUTNPC,   // npcs created via script (putnpc)
+	PUTNPC,   // npcs created via script (putnpc), is this needed still?
 	DBNPC     // npcs created in RC (Database-NPCs)
 };
 
@@ -192,6 +201,7 @@ public:
 	Character character;
 	std::array<uint8_t, 10> saves;
 	std::array<time_t, NPCPROP_COUNT> modTime;
+	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	FlagContainer flags;
 	ScriptContainer scripting;
 

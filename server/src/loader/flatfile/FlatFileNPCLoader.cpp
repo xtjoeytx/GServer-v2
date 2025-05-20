@@ -67,6 +67,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	// Make the NPC.
 	auto npc = std::make_shared<NPC>(id, NPCType::DBNPC);
 
+	// Set the default warp type.
+	if (server->isNpcServerEnabled())
+	{
+		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
+	}
+
 	// TODO(joey): implement
 	// 	JOINEDCLASSES staffblock (not really needed for us, so)
 	//	DONTBLOCK 1
@@ -247,15 +253,15 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "CANWARP")
 		{
-			//m_canWarp = strtoint(curLine.readString("")) != 0 ? NPCWarpType::AllLinks : m_canWarp;
+			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ALLOWED : npc->warpRestrictions;
 		}
 		else if (curCommand == "CANWARP2")
 		{
-			//m_canWarp = strtoint(curLine.readString("")) != 0 ? NPCWarpType::OverworldLinks : m_canWarp;
+			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
 		}
 		else if (curCommand == "TIMEOUT")
 		{
-			//m_timeout = strtoint(curLine.readString("")) * 20;
+			npc->timeout = strtoint(curLine.readString("")) * 20;
 		}
 		else if (curCommand == "FLAG")
 		{

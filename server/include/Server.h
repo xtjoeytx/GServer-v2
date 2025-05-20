@@ -201,7 +201,6 @@ public:
 	void updateClass(const std::string& className, const std::string& classCode);
 */
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
-	std::shared_ptr<NPC> addNPC(std::string_view file, NPCType type, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
@@ -333,7 +332,7 @@ private:
 	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
 
 	ServerList m_serverlist;
-	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
+	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNpcServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
 	std::time_t m_serverStartTime;
 	unsigned int m_serverTime;
 

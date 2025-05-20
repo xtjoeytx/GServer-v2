@@ -65,7 +65,7 @@ Server::Server(const CString& pName)
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
-	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
+	m_lastTimer = m_lastNpcServerTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
@@ -250,6 +250,17 @@ bool Server::doMain()
 
 	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
+
+	// NPC-Server runs every 100ms.
+	if (isNpcServerEnabled())
+	{
+		auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastNpcServerTimer);
+		if (time_diff.count() >= 100)
+		{
+			m_lastNpcServerTimer = currentTimer;
+			m_npcServer->run();
+		}
+	}
 
 	// Every second, do some events.
 	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastTimer);
@@ -936,6 +947,9 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(newId, newNPC));
 
+	// Set the default warp type.
+	newNPC->warpRestrictions = isNpcServerEnabled() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
 	// Set NPC props.
 	newNPC->level = level;
 	newNPC->character.pixelX = x * 16;
@@ -943,6 +957,12 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->image = image;
 	newNPC->setScript(script);
 	newNPC->recordInitialState();
+
+	// Created event.
+	if (isNpcServerEnabled())
+	{
+		newNPC->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
+	}
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
@@ -952,11 +972,6 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	}
 
 	return newNPC;
-}
-
-std::shared_ptr<NPC> Server::addNPC(std::string_view file, NPCType type, bool sendToPlayers)
-{
-	return nullptr;
 }
 
 std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
