@@ -251,6 +251,7 @@ inline bool operator!=(const ScriptVariable& left, const ScriptVariable& right)
 
 inline ScriptVariable* getScriptVariableUnsafe(std::any& anyval)
 {
+	if (!anyval.has_value()) return nullptr;
 	auto* direct = std::any_cast<ScriptVariable>(&anyval);
 	if (direct != nullptr) return direct;
 	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);
@@ -260,6 +261,7 @@ inline ScriptVariable* getScriptVariableUnsafe(std::any& anyval)
 
 inline const ScriptVariable* getScriptVariableUnsafe(const std::any& anyval)
 {
+	if (!anyval.has_value()) return nullptr;
 	const auto* direct = std::any_cast<ScriptVariable>(&anyval);
 	if (direct != nullptr) return direct;
 	auto* const* indirect = std::any_cast<ScriptVariable*>(&anyval);
@@ -269,6 +271,7 @@ inline const ScriptVariable* getScriptVariableUnsafe(const std::any& anyval)
 
 inline ScriptVariable& getScriptVariableOr(std::any& anyval, ScriptVariable& defaultValue)
 {
+	if (!anyval.has_value()) return defaultValue;
 	auto* direct = std::any_cast<ScriptVariable>(&anyval);
 	if (direct != nullptr) return *direct;
 	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);

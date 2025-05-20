@@ -46,6 +46,7 @@ statement
 	| flow_return END?
 	| flow_break END?
 	| flow_continue END?
+	| assignment_operation
 	| expression END?
 	| END
 	;
@@ -53,7 +54,6 @@ statement
 expression
 	: binary_expression
 	| unary_expression
-	| assignment_operation
 	;
 
 unary_expression
@@ -155,7 +155,7 @@ else_false_block
 	;
 
 for_loop
-    : KW_FOR TOKEN_PAREN_LEFT expression? END expression? END expression? TOKEN_PAREN_RIGHT block	# ForLoop
+    : KW_FOR TOKEN_PAREN_LEFT assignment_operation? END expression? END expression? TOKEN_PAREN_RIGHT block	# ForLoop
     ;
 
 while_loop

@@ -20,6 +20,9 @@ public:
 	void execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
 
 protected:
+	[[inline]] std::any safeVisit(antlr4::tree::ParseTree* node);
+
+protected:
 	std::optional<std::variant<ScriptVariable*, double*>> lookInVariableStore(const ScriptIdentifier& identifier);
 	std::optional<double*> getIdentifierValueForAssignment(std::any anyval);
 	std::optional<double*> getIdentifierValueForAssignment(ScriptIdentifier& identifier);
@@ -99,9 +102,20 @@ public:
 
 //
 
+inline std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
+{
+	if (node == nullptr)
+		return {};
+	return visit(node);
+}
+
+//
+
 template<class T>
 inline std::optional<T> GS1Visitor::getGS1ScriptVariable(std::any& anyval)
 {
+	if (!anyval.has_value()) return std::nullopt;
+
 	auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
 	if (identifier_test == nullptr)
 		return getScriptVariable<T>(anyval);
@@ -146,6 +160,8 @@ inline std::optional<bool> GS1Visitor::getGS1ScriptVariable<bool>(std::any& anyv
 template<class T>
 inline const std::optional<T> GS1Visitor::getGS1ScriptVariable(const std::any& anyval)
 {
+	if (!anyval.has_value()) return std::nullopt;
+
 	const auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
 	if (identifier_test == nullptr)
 		return getScriptVariable<T>(anyval);

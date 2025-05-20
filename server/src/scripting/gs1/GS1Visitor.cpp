@@ -602,11 +602,11 @@ std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
 std::any GS1Visitor::visitForLoop(GS1Parser::ForLoopContext* context)
 {
 	// Assignment.
-	visit(context->expression(0));
+	safeVisit(context->assignment_operation());
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getGS1ScriptVariable<bool>(visit(context->expression(1))).value_or(false))
+	while (loopCount++ < MAX_LOOPS && getGS1ScriptVariable<bool>(safeVisit(context->expression(0))).value_or(false))
 	{
 		// Block.
 		try
@@ -617,7 +617,7 @@ std::any GS1Visitor::visitForLoop(GS1Parser::ForLoopContext* context)
 		catch (continue_exception&) { continue; }
 
 		// Increment.
-		visit(context->expression(2));
+		safeVisit(context->expression(1));
 	}
 
 	return {};
