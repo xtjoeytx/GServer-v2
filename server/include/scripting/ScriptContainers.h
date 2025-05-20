@@ -3,7 +3,9 @@
 
 #include <queue>
 #include <any>
+#include <map>
 #include <variant>
+#include <functional>
 
 #include <common.h>
 
@@ -11,10 +13,8 @@
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class ScriptEventSourceType
@@ -48,7 +48,7 @@ constexpr ScriptEventSource FromServer()
 struct ScriptEvent
 {
 	ScriptEventType type;
-	ScriptEventSource source;
+	ScriptEventSource initiator;
 	std::vector<std::any> args;
 };
 
@@ -59,22 +59,22 @@ public:
 	[[inline]] std::queue<ScriptEvent>& queue();
 
 public:
-	void addEvent(ScriptEventType type, ScriptEventSource source)
+	void addEvent(ScriptEventType type, ScriptEventSource initiator)
 	{
-		m_eventQueue.push(std::move(ScriptEvent{ .type = type, .source = source }));
+		m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
 	}
 
 	template<class T>
-	void addEvent(ScriptEventType type, ScriptEventSource source, T&& arg)
+	void addEvent(ScriptEventType type, ScriptEventSource initiator, T&& arg)
 	{
-		ScriptEvent event{ .type = type, .source = source, .args = { std::make_any<T>(std::forward<T>(arg)) } };
+		ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::make_any<T>(std::forward<T>(arg)) } };
 		addEvent(event);
 	}
 
 	template<class T, class... Args>
-	void addEvent(ScriptEventType type, ScriptEventSource source, T&& arg, Args&&... args)
+	void addEvent(ScriptEventType type, ScriptEventSource initiator, T&& arg, Args&&... args)
 	{
-		ScriptEvent event{ .type = type, .source = source, .args = { std::make_any<T>(std::forward<T>(arg)) } };
+		ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::make_any<T>(std::forward<T>(arg)) } };
 		addEvent(event, std::forward<Args>(args)...);
 	}
 
@@ -109,7 +109,9 @@ inline std::queue<ScriptEvent>& ScriptEventQueue::queue()
 
 /////////////////////////////
 
-using ScriptVariable = std::variant<double, std::string, std::vector<double>>;
+using ScriptIdentifier = std::variant<std::string, std::pair<std::string, size_t>>;
+using ScriptVariable = std::variant<double, std::string, std::vector<double>, ScriptIdentifier>;
+using ScriptVariableFromServer = std::function<ScriptVariable*(std::string_view, size_t index)>;
 
 struct ScriptVariableStore
 {
@@ -119,6 +121,7 @@ public:
 	[[inline]] bool contains(std::string_view name) const noexcept;
 	[[inline]] ScriptVariable* get(std::string_view name) noexcept;
 	[[inline]] const ScriptVariable* get(std::string_view name) const noexcept;
+	[[inline]] ScriptVariable& get_or_add(std::string_view name) noexcept;
 
 public:
 	// Keep as a std::map as iterators/references are not invalidated when the map changes (like on insert or erase).
@@ -161,6 +164,15 @@ inline const ScriptVariable* ScriptVariableStore::get(std::string_view name) con
 		return nullptr;
 
 	return &it->second;
+}
+
+inline ScriptVariable& ScriptVariableStore::get_or_add(std::string_view name) noexcept
+{
+	auto var = get(name);
+	if (var != nullptr)
+		return *var;
+
+	return add(name, { 0.0 });
 }
 
 /////////////////////////////
@@ -271,7 +283,7 @@ inline std::optional<T> getScriptVariable(std::any& anyval)
 {
 	auto* variable = getScriptVariableUnsafe(anyval);
 	if (variable == nullptr)
-		return {};
+		return std::nullopt;
 	if constexpr (std::same_as<T, ScriptVariable>)
 	{
 		return *variable;
@@ -281,7 +293,7 @@ inline std::optional<T> getScriptVariable(std::any& anyval)
 		if (std::holds_alternative<T>(*variable))
 			return std::get<T>(*variable);
 	}
-	return {};
+	return std::nullopt;
 }
 
 template<>
@@ -289,7 +301,7 @@ inline std::optional<bool> getScriptVariable<bool>(std::any& anyval)
 {
 	auto double_value = getScriptVariable<double>(anyval);
 	if (!double_value.has_value())
-		return {};
+		return std::nullopt;
 	return double_value.value() != 0.0f;
 }
 
@@ -310,7 +322,7 @@ inline const std::optional<T> getScriptVariable(const std::any& anyval)
 		if (std::holds_alternative<T>(*variable))
 			return std::get<T>(*variable);
 	}
-	return {};
+	return std::nullopt;
 }
 
 template<>
@@ -318,7 +330,7 @@ inline const std::optional<bool> getScriptVariable<bool>(const std::any& anyval)
 {
 	const auto double_value = getScriptVariable<double>(anyval);
 	if (!double_value.has_value())
-		return {};
+		return std::nullopt;
 	return double_value.value() != 0.0f;
 }
 
@@ -330,8 +342,12 @@ struct ScriptContainer
 	ScriptVariableStore variables;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////
 
+using ScriptVariableStorePicker = std::variant<ScriptVariableStore*, ScriptVariableFromServer>;
+using ScriptVariableStoreMap = std::map<std::string, ScriptVariableStorePicker>;
+
+///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
 #endif // SCRIPTCONTAINERS_H

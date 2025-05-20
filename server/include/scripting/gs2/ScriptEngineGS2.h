@@ -5,18 +5,20 @@
 #include <string>
 #include <string_view>
 
-#include "BabyDI.h"
-#include "scripting/IScriptEngine.h"
-#include "scripting/GS2ScriptManager.h"
-
-///////////////////////////////////////////////////////////////////////////////
+#include <BabyDI.h>
+#include <scripting/IScriptEngine.h>
+#include <scripting/GS2ScriptManager.h>
 
 namespace preagonal
 {
+class Server;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
+namespace preagonal::gs2
+{
+///////////////////////////////////////////////////////////////////////////////
 
-class Server;
 class ScriptEngineGS2 : public IScriptEngine
 {
 public:
@@ -28,8 +30,10 @@ public:
 
 public:
 	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
-	virtual bool execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override { return false; }
 	virtual bool reset() override { return false; }
+
+public:
+	virtual bool execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context) override { return false; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);
@@ -41,7 +45,5 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-} // end namespace preagonal
-
+} // end namespace preagonal::gs2
 #endif // SCRIPTENGINEGS2_H

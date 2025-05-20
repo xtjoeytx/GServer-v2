@@ -4,13 +4,15 @@
 
 #include <common.h>
 #include <Server.h>
+#include <level/Level.h>
+#include <object/NPC.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <utilities/StringUtils.h>
 
 using namespace preagonal::grammar::gs1;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal
+namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -36,18 +38,42 @@ CompiledScriptResult ScriptEngineGS1::compileScript(ScriptType type, std::string
 	return result;
 }
 
-bool ScriptEngineGS1::execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables)
+bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context)
 {
 	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
 	if (wrapper == nullptr)
 		return false;
 
+	auto* server = BabyDI::Get<Server>();
+	auto& [source_id, source_type] = source;
+	NPCPtr npc = nullptr;
+	LevelPtr level = nullptr;
+
+	// Get whatever links we can.
+	if (source_type == ScriptEventSourceType::NPC)
+		npc = server->getNPC(source_id);
+	if (npc != nullptr)
+		level = npc->level.lock();
+
+	ScriptVariableStore* defaultVariableStore = nullptr;
+	ScriptVariableStoreMap variableStores{};
+
+	// Link to the default variable store.
+	if (level != nullptr)
+		defaultVariableStore = &level->variables;
+
+	// Link to the NPC variable store.
+	if (npc != nullptr)
+		variableStores.insert(std::make_pair("this.", &npc->scripting.variables));
+
+	// TODO(Nalin): Link to the server variable handler.
+
+	// Execute the script.
 	GS1Visitor visitor;
-	visitor.parser = wrapper->parser.get();
-	visitor.execute(event.source, wrapper->program, object_variables, level_variables);
+	visitor.execute(event.initiator, *wrapper->parser.get(), *wrapper->program, defaultVariableStore, &variableStores);
 
 	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal
+} // end namespace preagonal::gs1

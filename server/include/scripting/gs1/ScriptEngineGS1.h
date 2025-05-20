@@ -11,7 +11,7 @@
 #include <GS1Parser.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal
+namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,11 +68,13 @@ public:
 
 public:
 	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
-	virtual bool execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) override;
 	virtual bool reset() override { return false; }
+
+public:
+	virtual bool execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal
+} // end namespace preagonal::gs1
 
 #endif // SCRIPTENGINEGS1_H

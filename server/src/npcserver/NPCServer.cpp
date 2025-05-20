@@ -42,20 +42,23 @@ void NPCServer::initialize()
 
 	// Load the GS1 and GS2 engines.
 	// They must always be loaded as the client will only accept GS1 or GS2 scripts.
-	scripting.registerScriptEngine("GS1", std::make_shared<ScriptEngineGS1>());
-	scripting.registerScriptEngine("GS2", std::make_shared<ScriptEngineGS2>());
+	scripting.registerScriptEngine("GS1", std::make_shared<gs1::ScriptEngineGS1>());
+	scripting.registerScriptEngine("GS2", std::make_shared<gs2::ScriptEngineGS2>());
 
 	log::printLine(log::server, "Loading classes...");
 	loadClasses();
 
 	log::printLine(log::server, "Loading NPCs...");
 	loadNpcs();
+}
 
-	log::printLine(log::server, "Executing initial NPC events...");
+void NPCServer::run()
+{
+	// Run all NPC scripts.
 	{
 		for (auto& [id, npc] : m_server->getNPCList())
 		{
-			npc->getScript().executeEvents(npc->scripting.events, &npc->scripting.variables, nullptr);
+			npc->getScript().executeEvents(npc->scripting.events, source::FromNPC(id));
 		}
 	}
 }

@@ -24,12 +24,12 @@ const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
 	return empty;
 }
 
-void SourceCode::executeEvents(ScriptContainer& container, ScriptVariableStore* level_variables) const
+void SourceCode::executeEvents(ScriptContainer& container, ScriptEventSource source) const
 {
-	return executeEvents(container.events, &container.variables, level_variables);
+	return executeEvents(container.events, source);
 }
 
-void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) const
+void SourceCode::executeEvents(ScriptEventQueue& events, ScriptEventSource source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
@@ -38,7 +38,7 @@ void SourceCode::executeEvents(ScriptEventQueue& events, ScriptVariableStore* ob
 	{
 		auto& event = events.queue().front();
 		auto* engine = m_server_script->engine;
-		engine->execute(event, m_server_script, object_variables, level_variables);
+		engine->execute(event, source, m_server_script);
 	}
 }
 

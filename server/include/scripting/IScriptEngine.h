@@ -43,8 +43,10 @@ public:
 
 public:
 	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) = 0;
-	virtual bool execute(const ScriptEvent& event, CompiledScriptResultPtr context, ScriptVariableStore* object_variables, ScriptVariableStore* level_variables) = 0;
 	virtual bool reset() = 0;
+
+public:
+	virtual bool execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

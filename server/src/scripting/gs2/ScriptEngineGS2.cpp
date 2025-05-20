@@ -7,10 +7,8 @@
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace preagonal
+namespace preagonal::gs2
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 inline constexpr std::array<std::string_view, SCRIPT_TYPE_COUNT> scriptTypeStrings =
@@ -81,5 +79,4 @@ void ScriptEngineGS2::reportScriptException(const std::string& error_message)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-} // end namespace preagonal
+} // end namespace preagonal::gs2

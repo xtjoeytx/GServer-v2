@@ -24,13 +24,11 @@
 
 #include "BabyDI.h"
 
-///////////////////////////////////////////////////////////////////////////////
-
 using namespace std::literals;
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 using PlayerID = uint16_t;
@@ -42,6 +40,19 @@ inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);
 }
+
+//-----------------------------------------------
+
+template<class P>
+concept Pair = requires(P p)
+{
+	typename P::first_type;
+	typename P::second_type;
+	{ p.first } -> std::same_as<typename P::first_type>;
+	{ p.second } -> std::same_as<typename P::second_type>;
+};
+
+//-----------------------------------------------
 
 // TODO: Move to somewhere appropriate.
 template <typename T>
@@ -74,7 +85,6 @@ struct Rectangle
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // COMMON_H

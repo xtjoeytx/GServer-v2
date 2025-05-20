@@ -5,6 +5,7 @@
 #include <variant>
 #include <format>
 #include <string>
+#include <string_view>
 #include <exception>
 #include <utility>
 #include <vector>
@@ -13,9 +14,9 @@
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal::grammar::gs1
 {
+///////////////////////////////////////////////////////////////////////////////
 
 constexpr size_t MAX_LOOPS = 10000;
 
@@ -29,7 +30,7 @@ struct return_exception : public std::exception {};
 
 static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 {
-	if (tree == nullptr) return {};
+	if (tree == nullptr) return std::nullopt;
 
 	// We might be looking for the direct child.
 	if (tree->children.size() == 1)
@@ -39,7 +40,58 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 	if (auto* node = dynamic_cast<antlr4::tree::TerminalNode*>(tree); node != nullptr)
 		return node->getSymbol()->getType();
 
-	return {};
+	return std::nullopt;
+}
+
+// Gets our mangled identifier which has the data type tacked on.
+// GS1 has separate variable stores per data type.  So dumb.
+static std::string getMangledIdentifier(ScriptIdentifier& identifier, ScriptVariable& value)
+{
+	std::string result;
+
+	if (std::holds_alternative<std::string>(identifier))
+		result = std::get<std::string>(identifier);
+	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
+		result = std::get<std::pair<std::string, size_t>>(identifier).first;
+	else throw std::exception("getMangledIdentifier did not receive a valid identifier");
+
+	if (std::holds_alternative<double>(value))
+		result += "|double";
+	else if (std::holds_alternative<std::string>(value))
+		result += "|string";
+	else if (std::holds_alternative<std::vector<double>>(value))
+		result += "|array";
+	else throw std::exception("getMangledIdentifier received a ScriptVariable with an unknown data type");
+
+	return result;
+}
+
+// Gets our mangled identifier which has the data type tacked on.
+static std::string getMangledIdentifier(ScriptIdentifier& identifier, std::string_view dataType)
+{
+	std::string result;
+
+	if (std::holds_alternative<std::string>(identifier))
+		result = std::get<std::string>(identifier);
+	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
+		result = std::get<std::pair<std::string, size_t>>(identifier).first;
+	else throw std::exception("getMangledIdentifier did not receive a valid identifier");
+
+	result += "|";
+	result += dataType;
+
+	return result;
+}
+
+static std::optional<ScriptIdentifier> getIdentifier(std::any& anyval)
+{
+	auto* identifier = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier != nullptr)
+		return *identifier;
+	auto* stringval = std::any_cast<std::string>(&anyval);
+	if (stringval != nullptr)
+		return ScriptIdentifier{ *stringval };
+	return std::nullopt;
 }
 
 static std::vector<std::any> visitChildrenAndCollect(GS1Visitor* visitor, antlr4::tree::ParseTree* node)
@@ -57,18 +109,143 @@ static std::vector<std::any> visitChildrenAndCollect(GS1Visitor* visitor, antlr4
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::execute(ScriptEventSource source, antlr4::tree::ParseTree* startNode, ScriptVariableStore* objectVariables, ScriptVariableStore* levelVariables)
+std::optional<std::variant<ScriptVariable*, double*>> GS1Visitor::lookInVariableStore(const ScriptIdentifier& identifier)
 {
+	// Early out if we aren't saving variables anywhere.
+	if (m_variableStores == nullptr && m_defaultStore == nullptr)
+		return std::nullopt;
+
+	std::string identifierName;
+	std::optional<size_t> index = std::nullopt;
+
+	// Get our identifier name and index;
+	if (std::holds_alternative<std::string>(identifier))
+		identifierName = std::get<std::string>(identifier);
+	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
+	{
+		auto& pair = std::get<std::pair<std::string, size_t>>(identifier);
+		identifierName = pair.first;
+		index = pair.second;
+	}
+	else throw std::exception("getScriptVariableFromStore received an invalid identifier");
+
+	// Look through all the variable stores for the variable.
+	if (m_variableStores != nullptr)
+	{
+		for (auto& [prefix, storePicker] : *m_variableStores)
+		{
+			if (identifierName.starts_with(prefix))
+			{
+				if (std::holds_alternative<ScriptVariableStore*>(storePicker))
+				{
+					auto store = std::get<ScriptVariableStore*>(storePicker);
+					auto variable = store->get(identifierName);
+
+					// No variable found, create a new one.
+					if (variable == nullptr)
+						return &store->add(identifierName, ScriptVariable{ 0.0 });
+
+					// Check if the variable is an array.
+					if (std::holds_alternative<std::vector<double>>(*variable))
+					{
+						auto safeIndex = index.value_or(0);
+						auto& array = std::get<std::vector<double>>(*variable);
+
+						// Bad index access just returns 0.
+						if (safeIndex >= array.size())
+							return std::nullopt;
+
+						return &array[safeIndex];
+					}
+
+					return variable;
+				}
+				else if (std::holds_alternative<ScriptVariableFromServer>(storePicker))
+				{
+					auto picker = std::get<ScriptVariableFromServer>(storePicker);
+					return picker(identifierName, index.value_or(0));
+				}
+			}
+		}
+	}
+
+	// Check the default store.
+	if (m_defaultStore != nullptr)
+		return &m_defaultStore->get_or_add(identifierName);
+
+	// No variable found.
+	return std::nullopt;
+}
+
+std::optional<double*> GS1Visitor::getIdentifierValueForAssignment(std::any anyval)
+{
+	// Get our identifier.
+	auto identifier = getIdentifier(anyval);
+	if (!identifier.has_value())
+		return std::nullopt;
+
+	return getIdentifierValueForAssignment(identifier.value());
+}
+
+std::optional<double*> GS1Visitor::getIdentifierValueForAssignment(ScriptIdentifier& identifier)
+{
+	// Try to get our variable.
+	// Our value can be just a double* for updating an array, so lets try and get that.
+	double* value = nullptr;
+
+	// Try to get our variable.
+	auto identifier_value = lookInVariableStore(identifier);
+	if (!identifier_value.has_value())
+		return std::nullopt;
+
+	if (std::holds_alternative<ScriptVariable*>(identifier_value.value()))
+	{
+		auto* variable = std::get<ScriptVariable*>(identifier_value.value());
+		if (variable == nullptr)
+			return std::nullopt;
+
+		// It needs to hold a double.
+		if (!std::holds_alternative<double>(*variable))
+			return std::nullopt;
+
+		// Link to the double stored in the variant.
+		value = &std::get<double>(*variable);
+	}
+	else if (std::holds_alternative<double*>(identifier_value.value()))
+	{
+		// Pull the double* out.
+		auto* arrayvar = std::get<double*>(identifier_value.value());
+		if (arrayvar == nullptr)
+			return std::nullopt;
+
+		value = arrayvar;
+	}
+
+	if (value == nullptr)
+		return std::nullopt;
+
+	return value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GS1Visitor::execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
+{
+	m_parser = &parser;
 	m_source = source;
+	m_defaultStore = defaultStore;
+	m_variableStores = variableStores;
 
-	m_variableContainers.clear();
-	if (objectVariables != nullptr)
-		m_variableContainers.push_back(objectVariables);
-	if (levelVariables != nullptr)
-		m_variableContainers.push_back(levelVariables);
+	if (defaultStore == nullptr)
+	{
+		ScriptVariableStore defaultStoreThrowAway;
+		m_defaultStore = &defaultStoreThrowAway;
+		visit(&startNode);
+	}
+	else visit(&startNode);
 
-	// Execute!
-	visit(startNode);
+	m_defaultStore = nullptr;
+	m_variableStores = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,50 +382,11 @@ std::any GS1Visitor::visitInExpression(GS1Parser::InExpressionContext* context)
 	}
 }
 
-std::any GS1Visitor::visitPrimary_expression(GS1Parser::Primary_expressionContext* context)
-{
-	auto result = visitChildren(context);
-
-	// Handle IdentifierArray results.
-	// It has to return a double* for assignment operations to work.
-	if (auto* v = std::any_cast<double*>(&result); v != nullptr && *v != nullptr)
-		return ScriptVariable{ **v };
-
-	return result;
-}
-
-std::any GS1Visitor::visitIdentifier(GS1Parser::IdentifierContext* context)
-{
-	auto visited = visit(context->compound_identifier());
-	auto result = getScriptVariable(visited);
-	if (!result.has_value() || !std::holds_alternative<std::string>(result.value()))
-		throw std::exception("Identifier received an invalid compound_identifier");
-
-	std::string& identifier = std::get<std::string>(result.value());
-
-	// TODO(Nalin): Built-in variables.
-	// TODO(Nalin): Handle prefixed variables.
-
-	// Look for the variable in our containers.
-	for (auto* container : m_variableContainers)
-	{
-		if (auto* var = container->get(identifier); var != nullptr)
-			return var;
-	}
-
-	// No variable found, create a new one.
-	if (!m_variableContainers.empty())
-		return &m_variableContainers.front()->add(identifier, ScriptVariable{ 0.0 });
-
-	// No variable found, just return 0.
-	return ScriptVariable{ 0.0 };
-}
-
 std::any GS1Visitor::visitIdentifierArray(GS1Parser::IdentifierArrayContext* context)
 {
 	auto compound_any = visit(context->compound_identifier());
-	auto compound_identifier = getScriptVariable(compound_any);
-	if (!compound_identifier.has_value() || !std::holds_alternative<std::string>(compound_identifier.value()))
+	const auto* identifier = std::any_cast<ScriptIdentifier>(&compound_any);
+	if (identifier == nullptr || !std::holds_alternative<std::string>(*identifier))
 		throw std::exception("IdentifierArray received an invalid compound_identifier");
 
 	auto expression_any = visit(context->primary_expression());
@@ -256,31 +394,8 @@ std::any GS1Visitor::visitIdentifierArray(GS1Parser::IdentifierArrayContext* con
 	if (!expression_index.has_value() || !std::holds_alternative<double>(expression_index.value()))
 		throw std::exception("IdentifierArray received an invalid array index");
 
-	std::string& identifier = std::get<std::string>(compound_identifier.value());
-	size_t index = static_cast<size_t>(std::get<double>(expression_index.value()));
-
-	// TODO(Nalin): Built-in variables.
-
-	// Look for the variable in our containers.
-	for (auto* container : m_variableContainers)
-	{
-		if (auto* var = container->get(identifier); var != nullptr)
-		{
-			if (!std::holds_alternative<std::vector<double>>(*var))
-				throw std::exception("IdentifierArray identifier is not an array");
-			std::vector<double>& array = std::get<std::vector<double>>(*var);
-			if (index >= array.size())
-				throw std::exception("IdentifierArray index is out of range");
-			return &array[index];
-		}
-	}
-
-	// No variable found, create a new one.
-	if (!m_variableContainers.empty())
-		return m_variableContainers.front()->add(identifier, ScriptVariable{ 0.0 });
-
-	// No variable found, just return 0.
-	return ScriptVariable{ 0.0 };
+	auto index = static_cast<size_t>(std::get<double>(expression_index.value()));
+	return ScriptIdentifier{ std::make_pair(std::get<std::string>(*identifier), index) };
 }
 
 std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context)
@@ -290,15 +405,26 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 	auto results = visitChildrenAndCollect(this, context);
 	for (auto& piece : results)
 	{
-		auto var = getScriptVariable(piece);
-		if (!var.has_value() || !std::holds_alternative<std::string>(var.value()))
+		auto var = getIdentifier(piece);
+		if (!var.has_value())
+			throw std::exception("CompoundIdentifier chunk was not a valid identifier");
+
+		// If this is an array identifier, don't allow any compounding after it.
+		if (std::holds_alternative<std::pair<std::string, size_t>>(var.value()))
+		{
+			auto pair = std::get<std::pair<std::string, size_t>>(var.value());
+			identifier.append(pair.first);
+			return ScriptIdentifier{ std::make_pair(identifier, pair.second) };
+		}
+
+		if (!std::holds_alternative<std::string>(var.value()))
 			throw std::exception("CompoundIdentifier chunk was not a valid data type");
 
 		auto& str = std::get<std::string>(var.value());
 		identifier.append(str);
 	}
 
-	return ScriptVariable{ identifier };
+	return ScriptIdentifier{ identifier };
 }
 
 std::any GS1Visitor::visitIncDecOperation(GS1Parser::IncDecOperationContext* context)
@@ -311,42 +437,25 @@ std::any GS1Visitor::visitIncDecOperation(GS1Parser::IncDecOperationContext* con
 	if (!op.has_value())
 		throw std::exception("IncDecOperation has no operation");
 
-	// Try to get our variable.
-	// We need to handle double* due to IdentifierArray.
-	double* value = nullptr;
+	// Get our identifier value.
+	auto identifier = getIdentifierValueForAssignment(results[0]);
+	if (!identifier.has_value() || identifier.value() == nullptr)
+		throw std::exception("IncDecOperation has no identifier value");
 
-	// Try to get our variable.
-	ScriptVariable* variable = getScriptVariableUnsafe(results[0]);
-	if (variable != nullptr)
-	{
-		// It needs to hold a double.
-		if (!std::holds_alternative<double>(*variable))
-			throw std::exception("IncDecOperation has no valid value");
-
-		// Link to the double stored in the variant.
-		value = &std::get<double>(*variable);
-	}
-	// We had no variable, so let's check for a double*.
-	else
-	{
-		auto** arrayvar = std::any_cast<double*>(&results[0]);
-		if (arrayvar == nullptr || *arrayvar == nullptr)
-			throw std::exception("IncDecOperation has no valid value");
-
-		value = *arrayvar;
-	}
-
+	double* identifier_value = identifier.value();
 	switch (op.value())
 	{
 		case GS1Parser::OP_INC:
-			++(*value);
+			++(*identifier_value);
 			break;
 		case GS1Parser::OP_DEC:
-			--(*value);
+			--(*identifier_value);
 			break;
 	}
 
-	return variable;
+	// GS1 assignment operations are statements and can't be used inside expressions.
+	// So don't return anything.
+	return {};
 }
 
 std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* context)
@@ -363,10 +472,24 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 		if (results.size() != 2)
 			throw std::exception("setstring identifier,string;");
 
-		auto* identifier = getScriptVariableUnsafe(results[0]);
+		// Get the identifier.
+		auto identifier_name = getIdentifier(results[0]);
+		if (!identifier_name.has_value())
+			throw std::exception("setstring identifier is not a valid identifier");
+
+		// Find the identifier variable in the store.
+		auto identifier = lookInVariableStore(ScriptIdentifier{ getMangledIdentifier(identifier_name.value(), "string") });
+		if (!identifier.has_value() || !std::holds_alternative<ScriptVariable*>(identifier.value()))
+			return {};
+
+		// Get the link to the value.
+		auto identifier_value = std::get<ScriptVariable*>(identifier.value());
+		if (identifier_value == nullptr)
+			return {};
+
+		// Assign the string.
 		auto value = getScriptVariable<std::string>(results[1]).value_or({});
-		if (identifier != nullptr)
-			*identifier = value;
+		*identifier_value = value;
 	}
 
 	return {};
@@ -380,12 +503,12 @@ std::any GS1Visitor::visitUserFunctionCall(GS1Parser::UserFunctionCallContext* c
 	if (!function_name.has_value() || !std::holds_alternative<std::string>(function_name.value()))
 		throw std::exception("UserFunctionCall has no valid function name");
 
-	if (parser == nullptr)
+	if (m_parser == nullptr)
 		throw std::exception("GS1Visitor is missing the link to the parser");
 
 	std::string& name = std::get<std::string>(function_name.value());
-	auto function = parser->userFunctions.find(name);
-	if (function == parser->userFunctions.end())
+	auto function = m_parser->userFunctions.find(name);
+	if (function == m_parser->userFunctions.end())
 		throw std::exception("UserFunctionCall could not find user function");
 
 	return visit(function->second);
@@ -467,7 +590,6 @@ std::any GS1Visitor::visitFlowContinue(GS1Parser::FlowContinueContext* context)
 
 std::any GS1Visitor::visitAssignmentOperation(GS1Parser::AssignmentOperationContext* context)
 {
-	// identifier_ assignment_operator assignment
 	auto results = visitChildrenAndCollect(this, context);
 	if (results.size() != 2 || context->children.size() != 3)
 		throw std::exception("AssignmentOperation is not a binary expression");
@@ -476,86 +598,76 @@ std::any GS1Visitor::visitAssignmentOperation(GS1Parser::AssignmentOperationCont
 	if (!op.has_value())
 		throw std::exception("AssignmentOperation has no operation");
 
-	// Try to get our identifier.
-	// We need to handle double* due to IdentifierArray.
-	double* identifier_value_double = nullptr;
-
-	// Try to get our identifier.
-	ScriptVariable* identifier = getScriptVariableUnsafe(results[0]);
-	if (identifier == nullptr)
-	{
-		// We had no variable, so let's check for a double*.
-		auto** arrayvar = std::any_cast<double*>(&results[0]);
-		if (arrayvar == nullptr || *arrayvar == nullptr)
-			throw std::exception("AssignmentOperation has no valid value");
-
-		identifier_value_double = *arrayvar;
-	}
+	// Get our identifier.
+	auto identifier = getIdentifier(results[0]);
+	if (!identifier.has_value())
+		throw std::exception("IncDecOperation has no identifier value");
 
 	// Get the assignment variable.
 	auto assignment = getScriptVariable(results[1]);
 	if (!assignment.has_value())
 		throw std::exception("AssignmentOperation has no assignment value");
 
-	// Direct assignment?  We can abort early.
+	// Determine the identifier name mangle for searching our variable stores.
+	auto mangled = getMangledIdentifier(identifier.value(), assignment.value());
+
+	// Get our identifier variable.
+	auto identifier_variable = lookInVariableStore(ScriptIdentifier{ mangled });
+	if (!identifier_variable.has_value())
+		throw std::exception("AssignmentOperation has no identifier variable");
+
+	// Do a direct assignment first as the rest rely on doubles exclusively.
 	if (op.value() == GS1Parser::OP_ASSIGN)
 	{
-		// Array still needs a special case.
-		if (identifier == nullptr)
+		// Handle array assignment.
+		if (std::holds_alternative<double*>(identifier_variable.value()))
 		{
+			double* value = std::get<double*>(identifier_variable.value());
 			if (!std::holds_alternative<double>(assignment.value()))
-				throw std::exception("AssignmentOperation assignment does not hold a number");
-
-			*identifier_value_double = std::get<double>(assignment.value());
-			return results[0];
+				*value = 0.0;
+			else *value = std::get<double>(assignment.value());
+			return {};
 		}
 
-		*identifier = assignment.value();
-		return identifier;
+		// Otherwise, just set.
+		*std::get<ScriptVariable*>(identifier_variable.value()) = assignment.value();
+		return {};
 	}
 
-	// Get a pointer to our identifier so we can alter the variable.
-	if (identifier_value_double == nullptr)
-	{
-		if (!std::holds_alternative<double>(*identifier))
-			throw std::exception("AssignmentOperation identifier does not hold a number");
-		identifier_value_double = &std::get<double>(*identifier);
-	}
+	auto* identifier_value = std::get<ScriptVariable*>(identifier_variable.value());
+	if (identifier_value == nullptr)
+		throw std::exception("AssignmentOperation identifier value is null");
 
 	// The mathematical assignments require a double.
-	if (!std::holds_alternative<double>(assignment.value()))
-		throw std::exception("AssignmentOperation assignment does not hold a number");
+	if (!std::holds_alternative<double>(*identifier_value) || !std::holds_alternative<double>(assignment.value()))
+		throw std::exception("AssignmentOperation is can only perform math on doubles");
 
 	// Handle our values that require a double.
+	auto& identifier_value_double = std::get<double>(*identifier_value);
 	double assignment_value = std::get<double>(assignment.value());
 	switch (op.value())
 	{
 		case GS1Parser::OP_ASSIGN_ADD:
-			*identifier_value_double += assignment_value;
+			identifier_value_double += assignment_value;
 			break;
 		case GS1Parser::OP_ASSIGN_SUB:
-			*identifier_value_double -= assignment_value;
+			identifier_value_double -= assignment_value;
 			break;
 		case GS1Parser::OP_ASSIGN_MUL:
-			*identifier_value_double *= assignment_value;
+			identifier_value_double *= assignment_value;
 			break;
 		case GS1Parser::OP_ASSIGN_DIV:
-			*identifier_value_double /= assignment_value;
+			identifier_value_double /= assignment_value;
 			break;
 		case GS1Parser::OP_ASSIGN_MOD:
-			*identifier_value_double = static_cast<double>(static_cast<int64_t>(*identifier_value_double) % static_cast<int64_t>(assignment_value));
+			identifier_value_double = static_cast<double>(static_cast<int64_t>(identifier_value_double) % static_cast<int64_t>(assignment_value));
 			break;
 		case GS1Parser::OP_ASSIGN_POW:
-			*identifier_value_double = std::pow(*identifier_value_double, assignment_value);
+			identifier_value_double = std::pow(identifier_value_double, assignment_value);
 			break;
 	}
 
-	if (identifier != nullptr)
-		return identifier;
-	if (identifier_value_double != nullptr)
-		return identifier_value_double;
-
-	throw std::exception("AssignmentOperation reached the end");
+	return {};
 }
 
 std::any GS1Visitor::visitUnaryOperation(GS1Parser::UnaryOperationContext* context)
@@ -611,7 +723,7 @@ std::any GS1Visitor::visitStringLiteral(GS1Parser::StringLiteralContext* context
 std::any GS1Visitor::visitIdentifierLiteral(GS1Parser::IdentifierLiteralContext* context)
 {
 	std::string text{ std::move(context->IDENTIFIER()->getText()) };
-	return std::make_any<ScriptVariable>(std::move(string::trimMutate(text)));
+	return std::make_any<ScriptIdentifier>(std::move(string::trimMutate(text)));
 }
 
 std::any GS1Visitor::visitRangeLiteral(GS1Parser::RangeLiteralContext* context)
@@ -642,5 +754,4 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal::grammar::gs1

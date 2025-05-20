@@ -1,28 +1,34 @@
 #ifndef GS1VISITOR_H
 #define GS1VISITOR_H
 
+#include <optional>
+#include <string_view>
+#include <any>
+
 #include <GS1ParserBaseVisitor.h>
 
 #include <scripting/ScriptContainers.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal::grammar::gs1
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(ScriptEventSource source, antlr4::tree::ParseTree* startNode, ScriptVariableStore* objectVariables, ScriptVariableStore* levelVariables);
+	std::optional<std::variant<ScriptVariable*, double*>> lookInVariableStore(const ScriptIdentifier& identifier);
+	std::optional<double*> getIdentifierValueForAssignment(std::any anyval);
+	std::optional<double*> getIdentifierValueForAssignment(ScriptIdentifier& identifier);
 
 public:
-	GS1Parser* parser = nullptr;
+	void execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
 
 private:
+	GS1Parser* m_parser = nullptr;
 	ScriptEventSource m_source{};
-	std::vector<ScriptVariableStore*> m_variableContainers;
+	ScriptVariableStore* m_defaultStore = nullptr;
+	ScriptVariableStoreMap* m_variableStores = nullptr;
 
 public:
 	//virtual std::any visitProgram(GS1Parser::ProgramContext* context) = 0;
@@ -41,16 +47,16 @@ public:
 	//virtual std::any visitElse_false_block(GS1Parser::Else_false_blockContext* context) = 0;
 	//virtual std::any visitAssignment_operator(GS1Parser::Assignment_operatorContext* context) = 0;
 	//virtual std::any visitCompound_string(GS1Parser::Compound_stringContext* context) = 0;
-	//virtual std::any visitUnary_operator(GS1Parser::Unary_operatorContext* context) override;
-	//virtual std::any visitAssignment(GS1Parser::AssignmentContext* context) override;
+	//virtual std::any visitUnary_operator(GS1Parser::Unary_operatorContext* context) = 0;
+	//virtual std::any visitAssignment(GS1Parser::AssignmentContext* context) = 0;
 	//virtual std::any visitFunction_definition(GS1Parser::Function_definitionContext* context) = 0;
+	//virtual std::any visitPrimary_expression(GS1Parser::Primary_expressionContext* context) = 0;
+	//virtual std::any visitIdentifier(GS1Parser::IdentifierContext* context) = 0;
 	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
 	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
 	virtual std::any visitLogicExpression(GS1Parser::LogicExpressionContext* context) override;
 	virtual std::any visitTernaryExpression(GS1Parser::TernaryExpressionContext* context) override;
 	virtual std::any visitInExpression(GS1Parser::InExpressionContext* context) override;
-	virtual std::any visitPrimary_expression(GS1Parser::Primary_expressionContext* context) override;
-	virtual std::any visitIdentifier(GS1Parser::IdentifierContext* context) override;
 	virtual std::any visitIdentifierArray(GS1Parser::IdentifierArrayContext* context) override;
 	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
 	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
@@ -75,7 +81,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal::grammar::gs1
 
 #endif // GS1VISITOR_H
