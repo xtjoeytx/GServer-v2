@@ -17,12 +17,29 @@ namespace preagonal::grammar::gs1
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
+	void execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
+
+protected:
 	std::optional<std::variant<ScriptVariable*, double*>> lookInVariableStore(const ScriptIdentifier& identifier);
 	std::optional<double*> getIdentifierValueForAssignment(std::any anyval);
 	std::optional<double*> getIdentifierValueForAssignment(ScriptIdentifier& identifier);
 
-public:
-	void execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
+protected:
+	ScriptVariable* getGS1ScriptVariableUnsafe(std::any& anyval);
+	const ScriptVariable* getGS1ScriptVariableUnsafe(const std::any& anyval);
+	ScriptVariable& getGS1ScriptVariableOr(std::any& anyval, ScriptVariable& defaultValue);
+
+	template<class T = ScriptVariable>
+	[[inline]] std::optional<T> getGS1ScriptVariable(std::any& anyval);
+
+	template<>
+	[[inline]] std::optional<bool> getGS1ScriptVariable<bool>(std::any& anyval);
+
+	template<class T = ScriptVariable>
+	[[inline]] const std::optional<T> getGS1ScriptVariable(const std::any& anyval);
+
+	template<>
+	[[inline]] const std::optional<bool> getGS1ScriptVariable<bool>(const std::any& anyval);
 
 private:
 	GS1Parser* m_parser = nullptr;
@@ -79,6 +96,94 @@ public:
 	virtual std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
 	virtual std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
 };
+
+//
+
+template<class T>
+inline std::optional<T> GS1Visitor::getGS1ScriptVariable(std::any& anyval)
+{
+	auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier_test == nullptr)
+		return getScriptVariable<T>(anyval);
+
+	auto variable = lookInVariableStore(*identifier_test);
+	if (!variable.has_value())
+		return std::nullopt;
+
+	if constexpr (std::same_as<T, ScriptVariable>)
+	{
+		if (std::holds_alternative<double*>(variable.value()))
+			return ScriptVariable{ *std::get<double*>(variable.value()) };
+		return *std::get<ScriptVariable*>(variable.value());
+	}
+	else
+	{
+		if (!std::holds_alternative<ScriptVariable*>(variable.value()))
+			return std::nullopt;
+
+		auto* variable_value = std::get<ScriptVariable*>(variable.value());
+		if (variable_value == nullptr)
+			return std::nullopt;
+
+		if (std::holds_alternative<T>(*variable_value))
+			return std::get<T>(*variable_value);
+	}
+
+	return std::nullopt;
+}
+
+template<>
+inline std::optional<bool> GS1Visitor::getGS1ScriptVariable<bool>(std::any& anyval)
+{
+	auto double_value = getGS1ScriptVariable<double>(anyval);
+	if (!double_value.has_value())
+		return std::nullopt;
+	return double_value.value() != 0.0f;
+}
+
+///
+
+template<class T>
+inline const std::optional<T> GS1Visitor::getGS1ScriptVariable(const std::any& anyval)
+{
+	const auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier_test == nullptr)
+		return getScriptVariable<T>(anyval);
+
+	auto variable = lookInVariableStore(*identifier_test);
+	if (!variable.has_value())
+		return std::nullopt;
+
+	if constexpr (std::same_as<T, ScriptVariable>)
+	{
+		if (std::holds_alternative<double*>(variable.value()))
+			return ScriptVariable{ *std::get<double*>(variable.value()) };
+		return *std::get<ScriptVariable*>(variable.value());
+	}
+	else
+	{
+		if (!std::holds_alternative<ScriptVariable*>(variable.value()))
+			return std::nullopt;
+
+		auto* variable_value = std::get<ScriptVariable*>(variable.value());
+		if (variable_value == nullptr)
+			return std::nullopt;
+
+		if (std::holds_alternative<T>(*variable_value))
+			return std::get<T>(*variable_value);
+	}
+
+	return std::nullopt;
+}
+
+template<>
+inline const std::optional<bool> GS1Visitor::getGS1ScriptVariable<bool>(const std::any& anyval)
+{
+	const auto double_value = getGS1ScriptVariable<double>(anyval);
+	if (!double_value.has_value())
+		return std::nullopt;
+	return double_value.value() != 0.0f;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::grammar::gs1

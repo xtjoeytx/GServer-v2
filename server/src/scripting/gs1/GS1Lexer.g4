@@ -483,6 +483,7 @@ KW_TRUE			: 'true';
 KW_FALSE		: 'false';
 
 OP_ASSIGN		: '=';
+OP_ASSIGN2      : ':=';
 OP_ADD			: '+';
 OP_SUB			: '-';
 OP_MUL			: '*';

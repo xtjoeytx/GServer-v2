@@ -79,7 +79,7 @@ binary_expression
 	| binary_expression (OP_MUL | OP_DIV | OP_MOD) binary_expression						# MathExpression
 	| binary_expression (OP_ADD | OP_SUB) binary_expression									# MathExpression
 	| binary_expression (OP_LESS | OP_GREAT | OP_LESS_EQ | OP_GREAT_EQ) binary_expression	# ComparisonExpression
-	| binary_expression (OP_EQUAL | OP_NOTEQ) binary_expression								# ComparisonExpression
+	| binary_expression (OP_EQUAL | OP_ASSIGN | OP_NOTEQ) binary_expression					# ComparisonExpression
 	| binary_expression OP_LOGICALAND binary_expression										# LogicExpression
 	| binary_expression OP_LOGICALOR binary_expression										# LogicExpression
 	| binary_expression TOKEN_QUESTION binary_expression TOKEN_COLON binary_expression		# TernaryExpression
@@ -94,7 +94,7 @@ identifier_
 	;
 
 compound_identifier
-	: identifier_literal (identifier_literal | messagecode_string)*?							# CompoundIdentifier
+	: identifier_literal (identifier_literal | messagecode_string)*?					# CompoundIdentifier
 	;
 
 inc_dec_expression
@@ -176,6 +176,7 @@ flow_continue
 
 assignment_operator
 	: OP_ASSIGN
+	| OP_ASSIGN2
 	| OP_ASSIGN_MUL
 	| OP_ASSIGN_DIV
 	| OP_ASSIGN_MOD

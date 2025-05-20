@@ -129,6 +129,15 @@ std::optional<std::variant<ScriptVariable*, double*>> GS1Visitor::lookInVariable
 	}
 	else throw std::exception("getScriptVariableFromStore received an invalid identifier");
 
+	// If we don't have a data type on our identifier, pick a default.
+	if (!identifierName.contains('|'))
+	{
+		if (index.has_value())
+			identifierName += "|array";
+		else
+			identifierName += "|double";
+	}
+
 	// Look through all the variable stores for the variable.
 	if (m_variableStores != nullptr)
 	{
@@ -229,6 +238,60 @@ std::optional<double*> GS1Visitor::getIdentifierValueForAssignment(ScriptIdentif
 
 ///////////////////////////////////////////////////////////////////////////////
 
+ScriptVariable* GS1Visitor::getGS1ScriptVariableUnsafe(std::any& anyval)
+{
+	auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier_test == nullptr)
+		return getScriptVariableUnsafe(anyval);
+
+	auto variable = lookInVariableStore(*identifier_test);
+	if (!variable.has_value())
+		return nullptr;
+
+	if (std::holds_alternative<double*>(variable.value()))
+		throw std::exception("getGS1ScriptVariableUnsafe had a double*, consider using a safer version");
+
+	return std::get<ScriptVariable*>(variable.value());
+}
+
+const ScriptVariable* GS1Visitor::getGS1ScriptVariableUnsafe(const std::any& anyval)
+{
+	auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier_test == nullptr)
+		return getScriptVariableUnsafe(anyval);
+
+	auto variable = lookInVariableStore(*identifier_test);
+	if (!variable.has_value())
+		return nullptr;
+
+	if (std::holds_alternative<double*>(variable.value()))
+		throw std::exception("getGS1ScriptVariableUnsafe had a double*, consider using a safer version");
+
+	return std::get<ScriptVariable*>(variable.value());
+}
+
+ScriptVariable& GS1Visitor::getGS1ScriptVariableOr(std::any& anyval, ScriptVariable& defaultValue)
+{
+	auto* identifier_test = std::any_cast<ScriptIdentifier>(&anyval);
+	if (identifier_test == nullptr)
+		return getScriptVariableOr(anyval, defaultValue);
+
+	auto variable = lookInVariableStore(*identifier_test);
+	if (!variable.has_value())
+		return defaultValue;
+
+	if (std::holds_alternative<double*>(variable.value()))
+		throw std::exception("getGS1ScriptVariableOr had a double*, consider using a safer version");
+
+	auto* variable_value = std::get<ScriptVariable*>(variable.value());
+	if (variable_value == nullptr)
+		return defaultValue;
+
+	return *std::get<ScriptVariable*>(variable.value());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GS1Visitor::execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
 {
 	m_parser = &parser;
@@ -261,8 +324,8 @@ std::any GS1Visitor::visitMathExpression(GS1Parser::MathExpressionContext* conte
 		throw std::exception("MathExpression does not have an operator");
 
 	auto zero = ScriptVariable{ 0.0 };
-	auto& left = getScriptVariableOr(results[0], zero);
-	auto& right = getScriptVariableOr(results[1], zero);
+	auto& left = getGS1ScriptVariableOr(results[0], zero);
+	auto& right = getGS1ScriptVariableOr(results[1], zero);
 
 	auto getAsDoubles = [&zero](ScriptVariable& left, ScriptVariable& right) -> std::pair<double, double>
 	{
@@ -306,11 +369,16 @@ std::any GS1Visitor::visitComparisonExpression(GS1Parser::ComparisonExpressionCo
 		throw std::exception("ComparisonExpression does not have an operator");
 
 	ScriptVariable zero{ 0.0 };
-	auto left = getScriptVariableOr(results[0], zero);
-	auto right = getScriptVariableOr(results[1], zero);
+	auto left = getGS1ScriptVariableOr(results[0], zero);
+	auto right = getGS1ScriptVariableOr(results[1], zero);
 
 	switch (op.value())
 	{
+		case GS1Parser::OP_EQUAL:
+		case GS1Parser::OP_ASSIGN:
+			return ScriptVariable{ (left == right) ? 1.0 : 0.0 };
+		case GS1Parser::OP_NOTEQ:
+			return ScriptVariable{ (left != right) ? 1.0 : 0.0 };
 		case GS1Parser::OP_LESS:
 			return ScriptVariable{ (left < right) ? 1.0 : 0.0 };
 		case GS1Parser::OP_GREAT:
@@ -334,8 +402,8 @@ std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* con
 	if (!op.has_value())
 		throw std::exception("LogicExpression does not have an operator");
 
-	auto left = getScriptVariable<bool>(results[0]).value_or(false);
-	auto right = getScriptVariable<bool>(results[1]).value_or(false);
+	auto left = getGS1ScriptVariable<bool>(results[0]).value_or(false);
+	auto right = getGS1ScriptVariable<bool>(results[1]).value_or(false);
 
 	switch (op.value())
 	{
@@ -351,7 +419,7 @@ std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* con
 std::any GS1Visitor::visitTernaryExpression(GS1Parser::TernaryExpressionContext* context)
 {
 	auto condition = visit(context->binary_expression(0));
-	if (getScriptVariable<bool>(condition).value_or(false))
+	if (getGS1ScriptVariable<bool>(condition).value_or(false))
 		return visit(context->binary_expression(1));
 	return visit(context->binary_expression(2));
 }
@@ -369,7 +437,7 @@ std::any GS1Visitor::visitInExpression(GS1Parser::InExpressionContext* context)
 	if (right_range == nullptr && !right_array)
 		throw std::exception("InExpression does not have a range or array");
 
-	auto left = getScriptVariable<double>(results[0]).value_or(0.0);
+	auto left = getGS1ScriptVariable<double>(results[0]).value_or(0.0);
 	if (right_range != nullptr)
 	{
 		bool in_range = (right_range->first <= left && left <= right_range->second);
@@ -390,7 +458,7 @@ std::any GS1Visitor::visitIdentifierArray(GS1Parser::IdentifierArrayContext* con
 		throw std::exception("IdentifierArray received an invalid compound_identifier");
 
 	auto expression_any = visit(context->primary_expression());
-	auto expression_index = getScriptVariable(expression_any);
+	auto expression_index = getGS1ScriptVariable(expression_any);
 	if (!expression_index.has_value() || !std::holds_alternative<double>(expression_index.value()))
 		throw std::exception("IdentifierArray received an invalid array index");
 
@@ -488,7 +556,7 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 			return {};
 
 		// Assign the string.
-		auto value = getScriptVariable<std::string>(results[1]).value_or({});
+		auto value = getGS1ScriptVariable<std::string>(results[1]).value_or({});
 		*identifier_value = value;
 	}
 
@@ -499,7 +567,7 @@ std::any GS1Visitor::visitUserFunctionCall(GS1Parser::UserFunctionCallContext* c
 {
 	//throw std::exception("visitUserFunctionCall not implemented");
 	auto identifier = visit(context->identifier_literal());
-	auto function_name = getScriptVariable(identifier);
+	auto function_name = getGS1ScriptVariable(identifier);
 	if (!function_name.has_value() || !std::holds_alternative<std::string>(function_name.value()))
 		throw std::exception("UserFunctionCall has no valid function name");
 
@@ -523,7 +591,7 @@ std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallCont
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
 {
 	auto condition = visit(context->expression());
-	if (getScriptVariable<bool>(condition).value_or(false))
+	if (getGS1ScriptVariable<bool>(condition).value_or(false))
 		return visit(context->if_true_block());
 	else if (auto elseblock = context->else_false_block(); elseblock != nullptr)
 		return visit(elseblock);
@@ -538,7 +606,7 @@ std::any GS1Visitor::visitForLoop(GS1Parser::ForLoopContext* context)
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getScriptVariable<bool>(visit(context->expression(1))).value_or(false))
+	while (loopCount++ < MAX_LOOPS && getGS1ScriptVariable<bool>(visit(context->expression(1))).value_or(false))
 	{
 		// Block.
 		try
@@ -559,7 +627,7 @@ std::any GS1Visitor::visitWhileLoop(GS1Parser::WhileLoopContext* context)
 {
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getScriptVariable<bool>(visit(context->expression())).value_or(false))
+	while (loopCount++ < MAX_LOOPS && getGS1ScriptVariable<bool>(visit(context->expression())).value_or(false))
 	{
 		// Block.
 		try
@@ -604,7 +672,7 @@ std::any GS1Visitor::visitAssignmentOperation(GS1Parser::AssignmentOperationCont
 		throw std::exception("IncDecOperation has no identifier value");
 
 	// Get the assignment variable.
-	auto assignment = getScriptVariable(results[1]);
+	auto assignment = getGS1ScriptVariable(results[1]);
 	if (!assignment.has_value())
 		throw std::exception("AssignmentOperation has no assignment value");
 
@@ -617,7 +685,7 @@ std::any GS1Visitor::visitAssignmentOperation(GS1Parser::AssignmentOperationCont
 		throw std::exception("AssignmentOperation has no identifier variable");
 
 	// Do a direct assignment first as the rest rely on doubles exclusively.
-	if (op.value() == GS1Parser::OP_ASSIGN)
+	if (op.value() == GS1Parser::OP_ASSIGN || op.value() == GS1Parser::OP_ASSIGN2)
 	{
 		// Handle array assignment.
 		if (std::holds_alternative<double*>(identifier_variable.value()))
@@ -680,7 +748,7 @@ std::any GS1Visitor::visitUnaryOperation(GS1Parser::UnaryOperationContext* conte
 		throw std::exception("UnaryOperation does not have an operator");
 
 	ScriptVariable zero{ 0.0 };
-	auto& value = getScriptVariableOr(right, zero);
+	auto& value = getGS1ScriptVariableOr(right, zero);
 
 	switch (symbol.value())
 	{
