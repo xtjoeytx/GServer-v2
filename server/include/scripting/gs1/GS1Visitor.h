@@ -17,6 +17,9 @@ class GS1Visitor : public GS1ParserBaseVisitor
 public:
 	void execute(ScriptEventSource source, antlr4::tree::ParseTree* startNode, ScriptVariableStore* objectVariables, ScriptVariableStore* levelVariables);
 
+public:
+	GS1Parser* parser = nullptr;
+
 private:
 	ScriptEventSource m_source{};
 	std::vector<ScriptVariableStore*> m_variableContainers;
@@ -40,6 +43,7 @@ public:
 	//virtual std::any visitCompound_string(GS1Parser::Compound_stringContext* context) = 0;
 	//virtual std::any visitUnary_operator(GS1Parser::Unary_operatorContext* context) override;
 	//virtual std::any visitAssignment(GS1Parser::AssignmentContext* context) override;
+	//virtual std::any visitFunction_definition(GS1Parser::Function_definitionContext* context) = 0;
 	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
 	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
 	virtual std::any visitLogicExpression(GS1Parser::LogicExpressionContext* context) override;
@@ -51,7 +55,6 @@ public:
 	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
 	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
 	virtual std::any visitBuiltInCommand(GS1Parser::BuiltInCommandContext* context) override;
-	virtual std::any visitFunctionDefinition(GS1Parser::FunctionDefinitionContext* context) override;
 	virtual std::any visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context) override;
 	virtual std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
 	virtual std::any visitIfCondition(GS1Parser::IfConditionContext* context) override;

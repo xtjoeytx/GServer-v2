@@ -372,16 +372,23 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 	return {};
 }
 
-std::any GS1Visitor::visitFunctionDefinition(GS1Parser::FunctionDefinitionContext* context)
-{
-	throw std::exception("visitFunctionDefinition not implemented");
-	return {};
-}
-
 std::any GS1Visitor::visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context)
 {
-	throw std::exception("visitUserFunctionCall not implemented");
-	return {};
+	//throw std::exception("visitUserFunctionCall not implemented");
+	auto identifier = visit(context->identifier_literal());
+	auto function_name = getScriptVariable(identifier);
+	if (!function_name.has_value() || !std::holds_alternative<std::string>(function_name.value()))
+		throw std::exception("UserFunctionCall has no valid function name");
+
+	if (parser == nullptr)
+		throw std::exception("GS1Visitor is missing the link to the parser");
+
+	std::string& name = std::get<std::string>(function_name.value());
+	auto function = parser->userFunctions.find(name);
+	if (function == parser->userFunctions.end())
+		throw std::exception("UserFunctionCall could not find user function");
+
+	return visit(function->second);
 }
 
 std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context)

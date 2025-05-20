@@ -43,6 +43,7 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, CompiledScriptResultPtr 
 		return false;
 
 	GS1Visitor visitor;
+	visitor.parser = wrapper->parser.get();
 	visitor.execute(event.source, wrapper->program, object_variables, level_variables);
 
 	return false;

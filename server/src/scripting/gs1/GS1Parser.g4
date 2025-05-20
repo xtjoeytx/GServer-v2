@@ -5,6 +5,28 @@ options
 	tokenVocab=GS1Lexer;
 }
 
+@parser::header
+{
+// --------------------------------------------------------
+#include <map>
+#include <string>
+#include <string_view>
+#include <optional>
+// --------------------------------------------------------
+}
+
+@parser::members
+{
+// --------------------------------------------------------
+std::map<std::string, antlr4::tree::ParseTree*> userFunctions;
+// --------------------------------------------------------
+void add_user_function(std::string funcName, antlr4::tree::ParseTree* treeNode)
+{
+	userFunctions.insert_or_assign(funcName, treeNode);
+}
+// --------------------------------------------------------
+}
+
 program
 	: (statement | block)+ EOF
 	;
@@ -105,11 +127,11 @@ builtin_command_expression
 	;
 
 function_definition
-	: KW_FUNCTION identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block				# FunctionDefinition
+	: KW_FUNCTION identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block	{add_user_function($identifier_literal.ctx->getText(), $block.ctx);}
 	;
 
 user_function
-	: identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT									# UserFunctionCall
+	: identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT							# UserFunctionCall
 	;
 
 builtin_function
