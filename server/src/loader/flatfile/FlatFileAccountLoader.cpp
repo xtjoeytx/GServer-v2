@@ -1,28 +1,14 @@
-#include <algorithm>
-#include <concepts>
-#include <ranges>
-#include <format>
+#include <loader/flatfile/FlatFileAccountLoader.h>
 
-#include <memory.h>
-#include <time.h>
-#include <stdlib.h>
-
-#include "BabyDI.h"
-#include "IEnums.h"
-
-#include "Account.h"
-#include "FileSystem.h"
-#include "Server.h"
-#include "utilities/StringUtils.h"
-
-///////////////////////////////////////////////////////////////////////////////
+#include <Server.h>
+#include <utilities/StringUtils.h>
 
 using namespace std::string_view_literals;
 using system_clock = std::chrono::system_clock;
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // Helper to avoid having to write uint8_t everywhere.
@@ -49,20 +35,7 @@ static void writeLine(std::string& output, const std::string& section, const aut
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
-{
-	auto range = savedChests.equal_range(level.data());
-	for (auto& i = range.first; i != range.second; ++i)
-	{
-		if (i->second.first == x && i->second.second == y)
-			return true;
-	}
-	return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-flagPair PlainTextAccountLoader::decomposeFlag(const std::string& flag) const
+flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag) const
 {
 	auto server = BabyDI::Get<Server>();
 	flagPair result;
@@ -78,7 +51,7 @@ flagPair PlainTextAccountLoader::decomposeFlag(const std::string& flag) const
 	return result;
 }
 
-chestPair PlainTextAccountLoader::decomposeChest(const std::string& chest) const
+chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest) const
 {
 	chestPair result;
 	auto tokens = string::splitHard(chest, ":"sv);
@@ -91,7 +64,7 @@ chestPair PlainTextAccountLoader::decomposeChest(const std::string& chest) const
 	return result;
 }
 
-bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& account)
+bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& account)
 {
 	auto server = BabyDI::Get<Server>();
 
@@ -291,7 +264,7 @@ bool PlainTextAccountLoader::loadAccount(std::string_view accountName, Account& 
 	return true;
 }
 
-bool PlainTextAccountLoader::saveAccount(const Account& account)
+bool FlatFileAccountLoader::saveAccount(const Account& account)
 {
 	auto server = BabyDI::Get<Server>();
 
@@ -394,7 +367,7 @@ bool PlainTextAccountLoader::saveAccount(const Account& account)
 	return true;
 }
 
-bool PlainTextAccountLoader::checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const
+bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const
 {
 	constexpr std::array<std::string_view, 6> conditions = { ">=", "<=", "!=", "=", ">", "<" };
 
@@ -510,5 +483,4 @@ bool PlainTextAccountLoader::checkSearchConditions(std::string_view account, con
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

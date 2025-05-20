@@ -93,6 +93,86 @@ std::string_view trim(StringViewVariant auto const& str)
 	return trimLeft(trimRight(str));
 }
 
+// Trims whitespace from the start of a string, mutating it.
+inline std::string& trimLeftMutate(std::string& str)
+{
+	if (str.empty()) return str;
+
+	// Find first non-space.
+	const auto p = str.c_str();
+	size_t idx = 0;
+	while (idx < str.length() && std::isspace(int(p[idx])))
+		++idx;
+
+	// No whitespace.
+	if (idx == 0)
+		return str;
+
+	// All whitespace.
+	if (idx == str.length())
+	{
+		str.clear();
+		return str;
+	}
+
+	str = std::move(std::string{ str.begin() + idx, str.begin() + str.length()});
+	return str;
+}
+
+// Trims whitespace from the end of a string, mutating it.
+inline std::string& trimRightMutate(std::string& str)
+{
+	if (str.empty()) return str;
+
+	// Find last non-space.
+	const auto p = str.c_str();
+	size_t idx = str.length();
+	while (idx > 0 && std::isspace(int(p[idx - 1])))
+		--idx;
+
+	// No whitespace.
+	if (idx == str.length())
+		return str;
+
+	// All whitespace.
+	if (idx < 0)
+	{
+		str.clear();
+		return str;
+	}
+
+	str.resize(idx);
+	return str;
+}
+
+// Trims whitespace from the start and end of the string, mutating it.
+inline std::string& trimMutate(std::string& str)
+{
+	if (str.empty()) return str;
+
+	// Find first and last non-space.
+	const auto p = str.c_str();
+	size_t front = 0, back = str.length();
+	while (front < str.length() && std::isspace(static_cast<int>(p[front])))
+		++front;
+	while (front < back && std::isspace(static_cast<int>(p[back - 1])))
+		--back;
+
+	// No whitespace.
+	if (front == 0 && back == str.length())
+		return str;
+
+	// All whitespace.
+	if (back <= front)
+	{
+		str.clear();
+		return str;
+	}
+
+	str = std::move(std::string{ str.begin() + front, str.begin() + back });
+	return str;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 // Escapes quotes in a string.

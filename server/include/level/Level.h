@@ -37,6 +37,8 @@ class Map;
 
 class Level : public std::enable_shared_from_this<Level>
 {
+	friend class LevelLoader;
+
 public:
 	//! Destructor.
 	~Level();
@@ -312,13 +314,6 @@ public:
 
 private:
 	Level(short fillTile = 0);
-
-	// level-loading functions
-	bool loadLevel(const CString& pLevelName);
-	bool detectLevelType(const CString& pLevelName);
-	bool loadGraal(const CString& pLevelName);
-	bool loadZelda(const CString& pLevelName);
-	bool loadNW(const CString& pLevelName);
 
 private:
 	BabyDI_INJECT(Server, m_server);

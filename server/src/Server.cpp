@@ -1,36 +1,36 @@
 #include <atomic>
 #include <functional>
 #include <format>
+#include <chrono>
+#include <filesystem>
 
 #include <CString.h>
 #include <IUtil.h>
 
-#include "main.h"
-
-#include "Server.h"
-#include "level/Level.h"
-#include "level/Map.h"
-#include "npcserver/NPCServer.h"
-#include "npcserver/PlayerNpcServer.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "object/Weapon.h"
-#include "player/PlayerLogin.h"
-#include "player/PlayerClient.h"
-#include "scripting/ScriptClass.h"
-#include "scripting/ScriptOrigin.h"
-#include "scripting/gs1/ScriptEngineGS1.h"
-#include "scripting/gs2/ScriptEngineGS2.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <level/Map.h>
+#include <loader/flatfile/FlatFileAccountLoader.h>
+#include <loader/flatfile/FlatFileNPCLoader.h>
+#include <npcserver/NPCServer.h>
+#include <npcserver/PlayerNpcServer.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <object/Weapon.h>
+#include <player/PlayerLogin.h>
+#include <player/PlayerClient.h>
+#include <scripting/ScriptClass.h>
+#include <scripting/ScriptOrigin.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/gs2/ScriptEngineGS2.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 extern std::atomic_bool shutdownProgram;
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 static const char* const filesystemTypes[] = {
@@ -68,7 +68,8 @@ Server::Server(const CString& pName)
 	m_lastTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateServerTime();
 
-	m_accountLoader = std::make_unique<PlainTextAccountLoader>();
+	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
+	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
 }
 
 Server::~Server()
@@ -84,6 +85,10 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Load the NPC-Server.
 	loadNpcServer();
+
+	// Load the server objects.
+	ret = loadServerObjects();
+	if (ret) return ret;
 
 	// If an override serverip and serverport were specified, fix the options now.
 	if (!serverip.isEmpty())
@@ -460,8 +465,6 @@ void Server::loadFolderConfig()
 
 int Server::loadConfigFiles()
 {
-	// TODO(joey): /reloadconfig reloads this, but things like server flags, weapons and npcs probably shouldn't be reloaded.
-	//	Move them out of here?
 	log::printLine(log::server, ":: Loading server configuration...");
 
 	{
@@ -489,10 +492,6 @@ int Server::loadConfigFiles()
 		log::printLine(log::server, "Loading file system...");
 		loadFileSystem();
 
-		// Load server flags.
-		log::printLine(log::server, "Loading serverflags.txt...");
-		loadServerFlags();
-
 		// Load server message.
 		log::printLine(log::server, "Loading config/servermessage.html...");
 		loadServerMessage();
@@ -500,18 +499,6 @@ int Server::loadConfigFiles()
 		// Load IP bans.
 		log::printLine(log::server, "Loading config/ipbans.txt...");
 		loadIPBans();
-
-		// Load weapons.
-		log::printLine(log::server, "Loading weapons...");
-		loadWeapons(true);
-
-		// Load maps.
-		log::printLine(log::server, "Loading maps...");
-		loadMaps(true);
-
-		// Load map levels - doing this after db npcs are loaded incase
-		// some level scripts may require access to the databases.
-		loadMapLevels();
 
 		// Load translations.
 		log::printLine(log::server, "Loading translations...");
@@ -620,6 +607,43 @@ void Server::loadServerMessage()
 void Server::loadIPBans()
 {
 	m_ipBans = CString::loadToken(CString() << "config/ipbans.txt", "\n", true);
+}
+
+void Server::loadTranslations()
+{
+	this->TS_Reload();
+}
+
+void Server::loadWordFilter()
+{
+	m_wordFilter.load(CString() << "config/rules.txt");
+}
+
+int Server::loadServerObjects()
+{
+	log::printLine(log::server, ":: Loading server objects...");
+
+	{
+		auto indent = log::server.indent();
+
+		// Load server flags.
+		log::printLine(log::server, "Loading serverflags.txt...");
+		loadServerFlags();
+
+		// Load weapons.
+		log::printLine(log::server, "Loading weapons...");
+		loadWeapons(true);
+
+		// Load maps.
+		log::printLine(log::server, "Loading maps...");
+		loadMaps(true);
+
+		// Load map levels - doing this after db npcs are loaded incase
+		// some level scripts may require access to the databases.
+		loadMapLevels();
+	}
+
+	return 0;
 }
 
 void Server::loadWeapons(bool print)
@@ -823,16 +847,6 @@ void Server::loadNpcServer()
 	}
 }
 
-void Server::loadTranslations()
-{
-	this->TS_Reload();
-}
-
-void Server::loadWordFilter()
-{
-	m_wordFilter.load(CString() << "config/rules.txt");
-}
-
 void Server::saveServerFlags()
 {
 	CString out;
@@ -926,7 +940,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// New Npc
 	auto newNPC = std::make_shared<NPC>(newId, type);
 
-	// Assign NPC Id and add to list.
+	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(newId, newNPC));
 
 	// Set NPC props.
@@ -941,7 +955,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket(0);
-		sendPacketToLevelOnlyGmapArea(packet, level.lock());
+		sendPacketToLevelOnlyGmapArea(packet, level);
 	}
 
 	return newNPC;
@@ -1618,5 +1632,4 @@ void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, flo
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

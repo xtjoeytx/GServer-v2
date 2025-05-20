@@ -11,37 +11,38 @@
 #include <CTranslationManager.h>
 #include <IEnums.h>
 
-#include "common.h"
+#include <common.h>
 
-#include "Account.h"
-#include "FileSystem.h"
-#include "ServerList.h"
-#include "object/Player.h"
-#include "object/NPC.h"
-#include "misc/WordFilter.h"
-#include "utilities/CommandDispatcher.h"
-#include "utilities/FlagContainer.h"
-#include "utilities/IdGenerator.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Account.h>
+#include <FileSystem.h>
+#include <ServerList.h>
+#include <level/Level.h>
+#include <loader/IAccountLoader.h>
+#include <loader/INPCLoader.h>
+#include <object/Player.h>
+#include <object/NPC.h>
+#include <misc/WordFilter.h>
+#include <utilities/CommandDispatcher.h>
+#include <utilities/FlagContainer.h>
+#include <utilities/IdGenerator.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 #ifdef UPNP
-	#include "misc/UPNP.h"
+	#include <misc/UPNP.h>
 #endif
 
-#include "scripting/GS2ScriptManager.h"
-#include "scripting/ScriptClass.h"
+#include <scripting/GS2ScriptManager.h>
+#include <scripting/ScriptClass.h>
 
 // Resources
-#include "animation/GameAni.h"
-#include "utilities/ResourceManager.h"
-#include "UpdatePackage.h"
+#include <animation/GameAni.h>
+#include <utilities/ResourceManager.h>
+#include <UpdatePackage.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 //class Player;
@@ -101,6 +102,9 @@ using TriggerDispatcher = CommandDispatcher<std::string, Player*, std::vector<CS
 
 class Server : public CSocketStub
 {
+	friend class NPCServer;
+	friend class FlatFileNPCLoader;
+
 public:
 	// Required by CSocketStub.
 	bool onRecv();
@@ -127,14 +131,15 @@ public:
 	void loadAdminSettings();
 	void loadAllowedVersions();
 	void loadFileSystem();
-	void loadServerFlags();
 	void loadServerMessage();
 	void loadIPBans();
+	void loadTranslations();
+	void loadWordFilter();
+	int loadServerObjects();
+	void loadServerFlags();
 	void loadWeapons(bool print = false);
 	void loadMaps(bool print = false);
 	void loadMapLevels();
-	void loadTranslations();
-	void loadWordFilter();
 
 	// Folder Configuration
 	void loadAllFolders();
@@ -178,6 +183,7 @@ public:
 	auto& getGroupLevels() { return m_groupLevels; }
 
 	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
+	INPCLoader& getNPCLoader() { return *m_npcLoader; }
 
 	FileSystem* getFileSystemByType(CString& type);
 	std::string getFlag(std::string_view flagName) const;
@@ -185,7 +191,7 @@ public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
 
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const; // = PLTYPE_ANYCLIENT) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
 /*
@@ -316,6 +322,7 @@ private:
 	std::string m_shootParams;
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
+	std::unique_ptr<INPCLoader> m_npcLoader;
 
 	std::shared_ptr<NPCServer> m_npcServer;
 	std::shared_ptr<PlayerNpcServer> m_npcServerPlayer;
@@ -399,7 +406,6 @@ inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) co
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // SERVER_H

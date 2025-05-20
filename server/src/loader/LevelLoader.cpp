@@ -1,0 +1,626 @@
+#include <CString.h>
+
+#include <Server.h>
+#include <loader/LevelLoader.h>
+
+namespace preagonal
+{
+///////////////////////////////////////////////////////////////////////////////
+
+static constexpr int getBase64Position(char c)
+{
+	if (c >= 'a')
+		return 26 + (c - 'a');
+	else if (c >= 'A')
+		return (c - 'A');
+	else if (c >= '0' && c <= '9')
+		return 52 + (c - '0');
+
+	switch (c)
+	{
+		case '+':
+			return 52 + 10;
+		case '/':
+			return 52 + 11;
+	}
+
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LevelPtr LevelLoader::loadLevel(const std::filesystem::path& levelName)
+{
+	// We need to construct the level object this way so the "friend" status applies.
+	// If we use the normal std::make_shared, the constructor is inaccessible.
+	std::shared_ptr<Level> level{ new Level() };
+
+	return loadLevelInto(level, levelName);
+}
+
+LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path& levelName)
+{
+	auto* server = BabyDI::Get<Server>();
+
+	// Get the appropriate filesystem.
+	FileSystem* fileSystem = server->getFileSystem();
+	if (!server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = server->getFileSystem(FS_LEVEL);
+
+	// Find the level file.
+	auto levelPath = fileSystem->find(levelName.string());
+
+	// Load it.
+	CString fileData;
+	if (!fileData.load(levelPath))
+		return nullptr;
+
+	// Grab file version.
+	CString fileVersion = fileData.readChars(8);
+
+	// Determine the level type.
+	int v = -1;
+	if (fileVersion == "GLEVNW01") v = 0;
+	else if (fileVersion == "GR-V1.03" || fileVersion == "GR-V1.02" || fileVersion == "GR-V1.01")
+		v = 1;
+	else if (fileVersion == "Z3-V1.04" || fileVersion == "Z3-V1.03")
+		v = 2;
+
+	// Save level details.
+	level->m_fileVersion = fileVersion;
+	level->m_fileName = levelPath;
+	level->m_modTime = fileSystem->getModTime(levelPath);
+	level->m_actualLevelName = level->m_levelName = levelName.string();
+
+	// Load!
+	if (v == 0) return loadNW(level, fileSystem, fileData);
+	else if (v == 1) return loadGraal(level, fileSystem, fileData);
+	else if (v == 2) return loadZelda(level, fileSystem, fileData);
+
+	// Bad level version.
+	return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+{
+	int v = -1;
+	if (level->m_fileVersion == "Z3-V1.03") v = 3;
+	else if (level->m_fileVersion == "Z3-V1.04")
+		v = 4;
+	if (v == -1) return nullptr;
+
+	// Load tiles.
+	{
+		int bits = (v > 4 ? 13 : 12);
+		int read = 0;
+		unsigned int buffer = 0;
+		unsigned short code = 0;
+		short tiles[2] = { -1, -1 };
+		int boardIndex = 0;
+		int count = 1;
+		bool doubleMode = false;
+
+		// Read the tiles.
+		while (boardIndex < 64 * 64 && fileData.bytesLeft() != 0)
+		{
+			// Every control code/tile is either 12 or 13 bits.  WTF.
+			// Read in the bits.
+			while (read < bits)
+			{
+				buffer += ((unsigned char)fileData.readChar()) << read;
+				read += 8;
+			}
+
+			// Pull out a single 12/13 bit code from the buffer.
+			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
+			buffer >>= bits;
+			read -= bits;
+
+			// See if we have an RLE control code.
+			// Control codes determine how the RLE scheme works.
+			if (code & ((bits == 12) ? 0x800 : 0x1000))
+			{
+				// If the 0x100 bit is set, we are in a double repeat mode.
+				// {double 4}56 = 56565656
+				if (code & 0x100) doubleMode = true;
+
+				// How many tiles do we count?
+				count = code & 0xFF;
+				continue;
+			}
+
+			// If our count is 1, just read in a tile.  This is the default mode.
+			if (count == 1)
+			{
+				level->m_tiles[0][boardIndex++] = (short)code;
+				continue;
+			}
+
+			// If we reach here, we have an RLE scheme.
+			// See if we are in double repeat mode or not.
+			if (doubleMode)
+			{
+				// Read in our first tile.
+				if (tiles[0] == -1)
+				{
+					tiles[0] = (short)code;
+					continue;
+				}
+
+				// Read in our second tile.
+				tiles[1] = (short)code;
+
+				// Add the tiles now.
+				for (int i = 0; i < count && boardIndex < 64 * 64 - 1; ++i)
+				{
+					level->m_tiles[0][boardIndex++] = tiles[0];
+					level->m_tiles[0][boardIndex++] = tiles[1];
+				}
+
+				// Clean up.
+				tiles[0] = tiles[1] = -1;
+				doubleMode = false;
+				count = 1;
+			}
+			// Regular RLE scheme.
+			else
+			{
+				for (int i = 0; i < count && boardIndex < 64 * 64; ++i)
+					level->m_tiles[0][boardIndex++] = (short)code;
+				count = 1;
+			}
+		}
+	}
+
+	// Load the links.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0 || line == "#") break;
+
+			// Assemble the level string.
+			std::vector<CString> vline = line.tokenize();
+			CString linkLevel = vline[0];
+			if (vline.size() > 7)
+			{
+				for (size_t i = 0; i < vline.size() - 7; ++i)
+					linkLevel << " " << vline[1 + i];
+			}
+
+			if (fileSystem->find(linkLevel).isEmpty())
+				continue;
+
+			level->addLink(vline);
+		}
+	}
+
+	// Load the baddies.
+	{
+		while (fileData.bytesLeft())
+		{
+			signed char x = fileData.readChar();
+			signed char y = fileData.readChar();
+			signed char type = fileData.readChar();
+
+			// Ends with an invalid baddy.
+			if (x == -1 && y == -1 && type == -1)
+			{
+				fileData.readString("\n"); // Empty verses.
+				break;
+			}
+
+			// Add the baddy.
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			if (baddy == nullptr)
+				continue;
+
+			// Only v1.04+ baddies have verses.
+			if (v > 3)
+			{
+				// Load the verses.
+				std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
+				CString props;
+				for (char j = 0; j < (char)bverse.size(); ++j)
+					props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+				if (props.length() != 0) baddy->setPropsFromPacket(props);
+			}
+		}
+	}
+
+	// Load signs.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0) break;
+
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
+			CString text = line.readString("");
+
+			level->addSign(x, y, text, true);
+		}
+	}
+
+	return level;
+}
+
+LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+{
+	// Grab file version.
+	int v = -1;
+	if (level->m_fileVersion == "GR-V1.00") v = 0;
+	else if (level->m_fileVersion == "GR-V1.01")
+		v = 1;
+	else if (level->m_fileVersion == "GR-V1.02")
+		v = 2;
+	else if (level->m_fileVersion == "GR-V1.03")
+		v = 3;
+	if (v == -1) return nullptr;
+
+	auto* server = BabyDI::Get<Server>();
+
+	// Load tiles.
+	{
+		int bits = (v > 0 ? 13 : 12);
+		int read = 0;
+		unsigned int buffer = 0;
+		unsigned short code = 0;
+		short tiles[2] = { -1, -1 };
+		int boardIndex = 0;
+		int count = 1;
+		bool doubleMode = false;
+
+		// Read the tiles.
+		while (boardIndex < 64 * 64 && fileData.bytesLeft() != 0)
+		{
+			// Every control code/tile is either 12 or 13 bits.  WTF.
+			// Read in the bits.
+			while (read < bits)
+			{
+				buffer += ((unsigned char)fileData.readChar()) << read;
+				read += 8;
+			}
+
+			// Pull out a single 12/13 bit code from the buffer.
+			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
+			buffer >>= bits;
+			read -= bits;
+
+			// See if we have an RLE control code.
+			// Control codes determine how the RLE scheme works.
+			if (code & ((bits == 12) ? 0x800 : 0x1000))
+			{
+				// If the 0x100 bit is set, we are in a double repeat mode.
+				// {double 4}56 = 56565656
+				if (code & 0x100) doubleMode = true;
+
+				// How many tiles do we count?
+				count = code & 0xFF;
+				continue;
+			}
+
+			// If our count is 1, just read in a tile.  This is the default mode.
+			if (count == 1)
+			{
+				level->m_tiles[0][boardIndex++] = (short)code;
+				continue;
+			}
+
+			// If we reach here, we have an RLE scheme.
+			// See if we are in double repeat mode or not.
+			if (doubleMode)
+			{
+				// Read in our first tile.
+				if (tiles[0] == -1)
+				{
+					tiles[0] = (short)code;
+					continue;
+				}
+
+				// Read in our second tile.
+				tiles[1] = (short)code;
+
+				// Add the tiles now.
+				for (int i = 0; i < count && boardIndex < 64 * 64 - 1; ++i)
+				{
+					level->m_tiles[0][boardIndex++] = tiles[0];
+					level->m_tiles[0][boardIndex++] = tiles[1];
+				}
+
+				// Clean up.
+				tiles[0] = tiles[1] = -1;
+				doubleMode = false;
+				count = 1;
+			}
+			// Regular RLE scheme.
+			else
+			{
+				for (int i = 0; i < count && boardIndex < 64 * 64; ++i)
+					level->m_tiles[0][boardIndex++] = (short)code;
+				count = 1;
+			}
+		}
+	}
+
+	// Load the links.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0 || line == "#") break;
+
+			// Assemble the level string.
+			std::vector<CString> vline = line.tokenize();
+			CString linkLevel = vline[0];
+			if (vline.size() > 7)
+			{
+				for (size_t i = 0; i < vline.size() - 7; ++i)
+					linkLevel << " " << vline[1 + i];
+			}
+
+			if (fileSystem->find(linkLevel).isEmpty())
+				continue;
+
+			level->addLink(vline);
+		}
+	}
+
+	// Load the baddies.
+	{
+		while (fileData.bytesLeft())
+		{
+			signed char x = fileData.readChar();
+			signed char y = fileData.readChar();
+			signed char type = fileData.readChar();
+
+			// Ends with an invalid baddy.
+			if (x == -1 && y == -1 && type == -1)
+			{
+				fileData.readString("\n"); // Empty verses.
+				break;
+			}
+
+			// Add the baddy.
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			if (baddy == nullptr)
+				continue;
+
+			// Load the verses.
+			std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
+			CString props;
+			for (char j = 0; j < (char)bverse.size(); ++j)
+				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+			if (props.length() != 0) baddy->setPropsFromPacket(props);
+		}
+	}
+
+	// Load NPCs.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0 || line == "#") break;
+
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
+			CString image = line.readString("#");
+			CString code = line.readString("").replaceAll("\xa7", "\n");
+
+			auto npc = server->addNPC(image, code, x, y, level, NPCType::LEVELNPC, false);
+			level->m_npcs.insert(npc->id);
+		}
+	}
+
+	// Load chests.
+	if (v > 0)
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0 || line == "#") break;
+
+			char x = line.readGChar();
+			char y = line.readGChar();
+			char item = line.readGChar();
+			char signindex = line.readGChar();
+
+			level->addChest(x, y, LevelItemType(item), signindex);
+		}
+	}
+
+	// Load signs.
+	{
+		while (fileData.bytesLeft())
+		{
+			CString line = fileData.readString("\n");
+			if (line.length() == 0) break;
+
+			signed char x = line.readGChar();
+			signed char y = line.readGChar();
+			CString text = line.readString("");
+
+			level->addSign(x, y, text, true);
+		}
+	}
+
+	return level;
+}
+
+LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+{
+	// Load File
+	std::vector<CString> fileLines = fileData.tokenize("\n");
+	if (fileLines.empty())
+		return nullptr;
+
+	auto* server = BabyDI::Get<Server>();
+
+	// Parse Level
+	for (auto i = fileLines.begin(); i != fileLines.end(); ++i)
+	{
+		// Tokenize
+		std::vector<CString> curLine = i->tokenize();
+		if (curLine.empty())
+			continue;
+
+		// Parse Each Type
+		if (curLine[0] == "BOARD")
+		{
+			if (curLine.size() != 6)
+				continue;
+
+			int x, y, w, layer;
+			x = strtoint(curLine[1]);
+			y = strtoint(curLine[2]);
+			w = strtoint(curLine[3]);
+			layer = strtoint(curLine[4]);
+
+			if (!inrange(x, 0, 64) || !inrange(y, 0, 64) || w <= 0 || x + w > 64)
+				continue;
+
+			if (curLine[5].length() >= w * 2)
+			{
+				for (int ii = x; ii < x + w; ii++)
+				{
+					char left = curLine[5].readChar();
+					char top = curLine[5].readChar();
+					short tile = getBase64Position(left) << 6;
+					tile += getBase64Position(top);
+					level->m_tiles[layer][ii + y * 64] = tile;
+				}
+			}
+		}
+		else if (curLine[0] == "CHEST")
+		{
+			if (curLine.size() != 5)
+				continue;
+
+			LevelItemType itemType = LevelItem::getItemId(curLine[3].toString());
+			if (itemType != LevelItemType::INVALID)
+			{
+				char chestx = strtoint(curLine[1]);
+				char chesty = strtoint(curLine[2]);
+				char signidx = strtoint(curLine[4]);
+				level->addChest(chestx, chesty, itemType, signidx);
+			}
+		}
+		else if (curLine[0] == "LINK")
+		{
+			if (curLine.size() < 8)
+				continue;
+
+			// Get link string.
+			std::vector<CString>::iterator i = curLine.begin();
+			std::vector<CString> link(++i, curLine.end());
+
+			// Find the whole level name.
+			CString linkLevel(link[0]);
+			if (link.size() > 7)
+			{
+				for (size_t i = 0; i < link.size() - 7; ++i)
+					linkLevel << " " << link[i + 1];
+			}
+
+			if (fileSystem->find(linkLevel).isEmpty())
+				continue;
+
+			level->addLink(link);
+		}
+		else if (curLine[0] == "NPC")
+		{
+			unsigned int offset = 0;
+			if (curLine.size() < 4)
+				continue;
+
+			// Grab the image properties.
+			CString image(curLine[1]);
+			if (curLine.size() > 4)
+			{
+				offset = (int)curLine.size() - 4;
+				for (size_t i = 0; i < offset; ++i)
+					image << " " << curLine[i + 2];
+			}
+
+			// If the image is just a hyphen, clear it.
+			if (image == "-")
+				image.clear();
+
+			// Grab the NPC location.
+			float x = (float)strtofloat(curLine[2 + offset]);
+			float y = (float)strtofloat(curLine[3 + offset]);
+
+			// Grab the NPC code.
+			CString code;
+			++i;
+			while (i != fileLines.end())
+			{
+				if (*i == "NPCEND") break;
+				code << *i << "\n";
+				++i;
+			}
+			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
+			// Add the new NPC.
+			auto npc = server->addNPC(image, code, x, y, level, NPCType::LEVELNPC, false);
+			level->m_npcs.insert(npc->id);
+		}
+		else if (curLine[0] == "SIGN")
+		{
+			if (curLine.size() != 3)
+				continue;
+
+			int x = strtoint(curLine[1]);
+			int y = strtoint(curLine[2]);
+
+			// Grab the sign code.
+			CString text;
+			++i;
+			while (i != fileLines.end())
+			{
+				if (*i == "SIGNEND") break;
+				text << *i << "\n";
+				++i;
+			}
+
+			// Add the new sign.
+			level->addSign(x, y, text);
+		}
+		else if (curLine[0] == "BADDY")
+		{
+			if (curLine.size() != 4)
+				continue;
+
+			int x = strtoint(curLine[1]);
+			int y = strtoint(curLine[2]);
+			int type = strtoint(curLine[3]);
+
+			// Add the baddy.
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			if (baddy == nullptr)
+				continue;
+
+			// Load the verses.
+			std::vector<CString> bverse;
+			++i;
+			while (i != fileLines.end())
+			{
+				if (*i == "BADDYEND") break;
+				bverse.push_back(*i);
+				++i;
+			}
+			CString props;
+			for (char j = 0; j < (char)bverse.size(); ++j)
+				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+			if (props.length() != 0) baddy->setPropsFromPacket(props);
+		}
+		if (i == fileLines.end()) break;
+	}
+
+	return level;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // end namespace preagonal

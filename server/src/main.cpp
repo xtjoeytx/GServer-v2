@@ -142,6 +142,8 @@ int main(int argc, char* argv[])
 			{
 				CString startup;
 				startup.load("startupserver.txt");
+				startup = startup.readString("\n").replaceAllI("\r", "");
+
 				if (!startup.isEmpty() && !found_server("(startupserver.txt)", startup.text(), cwd / "servers" / startup.text()))
 					return ERR_SETTINGS;
 			}

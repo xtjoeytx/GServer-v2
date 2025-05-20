@@ -149,6 +149,8 @@ enum class NPCType
 
 class NPC
 {
+	friend class FlatFileNPCLoader;
+
 public:
 	NPC(NPCID id, NPCType type);
 	~NPC() = default;

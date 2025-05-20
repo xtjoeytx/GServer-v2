@@ -97,7 +97,7 @@ CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 			if (const auto& client = m_script.getClientByteCode(); !client.empty())
 			{
 				// TODO: Proper handling of bytecode that is too large.
-				assert(client->size() <= 0x705F);
+				assert(client.size() <= 0x705F);
 				return CString() >> (short)client.size() << std::string_view{ reinterpret_cast<const char*>(client.data()), client.size() };
 			}
 

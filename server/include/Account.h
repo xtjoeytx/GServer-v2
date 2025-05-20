@@ -8,28 +8,16 @@
 #include <vector>
 #include <unordered_map>
 #include <ranges>
-#include <optional>
-#include <variant>
-#include <numeric>
+#include <algorithm>
+#include <BabyDI.h>
 
-#include <typeinfo>
-#include <typeindex>
-#include <tuple>
-
-#include <CString.h>
-#include "BabyDI.h"
-
-#include "object/Character.h"
-#include "level/LevelChest.h"
-#include "player/PlayerProps.h"
-#include "utilities/FilePermissions.h"
-#include "utilities/FlagContainer.h"
+#include <object/Character.h>
+#include <utilities/FilePermissions.h>
+#include <utilities/FlagContainer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum PlayerPermissions
@@ -99,42 +87,33 @@ struct Account
 	std::vector<std::string> folderList;
 	std::string lastFolderAccessed;
 
-	bool hasRight(uint32_t right) const { return (adminRights & right); }
-	bool hasChest(std::string_view level, int8_t x, int8_t y) const;
-	bool hasWeapon(std::string_view weapon) const { return std::ranges::find(std::ranges::begin(weapons), std::ranges::end(weapons), weapon) != std::ranges::end(weapons); }
+	[[inline]] bool hasRight(uint32_t right) const;
+	[[inline]] bool hasChest(std::string_view level, int8_t x, int8_t y) const;
+	[[inline]] bool hasWeapon(std::string_view weapon) const;
 };
+
+inline bool Account::hasRight(uint32_t right) const
+{
+	return (adminRights & right);
+}
+
+inline bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
+{
+	auto range = savedChests.equal_range(level.data());
+	for (auto& i = range.first; i != range.second; ++i)
+	{
+		if (i->second.first == x && i->second.second == y)
+			return true;
+	}
+	return false;
+}
+
+inline bool Account::hasWeapon(std::string_view weapon) const
+{
+	return std::ranges::find(std::ranges::begin(weapons), std::ranges::end(weapons), weapon) != std::ranges::end(weapons);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-using flagPair = std::pair<std::string, std::string>;
-using chestPair = std::pair<std::string, std::pair<int8_t, int8_t>>;
-
-class IAccountLoader
-{
-public:
-	virtual bool loadAccount(std::string_view accountName, Account& account) = 0;
-	virtual bool saveAccount(const Account& account) = 0;
-
-public:
-	virtual bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const = 0;
-};
-
-class PlainTextAccountLoader : public IAccountLoader
-{
-public:
-	bool loadAccount(std::string_view accountName, Account& account) override;
-	bool saveAccount(const Account& account) override;
-
-public:
-	bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const override;
-
-protected:
-	flagPair decomposeFlag(const std::string& flag) const;
-	chestPair decomposeChest(const std::string& chest) const;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // ACCOUNT_H

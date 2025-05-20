@@ -34,6 +34,19 @@ public:
 		return m_nextId++;
 	}
 
+	// Marks the ID as used
+	bool markAsUsed(T id)
+	{
+		auto p = m_manuallyUsedIds.insert(id);
+		return p.second;
+	}
+
+	// Checks if the ID is being used
+	bool isIdUsed(T id) const
+	{
+		return (m_manuallyUsedIds.find(id) != m_manuallyUsedIds.end()) || (id < m_nextId && m_freeIds.find(id) == m_freeIds.end());
+	}
+
 	// Peeks the next ID
 	T peekNextId() const
 	{
@@ -49,7 +62,34 @@ public:
 	// Free an ID
 	void freeId(T id)
 	{
+		// If the ID was manually used, and it was beyond our next ID, then don't add it to the free list.
+		if (m_manuallyUsedIds.erase(id) != 0 && id >= m_nextId)
+			return;
+
 		m_freeIds.insert(id);
+
+		// See if we can condense the free IDs.
+		if (!m_freeIds.empty())
+		{
+			auto searchId = m_nextId - 1;
+			auto it = m_freeIds.rbegin();
+			while (it != m_freeIds.rend())
+			{
+				if (*it == searchId)
+				{
+					--searchId;
+					++it;
+					continue;
+				}
+				break;
+			}
+
+			// Erase the IDs.
+			if (it != m_freeIds.rbegin())
+			{
+				m_freeIds.erase(*(++it).base());
+			}
+		}
 	}
 
 	// Reset the free IDs and set the next ID
@@ -62,6 +102,7 @@ public:
 protected:
 	T m_nextId = static_cast<T>(0);
 	std::set<T> m_freeIds;
+	std::set<T> m_manuallyUsedIds;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
