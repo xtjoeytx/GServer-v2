@@ -41,8 +41,9 @@ public:
 	//virtual std::any visitUnary_operator(GS1Parser::Unary_operatorContext* context) override;
 	//virtual std::any visitAssignment(GS1Parser::AssignmentContext* context) override;
 	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
-	virtual std::any visitTernaryExpression(GS1Parser::TernaryExpressionContext* context) override;
+	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
 	virtual std::any visitLogicExpression(GS1Parser::LogicExpressionContext* context) override;
+	virtual std::any visitTernaryExpression(GS1Parser::TernaryExpressionContext* context) override;
 	virtual std::any visitInExpression(GS1Parser::InExpressionContext* context) override;
 	virtual std::any visitPrimary_expression(GS1Parser::Primary_expressionContext* context) override;
 	virtual std::any visitIdentifier(GS1Parser::IdentifierContext* context) override;

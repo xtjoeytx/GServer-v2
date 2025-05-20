@@ -118,28 +118,21 @@ std::any GS1Visitor::visitMathExpression(GS1Parser::MathExpressionContext* conte
 	throw std::exception("MathExpression has an unknown operator");
 }
 
-std::any GS1Visitor::visitTernaryExpression(GS1Parser::TernaryExpressionContext* context)
-{
-	auto condition = visit(context->binary_expression(0));
-	if (getScriptVariable<bool>(condition).value_or(false))
-		return visit(context->binary_expression(1));
-	return visit(context->binary_expression(2));
-}
-
-std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* context)
+std::any GS1Visitor::visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context)
 {
 	auto results = visitChildrenAndCollect(this, context);
 	if (results.size() != 2)
-		throw std::exception("LogicExpression is not a binary expression");
+		throw std::exception("ComparisonExpression is not a binary expression");
 
-	auto op = dynamic_cast<antlr4::tree::TerminalNode*>(context->children[1]);
-	if (op == nullptr)
-		throw std::exception("LogicExpression does not have an operator");
+	auto op = getSymbolType(context->children[1]);
+	if (!op.has_value())
+		throw std::exception("ComparisonExpression does not have an operator");
 
-	auto left = getScriptVariable<bool>(results[0]).value_or(false);
-	auto right = getScriptVariable<bool>(results[1]).value_or(false);
+	ScriptVariable zero{ 0.0 };
+	auto left = getScriptVariableOr(results[0], zero);
+	auto right = getScriptVariableOr(results[1], zero);
 
-	switch (op->getSymbol()->getType())
+	switch (op.value())
 	{
 		case GS1Parser::OP_LESS:
 			return ScriptVariable{ (left < right) ? 1.0 : 0.0 };
@@ -149,6 +142,26 @@ std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* con
 			return ScriptVariable{ (left <= right) ? 1.0 : 0.0 };
 		case GS1Parser::OP_GREAT_EQ:
 			return ScriptVariable{ (left >= right) ? 1.0 : 0.0 };
+	}
+
+	throw std::exception("ComparisonExpression has an unknown operator");
+}
+
+std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* context)
+{
+	auto results = visitChildrenAndCollect(this, context);
+	if (results.size() != 2)
+		throw std::exception("LogicExpression is not a binary expression");
+
+	auto op = getSymbolType(context->children[1]);
+	if (!op.has_value())
+		throw std::exception("LogicExpression does not have an operator");
+
+	auto left = getScriptVariable<bool>(results[0]).value_or(false);
+	auto right = getScriptVariable<bool>(results[1]).value_or(false);
+
+	switch (op.value())
+	{
 		case GS1Parser::OP_LOGICALAND:
 			return ScriptVariable{ (left && right) ? 1.0 : 0.0 };
 		case GS1Parser::OP_LOGICALOR:
@@ -156,6 +169,14 @@ std::any GS1Visitor::visitLogicExpression(GS1Parser::LogicExpressionContext* con
 	}
 
 	throw std::exception("LogicExpression has an unknown operator");
+}
+
+std::any GS1Visitor::visitTernaryExpression(GS1Parser::TernaryExpressionContext* context)
+{
+	auto condition = visit(context->binary_expression(0));
+	if (getScriptVariable<bool>(condition).value_or(false))
+		return visit(context->binary_expression(1));
+	return visit(context->binary_expression(2));
 }
 
 std::any GS1Visitor::visitInExpression(GS1Parser::InExpressionContext* context)
