@@ -418,28 +418,53 @@ std::any GS1Visitor::visitTernaryExpression(GS1Parser::TernaryExpressionContext*
 
 std::any GS1Visitor::visitInExpression(GS1Parser::InExpressionContext* context)
 {
-	auto results = visitChildrenAndCollect(this, context);
-	if (results.size() != 2)
-		throw std::exception("InExpression is not a binary expression");
+	std::vector<ScriptVariable*> values;
+	for (auto& be : context->binary_expression())
+	{
+		auto result = visit(be);
+		auto var = getGS1ScriptVariableUnsafe(result);
+		if (var != nullptr)
+			values.push_back(var);
+	}
 
-	auto* right_range = std::any_cast<ScriptVariablePair>(&results[1]);
-	auto* right_value = std::any_cast<ScriptVariable>(&results[1]);
+	auto right_any = visit(context->in_expression());
+	auto* right_range = std::any_cast<ScriptVariablePair>(&right_any);
+	auto* right_value = std::any_cast<ScriptVariable>(&right_any);
 	bool right_array = (right_value != nullptr && std::holds_alternative<std::vector<double>>(*right_value));
 
 	if (right_range == nullptr && !right_array)
 		throw std::exception("InExpression does not have a range or array");
 
-	auto left = getGS1ScriptVariable<double>(results[0]).value_or(0.0);
+	size_t range_op_left = GS1Parser::TOKEN_PIPE;
+	size_t range_op_right = GS1Parser::TOKEN_PIPE;
 	if (right_range != nullptr)
 	{
-		bool in_range = (right_range->first <= left && left <= right_range->second);
-		return ScriptVariable{ in_range ? 1.0 : 0.0 };
+		range_op_left = getSymbolType(context->in_expression()->range_literal()->children[0]).value_or(GS1Parser::TOKEN_PIPE);
+		range_op_right = getSymbolType(context->in_expression()->range_literal()->children[4]).value_or(GS1Parser::TOKEN_PIPE);
 	}
-	else
+
+	bool range_met = true;
+	for (auto* val : values)
 	{
-		auto& right_vector = std::get<std::vector<double>>(*right_value);
-		return ScriptVariable{ std::ranges::contains(right_vector, left) ? 1.0 : 0.0 };
+		double check = 0.0;
+		if (std::holds_alternative<double>(*val))
+			check = std::get<double>(*val);
+
+		if (right_range != nullptr)
+		{
+			bool test_left = (range_op_left == GS1Parser::TOKEN_PIPE) ? (right_range->first <= check) : (right_range->first < check);
+			bool test_right = (range_op_right == GS1Parser::TOKEN_PIPE) ? (check <= right_range->second) : (check < right_range->second);
+			bool in_range = test_left && test_right;
+			range_met = range_met && in_range;
+		}
+		else
+		{
+			auto& right_vector = std::get<std::vector<double>>(*right_value);
+			range_met = range_met && (std::ranges::contains(right_vector, check));
+		}
 	}
+
+	return ScriptVariable{ range_met ? 1.0 : 0.0 };
 }
 
 std::any GS1Visitor::visitIdentifierArray(GS1Parser::IdentifierArrayContext* context)

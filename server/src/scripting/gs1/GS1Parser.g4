@@ -83,7 +83,7 @@ binary_expression
 	| binary_expression OP_LOGICALAND binary_expression										# LogicExpression
 	| binary_expression OP_LOGICALOR binary_expression										# LogicExpression
 	| binary_expression TOKEN_QUESTION binary_expression TOKEN_COLON binary_expression		# TernaryExpression
-	| binary_expression OP_IN in_expression													# InExpression
+	| binary_expression (TOKEN_COMMA binary_expression)* OP_IN in_expression				# InExpression
 	| TOKEN_PAREN_LEFT binary_expression TOKEN_PAREN_RIGHT									# ignoreParenthesesExpression
 	| unary_expression																		# ignoreUnaryExpression
 	;
@@ -223,7 +223,7 @@ identifier_literal
 	;
 
 range_literal
-	: TOKEN_PIPE expression TOKEN_COMMA expression TOKEN_PIPE					# RangeLiteral
+	: (TOKEN_PIPE | OP_LESS) expression TOKEN_COMMA expression (TOKEN_PIPE | OP_GREAT)			# RangeLiteral
 	;
 
 array_literal
