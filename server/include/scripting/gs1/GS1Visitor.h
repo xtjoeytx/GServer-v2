@@ -17,7 +17,7 @@ namespace preagonal::grammar::gs1
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
+	void execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
 
 protected:
 	[[inline]] std::any safeVisit(antlr4::tree::ParseTree* node);

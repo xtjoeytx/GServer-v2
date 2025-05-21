@@ -49,8 +49,6 @@ enum class ScriptEventType : uint8_t
 	TIMEOUT,
 	//
 	SERVERLISTCONNECT,
-	PLAYERTOUCHESME,
-	PLAYERTOUCHESOTHER,
 
 	COUNT
 };

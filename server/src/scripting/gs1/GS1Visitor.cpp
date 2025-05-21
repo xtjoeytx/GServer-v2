@@ -143,7 +143,7 @@ std::optional<std::variant<ScriptVariable*, double*>> GS1Visitor::lookInVariable
 	{
 		for (auto& [prefix, storePicker] : *m_variableStores)
 		{
-			if (identifierName.starts_with(prefix))
+			if (prefix.empty() || identifierName.starts_with(prefix))
 			{
 				if (std::holds_alternative<ScriptVariableStore*>(storePicker))
 				{
@@ -292,23 +292,15 @@ ScriptVariable& GS1Visitor::getGS1ScriptVariableOr(std::any& anyval, ScriptVaria
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::execute(ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
+void GS1Visitor::execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
 {
 	m_parser = &parser;
 	m_source = source;
 	m_defaultStore = defaultStore;
 	m_variableStores = variableStores;
 
-	if (defaultStore == nullptr)
-	{
-		ScriptVariableStore defaultStoreThrowAway;
-		m_defaultStore = &defaultStoreThrowAway;
-		visit(&startNode);
-	}
-	else visit(&startNode);
-
-	m_defaultStore = nullptr;
-	m_variableStores = nullptr;
+	// Execute!
+	visit(&startNode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

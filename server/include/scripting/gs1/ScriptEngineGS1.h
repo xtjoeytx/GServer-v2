@@ -45,6 +45,8 @@ struct ScriptEventFlagNames
 	static constexpr std::string_view PLAYERTOUCHESOTHER = "playertouchesother"sv;
 };
 
+void setEventFlags(ScriptEventType event, ScriptVariableStore& variableStore);
+
 struct GS1ScriptWrapper
 {
 	GS1ScriptWrapper(std::string_view script);
