@@ -296,13 +296,13 @@ if(WIN32)
 endif()
 
 # Generate grammar.
-antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Lexer.g4" LEXER
+antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
 	FALSE						# 4: Generate listener
 	FALSE						# 5: Generate visitor
 	"preagonal::grammar::gs1"	# 6: Namespace
 )
 message("${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4")
-antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4" PARSER
+antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Parser.g4" PARSER
 	FALSE						# 4: Generate listener
 	TRUE						# 5: Generate visitor
 	"preagonal::grammar::gs1"	# 6: Namespace
