@@ -6,6 +6,8 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <object/NPC.h>
+#include <player/PlayerClient.h>
+#include <scripting/gs1/GS1Flags.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <utilities/StringUtils.h>
 
@@ -14,52 +16,6 @@ using namespace preagonal::grammar::gs1;
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
 {
-///////////////////////////////////////////////////////////////////////////////
-
-void setEventFlags(ScriptEventType event, ScriptVariableStore& variableStore)
-{
-	static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
-	{
-		{ ScriptEventType::CREATED, ScriptEventFlagNames::CREATED },
-		{ ScriptEventType::INITIALIZED, ScriptEventFlagNames::INITIALIZED },
-		{ ScriptEventType::PLAYERLOGIN, ScriptEventFlagNames::PLAYERLOGIN },
-		{ ScriptEventType::PLAYERLOGOUT, ScriptEventFlagNames::PLAYERLOGOUT },
-		{ ScriptEventType::PLAYERENTERS, ScriptEventFlagNames::PLAYERENTERS },
-		{ ScriptEventType::PLAYERLEAVES, ScriptEventFlagNames::PLAYERLEAVES },
-		{ ScriptEventType::PLAYERTOUCHSME, ScriptEventFlagNames::PLAYERTOUCHSME },
-		{ ScriptEventType::PLAYERTOUCHSOTHER, ScriptEventFlagNames::PLAYERTOUCHSOTHER },
-		{ ScriptEventType::PLAYERLAYSITEM, ScriptEventFlagNames::PLAYERLAYSITEM },
-		{ ScriptEventType::PLAYERCHATS, ScriptEventFlagNames::PLAYERCHATS },
-		{ ScriptEventType::PLAYERDIES, ScriptEventFlagNames::PLAYERDIES },
-		{ ScriptEventType::PLAYERENDREADING, ScriptEventFlagNames::PLAYERENDREADING },
-		{ ScriptEventType::WEAPONFIRED, ScriptEventFlagNames::WEAPONFIRED },
-		{ ScriptEventType::FIREDONHORSE, ScriptEventFlagNames::FIREDONHORSE },
-		{ ScriptEventType::COMPUSDIED, ScriptEventFlagNames::COMPUSDIED },
-		{ ScriptEventType::WARPED, ScriptEventFlagNames::WARPED },
-		{ ScriptEventType::NPCWARPED, ScriptEventFlagNames::NPCWARPED },
-		{ ScriptEventType::EXPLODED, ScriptEventFlagNames::EXPLODED },
-		{ ScriptEventType::WASHIT, ScriptEventFlagNames::WASHIT },
-		{ ScriptEventType::WASSHOT, ScriptEventFlagNames::WASSHOT },
-		{ ScriptEventType::WASPELT, ScriptEventFlagNames::WASPELT },
-		{ ScriptEventType::TIMEOUT, ScriptEventFlagNames::TIMEOUT },
-		//
-		{ ScriptEventType::SERVERLISTCONNECT, ScriptEventFlagNames::SERVERLISTCONNECT }
-	};
-
-	auto it = eventFlagMap.find(event);
-	if (it != eventFlagMap.end())
-	{
-		auto flagName = it->second;
-		variableStore.add(std::string{ flagName } + "|double", 1.0);
-
-		// TODO: Put extensions under a server option?
-		if (event == ScriptEventType::PLAYERTOUCHSME)
-			variableStore.add(std::string{ ScriptEventFlagNames::PLAYERTOUCHESME } + "|double", 1.0);
-		if (event == ScriptEventType::PLAYERTOUCHSOTHER)
-			variableStore.add(std::string{ ScriptEventFlagNames::PLAYERTOUCHESOTHER } + "|double", 1.0);
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
@@ -120,6 +76,10 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptEventSource source
 	// Set flags.
 	ScriptVariableStore eventFlagStore;
 	setEventFlags(event.type, eventFlagStore);
+	setPlayerFlags(eventFlagStore, npc, player);
+	setNpcFlags(eventFlagStore, npc);
+	setLevelFlags(eventFlagStore, npc, level);
+	setOtherFlags(eventFlagStore, npc, player, level);
 
 	// Use the flag store as a default container if none is set.
 	if (defaultVariableStore == nullptr)

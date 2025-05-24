@@ -19,54 +19,7 @@ class GS1Visitor : public GS1ParserBaseVisitor
 public:
 	void execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
 
-protected:
-	GS1Parser* m_parser = nullptr;
-	ScriptEventSource m_source{};
-	ScriptVariableStore* m_defaultStore = nullptr;
-	ScriptVariableStoreMap* m_variableStores = nullptr;
-
-protected:
-	std::any safeVisit(antlr4::tree::ParseTree* node);
-	ScriptVariableContainer& bindLinkToVariableStore(ScriptVariableContainer& container);
-	ScriptVariable getVariableFromStores(const ScriptIdentifier& identifier);
-
-protected:
-	static bool identifierHasDataType(const ScriptIdentifier& identifier);
-	static std::string getTypedIdentifier(const ScriptIdentifier& identifier, std::string_view dataType);
-	static ScriptVariableContainer& assignIdentifierType(ScriptVariableContainer& container, std::string_view dataType);
-
-protected:
-	template<typename T = double>
-	ScriptVariableContainer getVariableContainerFromStores(const ScriptIdentifier& identifier)
-	{
-		if (auto* str = std::get_if<std::string>(&identifier); str != nullptr && str->contains('|'))
-		{
-			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
-				return var.value();
-		}
-
-		if (auto* pair = std::get_if<std::pair<std::string, size_t>>(&identifier); pair != nullptr && pair->first.contains('|'))
-		{
-			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
-			{
-				if (auto* doubles = std::get_if<std::vector<double>>(&var.value().get()); doubles != nullptr)
-				{
-					if (pair->second < doubles->size())
-						return ScriptVariableContainer{ doubles->at(pair->second) };
-				}
-			}
-		}
-
-		if constexpr (std::same_as<T, double> || std::same_as<T, bool>)
-			return ScriptVariableContainer{ 0.0 };
-		if constexpr (std::same_as<T, std::string>)
-			return ScriptVariableContainer{ ScriptVariable{ std::string{ "" } } };
-		if constexpr (std::same_as<T, std::vector<double>>)
-			return ScriptVariableContainer{ std::vector<double>{} };
-
-		throw std::exception("getVariableFromStores variable was not in store and the data type is not valid");
-	}
-
+public:
 	/// <summary>
 	/// Tries to get the value within a ScriptVariable inside a ScriptVariableContainer.
 	/// If no identifier data type is set, it will try to guess the type based on the default value passed.
@@ -132,32 +85,60 @@ protected:
 		return gs1TryGetScriptVariableValueFromContainer(container, defaultValue);
 	}
 
+	template<typename T = double>
+	ScriptVariableContainer getVariableContainerFromStores(const ScriptIdentifier& identifier)
+	{
+		if (auto* str = std::get_if<std::string>(&identifier); str != nullptr && str->contains('|'))
+		{
+			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
+				return var.value();
+		}
+
+		if (auto* pair = std::get_if<std::pair<std::string, size_t>>(&identifier); pair != nullptr && pair->first.contains('|'))
+		{
+			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
+			{
+				if (auto* doubles = std::get_if<std::vector<double>>(&var.value().get()); doubles != nullptr)
+				{
+					if (pair->second < doubles->size())
+						return ScriptVariableContainer{ doubles->at(pair->second) };
+				}
+			}
+		}
+
+		if constexpr (std::same_as<T, double> || std::same_as<T, bool>)
+			return ScriptVariableContainer{ 0.0 };
+		if constexpr (std::same_as<T, std::string>)
+			return ScriptVariableContainer{ ScriptVariable{ std::string{ "" } } };
+		if constexpr (std::same_as<T, std::vector<double>>)
+			return ScriptVariableContainer{ std::vector<double>{} };
+
+		throw std::exception("getVariableFromStores variable was not in store and the data type is not valid");
+	}
+
 	constexpr auto bindGetter()
 	{
 		return std::bind(&GS1Visitor::getVariableFromStores, this, std::placeholders::_1);
 	}
 
+protected:
+	GS1Parser* m_parser = nullptr;
+	ScriptEventSource m_source{};
+	ScriptVariableStore* m_defaultStore = nullptr;
+	ScriptVariableStoreMap* m_variableStores = nullptr;
+
+protected:
+	std::any safeVisit(antlr4::tree::ParseTree* node);
+	ScriptVariableContainer& bindLinkToVariableStore(ScriptVariableContainer& container);
+	ScriptVariable getVariableFromStores(const ScriptIdentifier& identifier);
+	ScriptVariableContainer& fixBindAndGetVariable(ScriptVariableContainer& container);
+
+protected:
+	static bool identifierHasDataType(const ScriptIdentifier& identifier);
+	static std::string getTypedIdentifier(const ScriptIdentifier& identifier, std::string_view dataType);
+	static ScriptVariableContainer& assignIdentifierType(ScriptVariableContainer& container, std::string_view dataType);
+
 public:
-	//virtual std::any visitProgram(GS1Parser::ProgramContext* context) = 0;
-	//virtual std::any visitBlock(GS1Parser::BlockContext* context) = 0;
-	//virtual std::any visitStatement(GS1Parser::StatementContext* context) = 0;
-	//virtual std::any visitExpression(GS1Parser::ExpressionContext* context) = 0;
-	//virtual std::any visitUnary_expression(GS1Parser::Unary_expressionContext* context) = 0;
-	//virtual std::any visitPostfix_expression(GS1Parser::Postfix_expressionContext* context) = 0;
-	//virtual std::any visitIgnoreUnaryExpression(GS1Parser::IgnoreUnaryExpressionContext* context) = 0;
-	//virtual std::any visitIdentifier_(GS1Parser::Identifier_Context* context) = 0;
-	//virtual std::any visitIn_expression(GS1Parser::In_expressionContext* context) = 0;
-	//virtual std::any visitBuiltin_command_expression(GS1Parser::Builtin_command_expressionContext* context) = 0;
-	//virtual std::any visitBuiltin_function_parameters(GS1Parser::Builtin_function_parametersContext* context) = 0;
-	//virtual std::any visitIf_true_block(GS1Parser::If_true_blockContext* context) = 0;
-	//virtual std::any visitElse_false_block(GS1Parser::Else_false_blockContext* context) = 0;
-	//virtual std::any visitAssignment_operator(GS1Parser::Assignment_operatorContext* context) = 0;
-	//virtual std::any visitCompound_string(GS1Parser::Compound_stringContext* context) = 0;
-	//virtual std::any visitUnary_operator(GS1Parser::Unary_operatorContext* context) = 0;
-	//virtual std::any visitAssignment(GS1Parser::AssignmentContext* context) = 0;
-	//virtual std::any visitFunction_definition(GS1Parser::Function_definitionContext* context) = 0;
-	//virtual std::any visitPrimary_expression(GS1Parser::Primary_expressionContext* context) = 0;
-	//virtual std::any visitIdentifier(GS1Parser::IdentifierContext* context) = 0;
 	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
 	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
 	virtual std::any visitLogicExpression(GS1Parser::LogicExpressionContext* context) override;
@@ -166,6 +147,7 @@ public:
 	virtual std::any visitParenthesesExpression(GS1Parser::ParenthesesExpressionContext* context) override;
 	virtual std::any visitIdentifierArray(GS1Parser::IdentifierArrayContext* context) override;
 	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
+	virtual std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
 	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
 	virtual std::any visitBuiltInCommand(GS1Parser::BuiltInCommandContext* context) override;
 	virtual std::any visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context) override;

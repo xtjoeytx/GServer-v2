@@ -12,178 +12,206 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 171> builtInCommands = {
-	"addstring",
-	"addtiledef",
-	"addtiledef2",
-	"attachplayertoobj",
-	"blockagain",
-	"blockagainlocal",
-	"callnpc",
-	"callweapon",
-	"canbecarried",
-	"canbepulled",
-	"canbepushed",
-	"cannotbecarried",
-	"cannotbepulled",
-	"cannotbepushed",
-	"carryobject",
-	"changeimgcolors",
-	"changeimgmode",
-	"changeimgpart",
-	"changeimgvis",
-	"changeimgzoom",
-	"deletestring",
-	"destroy",
-	"detachplayer",
-	"disabledefmovement",
-	"disablemap",
-	"disablepause",
-	"disableselectweapons",
-	"disableweapons",
-	"dontblock",
-	"dontblocklocal",
-	"drawaslight",
-	"drawoverplayer",
-	"drawunderplayer",
-	"enabledefmovement",
-	"enablefeatures",
-	"enablemap",
-	"enablepause",
-	"enableselectweapons",
-	"enableweapons",
-	"explodebomb",
-	"followplayer",
-	"freezeplayer",
-	"hide",
-	"hideimg",
-	"hideimgs",
-	"hidelocal",
-	"hideplayer",
-	"hidesword",
-	"hitcompu",
-	"hitnpc",
-	"hitobjects",
-	"hitplayer",
-	"hurt ",
-	"insertstring",
-	"join ",
-	"lay ",
-	"lay2",
-	"loadmap",
-	"message",
-	"move",
-	"noplayerkilling",
-	"openurl",
-	"openurl2",
-	"play ",
-	"play2",
-	"playlooped",
-	"putbomb",
-	"putcomp",
-	"putexplosion",
-	"putexplosion2",
-	"puthorse",
-	"putleaps",
-	"putnewcomp",
-	"putnpc",
-	"putnpc2",
-	"putobject",
-	"reflectarrow",
-	"removearrow",
-	"removebomb",
-	"removecompus",
-	"removeexplo",
-	"removehorse",
-	"removeitem",
-	"removestring",
-	"removetiledefs",
-	"replaceani",
-	"replacestring",
-	"resetfocus",
-	"say",
-	"say2",
-	"set ",
-	"setani",
-	"setarray",
-	"setbackpal",
-	"setbeltcolor",
-	"setbody",
-	"setcharani",
-	"setchargender",
-	"setcharprop",
-	"setcoatcolor",
-	"setcoloreffect",
-	"setcursor",
-	"seteffect",
-	"seteffectmode ",
-	"setfocus",
-	"setgender",
-	"setgif ",
-	"sethead",
-	"setimg",
-	"setimgpart",
-	"setletters",
-	"setlevel ",
-	"setlevel2",
-	"setmap",
-	"setminimap",
-	"setmusicvolume",
-	"setplayerdir",
-	"setplayerprop",
-	"setshape",
-	"setshape2",
-	"setshield",
-	"setshoecolor",
-	"setshootparams",
-	"setskincolor",
-	"setsleevecolor",
-	"setstring",
-	"setsword",
-	"seturllevel",
-	"setzoomeffect",
-	"shoot",
-	"shootarrow",
-	"shootball",
-	"shootfireball",
-	"shootfireblast",
-	"shootnuke",
-	"show",
-	"showani",
-	"showani2",
-	"showcharacter",
-	"showfile",
-	"showimg",
-	"showimg2",
-	"showlocal",
-	"showpoly",
-	"showpoly2",
-	"showstats",
-	"showtext",
-	"showtext2",
-	"sleep",
-	"spyfire",
-	"stopmidi",
-	"stopsound",
-	"take ",
-	"take2",
-	"takehorse",
-	"takeplayercarry",
-	"takeplayerhorse",
-	"throwcarry",
-	"timereverywhere",
-	"timershow",
-	"toinventory",
-	"tokenize",
-	"tokenize2",
-	"toweapons",
-	"triggeraction",
-	"unfreezeplayer",
-	"unset ",
-	"updateboard",
-	"updateterrain",
-	"wraptext",
-	"wraptext2",
+constexpr std::array<std::string_view, 199> builtInCommands = {
+    "addguildmember",
+    "addstring",
+    "addtiledef",
+    "addtiledef2",
+    "addweapon",
+    "attachplayertoobj",
+    "blockagain",
+    "blockagainlocal",
+    "callnpc",
+    "callweapon",
+    "canbecarried",
+    "canbepulled",
+    "canbepushed",
+    "cannotbecarried",
+    "cannotbepulled",
+    "cannotbepushed",
+    "cannotwarp",
+    "canwarp",
+    "canwarp2",
+    "carryobject",
+    "changeimgcolors",
+    "changeimgmode",
+    "changeimgpart",
+    "changeimgvis",
+    "changeimgzoom",
+    "copyflagss",
+    "copylevel",
+    "copystrings",
+    "deletelevel",
+    "deletestring",
+    "destroy",
+    "detachplayer",
+    "disabledefmovement",
+    "disablemap",
+    "disablepause",
+    "disableselectweapons",
+    "disableweapons",
+    "dontblock",
+    "dontblocklocal",
+    "drawaslight",
+    "drawoverplayer",
+    "drawunderplayer",
+    "enabledefmovement",
+    "enablefeatures",
+    "enablemap",
+    "enablepause",
+    "enableselectweapons",
+    "enableweapons",
+    "explodebomb",
+    "followplayer",
+    "freezeplayer",
+    "freezeplayer2",
+    "hide",
+    "hideimg",
+    "hideimgs",
+    "hidelocal",
+    "hideplayer",
+    "hidesword",
+    "hitcompu",
+    "hitnpc",
+    "hitobjects",
+    "hitplayer",
+    "hurt ",
+    "insertstring",
+    "join ",
+    "lay ",
+    "lay2",
+    "loadmap",
+    "message",
+    "move",
+    "noplayerkilling",
+    "noplayeronwall",
+    "openurl",
+    "openurl2",
+    "play ",
+    "play2",
+    "playlooped",
+    "putbomb",
+    "putcomp",
+    "putexplosion",
+    "putexplosion2",
+    "puthorse",
+    "putleaps",
+    "putnewcomp",
+    "putnpc",
+    "putnpc2",
+    "putobject",
+    "reflectarrow",
+    "removearrow",
+    "removebomb",
+    "removecompus",
+    "removeexplo",
+    "removeguild",
+    "removeguildmember",
+    "removehorse",
+    "removeitem",
+    "removestring",
+    "removetiledefs",
+    "removeweapon",
+    "replaceani",
+    "replacestring",
+    "resetfocus",
+    "saveinfo",
+    "savelog ",
+    "savelog2",
+    "say ",
+    "say2",
+    "sendpm",
+    "sendrpgmessage",
+    "sendtonc",
+    "sendtorc",
+    "serverwarp",
+    "set ",
+    "setani",
+    "setarray",
+    "setbackpal",
+    "setbeltcolor",
+    "setbody",
+    "setcharani",
+    "setchargender",
+    "setcharprop",
+    "setcoatcolor",
+    "setcoloreffect",
+    "setcursor ",
+    "setcursor2",
+    "seteffect",
+    "seteffectmode ",
+    "setfocus",
+    "setgender",
+    "setgif ",
+    "sethead",
+    "setimg",
+    "setimgpart",
+    "setletters",
+    "setlevel ",
+    "setlevel2",
+    "setmap",
+    "setminimap",
+    "setmusicvolume",
+    "setplayerdir",
+    "setplayerprop",
+    "setpm",
+    "setshape",
+    "setshape2",
+    "setshield",
+    "setshoecolor",
+    "setshootparams",
+    "setskincolor",
+    "setsleevecolor",
+    "setspritesimage",
+    "setstatusimage",
+    "setstring",
+    "setsword",
+    "seturllevel",
+    "setz",
+    "setzoomeffect",
+    "shoot",
+    "shootarrow",
+    "shootball",
+    "shootfireball",
+    "shootfireblast",
+    "shootnuke",
+    "show",
+    "showani",
+    "showani2",
+    "showcharacter",
+    "showfile",
+    "showimg",
+    "showimg2",
+    "showlocal",
+    "showpoly",
+    "showpoly2",
+    "showstats",
+    "showtext",
+    "showtext2",
+    "sleep",
+    "spyfire",
+    "stopmidi",
+    "stopsound",
+    "take ",
+    "take2",
+    "takehorse",
+    "takeplayercarry",
+    "takeplayerhorse",
+    "throwcarry",
+    "timereverywhere",
+    "timershow",
+    "toinventory",
+    "tokenize",
+    "tokenize2",
+    "toweapons",
+    "triggeraction",
+    "unfreezeplayer",
+    "unset ",
+    "updateboard ",
+    "updateboard2 ",
+    "updateterrain",
+    "wraptext",
+    "wraptext2",
 };
 
 constexpr bool isBuiltInCommand(std::string_view name)
@@ -329,7 +357,8 @@ CMD_TAKEPLAYERCARRY      : 'takeplayercarry'      -> type(COMMAND);
 CMD_TAKEPLAYERHORSE      : 'takeplayerhorse'      -> type(COMMAND);
 CMD_DISABLEWEAPONS       : 'disableweapons'       -> type(COMMAND);
 CMD_ENABLEWEAPONS        : 'enableweapons'        -> type(COMMAND);
-CMD_FREEZEPLAYER         : 'freezeplayer'         -> type(COMMAND);
+CMD_FREEZEPLAYER         : 'freezeplayer '        -> type(COMMAND);
+CMD_FREEZEPLAYER2        : 'freezeplayer2'        -> type(COMMAND);
 CMD_UNFREEZEPLAYER       : 'unfreezeplayer'       -> type(COMMAND);
 CMD_HIDEPLAYER           : 'hideplayer'           -> type(COMMAND);
 CMD_HIDESWORD            : 'hidesword'            -> type(COMMAND);
@@ -347,6 +376,7 @@ CMD_REPLACEANI           : 'replaceani'           -> type(COMMAND), pushMode(IN_
 CMD_ATTACHPLAYERTOOBJ    : 'attachplayertoobj'    -> type(COMMAND);
 CMD_DETACHPLAYER         : 'detachplayer'         -> type(COMMAND);
 CMD_UPDATEBOARD          : 'updateboard'          -> type(COMMAND);
+CMD_UPDATEBOARD2         : 'updateboard2'         -> type(COMMAND);
 CMD_PUTOBJECT            : 'putobject'            -> type(COMMAND), pushMode(IN_SP);
 CMD_PUTBOMB              : 'putbomb'              -> type(COMMAND);
 CMD_PUTEXPLOSION         : 'putexplosion'         -> type(COMMAND);
@@ -361,6 +391,7 @@ CMD_SETEFFECT            : 'seteffect'            -> type(COMMAND);
 CMD_SETFOCUS             : 'setfocus'             -> type(COMMAND);
 CMD_RESETFOCUS           : 'resetfocus'           -> type(COMMAND);
 CMD_NOPLAYERKILLING      : 'noplayerkilling'      -> type(COMMAND);
+CMD_NOPLAYERONWALL       : 'noplayeronwall'       -> type(COMMAND);
 CMD_REMOVEBOMB           : 'removebomb'           -> type(COMMAND);
 CMD_REMOVEARROW          : 'removearrow'          -> type(COMMAND);
 CMD_REMOVEITEM           : 'removeitem'           -> type(COMMAND);
@@ -388,7 +419,32 @@ CMD_OPENURL              : 'openurl'              -> type(COMMAND), pushMode(IN_
 CMD_OPENURL2             : 'openurl2'             -> type(COMMAND), pushMode(IN_SP);
 CMD_SHOWFILE             : 'showfile'             -> type(COMMAND), pushMode(IN_S);
 CMD_JOIN                 : 'join '                -> type(COMMAND), pushMode(IN_S);
-CMD_SETCURSOR            : 'setcursor'            -> type(COMMAND);
+CMD_SETCURSOR            : 'setcursor '           -> type(COMMAND);
+CMD_CANWARP              : 'canwarp'              -> type(COMMAND);
+CMD_CANWARP2             : 'canwarp2'             -> type(COMMAND);
+CMD_CANNOTWARP           : 'cannotwarp'           -> type(COMMAND);
+CMD_ADDWEAPON            : 'addweapon'            -> type(COMMAND), pushMode(IN_S);
+CMD_REMOVEWEAPON         : 'removeweapon'         -> type(COMMAND), pushMode(IN_S);
+CMD_SETSPRITESIMAGE      : 'setspritesimage'      -> type(COMMAND), pushMode(IN_S);
+CMD_SETSTATUSIMAGE       : 'setstatusimage'       -> type(COMMAND), pushMode(IN_S);
+CMD_ADDGUILDMEMBER       : 'addguildmember'       -> type(COMMAND), pushMode(IN_SSS);
+CMD_REMOVEGUILDMEMBER    : 'removeguildmember'    -> type(COMMAND), pushMode(IN_SSS);
+CMD_REMOVEGUILD          : 'removeguild'          -> type(COMMAND), pushMode(IN_S);
+CMD_COPYSTRINGS          : 'copystrings'          -> type(COMMAND), pushMode(IN_SS);
+CMD_COPYFLAGSS           : 'copyflagss'           -> type(COMMAND), pushMode(IN_SS);
+CMD_SENDTORC             : 'sendtorc'             -> type(COMMAND), pushMode(IN_S);
+CMD_SENDTONC             : 'sendtonc'             -> type(COMMAND), pushMode(IN_S);
+CMD_SENDPM               : 'sendpm'               -> type(COMMAND), pushMode(IN_S);
+CMD_SETPM                : 'setpm'                -> type(COMMAND), pushMode(IN_S);
+CMD_SENDRPGMESSAGE       : 'sendrpgmessage'       -> type(COMMAND), pushMode(IN_S);
+CMD_SERVERWARP           : 'serverwarp'           -> type(COMMAND), pushMode(IN_S);
+CMD_SETZ                 : 'setz'				  -> type(COMMAND);
+CMD_SETCURSOR2           : 'setcursor2'           -> type(COMMAND), pushMode(IN_S);
+CMD_COPYLEVEL            : 'copylevel'            -> type(COMMAND), pushMode(IN_SS);
+CMD_DELETELEVEL          : 'deletelevel'          -> type(COMMAND), pushMode(IN_S);
+CMD_SAVEINFO             : 'saveinfo'             -> type(COMMAND), pushMode(IN_SS);
+CMD_SAVELOG              : 'savelog '             -> type(COMMAND), pushMode(IN_S);
+CMD_SAVELOG2             : 'savelog2'             -> type(COMMAND), pushMode(IN_SS);
 
 FUNC_GROUP_1
 	: (
@@ -428,9 +484,16 @@ FUNC_GROUP_1
 		| 'worldy'
 		| 'vecx'
 		| 'vecy'
+		| 'findnearestplayer'
+		| 'findnearestplayers'
+		| 'getnearestplayer'
+		| 'getnearestplayers'
+		| 'aindexof'
+		| 'getdir'
+		| 'getareanpcs'
 	) -> type(FUNCTION)
 	;
-	
+
 FUNC_GROUP_2
 	: (
 		'onmapx'
@@ -440,6 +503,15 @@ FUNC_GROUP_2
 		| 'imgwidth'
 		| 'imgheight'
 		| 'keycode'
+		| 'base64encode'
+		| 'base64decode'
+		| 'playersays'
+		| 'playersays2'
+		| 'hasweapon'
+		| '_'
+		| 'N_'
+		| 'getplayer'
+		| 'getnpc'
 	) -> type(FUNCTION), pushMode(IN_F_1S)
 	;
 
@@ -455,14 +527,16 @@ FUNC_GROUP_3
 FUNC_GROUP_4 : ('textwidth' | 'textheight') -> type(FUNCTION), pushMode(IN_F_1VSSS);
 FUNC_GROUP_5 : 'lindexof' -> type(FUNCTION), pushMode(IN_F_1SP);
 
-MC_NOINDEX	: '#' ([angcmWw1235678LfpbD] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE);
-MC_SIMPLE	: '#' ([ngcmWw1235678ptKk] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) WS* '(' -> type(MESSAGECODE), pushMode(IN_F_P);
+MC_NOINDEX	: '#' ([ngcmWw1235678LFfpbD] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE);
+MC_SIMPLE	: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) WS* '(' -> type(MESSAGECODE), pushMode(IN_F_P);
 MC_COMPUTED : '#' [sv] WS* '(' -> type(MESSAGECODE), pushMode(IN_F_C);
 MC_T        : '#T' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_S);
 MC_e		: '#e' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_VVS);
-MC_I		: '#I' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_CS);
+MC_I		: '#I' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_CP);
 MC_i		: '#i' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_SO);
 MC_R		: '#R' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+
+// TODO: Some string lists are CSV.
 
 // Keep above KW_TRUE/KW_FALSE.
 LITERAL
@@ -471,6 +545,7 @@ LITERAL
 	| KW_FALSE
 	;
 
+KW_WITH			: 'with';
 KW_FUNCTION		: 'function';
 KW_IF			: 'if';
 KW_ELSE			: 'else';
@@ -696,7 +771,7 @@ MS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 MS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 MS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 MS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-MS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+MS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 MS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 MS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 MS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION);
@@ -1285,7 +1360,7 @@ SSP_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 SSP_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 SSP_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 SSP_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-SSP_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+SSP_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 SSP_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 SSP_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 SSP_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1300,7 +1375,7 @@ SP_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 SP_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 SP_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 SP_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-SP_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+SP_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 SP_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 SP_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 SP_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1316,7 +1391,7 @@ CVS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 CVS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 CVS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 CVS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-CVS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+CVS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 CVS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 CVS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 CVS_LITERAL     : LITERAL -> type(LITERAL);
@@ -1334,7 +1409,7 @@ CS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 CS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 CS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 CS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-CS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+CS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 CS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 CS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 CS_LITERAL     : LITERAL -> type(LITERAL);
@@ -1358,7 +1433,7 @@ SSS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 SSS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 SSS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 SSS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-SSS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+SSS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 SSS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 SSS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 SSS_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1373,7 +1448,7 @@ SS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 SS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 SS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 SS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-SS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+SS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 SS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 SS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 SS_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1389,7 +1464,7 @@ S_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 S_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 S_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 S_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-S_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+S_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 S_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 S_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 S_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1406,7 +1481,7 @@ STRINGLIST_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 STRINGLIST_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 STRINGLIST_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 STRINGLIST_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-STRINGLIST_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+STRINGLIST_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 STRINGLIST_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 STRINGLIST_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 STRINGLIST_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1566,17 +1641,17 @@ F_IS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_S);
 F_IS_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
 
 // --------------------------------------------------------
-mode IN_F_CS;
+mode IN_F_CP;
 
 F_CS_WS         : WHITESPACE+ -> skip;
 F_CS_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
-F_CS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_S);
+F_CS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_P);
 F_CS_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
 F_CS_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_CS_MC_COMPUTED     : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_CS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_CS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_CS_MC_I            : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_CS_MC_I            : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_CS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_CS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_CS_LITERAL         : LITERAL -> type(LITERAL);
@@ -1595,7 +1670,7 @@ F_C_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_C_MC_COMPUTED     : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_C_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_C_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_C_MC_I            : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_C_MC_I            : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_C_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_C_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_C_LITERAL         : LITERAL -> type(LITERAL);
@@ -1613,7 +1688,7 @@ F_SO_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_SO_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_SO_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_SO_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_SO_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_SO_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_SO_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_SO_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_SO_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1645,7 +1720,7 @@ F_SS_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_SS_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_SS_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_SS_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_SS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_SS_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_SS_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_SS_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_SS_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1660,7 +1735,7 @@ F_S_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_S_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_S_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_S_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_S_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_S_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_S_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_S_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_S_STRING_ESCAPE  : '##' -> type(STRING);
@@ -1715,7 +1790,7 @@ F_STRINGLIST_MC_SIMPLE   : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
 F_STRINGLIST_MC_COMPUTED : MC_COMPUTED -> type(MESSAGECODE), pushMode(IN_F_C);
 F_STRINGLIST_MC_T        : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
 F_STRINGLIST_MC_e        : MC_e -> type(MESSAGECODE), pushMode(IN_F_VVS);
-F_STRINGLIST_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CS);
+F_STRINGLIST_MC_I        : MC_I -> type(MESSAGECODE), pushMode(IN_F_CP);
 F_STRINGLIST_MC_i        : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
 F_STRINGLIST_MC_R        : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
 F_STRINGLIST_STRING_ESCAPE  : '##' -> type(STRING);

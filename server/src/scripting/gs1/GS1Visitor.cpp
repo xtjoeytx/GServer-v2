@@ -1,5 +1,3 @@
-#include <scripting/gs1/GS1Visitor.h>
-
 #include <cstdint>
 #include <cmath>
 #include <variant>
@@ -10,6 +8,9 @@
 #include <utility>
 #include <vector>
 #include <ranges>
+
+#include <scripting/gs1/GS1MessageCodes.h>
+#include <scripting/gs1/GS1Visitor.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -237,6 +238,18 @@ ScriptVariable GS1Visitor::getVariableFromStores(const ScriptIdentifier& identif
 	throw std::exception("getVariableFromStores identifier has no data type");
 }
 
+ScriptVariableContainer& GS1Visitor::fixBindAndGetVariable(ScriptVariableContainer& container)
+{
+	checkAndAssignIdentifierType(container);
+	bindLinkToVariableStore(container);
+	if (!container.hasGetter())
+	{
+		container.setGetter(bindGetter());
+		container.retrieveFromGetter();
+	}
+	return container;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GS1Visitor::execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
@@ -461,6 +474,22 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 	return std::make_any<ScriptVariableContainer>(std::move(container));
 }
 
+std::any GS1Visitor::visitCompoundString(GS1Parser::CompoundStringContext* context)
+{
+	std::string compoundString;
+
+	auto results = visitChildrenAndCollect(this, context);
+	for (auto& piece : results)
+	{
+		auto result = tryGetScriptVariableValueFromAny(piece, std::string{});
+		compoundString.append(std::move(result));
+	}
+	string::trimMutate(compoundString);
+
+	ScriptVariableContainer container{ ScriptVariable{ compoundString } };
+	return std::make_any<ScriptVariableContainer>(std::move(container));
+}
+
 std::any GS1Visitor::visitIncDecOperation(GS1Parser::IncDecOperationContext* context)
 {
 	auto results = visitChildrenAndCollect(this, context);
@@ -522,7 +551,7 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 		// Get the value.
 		auto value = getScriptVariableContainer(results[1]);
 		if (!value.has_value() || !std::holds_alternative<std::string>(value.value().get()))
-			throw std::exception("setstring value is not a valid identifier");
+			throw std::exception("setstring value is not a valid string");
 
 		// Assign the string.
 		identifier.value().set(value.value().get());
@@ -708,8 +737,32 @@ std::any GS1Visitor::visitUnaryOperation(GS1Parser::UnaryOperationContext* conte
 
 std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 {
-	throw std::exception("visitMessageCode not implemented");
-	return {};
+	auto results = visitChildrenAndCollect(this, context);
+	auto messageCode = context->MESSAGECODE()->getText();
+	if (messageCode.empty())
+		throw std::exception("MessageCode is not a valid message code");
+
+	// Trim out the message code.
+	std::string_view messageCodeView{ messageCode };
+	if (messageCodeView.ends_with('('))
+		messageCodeView.remove_suffix(1);
+	if (messageCodeView.starts_with('#'))
+		messageCodeView.remove_prefix(1);
+
+	// Process the arguments.
+	std::vector<ScriptVariableContainer*> arguments;
+	for (auto& result : results)
+	{
+		auto* container = std::any_cast<ScriptVariableContainer>(&result);
+		if (container == nullptr)
+			throw std::exception("MessageCode argument is not a valid ScriptVariableContainer");
+
+		// Add to the arguments.
+		arguments.push_back(container);
+	}
+
+	// Process the message code.
+	return std::make_any<ScriptVariableContainer>(preagonal::gs1::processMessageCode(this, messageCodeView, arguments));
 }
 
 std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)
@@ -727,8 +780,7 @@ std::any GS1Visitor::visitLiteralAllFeatures(GS1Parser::LiteralAllFeaturesContex
 
 std::any GS1Visitor::visitStringLiteral(GS1Parser::StringLiteralContext* context)
 {
-	std::string text{ std::move(context->STRING()->getText()) };
-	return makeScriptVariableContainerFrom(std::move(string::trimMutate(text)));
+	return makeScriptVariableContainerFrom(std::move(context->STRING()->getText()));
 }
 
 std::any GS1Visitor::visitIdentifierLiteral(GS1Parser::IdentifierLiteralContext* context)

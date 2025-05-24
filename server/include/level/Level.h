@@ -147,6 +147,14 @@ public:
 	//! \param pLevelSpar If true, the level becomes a sparring zone level.
 	void setSparringZone(bool pLevelSpar) { m_isSparringZone = pLevelSpar; }
 
+	//! Gets the no player killing status of the level.
+	//! \return The no player killing status.  If true, the level is a no player killing zone.
+	bool isNoPkZone() const { return m_isNoPkZone; }
+
+	//! Sets the no player killing status of the level.
+	//! \param levelNoPk If true, the level becomes a no player killing level.
+	void setNoPkZone(bool levelNoPk) { m_isNoPkZone = levelNoPk; }
+
 	//! Gets the singleplayer status of the level.
 	//! \return The singleplayer status.  If true, the level is singleplayer.
 	bool isSingleplayer() const { return m_isSingleplayer; }
@@ -283,6 +291,7 @@ public:
 	//! \return Currently, it always returns true.
 	bool doTimedEvents();
 
+	bool hasLivingBaddies() const;
 	bool isOnWall(int pX, int pY);
 	bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
 	bool isOnWater(int pX, int pY);
@@ -300,6 +309,7 @@ private:
 
 	time_t m_modTime = 0;
 	bool m_isSparringZone = false;
+	bool m_isNoPkZone = false;
 	bool m_isSingleplayer = false;
 	int m_mapX = 0;
 	int m_mapY = 0;

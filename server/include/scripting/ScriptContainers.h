@@ -422,6 +422,14 @@ inline auto tryGetScriptVariableValueFromAny(const std::any& anyval, auto defaul
 	return container->get<decltype(defaultValue)>();
 }
 
+inline auto getScriptVariableValue(const ScriptVariable& variable, auto defaultValue) -> decltype(defaultValue)
+{
+	using value_type = decltype(defaultValue);
+	if (std::holds_alternative<value_type>(variable))
+		return std::get<value_type>(variable);
+	return defaultValue;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 

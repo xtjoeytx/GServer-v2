@@ -758,6 +758,9 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	if (script.contains("sparringzone"))
 		setSparringZone(true);
 
+	if (script.contains("noplayerkilling"))
+		setNoPkZone(true);
+
 	if (script.contains("singleplayer"))
 		setSingleplayer(true);
 
@@ -1077,6 +1080,16 @@ bool Level::removeChest(uint32_t index)
 		return true;
 	}
 
+	return false;
+}
+
+bool Level::hasLivingBaddies() const
+{
+	for (const auto& baddy: m_baddies)
+	{
+		if (baddy.second->getMode() != BDMODE_DEAD)
+			return true;
+	}
 	return false;
 }
 

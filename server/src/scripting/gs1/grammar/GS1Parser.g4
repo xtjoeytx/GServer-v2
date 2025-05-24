@@ -71,7 +71,7 @@ primary_expression
 	| array_literal
 	| literal_literal
 	| identifier_
-	| compound_string+
+	| compound_string
 	;
 
 binary_expression
@@ -139,7 +139,7 @@ builtin_function
 	;
 
 builtin_function_parameters
-	: (compound_string+ | expression) (TOKEN_COMMA (compound_string+ | expression))*
+	: (compound_string | expression) (TOKEN_COMMA (compound_string | expression))*
 	;
 
 if_condition
@@ -196,12 +196,11 @@ unary_operator
 	;
 
 unary_operation
-	: unary_operator expression			# UnaryOperation
+	: unary_operator expression					# UnaryOperation
 	;
 
 compound_string
-	: string_literal
-	| messagecode_string
+	: (string_literal | messagecode_string)+	# CompoundString
 	;
 
 messagecode_string
