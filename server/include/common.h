@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <variant>
 
 // TODO: Replace time.h with <chrono> across the program.
 #include <chrono>
@@ -50,6 +51,20 @@ concept Pair = requires(P p)
 	typename P::second_type;
 	{ p.first } -> std::same_as<typename P::first_type>;
 	{ p.second } -> std::same_as<typename P::second_type>;
+};
+
+template<class Va, class Tp>
+concept VariantContainsType = requires(Va v, Tp t)
+{
+	{ std::holds_alternative<Tp>(v) } -> std::same_as<bool>;
+};
+
+//-----------------------------------------------
+
+template<class... Ts>
+struct visit_functions : Ts...
+{
+	using Ts::operator()...;
 };
 
 //-----------------------------------------------

@@ -177,8 +177,9 @@ protected:
 	CString m_grMovementPackets;
 	CString m_levelGroup;
 	CString m_grExecParameterList;
-
 };
+
+using PlayerClientPtr = std::shared_ptr<PlayerClient>;
 
 // So stupid that I have to do this.
 inline CString PlayerClient::getProp(int pPropId) const

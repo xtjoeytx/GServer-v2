@@ -84,7 +84,7 @@ binary_expression
 	| binary_expression OP_LOGICALOR binary_expression										# LogicExpression
 	| binary_expression TOKEN_QUESTION binary_expression TOKEN_COLON binary_expression		# TernaryExpression
 	| binary_expression (TOKEN_COMMA binary_expression)* OP_IN in_expression				# InExpression
-	| TOKEN_PAREN_LEFT binary_expression TOKEN_PAREN_RIGHT									# ignoreParenthesesExpression
+	| TOKEN_PAREN_LEFT binary_expression TOKEN_PAREN_RIGHT									# ParenthesesExpression
 	| unary_expression																		# ignoreUnaryExpression
 	;
 
@@ -113,7 +113,7 @@ assignment
 	;
 
 builtin_command
-	: COMMAND builtin_command_expression? (TOKEN_COMMA builtin_command_expression?)*	# BuiltInCommand
+	: COMMAND WS*? builtin_command_expression? (TOKEN_COMMA builtin_command_expression?)*	# BuiltInCommand
 	;
 
 builtin_command_expression

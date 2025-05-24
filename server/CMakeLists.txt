@@ -121,6 +121,7 @@ set(
 	"src/player/packets/PlayerRCPackets.cpp"
 	"src/scripting/GS2ScriptManager.cpp"
 	"src/scripting/ScriptClass.cpp"
+	"src/scripting/ScriptContainers.cpp"
 	"src/scripting/ScriptSystem.cpp"
 	"src/scripting/SourceCode.cpp"
 	"src/scripting/gs1/GS1Visitor.cpp"

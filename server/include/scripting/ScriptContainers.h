@@ -6,6 +6,7 @@
 #include <map>
 #include <variant>
 #include <functional>
+#include <utility>
 
 #include <common.h>
 
@@ -25,6 +26,8 @@ enum class ScriptEventSourceType
 };
 using ScriptEventSource = std::pair<uint32_t, ScriptEventSourceType>;
 
+//---------------------------
+
 namespace source
 {
 constexpr ScriptEventSource FromPlayer(PlayerID id)
@@ -43,7 +46,9 @@ constexpr ScriptEventSource FromServer()
 }
 } // end namespace source
 
-/////////////////////////////
+////////////////////////////////////////////////////////////
+// ScriptEvent
+////////////////////////////////////////////////////////////
 
 struct ScriptEvent
 {
@@ -52,6 +57,8 @@ struct ScriptEvent
 	std::vector<std::any> args;
 };
 
+//---------------------------
+
 // Queued script events.
 class ScriptEventQueue
 {
@@ -59,125 +66,276 @@ public:
 	[[inline]] std::queue<ScriptEvent>& queue();
 
 public:
-	void addEvent(ScriptEventType type, ScriptEventSource initiator)
-	{
-		m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
-	}
+	void addEvent(ScriptEventType type, ScriptEventSource initiator);
 
-	template<class T>
-	void addEvent(ScriptEventType type, ScriptEventSource initiator, T&& arg)
-	{
-		ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::make_any<T>(std::forward<T>(arg)) } };
-		addEvent(event);
-	}
-
-	template<class T, class... Args>
-	void addEvent(ScriptEventType type, ScriptEventSource initiator, T&& arg, Args&&... args)
-	{
-		ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::make_any<T>(std::forward<T>(arg)) } };
-		addEvent(event, std::forward<Args>(args)...);
-	}
+	[[inline]] void addEvent(ScriptEventType type, ScriptEventSource initiator, auto&&... args);
 
 private:
-	void addEvent(ScriptEvent& event)
-	{
-		m_eventQueue.push(std::move(event));
-	}
-
-	template<class T>
-	void addEvent(ScriptEvent& event, T&& arg)
-	{
-		event.args.push_back(std::forward<T>(arg));
-		addEvent(event);
-	}
-
-	template<class T, class... Args>
-	void addEvent(ScriptEvent& event, T&& arg, Args&&... args)
-	{
-		event.args.push_back(std::forward<T>(arg));
-		addEvent(event, std::forward<Args>(args)...);
-	}
+	void addEvent(const ScriptEvent& event);
+	void addEvent(ScriptEvent&& event);
 
 private:
 	std::queue<ScriptEvent> m_eventQueue;
 };
+
+//---------------------------
 
 inline std::queue<ScriptEvent>& ScriptEventQueue::queue()
 {
 	return m_eventQueue;
 }
 
-/////////////////////////////
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptEventSource initiator, auto&&... args)
+{
+	ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::forward<decltype(args)>(args)... } };
+	addEvent(std::move(event));
+}
 
+////////////////////////////////////////////////////////////
+// ScriptVariable / ScriptVariableContainer
+////////////////////////////////////////////////////////////
+
+// An identifier (normal and array variant).
 using ScriptIdentifier = std::variant<std::string, std::pair<std::string, size_t>>;
-using ScriptVariable = std::variant<double, std::string, std::vector<double>, ScriptIdentifier>;
-using ScriptVariableFromServer = std::function<ScriptVariable*(std::string_view, size_t index)>;
+
+// A script variable.
+using ScriptVariable = std::variant<double, std::string, std::vector<double>>;
+using ScriptVariablePair = std::pair<ScriptVariable, ScriptVariable>;
+
+// A container for a script variable.
+// This is used to store a variable and its getter/setter functions.
+// Scripting language engines should use this intead of raw ScriptVariable values.
+class ScriptVariableContainer
+{
+	using func_get = std::function<ScriptVariable(const ScriptIdentifier&)>;
+	using func_set = std::function<void(const ScriptIdentifier&, const ScriptVariable&)>;
+
+public:
+	// Don't allow a default constructor.  Store with std::optional instead.
+	ScriptVariableContainer() = delete;
+
+	// Construct via a ScriptIdentifier.
+	ScriptVariableContainer(const ScriptIdentifier& identifier, func_get getter = {}, func_set setter = {})
+		: m_getter(getter), m_setter(setter), m_identifier(identifier)
+	{
+		retrieveFromGetter();
+	}
+	ScriptVariableContainer(ScriptIdentifier&& identifier, func_get getter = {}, func_set setter = {}) noexcept
+		: m_getter(getter), m_setter(setter), m_identifier(std::move(identifier))
+	{
+		retrieveFromGetter();
+	}
+
+	// Construct via a ScriptVariable.
+	// Doesn't have getter functions because those require a ScriptIdentifier.
+	ScriptVariableContainer(const ScriptVariable& value, func_set setter = {})
+		: m_setter(setter), m_value(value) {}
+	ScriptVariableContainer(ScriptVariable&& value, func_set setter = {}) noexcept
+		: m_setter(setter), m_value(std::move(value)) {}
+
+	// Construct via a ScriptIdentifier and a ScriptVariable.
+	ScriptVariableContainer(const ScriptIdentifier& identifier, const ScriptVariable& value, func_set setter = {})
+		: m_setter(setter), m_identifier(identifier), m_value(value) {}
+	ScriptVariableContainer(const ScriptIdentifier& identifier, ScriptVariable&& value, func_set setter = {}) noexcept
+		: m_setter(setter), m_identifier(identifier), m_value(std::move(value)) {}
+	ScriptVariableContainer(ScriptIdentifier&& identifier, const ScriptVariable& value, func_set setter = {}) noexcept
+		: m_setter(setter), m_identifier(std::move(identifier)), m_value(value) {}
+	ScriptVariableContainer(ScriptIdentifier&& identifier, ScriptVariable&& value, func_set setter = {}) noexcept
+		: m_setter(setter), m_identifier(std::move(identifier)), m_value(std::move(value)) {}
+
+public:
+	// Copy and move constructors.
+	// TODO(Nalin): std::any is just going to copy-construct anything.  Consider optimizing by wrapping with a std::shared_ptr.
+	// [[deprecated("Prefer moving with std::move()")]]
+	ScriptVariableContainer(const ScriptVariableContainer& other)
+		: m_getter(other.m_getter), m_setter(other.m_setter), m_identifier(other.m_identifier), m_value(other.m_value)
+	{}
+	ScriptVariableContainer(ScriptVariableContainer&& other) noexcept
+		: m_getter(other.m_getter), m_setter(other.m_setter), m_identifier(std::move(other.m_identifier)), m_value(std::move(other.m_value))
+	{}
+
+public:
+	// Assignment and move assignment operators from a ScriptVariable.
+	[[inline]] ScriptVariableContainer& operator=(const ScriptVariable& value) noexcept;
+	[[inline]] ScriptVariableContainer& operator=(ScriptVariable&& value) noexcept;
+
+public:
+	[[inline]] bool hasIdentifier() const noexcept;
+	[[inline]] const std::optional<ScriptIdentifier>& getIdentifier() const noexcept;
+	[[inline]] void setIdentifier(const ScriptIdentifier& identifier) noexcept;
+	[[inline]] void setIdentifier(ScriptIdentifier&& identifier) noexcept;
+	[[inline]] std::optional<ScriptIdentifier>& getMutableIdentifier() noexcept;
+
+public:
+	// Get the underlying ScriptVariable.
+	[[inline]] ScriptVariable& get() noexcept;
+
+	// Get the underlying ScriptVariable.
+	[[inline]] const ScriptVariable& get() const noexcept;
+
+	// Get the ScriptVariable as a specific data type.
+	template<typename T> requires(VariantContainsType<ScriptVariable, T>)
+	[[inline]] T get() const noexcept;
+
+	// Get the ScriptVariable as a boolean data type.
+	template<>
+	[[inline]] bool get<bool>() const noexcept;
+
+	// Sets the ScriptVariable to a new value.
+	ScriptVariableContainer& set(const ScriptVariable& value) noexcept;
+	ScriptVariableContainer& set(ScriptVariable&& value) noexcept;
+	ScriptVariableContainer& set(const ScriptVariableContainer& value) noexcept;
+	ScriptVariableContainer& set(ScriptVariableContainer&& value) noexcept;
+
+public:
+	ScriptVariableContainer& setGetter(func_get getter) noexcept
+	{
+		m_getter = getter;
+		return *this;
+	}
+	ScriptVariableContainer& setSetter(func_set setter) noexcept
+	{
+		m_setter = setter;
+		return *this;
+	}
+	bool hasGetter() const noexcept
+	{
+		return m_getter != nullptr;
+	}
+	bool hasSetter() const noexcept
+	{
+		return m_setter != nullptr;
+	}
+
+public:
+	[[inline]] void retrieveFromGetter() noexcept;
+
+private:
+	func_get m_getter;
+	func_set m_setter;
+	std::optional<ScriptIdentifier> m_identifier;
+	ScriptVariable m_value;
+};
+
+//---------------------------
+
+inline ScriptVariableContainer& ScriptVariableContainer::operator=(const ScriptVariable& value) noexcept
+{
+	set(value);
+}
+
+inline ScriptVariableContainer& ScriptVariableContainer::operator=(ScriptVariable&& value) noexcept
+{
+	set(std::move(value));
+}
+
+inline bool ScriptVariableContainer::hasIdentifier() const noexcept
+{
+	return m_identifier.has_value();
+}
+
+inline const std::optional<ScriptIdentifier>& ScriptVariableContainer::getIdentifier() const noexcept
+{
+	return m_identifier;
+}
+
+inline void ScriptVariableContainer::setIdentifier(const ScriptIdentifier& identifier) noexcept
+{
+	m_identifier = identifier;
+}
+
+inline void ScriptVariableContainer::setIdentifier(ScriptIdentifier&& identifier) noexcept
+{
+	m_identifier = identifier;
+}
+
+inline std::optional<ScriptIdentifier>& ScriptVariableContainer::getMutableIdentifier() noexcept
+{
+	return m_identifier;
+}
+
+inline ScriptVariable& ScriptVariableContainer::get() noexcept
+{
+	return m_value;
+}
+
+inline const ScriptVariable& ScriptVariableContainer::get() const noexcept
+{
+	return m_value;
+}
+
+template<typename T> requires(VariantContainsType<ScriptVariable, T>)
+inline T ScriptVariableContainer::get() const noexcept
+{
+	if (std::holds_alternative<T>(m_value))
+		return std::get<T>(m_value);
+	if constexpr (std::same_as<T, double>)
+		return 0.0;
+	return T{};
+}
+
+template<>
+inline bool ScriptVariableContainer::get<bool>() const noexcept
+{
+	if (std::holds_alternative<double>(m_value))
+		return std::get<double>(m_value) != 0.0;
+	return false;
+}
+
+inline void ScriptVariableContainer::retrieveFromGetter() noexcept
+{
+	if (m_getter && m_identifier.has_value())
+		m_value = std::move(m_getter(m_identifier.value()));
+}
+
+////////////////////////////////////////////////////////////
+// ScriptVariableStore
+////////////////////////////////////////////////////////////
 
 struct ScriptVariableStore
 {
 public:
-	[[inline]] ScriptVariable& add(std::string_view name, ScriptVariable value) noexcept;
-	[[inline]] bool remove(std::string_view name) noexcept;
-	[[inline]] bool contains(std::string_view name) const noexcept;
-	[[inline]] ScriptVariable* get(std::string_view name) noexcept;
-	[[inline]] const ScriptVariable* get(std::string_view name) const noexcept;
-	[[inline]] ScriptVariable& get_or_add(std::string_view name) noexcept;
+	virtual ~ScriptVariableStore() {}
 
 public:
-	// Keep as a std::map as iterators/references are not invalidated when the map changes (like on insert or erase).
-	// If it must be changed, a refactor of the scripting languages are needed.
+	virtual ScriptVariableContainer add(std::string name, ScriptVariable value) noexcept;
+	virtual bool remove(std::string_view name) noexcept;
+	virtual bool contains(std::string_view name) const noexcept;
+	virtual std::optional<ScriptVariableContainer> get(std::string name) noexcept;
+	virtual std::optional<const ScriptVariableContainer> get(std::string name) const noexcept;
+	virtual ScriptVariableContainer get_or_add(std::string name) noexcept;
+	virtual ScriptVariableContainer& try_link(ScriptVariableContainer& container) noexcept;
+
+public:
 	std::map<std::string, ScriptVariable, std::less<>> store;
+
+public:
+	void update(const ScriptIdentifier& identifier, const ScriptVariable& value);
+	constexpr auto bindSetter()
+	{
+		return std::bind(&ScriptVariableStore::update, this, std::placeholders::_1, std::placeholders::_2);
+	}
 };
 
-inline ScriptVariable& ScriptVariableStore::add(std::string_view name, ScriptVariable value) noexcept
-{
-	auto [iter, was_inserted] = store.insert_or_assign(std::string{ name }, value);
+//---------------------------
 
-	// https://en.cppreference.com/w/cpp/container/map/insert_or_assign
-	// No iterators or references are invalidated.
-	return *&iter->second;
-}
-
-inline bool ScriptVariableStore::remove(std::string_view name) noexcept
-{
-	return store.erase(name) != 0;
-}
-
-inline bool ScriptVariableStore::contains(std::string_view name) const noexcept
-{
-	return store.contains(name);
-}
-
-inline ScriptVariable* ScriptVariableStore::get(std::string_view name) noexcept
-{
-	auto it = store.find(name);
-	if (it == store.end())
-		return nullptr;
-
-	return &it->second;
-}
-
-inline const ScriptVariable* ScriptVariableStore::get(std::string_view name) const noexcept
-{
-	auto it = store.find(name);
-	if (it == store.end())
-		return nullptr;
-
-	return &it->second;
-}
-
-inline ScriptVariable& ScriptVariableStore::get_or_add(std::string_view name) noexcept
-{
-	auto var = get(name);
-	if (var != nullptr)
-		return *var;
-
-	return add(name, { 0.0 });
-}
+using ScriptVariableFromServer = std::function<ScriptVariableContainer(const ScriptIdentifier&)>;
+using ScriptVariableStorePicker = std::variant<ScriptVariableStore*, ScriptVariableFromServer>;
+using ScriptVariableStoreMap = std::map<std::string, ScriptVariableStorePicker>;
 
 /////////////////////////////
+// ScriptContainer
+/////////////////////////////
 
-using ScriptVariablePair = std::pair<ScriptVariable, ScriptVariable>;
+struct ScriptContainer
+{
+	ScriptEventQueue events;
+	ScriptVariableStore variables;
+};
+
+////////////////////////////////////////////////////////////
+// ScriptVariable Operators
+////////////////////////////////////////////////////////////
 
 inline ScriptVariable operator+(const ScriptVariable& left, const ScriptVariable& right)
 {
@@ -247,108 +405,22 @@ inline bool operator!=(const ScriptVariable& left, const ScriptVariable& right)
 	return std::get<double>(left) != std::get<double>(right);
 }
 
-/////////////////////////////
+////////////////////////////////////////////////////////////
+// Functions
+////////////////////////////////////////////////////////////
 
-inline ScriptVariable* getScriptVariableUnsafe(std::any& anyval)
+std::optional<ScriptVariableContainer> retrieveVariableFromStore(const ScriptIdentifier& identifier, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores = nullptr);
+ScriptVariableContainer* getScriptVariableContainerUnsafe(std::any& anyval);
+std::optional<ScriptVariableContainer> getScriptVariableContainer(const std::any& anyval);
+
+std::string getIdentifierName(const ScriptIdentifier& identifier);
+
+inline auto tryGetScriptVariableValueFromAny(const std::any& anyval, auto defaultValue) -> decltype(defaultValue)
 {
-	if (!anyval.has_value()) return nullptr;
-	auto* direct = std::any_cast<ScriptVariable>(&anyval);
-	if (direct != nullptr) return direct;
-	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);
-	if (indirect != nullptr && *indirect != nullptr) return *indirect;
-	return nullptr;
+	const auto* container = std::any_cast<const ScriptVariableContainer>(&anyval);
+	if (container == nullptr) return defaultValue;
+	return container->get<decltype(defaultValue)>();
 }
-
-inline const ScriptVariable* getScriptVariableUnsafe(const std::any& anyval)
-{
-	if (!anyval.has_value()) return nullptr;
-	const auto* direct = std::any_cast<ScriptVariable>(&anyval);
-	if (direct != nullptr) return direct;
-	auto* const* indirect = std::any_cast<ScriptVariable*>(&anyval);
-	if (indirect != nullptr && *indirect != nullptr) return *indirect;
-	return nullptr;
-}
-
-inline ScriptVariable& getScriptVariableOr(std::any& anyval, ScriptVariable& defaultValue)
-{
-	if (!anyval.has_value()) return defaultValue;
-	auto* direct = std::any_cast<ScriptVariable>(&anyval);
-	if (direct != nullptr) return *direct;
-	auto** indirect = std::any_cast<ScriptVariable*>(&anyval);
-	if (indirect != nullptr && *indirect != nullptr) return **indirect;
-	return defaultValue;
-}
-
-///
-
-template<class T = ScriptVariable>
-inline std::optional<T> getScriptVariable(std::any& anyval)
-{
-	auto* variable = getScriptVariableUnsafe(anyval);
-	if (variable == nullptr)
-		return std::nullopt;
-	if constexpr (std::same_as<T, ScriptVariable>)
-	{
-		return *variable;
-	}
-	else
-	{
-		if (std::holds_alternative<T>(*variable))
-			return std::get<T>(*variable);
-	}
-	return std::nullopt;
-}
-
-template<>
-inline std::optional<bool> getScriptVariable<bool>(std::any& anyval)
-{
-	auto double_value = getScriptVariable<double>(anyval);
-	if (!double_value.has_value())
-		return std::nullopt;
-	return double_value.value() != 0.0f;
-}
-
-///
-
-template<class T = ScriptVariable>
-inline const std::optional<T> getScriptVariable(const std::any& anyval)
-{
-	const auto* variable = getScriptVariableUnsafe(anyval);
-	if (variable == nullptr)
-		return {};
-	if constexpr (std::same_as<T, ScriptVariable>)
-	{
-		return *variable;
-	}
-	else
-	{
-		if (std::holds_alternative<T>(*variable))
-			return std::get<T>(*variable);
-	}
-	return std::nullopt;
-}
-
-template<>
-inline const std::optional<bool> getScriptVariable<bool>(const std::any& anyval)
-{
-	const auto double_value = getScriptVariable<double>(anyval);
-	if (!double_value.has_value())
-		return std::nullopt;
-	return double_value.value() != 0.0f;
-}
-
-/////////////////////////////
-
-struct ScriptContainer
-{
-	ScriptEventQueue events;
-	ScriptVariableStore variables;
-};
-
-/////////////////////////////
-
-using ScriptVariableStorePicker = std::variant<ScriptVariableStore*, ScriptVariableFromServer>;
-using ScriptVariableStoreMap = std::map<std::string, ScriptVariableStorePicker>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

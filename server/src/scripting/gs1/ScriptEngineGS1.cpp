@@ -92,12 +92,17 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptEventSource source
 
 	auto* server = BabyDI::Get<Server>();
 	auto& [source_id, source_type] = source;
+	PlayerClientPtr player = nullptr;
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
 
 	// Get whatever links we can.
+	if (source_type == ScriptEventSourceType::PLAYER)
+		player = server->getPlayer<PlayerClient>(source_id);
 	if (source_type == ScriptEventSourceType::NPC)
 		npc = server->getNPC(source_id);
+	if (player != nullptr)
+		level = player->getLevel();
 	if (npc != nullptr)
 		level = npc->level.lock();
 
@@ -114,7 +119,7 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptEventSource source
 
 	// Set flags.
 	ScriptVariableStore eventFlagStore;
-	preagonal::gs1::setEventFlags(event.type, eventFlagStore);
+	setEventFlags(event.type, eventFlagStore);
 
 	// Use the flag store as a default container if none is set.
 	if (defaultVariableStore == nullptr)
