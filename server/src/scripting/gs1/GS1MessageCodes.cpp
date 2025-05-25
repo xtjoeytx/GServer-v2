@@ -2,8 +2,14 @@
 
 #include <common.h>
 
+#include <Server.h>
+#include <object/Character.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <player/PlayerClient.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/StringUtils.h>
 
 using namespace preagonal::grammar::gs1;
@@ -97,6 +103,101 @@ static MessageCodeHandleMap GenerateMap()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+using PlayerOrNPC = std::optional<std::variant<PlayerPtr, NPCPtr>>;
+
+static PlayerPtr getPlayerFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
+{
+	if (source.second != ScriptEventSourceType::PLAYER)
+		return nullptr;
+
+	auto* server = BabyDI::Get<Server>();
+	if (auto player = server->getPlayer(source.first); player != nullptr)
+	{
+		if (index.has_value())
+		{
+			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getPlayers().size())
+				player = server->getPlayer(level->getPlayers().at(index.value()));
+		}
+		return player;
+	}
+
+	return nullptr;
+}
+
+static PlayerClientPtr getPlayerClientFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
+{
+	auto player = getPlayerFromSource(source, index);
+	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
+		return client;
+	return nullptr;
+}
+
+static NPCPtr getNPCFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
+{
+	if (source.second != ScriptEventSourceType::NPC)
+		return nullptr;
+	auto* server = BabyDI::Get<Server>();
+	if (auto npc = server->getNPC(source.first); npc != nullptr)
+	{
+		if (index.has_value())
+		{
+			if (auto level = npc->level.lock(); level != nullptr && index.value() < level->getNPCs().size())
+				npc = server->getNPC(level->getNPCs().at(index.value()));
+		}
+		return npc;
+	}
+	return nullptr;
+}
+
+static PlayerOrNPC getPlayerOrNPCFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
+{
+	if (source.second == ScriptEventSourceType::SERVER)
+		return std::nullopt;
+
+	auto* server = BabyDI::Get<Server>();
+	if (source.second == ScriptEventSourceType::PLAYER)
+		return getPlayerFromSource(source, index);
+	else if (source.second == ScriptEventSourceType::NPC)
+		return getNPCFromSource(source, index);
+
+	return std::nullopt;
+}
+
+static Character* getCharacterFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
+{
+	if (source.second == ScriptEventSourceType::SERVER)
+		return nullptr;
+
+	auto* server = BabyDI::Get<Server>();
+	if (source.second == ScriptEventSourceType::PLAYER)
+	{
+		if (auto player = getPlayerFromSource(source, index); player != nullptr)
+			return &player->account.character;
+	}
+	else if (source.second == ScriptEventSourceType::NPC)
+	{
+		if (auto npc = getNPCFromSource(source, index); npc != nullptr)
+			return &npc->character;
+	}
+
+	return nullptr;
+}
+
+static ScriptVariable handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<ScriptVariableContainer*>& arguments, std::function<ScriptVariable(Character&, std::vector<ScriptVariableContainer*> const&)> picker)
+{
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+
+	Character* character = getCharacterFromSource(visitor->getCurrentSource(), index);
+	if (character == nullptr)
+		return std::string{};
+
+	return picker(*character, arguments);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 ScriptVariable processMessageCode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
 	static MessageCodeHandleMap map = GenerateMap();
@@ -120,9 +221,9 @@ ScriptVariable processMessageCode(GS1Visitor* visitor, std::string_view messageC
 	else if (messageCode.starts_with("P"))
 	{
 		std::string_view indexStr = messageCode.substr(1);
-		auto index = std::stoi(std::string(indexStr));
+		auto index = string::toNumber<uint8_t>(std::string(indexStr));
 		if (index >= 1 && index <= 30)
-			return mc_P(visitor, static_cast<uint8_t>(index), messageCode, arguments);
+			return mc_P(visitor, index, messageCode, arguments);
 	}
 	// Any other message code in the map.
 	else
@@ -142,24 +243,30 @@ ScriptVariable processMessageCode(GS1Visitor* visitor, std::string_view messageC
 // Sword image filename of the player.
 ScriptVariable mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #1 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.swordImage;
+	});
 }
 
 // #2 | #2(index)
 // Shield image filename of the player.
 ScriptVariable mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #2 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.shieldImage;
+	});
 }
 
 // #3 | #3(index)
 // Head image filename of the player.
 ScriptVariable mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #3 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.headImage;
+	});
 }
 
 // #4 is unused.
@@ -168,40 +275,74 @@ ScriptVariable mc_3(GS1Visitor* visitor, std::string_view messageCode, const std
 // Horse image filename of the player.
 ScriptVariable mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #5 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.horseImage;
+	});
 }
 
 // #6 | #6(index)
 // NPC image filename of the carried NPC.
 ScriptVariable mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #6 is not implemented yet");
-	return ScriptVariable(std::string{});
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+
+	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(), index);
+	if (!result.has_value())
+		return std::string{};
+
+	const auto picker = visit_functions
+	{
+		[](PlayerPtr& player) -> std::string
+		{
+			if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr && client->getCarryNpcId() != 0)
+			{
+				auto* server = BabyDI::Get<Server>();
+				if (auto npc = server->getNPC(client->getCarryNpcId()); npc != nullptr)
+					return npc->image;
+			}
+			return std::string{};
+		},
+		[](NPCPtr& npc) -> std::string { return std::string{}; },
+	};
+
+	return std::visit(picker, result.value());
 }
 
 // #7 | #7(index)
 // Bow image filename of the player.
 ScriptVariable mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #7 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.bowImage;
+	});
 }
 
 // #8 | #8(index)
 // Body image filename of the player.
 ScriptVariable mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #8 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.bodyImage;
+	});
 }
 
 // #a | #a(index)
 // Account name of the player.
 ScriptVariable mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #a is not implemented yet");
-	return ScriptVariable(std::string{});
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+
+	if (auto player = getPlayerFromSource(visitor->getCurrentSource(), index); player != nullptr)
+		return player->account.name;
+
+	return std::string{};
 }
 
 // #b
@@ -210,15 +351,17 @@ ScriptVariable mc_b(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	// Pass this along with processing it.
 	// The client deals with it.
-	return ScriptVariable("#b");
+	return "#b"s;
 }
 
 // #c | #c(index)
 // Current chat text of the player.
 ScriptVariable mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #c is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.chatMessage;
+	});
 }
 
 // #D | #D(filename)
@@ -238,39 +381,63 @@ ScriptVariable mc_e(GS1Visitor* visitor, std::string_view messageCode, const std
 	auto startIndex = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
 	auto length = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[1], 0.0));
 	auto str = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[2], std::string{});
-	return ScriptVariable(str.substr(startIndex, length));
+	return str.substr(startIndex, length);
 }
 
 // #F
 // The level filename of the current player. (#L will return the NPC level filename)
 ScriptVariable mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #F is not implemented yet");
-	return ScriptVariable(std::string{});
+	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource());
+	if (!result.has_value())
+		return std::string{};
+
+	const auto picker = visit_functions
+	{
+		[](PlayerPtr& player) -> std::string { return player->account.level; },
+		[](NPCPtr& npc) -> std::string
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+				return level->getLevelName().toString();
+			return std::string{};
+		},
+	};
+
+	return std::visit(picker, result.value());
 }
 
 // #f
 // Image filename of the NPC.
 ScriptVariable mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #f is not implemented yet");
-	return ScriptVariable(std::string{});
+	auto npc = getNPCFromSource(visitor->getCurrentSource());
+	if (npc != nullptr)
+		return npc->image;
+
+	return std::string{};
 }
 
 // #g | #g(index)
 // Guild name of the player.
 ScriptVariable mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #g is not implemented yet");
-	return ScriptVariable(std::string{});
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+
+	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
+		return client->getGuild().toString();
+
+	return std::string{};
 }
 
-// #G
-// Update stats of the player.  (???)
+// #G | #G(index)
+// Upgrade status of the player.  (???)
+// player.upgradestatus #G(index)
 ScriptVariable mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
 	throw std::exception("Message Code #G is not implemented yet");
-	return ScriptVariable(std::string{});
+	return std::string{};
 }
 
 // #I(string_list, index)
@@ -283,9 +450,9 @@ ScriptVariable mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 	auto csvStringList = string::fromCSV(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], std::string{}));
 	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[1], 0.0));
 	if (index < csvStringList.size())
-		return ScriptVariable(csvStringList[index]);
+		return csvStringList[index];
 
-	return ScriptVariable(std::string{});
+	return std::string{};
 }
 
 // #i(image) | #i(image, x, y, width, height)
@@ -313,40 +480,64 @@ ScriptVariable mc_k(GS1Visitor* visitor, std::string_view messageCode, const std
 // The current level filename of the NPC (use #F for the player).
 ScriptVariable mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #L is not implemented yet");
-	return ScriptVariable(std::string{});
+	auto npc = getNPCFromSource(visitor->getOriginalSource());
+	if (npc != nullptr)
+	{
+		if (auto level = npc->level.lock(); level != nullptr)
+			return level->getLevelName().toString();
+	}
+
+	return std::string{};
 }
 
 // #m | #m(index)
 // The animation of the player.
 ScriptVariable mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #m is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.gani;
+	});
 }
 
 // #n | #n(index)
 // The nickname of the player.
 ScriptVariable mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #n is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.nickName;
+	});
 }
 
 // #N | #N(index)
 // The database NPC name.
 ScriptVariable mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #N is not implemented yet");
-	return ScriptVariable(std::string{});
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+
+	if (auto npc = getNPCFromSource(visitor->getCurrentSource(), index); npc != nullptr)
+		return npc->name;
+
+	return std::string{};
 }
 
 // #p(index)
 // The action parameter of the specified index.
 ScriptVariable mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #p is not implemented yet");
-	return ScriptVariable(std::string{});
+	if (arguments.size() != 1)
+		throw std::exception("Message Code #p requires exactly 1 argument");
+
+	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+	if (index < visitor->getEvent().args.size())
+	{
+		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)
+			return *arg;
+	}
+	return std::string{};
 }
 
 // #Q(guild_name, account_name)
@@ -354,7 +545,7 @@ ScriptVariable mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 ScriptVariable mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
 	throw std::exception("Message Code #Q is not implemented yet");
-	return ScriptVariable(std::string{});
+	return std::string{};
 }
 
 // #R(string_list)
@@ -367,7 +558,7 @@ ScriptVariable mc_R(GS1Visitor* visitor, std::string_view messageCode, const std
 	std::uniform_int_distribution<size_t> dist(0, arguments.size() - 1);
 	size_t index = dist(rng);
 
-	return ScriptVariable(arguments[index]->get());
+	return arguments[index]->get();
 }
 
 // #s(identifier)
@@ -384,8 +575,14 @@ ScriptVariable mc_s(GS1Visitor* visitor, std::string_view messageCode, const std
 // The token at the specified index as created via tokenize.
 ScriptVariable mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #t is not implemented yet");
-	return ScriptVariable(std::string{});
+	if (arguments.size() != 1)
+		throw std::exception("Message Code #t requires exactly 1 argument");
+
+	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+	if (index >= visitor->tokens.size())
+		return std::string{};
+
+	return visitor->tokens[index];
 }
 
 // #T(string)
@@ -397,7 +594,7 @@ ScriptVariable mc_T(GS1Visitor* visitor, std::string_view messageCode, const std
 
 	auto str = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], std::string{});
 	string::trim(str);
-	return ScriptVariable(str);
+	return str;
 }
 
 // #v(identifier)
@@ -408,7 +605,7 @@ ScriptVariable mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 		throw std::exception("Message Code #s requires exactly 1 argument");
 
 	auto number = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0);
-	return ScriptVariable(std::format("{}", number));
+	return std::format("{}", number);
 }
 
 // #W | #W(index)
@@ -437,16 +634,20 @@ ScriptVariable mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 // #C4 - belt color
 ScriptVariable mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #C0-#C4 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return getGraalColorName(static_cast<GraalColors>(character.colors[index]));
+	});
 }
 
 // #P1 - #P30 | #P1(index) - #P30(index)
 // Gani attributes.
 ScriptVariable mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
 {
-	throw std::exception("Message Code #P1-#P30 is not implemented yet");
-	return ScriptVariable(std::string{});
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> ScriptVariable
+	{
+		return character.ganiAttributes[index];
+	});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

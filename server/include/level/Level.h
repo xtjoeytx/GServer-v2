@@ -97,7 +97,7 @@ public:
 
 	//! Gets a vector full of the level npc ids.
 	//! \return The level npcs.
-	std::set<NPCID>& getNPCs() { return m_npcs; }
+	std::vector<NPCID>& getNPCs() { return m_npcs; }
 
 	//! Gets a vector full of the level signs.
 	//! \return The level signs.
@@ -326,7 +326,7 @@ private:
 	std::vector<LevelItem> m_items;
 	std::vector<LevelLinkPtr> m_links;
 	std::vector<LevelSignPtr> m_signs;
-	std::set<NPCID> m_npcs;
+	std::vector<NPCID> m_npcs;
 	std::deque<PlayerID> m_players;
 };
 

@@ -41,6 +41,15 @@ inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);
 }
+using prop_access = std::variant<int8_t*, int16_t*, uint8_t*, uint16_t*, uint32_t*, float*, std::string*, std::pair<float*, float*>>;
+
+//-----------------------------------------------
+
+inline int64_t currentTimeInSeconds()
+{
+	using namespace std::chrono;
+	return static_cast<int64_t>(duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+}
 
 //-----------------------------------------------
 
@@ -101,5 +110,7 @@ struct Rectangle
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
+
+#undef ERROR
 
 #endif // COMMON_H

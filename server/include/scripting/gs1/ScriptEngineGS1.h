@@ -5,6 +5,7 @@
 
 // Stupid Windows.h defines
 #undef ERROR
+#undef TRANSPARENT
 #include <antlr4-runtime.h>
 
 #include <GS1Lexer.h>
@@ -94,7 +95,38 @@ enum class GameFeatureFlags : uint32_t
 	ALLFEATURES = 0xFFFF
 };
 
-void setEventFlags(ScriptEventType event, ScriptVariableStore& variableStore);
+enum class GraalColors : uint8_t
+{
+	WHITE = 0,
+	YELLOW,
+	ORANGE,
+	PINK,
+	RED,
+	DARKRED,
+	LIGHTGREEN,
+	GREEN,
+	DARKGREEN,
+	LIGHTBLUE,
+	BLUE,
+	DARKBLUE,
+	BROWN,
+	CYNOBER,
+	PURPLE,
+	DARKPURPLE,
+	LIGHTGRAY,
+	GRAY,
+	BLACK,
+	TRANSPARENT,
+
+	COUNT
+};
+constexpr size_t GRAAL_COLOR_MAX = static_cast<size_t>(GraalColors::COUNT);
+
+//----------------------------
+
+std::string getGraalColorName(GraalColors color);
+
+//----------------------------
 
 struct GS1ScriptWrapper
 {

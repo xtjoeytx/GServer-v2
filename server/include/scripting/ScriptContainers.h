@@ -13,10 +13,10 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 enum class ScriptEventSourceType
 {
@@ -26,7 +26,7 @@ enum class ScriptEventSourceType
 };
 using ScriptEventSource = std::pair<uint32_t, ScriptEventSourceType>;
 
-//---------------------------
+//----------------------------
 
 namespace source
 {
@@ -57,7 +57,7 @@ struct ScriptEvent
 	std::vector<std::any> args;
 };
 
-//---------------------------
+//----------------------------
 
 // Queued script events.
 class ScriptEventQueue
@@ -78,7 +78,7 @@ private:
 	std::queue<ScriptEvent> m_eventQueue;
 };
 
-//---------------------------
+//----------------------------
 
 inline std::queue<ScriptEvent>& ScriptEventQueue::queue()
 {
@@ -217,7 +217,7 @@ private:
 	ScriptVariable m_value;
 };
 
-//---------------------------
+//----------------------------
 
 inline ScriptVariableContainer& ScriptVariableContainer::operator=(const ScriptVariable& value) noexcept
 {
@@ -317,15 +317,15 @@ public:
 	}
 };
 
-//---------------------------
+//----------------------------
 
 using ScriptVariableFromServer = std::function<ScriptVariableContainer(const ScriptIdentifier&)>;
 using ScriptVariableStorePicker = std::variant<ScriptVariableStore*, ScriptVariableFromServer>;
 using ScriptVariableStoreMap = std::map<std::string, ScriptVariableStorePicker>;
 
-/////////////////////////////
+////////////////////////////////////////////////////////////
 // ScriptContainer
-/////////////////////////////
+////////////////////////////////////////////////////////////
 
 struct ScriptContainer
 {
@@ -430,7 +430,7 @@ inline auto getScriptVariableValue(const ScriptVariable& variable, auto defaultV
 	return defaultValue;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
 #endif // SCRIPTCONTAINERS_H

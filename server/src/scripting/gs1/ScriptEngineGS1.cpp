@@ -13,10 +13,44 @@
 
 using namespace preagonal::grammar::gs1;
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
 {
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+std::string getGraalColorName(GraalColors color)
+{
+	static const std::unordered_map<GraalColors, std::string> colorNames =
+	{
+		{ GraalColors::WHITE, "white" },
+		{ GraalColors::YELLOW, "yellow" },
+		{ GraalColors::ORANGE, "orange" },
+		{ GraalColors::PINK, "pink" },
+		{ GraalColors::RED, "red" },
+		{ GraalColors::DARKRED, "darkred" },
+		{ GraalColors::LIGHTGREEN, "lightgreen" },
+		{ GraalColors::GREEN, "green" },
+		{ GraalColors::DARKGREEN, "darkgreen" },
+		{ GraalColors::LIGHTBLUE, "lightblue" },
+		{ GraalColors::BLUE, "blue" },
+		{ GraalColors::DARKBLUE, "darkblue" },
+		{ GraalColors::BROWN, "brown" },
+		{ GraalColors::CYNOBER, "cynober" },
+		{ GraalColors::PURPLE, "purple" },
+		{ GraalColors::DARKPURPLE, "darkpurple" },
+		{ GraalColors::LIGHTGRAY, "lightgray" },
+		{ GraalColors::GRAY, "gray" },
+		{ GraalColors::BLACK, "black" },
+		{ GraalColors::TRANSPARENT, "transparent" },
+	};
+
+	if (colorNames.find(color) != colorNames.end())
+		return colorNames.at(color);
+
+	return {};
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
 {
@@ -27,7 +61,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
 	program = parser->program();
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 ScriptEngineGS1::ScriptEngineGS1()
 {
@@ -94,5 +128,5 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptEventSource source
 	return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1

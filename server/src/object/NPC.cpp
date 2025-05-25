@@ -11,21 +11,21 @@
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
-///////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 static constexpr std::array<uint8_t, 30> attrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
 static std::string_view toWeaponName(std::string_view code);
-static std::string doJoins(std::string_view code, FileSystem* fs);
+static std::string performClientSideJoinHack(std::string_view code, FileSystem* fs);
+
+//----------------------------
 
 NPC::NPC(NPCID id, NPCType type)
-	: id(id), type(type)
+	: id(id), type(type), m_savedModTime()
 {
 	saves.fill(0);
 	modTime.fill(0);
@@ -33,8 +33,12 @@ NPC::NPC(NPCID id, NPCType type)
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2 });
-	std::ranges::for_each(props, [this, now = time(0)](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	std::ranges::for_each(props, [this, now = currentTimeInSeconds()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+
+	m_savedModTime = modTime;
 }
+
+//----------------------------
 
 void NPC::setScript(std::string_view script)
 {
@@ -49,7 +53,7 @@ void NPC::setScript(std::string_view script)
 	// If there is no npc-server, emulate script joins.
 	if (!m_server->isNpcServerEnabled() && m_server->Generation == ServerGeneration::CLASSIC)
 	{
-		auto joinedScript = doJoins(clientside, m_server->getFileSystem());
+		auto joinedScript = performClientSideJoinHack(clientside, m_server->getFileSystem());
 		m_script.setModifiedSource(joinedScript);
 		clientside = m_script.getClientSide();
 	}
@@ -79,6 +83,48 @@ void NPC::setScript(std::string_view script)
 	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
 }
+
+//----------------------------
+
+CString NPC::getModifiedPropsPacket(int clientVersion) const
+{
+	CString result;
+	for (auto i = 0; i < NPCPROP_COUNT; ++i)
+	{
+		if (modTime[i] != m_savedModTime[i])
+			result >> (char)i << getPropPacket((NPCProp)i, clientVersion);
+	}
+	return result;
+}
+
+
+CString NPC::getAllPropsPacket(time_t newTime, int clientVersion) const
+{
+	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
+	CString retVal;
+	int pmax = NPCPROP_COUNT;
+	if (clientVersion < CLVER_2_1) pmax = 36;
+
+	for (int i = 0; i < pmax; i++)
+	{
+		if (modTime[i] != 0 && modTime[i] >= newTime)
+		{
+			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == 0)
+				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
+			else
+				retVal >> (char)i << getPropPacket((NPCProp)i, clientVersion);
+		}
+	}
+	if (clientVersion > CLVER_1_411)
+	{
+		if (modTime[PROPID(NPCProp::GANI)] == 0 && image == "#c#")
+			retVal >> (char)NPCProp::GANI >> (char)4 << "idle";
+	}
+
+	return retVal;
+}
+
+//----------------------------
 
 CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 {
@@ -319,32 +365,6 @@ CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 	}
 
 	return CString();
-}
-
-CString NPC::getAllPropsPacket(time_t newTime, int clientVersion) const
-{
-	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
-	CString retVal;
-	int pmax = NPCPROP_COUNT;
-	if (clientVersion < CLVER_2_1) pmax = 36;
-
-	for (int i = 0; i < pmax; i++)
-	{
-		if (modTime[i] != 0 && modTime[i] >= newTime)
-		{
-			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == 0)
-				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
-			else
-				retVal >> (char)i << getPropPacket((NPCProp)i, clientVersion);
-		}
-	}
-	if (clientVersion > CLVER_1_411)
-	{
-		if (modTime[PROPID(NPCProp::GANI)] == 0 && image == "#c#")
-			retVal >> (char)NPCProp::GANI >> (char)4 << "idle";
-	}
-
-	return retVal;
 }
 
 CString NPC::setPropsFromPacket(CString& pProps, int clientVersion, bool pForward)
@@ -732,12 +752,149 @@ CString NPC::setPropsFromPacket(CString& pProps, int clientVersion, bool pForwar
 	return ret;
 }
 
+/*
 void NPC::setPropModTime(NPCProp pid, time_t time)
 {
 	if (PROPID(pid) >= NPCPROP_COUNT)
 		return;
 	modTime[PROPID(pid)] = time;
 }
+*/
+
+//----------------------------
+
+prop_access NPC::getPropAccess(NPCProp prop)
+{
+	static uint32_t prevent_access_int = 0;
+	static float prevent_access_float = 0.0f;
+	static std::string prevent_access_string;
+
+	switch (prop)
+	{
+		case NPCProp::IMAGE:
+			return &image;
+		case NPCProp::SCRIPT:
+			return &prevent_access_string;
+		case NPCProp::X:
+			throw std::exception("NPC::getPropAccess: use X2 instead of X");
+		case NPCProp::Y:
+			throw std::exception("NPC::getPropAccess: use Y2 instead of Y");
+		case NPCProp::POWER:
+			return &character.hitpointsInHalves;
+		case NPCProp::RUPEES:
+			return &character.gralats;
+		case NPCProp::ARROWS:
+			return &character.arrows;
+		case NPCProp::BOMBS:
+			return &character.bombs;
+		case NPCProp::GLOVEPOWER:
+			return &character.glovePower;
+		case NPCProp::BOMBPOWER:
+			return &character.bombPower;
+		case NPCProp::SWORDIMAGE:
+			return &character.swordImage;
+		case NPCProp::SHIELDIMAGE:
+			return &character.shieldImage;
+		case NPCProp::GANI:
+			return &character.gani;
+		case NPCProp::VISFLAGS:
+			return &visFlags;
+		case NPCProp::BLOCKFLAGS:
+			return &blockFlags;
+		case NPCProp::MESSAGE:
+			return &character.chatMessage;
+		case NPCProp::HURTDXDY:
+			return std::make_pair(&hurtX, &hurtY);
+		case NPCProp::ID:
+			return &prevent_access_int;
+		case NPCProp::SPRITE:
+			return &character.sprite;
+		case NPCProp::COLORS:
+			return &character.colors.at(0);
+		case NPCProp::NICKNAME:
+			return &character.nickName;
+		case NPCProp::HORSEIMAGE:
+			return &character.horseImage;
+		case NPCProp::HEADIMAGE:
+			return &character.headImage;
+		case NPCProp::SAVE0:
+		case NPCProp::SAVE1:
+		case NPCProp::SAVE2:
+		case NPCProp::SAVE3:
+		case NPCProp::SAVE4:
+		case NPCProp::SAVE5:
+		case NPCProp::SAVE6:
+		case NPCProp::SAVE7:
+		case NPCProp::SAVE8:
+		case NPCProp::SAVE9:
+			return &saves[static_cast<size_t>(PROPID(prop)) - PROPID(NPCProp::SAVE0)];
+		case NPCProp::ALIGNMENT:
+			return &character.ap;
+		case NPCProp::IMAGEPART:
+			throw std::exception("NPC::getPropAccess: IMAGEPART is not implemented, is this required?");
+		case NPCProp::BODYIMAGE:
+			return &character.bodyImage;
+		case NPCProp::GMAPLEVELX:
+			return &prevent_access_int;
+		case NPCProp::GMAPLEVELY:
+			return &prevent_access_int;
+		case NPCProp::Z:
+			throw std::exception("NPC::getPropAccess: use Z2 instead of Z");
+		case NPCProp::UNKNOWN48:
+			throw std::exception("NPC::getPropAccess: UNKNOWN48 is not implemented, is this required?");
+		case NPCProp::SCRIPTER:
+			return &m_npcScripter;
+		case NPCProp::NAME:
+			return &name;
+		case NPCProp::TYPE:
+			return &m_npcScriptType;
+		case NPCProp::CURLEVEL:
+			return &prevent_access_string;
+		case NPCProp::CLASS:
+			return &m_npcClass;
+		case NPCProp::X2:
+			return &character.pixelX;
+		case NPCProp::Y2:
+			return &character.pixelY;
+		case NPCProp::Z2:
+			return &character.pixelZ;
+		case NPCProp::GATTRIB1:
+		case NPCProp::GATTRIB2:
+		case NPCProp::GATTRIB3:
+		case NPCProp::GATTRIB4:
+		case NPCProp::GATTRIB5:
+		case NPCProp::GATTRIB6:
+		case NPCProp::GATTRIB7:
+		case NPCProp::GATTRIB8:
+		case NPCProp::GATTRIB9:
+		case NPCProp::GATTRIB10:
+		case NPCProp::GATTRIB11:
+		case NPCProp::GATTRIB12:
+		case NPCProp::GATTRIB13:
+		case NPCProp::GATTRIB14:
+		case NPCProp::GATTRIB15:
+		case NPCProp::GATTRIB16:
+		case NPCProp::GATTRIB17:
+		case NPCProp::GATTRIB18:
+		case NPCProp::GATTRIB19:
+		case NPCProp::GATTRIB20:
+		case NPCProp::GATTRIB21:
+		case NPCProp::GATTRIB22:
+		case NPCProp::GATTRIB23:
+		case NPCProp::GATTRIB24:
+		case NPCProp::GATTRIB25:
+		case NPCProp::GATTRIB26:
+		case NPCProp::GATTRIB27:
+		case NPCProp::GATTRIB28:
+		case NPCProp::GATTRIB29:
+		case NPCProp::GATTRIB30:
+			return &character.ganiAttributes[std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(prop)))];
+	};
+
+	return &prevent_access_int; // Should never be reached, but prevents compiler warnings.
+}
+
+//----------------------------
 
 std::string_view toWeaponName(std::string_view code)
 {
@@ -763,7 +920,7 @@ std::string_view toWeaponName(std::string_view code)
 	return string::trim(code.substr(name_start, name_pos - name_start));
 }
 
-std::string doJoins(std::string_view code, FileSystem* fs)
+std::string performClientSideJoinHack(std::string_view code, FileSystem* fs)
 {
 	std::string result;
 	std::vector<std::string_view> joins;
@@ -812,6 +969,5 @@ std::string doJoins(std::string_view code, FileSystem* fs)
 	return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

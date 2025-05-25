@@ -751,7 +751,7 @@ bool Level::isPlayerLeader(PlayerID id)
 
 bool Level::addNPC(std::shared_ptr<NPC> npc)
 {
-	[[maybe_unused]] auto [iter, inserted] = m_npcs.insert(npc->id);
+	m_npcs.push_back(npc->id);
 
 	auto script = npc->getScript().getClientSide();
 
@@ -764,7 +764,7 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	if (script.contains("singleplayer"))
 		setSingleplayer(true);
 
-	return inserted;
+	return true;
 }
 
 bool Level::addNPC(NPCID npcId)
@@ -785,7 +785,7 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 	if (npc == nullptr)
 		return;
 
-	m_npcs.erase(npc->id);
+	std::erase(m_npcs, npc->id);
 
 	if (npc->isCharacter())
 	{

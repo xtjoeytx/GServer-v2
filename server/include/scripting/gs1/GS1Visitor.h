@@ -4,7 +4,9 @@
 #include <optional>
 #include <string_view>
 #include <any>
+#include <stack>
 
+#undef ERROR
 #include <GS1ParserBaseVisitor.h>
 
 #include <scripting/ScriptContainers.h>
@@ -18,6 +20,25 @@ class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
 	void execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
+
+public:
+	std::vector<std::string> tokens;
+
+public:
+	const ScriptEventSource& getOriginalSource() const
+	{
+		return m_originalSource;
+	}
+
+	const ScriptEventSource& getCurrentSource() const
+	{
+		return m_currentSource.empty() ? m_originalSource : m_currentSource.top();
+	}
+
+	const ScriptEvent& getEvent() const
+	{
+		return *m_event;
+	}
 
 public:
 	/// <summary>
@@ -123,7 +144,9 @@ public:
 
 protected:
 	GS1Parser* m_parser = nullptr;
-	ScriptEventSource m_source{};
+	const ScriptEvent* m_event = nullptr;
+	ScriptEventSource m_originalSource;
+	std::stack<ScriptEventSource> m_currentSource;
 	ScriptVariableStore* m_defaultStore = nullptr;
 	ScriptVariableStoreMap* m_variableStores = nullptr;
 

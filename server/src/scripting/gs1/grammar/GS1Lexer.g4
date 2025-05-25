@@ -527,7 +527,7 @@ FUNC_GROUP_3
 FUNC_GROUP_4 : ('textwidth' | 'textheight') -> type(FUNCTION), pushMode(IN_F_1VSSS);
 FUNC_GROUP_5 : 'lindexof' -> type(FUNCTION), pushMode(IN_F_1SP);
 
-MC_NOINDEX	: '#' ([ngcmWw1235678LFfpbD] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE);
+MC_NOINDEX	: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE);
 MC_SIMPLE	: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) WS* '(' -> type(MESSAGECODE), pushMode(IN_F_P);
 MC_COMPUTED : '#' [sv] WS* '(' -> type(MESSAGECODE), pushMode(IN_F_C);
 MC_T        : '#T' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_S);

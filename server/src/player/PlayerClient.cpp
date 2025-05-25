@@ -136,12 +136,8 @@ void PlayerClient::cleanup()
 			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
 			{
 				auto curtime = time(0);
-				npc->character.pixelX = account.character.pixelX + 8;
-				npc->character.pixelY = account.character.pixelY + 16;
-				npc->setPropModTime(NPCProp::X, curtime);
-				npc->setPropModTime(NPCProp::Y, curtime);
-				npc->setPropModTime(NPCProp::X2, curtime);
-				npc->setPropModTime(NPCProp::Y2, curtime);
+				npc->setProp(NPCProp::X2, static_cast<int16_t>(account.character.pixelX + 8));
+				npc->setProp(NPCProp::Y2, static_cast<int16_t>(account.character.pixelY + 16));
 				m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket(curtime), self(), level, {m_id});
 			}
 			m_carryNpcId = 0;

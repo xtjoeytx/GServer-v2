@@ -11,6 +11,9 @@
 #include <CTranslationManager.h>
 #include <IEnums.h>
 
+#undef ERROR
+#undef TRANSPARENT
+
 #include <common.h>
 
 #include <Account.h>

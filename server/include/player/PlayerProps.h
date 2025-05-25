@@ -126,10 +126,10 @@ enum class PropSetBy
 struct PropSetResults
 {
 	// The props to send back out as the result of setting this prop.
-	std::inplace_vector<uint8_t, 3> resultPropIds;
+	std::inplace_vector<uint8_t, 3> resultPropIds{};
 
 	// The results of the prop set.
-	std::bitset<4> resultFlags;
+	std::bitset<4> resultFlags{};
 
 	// Pass the prop changes to everybody.
 	static const size_t sendToAll = 0;

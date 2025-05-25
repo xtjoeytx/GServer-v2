@@ -11,12 +11,10 @@
 #include <scripting/SourceCode.h>
 #include <utilities/FlagContainer.h>
 
-///////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 class Server;
 class Level;
@@ -156,6 +154,8 @@ enum class NPCType
 	DBNPC     // npcs created in RC (Database-NPCs)
 };
 
+//----------------------------
+
 class NPC
 {
 	friend class FlatFileNPCLoader;
@@ -164,16 +164,26 @@ public:
 	NPC(NPCID id, NPCType type);
 	~NPC() = default;
 
+	void setScript(std::string_view script);
+	const SourceCode& getScript() const noexcept { return m_script; }
+
+public:
+	[[inline]] void recordCurrentPropModTime();
+
+	[[inline]] void setProp(NPCProp prop, const auto& value)
+		requires VariantContainsType<prop_access, std::remove_cvref_t<decltype(value)>>;
+
+	CString getModifiedPropsPacket(int clientVersion = CLVER_2_17) const;
+
 	// prop functions
 	CString getPropPacket(NPCProp pId, int clientVersion = CLVER_2_17) const;
 	CString getAllPropsPacket(time_t newTime, int clientVersion = CLVER_2_17) const;
 	CString setPropsFromPacket(CString& pProps, int clientVersion = CLVER_2_17, bool pForward = false);
-	void setPropModTime(NPCProp pid, time_t time);
+	//void setPropModTime(NPCProp pid, time_t time);
 
-	void setScript(std::string_view script);
-	const SourceCode& getScript() const noexcept { return m_script; }
-
+public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
+	bool isCharacter() const noexcept { return image == "#c#"; }
 
 	// Records the current state as the initial state of the NPC.
 	void recordInitialState()
@@ -182,8 +192,6 @@ public:
 		m_initialLevel = level;
 		m_initialCharacter = character;
 	}
-
-	bool isCharacter() const noexcept { return image == "#c#"; }
 
 public:
 	const NPCID id;
@@ -200,13 +208,19 @@ public:
 	int timeout = 0;
 	Character character;
 	std::array<uint8_t, 10> saves;
-	std::array<time_t, NPCPROP_COUNT> modTime;
+	std::array<int64_t, NPCPROP_COUNT> modTime;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	FlagContainer flags;
 	ScriptContainer scripting;
 
 private:
+	prop_access getPropAccess(NPCProp prop);
+
+private:
 	BabyDI_INJECT(Server, m_server);
+
+	std::array<int64_t, NPCPROP_COUNT> m_savedModTime;
+	bool m_blockPositionUpdates = false;
 
 	SourceCode m_script;
 
@@ -214,17 +228,44 @@ private:
 	std::weak_ptr<Level> m_initialLevel;
 	Character m_initialCharacter;
 
-	bool m_blockPositionUpdates = false;
 	std::string m_weaponName;
-
-	CString m_npcScripter, m_npcScriptType;
+	std::string m_npcScripter;
+	std::string m_npcScriptType;
+	std::string m_npcClass;
 };
 
 using NPCPtr = std::shared_ptr<NPC>;
 using NPCWeakPtr = std::weak_ptr<NPC>;
 
-///////////////////////////////////////////////////////////////////////////////
+//----------------------------
 
+inline void NPC::recordCurrentPropModTime()
+{
+	m_savedModTime = modTime;
+}
+
+void NPC::setProp(NPCProp prop, const auto& value)
+	requires VariantContainsType<prop_access, std::remove_cvref_t<decltype(value)>>
+{
+	using value_type = std::remove_cvref_t<decltype(value)>;
+
+	auto access = getPropAccess(prop);
+	auto* ptr = std::get_if<value_type*>(&access);
+	if (ptr == nullptr)
+		return;
+
+	**ptr = value;
+	modTime[PROPID(prop)] = currentTimeInSeconds();
+
+	if (prop == NPCProp::X2)
+		modTime[PROPID(NPCProp::X)] = modTime[PROPID(prop)];
+	if (prop == NPCProp::Y2)
+		modTime[PROPID(NPCProp::Y)] = modTime[PROPID(prop)];
+	if (prop == NPCProp::Z2)
+		modTime[PROPID(NPCProp::Z)] = modTime[PROPID(prop)];
+}
+
+////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
 #endif // NPC_H

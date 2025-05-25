@@ -255,9 +255,12 @@ ScriptVariableContainer& GS1Visitor::fixBindAndGetVariable(ScriptVariableContain
 void GS1Visitor::execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
 {
 	m_parser = &parser;
-	m_source = source;
+	m_event = &event;
+	m_originalSource = source;
 	m_defaultStore = defaultStore;
 	m_variableStores = variableStores;
+
+	m_currentSource.push(source);
 
 	// Execute!
 	visit(&startNode);
