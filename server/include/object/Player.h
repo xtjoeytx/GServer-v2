@@ -8,25 +8,24 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include "common.h"
+#include <common.h>
 
-#include "Account.h"
-#include "player/PlayerProps.h"
-#include "network/IPacketHandler.h"
-#include "utilities/IdGenerator.h"
+#include <Account.h>
+#include <player/PlayerProps.h>
+#include <network/IPacketHandler.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/IdGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class Level;
 class Map;
 class Weapon;
 
-constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
+//----------------------------
 
 enum class LevelItemType;
 
@@ -36,6 +35,75 @@ enum
 	PLSETPROPS_FORWARD = 0x02,     // forward data to other players
 	PLSETPROPS_FORWARDSELF = 0x04, // forward data back to the player
 };
+
+enum class CursorNumbers : uint8_t
+{
+	DEFAULT = 0,
+	HIDDEN = 1,
+	NORMAL = 2,
+	CROSS = 3,
+	TEXT = 4,
+	HIDDEN_2 = 5,
+	RESIZE_LL_UR = 6,
+	RESIZE_UD = 7,
+	RESIZE_UL_LR = 8,
+	RESIZE_LR = 9,
+	UP_ARROW = 10,
+	HOURGLASS = 11,
+	FILE = 12,
+	NOT_ALLOWED = 13,
+	BREAK_ADJUST_LR = 14,
+	BREAK_ADJUST_UD = 15,
+	MULTIPLE_FILES = 16,
+	SQL_HOURGLASS = 17,
+	NOT_ALLOWED_2 = 18,
+	MOUSE_HOURGLASS = 19,
+	MOUSE_QUESTION = 20,
+	POINTING_HAND = 21,
+	FOUR_DIR_ARROW = 22,
+
+	COUNT
+};
+
+enum class GameFeatureFlags : uint32_t
+{
+	M_MAP = 0x0001,
+	P_PAUSE = 0x0002,
+	Q_WEAPONSELECT = 0x0004,
+	R_SHOWRATING = 0x0008,
+	SA_DROPITEM = 0x0010,
+	SD_SWITCHWEAPON = 0x0020,
+	TAB_CHAT = 0x0040,
+	CHATMESSAGE = 0x0080,
+	HEARTSOVERPLAYERS = 0x0100,
+	NICKNAMES = 0x0200,
+	TOALL_PM_BUBBLES = 0x0400,
+	OPEN_PROFILE = 0x0800,
+	EMOTICONS = 0x1000,
+	LEVELSNAPSHOTS = 0x2000, // ALT+5
+	LEVELZOOMING = 0x4000, // ALT+8/9
+	LOGFRAME = 0x8000, // F2 (savelog() / echo())
+	ALLFEATURES = 0xFFFF
+};
+
+enum class GameStatsFlags : uint32_t
+{
+	ASD_KEYS = 0x0001,
+	ICONS = 0x0002, // (for gralats, bombs, arrows, etc.)
+	GRALAT_COUNT = 0x0004,
+	BOMB_COUNT = 0x0008,
+	ARROW_COUNT = 0x0010,
+	HEART_COUNT = 0x0020,
+	ALIGNMENT = 0x0040,
+	MAGIC = 0x0080,
+	MINIMAP = 0x0100, // ALT+3
+	INVENTORY = 0x0200,
+	PLAYERS = 0x0400,
+	OPEN_PROFILE = 0x0800,
+	ALLSTATS = 0xFFFF
+};
+
+//----------------------------
 
 struct ShootPacketNew
 {
@@ -65,6 +133,8 @@ struct CachedLevel
 	std::weak_ptr<Level> level;
 	time_t modTime;
 };
+
+//----------------------------
 
 class Server;
 class Player : public CSocketStub, public IPacketHandler, public std::enable_shared_from_this<Player>
@@ -178,6 +248,7 @@ public:
 
 public:
 	Account account;
+	GameVariableStore variables;
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
@@ -291,6 +362,8 @@ protected:
 using PlayerPtr = std::shared_ptr<Player>;
 using PlayerWeakPtr = std::weak_ptr<Player>;
 
+//----------------------------
+
 template<typename T>
 concept DerivedFromPlayer = std::is_base_of_v<Player, T>;
 
@@ -337,7 +410,6 @@ inline bool Player::removeChatChannel(const std::string& channel)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // PLAYER_H

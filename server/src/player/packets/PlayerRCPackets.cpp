@@ -21,7 +21,6 @@
 #include "player/PlayerRC.h"
 #include "utilities/Log.h"
 #include "utilities/StringUtils.h"
-#include "utilities/TimeUnits.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1033,24 +1032,29 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			}
 			else if (words[0] == "/serveruptime" && words.size() == 1)
 			{
-				auto time_units = utilities::TimeUnits(std::time(nullptr) - m_server->getServerStartTime());
+				auto time_diff = std::chrono::system_clock::now() - m_server->getServerStartTime();
 
 				constexpr auto format_time_fn = [](std::string& m, const uint64_t t, const char* fmtStr)
+				{
+					if (t > 0)
 					{
-						if (t > 0)
-						{
-							m.append(std::format(" {} {}", t, fmtStr));
-							if (t > 1)
-								m.append("s");
-						}
-					};
+						m.append(std::format(" {} {}", t, fmtStr));
+						if (t > 1)
+							m.append("s");
+					}
+				};
+
+				auto days = std::chrono::duration_cast<std::chrono::days>(time_diff).count();
+				auto hours = std::chrono::duration_cast<std::chrono::hours>(time_diff).count() % 24;
+				auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_diff).count() % 60;
+				auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_diff).count() % 60;
 
 				std::string msg;
-				format_time_fn(msg, time_units.days, "day");
-				format_time_fn(msg, time_units.hours, "hour");
-				format_time_fn(msg, time_units.minutes, "minute");
-				if (time_units.days == 0)
-					format_time_fn(msg, time_units.seconds, "second");
+				format_time_fn(msg, days, "day");
+				format_time_fn(msg, hours, "hour");
+				format_time_fn(msg, minutes, "minute");
+				if (days == 0)
+					format_time_fn(msg, seconds, "second");
 
 				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
 			}
@@ -1580,7 +1584,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		mkdir_path << *i << '/';
 
 #if defined(_WIN32) || defined(_WIN64)
-		mkdir(mkdir_path.text());
+		(void)mkdir(mkdir_path.text());
 #else
 		mkdir(mkdir_path.text(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif

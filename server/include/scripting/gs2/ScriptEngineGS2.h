@@ -33,7 +33,7 @@ public:
 	virtual bool reset() override { return false; }
 
 public:
-	virtual bool execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context) override { return false; }
+	virtual bool execute(const ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) override { return false; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);

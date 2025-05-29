@@ -4,12 +4,15 @@
 #include <optional>
 #include <string_view>
 #include <any>
-#include <stack>
+#include <deque>
 
 #undef ERROR
 #include <GS1ParserBaseVisitor.h>
 
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+
+using namespace preagonal::gs1;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::grammar::gs1
@@ -19,148 +22,42 @@ namespace preagonal::grammar::gs1
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(const ScriptEvent& event, ScriptEventSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores);
+	void execute(const ScriptEvent& event, ScriptObjectSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode);
 
 public:
-	std::vector<std::string> tokens;
+	std::vector<std::string> tokenizeTokens;
+	GameVariableStore* builtInStore = nullptr;
 
 public:
-	const ScriptEventSource& getOriginalSource() const
-	{
-		return m_originalSource;
-	}
-
-	const ScriptEventSource& getCurrentSource() const
-	{
-		return m_currentSource.empty() ? m_originalSource : m_currentSource.top();
-	}
-
-	const ScriptEvent& getEvent() const
-	{
-		return *m_event;
-	}
+	[[inline]] const ScriptObjectSource& getOriginalSource() const;
+	[[inline]] const ScriptObjectSource& getCurrentSource() const;
+	[[inline]] const ScriptEvent& getEvent() const;
 
 public:
-	/// <summary>
-	/// Tries to get the value within a ScriptVariable inside a ScriptVariableContainer.
-	/// If no identifier data type is set, it will try to guess the type based on the default value passed.
-	/// </summary>
-	/// <param name="container">The container to retrieve the value from.</param>
-	/// <param name="defaultValue">The default value to return if no value could be found.</param>
-	/// <returns>A value contained in the ScriptVariable, or defaultValue if none found.</returns>
-	auto gs1TryGetScriptVariableValueFromContainer(ScriptVariableContainer& container, auto defaultValue) -> decltype(defaultValue)
-	{
-		if (container.hasIdentifier())
-		{
-			// Try to assign the data type if we don't have one.
-			if (!identifierHasDataType(container.getIdentifier().value()))
-			{
-				if constexpr (std::same_as<decltype(defaultValue), double> || std::same_as<decltype(defaultValue), bool>)
-				{
-					const auto& identifier = container.getIdentifier();
-					if (std::holds_alternative<std::string>(identifier.value()))
-						assignIdentifierType(container, "double");
-					else assignIdentifierType(container, "array");
-				}
-				else if constexpr (std::same_as<decltype(defaultValue), std::string>)
-					assignIdentifierType(container, "string");
-			}
+	template<ValidGameValue T>
+	[[inline]] static T getGameValueAs(const GS1ScriptValue& value);
 
-			// Attempt to link the identifier to a variable store.
-			bindLinkToVariableStore(container);
-			if (!container.hasGetter())
-			{
-				container.setGetter(bindGetter());
-				container.retrieveFromGetter();
-			}
-		}
-		return container.get<decltype(defaultValue)>();
-	}
-
-	/// <summary>
-	/// Tries to get the value within a ScriptVariable inside a ScriptVariableContainer contained inside a std::any.
-	/// If no identifier data type is set, it will try to guess the type based on the default value passed.
-	/// </summary>
-	/// <param name="anyval">The std::any instance that contains the ScriptVariableContainer.</param>
-	/// <param name="defaultValue">The default value to return if no value could be found.</param>
-	/// <returns>A value contained in the ScriptVariableContainer, or defaultValue if none found.</returns>
-	auto gs1TryGetScriptVariableValueFromAny(std::any& anyval, auto defaultValue) -> decltype(defaultValue)
-	{
-		auto* container = getScriptVariableContainerUnsafe(anyval);
-		if (container == nullptr) return defaultValue;
-		return gs1TryGetScriptVariableValueFromContainer(*container, defaultValue);
-	}
-
-	/// <summary>
-	/// Tries to get the value within a ScriptVariable inside a ScriptVariableContainer contained inside a std::any.
-	/// If no identifier data type is set, it will try to guess the type based on the default value passed.
-	/// </summary>
-	/// <param name="anyval">The std::any instance that contains the ScriptVariableContainer.</param>
-	/// <param name="defaultValue">The default value to return if no value could be found.</param>
-	/// <returns>A value contained in the ScriptVariableContainer, or defaultValue if none found.</returns>
-	auto gs1TryGetScriptVariableValueFromAny(std::any&& anyval, auto defaultValue) -> decltype(defaultValue)
-	{
-		auto* attempt = std::any_cast<ScriptVariableContainer>(&anyval);
-		if (attempt == nullptr) return defaultValue;
-		ScriptVariableContainer container{ *attempt };
-		return gs1TryGetScriptVariableValueFromContainer(container, defaultValue);
-	}
-
-	template<typename T = double>
-	ScriptVariableContainer getVariableContainerFromStores(const ScriptIdentifier& identifier)
-	{
-		if (auto* str = std::get_if<std::string>(&identifier); str != nullptr && str->contains('|'))
-		{
-			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
-				return var.value();
-		}
-
-		if (auto* pair = std::get_if<std::pair<std::string, size_t>>(&identifier); pair != nullptr && pair->first.contains('|'))
-		{
-			if (auto var = retrieveVariableFromStore(identifier, m_defaultStore, m_variableStores); var.has_value())
-			{
-				if (auto* doubles = std::get_if<std::vector<double>>(&var.value().get()); doubles != nullptr)
-				{
-					if (pair->second < doubles->size())
-						return ScriptVariableContainer{ doubles->at(pair->second) };
-				}
-			}
-		}
-
-		if constexpr (std::same_as<T, double> || std::same_as<T, bool>)
-			return ScriptVariableContainer{ 0.0 };
-		if constexpr (std::same_as<T, std::string>)
-			return ScriptVariableContainer{ ScriptVariable{ std::string{ "" } } };
-		if constexpr (std::same_as<T, std::vector<double>>)
-			return ScriptVariableContainer{ std::vector<double>{} };
-
-		throw std::exception("getVariableFromStores variable was not in store and the data type is not valid");
-	}
-
-	constexpr auto bindGetter()
-	{
-		return std::bind(&GS1Visitor::getVariableFromStores, this, std::placeholders::_1);
-	}
+	template<ValidGameValue T>
+	[[inline]] T getReadOnlyGameValueFromAnyAs(const std::any& value);
 
 protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
-	ScriptEventSource m_originalSource;
-	std::stack<ScriptEventSource> m_currentSource;
-	ScriptVariableStore* m_defaultStore = nullptr;
-	ScriptVariableStoreMap* m_variableStores = nullptr;
+	ScriptObjectSource m_originalSource;
+	std::deque<ScriptObjectSource> m_currentSource;
+	GameVariableStore* m_serverStore = nullptr;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
-	ScriptVariableContainer& bindLinkToVariableStore(ScriptVariableContainer& container);
-	ScriptVariable getVariableFromStores(const ScriptIdentifier& identifier);
-	ScriptVariableContainer& fixBindAndGetVariable(ScriptVariableContainer& container);
 
 protected:
-	static bool identifierHasDataType(const ScriptIdentifier& identifier);
-	static std::string getTypedIdentifier(const ScriptIdentifier& identifier, std::string_view dataType);
-	static ScriptVariableContainer& assignIdentifierType(ScriptVariableContainer& container, std::string_view dataType);
-
+	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectSourceType type);
+	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
+	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
+	GS1GameVariable getGameVariableFromAny(std::any& value);
+	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
+	GameValue getReadOnlyGameValueFromAny(const std::any& value);
+	
 public:
 	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
 	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
@@ -168,7 +65,8 @@ public:
 	virtual std::any visitTernaryExpression(GS1Parser::TernaryExpressionContext* context) override;
 	virtual std::any visitInExpression(GS1Parser::InExpressionContext* context) override;
 	virtual std::any visitParenthesesExpression(GS1Parser::ParenthesesExpressionContext* context) override;
-	virtual std::any visitIdentifierArray(GS1Parser::IdentifierArrayContext* context) override;
+	virtual std::any visitIdentifierAccess(GS1Parser::IdentifierAccessContext* context) override;
+	virtual std::any visitIdentifierValue(GS1Parser::IdentifierValueContext* context) override;
 	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
 	virtual std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
 	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
@@ -178,6 +76,7 @@ public:
 	virtual std::any visitIfCondition(GS1Parser::IfConditionContext* context) override;
 	virtual std::any visitForLoop(GS1Parser::ForLoopContext* context) override;
 	virtual std::any visitWhileLoop(GS1Parser::WhileLoopContext* context) override;
+	virtual std::any visitWithStatement(GS1Parser::WithStatementContext* context) override;
 	virtual std::any visitFlowReturn(GS1Parser::FlowReturnContext* context) override;
 	virtual std::any visitFlowBreak(GS1Parser::FlowBreakContext* context) override;
 	virtual std::any visitFlowContinue(GS1Parser::FlowContinueContext* context) override;
@@ -186,11 +85,75 @@ public:
 	virtual std::any visitMessageCode(GS1Parser::MessageCodeContext* context) override;
 	virtual std::any visitLiteral(GS1Parser::LiteralContext* context) override;
 	virtual std::any visitLiteralAllFeatures(GS1Parser::LiteralAllFeaturesContext* context) override;
+	virtual std::any visitLiteralAllStats(GS1Parser::LiteralAllStatsContext* context) override;
 	virtual std::any visitStringLiteral(GS1Parser::StringLiteralContext* context) override;
 	virtual std::any visitIdentifierLiteral(GS1Parser::IdentifierLiteralContext* context) override;
 	virtual std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
 	virtual std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
+	virtual std::any visitStorageToken(GS1Parser::StorageTokenContext* context) override;
 };
+
+//----------------------------
+
+template<ValidGameValue T>
+inline auto makeDefault() -> T
+{
+	if constexpr (std::is_same_v<T, double>)
+		return 0.0;
+	else if constexpr (std::is_same_v<T, std::string>)
+		return std::string{};
+	else
+		return T{};
+}
+
+//----------------------------
+
+inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
+{
+	return m_originalSource;
+}
+
+inline const ScriptObjectSource& GS1Visitor::getCurrentSource() const
+{
+	return m_currentSource.empty() ? m_originalSource : m_currentSource.back();
+}
+
+inline const ScriptEvent& GS1Visitor::getEvent() const
+{
+	return *m_event;
+}
+
+template<ValidGameValue T>
+inline static T GS1Visitor::getGameValueAs(const GS1ScriptValue& value)
+{
+	if (const auto* gs1Pair = std::get_if<GS1GameVariable>(&value); gs1Pair != nullptr)
+	{
+		const auto* gameVariant = &gs1Pair->first;
+		const GameVariable* gameVar = nullptr;
+		if (const auto* byVal = std::get_if<GameVariable>(gameVariant); byVal != nullptr)
+			gameVar = byVal;
+		else if (const auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(gameVariant); byPtr != nullptr)
+		{
+			if (auto lock = byPtr->lock(); lock != nullptr)
+				gameVar = lock.get();
+		}
+
+		if (gameVar != nullptr)
+			return gameVar->get<T>(gs1Pair->second).value_or(makeDefault<T>());
+	}
+	else if (auto* gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+		return gameValue->get<T>().value_or(makeDefault<T>());
+	return makeDefault<T>();
+}
+
+//----------------------------
+
+template<ValidGameValue T>
+inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
+{
+	auto gameval = getReadOnlyGameValueFromAny(value);
+	return gameval.get<T>().value_or(makeDefault<T>());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::grammar::gs1

@@ -1,22 +1,19 @@
 #ifndef GS1FUNCTIONS_H
 #define GS1FUNCTIONS_H
 
-#include <scripting/ScriptContainers.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+
+namespace preagonal::grammar::gs1
+{
+class GS1Visitor;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-//ScriptVariable processBuiltInFunction();
-
-/*
-	testcompu(x,y), testplayer(x,y), testnpc(x,y), testitem(x,y),
-	testbomb(x,y), testexplo(x,y), testhorse(x,y) tests if there is
-	and object on (x,y) and gives you the index of that object
-	in the object list, otherwise it returns -1 (except testplayer:
-	returns -2 because -1 means the current npc character);
-*/
+GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 
 ///////////////////////////////////////////////////////////////////////////////
 }

@@ -299,7 +299,7 @@ public:
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
 
-	ScriptVariableStore variables;
+	GameVariableStore variables;
 
 private:
 	Level(short fillTile = 0);

@@ -609,7 +609,7 @@ struct inplace_vector : private __iv_detail::__storage::_t<__T, __N> {
     {
         for (auto&& __e : __x) emplace_back(__e);
     }
-    constexpr inplace_vector(inplace_vector&& __x) 
+    constexpr inplace_vector(inplace_vector&& __x) noexcept
       requires(movable<__T>)
     {
         for (auto&& __e : __x) emplace_back(::std::move(__e));
@@ -621,7 +621,7 @@ struct inplace_vector : private __iv_detail::__storage::_t<__T, __N> {
         for (auto&& __e : __x) emplace_back(__e);
         return *this;
     }
-    constexpr inplace_vector& operator=(inplace_vector&& __x) 
+    constexpr inplace_vector& operator=(inplace_vector&& __x) noexcept
       requires(movable<__T>)    
     {
         clear();

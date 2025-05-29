@@ -578,6 +578,26 @@ inline float toFloat(const std::string& str)
 	return 0.0f;
 }
 
+inline bool toDouble(const std::string& str, double& result)
+{
+	char* p_end = nullptr;
+	const double num = std::strtod(str.c_str(), &p_end);
+	if (p_end == str.c_str())
+		return false;
+
+	result = num;
+	return true;
+}
+
+inline double toDouble(const std::string& str)
+{
+	double result;
+	if (toDouble(str, result))
+		return result;
+
+	return 0.0f;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline std::string extractLine(std::string_view& str, char delim = '\n')

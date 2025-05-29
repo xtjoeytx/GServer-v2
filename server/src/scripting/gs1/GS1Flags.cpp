@@ -7,57 +7,57 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void setEventFlags(ScriptEventType event, ScriptVariableStore& variableStore)
+void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 {
 	static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
 	{
-		{ ScriptEventType::CREATED, ScriptEventFlagNames::CREATED },
-		{ ScriptEventType::INITIALIZED, ScriptEventFlagNames::INITIALIZED },
-		{ ScriptEventType::PLAYERLOGIN, ScriptEventFlagNames::PLAYERLOGIN },
-		{ ScriptEventType::PLAYERLOGOUT, ScriptEventFlagNames::PLAYERLOGOUT },
-		{ ScriptEventType::PLAYERENTERS, ScriptEventFlagNames::PLAYERENTERS },
-		{ ScriptEventType::PLAYERLEAVES, ScriptEventFlagNames::PLAYERLEAVES },
-		{ ScriptEventType::PLAYERTOUCHSME, ScriptEventFlagNames::PLAYERTOUCHSME },
-		{ ScriptEventType::PLAYERTOUCHSOTHER, ScriptEventFlagNames::PLAYERTOUCHSOTHER },
-		{ ScriptEventType::PLAYERLAYSITEM, ScriptEventFlagNames::PLAYERLAYSITEM },
-		{ ScriptEventType::PLAYERCHATS, ScriptEventFlagNames::PLAYERCHATS },
-		{ ScriptEventType::PLAYERDIES, ScriptEventFlagNames::PLAYERDIES },
-		{ ScriptEventType::PLAYERENDREADING, ScriptEventFlagNames::PLAYERENDREADING },
-		{ ScriptEventType::WEAPONFIRED, ScriptEventFlagNames::WEAPONFIRED },
-		{ ScriptEventType::FIREDONHORSE, ScriptEventFlagNames::FIREDONHORSE },
-		{ ScriptEventType::COMPUSDIED, ScriptEventFlagNames::COMPUSDIED },
-		{ ScriptEventType::WARPED, ScriptEventFlagNames::WARPED },
-		{ ScriptEventType::NPCWARPED, ScriptEventFlagNames::NPCWARPED },
-		{ ScriptEventType::EXPLODED, ScriptEventFlagNames::EXPLODED },
-		{ ScriptEventType::WASHIT, ScriptEventFlagNames::WASHIT },
-		{ ScriptEventType::WASSHOT, ScriptEventFlagNames::WASSHOT },
-		{ ScriptEventType::WASPELT, ScriptEventFlagNames::WASPELT },
-		{ ScriptEventType::TIMEOUT, ScriptEventFlagNames::TIMEOUT },
+		{ ScriptEventType::CREATED, "created"},
+		{ ScriptEventType::INITIALIZED, "initialized" },
+		{ ScriptEventType::PLAYERLOGIN, "playerlogin"},
+		{ ScriptEventType::PLAYERLOGOUT, "playerlogout" },
+		{ ScriptEventType::PLAYERENTERS, "playerenters" },
+		{ ScriptEventType::PLAYERLEAVES, "playerleaves" },
+		{ ScriptEventType::PLAYERTOUCHSME, "playertouchsme" },
+		{ ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother" },
+		{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
+		{ ScriptEventType::PLAYERCHATS, "playerchats" },
+		{ ScriptEventType::PLAYERDIES, "playerdies" },
+		{ ScriptEventType::PLAYERENDREADING, "playerendreading" },
+		{ ScriptEventType::WEAPONFIRED, "weaponfired" },
+		{ ScriptEventType::FIREDONHORSE, "firedonhorse" },
+		{ ScriptEventType::COMPUSDIED, "compusdied" },
+		{ ScriptEventType::WARPED, "warped" },
+		{ ScriptEventType::NPCWARPED, "npcwarped" },
+		{ ScriptEventType::EXPLODED, "exploded" },
+		{ ScriptEventType::WASHIT, "washit" },
+		{ ScriptEventType::WASSHOT, "wasshot" },
+		{ ScriptEventType::WASPELT, "waspelt" },
+		{ ScriptEventType::TIMEOUT, "timeout" },
 		//
-		{ ScriptEventType::SERVERLISTCONNECT, ScriptEventFlagNames::SERVERLISTCONNECT }
+		{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
 	};
 
 	auto it = eventFlagMap.find(event);
 	if (it != eventFlagMap.end())
 	{
 		auto flagName = it->second;
-		variableStore.add(std::string{ flagName } + "|double", 1.0);
+		variableStore.add(flagName, 1.0);
 
 		// TODO: Put extensions under a server option?
 		if (event == ScriptEventType::PLAYERTOUCHSME)
-			variableStore.add(std::string{ ScriptEventFlagNames::PLAYERTOUCHESME } + "|double", 1.0);
+			variableStore.add("playertouchesme", 1.0);
 		if (event == ScriptEventType::PLAYERTOUCHSOTHER)
-			variableStore.add(std::string{ ScriptEventFlagNames::PLAYERTOUCHESOTHER } + "|double", 1.0);
+			variableStore.add("playertouchesother", 1.0);
 	}
 }
 
-void setPlayerFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player)
+void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player)
 {
 	if (player == nullptr)
 		return;
 
 	if ((player->account.status & PLSTATUS_HASSPIN) != 0)
-		variableStore.add("canspin|double", 1.0);
+		variableStore.add("canspin", 1.0);
 
 	/* TODO(Nalin): Carry sprite flags. PLPROP_CARRYSPRITE
 		carrying           the player carries something
@@ -69,15 +69,15 @@ void setPlayerFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClient
 	*/
 
 	if ((player->account.status & PLSTATUS_ALLOWWEAPONS) != 0)
-		variableStore.add("weaponsenabled|double", 1.0);
+		variableStore.add("weaponsenabled", 1.0);
 	if ((player->account.status & PLSTATUS_PAUSED) != 0)
-		variableStore.add("playerpaused|double", 1.0);
+		variableStore.add("playerpaused", 1.0);
 	if ((player->account.status & PLSTATUS_MALE) != 0)
-		variableStore.add("playerismale|double", 1.0);
+		variableStore.add("playerismale", 1.0);
 	if ((player->account.status & PLSTATUS_MALE) == 0)
-		variableStore.add("playerisfemale|double", 1.0);
+		variableStore.add("playerisfemale", 1.0);
 	if (!player->account.character.horseImage.empty())
-		variableStore.add("playeronhorse|double", 1.0);
+		variableStore.add("playeronhorse", 1.0);
 
 	// TODO(Nalin): playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
 	/*
@@ -86,12 +86,12 @@ void setPlayerFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClient
 	*/
 
 	if (npc != nullptr && player->getAttachedNPC() == npc->id)
-		variableStore.add("playerattached|double", 1.0);
+		variableStore.add("playerattached", 1.0);
 	if (auto level = player->getLevel(); level != nullptr && level->isPlayerLeader(player->getId()))
-		variableStore.add("isleader|double", 1.0);
+		variableStore.add("isleader", 1.0);
 }
 
-void setNpcFlags(ScriptVariableStore& variableStore, NPCPtr npc)
+void setNpcFlags(GameVariableStore& variableStore, NPCPtr npc)
 {
 	if (npc == nullptr)
 		return;
@@ -99,7 +99,7 @@ void setNpcFlags(ScriptVariableStore& variableStore, NPCPtr npc)
 	// TODO(Nalin): timeout
 
 	if (npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
-		variableStore.add("visible|double", 1.0);
+		variableStore.add("visible", 1.0);
 
 	// followsplayer - Client side only, unless we go sicko mode in the future.
 
@@ -120,19 +120,19 @@ void setNpcFlags(ScriptVariableStore& variableStore, NPCPtr npc)
 	*/
 }
 
-void setLevelFlags(ScriptVariableStore& variableStore, NPCPtr npc, LevelPtr level)
+void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 {
 	if (level == nullptr)
 		return;
 
 	if (level->isSparringZone())
-		variableStore.add("issparringzone|double", 1.0);
+		variableStore.add("issparringzone", GameValue{ 1.0 });
 	if (level->isNoPkZone())
-		variableStore.add("nopkzone|double", 1.0);
+		variableStore.add("nopkzone", 1.0);
 	if (level->getMap() != nullptr)
-		variableStore.add("isonmap|double", 1.0);
+		variableStore.add("isonmap", 1.0);
 	if (!level->hasLivingBaddies())
-		variableStore.add("compsdead|double", 1.0);
+		variableStore.add("compsdead", 1.0);
 
 	/*
 		levelorgx     level origin(x), can be different to 0, 0 if the player is attached to an npc
@@ -141,7 +141,7 @@ void setLevelFlags(ScriptVariableStore& variableStore, NPCPtr npc, LevelPtr leve
 	*/
 }
 
-void setOtherFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+void setOtherFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
 {
 	// Character based flags.
 
@@ -157,7 +157,6 @@ void setOtherFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClientP
 	// pm  #p(0) is account, #p(1) is the message
 
 	// Others
-	// allstats - Should probably be a lexer thing like allfeatures.
 	// actionplayer
 
 	/* Older flags:

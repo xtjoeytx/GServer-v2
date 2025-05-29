@@ -979,34 +979,37 @@ ij_toml_keep_indents_on_empty_lines = false
 
 # Visual C++ Code Style settings
 
-cpp_generate_documentation_comments = xml
+cpp_generate_documentation_comments = doxygen_triple_slash
 
 # Visual C++ Formatting settings
 
+indent_style = tab
+indent_size = 4
+tab_width= 4
 cpp_indent_braces = false
-cpp_indent_multi_line_relative_to = innermost_parenthesis
+cpp_indent_multi_line_relative_to = outermost_parenthesis
 cpp_indent_within_parentheses = indent
-cpp_indent_preserve_within_parentheses = true
+cpp_indent_preserve_within_parentheses = false
 cpp_indent_case_contents = true
 cpp_indent_case_labels = true
 cpp_indent_case_contents_when_block = false
-cpp_indent_lambda_braces_when_parameter = true
+cpp_indent_lambda_braces_when_parameter = false
 cpp_indent_goto_labels = one_left
 cpp_indent_preprocessor = leftmost_column
 cpp_indent_access_specifiers = false
 cpp_indent_namespace_contents = false
 cpp_indent_preserve_comments = false
-cpp_new_line_before_open_brace_namespace = ignore
-cpp_new_line_before_open_brace_type = ignore
-cpp_new_line_before_open_brace_function = ignore
-cpp_new_line_before_open_brace_block = ignore
-cpp_new_line_before_open_brace_lambda = ignore
-cpp_new_line_scope_braces_on_separate_lines = false
+cpp_new_line_before_open_brace_namespace = new_line
+cpp_new_line_before_open_brace_type = new_line
+cpp_new_line_before_open_brace_function = new_line
+cpp_new_line_before_open_brace_block = new_line
+cpp_new_line_before_open_brace_lambda = new_line
+cpp_new_line_scope_braces_on_separate_lines = true
 cpp_new_line_close_brace_same_line_empty_type = false
 cpp_new_line_close_brace_same_line_empty_function = false
 cpp_new_line_before_catch = true
 cpp_new_line_before_else = true
-cpp_new_line_before_while_in_do_while = false
+cpp_new_line_before_while_in_do_while = true
 cpp_space_before_function_open_parenthesis = remove
 cpp_space_within_parameter_list_parentheses = false
 cpp_space_between_empty_parameter_list_parentheses = false
@@ -1043,7 +1046,7 @@ cpp_space_around_ternary_operator = insert
 cpp_use_unreal_engine_macro_formatting = true
 cpp_wrap_preserve_blocks = one_liners
 
-# Visual C++ Inlcude Cleanup settings
+# Visual C++ Include Cleanup settings
 
 cpp_include_cleanup_add_missing_error_tag_type = suggestion
 cpp_include_cleanup_remove_unused_error_tag_type = dimmed

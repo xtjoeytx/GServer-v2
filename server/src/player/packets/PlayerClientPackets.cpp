@@ -209,6 +209,15 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 {
+	/*
+	1 [SHORT ID]
+	3 [CHAR X]
+	4 [CHAR Y]
+	5 [CHAR ?] & 4 = removes mirror shots, some sort of bit flag, might store "from" information?
+	6 [CHAR ?] dir
+	7 [CHAR ?] power
+	*/
+	// TODO(Nalin): Figure this out!
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
 	return HandlePacketResult::Handled;
 }

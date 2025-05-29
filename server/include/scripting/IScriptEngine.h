@@ -46,7 +46,7 @@ public:
 	virtual bool reset() = 0;
 
 public:
-	virtual bool execute(const ScriptEvent& event, ScriptEventSource source, CompiledScriptResultPtr context) = 0;
+	virtual bool execute(const ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -24,12 +24,12 @@ const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
 	return empty;
 }
 
-void SourceCode::executeEvents(ScriptContainer& container, ScriptEventSource source) const
+void SourceCode::executeEvents(ScriptContainer& container, ScriptObjectSource source) const
 {
 	return executeEvents(container.events, source);
 }
 
-void SourceCode::executeEvents(ScriptEventQueue& events, ScriptEventSource source) const
+void SourceCode::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;

@@ -1,15 +1,213 @@
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <vector>
+#include <string>
+#include <string_view>
+
+#include <Server.h>
+#include <level/Level.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+ScriptObjectSource FromLevel(LevelPtr level)
+{
+	return std::make_pair(string::string_hash{}(level->getLevelName()), ScriptObjectSourceType::LEVEL);
+}
+
+////////////////////////////////////////////////////////////
+// GameValue
+////////////////////////////////////////////////////////////
+
+GameValue& GameValue::operator=(const GameValue& other) noexcept
+{
+	if (this != &other)
+	{
+		m_number = other.m_number;
+		m_text = other.m_text;
+		m_array = other.m_array;
+	}
+	return *this;
+}
+
+GameValue& GameValue::operator=(GameValue&& other) noexcept
+{
+	if (this != &other)
+	{
+		m_number = std::move(other.m_number);
+		m_text = std::move(other.m_text);
+		m_array = std::move(other.m_array);
+	}
+	return *this;
+}
+
+bool GameValue::operator==(const GameValue& other) noexcept
+{
+	return (bool)*this == (bool)other;
+}
+
+GameValue::operator bool() const
+{
+	if (m_number.has_value())
+		return m_number.value() != 0.0;
+	return false;
+}
+
+////////////////////////////////////////////////////////////
+// GameVariable
+////////////////////////////////////////////////////////////
+
+GameVariable::operator double() const
+{
+	auto* value = game_value().get_unsafe<double>();
+	return (value != nullptr) ? *value : 0.0;
+}
+
+GameVariable::operator std::string() const
+{
+	auto* value = game_value().get_unsafe<std::string>();
+	return (value != nullptr) ? *value : std::string{};
+}
+
+GameVariable& GameVariable::operator=(const GameVariable& other)
+{
+	if (this != &other)
+	{
+		identifier = other.identifier;
+		m_value = other.m_value;
+		m_getter = other.m_getter;
+		m_setter = other.m_setter;
+	}
+	return *this;
+}
+
+GameVariable& GameVariable::operator=(GameVariable&& other) noexcept
+{
+	if (this != &other)
+	{
+		identifier = std::move(other.identifier);
+		m_value = std::move(other.m_value);
+		m_getter = std::move(other.m_getter);
+		m_setter = std::move(other.m_setter);
+	}
+	return *this;
+}
+
+//----------------------------
+
+void GameVariable::setCallbacks(func_get getter, func_set setter)
+{
+	m_getter = std::move(getter);
+	m_setter = std::move(setter);
+}
+
+GameValue& GameVariable::get_underlying()
+{
+	return game_value();
+}
+
+const GameValue& GameVariable::get_underlying() const
+{
+	return game_value();
+}
+
+//----------------------------
+
+GameValue& GameVariable::game_value()
+{
+	if (!m_getter) [[likely]]
+		return m_value;
+	m_value = std::move(m_getter(identifier));
+	return m_value;
+}
+
+const GameValue& GameVariable::game_value() const
+{
+	if (!m_getter) [[likely]]
+		return m_value;
+	m_value = std::move(m_getter(identifier));
+	return m_value;
+}
+
+////////////////////////////////////////////////////////////
+// GameVariableStore
+////////////////////////////////////////////////////////////
+
+std::weak_ptr<GameVariable> GameVariableStore::add(std::string_view name, GameValue&& value) noexcept
+{
+	auto variable = std::make_shared<GameVariable>(std::string{ name }, GameValue{ std::move(value) });
+	auto [iter, was_inserted] = store.insert_or_assign(variable->identifier, variable);
+	return iter->second;
+}
+
+bool GameVariableStore::remove(std::string_view name) noexcept
+{
+	if (store.empty()) return false;
+	auto it = store.find(name);
+	if (it == store.end()) return false;
+	store.erase(it);
+	return true;
+}
+
+bool GameVariableStore::contains(std::string_view name) const noexcept
+{
+	if (store.empty()) return false;
+	return store.contains(name);
+}
+
+std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) noexcept
+{
+	if (store.empty()) return {};
+	auto it = store.find(name);
+	if (it == store.end()) return {};
+	return it->second;
+}
+
+const std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) const noexcept
+{
+	if (store.empty()) return {};
+	auto it = store.find(name);
+	if (it == store.end()) return {};
+	return it->second;
+}
+
+std::weak_ptr<GameVariable> GameVariableStore::get_or_add(std::string_view name) noexcept
+{
+	if (!store.empty())
+	{
+		auto it = store.find(name);
+		if (it != store.end()) return it->second;
+	}
+	return add(std::move(name), GameValue{ 0.0 });
+}
+
+GameVariableVariant GameVariableStore::get_or_stub(std::string_view name) noexcept
+{
+	if (!store.empty())
+	{
+		auto it = store.find(name);
+		if (it != store.end())
+			return std::weak_ptr<GameVariable>(it->second);
+	}
+	return GameVariable(std::string{ name }, GameValue{ 0.0 }, nullptr, std::bind(&GameVariableStore::stub_new, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void GameVariableStore::stub_new(GameVariable& variable, const GameValue& value)
+{
+	auto new_variable = add(variable.identifier, GameValue{ value });
+	variable.setCallbacks(variable.getCallbackGetter(), {});
+}
+
 ////////////////////////////////////////////////////////////
 // ScriptEventQueue
 ////////////////////////////////////////////////////////////
 
-void ScriptEventQueue::addEvent(ScriptEventType type, ScriptEventSource initiator)
+void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator)
 {
 	m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
 }
@@ -22,233 +220,6 @@ void ScriptEventQueue::addEvent(const ScriptEvent& event)
 void ScriptEventQueue::addEvent(ScriptEvent&& event)
 {
 	m_eventQueue.push(std::move(event));
-}
-
-////////////////////////////////////////////////////////////
-// ScriptVariableContainer
-////////////////////////////////////////////////////////////
-
-// Sets the ScriptVariable to a new value.
-ScriptVariableContainer& ScriptVariableContainer::set(const ScriptVariable& value) noexcept
-{
-	m_value = value;
-	if (m_setter && m_identifier.has_value())
-		m_setter(m_identifier.value(), m_value);
-	return *this;
-}
-
-// Sets the ScriptVariable to a new value.
-ScriptVariableContainer& ScriptVariableContainer::set(ScriptVariable&& value) noexcept
-{
-	m_value = std::move(value);
-	if (m_setter && m_identifier.has_value())
-		m_setter(m_identifier.value(), m_value);
-	return *this;
-}
-
-// Sets the ScriptVariable to a new value.
-ScriptVariableContainer& ScriptVariableContainer::set(const ScriptVariableContainer& value) noexcept
-{
-	m_value = value.get();
-	if (m_setter && m_identifier.has_value())
-		m_setter(m_identifier.value(), m_value);
-	return *this;
-}
-
-// Sets the ScriptVariable to a new value.
-ScriptVariableContainer& ScriptVariableContainer::set(ScriptVariableContainer&& value) noexcept
-{
-	m_value = std::move(value.get());
-	if (m_setter && m_identifier.has_value())
-		m_setter(m_identifier.value(), m_value);
-	return *this;
-}
-
-////////////////////////////////////////////////////////////
-// ScriptVariableStore
-////////////////////////////////////////////////////////////
-
-
-ScriptVariableContainer ScriptVariableStore::add(std::string name, ScriptVariable value) noexcept
-{
-	auto [iter, was_inserted] = store.insert_or_assign(name, value);
-	return ScriptVariableContainer(ScriptIdentifier{ std::move(name) }, iter->second, bindSetter());
-}
-
-bool ScriptVariableStore::remove(std::string_view name) noexcept
-{
-	return store.erase(name) != 0;
-}
-
-bool ScriptVariableStore::contains(std::string_view name) const noexcept
-{
-	return store.contains(name);
-}
-
-std::optional<ScriptVariableContainer> ScriptVariableStore::get(std::string name) noexcept
-{
-	auto it = store.find(name);
-	if (it == store.end())
-		return std::nullopt;
-
-	return ScriptVariableContainer(ScriptIdentifier{ std::move(name) }, it->second, bindSetter());
-}
-
-std::optional<const ScriptVariableContainer> ScriptVariableStore::get(std::string name) const noexcept
-{
-	auto it = store.find(name);
-	if (it == store.end())
-		return std::nullopt;
-
-	return ScriptVariableContainer{ ScriptIdentifier{ std::move(name) }, it->second };
-}
-
-ScriptVariableContainer ScriptVariableStore::get_or_add(std::string name) noexcept
-{
-	auto it = store.find(name);
-	if (it != store.end())
-		return ScriptVariableContainer(ScriptIdentifier{ std::move(name) }, it->second, bindSetter());
-
-	return add(name, { 0.0 });
-}
-
-ScriptVariableContainer& ScriptVariableStore::try_link(ScriptVariableContainer& container) noexcept
-{
-	if (!container.hasIdentifier())
-		return container;
-
-	const auto& identifier = container.getIdentifier().value();
-	if (store.contains(getIdentifierName(identifier)))
-		container.setSetter(bindSetter());
-
-	return container;
-}
-
-void ScriptVariableStore::update(const ScriptIdentifier& identifier, const ScriptVariable& value)
-{
-	std::string_view identifierName;
-	std::optional<size_t> index = std::nullopt;
-
-	if (std::holds_alternative<std::string>(identifier))
-		identifierName = std::get<std::string>(identifier);
-	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
-	{
-		auto& pair = std::get<std::pair<std::string, size_t>>(identifier);
-		identifierName = pair.first;
-		index = pair.second;
-	}
-	else throw std::exception("ScriptVariableStore::update received an invalid identifier");
-
-	auto it = store.find(identifierName);
-	if (it == store.end())
-	{
-		add(std::string{ identifierName }, value);
-		return;
-	}
-
-	// If we don't have an index, we need to set the value directly.
-	if (!index.has_value())
-	{
-		it->second = value;
-	}
-	// Update the record in the array.
-	else
-	{
-		if (!std::holds_alternative<std::vector<double>>(it->second))
-			throw std::exception("ScriptVariableStore::update received an indexed identifier, but the value does not contain an array");
-
-		auto& array = std::get<std::vector<double>>(it->second);
-		if (const auto* newValue = std::get_if<double>(&value))
-		{
-			array[index.value()] = *newValue;
-		}
-		else
-		{
-			array[index.value()] = 0.0;
-		}
-	}
-}
-
-////////////////////////////////////////////////////////////
-// Functions
-////////////////////////////////////////////////////////////
-
-std::optional<ScriptVariableContainer> retrieveVariableFromStore(const ScriptIdentifier& identifier, ScriptVariableStore* defaultStore, ScriptVariableStoreMap* variableStores)
-{
-	// Early out if we aren't saving variables anywhere.
-	if (variableStores == nullptr && defaultStore == nullptr)
-		return std::nullopt;
-
-	std::string identifierName;
-	std::optional<size_t> index = std::nullopt;
-
-	// Get our identifier name and index;
-	if (std::holds_alternative<std::string>(identifier))
-		identifierName = std::get<std::string>(identifier);
-	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
-	{
-		auto& pair = std::get<std::pair<std::string, size_t>>(identifier);
-		identifierName = pair.first;
-		index = pair.second;
-	}
-	else throw std::exception("retrieveVariableFromStore received an invalid identifier");
-
-	// Look through all the variable stores for the variable.
-	if (variableStores != nullptr)
-	{
-		for (auto& [prefix, storePicker] : *variableStores)
-		{
-			if (prefix.empty() || identifierName.starts_with(prefix))
-			{
-				if (std::holds_alternative<ScriptVariableStore*>(storePicker))
-				{
-					auto store = std::get<ScriptVariableStore*>(storePicker);
-					return store->get_or_add(identifierName);
-				}
-				else if (std::holds_alternative<ScriptVariableFromServer>(storePicker))
-				{
-					auto& picker = std::get<ScriptVariableFromServer>(storePicker);
-					return picker(identifier);
-				}
-			}
-		}
-	}
-
-	// Check the default store.
-	if (defaultStore != nullptr)
-		return defaultStore->get_or_add(identifierName);
-
-	// No variable found.
-	return std::nullopt;
-}
-
-ScriptVariableContainer* getScriptVariableContainerUnsafe(std::any& anyval)
-{
-	if (!anyval.has_value()) return nullptr;
-	auto* direct = std::any_cast<ScriptVariableContainer>(&anyval);
-	if (direct != nullptr) return direct;
-	return nullptr;
-}
-
-std::optional<ScriptVariableContainer> getScriptVariableContainer(const std::any& anyval)
-{
-	if (!anyval.has_value()) return std::nullopt;
-	auto* direct = std::any_cast<ScriptVariableContainer>(&anyval);
-	if (direct != nullptr) return *direct;
-	return std::nullopt;
-}
-
-std::string getIdentifierName(const ScriptIdentifier& identifier)
-{
-	if (std::holds_alternative<std::string>(identifier))
-		return std::get<std::string>(identifier);
-	else if (std::holds_alternative<std::pair<std::string, size_t>>(identifier))
-	{
-		auto& pair = std::get<std::pair<std::string, size_t>>(identifier);
-		return pair.first;
-	}
-
-	throw std::exception("getIdentifierName received an invalid identifier");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

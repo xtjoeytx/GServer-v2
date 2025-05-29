@@ -19,45 +19,45 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using MessageCodeHandleFunc = ScriptVariable(*)(GS1Visitor*, std::string_view, const std::vector<ScriptVariableContainer*>&);
+using MessageCodeHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using MessageCodeHandleMap = std::unordered_map<size_t, MessageCodeHandleFunc>;
 
-static ScriptVariable mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_b(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_R(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
+static GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 
-static ScriptVariable mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
-static ScriptVariable mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments);
+static GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 
 static MessageCodeHandleMap GenerateMap()
 {
@@ -103,91 +103,11 @@ static MessageCodeHandleMap GenerateMap()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using PlayerOrNPC = std::optional<std::variant<PlayerPtr, NPCPtr>>;
-
-static PlayerPtr getPlayerFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
-{
-	if (source.second != ScriptEventSourceType::PLAYER)
-		return nullptr;
-
-	auto* server = BabyDI::Get<Server>();
-	if (auto player = server->getPlayer(source.first); player != nullptr)
-	{
-		if (index.has_value())
-		{
-			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getPlayers().size())
-				player = server->getPlayer(level->getPlayers().at(index.value()));
-		}
-		return player;
-	}
-
-	return nullptr;
-}
-
-static PlayerClientPtr getPlayerClientFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
-{
-	auto player = getPlayerFromSource(source, index);
-	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
-		return client;
-	return nullptr;
-}
-
-static NPCPtr getNPCFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
-{
-	if (source.second != ScriptEventSourceType::NPC)
-		return nullptr;
-	auto* server = BabyDI::Get<Server>();
-	if (auto npc = server->getNPC(source.first); npc != nullptr)
-	{
-		if (index.has_value())
-		{
-			if (auto level = npc->level.lock(); level != nullptr && index.value() < level->getNPCs().size())
-				npc = server->getNPC(level->getNPCs().at(index.value()));
-		}
-		return npc;
-	}
-	return nullptr;
-}
-
-static PlayerOrNPC getPlayerOrNPCFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
-{
-	if (source.second == ScriptEventSourceType::SERVER)
-		return std::nullopt;
-
-	auto* server = BabyDI::Get<Server>();
-	if (source.second == ScriptEventSourceType::PLAYER)
-		return getPlayerFromSource(source, index);
-	else if (source.second == ScriptEventSourceType::NPC)
-		return getNPCFromSource(source, index);
-
-	return std::nullopt;
-}
-
-static Character* getCharacterFromSource(const ScriptEventSource& source, std::optional<size_t> index = std::nullopt)
-{
-	if (source.second == ScriptEventSourceType::SERVER)
-		return nullptr;
-
-	auto* server = BabyDI::Get<Server>();
-	if (source.second == ScriptEventSourceType::PLAYER)
-	{
-		if (auto player = getPlayerFromSource(source, index); player != nullptr)
-			return &player->account.character;
-	}
-	else if (source.second == ScriptEventSourceType::NPC)
-	{
-		if (auto npc = getNPCFromSource(source, index); npc != nullptr)
-			return &npc->character;
-	}
-
-	return nullptr;
-}
-
-static ScriptVariable handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<ScriptVariableContainer*>& arguments, std::function<ScriptVariable(Character&, std::vector<ScriptVariableContainer*> const&)> picker)
+static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments, std::function<GS1ScriptValue(Character&, std::vector<GS1ScriptValue*> const&)> picker)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	Character* character = getCharacterFromSource(visitor->getCurrentSource(), index);
 	if (character == nullptr)
@@ -198,7 +118,7 @@ static ScriptVariable handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptVariable processMessageCode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	static MessageCodeHandleMap map = GenerateMap();
 
@@ -241,9 +161,9 @@ ScriptVariable processMessageCode(GS1Visitor* visitor, std::string_view messageC
 
 // #1 | #1(index)
 // Sword image filename of the player.
-ScriptVariable mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.swordImage;
 	});
@@ -251,9 +171,9 @@ ScriptVariable mc_1(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #2 | #2(index)
 // Shield image filename of the player.
-ScriptVariable mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.shieldImage;
 	});
@@ -261,9 +181,9 @@ ScriptVariable mc_2(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #3 | #3(index)
 // Head image filename of the player.
-ScriptVariable mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.headImage;
 	});
@@ -273,9 +193,9 @@ ScriptVariable mc_3(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #5 | #5(index)
 // Horse image filename of the player.
-ScriptVariable mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.horseImage;
 	});
@@ -283,11 +203,11 @@ ScriptVariable mc_5(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #6 | #6(index)
 // NPC image filename of the carried NPC.
-ScriptVariable mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(), index);
 	if (!result.has_value())
@@ -313,9 +233,9 @@ ScriptVariable mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #7 | #7(index)
 // Bow image filename of the player.
-ScriptVariable mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.bowImage;
 	});
@@ -323,9 +243,9 @@ ScriptVariable mc_7(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #8 | #8(index)
 // Body image filename of the player.
-ScriptVariable mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.bodyImage;
 	});
@@ -333,11 +253,11 @@ ScriptVariable mc_8(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #a | #a(index)
 // Account name of the player.
-ScriptVariable mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto player = getPlayerFromSource(visitor->getCurrentSource(), index); player != nullptr)
 		return player->account.name;
@@ -347,7 +267,7 @@ ScriptVariable mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #b
 // Line break for say2.
-ScriptVariable mc_b(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// Pass this along with processing it.
 	// The client deals with it.
@@ -356,9 +276,9 @@ ScriptVariable mc_b(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #c | #c(index)
 // Current chat text of the player.
-ScriptVariable mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.chatMessage;
 	});
@@ -366,27 +286,27 @@ ScriptVariable mc_c(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #D | #D(filename)
 // Current file being downloaded | The download position of the specified file.
-ScriptVariable mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #D is registered as a clientside message code");
 }
 
 // #e(start_index, length, string)
 // Extracts a substring from the given string.
-ScriptVariable mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::exception("Message Code #e requires exactly 3 arguments");
 
-	auto startIndex = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
-	auto length = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[1], 0.0));
-	auto str = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[2], std::string{});
+	auto startIndex = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto length = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto str = visitor->getGameValueAs<std::string>(*arguments[2]);
 	return str.substr(startIndex, length);
 }
 
 // #F
 // The level filename of the current player. (#L will return the NPC level filename)
-ScriptVariable mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource());
 	if (!result.has_value())
@@ -408,7 +328,7 @@ ScriptVariable mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #f
 // Image filename of the NPC.
-ScriptVariable mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	auto npc = getNPCFromSource(visitor->getCurrentSource());
 	if (npc != nullptr)
@@ -419,11 +339,11 @@ ScriptVariable mc_f(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #g | #g(index)
 // Guild name of the player.
-ScriptVariable mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
 		return client->getGuild().toString();
@@ -434,7 +354,7 @@ ScriptVariable mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 // #G | #G(index)
 // Upgrade status of the player.  (???)
 // player.upgradestatus #G(index)
-ScriptVariable mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #G is not implemented yet");
 	return std::string{};
@@ -442,13 +362,13 @@ ScriptVariable mc_G(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #I(string_list, index)
 // Returns the string at the given index from the string list.
-ScriptVariable mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::exception("Message Code #I requires exactly 2 arguments");
 
-	auto csvStringList = string::fromCSV(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], std::string{}));
-	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[1], 0.0));
+	auto csvStringList = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[0]));
+	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
 	if (index < csvStringList.size())
 		return csvStringList[index];
 
@@ -457,28 +377,28 @@ ScriptVariable mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #i(image) | #i(image, x, y, width, height)
 // Displays an image or part of an image when used in a sign.
-ScriptVariable mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #i is registered as a clientside message code");
 }
 
 // #K(key_index)
 // The name of the specified key.
-ScriptVariable mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #K is registered as a clientside message code");
 }
 
 // #k(key_index)
 // The description of the specified key (in client language/key assignments).
-ScriptVariable mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #k is registered as a clientside message code");
 }
 
 // #L
 // The current level filename of the NPC (use #F for the player).
-ScriptVariable mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	auto npc = getNPCFromSource(visitor->getOriginalSource());
 	if (npc != nullptr)
@@ -492,9 +412,9 @@ ScriptVariable mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #m | #m(index)
 // The animation of the player.
-ScriptVariable mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.gani;
 	});
@@ -502,9 +422,9 @@ ScriptVariable mc_m(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #n | #n(index)
 // The nickname of the player.
-ScriptVariable mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.nickName;
 	});
@@ -512,11 +432,11 @@ ScriptVariable mc_n(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #N | #N(index)
 // The database NPC name.
-ScriptVariable mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto npc = getNPCFromSource(visitor->getCurrentSource(), index); npc != nullptr)
 		return npc->name;
@@ -526,12 +446,12 @@ ScriptVariable mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #p(index)
 // The action parameter of the specified index.
-ScriptVariable mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("Message Code #p requires exactly 1 argument");
 
-	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
+	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	if (index < visitor->getEvent().args.size())
 	{
 		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)
@@ -542,7 +462,7 @@ ScriptVariable mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #Q(guild_name, account_name)
 // The nickname for a player in a guild.
-ScriptVariable mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::exception("Message Code #Q is not implemented yet");
 	return std::string{};
@@ -550,7 +470,7 @@ ScriptVariable mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #R(string_list)
 // Randomly selects a string from the given string list.
-ScriptVariable mc_R(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	using namespace std::chrono;
 	auto seed = static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
@@ -558,59 +478,59 @@ ScriptVariable mc_R(GS1Visitor* visitor, std::string_view messageCode, const std
 	std::uniform_int_distribution<size_t> dist(0, arguments.size() - 1);
 	size_t index = dist(rng);
 
-	return arguments[index]->get();
+	return visitor->getGameValueAs<std::string>(*arguments[index]);
 }
 
 // #s(identifier)
 // The string value of a variable.
-ScriptVariable mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("Message Code #s requires exactly 1 argument");
 
-	return visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], std::string{});
+	return visitor->getGameValueAs<std::string>(*arguments[0]);
 }
 
 // #t(index)
 // The token at the specified index as created via tokenize.
-ScriptVariable mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("Message Code #t requires exactly 1 argument");
 
-	auto index = static_cast<size_t>(visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0));
-	if (index >= visitor->tokens.size())
+	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	if (index >= visitor->tokenizeTokens.size())
 		return std::string{};
 
-	return visitor->tokens[index];
+	return visitor->tokenizeTokens[index];
 }
 
 // #T(string)
 // Trims the tring.
-ScriptVariable mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("Message Code #T requires exactly 1 argument");
 
-	auto str = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], std::string{});
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	string::trim(str);
 	return str;
 }
 
 // #v(identifier)
 // The value of an number variable as a string.
-ScriptVariable mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("Message Code #s requires exactly 1 argument");
 
-	auto number = visitor->gs1TryGetScriptVariableValueFromContainer(*arguments[0], 0.0);
+	auto number = visitor->getGameValueAs<double>(*arguments[0]);
 	return std::format("{}", number);
 }
 
 // #W | #W(index)
 // Image filename of a player's weapon.
-ScriptVariable mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO(Nalin): #W might not be possible serverside, but #W(index) should be possible.
 	throw std::exception("Message Code #W is registered as a clientside message code");
@@ -618,7 +538,7 @@ ScriptVariable mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #w | #w(index)
 // The name of the player's weapon.
-ScriptVariable mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO(Nalin): #w might not be possible serverside, but #w(index) should be possible.
 	throw std::exception("Message Code #w is registered as a clientside message code");
@@ -632,19 +552,19 @@ ScriptVariable mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 // #C2 - sleeves color
 // #C3 - shoes color
 // #C4 - belt color
-ScriptVariable mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
-		return getGraalColorName(static_cast<GraalColors>(character.colors[index]));
+		return getCharacterColorName(static_cast<CharacterColors>(character.colors[index]));
 	});
 }
 
 // #P1 - #P30 | #P1(index) - #P30(index)
 // Gani attributes.
-ScriptVariable mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<ScriptVariableContainer*>& arguments)
+GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> ScriptVariable
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> GS1ScriptValue
 	{
 		return character.ganiAttributes[index];
 	});

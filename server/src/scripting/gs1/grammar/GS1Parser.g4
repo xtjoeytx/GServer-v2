@@ -40,6 +40,7 @@ statement
 	: if_condition
 	| for_loop
 	| while_loop
+	| with_statement
 	| function_definition END?
 	| user_function END?
 	| builtin_command END?
@@ -56,22 +57,20 @@ expression
 	| unary_expression
 	;
 
+// Keep strings from mixing with identifiers as much as possible to speed up parsing.
+expression_allow_string
+	: binary_expression
+	| compound_string
+	| unary_expression
+	;
+
 unary_expression
-	: postfix_expression
+	: inc_dec_expression
 	| unary_operation
-	;
-
-postfix_expression
-	: primary_expression
-	| inc_dec_expression
-	;
-
-primary_expression
-	: builtin_function
+	| builtin_function
 	| array_literal
 	| literal_literal
-	| identifier_
-	| compound_string
+	| identifier_access
 	;
 
 binary_expression
@@ -88,18 +87,23 @@ binary_expression
 	| unary_expression																		# ignoreUnaryExpression
 	;
 
-identifier_
-	: compound_identifier																# Identifier
-	| compound_identifier TOKEN_BRACKET_LEFT primary_expression TOKEN_BRACKET_RIGHT		# IdentifierArray
+identifier_access
+	: identifier_value (TOKEN_PERIOD identifier_value)*?									# IdentifierAccess
+	;
+
+identifier_value
+	: compound_identifier (TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?		# IdentifierValue
+	| storage_token compound_identifier
+		(TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?							# IdentifierValue
 	;
 
 compound_identifier
-	: identifier_literal (identifier_literal | messagecode_string)*?					# CompoundIdentifier
+	: identifier_literal (identifier_literal | messagecode_string)*?						# CompoundIdentifier
 	;
 
 inc_dec_expression
-	: identifier_ OP_INC	# IncDecOperation
-	| identifier_ OP_DEC	# IncDecOperation
+	: identifier_access OP_INC	# IncDecOperation
+	| identifier_access OP_DEC	# IncDecOperation
 	;
 
 in_expression
@@ -117,7 +121,7 @@ builtin_command
 	;
 
 builtin_command_expression
-	: expression
+	: expression_allow_string
 	| ITEM
 	| CARRY
 	| DIRECTION
@@ -127,15 +131,16 @@ builtin_command_expression
 	;
 
 function_definition
-	: KW_FUNCTION identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block	{add_user_function($identifier_literal.ctx->getText(), $block.ctx);}
+	: KW_FUNCTION identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block
+		{add_user_function($identifier_literal.ctx->getText(), $block.ctx);}
 	;
 
 user_function
-	: identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT							# UserFunctionCall
+	: identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT									# UserFunctionCall
 	;
 
 builtin_function
-	: FUNCTION TOKEN_PAREN_LEFT builtin_function_parameters TOKEN_PAREN_RIGHT		# BuiltInFunctionCall
+	: FUNCTION TOKEN_PAREN_LEFT builtin_function_parameters TOKEN_PAREN_RIGHT				# BuiltInFunctionCall
 	;
 
 builtin_function_parameters
@@ -155,23 +160,31 @@ else_false_block
 	;
 
 for_loop
-    : KW_FOR TOKEN_PAREN_LEFT assignment_operation? END expression? END expression? TOKEN_PAREN_RIGHT block	# ForLoop
+    : KW_FOR TOKEN_PAREN_LEFT
+		assignment_operation? END
+		expression? END
+		expression? TOKEN_PAREN_RIGHT
+		block																				# ForLoop
     ;
 
 while_loop
-    : KW_WHILE TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT block									# WhileLoop
+    : KW_WHILE TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT block							# WhileLoop
     ;
 
+with_statement
+	: KW_WITH TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT block							# WithStatement
+	;
+
 flow_return
-    : KW_RETURN			# FlowReturn
+    : KW_RETURN																				# FlowReturn
     ;
 
 flow_break
-    : KW_BREAK			# FlowBreak
+    : KW_BREAK																				# FlowBreak
     ;
 	
 flow_continue
-    : KW_CONTINUE		# FlowContinue
+    : KW_CONTINUE																			# FlowContinue
     ;
 
 assignment_operator
@@ -186,7 +199,7 @@ assignment_operator
 	;
 
 assignment_operation
-	: identifier_ assignment_operator assignment	# AssignmentOperation
+	: identifier_access assignment_operator assignment										# AssignmentOperation
 	;
 
 unary_operator
@@ -196,35 +209,50 @@ unary_operator
 	;
 
 unary_operation
-	: unary_operator expression					# UnaryOperation
+	: unary_operator expression																# UnaryOperation
 	;
 
 compound_string
-	: (string_literal | messagecode_string)+	# CompoundString
+	: (string_literal | messagecode_string)+?												# CompoundString
 	;
 
 messagecode_string
-	: MESSAGECODE																				# MessageCode
-	| MESSAGECODE TOKEN_PAREN_LEFT? expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT		# MessageCode
+	: MESSAGECODE																			# MessageCode
+	| MESSAGECODE TOKEN_PAREN_LEFT?
+		expression_allow_string (TOKEN_COMMA expression_allow_string)*
+		TOKEN_PAREN_RIGHT																	# MessageCode
 	;
 
 literal_literal
-	: LITERAL		# Literal
-	| ALLFEATURES	# LiteralAllFeatures
+	: LITERAL																				# Literal
+	| ALLFEATURES																			# LiteralAllFeatures
+	| ALLSTATS																				# LiteralAllStats
 	;
 
 string_literal
-	: STRING		# StringLiteral
+	: STRING																				# StringLiteral
 	;
 
 identifier_literal
-	: IDENTIFIER	# IdentifierLiteral
+	: IDENTIFIER																			# IdentifierLiteral
 	;
 
 range_literal
-	: (TOKEN_PIPE | OP_LESS) expression TOKEN_COMMA expression (TOKEN_PIPE | OP_GREAT)			# RangeLiteral
+	: (TOKEN_PIPE | OP_LESS) expression TOKEN_COMMA expression (TOKEN_PIPE | OP_GREAT)		# RangeLiteral
 	;
 
 array_literal
-	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* TOKEN_BRACE_RIGHT	# ArrayLiteral
+	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* TOKEN_BRACE_RIGHT				# ArrayLiteral
+	;
+
+storage_token
+	: STORAGE_THIS																			# StorageToken
+	| STORAGE_THISO																			# StorageToken
+	| STORAGE_CLIENT																		# StorageToken
+	| STORAGE_CLIENTR																		# StorageToken
+	| STORAGE_SERVER																		# StorageToken
+	| STORAGE_SERVERR																		# StorageToken
+	| STORAGE_LEVEL																			# StorageToken
+	| STORAGE_LOCAL																			# StorageToken
+	| STORAGE_TEMP																			# StorageToken
 	;

@@ -258,7 +258,7 @@ public:
 	bool isNpcServerEnabled() const { return m_playerList.find(0) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
 
-	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptEventSource source)
+	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source)
 	{
 		if (level == nullptr) return;
 		for (auto& npcid : level->getNPCs())
@@ -269,7 +269,7 @@ public:
 	}
 
 	template<class ...Args>
-	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptEventSource source, Args... args)
+	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source, Args... args)
 	{
 		if (level == nullptr) return;
 		for (auto& npcid : level->getNPCs())
@@ -279,7 +279,7 @@ public:
 		}
 	}
 
-	std::time_t getServerStartTime() const
+	std::chrono::system_clock::time_point getServerStartTime() const
 	{
 		return m_serverStartTime;
 	}
@@ -336,7 +336,7 @@ private:
 
 	ServerList m_serverlist;
 	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNpcServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
-	std::time_t m_serverStartTime;
+	std::chrono::system_clock::time_point m_serverStartTime;
 	unsigned int m_serverTime;
 
 	// Trigger dispatcher

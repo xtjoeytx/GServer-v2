@@ -36,6 +36,9 @@ using PlayerID = uint16_t;
 using NPCID = uint32_t;
 
 inline constexpr PlayerID NPCServerPlayerID = 0;
+inline constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
+
+//-----------------------------------------------
 
 inline static constexpr uint8_t PROPID(auto prop)
 {

@@ -55,8 +55,8 @@ public:
 	[[inline]] void setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
-	void executeEvents(ScriptContainer& container, ScriptEventSource source) const;
-	void executeEvents(ScriptEventQueue& events, ScriptEventSource source) const;
+	void executeEvents(ScriptContainer& container, ScriptObjectSource source) const;
+	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
 private:
 	static std::string minify(const std::string& src) noexcept;

@@ -12,11 +12,11 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void setEventFlags(ScriptEventType event, ScriptVariableStore& variableStore);
-void setPlayerFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player);
-void setNpcFlags(ScriptVariableStore& variableStore, NPCPtr npc);
-void setLevelFlags(ScriptVariableStore& variableStore, NPCPtr npc, LevelPtr level);
-void setOtherFlags(ScriptVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
+void setEventFlags(ScriptEventType event, GameVariableStore& variableStore);
+void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player);
+void setNpcFlags(GameVariableStore& variableStore, NPCPtr npc);
+void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level);
+void setOtherFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
 
 ///////////////////////////////////////////////////////////////////////////////
 }

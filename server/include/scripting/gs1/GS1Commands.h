@@ -211,6 +211,13 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"savelog2",
 };
 
+/*
+	triggeractions:
+		serverside		- when received from client, triggers the weapon script of the weapon listed in first parameter.
+		server{EVENT}	- invokes an event on the control-npc: if (actionserver{EVENT})
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 }
 #endif // GS1COMMANDS_H

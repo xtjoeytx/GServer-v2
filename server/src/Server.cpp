@@ -61,7 +61,7 @@ static CString operator<<(const CString& first, const CString& second)
 }
 
 Server::Server(const CString& pName)
-	: running(false), m_doRestart(false), m_name(pName), m_animationManager(this), m_packageManager(this), m_serverStartTime(0),
+	: running(false), m_doRestart(false), m_name(pName), m_animationManager(this), m_packageManager(this), m_serverStartTime(),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
@@ -141,7 +141,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_sockManager.registerSocket((CSocketStub*)this);
 
 	// Register the server start time.
-	m_serverStartTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	m_serverStartTime = std::chrono::system_clock::now();
 
 	return 0;
 }

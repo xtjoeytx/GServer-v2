@@ -40,6 +40,68 @@ struct Character
 	std::string ganiAttributes[30];
 };
 
+//----------------------------
+
+#undef TRANSPARENT
+enum class CharacterColors : uint8_t
+{
+	WHITE = 0,
+	YELLOW,
+	ORANGE,
+	PINK,
+	RED,
+	DARKRED,
+	LIGHTGREEN,
+	GREEN,
+	DARKGREEN,
+	LIGHTBLUE,
+	BLUE,
+	DARKBLUE,
+	BROWN,
+	CYNOBER,
+	PURPLE,
+	DARKPURPLE,
+	LIGHTGRAY,
+	GRAY,
+	BLACK,
+	TRANSPARENT,
+
+	COUNT
+};
+constexpr size_t CHARACTERCOLORS_COUNT = static_cast<size_t>(CharacterColors::COUNT);
+
+inline std::string getCharacterColorName(CharacterColors color)
+{
+	static const std::unordered_map<CharacterColors, std::string> colorNames =
+	{
+		{ CharacterColors::WHITE, "white" },
+		{ CharacterColors::YELLOW, "yellow" },
+		{ CharacterColors::ORANGE, "orange" },
+		{ CharacterColors::PINK, "pink" },
+		{ CharacterColors::RED, "red" },
+		{ CharacterColors::DARKRED, "darkred" },
+		{ CharacterColors::LIGHTGREEN, "lightgreen" },
+		{ CharacterColors::GREEN, "green" },
+		{ CharacterColors::DARKGREEN, "darkgreen" },
+		{ CharacterColors::LIGHTBLUE, "lightblue" },
+		{ CharacterColors::BLUE, "blue" },
+		{ CharacterColors::DARKBLUE, "darkblue" },
+		{ CharacterColors::BROWN, "brown" },
+		{ CharacterColors::CYNOBER, "cynober" },
+		{ CharacterColors::PURPLE, "purple" },
+		{ CharacterColors::DARKPURPLE, "darkpurple" },
+		{ CharacterColors::LIGHTGRAY, "lightgray" },
+		{ CharacterColors::GRAY, "gray" },
+		{ CharacterColors::BLACK, "black" },
+		{ CharacterColors::TRANSPARENT, "transparent" },
+	};
+
+	if (colorNames.find(color) != colorNames.end())
+		return colorNames.at(color);
+
+	return {};
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
