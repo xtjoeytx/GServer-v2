@@ -7,6 +7,63 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
+Z3-V1.03
+	12 bit tiles
+	links
+	baddies (no verses)
+	signs
+
+Z3-V1.04
+	12 bit tiles
+	links
+	baddies
+	signs
+
+GR-V1.00
+	12 bit tiles
+	links
+	baddies
+	npcs
+	signs
+
+GR-V1.01
+	12 bit tiles
+	links
+	baddies
+	npcs
+	chests
+	signs
+
+GR-V1.02
+	13 bit tiles
+	links
+	baddies
+	npcs
+	chests
+	signs
+
+GR-V1.03
+	13 bit tiles
+	links (using variables)
+	baddies
+	npcs
+	chests
+	signs
+
+GLEVNW01
+
+GSERVL01
+	saves modified npcs in 'levelnpcs/levelfilename.save`
+	index "prop string"
+
+	REPLACENPCS
+	1 "prop string"
+	REPLACENPCSEND
+*/
+
+constexpr int MAX_TILE_COUNT = 64 * 64; // 4096 tiles per level.
+
 static constexpr int getBase64Position(char c)
 {
 	if (c >= 'a')
@@ -25,6 +82,91 @@ static constexpr int getBase64Position(char c)
 	}
 
 	return 0;
+}
+
+static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles& outputTiles)
+{
+	uint32_t buffer = 0;
+	uint32_t read = 0;
+	uint16_t code = 0;
+	int tileReadAmount = 1;
+	int boardWriteIndex = 0;
+
+	bool doubleTileRLEMode = false;
+	int32_t rleTiles[2] = { -1, -1 };
+
+	// Read the tiles.
+	size_t readPos = 0;
+	while (boardWriteIndex < MAX_TILE_COUNT && readPos < data.size())
+	{
+		// Every control code/tile is either 12 or 13 bits.  WTF.
+		// Read in the bits.
+		while (read < bits)
+		{
+			buffer += data[readPos++] << read;
+			read += 8;
+		}
+
+		// Pull out a single 12/13 bit code from the buffer.
+		code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
+		buffer >>= bits;
+		read -= bits;
+
+		// See if we have an RLE control code.
+		// Control codes determine how the RLE scheme works.
+		if (code & ((bits == 12) ? 0x800 : 0x1000))
+		{
+			// If the 0x100 bit is set, we are in a double repeat mode.
+			// {double 4}56 = 56565656
+			if (code & 0x100) doubleTileRLEMode = true;
+
+			// How many tiles do we count?
+			tileReadAmount = code & 0xFF;
+			continue;
+		}
+
+		// If our count is 1, just read in a tile.  This is the default mode.
+		if (tileReadAmount == 1)
+		{
+			outputTiles[boardWriteIndex++] = code;
+			continue;
+		}
+
+		// If we reach here, we have an RLE scheme.
+		// See if we are in double repeat mode or not.
+		if (doubleTileRLEMode)
+		{
+			// Read in our first tile.
+			if (rleTiles[0] == -1)
+			{
+				rleTiles[0] = code;
+				continue;
+			}
+
+			// Read in our second tile.
+			rleTiles[1] = code;
+
+			// Add the tiles now.
+			for (int i = 0; i < tileReadAmount && boardWriteIndex < MAX_TILE_COUNT - 1; ++i)
+			{
+				outputTiles[boardWriteIndex++] = rleTiles[0];
+				outputTiles[boardWriteIndex++] = rleTiles[1];
+			}
+
+			// Clean up.
+			rleTiles[0] = rleTiles[1] = -1;
+			doubleTileRLEMode = false;
+			tileReadAmount = 1;
+		}
+		// Regular RLE scheme.
+		else
+		{
+			for (int i = 0; i < tileReadAmount && boardWriteIndex < MAX_TILE_COUNT; ++i)
+				outputTiles[boardWriteIndex++] = code;
+			tileReadAmount = 1;
+		}
+	}
+	return readPos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,24 +200,19 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 	// Grab file version.
 	CString fileVersion = fileData.readChars(8);
 
-	// Determine the level type.
-	int v = -1;
-	if (fileVersion == "GLEVNW01") v = 0;
-	else if (fileVersion == "GR-V1.03" || fileVersion == "GR-V1.02" || fileVersion == "GR-V1.01")
-		v = 1;
-	else if (fileVersion == "Z3-V1.04" || fileVersion == "Z3-V1.03")
-		v = 2;
-
 	// Save level details.
 	level->m_fileVersion = fileVersion;
 	level->m_fileName = levelPath;
-	level->m_modTime = fileSystem->getModTime(levelPath);
+	level->m_modTime = fileSystem->getModTime(levelName.string());
 	level->m_actualLevelName = level->m_levelName = levelName.string();
 
-	// Load!
-	if (v == 0) return loadNW(level, fileSystem, fileData);
-	else if (v == 1) return loadGraal(level, fileSystem, fileData);
-	else if (v == 2) return loadZelda(level, fileSystem, fileData);
+	// Load the level.
+	if (fileVersion == "GLEVNW01")
+		return loadNW(level, fileSystem, fileData);
+	if (fileVersion == "GR-V1.03" || fileVersion == "GR-V1.02" || fileVersion == "GR-V1.01" || fileVersion == "GR-V1.00")
+		return loadGraal(level, fileSystem, fileData);
+	if (fileVersion == "Z3-V1.04" || fileVersion == "Z3-V1.03")
+		return loadZelda(level, fileSystem, fileData);
 
 	// Bad level version.
 	return nullptr;
@@ -85,94 +222,18 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 
 LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString& fileData)
 {
-	int v = -1;
-	if (level->m_fileVersion == "Z3-V1.03") v = 3;
+	int version = -1;
+	if (level->m_fileVersion == "Z3-V1.03")
+		version = 3;
 	else if (level->m_fileVersion == "Z3-V1.04")
-		v = 4;
-	if (v == -1) return nullptr;
+		version = 4;
+
+	if (version == -1) return nullptr;
 
 	// Load tiles.
-	{
-		int bits = (v > 4 ? 13 : 12);
-		int read = 0;
-		unsigned int buffer = 0;
-		unsigned short code = 0;
-		short tiles[2] = { -1, -1 };
-		int boardIndex = 0;
-		int count = 1;
-		bool doubleMode = false;
-
-		// Read the tiles.
-		while (boardIndex < 64 * 64 && fileData.bytesLeft() != 0)
-		{
-			// Every control code/tile is either 12 or 13 bits.  WTF.
-			// Read in the bits.
-			while (read < bits)
-			{
-				buffer += ((unsigned char)fileData.readChar()) << read;
-				read += 8;
-			}
-
-			// Pull out a single 12/13 bit code from the buffer.
-			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
-			buffer >>= bits;
-			read -= bits;
-
-			// See if we have an RLE control code.
-			// Control codes determine how the RLE scheme works.
-			if (code & ((bits == 12) ? 0x800 : 0x1000))
-			{
-				// If the 0x100 bit is set, we are in a double repeat mode.
-				// {double 4}56 = 56565656
-				if (code & 0x100) doubleMode = true;
-
-				// How many tiles do we count?
-				count = code & 0xFF;
-				continue;
-			}
-
-			// If our count is 1, just read in a tile.  This is the default mode.
-			if (count == 1)
-			{
-				level->m_tiles[0][boardIndex++] = (short)code;
-				continue;
-			}
-
-			// If we reach here, we have an RLE scheme.
-			// See if we are in double repeat mode or not.
-			if (doubleMode)
-			{
-				// Read in our first tile.
-				if (tiles[0] == -1)
-				{
-					tiles[0] = (short)code;
-					continue;
-				}
-
-				// Read in our second tile.
-				tiles[1] = (short)code;
-
-				// Add the tiles now.
-				for (int i = 0; i < count && boardIndex < 64 * 64 - 1; ++i)
-				{
-					level->m_tiles[0][boardIndex++] = tiles[0];
-					level->m_tiles[0][boardIndex++] = tiles[1];
-				}
-
-				// Clean up.
-				tiles[0] = tiles[1] = -1;
-				doubleMode = false;
-				count = 1;
-			}
-			// Regular RLE scheme.
-			else
-			{
-				for (int i = 0; i < count && boardIndex < 64 * 64; ++i)
-					level->m_tiles[0][boardIndex++] = (short)code;
-				count = 1;
-			}
-		}
-	}
+	std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
+	auto read = readBinaryTiles(12, tiles, level->m_tiles[0]);
+	fileData.setRead(fileData.readPos() + read);
 
 	// Load the links.
 	{
@@ -218,7 +279,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 				continue;
 
 			// Only v1.04+ baddies have verses.
-			if (v > 3)
+			if (version > 3)
 			{
 				// Load the verses.
 				std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
@@ -251,100 +312,22 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString& fileData)
 {
 	// Grab file version.
-	int v = -1;
-	if (level->m_fileVersion == "GR-V1.00") v = 0;
+	int version = -1;
+	if (level->m_fileVersion == "GR-V1.00")
+		version = 0;
 	else if (level->m_fileVersion == "GR-V1.01")
-		v = 1;
+		version = 1;
 	else if (level->m_fileVersion == "GR-V1.02")
-		v = 2;
+		version = 2;
 	else if (level->m_fileVersion == "GR-V1.03")
-		v = 3;
-	if (v == -1) return nullptr;
+		version = 3;
 
-	auto* server = BabyDI::Get<Server>();
+	if (version == -1) return nullptr;
 
 	// Load tiles.
-	{
-		int bits = (v > 0 ? 13 : 12);
-		int read = 0;
-		unsigned int buffer = 0;
-		unsigned short code = 0;
-		short tiles[2] = { -1, -1 };
-		int boardIndex = 0;
-		int count = 1;
-		bool doubleMode = false;
-
-		// Read the tiles.
-		while (boardIndex < 64 * 64 && fileData.bytesLeft() != 0)
-		{
-			// Every control code/tile is either 12 or 13 bits.  WTF.
-			// Read in the bits.
-			while (read < bits)
-			{
-				buffer += ((unsigned char)fileData.readChar()) << read;
-				read += 8;
-			}
-
-			// Pull out a single 12/13 bit code from the buffer.
-			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
-			buffer >>= bits;
-			read -= bits;
-
-			// See if we have an RLE control code.
-			// Control codes determine how the RLE scheme works.
-			if (code & ((bits == 12) ? 0x800 : 0x1000))
-			{
-				// If the 0x100 bit is set, we are in a double repeat mode.
-				// {double 4}56 = 56565656
-				if (code & 0x100) doubleMode = true;
-
-				// How many tiles do we count?
-				count = code & 0xFF;
-				continue;
-			}
-
-			// If our count is 1, just read in a tile.  This is the default mode.
-			if (count == 1)
-			{
-				level->m_tiles[0][boardIndex++] = (short)code;
-				continue;
-			}
-
-			// If we reach here, we have an RLE scheme.
-			// See if we are in double repeat mode or not.
-			if (doubleMode)
-			{
-				// Read in our first tile.
-				if (tiles[0] == -1)
-				{
-					tiles[0] = (short)code;
-					continue;
-				}
-
-				// Read in our second tile.
-				tiles[1] = (short)code;
-
-				// Add the tiles now.
-				for (int i = 0; i < count && boardIndex < 64 * 64 - 1; ++i)
-				{
-					level->m_tiles[0][boardIndex++] = tiles[0];
-					level->m_tiles[0][boardIndex++] = tiles[1];
-				}
-
-				// Clean up.
-				tiles[0] = tiles[1] = -1;
-				doubleMode = false;
-				count = 1;
-			}
-			// Regular RLE scheme.
-			else
-			{
-				for (int i = 0; i < count && boardIndex < 64 * 64; ++i)
-					level->m_tiles[0][boardIndex++] = (short)code;
-				count = 1;
-			}
-		}
-	}
+	std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
+	auto read = readBinaryTiles(version > 1 ? 13 : 12, tiles, level->m_tiles[0]);
+	fileData.setRead(fileData.readPos() + read);
 
 	// Load the links.
 	{
@@ -400,6 +383,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 
 	// Load NPCs.
 	{
+		auto* server = BabyDI::Get<Server>();
 		while (fileData.bytesLeft())
 		{
 			CString line = fileData.readString("\n");
@@ -411,12 +395,12 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			CString code = line.readString("").replaceAll("\xa7", "\n");
 
 			auto npc = server->addNPC(image, code, x, y, level, NPCType::LEVELNPC, false);
-			level->m_npcs.insert(npc->id);
+			level->m_npcs.push_back(npc->id);
 		}
 	}
 
 	// Load chests.
-	if (v > 0)
+	if (version > 0)
 	{
 		while (fileData.bytesLeft())
 		{
@@ -565,7 +549,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
 			// Add the new NPC.
 			auto npc = server->addNPC(image, code, x, y, level, NPCType::LEVELNPC, false);
-			level->m_npcs.insert(npc->id);
+			level->m_npcs.push_back(npc->id);
 		}
 		else if (curLine[0] == "SIGN")
 		{

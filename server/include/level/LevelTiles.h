@@ -14,16 +14,16 @@ namespace preagonal
 class LevelTiles
 {
 public:
-	LevelTiles(short fillTile = 0x00)
+	LevelTiles(uint16_t fillTile = 0x00)
 	{
 		memset(m_tiles, fillTile, sizeof(m_tiles));
 	}
 
-	short& operator[](uint32_t index) { return m_tiles[index]; }
+	uint16_t& operator[](size_t index) { return m_tiles[index]; }
 	explicit operator char* () const { return (char*)m_tiles; };
 
 private:
-	short m_tiles[4096];
+	uint16_t m_tiles[4096];
 };
 
 ///////////////////////////////////////////////////////////////////////////////

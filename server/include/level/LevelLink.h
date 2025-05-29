@@ -48,6 +48,8 @@ private:
 	int m_y = 0;
 	int m_width = 0;
 	int m_height = 0;
+	bool m_constantX = false;
+	bool m_constantY = false;
 };
 
 using LevelLinkPtr = std::shared_ptr<LevelLink>;

@@ -21,6 +21,7 @@ LevelLink::LevelLink(const std::vector<CString>& pLink)
 
 CString LevelLink::getLinkStr() const
 {
+	// TODO(Nalin): BAD!!!
 	static char retVal[500];
 	sprintf(retVal, "%s %i %i %i %i %s %s", m_newLevel.text(), m_x, m_y, m_width, m_height, m_newX.text(), m_newY.text());
 	return retVal;
@@ -45,6 +46,20 @@ void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
 	m_height = strtoint(pLink[4 + offset]);
 	m_newX = pLink[5 + offset];
 	m_newY = pLink[6 + offset];
+
+	// TODO: We need better handling of ancient level links that don't use math.
+
+	if (m_newX == "-1")
+	{
+		m_constantX = true;
+		m_newX = "playerx";
+	}
+
+	if (m_newY == "-1")
+	{
+		m_constantY = true;
+		m_newY = "playery";
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
