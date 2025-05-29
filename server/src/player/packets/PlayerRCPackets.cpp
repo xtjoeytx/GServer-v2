@@ -1003,7 +1003,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 				log::print(log::rc, "{} updated all the levels", account.name);
 				int count = 0;
 				auto& levels = m_server->getLevelList();
-				for (auto& level : levels)
+				for (auto& [name, level] : levels)
 				{
 					level->reload();
 					++count;

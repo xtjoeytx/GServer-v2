@@ -36,27 +36,57 @@ concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringVariant<
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// A hash function for strings that can be used with heterogenous lookups.
+// A hash function for strings that can be used with heterogeneous lookups.
 struct string_hash
 {
 	using hash_type = std::hash<std::string_view>;
 	using is_transparent = void;
 
-	size_t operator()(const char* str) const noexcept
+	[[nodiscard]] size_t operator()(const char* str) const noexcept
 	{
 		return hash_type{}(str);
 	}
-	size_t operator()(const std::string_view& str) const noexcept
+	[[nodiscard]] size_t operator()(const std::string_view& str) const noexcept
 	{
 		return hash_type{}(str);
 	}
-	size_t operator()(const std::string& str) const noexcept
+	[[nodiscard]] size_t operator()(const std::string& str) const noexcept
 	{
 		return hash_type{}(str);
 	}
-	size_t operator()(const CString& str) const noexcept
+	[[nodiscard]] size_t operator()(const CString& str) const noexcept
 	{
 		return hash_type{}(str.toStringView());
+	}
+	[[nodiscard]] size_t operator()(const size_t& hash) const noexcept
+	{
+		return hash;
+	}
+};
+
+// An comparator function for strings that can be used with heterogeneous lookups.
+struct string_hash_equal
+{
+	using is_transparent = void;
+	[[nodiscard]] bool operator()(const char* lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string_view& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const CString& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const size_t& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
 	}
 };
 
@@ -516,7 +546,7 @@ std::string toUpper(StringViewVariant auto str)
 	ret.reserve(str.size());
 
 	auto r = std::transform([](const Elem& c) { return static_cast<Elem>(std::toupper(static_cast<int>(c))); });
-	std::ranges::copy(ret, r, std::back_inserter(ret));
+	std::ranges::copy(str | r, std::back_inserter(ret));
 	return ret;
 }
 
@@ -529,8 +559,8 @@ std::string toLower(StringViewVariant auto str)
 	std::basic_string<Elem, Traits> ret{};
 	ret.reserve(str.size());
 
-	auto r = std::transform([](const Elem& c) { return static_cast<Elem>(std::tolower(static_cast<int>(c))); });
-	std::ranges::copy(ret, r, std::back_inserter(ret));
+	auto r = std::views::transform([](const Elem& c) { return static_cast<Elem>(std::tolower(static_cast<int>(c))); });
+	std::ranges::copy(str | r, std::back_inserter(ret));
 	return ret;
 }
 

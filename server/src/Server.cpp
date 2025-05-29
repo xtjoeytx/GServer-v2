@@ -293,7 +293,7 @@ bool Server::doTimedEvents()
 
 	// Do level events.
 	{
-		for (auto& level: m_levelList)
+		for (auto& [name, level]: m_levelList)
 		{
 			assert(level);
 			level->doTimedEvents();
@@ -809,13 +809,13 @@ void Server::loadMaps(bool print)
 	}
 
 	// Update all map <--> level relationships
-	for (const auto& level: m_levelList)
+	for (const auto& [levelname, level]: m_levelList)
 	{
 		bool found = false;
 		for (const auto& map: m_mapList)
 		{
 			int mx, my;
-			if (map->isLevelOnMap(level->getLevelName().toLower().text(), mx, my))
+			if (map->isLevelOnMap(levelname, mx, my))
 			{
 				level->setMap(map, mx, my);
 				found = true;

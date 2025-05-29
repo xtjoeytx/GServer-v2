@@ -355,11 +355,8 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 
 	// Find Appropriate Level by Name
 	CString levelName = pLevelName.toLower();
-	for (auto& it: levelList)
-	{
-		if (it->getLevelName().toLower() == levelName)
-			return it;
-	}
+	if (auto it = levelList.find(levelName.toStringView()); it != levelList.end())
+		return it->second;
 
 	if (loadAbsolute)
 	{
@@ -391,7 +388,7 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 	}
 
 	// Return Level
-	levelList.push_back(level);
+	levelList.insert(std::make_pair(levelName.toString(), level));
 	return level;
 }
 
@@ -407,7 +404,7 @@ std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& lev
 	level->setLevelName(levelName);
 
 	// Return Level
-	levelList.push_back(level);
+	levelList.insert(std::make_pair(string::toLower(levelName), level));
 	return level;
 }
 

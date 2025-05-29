@@ -302,6 +302,7 @@ public:
 public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
 	FlagContainer Flags;
+	GameVariableStore Variables;
 
 private:
 	bool doTimedEvents();
@@ -327,7 +328,7 @@ private:
 	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_INIT };
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
-	std::vector<std::shared_ptr<Level>> m_levelList;
+	std::unordered_map<std::string, std::shared_ptr<Level>, string::string_hash, string::string_hash_equal> m_levelList;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;

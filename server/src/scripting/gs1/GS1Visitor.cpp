@@ -49,7 +49,7 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 
 static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource source)
 {
-	static GameVariableStore testStore;
+	static GameVariableStore invalidStore;
 
 	auto* server = BabyDI::Get<Server>();
 	switch (source.second)
@@ -63,12 +63,15 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource sour
 				return &npc->scripting.variables;
 			break;
 		case ScriptObjectSourceType::LEVEL:
-			// TODO(Nalin): Level name is hashed, figure this out.
-			//throw std::exception("GS1Visitor does not support level variables yet.");
-			return &testStore;
+		{
+			auto& levelList = server->getLevelList();
+			if (auto it = levelList.find(source.first); it != levelList.end())
+				return &it->second->variables;
+			log::printLine(log::script, "Could not find level for source.");
+			return &invalidStore;
+		}
 		case ScriptObjectSourceType::SERVER:
-			//throw std::exception("GS1Visitor does not support server variables yet.");
-			return &testStore;
+			return &server->Variables;
 	}
 	return nullptr;
 }
@@ -153,9 +156,21 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			store = m_serverStore;
 			break;
 		case GS1Parser::STORAGE_LEVEL:
+		{
 			auto* server = BabyDI::Get<Server>();
-			//if (auto level = m_originalSource.first.first)
-				break;
+			auto pair = getPlayerOrNPCFromSource(m_originalSource);
+			if (!pair.has_value())
+				return nullptr;
+
+			const auto picker = visit_functions
+			{
+				[&server](PlayerPtr& player) -> LevelPtr { return server->getLevel(player->account.level); },
+				[&server](NPCPtr& npc) -> LevelPtr { return npc->level.lock(); }
+			};
+
+			auto level = std::visit(picker, pair.value());
+			return &level->variables;
+		}
 	}
 	return store;
 }
