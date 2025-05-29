@@ -85,7 +85,7 @@ public:
 			}
 
 			// Erase the IDs.
-			if (it != m_freeIds.rbegin())
+			if (it != m_freeIds.rend())
 			{
 				m_freeIds.erase(*(++it).base());
 			}

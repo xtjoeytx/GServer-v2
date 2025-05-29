@@ -394,7 +394,7 @@ bool Server::onRecv()
 		return true;
 
 	// Create the new player.
-	auto newPlayer = std::make_shared<PlayerLogin>(newSock, 0);
+	auto newPlayer = std::make_shared<PlayerLogin>(newSock, USHRT_MAX);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))

@@ -76,6 +76,9 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 		return HandlePacketResult::Failed;
 	}
 
+	// Fix the type.
+	player->setType(m_type);
+
 	// Update the new player's current packet state to match ours.
 	player->PacketCount = 1;
 	player->setReceivedBuffer(m_recvBuffer);
