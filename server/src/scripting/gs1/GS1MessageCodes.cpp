@@ -159,7 +159,7 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageC
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// #1 | #1(index)
+// #1 | #1(index)  [Read / Write]
 // Sword image filename of the player.
 GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -169,7 +169,7 @@ GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #2 | #2(index)
+// #2 | #2(index)  [Read / Write]
 // Shield image filename of the player.
 GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -179,7 +179,7 @@ GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #3 | #3(index)
+// #3 | #3(index)  [Read / Write]
 // Head image filename of the player.
 GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -191,7 +191,7 @@ GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #4 is unused.
 
-// #5 | #5(index)
+// #5 | #5(index)  [Read / Write]
 // Horse image filename of the player.
 GS1ScriptValue mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -201,7 +201,7 @@ GS1ScriptValue mc_5(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #6 | #6(index)
+// #6 | #6(index)  [Read]
 // NPC image filename of the carried NPC.
 GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -231,7 +231,7 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::visit(picker, result.value());
 }
 
-// #7 | #7(index)
+// #7 | #7(index)  [Read / Write]
 // Bow image filename of the player.
 GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -241,7 +241,7 @@ GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #8 | #8(index)
+// #8 | #8(index)  [Read / Write]
 // Body image filename of the player.
 GS1ScriptValue mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -251,7 +251,7 @@ GS1ScriptValue mc_8(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #a | #a(index)
+// #a | #a(index)  [Read]
 // Account name of the player.
 GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -274,7 +274,7 @@ GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std
 	return "#b"s;
 }
 
-// #c | #c(index)
+// #c | #c(index)  [Read / Write]
 // Current chat text of the player.
 GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -304,7 +304,7 @@ GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std
 	return str.substr(startIndex, length);
 }
 
-// #F
+// #F  [Read]
 // The level filename of the current player. (#L will return the NPC level filename)
 GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -326,7 +326,7 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::visit(picker, result.value());
 }
 
-// #f
+// #f  [Read]
 // Image filename of the NPC.
 GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -337,7 +337,7 @@ GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::string{};
 }
 
-// #g | #g(index)
+// #g | #g(index)  [Read]
 // Guild name of the player.
 GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -351,7 +351,7 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::string{};
 }
 
-// #G | #G(index)
+// #G | #G(index)  [Read]
 // Upgrade status of the player.  (???)
 // player.upgradestatus #G(index)
 GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -396,7 +396,7 @@ GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std
 	throw std::exception("Message Code #k is registered as a clientside message code");
 }
 
-// #L
+// #L  [Read]
 // The current level filename of the NPC (use #F for the player).
 GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -410,7 +410,7 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::string{};
 }
 
-// #m | #m(index)
+// #m | #m(index)  [Read / Write]
 // The animation of the player.
 GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -420,7 +420,7 @@ GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #n | #n(index)
+// #n | #n(index)  [Read / Write]
 // The nickname of the player.
 GS1ScriptValue mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -430,7 +430,7 @@ GS1ScriptValue mc_n(GS1Visitor* visitor, std::string_view messageCode, const std
 	});
 }
 
-// #N | #N(index)
+// #N | #N(index)  [Read]
 // The database NPC name.
 GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -444,7 +444,7 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::string{};
 }
 
-// #p(index)
+// #p(index)  [Read / Write]
 // The action parameter of the specified index.
 GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -460,7 +460,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::string{};
 }
 
-// #Q(guild_name, account_name)
+// #Q(guild_name, account_name)  [Read]
 // The nickname for a player in a guild.
 GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -491,7 +491,7 @@ GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std
 	return visitor->getGameValueAs<std::string>(*arguments[0]);
 }
 
-// #t(index)
+// #t(index)  [Read / Write]
 // The token at the specified index as created via tokenize.
 GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -528,7 +528,7 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::format("{}", number);
 }
 
-// #W | #W(index)
+// #W | #W(index)  [Read]
 // Image filename of a player's weapon.
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -536,7 +536,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 	throw std::exception("Message Code #W is registered as a clientside message code");
 }
 
-// #w | #w(index)
+// #w | #w(index)  [Read]
 // The name of the player's weapon.
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -546,7 +546,7 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 
 //----------------------------
 
-// #C0 - #C4 | #C0(index) - #C4(index)
+// #C0 - #C4 | #C0(index) - #C4(index)  [Read / Write]
 // #C0 - skin color
 // #C1 - coat color
 // #C2 - sleeves color
@@ -560,7 +560,7 @@ GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view message
 	});
 }
 
-// #P1 - #P30 | #P1(index) - #P30(index)
+// #P1 - #P30 | #P1(index) - #P30(index)  [Read / Write]
 // Gani attributes.
 GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {

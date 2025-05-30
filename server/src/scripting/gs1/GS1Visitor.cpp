@@ -83,18 +83,6 @@ static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
 	return {};
 }
 
-static GameVariable* getGameVariableFromVariant(GameVariableVariant& variant)
-{
-	if (auto* byVal = std::get_if<GameVariable>(&variant); byVal != nullptr)
-		return byVal;
-	else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&variant); byPtr != nullptr)
-	{
-		if (auto lock = byPtr->lock(); lock != nullptr)
-			return lock.get();
-	}
-	return nullptr;
-}
-
 static std::vector<std::any> visitChildrenAndCollect(GS1Visitor* visitor, antlr4::tree::ParseTree* node)
 {
 	if (node == nullptr) return {};
@@ -113,6 +101,52 @@ static std::vector<std::any> visitChildrenAndCollect(GS1Visitor* visitor, antlr4
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Public member functions.
+
+GameVariable* GS1Visitor::getGameVariableFromGS1ScriptValue(GS1ScriptValue& value)
+{
+	if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
+	{
+		auto* gameVariable = getGameVariableFromVariant(gs1GameVariable->first);
+		if (gameVariable != nullptr)
+			return gameVariable;
+	}
+	return nullptr;
+}
+
+GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& variant)
+{
+	if (auto* byVal = std::get_if<GameVariable>(&variant); byVal != nullptr)
+		return byVal;
+	else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&variant); byPtr != nullptr)
+	{
+		if (auto lock = byPtr->lock(); lock != nullptr)
+			return lock.get();
+	}
+	return nullptr;
+}
+
+GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
+{
+	// If we have a specific storage type, try to get the store for it.
+	if (type.has_value())
+	{
+		if (auto* store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
+			return store->get_or_stub(identifier);
+	}
+	// Otherwise, try built-in variables.  Built-in variables will never have a storage type.
+	else if (builtInStore != nullptr)
+		return builtInStore->get(identifier);
+
+	// No store found?  Get the original source store.
+	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
+		return store->get_or_stub(identifier);
+
+	// Still nothing?  Just return empty.
+	return {};
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Member functions.
 
 std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
@@ -120,6 +154,18 @@ std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
 	if (node == nullptr)
 		return {};
 	return visit(node);
+}
+
+std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type)
+{
+	auto it = m_currentSource.rbegin();
+	while (it != m_currentSource.rend())
+	{
+		if (it->second == type)
+			return *it;
+		++it;
+	}
+	return std::nullopt;
 }
 
 GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectSourceType type)
@@ -173,26 +219,6 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 		}
 	}
 	return store;
-}
-
-GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
-{
-	// If we have a specific storage type, try to get the store for it.
-	if (type.has_value())
-	{
-		if (auto* store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
-			return store->get_or_stub(identifier);
-	}
-	// Otherwise, try built-in variables.  Built-in variables will never have a storage type.
-	else if (builtInStore != nullptr)
-		return builtInStore->get(identifier);
-
-	// No store found?  Get the original source store.
-	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
-		return store->get_or_stub(identifier);
-
-	// Still nothing?  Just return empty.
-	return {};
 }
 
 GS1GameVariable GS1Visitor::getGameVariableFromAny(std::any& value)
@@ -480,7 +506,8 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	}
 
 	// Get the game variable store for the identifier.
-	auto variable = getGameVariableFromStorage(*identifier, storage.value_or(GS1Parser::STORAGE_THIS));
+	// If there is no storage type, it gets set on the original source NPC.
+	auto variable = getGameVariableFromStorage(*identifier, storage.value_or(GS1Parser::STORAGE_THISO));
 	auto* gameVariable = getGameVariableFromVariant(variable);
 	if (gameVariable != nullptr)
 		return std::make_any<GS1ScriptValue>(std::make_pair(variable, index));

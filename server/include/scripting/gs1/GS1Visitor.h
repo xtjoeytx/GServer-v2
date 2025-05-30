@@ -32,6 +32,7 @@ public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
 	[[inline]] const ScriptObjectSource& getCurrentSource() const;
 	[[inline]] const ScriptEvent& getEvent() const;
+	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type);
 
 public:
 	template<ValidGameValue T>
@@ -39,6 +40,10 @@ public:
 
 	template<ValidGameValue T>
 	[[inline]] T getReadOnlyGameValueFromAnyAs(const std::any& value);
+
+	GameVariable* getGameVariableFromGS1ScriptValue(GS1ScriptValue& value);
+	GameVariable* getGameVariableFromVariant(GameVariableVariant& variant);
+	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 protected:
 	GS1Parser* m_parser = nullptr;
@@ -53,7 +58,6 @@ protected:
 protected:
 	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectSourceType type);
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
-	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);

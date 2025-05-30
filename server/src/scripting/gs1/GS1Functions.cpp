@@ -483,14 +483,30 @@ GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, con
 // Returns the index of the first occurrence of string in the string list, or -1 if not found.
 GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function lindexof not implemented");
+	if (arguments.size() != 2)
+		throw std::exception("Built-in function lindexof requires exactly two arguments");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto listItems = string::splitHard(list, ","sv);
+	for (auto i = 0; i < listItems.size(); ++i)
+	{
+		if (string::trim(listItems[i]) == string::trim(str))
+			return static_cast<double>(i);
+	}
+
+	return -1.0;
 }
 
 // sarraylen(list)
 // Returns the length of the string list.
 GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function sarraylen not implemented");
+	if (arguments.size() != 1)
+		throw std::exception("Built-in function sarraylen requires exactly one argument");
+
+	auto list = visitor->getGameValueAs<std::string>(*arguments[0]);
+	return static_cast<double>(std::ranges::count(list, ',') + 1);
 }
 
 //----------------------------
@@ -521,7 +537,32 @@ GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode,
 // Returns the direction to look in the relative position specified by dx and dy.
 GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getdir not implemented");
+	if (auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
+	{
+		if (arguments.size() != 2)
+			throw std::exception("Built-in function getdir requires exactly two arguments");
+
+		auto dx = visitor->getGameValueAs<double>(*arguments[0]);
+		auto dy = visitor->getGameValueAs<double>(*arguments[1]);
+		auto ix = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dx))));
+		auto iy = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dy))));
+
+		// Up
+		if (ix == 0 && iy == -1)
+			return 0.0;
+		// Left
+		if (ix == -1 && iy == 0)
+			return 1.0;
+		// Down
+		if (ix == 0 && iy == 1)
+			return 2.0;
+		// Right
+		if (ix == 1 && iy == 0)
+			return 3.0;
+	}
+
+	// Default to looking down.
+	return 2.0;
 }
 
 GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -534,14 +575,42 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 	throw std::exception("Built-in function getnearestplayers not implemented");
 }
 
+// getnpc(name)
+// Returns an NPC object that links to the NPC, or a false value if not found.
 GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getnpc not implemented");
+	if (arguments.size() != 1)
+		throw std::exception("Built-in function getnpc requires exactly one argument");
+
+	auto npcName = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto* server = BabyDI::Get<Server>();
+	auto& npcList = server->getNPCList();
+	for (auto& [id, npc] : npcList)
+	{
+		if (npc->name == npcName)
+			return ScriptObjectSource{ id, ScriptObjectSourceType::NPC };
+	}
+
+	return 0.0;
 }
 
+// getplayer(account)
+// Returns a Player object that links to the player with the specified account name, or a false value if not found.
 GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getplayer not implemented");
+	if (arguments.size() != 1)
+		throw std::exception("Built-in function getplayer requires exactly one argument");
+
+	auto playerName = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto* server = BabyDI::Get<Server>();
+	if (auto player = server->getPlayer(playerName, PLTYPE_ANYPLAYER); player != nullptr)
+	{
+		return ScriptObjectSource{ player->getId(), ScriptObjectSourceType::PLAYER };
+	}
+
+	return 0.0;
 }
 
 // getz(x, y)
@@ -560,7 +629,19 @@ GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view messageCod
 // Checks if the player has the specified weapon.
 GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function hasweapon not implemented");
+	if (arguments.size() != 1)
+		throw std::exception("Built-in function hasweapon requires exactly one argument");
+
+	auto weaponName = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
+	if (player.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto playerObject = server->getPlayer(player.value().first); playerObject != nullptr)
+			return playerObject->account.hasWeapon(weaponName) ? 1.0 : 0.0;
+	}
+
+	return 0.0;
 }
 
 // imgheight(image)

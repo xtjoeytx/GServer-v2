@@ -94,7 +94,7 @@ constexpr std::array<std::string_view, 199> builtInCommands = {
     "playlooped",
     "putbomb",
     "putcomp",
-    "putexplosion",
+    "putexplosion ",
     "putexplosion2",
     "puthorse",
     "putleaps",
@@ -253,7 +253,7 @@ virtual std::unique_ptr<antlr4::Token> nextToken() override
 
 void emitIdentifier(size_t type, std::string_view name)
 {
-	m_pendingTokens.emplace_back(_factory->create({ this, _input }, type, _text, channel, tokenStartCharIndex + name.length(), tokenStartCharIndex + name.length(), tokenStartLine, tokenStartCharPositionInLine + name.length()));
+	m_pendingTokens.emplace_back(_factory->create({ this, _input }, type, _text, antlr4::Lexer::HIDDEN, tokenStartCharIndex + name.length(), tokenStartCharIndex + name.length(), tokenStartLine, tokenStartCharPositionInLine + name.length()));
 }
 
 bool m_pickQueuedTokens = false;
