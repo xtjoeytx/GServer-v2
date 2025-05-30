@@ -8,6 +8,7 @@
 #include "level/Level.h"
 #include "level/Map.h"
 #include "npcserver/NPCServer.h"
+#include <scripting/ScriptContainers.h>
 #include "scripting/SourceCode.h"
 #include "utilities/Log.h"
 
@@ -17,10 +18,135 @@ namespace preagonal
 ////////////////////////////////////////////////////////////////////////////////
 
 static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
-static constexpr std::array<uint8_t, 30> attrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
 static std::string_view toWeaponName(std::string_view code);
 static std::string performClientSideJoinHack(std::string_view code, FileSystem* fs);
+
+template<typename T>
+concept ValidGameValueCallable = requires(T t)
+{
+	{ t() } -> std::convertible_to<GameValue>;
+};
+
+template <typename T>
+void copyToArrayAs(const auto& vec, auto& propvalue)
+{
+	size_t count = std::min(vec.size(), propvalue.size());
+	auto it = std::begin(vec);
+	for (size_t i = 0; i < count; ++i, ++it)
+	{
+		propvalue[i] = static_cast<T>(*it);
+	}
+}
+
+static GameVariable::func_get prop_get(ValidGameValueCallable auto getter)
+{
+	return [getter](std::string_view identifier) -> GameValue
+	{
+		return GameValue{ getter() };
+	};
+}
+
+static GameVariable::func_get prop_get(auto& value)
+{
+	using V = std::remove_cvref_t<decltype(value)>;
+	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V>,
+				  "NPC prop_get called with an unsupported type. Supported types are integral, floats, string, or ranges.");
+
+	if constexpr (std::integral<V> || std::floating_point<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ static_cast<double>(value) };
+		};
+	}
+	else if constexpr (string::StringVariant<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ std::string{ value } };
+		};
+	}
+	else if constexpr (std::ranges::forward_range<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ value | std::views::transform([](const auto& v) { return static_cast<double>(v); }) | std::ranges::to<std::vector<double>>() };
+		};
+	}
+
+	throw std::exception("NPC prop_get called with an unsupported type.");
+}
+
+static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
+{
+	return [who, prop, setter](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+	{
+		setter(value, index);
+		if (prop.has_value() && who != nullptr)
+		{
+			if (prop.value() != NPCProp::SAVE0)
+				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+			else if (index.has_value() && index.value() <= 9)
+			{
+				auto propIndex = PROPID(NPCProp::SAVE0) + index.value();
+				who->modTime[propIndex] = currentTimeInSeconds();
+			}
+		}
+	};
+}
+
+static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, auto& propvalue)
+{
+	using V = std::remove_cvref_t<decltype(propvalue)>;
+	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::random_access_range<V>,
+		"NPC prop_get called with an unsupported type. Supported types are integral, floats, string, or ranges.");
+
+	if constexpr (std::integral<V> || std::floating_point<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			propvalue = static_cast<V>(value.get<double>().value_or(0.0));
+			if (prop.has_value())
+				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+		};
+	}
+	else if constexpr (string::StringVariant<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			propvalue = value.get<std::string>().value_or({});
+			if (prop.has_value())
+				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+		};
+	}
+	else if constexpr (std::ranges::random_access_range<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			size_t propvalue_size = std::ranges::size(propvalue);
+			if (propvalue_size > 0)
+			{
+				using value_type = std::remove_cvref_t<decltype(propvalue[0])>;
+				if (index.has_value() && index.value() < propvalue_size)
+				{
+					propvalue[index.value()] = static_cast<value_type>(value.get<double>().value_or(0.0));
+					if (prop.has_value())
+						who->modTime[PROPID(prop.value()) + index.value()] = currentTimeInSeconds();
+				}
+				else if (!index.has_value())
+				{
+					auto vec = value.get<std::vector<double>>().value();
+					copyToArrayAs<value_type>(vec, propvalue);
+					if (prop.has_value())
+						who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+				}
+			}
+		};
+	}
+
+	throw std::exception("NPC prop_set called with an unsupported type.");
+}
 
 //----------------------------
 
@@ -36,6 +162,38 @@ NPC::NPC(NPCID id, NPCType type)
 	std::ranges::for_each(props, [this, now = currentTimeInSeconds()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
+
+	// Create variable store links.
+	scripting.variables.add(GameVariable{ "id", prop_get([this]() { return static_cast<double>(this->id); }), {} });
+	scripting.variables.add(GameVariable{ "width", prop_get([this]() { return static_cast<double>(imageSize.width()); }), {} });
+	scripting.variables.add(GameVariable{ "height", prop_get([this]() { return static_cast<double>(imageSize.height()); }), {} });
+	scripting.variables.add(GameVariable{ "rupees", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
+	scripting.variables.add(GameVariable{ "gralats", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
+	scripting.variables.add(GameVariable{ "bombs", prop_get(character.bombs), prop_set(this, NPCProp::BOMBS, character.bombs) });
+	scripting.variables.add(GameVariable{ "darts", prop_get(character.arrows), prop_set(this, NPCProp::ARROWS, character.arrows) });
+	scripting.variables.add(GameVariable{ "glovepower", prop_get(character.glovePower), prop_set(this, NPCProp::GLOVEPOWER, character.glovePower) });
+	scripting.variables.add(GameVariable{ "swordpower", prop_get(character.swordPower), prop_set(this, NPCProp::SWORDIMAGE, character.swordPower) });
+	scripting.variables.add(GameVariable{ "shieldpower", prop_get(character.shieldPower), prop_set(this, NPCProp::SHIELDIMAGE, character.shieldPower) });
+	scripting.variables.add(GameVariable{ "sprite", prop_get(character.sprite), prop_set(this, NPCProp::SPRITE, character.sprite) });
+	scripting.variables.add(GameVariable{ "ap", prop_get(character.ap), prop_set(this, NPCProp::ALIGNMENT, character.ap) });
+	scripting.variables.add(GameVariable{ "hurtdx", prop_get(hurtX), prop_set(this, NPCProp::HURTDXDY, hurtX) });
+	scripting.variables.add(GameVariable{ "hurtdy", prop_get(hurtY), prop_set(this, NPCProp::HURTDXDY, hurtY) });
+	scripting.variables.add(GameVariable{ "save", prop_get(saves), prop_set(this, NPCProp::SAVE0, saves) });
+	scripting.variables.add(GameVariable{ "x",
+		prop_get([this]() { return character.pixelX / 16.0; }),
+		prop_set(this, NPCProp::X2, [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ "y",
+		prop_get([this]() { return character.pixelY / 16.0; }),
+		prop_set(this, NPCProp::Y2, [this](const GameValue& value, std::optional<size_t>) { character.pixelY = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ "z",
+		prop_get([this]() { return character.pixelZ / 16.0; }),
+		prop_set(this, NPCProp::Z2, [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ "timeout",
+		prop_get([this]() { return timeout.count() / 1000.0; }),
+		prop_set(this, std::nullopt, [this](const GameValue& value, std::optional<size_t>) { timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000)); }) });
+	scripting.variables.add(GameVariable{ "dir",
+		prop_get([this]() { return static_cast<double>(character.sprite % 4); }),
+		prop_set(this, NPCProp::SPRITE, [this](const GameValue& value, std::optional<size_t>) { character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0)) % 4; }) });
 }
 
 //----------------------------
@@ -96,7 +254,6 @@ CString NPC::getModifiedPropsPacket(int clientVersion) const
 	}
 	return result;
 }
-
 
 CString NPC::getAllPropsPacket(time_t newTime, int clientVersion) const
 {
@@ -359,7 +516,7 @@ CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
 		case NPCProp::GATTRIB29:
 		case NPCProp::GATTRIB30:
 		{
-			auto index = std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(pId)));
+			auto index = std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(pId)));
 			return CString() >> (char)character.ganiAttributes[index].length() << character.ganiAttributes[index];
 		}
 	}
@@ -716,7 +873,7 @@ CString NPC::setPropsFromPacket(CString& pProps, int clientVersion, bool pForwar
 			case NPCProp::GATTRIB29:
 			case NPCProp::GATTRIB30:
 			{
-				auto index = std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(propId)));
+				auto index = std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(propId)));
 				character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
 				break;
 			}
@@ -888,7 +1045,7 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::GATTRIB28:
 		case NPCProp::GATTRIB29:
 		case NPCProp::GATTRIB30:
-			return &character.ganiAttributes[std::ranges::distance(attrPackets.begin(), std::ranges::find(attrPackets, PROPID(prop)))];
+			return &character.ganiAttributes[std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(prop)))];
 	};
 
 	return &prevent_access_int; // Should never be reached, but prevents compiler warnings.

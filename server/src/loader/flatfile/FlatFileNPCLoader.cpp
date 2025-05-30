@@ -261,7 +261,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "TIMEOUT")
 		{
-			npc->timeout = strtoint(curLine.readString("")) * 20;
+			npc->timeout = std::chrono::milliseconds(strtoint(curLine.readString("")) * 20);
 		}
 		else if (curCommand == "FLAG")
 		{
@@ -367,7 +367,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "COLORS " << CString((int)npc->character.colors[0]) << "," << CString((int)npc->character.colors[1]) << "," << CString((int)npc->character.colors[2]) << "," << CString((int)npc->character.colors[3]) << "," << CString((int)npc->character.colors[4]) << NL;
 	fileData << "SPRITE " << CString(npc->character.sprite) << NL;
 	fileData << "AP " << CString(npc->character.ap) << NL;
-	//fileData << "TIMEOUT " << CString(m_timeout / 20) << NL;
+	fileData << "TIMEOUT " << CString(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
 	fileData << "LAYER 0" << NL;
 	fileData << "SHAPETYPE 0" << NL;
 	fileData << "SHAPE " << CString(npc->imageSize.width()) << " " << CString(npc->imageSize.height()) << NL;

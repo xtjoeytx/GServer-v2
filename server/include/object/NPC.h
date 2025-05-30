@@ -16,6 +16,8 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+inline constexpr std::array<uint8_t, 30> npcGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
+
 class Server;
 class Level;
 class Player;
@@ -205,7 +207,7 @@ public:
 	uint8_t blockFlags = 0;
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;
-	int timeout = 0;
+	std::chrono::milliseconds timeout = 0ms;
 	Character character;
 	std::array<uint8_t, 10> saves;
 	std::array<int64_t, NPCPROP_COUNT> modTime;

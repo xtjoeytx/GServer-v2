@@ -230,7 +230,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 struct GameVariable
 {
 	using func_get = std::function<GameValue(std::string_view)>;
-	using func_set = std::function<void(GameVariable&, const GameValue&)>;
+	using func_set = std::function<void(GameVariable&, const GameValue&, std::optional<size_t>)>;
 
 	GameVariable() = default;
 	GameVariable(const std::string& name, GameValue&& value)
@@ -379,19 +379,17 @@ inline const T* GameVariable::get_unsafe(std::optional<size_t> index) const
 
 inline GameVariable& GameVariable::set(ValidGameValue auto&& value, std::optional<size_t> index)
 {
-	auto& gvalue = game_value();
-	gvalue.set(std::forward<decltype(value)>(value), index);
+	m_value.set(std::forward<decltype(value)>(value), index);
 	if (m_setter) [[unlikely]]
-		m_setter(*this, gvalue);
+		m_setter(*this, m_value, index);
 	return *this;
 }
 
 inline GameVariable& GameVariable::assign(ValidGameValue auto&& value, std::optional<size_t> index)
 {
-	auto& gvalue = game_value();
-	gvalue.assign(std::forward<decltype(value)>(value), index);
+	m_value.assign(std::forward<decltype(value)>(value), index);
 	if (m_setter) [[unlikely]]
-		m_setter(*this, gvalue);
+		m_setter(*this, m_value, index);
 	return *this;
 }
 
@@ -411,6 +409,11 @@ public:
 	/// @param value The value to assign to the new game variable (moved).
 	/// @return A weak pointer to the newly added GameVariable.
 	virtual std::weak_ptr<GameVariable> add(std::string_view name, GameValue&& value) noexcept;
+
+	/// @brief Adds a new game variable.
+	/// @param variable The variable to add to the store (moved).
+	/// @return A weak pointer to the newly added GameVariable.
+	virtual std::weak_ptr<GameVariable> add(GameVariable&& variable) noexcept;
 
 	/// @brief Removes an item identified by the given name.
 	/// @param name The name of the item to remove.

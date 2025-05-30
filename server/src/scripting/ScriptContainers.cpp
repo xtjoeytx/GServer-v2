@@ -140,8 +140,15 @@ const GameValue& GameVariable::game_value() const
 
 std::weak_ptr<GameVariable> GameVariableStore::add(std::string_view name, GameValue&& value) noexcept
 {
-	auto variable = std::make_shared<GameVariable>(std::string{ name }, GameValue{ std::move(value) });
-	auto [iter, was_inserted] = store.insert_or_assign(variable->identifier, variable);
+	auto var = std::make_shared<GameVariable>(std::string{ name }, GameValue{ std::move(value) });
+	auto [iter, was_inserted] = store.insert_or_assign(var->identifier, var);
+	return iter->second;
+}
+
+std::weak_ptr<GameVariable> GameVariableStore::add(GameVariable&& variable) noexcept
+{
+	auto var = std::make_shared<GameVariable>(std::move(variable));
+	auto [iter, was_inserted] = store.insert_or_assign(var->identifier, var);
 	return iter->second;
 }
 
