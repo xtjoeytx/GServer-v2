@@ -52,14 +52,53 @@ void NPCServer::initialize()
 	loadNpcs();
 }
 
-void NPCServer::run()
+void NPCServer::run(std::chrono::milliseconds timeDelta)
 {
-	// Run all NPC scripts.
+	// Save all NPC mod times and update timeouts.
 	{
 		for (auto& [id, npc] : m_server->getNPCList())
 		{
-			npc->getScript().executeEvents(npc->scripting.events, source::FromNPC(id));
+			npc->recordCurrentPropModTime();
+			if (npc->timeout.count() != 0)
+			{
+				npc->timeout -= timeDelta;
+				if (npc->timeout < std::chrono::milliseconds::zero())
+				{
+					npc->timeout = 0ms;
+					npc->scripting.events.addEvent(ScriptEventType::TIMEOUT, source::FromNPC(id));
+				}
+			}
 		}
+	}
+
+	// Save all player prop mod times.
+	for (auto& [id, player] : m_server->getPlayerList())
+	{
+		player->recordCurrentPropModTime();
+	}
+
+	// Run all NPC scripts.
+	{
+		for (auto& [id, npc] : m_server->getNPCList())
+			npc->getScript().executeEvents(npc->scripting.events, source::FromNPC(id));
+	}
+
+	// Send all changed NPC props.
+	{
+		CString propsPacket;
+		for (auto& [id, npc] : m_server->getNPCList())
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				propsPacket.clear();
+				propsPacket.writeChar((char)PLO_NPCPROPS) >> (int)npc->id << npc->getModifiedPropsPacket();
+				m_server->sendPacketToLevelArea(propsPacket, level);
+			}
+		}
+	}
+
+	// Send all changed player props.
+	{
 	}
 }
 

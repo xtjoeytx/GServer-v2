@@ -258,7 +258,7 @@ bool Server::doMain()
 		if (time_diff.count() >= 100)
 		{
 			m_lastNpcServerTimer = currentTimer;
-			m_npcServer->run();
+			m_npcServer->run(time_diff);
 		}
 	}
 

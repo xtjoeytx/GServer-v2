@@ -29,7 +29,7 @@ public:
 
 public:
 	void initialize();
-	void run();
+	void run(std::chrono::milliseconds timeDelta);
 
 private:
 	void loadClasses();
