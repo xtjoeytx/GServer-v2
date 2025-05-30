@@ -186,13 +186,18 @@ public:
 	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
 
 	// Prop-Manipulation
-	virtual CString getProp(int pPropId) const;
-	virtual bool getProp(CString& buffer, int pPropId) const;
-	CString getProps(const PropList& props) const;
-	CString getPropsRC();
-	PropSetResults setProp(uint8_t prop, CString& packet, PropSetBy setBy = PropSetBy::CLIENT);
+	[[inline]] void recordCurrentPropModTime();
+	[[inline]] void setProp(PlayerProp prop, const auto& value)
+		requires VariantContainsType<prop_access, std::remove_cvref_t<decltype(value)>>;
+
+	virtual CString getPropPacket(PlayerProp pPropId) const;
+	virtual bool getPropPacket(CString& buffer, PlayerProp pPropId) const;
+	CString getModifiedPropsPacket() const;
+	CString getPropsPacketFromList(const PropList& props) const;
+	CString getPropsForRCPacket();
+	PropSetResults setPropFromPacket(PlayerProp prop, CString& packet, PropSetBy setBy = PropSetBy::CLIENT);
 	void setPropsFromPacket(CString& packet, PropSetBy setBy, Player* originator = nullptr);
-	void setPropsFromRC(CString& packet, Player* rc = nullptr);
+	void setPropsFromRCPacket(CString& packet, Player* rc = nullptr);
 	void sendPropsToClient(const PropList& props);
 	void exchangeMyPropsWithOthers();
 
@@ -249,6 +254,9 @@ public:
 public:
 	Account account;
 	GameVariableStore variables;
+
+protected:
+	prop_access getPropAccess(PlayerProp prop);
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
@@ -333,16 +341,18 @@ protected:
 	int m_type = PLTYPE_AWAIT;
 	int m_versionId = CLVER_UNKNOWN;
 	CString m_version;
-	CString m_os{ "wind" };
-	CString m_serverName;
+	std::string m_os{ "wind" };
+	std::string m_serverName;
 	uint8_t m_statusMsg = 0;
 	uint8_t m_additionalFlags = 0;
-	int m_envCodePage = 1252;
+	uint32_t m_envCodePage = 1252;
 	std::set<std::string> m_channelList;
 	time_t m_lastData;
-	unsigned char m_encryptionKey = 0;
-	unsigned long m_accountIp = 0;
+	uint8_t m_encryptionKey = 0;
+	uint32_t m_accountIp = 0;
 	int64_t m_deviceId = 0;
+	std::array<int64_t, PLAYERPROP_COUNT> m_modTime;
+	std::array<int64_t, PLAYERPROP_COUNT> m_savedModTime;
 
 	std::vector<CString> m_privateMessageServerList;
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_externalPlayers;
@@ -407,6 +417,34 @@ inline bool Player::removeChatChannel(const std::string& channel)
 {
 	m_channelList.erase(channel);
 	return false;
+}
+
+//----------------------------
+
+inline void Player::recordCurrentPropModTime()
+{
+	m_savedModTime = m_modTime;
+}
+
+void Player::setProp(PlayerProp prop, const auto& value)
+	requires VariantContainsType<prop_access, std::remove_cvref_t<decltype(value)>>
+{
+	using value_type = std::remove_cvref_t<decltype(value)>;
+
+	auto access = getPropAccess(prop);
+	auto* ptr = std::get_if<value_type*>(&access);
+	if (ptr == nullptr)
+		return;
+
+	**ptr = value;
+	m_modTime[PROPID(prop)] = currentTimeInSeconds();
+
+	if (prop == PlayerProp::X2)
+		m_modTime[PROPID(PlayerProp::X)] = m_modTime[PROPID(prop)];
+	if (prop == PlayerProp::Y2)
+		m_modTime[PROPID(PlayerProp::Y)] = m_modTime[PROPID(prop)];
+	if (prop == PlayerProp::Z2)
+		m_modTime[PROPID(PlayerProp::Z)] = m_modTime[PROPID(prop)];
 }
 
 ///////////////////////////////////////////////////////////////////////////////

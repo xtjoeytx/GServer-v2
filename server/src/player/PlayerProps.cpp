@@ -44,54 +44,238 @@ uint8_t PropLimits::applyShieldPower(uint8_t shieldPower)
 	return std::clamp(shieldPower, static_cast<uint8_t>(0), static_cast<uint8_t>(server->getSettings().getInt("shieldlimit", 3)));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+prop_access Player::getPropAccess(PlayerProp prop)
+{
+	static uint32_t prevent_access_int = 0;
+	static float prevent_access_float = 0.0f;
+	static std::string prevent_access_string;
+
+	switch (prop)
+	{
+		case PlayerProp::NICKNAME:
+			return &account.nickname;
+		case PlayerProp::MAXPOWER:
+			return &account.maxHitpoints;
+		case PlayerProp::CURPOWER:
+			return &account.character.hitpointsInHalves;
+		case PlayerProp::RUPEESCOUNT:
+			return &account.character.gralats;
+		case PlayerProp::ARROWSCOUNT:
+			return &account.character.arrows;
+		case PlayerProp::BOMBSCOUNT:
+			return &account.character.bombs;
+		case PlayerProp::GLOVEPOWER:
+			return &account.character.glovePower;
+		case PlayerProp::BOMBPOWER:
+			return &account.character.bombPower;
+		case PlayerProp::SWORDPOWER:
+			return &account.character.swordPower;
+		case PlayerProp::SHIELDPOWER:
+			return &account.character.shieldPower;
+		case PlayerProp::GANI:
+		{
+			/* TODO(Nalin): How should this hack work?
+			if (isClient() && m_versionId < CLVER_2_1)
+			{
+				if (!account.character.bowImage.empty())
+					return &account.character.bowImage;
+				else
+					return &account.character.bowPower;
+			}
+			*/
+			return &account.character.gani;
+		}
+		case PlayerProp::HEADGIF:
+			return &account.character.headImage;
+		case PlayerProp::CURCHAT:
+			return &account.character.chatMessage;
+		case PlayerProp::COLORS:
+			return &account.character.colors[0];
+		case PlayerProp::ID:
+			return &prevent_access_int;
+		case PlayerProp::X:
+			throw std::exception("NPC::getPropAccess: use X2 instead of X");
+		case PlayerProp::Y:
+			throw std::exception("NPC::getPropAccess: use Y2 instead of Y");
+		case PlayerProp::SPRITE:
+			return &account.character.sprite;
+		case PlayerProp::STATUS:
+			return &account.status;
+		case PlayerProp::CARRYSPRITE:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::CURLEVEL:
+			return &account.level;
+		case PlayerProp::HORSEGIF:
+			return &account.character.horseImage;
+		case PlayerProp::HORSEBUSHES:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::EFFECTCOLORS:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::CARRYNPC:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::APCOUNTER:
+			return &account.apCounter;
+		case PlayerProp::MAGICPOINTS:
+			return &account.character.mp;
+		case PlayerProp::KILLSCOUNT:
+			return &account.kills;
+		case PlayerProp::DEATHSCOUNT:
+			return &account.deaths;
+		case PlayerProp::ONLINESECS:
+			return &account.onlineSeconds;
+		case PlayerProp::IPADDR:
+			return &m_accountIp;
+		case PlayerProp::UDPPORT:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::ALIGNMENT:
+			return &account.character.ap;
+		case PlayerProp::ADDITFLAGS:
+			return &m_additionalFlags;
+		case PlayerProp::ACCOUNTNAME:
+			return &account.name;
+		case PlayerProp::BODYIMG:
+			return &account.character.bodyImage;
+		case PlayerProp::RATING:
+			return std::make_pair(&account.eloRating, &account.eloDeviation);
+		case PlayerProp::ATTACHNPC:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::GMAPLEVELX:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::GMAPLEVELY:
+			// TODO: Make this work.
+			return &prevent_access_int;
+		case PlayerProp::Z:
+			throw std::exception("NPC::getPropAccess: use Z2 instead of Z");
+		case PlayerProp::JOINLEAVELVL:
+			return &prevent_access_int;
+		case PlayerProp::PCONNECTED:
+			return &prevent_access_int;
+		case PlayerProp::PLANGUAGE:
+			return &account.language;
+		case PlayerProp::PSTATUSMSG:
+			return &m_statusMsg;
+		case PlayerProp::GATTRIB1:
+		case PlayerProp::GATTRIB2:
+		case PlayerProp::GATTRIB3:
+		case PlayerProp::GATTRIB4:
+		case PlayerProp::GATTRIB5:
+		case PlayerProp::GATTRIB6:
+		case PlayerProp::GATTRIB7:
+		case PlayerProp::GATTRIB8:
+		case PlayerProp::GATTRIB9:
+		case PlayerProp::GATTRIB10:
+		case PlayerProp::GATTRIB11:
+		case PlayerProp::GATTRIB12:
+		case PlayerProp::GATTRIB13:
+		case PlayerProp::GATTRIB14:
+		case PlayerProp::GATTRIB15:
+		case PlayerProp::GATTRIB16:
+		case PlayerProp::GATTRIB17:
+		case PlayerProp::GATTRIB18:
+		case PlayerProp::GATTRIB19:
+		case PlayerProp::GATTRIB20:
+		case PlayerProp::GATTRIB21:
+		case PlayerProp::GATTRIB22:
+		case PlayerProp::GATTRIB23:
+		case PlayerProp::GATTRIB24:
+		case PlayerProp::GATTRIB25:
+		case PlayerProp::GATTRIB26:
+		case PlayerProp::GATTRIB27:
+		case PlayerProp::GATTRIB28:
+		case PlayerProp::GATTRIB29:
+		case PlayerProp::GATTRIB30:
+			return &account.character.ganiAttributes[std::ranges::distance(GaniAttributePropList.begin(), std::ranges::find(GaniAttributePropList, PROPID(prop)))];
+		case PlayerProp::OSTYPE:
+			return &m_os;
+		case PlayerProp::TEXTCODEPAGE:
+			return &m_envCodePage;
+		case PlayerProp::ONLINESECS2:
+			return &prevent_access_int;
+		case PlayerProp::X2:
+			return &account.character.pixelX;
+		case PlayerProp::Y2:
+			return &account.character.pixelY;
+		case PlayerProp::Z2:
+			return &account.character.pixelZ;
+		case PlayerProp::PLAYERLISTCATEGORY:
+			return &prevent_access_int;
+		case PlayerProp::COMMUNITYNAME:
+			return &account.communityName;
+	};
+
+	return &prevent_access_int; // Should never be reached, but prevents compiler warnings.
+}
+
+CString Player::getModifiedPropsPacket() const
+{
+	CString result;
+	for (auto i = 0; i < PLAYERPROP_COUNT; ++i)
+	{
+		if (m_modTime[i] != m_savedModTime[i])
+			result >> (char)i << getPropPacket((PlayerProp)i);
+	}
+	return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /*
 	Player: Prop-Manipulation
 */
-bool Player::getProp(CString& buffer, int pPropId) const
+bool Player::getPropPacket(CString& buffer, PlayerProp pPropId) const
 {
 	switch (pPropId)
 	{
-		case PLPROP_NICKNAME:
+		case PlayerProp::NICKNAME:
 			buffer >> (char)account.character.nickName.length() << account.character.nickName;
 			return true;
 
-		case PLPROP_MAXPOWER:
+		case PlayerProp::MAXPOWER:
 			buffer >> (char)account.maxHitpoints;
 			return true;
 
-		case PLPROP_CURPOWER:
+		case PlayerProp::CURPOWER:
 			buffer >> (char)(account.character.hitpointsInHalves);
 			return true;
 
-		case PLPROP_RUPEESCOUNT:
+		case PlayerProp::RUPEESCOUNT:
 			buffer >> (int)account.character.gralats;
 			return true;
 
-		case PLPROP_ARROWSCOUNT:
+		case PlayerProp::ARROWSCOUNT:
 			buffer >> (char)account.character.arrows;
 			return true;
 
-		case PLPROP_BOMBSCOUNT:
+		case PlayerProp::BOMBSCOUNT:
 			buffer >> (char)account.character.bombs;
 			return true;
 
-		case PLPROP_GLOVEPOWER:
+		case PlayerProp::GLOVEPOWER:
 			buffer >> (char)account.character.glovePower;
 			return true;
 
-		case PLPROP_BOMBPOWER:
+		case PlayerProp::BOMBPOWER:
 			buffer >> (char)account.character.bombPower;
 			return true;
 
-		case PLPROP_SWORDPOWER:
+		case PlayerProp::SWORDPOWER:
 			buffer >> (char)(account.character.swordPower + 30) >> (char)account.character.swordImage.length() << account.character.swordImage;
 			return true;
 
-		case PLPROP_SHIELDPOWER:
+		case PlayerProp::SHIELDPOWER:
 			buffer >> (char)(account.character.shieldPower + 10) >> (char)account.character.shieldImage.length() << account.character.shieldImage;
 			return true;
 
-		case PLPROP_GANI:
+		case PlayerProp::GANI:
 		{
 			if (isClient() && m_versionId < CLVER_2_1)
 			{
@@ -106,23 +290,23 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_HEADGIF:
+		case PlayerProp::HEADGIF:
 			buffer >> (char)(account.character.headImage.length() + 100) << account.character.headImage;
 			return true;
 
-		case PLPROP_CURCHAT:
+		case PlayerProp::CURCHAT:
 			buffer >> (char)account.character.chatMessage.length() << account.character.chatMessage;
 			return true;
 
-		case PLPROP_COLORS:
+		case PlayerProp::COLORS:
 			buffer >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4];
 			return true;
 
-		case PLPROP_ID:
+		case PlayerProp::ID:
 			buffer >> (short)m_id;
 			return true;
 
-		case PLPROP_X:
+		case PlayerProp::X:
 		{
 			auto val = static_cast<uint8_t>(account.character.pixelX / 8);
 			if (val == 233) val = 232;
@@ -130,7 +314,7 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_Y:
+		case PlayerProp::Y:
 		{
 			auto val = static_cast<uint8_t>(account.character.pixelY / 8);
 			if (val == 233) val = 232;
@@ -138,113 +322,113 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_Z:
+		case PlayerProp::Z:
 			// range: -25 to 85
 			buffer >> (char)(std::min(85 * 2, std::max(-25 * 2, (account.character.pixelZ / 8))) + 50);
 			return true;
 
-		case PLPROP_SPRITE:
+		case PlayerProp::SPRITE:
 			buffer >> (char)account.character.sprite;
 			return true;
 
-		case PLPROP_STATUS:
+		case PlayerProp::STATUS:
 			buffer >> (char)account.status;
 			return true;
 
-		case PLPROP_CARRYSPRITE:
+		case PlayerProp::CARRYSPRITE:
 			buffer >> (char)-1;
 			return true;
 
-		case PLPROP_CURLEVEL:
+		case PlayerProp::CURLEVEL:
 			buffer >> (char)1 << " ";
 			return true;
 
-		case PLPROP_HORSEGIF:
+		case PlayerProp::HORSEGIF:
 			buffer >> (char)account.character.horseImage.length() << account.character.horseImage;
 			return true;
 
-		case PLPROP_HORSEBUSHES:
+		case PlayerProp::HORSEBUSHES:
 			buffer >> (char)0;
 			return true;
 
-		case PLPROP_EFFECTCOLORS:
+		case PlayerProp::EFFECTCOLORS:
 			buffer >> (char)0;
 			return true;
 
-		case PLPROP_CARRYNPC:
+		case PlayerProp::CARRYNPC:
 			buffer >> (int)0;
 			return true;
 
-		case PLPROP_APCOUNTER:
+		case PlayerProp::APCOUNTER:
 			buffer >> (short)(account.apCounter + 1);
 			return true;
 
-		case PLPROP_MAGICPOINTS:
+		case PlayerProp::MAGICPOINTS:
 			buffer >> (char)account.character.mp;
 			return true;
 
-		case PLPROP_KILLSCOUNT:
+		case PlayerProp::KILLSCOUNT:
 			buffer >> (int)account.kills;
 			return true;
 
-		case PLPROP_DEATHSCOUNT:
+		case PlayerProp::DEATHSCOUNT:
 			buffer >> (int)account.deaths;
 			return true;
 
-		case PLPROP_ONLINESECS:
+		case PlayerProp::ONLINESECS:
 			buffer >> (int)account.onlineSeconds;
 			return true;
 
-		case PLPROP_IPADDR:
+		case PlayerProp::IPADDR:
 			buffer.writeGInt5(m_accountIp);
 			return true;
 
-		case PLPROP_UDPPORT:
+		case PlayerProp::UDPPORT:
 			buffer >> (int)0;
 			return true;
 
-		case PLPROP_ALIGNMENT:
+		case PlayerProp::ALIGNMENT:
 			buffer >> (char)account.character.ap;
 			return true;
 
-		case PLPROP_ADDITFLAGS:
+		case PlayerProp::ADDITFLAGS:
 			buffer >> (char)m_additionalFlags;
 			return true;
 
-		case PLPROP_ACCOUNTNAME:
+		case PlayerProp::ACCOUNTNAME:
 			buffer >> (char)account.name.length() << account.name;
 			return true;
 
-		case PLPROP_BODYIMG:
+		case PlayerProp::BODYIMG:
 			buffer >> (char)account.character.bodyImage.length() << account.character.bodyImage;
 			return true;
 
-		case PLPROP_RATING:
+		case PlayerProp::RATING:
 		{
 			int temp = (((int)account.eloRating & 0xFFF) << 9) | ((int)account.eloDeviation & 0x1FF);
 			buffer >> (int)temp;
 			return true;
 		}
 
-		case PLPROP_ATTACHNPC:
+		case PlayerProp::ATTACHNPC:
 			buffer >> (char)0 >> (int)0;
 			return true;
 
 		// Simplifies login.
 		// Manually send prop if you are leaving the level.
 		// 1 = join level, 0 = leave level.
-		case PLPROP_JOINLEAVELVL:
+		case PlayerProp::JOINLEAVELVL:
 			buffer >> (char)1;
 			return true;
 
-		case PLPROP_PCONNECTED:
+		case PlayerProp::PCONNECTED:
 			return true;
 
-		case PLPROP_PLANGUAGE:
+		case PlayerProp::PLANGUAGE:
 			buffer >> (char)account.language.length() << account.language;
 			return true;
 
-		case PLPROP_PSTATUSMSG:
+		case PlayerProp::PSTATUSMSG:
 		{
 			if (m_statusMsg > m_server->getStatusList().size() - 1)
 				buffer >> (char)0;
@@ -255,21 +439,21 @@ bool Player::getProp(CString& buffer, int pPropId) const
 
 		// OS type.
 		// Windows: wind
-		case PLPROP_OSTYPE:
+		case PlayerProp::OSTYPE:
 			buffer >> (char)m_os.length() << m_os;
 			return true;
 
 		// Text codepage.
 		// Example: 1252
-		case PLPROP_TEXTCODEPAGE:
+		case PlayerProp::TEXTCODEPAGE:
 			buffer.writeGInt(m_envCodePage);
 			return true;
 
-		case PLPROP_ONLINESECS2:
+		case PlayerProp::ONLINESECS2:
 			//buffer.writeGInt5(m_onlineTime);
 			return true;
 
-		case PLPROP_X2:
+		case PlayerProp::X2:
 		{
 			uint16_t val = (uint16_t)std::abs(account.character.pixelX) << 1;
 			if (account.character.pixelX < 0)
@@ -278,7 +462,7 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_Y2:
+		case PlayerProp::Y2:
 		{
 			uint16_t val = (uint16_t)std::abs(account.character.pixelY) << 1;
 			if (account.character.pixelY < 0)
@@ -287,7 +471,7 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_Z2:
+		case PlayerProp::Z2:
 		{
 			// range: -25 to 85
 			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, account.character.pixelZ));
@@ -299,21 +483,21 @@ bool Player::getProp(CString& buffer, int pPropId) const
 		}
 
 		// TODO: Better level handling.  We should be able to find this from the level name.
-		case PLPROP_GMAPLEVELX:
+		case PlayerProp::GMAPLEVELX:
 			buffer >> (char)0;
 			return true;
 
-		case PLPROP_GMAPLEVELY:
+		case PlayerProp::GMAPLEVELY:
 			buffer >> (char)0;
 			return true;
 
 		// TODO(joey): figure this out. Something to do with guilds? irc-related
 		//	(char)(some bitflag for something, uses the first 3 bits im not sure)
 		//		okay i tested some flags, 1 removes the channel. 3 adds it. not sure what third bit does.
-		case PLPROP_PLAYERLISTCATEGORY:
+		case PlayerProp::PLAYERLISTCATEGORY:
 			return true;
 
-		case PLPROP_COMMUNITYNAME:
+		case PlayerProp::COMMUNITYNAME:
 			buffer >> (char)account.communityName.length() << account.communityName;
 			return true;
 
@@ -321,7 +505,7 @@ bool Player::getProp(CString& buffer, int pPropId) const
 			break;
 	}
 
-	if (auto iter = std::ranges::find(GaniAttributePropList, pPropId); iter != GaniAttributePropList.end())
+	if (auto iter = std::ranges::find(GaniAttributePropList, PROPID(pPropId)); iter != GaniAttributePropList.end())
 	{
 		auto propIndex = std::distance(GaniAttributePropList.begin(), iter);
 		buffer >> (char)account.character.ganiAttributes[propIndex].length() << account.character.ganiAttributes[propIndex];
@@ -331,18 +515,18 @@ bool Player::getProp(CString& buffer, int pPropId) const
 	return false;
 }
 
-bool PlayerClient::getProp(CString& buffer, int pPropId) const
+bool PlayerClient::getPropPacket(CString& buffer, PlayerProp pPropId) const
 {
 	auto level = m_currentLevel.lock();
 	auto map = m_pmap.lock();
 
 	switch (pPropId)
 	{
-		case PLPROP_CARRYSPRITE:
+		case PlayerProp::CARRYSPRITE:
 			buffer >> (char)m_carrySprite;
 			return true;
 
-		case PLPROP_CURLEVEL:
+		case PlayerProp::CURLEVEL:
 		{
 			if (map && map->getType() == MapType::GMAP)
 				buffer >> (char)map->getMapName().length() << map->getMapName();
@@ -356,51 +540,53 @@ bool PlayerClient::getProp(CString& buffer, int pPropId) const
 			return true;
 		}
 
-		case PLPROP_HORSEBUSHES:
+		case PlayerProp::HORSEBUSHES:
 			buffer >> (char)m_horseBombCount;
 			return true;
 
-		case PLPROP_CARRYNPC:
+		case PlayerProp::CARRYNPC:
 			buffer >> (int)m_carryNpcId;
 			return true;
 
-		case PLPROP_UDPPORT:
+		case PlayerProp::UDPPORT:
 			buffer >> (int)m_udpport;
 			return true;
 
-		case PLPROP_ATTACHNPC:
+		case PlayerProp::ATTACHNPC:
 			// Only attach type 0 (NPC) supported.
 			buffer >> (char)0 >> (int)m_attachNPC;
 			return true;
 
-		case PLPROP_GMAPLEVELX:
+		case PlayerProp::GMAPLEVELX:
 			buffer >> (char)(level ? level->getGmapX() : 0);
 			return true;
 
-		case PLPROP_GMAPLEVELY:
+		case PlayerProp::GMAPLEVELY:
 			buffer >> (char)(level ? level->getGmapY() : 0);
 			return true;
 
 		default:
-			return Player::getProp(buffer, pPropId);
+			return Player::getPropPacket(buffer, pPropId);
 	}
 
 	return false;
 }
 
-PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
+PropSetResults Player::setPropFromPacket(PlayerProp prop, CString& packet, PropSetBy setBy)
 {
 	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
 	auto level = player ? player->getLevel() : nullptr;
 	bool restrictedPropAllowed = !m_server->isNpcServerEnabled() || setBy == PropSetBy::SERVER;
 
-	PropSetResults result{ .resultPropIds = {prop} };
-	result.resultFlags.set(PropSetResults::sendToLevel, clientPropsSharedLocal[prop]);
+	PropSetResults result{ .resultPropIds = { PROPID(prop) } };
+	result.resultFlags.set(PropSetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
 	result.resultFlags.set(PropSetResults::sendToSelf, setBy == PropSetBy::SERVER);
+
+	m_modTime[PROPID(prop)] = currentTimeInSeconds();
 
 	switch (prop)
 	{
-		case PLPROP_NICKNAME:
+		case PlayerProp::NICKNAME:
 		{
 			CString nick = packet.readChars(packet.readGUChar());
 
@@ -420,7 +606,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_MAXPOWER:
+		case PlayerProp::MAXPOWER:
 		{
 			uint8_t newMaxPower = packet.readGUChar();
 
@@ -429,13 +615,13 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				account.maxHitpoints = PropLimits::applyMaxHitpoints(newMaxPower);
 				account.character.hitpointsInHalves = newMaxPower * 2;
 
-				result.resultPropIds.push_back(PLPROP_CURPOWER);
+				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
 				result.resultFlags.set(PropSetResults::sendToSelf);
 			}
 			break;
 		}
 
-		case PLPROP_CURPOWER:
+		case PlayerProp::CURPOWER:
 		{
 			uint8_t power = packet.readGUChar();
 			if (account.character.ap < 40 && power > account.character.hitpointsInHalves) break;
@@ -443,7 +629,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_RUPEESCOUNT:
+		case PlayerProp::RUPEESCOUNT:
 		{
 			unsigned int newGralatCount = std::min(packet.readGUInt(), 9999999u);
 			if (restrictedPropAllowed)
@@ -451,15 +637,15 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_ARROWSCOUNT:
+		case PlayerProp::ARROWSCOUNT:
 			account.character.arrows = PropLimits::apply(packet.readGUChar(), PropLimits::MaxArrows);
 			break;
 
-		case PLPROP_BOMBSCOUNT:
+		case PlayerProp::BOMBSCOUNT:
 			account.character.bombs = PropLimits::apply(packet.readGUChar(), PropLimits::MaxBombs);
 			break;
 
-		case PLPROP_GLOVEPOWER:
+		case PlayerProp::GLOVEPOWER:
 		{
 			uint8_t newGlovePower = packet.readGUChar();
 			if (restrictedPropAllowed)
@@ -467,11 +653,11 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_BOMBPOWER:
+		case PlayerProp::BOMBPOWER:
 			account.character.bombPower = PropLimits::apply(packet.readGUChar(), PropLimits::MaxBombPower);
 			break;
 
-		case PLPROP_SWORDPOWER:
+		case PlayerProp::SWORDPOWER:
 		{
 			int sp = packet.readGUChar();
 			std::string img;
@@ -501,7 +687,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_SHIELDPOWER:
+		case PlayerProp::SHIELDPOWER:
 		{
 			int sp = packet.readGUChar();
 			std::string img;
@@ -536,7 +722,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_GANI:
+		case PlayerProp::GANI:
 		{
 			if (isClient() && m_versionId < CLVER_2_1)
 			{
@@ -574,7 +760,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_HEADGIF:
+		case PlayerProp::HEADGIF:
 		{
 			int len = packet.readGUChar();
 			std::string img;
@@ -603,7 +789,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_CURCHAT:
+		case PlayerProp::CURCHAT:
 		{
 			int len = PropLimits::apply(packet.readGUChar(), PropLimits::ChatMessageLength);
 			account.character.chatMessage = packet.readChars(len).toString();
@@ -626,16 +812,16 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_COLORS:
+		case PlayerProp::COLORS:
 			for (unsigned char& color : account.character.colors)
 				color = packet.readGUChar();
 			break;
 
-		case PLPROP_ID:
+		case PlayerProp::ID:
 			packet.readGUShort();
 			break;
 
-		case PLPROP_X:
+		case PlayerProp::X:
 			account.character.pixelX = (packet.readGChar() * 8);
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -646,10 +832,10 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			//doTouchTest = true;
 
 			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PLPROP_X2);
+			result.resultPropIds.push_back(PROPID(PlayerProp::X2));
 			break;
 
-		case PLPROP_Y:
+		case PlayerProp::Y:
 			account.character.pixelY = (packet.readGChar() * 8);
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -660,10 +846,10 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			//doTouchTest = true;
 
 			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PLPROP_Y2);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Y2));
 			break;
 
-		case PLPROP_Z:
+		case PlayerProp::Z:
 			account.character.pixelZ = (packet.readGUChar() - 50) * 8;
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -674,17 +860,17 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			//doTouchTest = true;
 
 			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PLPROP_Z2);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
 			break;
 
-		case PLPROP_SPRITE:
+		case PlayerProp::SPRITE:
 			account.character.sprite = packet.readGUChar();
 
 			// Do collision testing.
 			//doTouchTest = true;
 			break;
 
-		case PLPROP_STATUS:
+		case PlayerProp::STATUS:
 		{
 			int oldStatus = account.status;
 			account.status = packet.readGUChar();
@@ -699,7 +885,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				auto newPower = PropLimits::applyMaxHitpoints(account.character.ap < 20 ? 3 : (account.character.ap < 40 ? 5 : account.maxHitpoints)) * 2;
 				account.character.hitpointsInHalves = newPower;
 
-				result.resultPropIds.push_back(PLPROP_CURPOWER);
+				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
 				result.resultFlags.set(PropSetResults::sendToSelf);
 
 				// TODO(Nalin): There could be a race condition on when this packet is sent.  Do we delay until after props are sent to the client?
@@ -737,7 +923,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_CARRYSPRITE:
+		case PlayerProp::CARRYSPRITE:
 		{
 			uint8_t sprite = packet.readGUChar();
 			if (player == nullptr) break;
@@ -745,7 +931,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_CURLEVEL:
+		case PlayerProp::CURLEVEL:
 		{
 			std::string level = packet.readChars(packet.readGUChar()).toString();
 			if (restrictedPropAllowed)
@@ -753,7 +939,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_HORSEGIF:
+		case PlayerProp::HORSEGIF:
 		{
 			int len = PropLimits::apply(packet.readGUChar(), PropLimits::HorseImageLength);
 			account.character.horseImage = packet.readChars(len).toString();
@@ -762,7 +948,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_HORSEBUSHES:
+		case PlayerProp::HORSEBUSHES:
 		{
 			uint8_t count = packet.readGUChar();
 			if (player == nullptr) break;
@@ -770,7 +956,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_EFFECTCOLORS:
+		case PlayerProp::EFFECTCOLORS:
 		{
 			auto len = packet.readGUChar();
 			if (len > 0)
@@ -778,7 +964,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_CARRYNPC:
+		case PlayerProp::CARRYNPC:
 		{
 			NPCID newNpcId = packet.readGUInt();
 
@@ -791,7 +977,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			if (auto map = player->getMap().lock(); map && map->getType() == MapType::GMAP)
 			{
 				// I tried to throw the NPC and make it visible again, but there seems to be a race condition with the client.
-				// The client wasn't throwing the NPC automatically when setting the PLPROP_CARRYNPC to 0.
+				// The client wasn't throwing the NPC automatically when setting the PlayerProp::CARRYNPC to 0.
 				// It would also permanently hide the NPC when thrown and I couldn't bring it back.
 				// There are probably race conditions with how long it takes for the pick up and throw animations to fully play out.
 				break;
@@ -809,13 +995,13 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 						for (auto& [otherId, other] : playerList)
 						{
 							if (other.get() == this) continue;
-							if (other->getProp(PLPROP_CARRYNPC).readGUInt() == newNpcId)
+							if (other->getPropPacket(PlayerProp::CARRYNPC).readGUInt() == newNpcId)
 							{
 								// Somebody else got this NPC first.  Force the player to throw his down
 								// and tell the player to remove the NPC from memory.
-								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_CARRYNPC >> (int)0);
+								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPC >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
-								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_CARRYNPC >> (int)0, player, { m_id });
+								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player, { m_id });
 								isOwner = false;
 								newNpcId = 0;
 								break;
@@ -828,11 +1014,11 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_APCOUNTER:
+		case PlayerProp::APCOUNTER:
 			account.apCounter = packet.readGUShort();
 			break;
 
-		case PLPROP_MAGICPOINTS:
+		case PlayerProp::MAGICPOINTS:
 		{
 			uint8_t newMP = packet.readGUChar();
 			if (restrictedPropAllowed)
@@ -840,23 +1026,23 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_KILLSCOUNT:
+		case PlayerProp::KILLSCOUNT:
 			packet.readGInt();
 			break;
 
-		case PLPROP_DEATHSCOUNT:
+		case PlayerProp::DEATHSCOUNT:
 			packet.readGInt();
 			break;
 
-		case PLPROP_ONLINESECS:
+		case PlayerProp::ONLINESECS:
 			packet.readGInt();
 			break;
 
-		case PLPROP_IPADDR:
+		case PlayerProp::IPADDR:
 			packet.readGInt5();
 			break;
 
-		case PLPROP_UDPPORT:
+		case PlayerProp::UDPPORT:
 		{
 			uint16_t udpPort = static_cast<uint16_t>(packet.readGInt());
 			if (player == nullptr) break;
@@ -864,7 +1050,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_ALIGNMENT:
+		case PlayerProp::ALIGNMENT:
 		{
 			uint8_t newAlignment = packet.readGUChar();
 			if (restrictedPropAllowed)
@@ -872,24 +1058,24 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_ADDITFLAGS:
+		case PlayerProp::ADDITFLAGS:
 			m_additionalFlags = packet.readGUChar();
 			break;
 
-		case PLPROP_ACCOUNTNAME:
+		case PlayerProp::ACCOUNTNAME:
 			packet.readChars(packet.readGUChar());
 			break;
 
-		case PLPROP_BODYIMG:
+		case PlayerProp::BODYIMG:
 			account.character.bodyImage = PropLimits::apply(packet.readChars(packet.readGUChar()).toString(), PropLimits::BodyImageLength);
 			break;
 
-		case PLPROP_RATING:
+		case PlayerProp::RATING:
 			packet.readGInt();
 			//m_eloRating = (float)((len >> 9) & 0xFFF);
 			break;
 
-		case PLPROP_ATTACHNPC:
+		case PlayerProp::ATTACHNPC:
 		{
 			// Only supports object_type 0 (NPC).
 			unsigned char object_type = packet.readGUChar();
@@ -899,7 +1085,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_GMAPLEVELX:
+		case PlayerProp::GMAPLEVELX:
 		{
 			int mx = packet.readGUChar();
 			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
@@ -911,7 +1097,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_GMAPLEVELY:
+		case PlayerProp::GMAPLEVELY:
 		{
 			int my = packet.readGUChar();
 			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
@@ -923,17 +1109,17 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_JOINLEAVELVL:
+		case PlayerProp::JOINLEAVELVL:
 			break;
 
-		case PLPROP_PCONNECTED:
+		case PlayerProp::PCONNECTED:
 			break;
 
-		case PLPROP_PLANGUAGE:
+		case PlayerProp::PLANGUAGE:
 			account.language = packet.readChars(packet.readGUChar()).toString();
 			break;
 
-		case PLPROP_PSTATUSMSG:
+		case PlayerProp::PSTATUSMSG:
 			m_statusMsg = packet.readGUChar();
 			if (m_id == 0 || !m_loaded)
 				break;
@@ -941,38 +1127,38 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			result.resultFlags.set(PropSetResults::sendToAll);
 			break;
 
-		case PLPROP_GATTRIB1:
-		case PLPROP_GATTRIB2:
-		case PLPROP_GATTRIB3:
-		case PLPROP_GATTRIB4:
-		case PLPROP_GATTRIB5:
-		case PLPROP_GATTRIB6:
-		case PLPROP_GATTRIB7:
-		case PLPROP_GATTRIB8:
-		case PLPROP_GATTRIB9:
-		case PLPROP_GATTRIB10:
-		case PLPROP_GATTRIB11:
-		case PLPROP_GATTRIB12:
-		case PLPROP_GATTRIB13:
-		case PLPROP_GATTRIB14:
-		case PLPROP_GATTRIB15:
-		case PLPROP_GATTRIB16:
-		case PLPROP_GATTRIB17:
-		case PLPROP_GATTRIB18:
-		case PLPROP_GATTRIB19:
-		case PLPROP_GATTRIB20:
-		case PLPROP_GATTRIB21:
-		case PLPROP_GATTRIB22:
-		case PLPROP_GATTRIB23:
-		case PLPROP_GATTRIB24:
-		case PLPROP_GATTRIB25:
-		case PLPROP_GATTRIB26:
-		case PLPROP_GATTRIB27:
-		case PLPROP_GATTRIB28:
-		case PLPROP_GATTRIB29:
-		case PLPROP_GATTRIB30:
+		case PlayerProp::GATTRIB1:
+		case PlayerProp::GATTRIB2:
+		case PlayerProp::GATTRIB3:
+		case PlayerProp::GATTRIB4:
+		case PlayerProp::GATTRIB5:
+		case PlayerProp::GATTRIB6:
+		case PlayerProp::GATTRIB7:
+		case PlayerProp::GATTRIB8:
+		case PlayerProp::GATTRIB9:
+		case PlayerProp::GATTRIB10:
+		case PlayerProp::GATTRIB11:
+		case PlayerProp::GATTRIB12:
+		case PlayerProp::GATTRIB13:
+		case PlayerProp::GATTRIB14:
+		case PlayerProp::GATTRIB15:
+		case PlayerProp::GATTRIB16:
+		case PlayerProp::GATTRIB17:
+		case PlayerProp::GATTRIB18:
+		case PlayerProp::GATTRIB19:
+		case PlayerProp::GATTRIB20:
+		case PlayerProp::GATTRIB21:
+		case PlayerProp::GATTRIB22:
+		case PlayerProp::GATTRIB23:
+		case PlayerProp::GATTRIB24:
+		case PlayerProp::GATTRIB25:
+		case PlayerProp::GATTRIB26:
+		case PlayerProp::GATTRIB27:
+		case PlayerProp::GATTRIB28:
+		case PlayerProp::GATTRIB29:
+		case PlayerProp::GATTRIB30:
 		{
-			if (auto iter = std::ranges::find(GaniAttributePropList, prop); iter != GaniAttributePropList.end())
+			if (auto iter = std::ranges::find(GaniAttributePropList, PROPID(prop)); iter != GaniAttributePropList.end())
 			{
 				auto index = std::distance(GaniAttributePropList.begin(), iter);
 				account.character.ganiAttributes[index] = packet.readChars(packet.readGUChar()).toString();
@@ -982,25 +1168,25 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 
 		// OS type.
 		// Windows: wind
-		case PLPROP_OSTYPE:
+		case PlayerProp::OSTYPE:
 			m_os = packet.readChars(packet.readGUChar());
 			break;
 
 		// Text codepage.
 		// Example: 1252
-		case PLPROP_TEXTCODEPAGE:
+		case PlayerProp::TEXTCODEPAGE:
 			m_envCodePage = packet.readGInt();
 			break;
 
 		// TODO(Nalin): Does this need to be read?
-		case PLPROP_ONLINESECS2:
+		case PlayerProp::ONLINESECS2:
 			//m_onlineTime = pPacket.readGUInt5();
 			break;
 
 		// Location, in pixels, of the player on the level in 2.30+ clients.
 		// Bit 0x0001 controls if it is negative or not.
 		// Bits 0xFFFE are the actual value.
-		case PLPROP_X2:
+		case PlayerProp::X2:
 		{
 			auto len = packet.readGUShort();
 			account.character.pixelX = (len >> 1);
@@ -1010,7 +1196,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				account.character.pixelX = -account.character.pixelX;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
-			result.resultPropIds.push_back(PLPROP_X);
+			result.resultPropIds.push_back(PROPID(PlayerProp::X));
 
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -1021,7 +1207,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_Y2:
+		case PlayerProp::Y2:
 		{
 			auto len = packet.readGUShort();
 			account.character.pixelY = (len >> 1);
@@ -1031,7 +1217,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				account.character.pixelY = -account.character.pixelY;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
-			result.resultPropIds.push_back(PLPROP_Y);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
 
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -1043,7 +1229,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_Z2:
+		case PlayerProp::Z2:
 		{
 			auto len = packet.readGUShort();
 			account.character.pixelZ = (len >> 1);
@@ -1053,7 +1239,7 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 				account.character.pixelZ = -account.character.pixelZ;
 
 			// Let pre-2.30+ clients see 2.30+ movement.
-			result.resultPropIds.push_back(PLPROP_Z);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
 
 			account.status &= (~PLSTATUS_PAUSED);
 
@@ -1065,17 +1251,17 @@ PropSetResults Player::setProp(uint8_t prop, CString& packet, PropSetBy setBy)
 			break;
 		}
 
-		case PLPROP_PLAYERLISTCATEGORY:
+		case PlayerProp::PLAYERLISTCATEGORY:
 			(void)packet.readGUChar();
 			break;
 
-		case PLPROP_COMMUNITYNAME:
+		case PlayerProp::COMMUNITYNAME:
 			packet.readChars(packet.readGUChar());
 			break;
 
 		default:
 		{
-			log::printLine(log::server, "Player {} sent an unidentified prop: {}.", account.name, prop);
+			log::printLine(log::server, "Player {} sent an unidentified prop: {}.", account.name, PROPID(prop));
 			for (int i = 0; i < packet.length(); ++i)
 				log::print(log::server, "{:02x} ", (unsigned char)packet[i]);
 			log::print(log::server, "\n");
@@ -1094,10 +1280,10 @@ void Player::setPropsFromPacket(CString& packet, PropSetBy setBy, Player* origin
 
 	while (packet.bytesLeft() > 0)
 	{
-		unsigned char propId = packet.readGUChar();
+		PlayerProp propId = (PlayerProp)packet.readGUChar();
 
 		// Admin check on changing gralats.
-		if (propId == PLPROP_RUPEESCOUNT && originator != nullptr)
+		if (propId == PlayerProp::RUPEESCOUNT && originator != nullptr)
 		{
 			bool canSet = m_server->getSettings().getBool("normaladminscanchangegralats", true);
 			canSet = canSet || (originator->isStaff() && originator->account.hasRight(PLPERM_SETRIGHTS));
@@ -1108,7 +1294,7 @@ void Player::setPropsFromPacket(CString& packet, PropSetBy setBy, Player* origin
 			}
 		}
 
-		auto result = setProp(propId, packet, setBy);
+		auto result = setPropFromPacket(propId, packet, setBy);
 
 		// TODO(Nalin): Might need to add the 5 bad prop grace back in.
 		if (result.resultFlags.test(PropSetResults::wasInvalid))
@@ -1126,20 +1312,21 @@ void Player::setPropsFromPacket(CString& packet, PropSetBy setBy, Player* origin
 		if (isLoggedIn() && isLoaded() && (sendToAll || sendToLevel || sendToSelf))
 		{
 			CString prop;
-			for (auto& resultProp: result.resultPropIds)
+			for (auto& resultPropId: result.resultPropIds)
 			{
-				prop = getProp(resultProp);
+				PlayerProp resultProp = (PlayerProp)resultPropId;
+				prop = getPropPacket(resultProp);
 				if (sendToAll)
 					globalBuff >> (char)resultProp << prop;
 				if (sendToLevel)
 				{
-					if (resultProp >= PLPROP_X2)
+					if (resultProp >= PlayerProp::X2)
 						levelBuffEnd >> (char)resultProp << prop;
 					else levelBuff >> (char)resultProp << prop;
 				}
 				if (sendToSelf)
 				{
-					if (resultProp >= PLPROP_X2)
+					if (resultProp >= PlayerProp::X2)
 						selfBuffEnd >> (char)resultProp << prop;
 					else selfBuff >> (char)resultProp << prop;
 				}
@@ -1175,32 +1362,32 @@ void Player::sendPropsToClient(const PropList& props)
 	for (int i = 0; i < propCount; ++i)
 	{
 		if (props[i])
-			propPacket >> (char)i << getProp(i);
+			propPacket >> (char)i << getPropPacket((PlayerProp)i);
 	}
 
 	// Send Packet
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS << propPacket);
 }
 
-CString Player::getProps(const PropList& props) const
+CString Player::getPropsPacketFromList(const PropList& props) const
 {
 	CString propPacket;
 
-	// Check if PLPROP_JOINLEAVELVL is set.
+	// Check if PlayerProp::JOINLEAVELVL is set.
 	// When the player leaves the level we explicitly send a 0.
 	// This prop is only ever in the prop list when we are exchanging props after entering a level, so always just send 1.
-	if (isClient() && props[PLPROP_JOINLEAVELVL])
-		propPacket >> (char)PLPROP_JOINLEAVELVL >> (char)1;
+	if (isClient() && props[PROPID(PlayerProp::JOINLEAVELVL)])
+		propPacket >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
 
 	// Create Props
 	int propCount = (isClient() && m_versionId < CLVER_2_1 ? 37 : props.size());
 	for (int i = 0; i < propCount; ++i)
 	{
-		if (i == PLPROP_JOINLEAVELVL) continue;
+		if (i == PROPID(PlayerProp::JOINLEAVELVL)) continue;
 
 		/*
 		* TODO(Nalin): Check if this is needed.
-		if (i == PLPROP_ATTACHNPC)
+		if (i == PlayerProp::ATTACHNPC)
 		{
 			if (auto client = std::dynamic_pointer_cast<const PlayerClient>(shared_from_this()); client != nullptr && client->m_attachNPC != 0)
 			{
@@ -1213,19 +1400,19 @@ CString Player::getProps(const PropList& props) const
 		if (props[i])
 		{
 			propPacket >> (char)i;
-			getProp(propPacket, i);
+			getPropPacket(propPacket, (PlayerProp)i);
 		}
 	}
 
 	if (m_isExternal)
-		propPacket >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS;
+		propPacket >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS;
 
 	return propPacket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Player::setPropsFromRC(CString& pPacket, Player* rc)
+void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 {
 	bool hadBomb = false, hadBow = false;
 	CString outPacket;
@@ -1339,17 +1526,17 @@ void Player::setPropsFromRC(CString& pPacket, Player* rc)
 	}
 }
 
-CString Player::getPropsRC()
+CString Player::getPropsForRCPacket()
 {
 	CString ret, props;
 	ret >> (char)account.name.length() << account.name;
 	ret >> (char)4 << "main"; // worldName
 
 	// Add the props.
-	for (int i = 0; i < PROPSCOUNT; ++i)
+	for (int i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
 		if (clientPropsForRCView[i])
-			props >> (char)i << getProp(i);
+			props >> (char)i << getPropPacket((PlayerProp)i);
 	}
 	ret >> (char)props.length() << props;
 

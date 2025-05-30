@@ -67,8 +67,8 @@ public:
 	std::weak_ptr<Map> getMap() const;
 	void setMap(const std::shared_ptr<Map>& map);
 
-	virtual CString getProp(int pPropId) const override;
-	virtual bool getProp(CString& buffer, int pPropId) const override;
+	virtual CString getPropPacket(PlayerProp pPropId) const override;
+	virtual bool getPropPacket(CString& buffer, PlayerProp pPropId) const override;
 
 	// Level manipulation
 	std::shared_ptr<Level> getLevel() const;
@@ -182,9 +182,9 @@ protected:
 using PlayerClientPtr = std::shared_ptr<PlayerClient>;
 
 // So stupid that I have to do this.
-inline CString PlayerClient::getProp(int pPropId) const
+inline CString PlayerClient::getPropPacket(PlayerProp pPropId) const
 {
-	return Player::getProp(pPropId);
+	return Player::getPropPacket(pPropId);
 }
 
 inline const CString& PlayerClient::getGroup() const

@@ -169,8 +169,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 					{
 						CString nick = p->account.character.nickName;
 						p->setNick(nick.readString("(").trimI());
-						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME));
-						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME << p->getProp(PLPROP_NICKNAME), { pid });
+						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::NICKNAME << p->getPropPacket(PlayerProp::NICKNAME));
+						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PlayerProp::NICKNAME << p->getPropPacket(PlayerProp::NICKNAME), { pid });
 					}
 				}
 			}
@@ -195,8 +195,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 				{
 					CString nick = p->account.character.nickName;
 					p->setNick(CString() << nick.readString("(").trimI() << " (" << guild << ")", true);
-					p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PLPROP_NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName);
-					sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PLPROP_NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName, { p->getId() });
+					p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName);
+					sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PlayerProp::NICKNAME >> (char)p->account.character.nickName.length() << p->account.character.nickName, { p->getId() });
 				}
 			}
 		}

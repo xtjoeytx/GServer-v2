@@ -160,10 +160,10 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 				if (isRC())
 				{
 					// Irc players start at 16k
-					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
+					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PlayerProp::NICKNAME >> (char)channelNick.length() << channelNick >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
 				}
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PLPROP_ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PLPROP_NICKNAME >> (char)channelNick.length() << channelNick >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PlayerProp::ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PlayerProp::NICKNAME >> (char)channelNick.length() << channelNick >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::CHANNELS);
 			}
 			else if (params.size() > 3)
 			{

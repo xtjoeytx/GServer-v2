@@ -322,7 +322,7 @@ void Player::cleanup()
 		// Announce our departure to other clients.
 		if (!isNC())
 		{
-			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PLPROP_PCONNECTED, this);
+			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::PCONNECTED, this);
 			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)m_id, this);
 		}
 
@@ -407,10 +407,10 @@ bool Player::canSend()
 	return m_fileQueue.canSend();
 }
 
-CString Player::getProp(int pPropId) const
+CString Player::getPropPacket(PlayerProp pPropId) const
 {
 	CString packet;
-	getProp(packet, pPropId);
+	getPropPacket(packet, pPropId);
 	return packet;
 }
 
@@ -708,10 +708,10 @@ void Player::exchangeMyPropsWithOthers()
 {
 	// RC props are send differently.
 	CString myRCProps;
-	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PLPROP_CURLEVEL << getProp(PLPROP_CURLEVEL) >> (char)PLPROP_PSTATUSMSG << getProp(PLPROP_PSTATUSMSG) >> (char)PLPROP_NICKNAME << getProp(PLPROP_NICKNAME) >> (char)PLPROP_COMMUNITYNAME << getProp(PLPROP_COMMUNITYNAME);
+	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::CURLEVEL << getPropPacket(PlayerProp::CURLEVEL) >> (char)PlayerProp::PSTATUSMSG << getPropPacket(PlayerProp::PSTATUSMSG) >> (char)PlayerProp::NICKNAME << getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::COMMUNITYNAME << getPropPacket(PlayerProp::COMMUNITYNAME);
 
 	// Get our client props.
-	CString myClientProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << (isClient() ? getProps(loginPropsClientOthers) : getProps(loginPropsRC));
+	CString myClientProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
 
 	CString rcsOnline;
 	auto& playerList = m_server->getPlayerList();
@@ -728,7 +728,7 @@ void Player::exchangeMyPropsWithOthers()
 
 		// Add Player / RC.
 		if (isClient())
-			sendPacket(player->isClient() ? player->getProps(loginPropsClientOthers) : player->getProps(loginPropsRC));
+			sendPacket(player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC));
 		else
 		{
 			// TODO: Make sure this works when levels get fixed.
@@ -737,7 +737,7 @@ void Player::exchangeMyPropsWithOthers()
 			CString levelName = player->account.level;
 
 			// Get the other player's RC props.
-			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name >> (char)PLPROP_CURLEVEL >> (char)levelName.length() << levelName >> (char)PLPROP_PSTATUSMSG << player->getProp(PLPROP_PSTATUSMSG) >> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME) >> (char)PLPROP_COMMUNITYNAME << player->getProp(PLPROP_COMMUNITYNAME));
+			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name >> (char)PlayerProp::CURLEVEL >> (char)levelName.length() << levelName >> (char)PlayerProp::PSTATUSMSG << player->getPropPacket(PlayerProp::PSTATUSMSG) >> (char)PlayerProp::NICKNAME << player->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::COMMUNITYNAME << player->getPropPacket(PlayerProp::COMMUNITYNAME));
 		}
 	}
 }
@@ -887,7 +887,7 @@ void Player::setNick(CString pNickName, bool force)
 
 void Player::setChat(const CString& pChat)
 {
-	setPropsFromPacket(CString() >> (char)PLPROP_CURCHAT >> (char)pChat.length() << pChat, PropSetBy::SERVER);
+	setPropsFromPacket(CString() >> (char)PlayerProp::CURCHAT >> (char)pChat.length() << pChat, PropSetBy::SERVER);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1126,7 +1126,7 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 		if (pid == m_id) continue;
 
 		// See if the player is allowing toalls.
-		unsigned char flags = strtoint(player->getProp(PLPROP_ADDITFLAGS));
+		unsigned char flags = strtoint(player->getPropPacket(PlayerProp::ADDITFLAGS));
 		if (flags & PLFLAG_NOTOALL) continue;
 
 		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)m_id >> (char)message.length() << message);
@@ -1192,7 +1192,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
 
 			// Don't send to people who don't want mass messages.
-			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
+			if (pmPlayerCount != 1 && (pmPlayer->getPropPacket(PlayerProp::ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 				continue;
 
 			// Send the message.

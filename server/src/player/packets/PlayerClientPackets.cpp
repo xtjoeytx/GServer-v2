@@ -273,8 +273,8 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	if (level->isSparringZone())
 	{
 		// Get some stats we are going to use.
-		// Need to parse the other player's PLPROP_RATING.
-		unsigned int otherRating = killer->getProp(PLPROP_RATING).readGUInt();
+		// Need to parse the other player's PlayerProp::RATING.
+		unsigned int otherRating = killer->getPropPacket(PlayerProp::RATING).readGUInt();
 		float oldStats[4] = { account.eloRating, account.eloDeviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
@@ -306,13 +306,13 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		{
 			account.eloRating = tLoseRating;
 			account.eloDeviation = tLoseDeviation;
-			this->setPropsFromPacket(CString() >> (char)PLPROP_RATING >> (int)0, PropSetBy::SERVER);
+			this->setPropsFromPacket(CString() >> (char)PlayerProp::RATING >> (int)0, PropSetBy::SERVER);
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
 			killer->account.eloRating = tWinRating;
 			killer->account.eloRating = tWinDeviation;
-			killer->setPropsFromPacket(CString() >> (char)PLPROP_RATING >> (int)0, PropSetBy::SERVER);
+			killer->setPropsFromPacket(CString() >> (char)PlayerProp::RATING >> (int)0, PropSetBy::SERVER);
 		}
 		this->account.lastSparTime = std::chrono::system_clock::now();
 		killer->account.lastSparTime = std::chrono::system_clock::now();
@@ -328,7 +328,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		// Now, adjust their AP if allowed.
 		if (settings.getBool("apsystem", true))
 		{
-			signed char oAp = killer->getProp(PLPROP_ALIGNMENT).readGChar();
+			signed char oAp = killer->getPropPacket(PlayerProp::ALIGNMENT).readGChar();
 
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && account.character.ap > 19)
@@ -339,7 +339,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (account.character.ap / 20));
 				if (oAp < 0) oAp = 0;
 				killer->account.apCounter = (oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4]))));
-				killer->setPropsFromPacket(CString() >> (char)PLPROP_ALIGNMENT >> (char)oAp, PropSetBy::SERVER);
+				killer->setPropsFromPacket(CString() >> (char)PlayerProp::ALIGNMENT >> (char)oAp, PropSetBy::SERVER);
 			}
 		}
 	}
@@ -447,7 +447,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				{
 					if (pos == -22) pos = -21.5f;
 					if (pos == 116) pos = 115.5f;
-					m_grMovementPackets >> (char)PLPROP_X;
+					m_grMovementPackets >> (char)PlayerProp::X;
 					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
 					m_grMovementPackets << "\n";
 				}
@@ -461,7 +461,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				{
 					if (pos == -22) pos = -21.5f;
 					if (pos == 116) pos = 115.5f;
-					m_grMovementPackets >> (char)PLPROP_Y;
+					m_grMovementPackets >> (char)PlayerProp::Y;
 					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
 					m_grMovementPackets << "\n";
 				}
@@ -472,7 +472,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
 				if (pos != getZ())
-					m_grMovementPackets >> (char)PLPROP_Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
+					m_grMovementPackets >> (char)PlayerProp::Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
 				return HandlePacketResult::Handled;
 			}
 		}
@@ -626,7 +626,7 @@ HandlePacketResult PlayerClient::msgPLI_HURTPLAYER(CString& pPacket)
 	if (victim == 0) return HandlePacketResult::Handled;
 
 	// If they are paused, they don't get hurt.
-	if (victim->getProp(PLPROP_STATUS).readGChar() & PLSTATUS_PAUSED) return HandlePacketResult::Handled;
+	if (victim->getPropPacket(PlayerProp::STATUS).readGChar() & PLSTATUS_PAUSED) return HandlePacketResult::Handled;
 
 	// Send the packet.
 	victim->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)m_id >> (char)hurtdx >> (char)hurtdy >> (char)power >> (int)npc);
@@ -729,7 +729,7 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
 
 			// Don't send to people who don't want mass messages.
-			if (pmPlayerCount != 1 && (pmPlayer->getProp(PLPROP_ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
+			if (pmPlayerCount != 1 && (pmPlayer->getPropPacket(PlayerProp::ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
 				continue;
 
 			// Jailed people cannot send PMs to normal players.
@@ -1136,7 +1136,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setPropsFromPacket(CString() >> (char)PLPROP_MAXPOWER >> (char)hearts, PropSetBy::SERVER);
+					setPropsFromPacket(CString() >> (char)PlayerProp::MAXPOWER >> (char)hearts, PropSetBy::SERVER);
 				}
 			}
 		}

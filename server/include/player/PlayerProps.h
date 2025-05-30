@@ -12,101 +12,101 @@
 #include "utilities/inplace_vector.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
-enum PlayerProp : uint8_t
+enum class PlayerProp : uint8_t
 {
-	PLPROP_NICKNAME = 0,
-	PLPROP_MAXPOWER = 1,
-	PLPROP_CURPOWER = 2,
-	PLPROP_RUPEESCOUNT = 3,
-	PLPROP_ARROWSCOUNT = 4,
-	PLPROP_BOMBSCOUNT = 5,
-	PLPROP_GLOVEPOWER = 6,
-	PLPROP_BOMBPOWER = 7,
-	PLPROP_SWORDPOWER = 8,
-	PLPROP_SHIELDPOWER = 9,
-	PLPROP_GANI = 10, // PLPROP_BOWGIF in pre-2.x
-	PLPROP_HEADGIF = 11,
-	PLPROP_CURCHAT = 12,
-	PLPROP_COLORS = 13,
-	PLPROP_ID = 14,
-	PLPROP_X = 15,
-	PLPROP_Y = 16,
-	PLPROP_SPRITE = 17,
-	PLPROP_STATUS = 18,
-	PLPROP_CARRYSPRITE = 19,
-	PLPROP_CURLEVEL = 20,
-	PLPROP_HORSEGIF = 21,
-	PLPROP_HORSEBUSHES = 22,
-	PLPROP_EFFECTCOLORS = 23,
-	PLPROP_CARRYNPC = 24,
-	PLPROP_APCOUNTER = 25,
-	PLPROP_MAGICPOINTS = 26,
-	PLPROP_KILLSCOUNT = 27,
-	PLPROP_DEATHSCOUNT = 28,
-	PLPROP_ONLINESECS = 29,
-	PLPROP_IPADDR = 30,
-	PLPROP_UDPPORT = 31,
-	PLPROP_ALIGNMENT = 32,
-	PLPROP_ADDITFLAGS = 33,
-	PLPROP_ACCOUNTNAME = 34,
-	PLPROP_BODYIMG = 35,
-	PLPROP_RATING = 36,
-	PLPROP_GATTRIB1 = 37,
-	PLPROP_GATTRIB2 = 38,
-	PLPROP_GATTRIB3 = 39,
-	PLPROP_GATTRIB4 = 40,
-	PLPROP_GATTRIB5 = 41,
-	PLPROP_ATTACHNPC = 42,
-	PLPROP_GMAPLEVELX = 43,
-	PLPROP_GMAPLEVELY = 44,
-	PLPROP_Z = 45,
-	PLPROP_GATTRIB6 = 46,
-	PLPROP_GATTRIB7 = 47,
-	PLPROP_GATTRIB8 = 48,
-	PLPROP_GATTRIB9 = 49,
-	PLPROP_JOINLEAVELVL = 50,
-	PLPROP_PCONNECTED = 51,
-	PLPROP_PLANGUAGE = 52,
-	PLPROP_PSTATUSMSG = 53,
-	PLPROP_GATTRIB10 = 54,
-	PLPROP_GATTRIB11 = 55,
-	PLPROP_GATTRIB12 = 56,
-	PLPROP_GATTRIB13 = 57,
-	PLPROP_GATTRIB14 = 58,
-	PLPROP_GATTRIB15 = 59,
-	PLPROP_GATTRIB16 = 60,
-	PLPROP_GATTRIB17 = 61,
-	PLPROP_GATTRIB18 = 62,
-	PLPROP_GATTRIB19 = 63,
-	PLPROP_GATTRIB20 = 64,
-	PLPROP_GATTRIB21 = 65,
-	PLPROP_GATTRIB22 = 66,
-	PLPROP_GATTRIB23 = 67,
-	PLPROP_GATTRIB24 = 68,
-	PLPROP_GATTRIB25 = 69,
-	PLPROP_GATTRIB26 = 70,
-	PLPROP_GATTRIB27 = 71,
-	PLPROP_GATTRIB28 = 72,
-	PLPROP_GATTRIB29 = 73,
-	PLPROP_GATTRIB30 = 74,
-	PLPROP_OSTYPE = 75,       // 2.19+
-	PLPROP_TEXTCODEPAGE = 76, // 2.19+
-	PLPROP_ONLINESECS2 = 77,
-	PLPROP_X2 = 78,
-	PLPROP_Y2 = 79,
-	PLPROP_Z2 = 80,
-	PLPROP_PLAYERLISTCATEGORY = 81, // {GCHAR flag} - flag 0 places in playerlist, flag 1 places in servers tab, flag 3 places in channels tab (unconfirmed)
+	NICKNAME = 0,
+	MAXPOWER = 1,
+	CURPOWER = 2,
+	RUPEESCOUNT = 3,
+	ARROWSCOUNT = 4,
+	BOMBSCOUNT = 5,
+	GLOVEPOWER = 6,
+	BOMBPOWER = 7,
+	SWORDPOWER = 8,
+	SHIELDPOWER = 9,
+	GANI = 10, // PLPROP_BOWGIF in pre-2.x
+	HEADGIF = 11,
+	CURCHAT = 12,
+	COLORS = 13,
+	ID = 14,
+	X = 15,
+	Y = 16,
+	SPRITE = 17,
+	STATUS = 18,
+	CARRYSPRITE = 19,
+	CURLEVEL = 20,
+	HORSEGIF = 21,
+	HORSEBUSHES = 22,
+	EFFECTCOLORS = 23,
+	CARRYNPC = 24,
+	APCOUNTER = 25,
+	MAGICPOINTS = 26,
+	KILLSCOUNT = 27,
+	DEATHSCOUNT = 28,
+	ONLINESECS = 29,
+	IPADDR = 30,
+	UDPPORT = 31,
+	ALIGNMENT = 32,
+	ADDITFLAGS = 33,
+	ACCOUNTNAME = 34,
+	BODYIMG = 35,
+	RATING = 36,
+	GATTRIB1 = 37,
+	GATTRIB2 = 38,
+	GATTRIB3 = 39,
+	GATTRIB4 = 40,
+	GATTRIB5 = 41,
+	ATTACHNPC = 42,
+	GMAPLEVELX = 43,
+	GMAPLEVELY = 44,
+	Z = 45,
+	GATTRIB6 = 46,
+	GATTRIB7 = 47,
+	GATTRIB8 = 48,
+	GATTRIB9 = 49,
+	JOINLEAVELVL = 50,
+	PCONNECTED = 51,
+	PLANGUAGE = 52,
+	PSTATUSMSG = 53,
+	GATTRIB10 = 54,
+	GATTRIB11 = 55,
+	GATTRIB12 = 56,
+	GATTRIB13 = 57,
+	GATTRIB14 = 58,
+	GATTRIB15 = 59,
+	GATTRIB16 = 60,
+	GATTRIB17 = 61,
+	GATTRIB18 = 62,
+	GATTRIB19 = 63,
+	GATTRIB20 = 64,
+	GATTRIB21 = 65,
+	GATTRIB22 = 66,
+	GATTRIB23 = 67,
+	GATTRIB24 = 68,
+	GATTRIB25 = 69,
+	GATTRIB26 = 70,
+	GATTRIB27 = 71,
+	GATTRIB28 = 72,
+	GATTRIB29 = 73,
+	GATTRIB30 = 74,
+	OSTYPE = 75,       // 2.19+
+	TEXTCODEPAGE = 76, // 2.19+
+	ONLINESECS2 = 77,
+	X2 = 78,
+	Y2 = 79,
+	Z2 = 80,
+	PLAYERLISTCATEGORY = 81, // {GCHAR flag} - flag 0 places in playerlist, flag 1 places in servers tab, flag 3 places in channels tab (unconfirmed)
 
 	// In Graal v5, where players have the Graal######## accounts, this is their chosen account alias (community name.)
-	PLPROP_COMMUNITYNAME = 82,
+	COMMUNITYNAME = 82,
+
+	PLAYERPROP_COUNT
 };
-inline constexpr int PROPSCOUNT = 83;
+constexpr int PLAYERPROP_COUNT = static_cast<int>(PlayerProp::PLAYERPROP_COUNT);
 
 enum class PlayerListCategory : uint8_t
 {
@@ -201,7 +201,7 @@ struct PropLimits
 // Gani attributes in order of their property number.
 inline constexpr std::array<int, 30> GaniAttributePropList = { 37, 38, 39, 40, 41, 46, 47, 48, 49, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74 };
 
-using PropList = std::array<bool, PROPSCOUNT>;
+using PropList = std::array<bool, PLAYERPROP_COUNT>;
 
 // Sent to the player on login.
 inline constexpr PropList loginPropsClientSelf =
@@ -318,7 +318,6 @@ inline constexpr PropList clientPropsForRCView =
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // PLAYERPROPS_H

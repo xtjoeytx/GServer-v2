@@ -63,7 +63,7 @@ bool Player::remPMServer(CString& option)
 				if (isRC())
 					sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::PCONNECTED);
 			}
 		}
 	}
@@ -116,9 +116,9 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 					if (isRC())
 						sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 					else
-						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PLPROP_PCONNECTED);
+						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::PCONNECTED);
 
-					//m_server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PLPROP_PCONNECTED, this);
+					//m_server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PlayerProp::PCONNECTED, this);
 					//m_server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 				}
 			}
@@ -165,11 +165,11 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			if (isRC())
 			{
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getPropPacket(PlayerProp::ACCOUNTNAME) >> (char)PlayerProp::NICKNAME << externalPlayer->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 			else
 			{
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PLPROP_ACCOUNTNAME << externalPlayer->getProp(PLPROP_ACCOUNTNAME) >> (char)PLPROP_NICKNAME << externalPlayer->getProp(PLPROP_NICKNAME) >> (char)PLPROP_PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PlayerProp::ACCOUNTNAME << externalPlayer->getPropPacket(PlayerProp::ACCOUNTNAME) >> (char)PlayerProp::NICKNAME << externalPlayer->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 		}
 	}

@@ -91,25 +91,25 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 				rupeeCount += 1;
 
 			rupeeCount = clip(rupeeCount, 0, 9999999);
-			return CString() >> (char)PLPROP_RUPEESCOUNT >> (int)rupeeCount;
+			return CString() >> (char)PlayerProp::RUPEESCOUNT >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS: // bombs
 		{
 			int bombCount = clip(player->account.character.bombs + 5, 0, 99);
-			return CString() >> (char)PLPROP_BOMBSCOUNT >> (char)bombCount;
+			return CString() >> (char)PlayerProp::BOMBSCOUNT >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS: // darts
 		{
 			int arrowCount = clip(player->account.character.arrows + 5, 0, 99);
-			return CString() >> (char)PLPROP_ARROWSCOUNT >> (char)arrowCount;
+			return CString() >> (char)PlayerProp::ARROWSCOUNT >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART: // heart
 		{
 			uint8_t newPower = clip(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
-			return CString() >> (char)PLPROP_CURPOWER >> (char)(newPower);
+			return CString() >> (char)PlayerProp::CURPOWER >> (char)(newPower);
 		}
 
 		case LevelItemType::GLOVE1: // glove1
@@ -121,7 +121,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			else if (glovePower < 2)
 				glovePower = 2;
 
-			return CString() >> (char)PLPROP_GLOVEPOWER >> (char)glovePower;
+			return CString() >> (char)PlayerProp::GLOVEPOWER >> (char)glovePower;
 		}
 
 		case LevelItemType::BOW:       // bow
@@ -149,7 +149,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			if (player->account.character.shieldPower > newShieldPower)
 				newShieldPower = player->account.character.shieldPower;
 
-			return CString() >> (char)PLPROP_SHIELDPOWER >> (char)newShieldPower;
+			return CString() >> (char)PlayerProp::SHIELDPOWER >> (char)newShieldPower;
 		}
 
 		case LevelItemType::SWORD:       // sword
@@ -165,22 +165,22 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 				swordPower = (swordPower < 2 ? 2 : swordPower);
 			else
 				swordPower = (swordPower < 1 ? 1 : swordPower);
-			return CString() >> (char)PLPROP_SWORDPOWER >> (char)swordPower;
+			return CString() >> (char)PlayerProp::SWORDPOWER >> (char)swordPower;
 		}
 
 		case LevelItemType::FULLHEART: // fullheart
 		{
 			char heartMax = clip(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
-			return CString() >> (char)PLPROP_MAXPOWER >> (char)heartMax >> (char)PLPROP_CURPOWER >> (char)(heartMax * 2);
+			return CString() >> (char)PlayerProp::MAXPOWER >> (char)heartMax >> (char)PlayerProp::CURPOWER >> (char)(heartMax * 2);
 		}
 
 		case LevelItemType::SPINATTACK: // spinattack
 		{
-			CString playerProp = player->getProp(PLPROP_STATUS);
+			CString playerProp = player->getPropPacket(PlayerProp::STATUS);
 			char status = playerProp.readGChar();
 			if (status & PLSTATUS_HASSPIN) return {};
 			status |= PLSTATUS_HASSPIN;
-			return CString() >> (char)PLPROP_STATUS >> (char)status;
+			return CString() >> (char)PlayerProp::STATUS >> (char)status;
 		}
 
 		default:

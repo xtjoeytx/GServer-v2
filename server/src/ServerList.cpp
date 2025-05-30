@@ -310,13 +310,13 @@ void ServerList::addPlayer(PlayerPtr player)
 
 	CString dataPacket;
 	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
-	dataPacket >> (char)PLPROP_ACCOUNTNAME << player->getProp(PLPROP_ACCOUNTNAME);
-	dataPacket >> (char)PLPROP_NICKNAME << player->getProp(PLPROP_NICKNAME);
-	dataPacket >> (char)PLPROP_CURLEVEL << player->getProp(PLPROP_CURLEVEL);
-	dataPacket >> (char)PLPROP_X << player->getProp(PLPROP_X);
-	dataPacket >> (char)PLPROP_Y << player->getProp(PLPROP_Y);
-	dataPacket >> (char)PLPROP_ALIGNMENT << player->getProp(PLPROP_ALIGNMENT);
-	dataPacket >> (char)PLPROP_IPADDR << player->getProp(PLPROP_IPADDR);
+	dataPacket >> (char)PlayerProp::ACCOUNTNAME << player->getPropPacket(PlayerProp::ACCOUNTNAME);
+	dataPacket >> (char)PlayerProp::NICKNAME << player->getPropPacket(PlayerProp::NICKNAME);
+	dataPacket >> (char)PlayerProp::CURLEVEL << player->getPropPacket(PlayerProp::CURLEVEL);
+	dataPacket >> (char)PlayerProp::X << player->getPropPacket(PlayerProp::X);
+	dataPacket >> (char)PlayerProp::Y << player->getPropPacket(PlayerProp::Y);
+	dataPacket >> (char)PlayerProp::ALIGNMENT << player->getPropPacket(PlayerProp::ALIGNMENT);
+	dataPacket >> (char)PlayerProp::IPADDR << player->getPropPacket(PlayerProp::IPADDR);
 	sendPacket(dataPacket);
 }
 
@@ -495,7 +495,7 @@ void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 	if (p)
 	{
 		// Create the prop packet.
-		CString prop = CString() >> (char)PLPROP_NICKNAME >> (char)nickname.length() << nickname;
+		CString prop = CString() >> (char)PlayerProp::NICKNAME >> (char)nickname.length() << nickname;
 
 		// Assign the nickname to the player.
 		p->setNick(nickname, true);
@@ -547,7 +547,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 	// Start the profile string.
 	CString profile;
-	profile << p2->getProp(PLPROP_ACCOUNTNAME) << pPacket.readString("");
+	profile << p2->getPropPacket(PlayerProp::ACCOUNTNAME) << pPacket.readString("");
 
 	// Add the time to the profile string.
 	auto time = p2->account.onlineSeconds;
@@ -567,23 +567,23 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		val = CString((int)p2->account.deaths);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
+		val = CString((int)p2->getPropPacket(PlayerProp::MAXPOWER).readGUChar());
 		profile >> (char)val.length() << val;
 
-		int rating = p2->getProp(PLPROP_RATING).readGUInt();
+		int rating = p2->getPropPacket(PlayerProp::RATING).readGUInt();
 		val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGUChar());
+		val = CString((int)p2->getPropPacket(PlayerProp::ALIGNMENT).readGUChar());
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
+		val = CString((int)p2->getPropPacket(PlayerProp::RUPEESCOUNT).readGUInt());
 		profile >> (char)val.length() << val;
 
-		val = CString((int)(p2->getProp(PLPROP_SWORDPOWER).readGUChar() - 30));
+		val = CString((int)(p2->getPropPacket(PlayerProp::SWORDPOWER).readGUChar() - 30));
 		profile >> (char)val.length() << val;
 
-		bool canSpin = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) != 0 ? true : false);
+		bool canSpin = ((p2->getPropPacket(PlayerProp::STATUS).readGUChar() & PLSTATUS_HASSPIN) != 0 ? true : false);
 		if (canSpin) val = "true";
 		else
 			val = "false";
@@ -607,44 +607,44 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				else if (val == "playerdeaths")
 					val = CString((unsigned int)(p2->account.deaths));
 				else if (val == "playerfullhearts")
-					val = CString((int)p2->getProp(PLPROP_MAXPOWER).readGUChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::MAXPOWER).readGUChar());
 				else if (val == "playerrating")
 				{
-					int rating = p2->getProp(PLPROP_RATING).readGUInt();
+					int rating = p2->getPropPacket(PlayerProp::RATING).readGUInt();
 					val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
 				}
 				else if (val == "playerap")
-					val = CString((int)p2->getProp(PLPROP_ALIGNMENT).readGChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::ALIGNMENT).readGChar());
 				else if (val == "playerrupees")
-					val = CString((int)p2->getProp(PLPROP_RUPEESCOUNT).readGUInt());
+					val = CString((int)p2->getPropPacket(PlayerProp::RUPEESCOUNT).readGUInt());
 				else if (val == "playerswordpower")
 				{
-					char sp = p2->getProp(PLPROP_SWORDPOWER).readGChar();
+					char sp = p2->getPropPacket(PlayerProp::SWORDPOWER).readGChar();
 					if (sp > 4) sp -= 30;
 					val = CString((int)sp);
 				}
 				else if (val == "canspin")
-					val = ((p2->getProp(PLPROP_STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
+					val = ((p2->getPropPacket(PlayerProp::STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
 				else if (val == "playerhearts")
 				{
-					unsigned char power = p2->getProp(PLPROP_CURPOWER).readGUChar();
+					unsigned char power = p2->getPropPacket(PlayerProp::CURPOWER).readGUChar();
 					val = CString((int)(power / 2));
 					if (power % 2 == 1) val << ".5";
 				}
 				else if (val == "playerdarts")
-					val = CString((int)p2->getProp(PLPROP_ARROWSCOUNT).readGUChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::ARROWSCOUNT).readGUChar());
 				else if (val == "playerbombs")
-					val = CString((int)p2->getProp(PLPROP_BOMBSCOUNT).readGUChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::BOMBSCOUNT).readGUChar());
 				else if (val == "playermp")
-					val = CString((int)p2->getProp(PLPROP_MAGICPOINTS).readGUChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::MAGICPOINTS).readGUChar());
 				else if (val == "playershieldpower")
 				{
-					char sp = p2->getProp(PLPROP_SHIELDPOWER).readGChar();
+					char sp = p2->getPropPacket(PlayerProp::SHIELDPOWER).readGChar();
 					if (sp > 3) sp -= 10;
 					val = CString((int)sp);
 				}
 				else if (val == "playerglovepower")
-					val = CString((int)p2->getProp(PLPROP_GLOVEPOWER).readGUChar());
+					val = CString((int)p2->getPropPacket(PlayerProp::GLOVEPOWER).readGUChar());
 				else
 				{
 					// Find if String-Array
@@ -836,31 +836,31 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		switch (type)
 		{
 			case SVF_HEAD:
-				result = p->setProp(PLPROP_HEADGIF, CString() >> (char)(shortName.length() + 100) << shortName, PropSetBy::SERVER);
+				result = p->setPropFromPacket(PlayerProp::HEADGIF, CString() >> (char)(shortName.length() + 100) << shortName, PropSetBy::SERVER);
 				break;
 
 			case SVF_BODY:
-				result = p->setProp(PLPROP_BODYIMG, CString() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				result = p->setPropFromPacket(PlayerProp::BODYIMG, CString() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 
 			case SVF_SWORD:
 			{
-				CString prop = p->getProp(PLPROP_SWORDPOWER);
-				result = p->setProp(PLPROP_SWORDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				CString prop = p->getPropPacket(PlayerProp::SWORDPOWER);
+				result = p->setPropFromPacket(PlayerProp::SWORDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 			}
 
 			case SVF_SHIELD:
 			{
-				CString prop = p->getProp(PLPROP_SHIELDPOWER);
-				result = p->setProp(PLPROP_SHIELDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				CString prop = p->getPropPacket(PlayerProp::SHIELDPOWER);
+				result = p->setPropFromPacket(PlayerProp::SHIELDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
 				break;
 			}
 		}
 
 		// Send the prop.
 		uint8_t propId = result.resultPropIds.front();
-		CString prop = p->getProp(propId);
+		CString prop = p->getPropPacket((PlayerProp)propId);
 		if (result.resultFlags.test(PropSetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(PropSetResults::sendToLevel))
