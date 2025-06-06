@@ -391,15 +391,15 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 
 	// Add the baddy.
 	auto level = getLevel();
-	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], bType);
+	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], static_cast<BaddyType>(bType));
 	if (baddy == 0) return HandlePacketResult::Handled;
 
 	// Set the baddy props.
 	baddy->setRespawn(false);
-	baddy->setPropsFromPacket(CString() >> (char)BDPROP_POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
+	baddy->setPropsFromPacket(CString() >> (char)BaddyProp::POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
 
 	// Send the props to everybody in the level.
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(), level);
+	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(), level);
 	return HandlePacketResult::Handled;
 }
 

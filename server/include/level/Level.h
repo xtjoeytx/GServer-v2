@@ -17,13 +17,10 @@
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
 #include <scripting/ScriptContainers.h>
-#include <utilities/IdGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // Starting baddy id.  Baddy id 0 breaks the client so always start here.
@@ -205,11 +202,23 @@ public:
 	//! \param pY Y location of the baddy to add.
 	//! \param pType The type of baddy to add.
 	//! \return A pointer to the new LevelBaddy.
-	LevelBaddy* addBaddy(float pX, float pY, char pType);
+	LevelBaddy* addBaddy(float pX, float pY, BaddyType pType);
+
+	/// @brief Adds a new baddy to the level and sends it to the players inside.
+	/// @param x The X position of the baddy.
+	/// @param y The Y position of the baddy.
+	/// @param type The type of baddy to add.
+	/// @param power The power of the baddy.
+	/// @param image The custom image to use for the baddy, if any.
+	/// @return A pointer to the new LevelBaddy.
+	LevelBaddy* addNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image = {});
 
 	//! Removes a baddy from the level.
 	//! \param pId ID of the baddy to remove.
 	void removeBaddy(uint8_t pId);
+
+	//! Removes all baddies from the level.
+	void removeAllBaddies();
 
 	//! Finds a baddy by the specified id number.
 	//! \param pId The ID number of the baddy to find.
@@ -317,9 +326,7 @@ private:
 	std::weak_ptr<Map> m_map;
 	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;
 
-	std::unordered_map<uint8_t, LevelBaddyPtr> m_baddies;
-	IdGenerator<uint8_t> m_baddyIdGenerator{ BADDYID_INIT };
-
+	std::vector<LevelBaddyPtr> m_baddies;
 	std::vector<LevelBoardChange> m_boardChanges;
 	std::vector<LevelChestPtr> m_chests;
 	std::vector<LevelHorse> m_horses;
@@ -333,7 +340,6 @@ private:
 using LevelPtr = std::shared_ptr<Level>;
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // LEVEL_H

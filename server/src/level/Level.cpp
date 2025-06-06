@@ -16,10 +16,8 @@
 #include <scripting/ScriptTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -64,7 +62,6 @@ Level::~Level()
 
 	// Delete baddies.
 	m_baddies.clear();
-	m_baddyIdGenerator.resetAndSetNext(BADDYID_INIT);
 
 	// Delete chests.
 	m_chests.clear();
@@ -99,14 +96,12 @@ Level::~Level()
 CString Level::getBaddyPacket(int clientVersion)
 {
 	CString retVal;
-	for (const auto& [id, baddy]: m_baddies)
+	for (const auto& baddy: m_baddies)
 	{
-		assert(baddy != nullptr);
 		if (baddy == nullptr)
 			continue;
 
-		//if (baddy->getProp(BDPROP_MODE).readGChar() != BDMODE_DIE)
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(clientVersion) << "\n";
+		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(clientVersion) << "\n";
 	}
 	return retVal;
 }
@@ -271,9 +266,12 @@ bool Level::reload()
 		}
 	}
 
-	// Delete baddies.
-	m_baddies.clear();
-	m_baddyIdGenerator.resetAndSetNext(BADDYID_INIT);
+	// Kill off all the baddies and disable respawn.
+	for (size_t i = 0; i < m_baddies.size(); ++i)
+	{
+		m_baddies[i]->setRespawn(false);
+		m_baddies[i]->mode = BaddyMode::DEAD;
+	}
 
 	// Delete chests.
 	m_chests.clear();
@@ -498,11 +496,11 @@ void Level::saveLevel(const std::string& filename)
 
 	for (const auto& baddy: m_baddies)
 	{
-		fileStream << "BADDY" << s << baddy.second->getX() << s << baddy.second->getY() << s << baddy.second->getType() << std::endl;
+		fileStream << "BADDY" << s << baddy->x << s << baddy->y << s << PROPID(baddy->type) << std::endl;
 
-		for (const auto& verse: baddy.second->getVerses())
+		for (const auto& verse: baddy->verses)
 		{
-			fileStream << verse.text() << std::endl;
+			fileStream << verse << std::endl;
 		}
 
 		fileStream << "BADDYEND" << std::endl;
@@ -674,22 +672,50 @@ void Level::removeHorse(float pX, float pY)
 	}
 }
 
-LevelBaddy* Level::addBaddy(float pX, float pY, char pType)
+LevelBaddy* Level::addBaddy(float pX, float pY, BaddyType pType)
 {
+	// Find the next available baddy that can be used.
+	size_t nextId = 0;
+	for (nextId = 0; nextId < m_baddies.size(); ++nextId)
+	{
+		if (m_baddies[nextId] == nullptr || m_baddies[nextId]->canBeReplaced())
+			break;
+	}
+
 	// Limit of 50 baddies per level.
-	if (m_baddies.size() > 50) return nullptr;
+	if ((nextId + 1) > 50)
+		return nullptr;
 
 	// New Baddy
 	auto newBaddy = std::make_unique<LevelBaddy>(pX, pY, pType, this->shared_from_this());
 
-	// Get the next baddy id.
-	auto new_id = m_baddyIdGenerator.getAvailableId();
-
 	// Assign the new id.
-	newBaddy->setId(new_id);
+	newBaddy->id = nextId + 1;
 
 	auto* baddy = newBaddy.get();
-	m_baddies[new_id] = std::move(newBaddy);
+	if (nextId >= m_baddies.size())
+		m_baddies.push_back(std::move(newBaddy));
+	else
+		m_baddies[nextId] = std::move(newBaddy);
+
+	return baddy;
+}
+
+LevelBaddy* Level::addNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image)
+{
+	auto baddy = addBaddy(x, y, type);
+	if (baddy == nullptr)
+		return nullptr;
+
+	baddy->setImage(image);
+	baddy->power = power;
+	
+	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
+	for (auto& player : m_players)
+	{
+		if (auto p = m_server->getPlayer(player); p)
+			p->sendPacket(packet);
+	}
 
 	return baddy;
 }
@@ -697,25 +723,50 @@ LevelBaddy* Level::addBaddy(float pX, float pY, char pType)
 void Level::removeBaddy(uint8_t pId)
 {
 	// Don't allow us to remove id 0 or any id over 50.
-	if (pId < 1 || pId > 50) return;
+	if (pId < 1 || pId > 50 || (pId >= m_baddies.size())) return;
 
 	// Find the baddy.
-	auto iter = m_baddies.find(pId);
-	if (iter == std::end(m_baddies)) return;
+	auto& baddy = m_baddies.at(pId - 1);
 
 	// Erase the baddy.
-	auto id = iter->first;
-	m_baddyIdGenerator.freeId(id);
-	m_baddies.erase(iter);
+	baddy->mode = BaddyMode::DEAD;
+	baddy->setRespawn(false);
+
+	// Set the baddy as dead for all the other players in the level.
+	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
+	for (const auto& playerId : m_players)
+	{
+		auto player = m_server->getPlayer(playerId);
+		player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
+	}
+}
+
+void Level::removeAllBaddies()
+{
+	CString propsPacket;
+	for (auto& baddy : m_baddies)
+	{
+		baddy->mode = BaddyMode::DEAD;
+		baddy->setRespawn(false);
+
+		// Set the baddy as dead for all the other players in the level.
+		propsPacket.clear();
+		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy->id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
+		for (const auto& playerId : m_players)
+		{
+			auto player = m_server->getPlayer(playerId);
+			player->sendPacket(propsPacket);
+		}
+	}
 }
 
 LevelBaddy* Level::getBaddy(uint8_t id)
 {
-	auto iter = m_baddies.find(id);
-	if (iter == std::end(m_baddies))
+	if (id >= m_baddies.size())
 		return nullptr;
 
-	return iter->second.get();
+	auto& baddy = m_baddies.at(id);
+	return baddy.get();
 }
 
 int Level::addPlayer(PlayerID id)
@@ -747,15 +798,15 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 {
 	m_npcs.push_back(npc->id);
 
-	auto script = npc->getScript().getClientSide();
+	auto script = string::trimLeft(npc->getScript().getClientSide());
 
-	if (script.contains("sparringzone"))
+	if (script.starts_with("sparringzone"))
 		setSparringZone(true);
 
-	if (script.contains("noplayerkilling"))
+	if (script.starts_with("noplayerkilling"))
 		setNoPkZone(true);
 
-	if (script.contains("singleplayer"))
+	if (script.starts_with("singleplayer"))
 		setSingleplayer(true);
 
 	return true;
@@ -848,47 +899,38 @@ bool Level::doTimedEvents()
 	}
 
 	// Check if any baddies need to be marked as dead or respawned.
-	std::unordered_set<LevelBaddy*> set_dead;
-	for (auto i = m_baddies.begin(); i != m_baddies.end();)
+	for (auto& baddy : m_baddies)
 	{
-		auto& baddy = i->second;
-		if (baddy == nullptr)
-		{
-			i = m_baddies.erase(i);
-			continue;
-		}
-		++i;
-
 		// See if we can respawn him.
 		int respawnTimer = baddy->timeout.doTimeout();
 		if (respawnTimer == 0)
 		{
-			if (baddy->getType() == 4 /*swamp arrow baddy*/ && baddy->getMode() == BDMODE_HURT)
+			if (baddy->type == BaddyType::SWAMPSOLDIER && baddy->mode == BaddyMode::HURT)
 			{
-				if (baddy->getPower() == 1)
+				if (baddy->power == 1)
 				{
 					// Unset the hurt mode on the baddy.
-					CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_SWAMPSHOT;
+					CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::SWAMPSHOT;
 					baddy->setPropsFromPacket(props);
 					for (unsigned int i = 1; i < m_players.size(); ++i)
 					{
 						auto player = m_server->getPlayer(m_players[i]);
-						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 					}
 				}
 			}
-			else if (baddy->getMode() == BDMODE_DIE)
+			else if (baddy->mode == BaddyMode::DIE)
 			{
-				// Setting the baddy props could delete the baddy and invalidate our iterator.
-				// So, save a list of all the baddies we are setting as dead and do it after this loop.
-				set_dead.insert(baddy.get());
+				baddy->mode = BaddyMode::DEAD;
+				if (baddy->canRespawn())
+					baddy->timeout.setTimeout(m_server->getSettings().getInt("baddyrespawntime", 60));
 
 				// Set the baddy as dead for all the other players in the level.
-				CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
+				CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 				for (unsigned int i = 1; i < m_players.size(); ++i)
 				{
 					auto player = m_server->getPlayer(m_players[i]);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << props);
+					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 				}
 			}
 			else
@@ -897,16 +939,9 @@ bool Level::doTimedEvents()
 				for (auto p: m_players)
 				{
 					auto player = m_server->getPlayer(p);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->getId() << baddy->getProps(player->getVersion()));
+					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(player->getVersion()));
 				}
 			}
-		}
-	}
-	{ // Mark all the baddies as dead now.
-		CString props = CString() >> (char)BDPROP_MODE >> (char)BDMODE_DEAD;
-		for (auto& baddy: set_dead)
-		{
-			baddy->setPropsFromPacket(props);
 		}
 	}
 
@@ -1081,12 +1116,11 @@ bool Level::hasLivingBaddies() const
 {
 	for (const auto& baddy: m_baddies)
 	{
-		if (baddy.second->getMode() != BDMODE_DEAD)
+		if (baddy->mode != BaddyMode::DEAD)
 			return true;
 	}
 	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

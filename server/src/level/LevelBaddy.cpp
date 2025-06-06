@@ -12,38 +12,37 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const int baddytypes = 10;
-const char* baddyImages[baddytypes] = {
+constexpr int baddytypes = 10;
+constexpr const char* baddyImages[baddytypes] = {
 	"baddygray.png", "baddyblue.png", "baddyred.png", "baddyblue.png", "baddygray.png",
 	"baddyhare.png", "baddyoctopus.png", "baddygold.png", "baddylizardon.png", "baddydragon.png"
 };
-const char baddyStartMode[baddytypes] = {
-	BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_SWAMPSHOT,
-	BDMODE_HAREJUMP, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK, BDMODE_WALK
+constexpr BaddyMode baddyStartMode[baddytypes] = {
+	BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::SWAMPSHOT,
+	BaddyMode::HAREJUMP, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK
 };
-const int baddyPower[baddytypes] = {
+constexpr const int baddyPower[baddytypes] = {
 	2, 3, 4, 3, 2,
 	1, 1, 6, 12, 8
 };
 
-LevelBaddy::LevelBaddy(const float pX, const float pY, const unsigned char pType, std::weak_ptr<Level> pLevel)
-	: m_level(pLevel), m_type(pType),
-	m_startX(pX), m_startY(pY)
+LevelBaddy::LevelBaddy(float x, float y, BaddyType type, std::weak_ptr<Level> level)
+	: m_level(level), type(type), m_originalX(x), m_originalY(y)
 {
-	if (pType > baddytypes) m_type = 0;
-	m_verses.resize(3);
+	if (PROPID(type) > baddytypes) type = BaddyType::GRAYSOLDIER;
+	verses.resize(3);
 	reset();
 }
 
 void LevelBaddy::reset()
 {
-	m_mode = baddyStartMode[(int)m_type];
-	m_x = m_startX;
-	m_y = m_startY;
-	m_power = baddyPower[(int)m_type];
-	m_image = baddyImages[(int)m_type];
-	m_dir = (2 << 2) | 2; // Both head/body direction is encoded in dir.
-	m_ani = 0;
+	mode = baddyStartMode[PROPID(type)];
+	x = m_originalX;
+	y = m_originalY;
+	power = baddyPower[PROPID(type)];
+	image = baddyImages[PROPID(type)];
+	direction = (2 << 2) | 2; // Both head/body direction is encoded in dir.
+	animation = 0;
 	m_hasCustomImage = false;
 }
 
@@ -76,52 +75,52 @@ void LevelBaddy::dropItem()
 	{
 		if (auto lvl = m_level.lock(); lvl)
 		{
-			if (lvl->addItem(this->m_x, this->m_y, itemType))
-				m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->m_x * 2) >> (char)(this->m_y * 2) >> (char)LevelItem::getItemTypeId(itemType), m_level);
+			if (lvl->addItem(this->x, this->y, itemType))
+				m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)LevelItem::getItemTypeId(itemType), m_level);
 		}
 	}
 }
 
-CString LevelBaddy::getProp(const int propId, int clientVersion) const
+CString LevelBaddy::getProp(BaddyProp propId, int clientVersion) const
 {
 	switch (propId)
 	{
-		case BDPROP_ID:
-			return CString() >> (char)m_id;
+		case BaddyProp::ID:
+			return CString() >> (char)id;
 
-		case BDPROP_X:
-			return CString() >> (char)(m_x * 2);
+		case BaddyProp::X:
+			return CString() >> (char)(x * 2);
 
-		case BDPROP_Y:
-			return CString() >> (char)(m_y * 2);
+		case BaddyProp::Y:
+			return CString() >> (char)(y * 2);
 
-		case BDPROP_TYPE:
-			return CString() >> (char)m_type;
+		case BaddyProp::TYPE:
+			return CString() >> (char)PROPID(type);
 
-		case BDPROP_POWERIMAGE:
+		case BaddyProp::POWERIMAGE:
 		{
-			if (clientVersion < CLVER_2_1 && m_image == baddyImages[(int)m_type])
-				return CString() >> (char)m_power >> (char)m_image.length() << m_image.replaceAll(".png", ".gif");
+			if (clientVersion < CLVER_2_1 && image == baddyImages[PROPID(type)])
+				return CString() >> (char)power >> (char)image.length() << string::replace(image, ".png", ".gif");
 			else
-				return CString() >> (char)m_power >> (char)m_image.length() << m_image;
+				return CString() >> (char)power >> (char)image.length() << image;
 		}
 
-		case BDPROP_MODE:
-			return CString() >> (char)m_mode;
+		case BaddyProp::MODE:
+			return CString() >> (char)PROPID(mode);
 
-		case BDPROP_ANI:
-			return CString() >> (char)m_ani;
+		case BaddyProp::ANI:
+			return CString() >> (char)animation;
 
-		case BDPROP_DIR:
-			return CString() >> (char)m_dir;
+		case BaddyProp::DIR:
+			return CString() >> (char)direction;
 
-		case BDPROP_VERSESIGHT:
-		case BDPROP_VERSEHURT:
-		case BDPROP_VERSEATTACK:
+		case BaddyProp::VERSESIGHT:
+		case BaddyProp::VERSEHURT:
+		case BaddyProp::VERSEATTACK:
 		{
-			unsigned int verseId = propId - BDPROP_VERSESIGHT;
-			if (verseId < m_verses.size())
-				return CString() >> (char)m_verses[verseId].length() << m_verses[verseId];
+			auto verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
+			if (verseId < verses.size())
+				return CString() >> (char)verses[verseId].length() << verses[verseId];
 			else
 				return CString() >> (char)0;
 		}
@@ -132,8 +131,8 @@ CString LevelBaddy::getProp(const int propId, int clientVersion) const
 CString LevelBaddy::getProps(int clientVersion) const
 {
 	CString retVal;
-	for (int i = 1; i < BDPROP_COUNT; i++)
-		retVal >> (char)i << getProp(i, clientVersion);
+	for (int i = 1; i < BADDYPROP_COUNT; i++)
+		retVal >> (char)i << getProp(static_cast<BaddyProp>(i), clientVersion);
 	return retVal;
 }
 
@@ -142,36 +141,36 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 	int len = 0;
 	while (pProps.bytesLeft())
 	{
-		unsigned char propId = pProps.readGUChar();
+		BaddyProp propId = static_cast<BaddyProp>(pProps.readGUChar());
 		switch (propId)
 		{
-			case BDPROP_ID:
-				m_id = pProps.readGChar();
+			case BaddyProp::ID:
+				id = pProps.readGChar();
 				break;
 
-			case BDPROP_X:
-				m_x = (float)pProps.readGChar() / 2.0f;
-				m_x = clip(m_x, 0.0f, 63.5f);
+			case BaddyProp::X:
+				x = (float)pProps.readGChar() / 2.0f;
+				x = clip(x, 0.0f, 63.5f);
 				break;
 
-			case BDPROP_Y:
-				m_y = (float)pProps.readGChar() / 2.0f;
-				m_y = clip(m_y, 0.0f, 63.5f);
+			case BaddyProp::Y:
+				y = (float)pProps.readGChar() / 2.0f;
+				y = clip(y, 0.0f, 63.5f);
 				break;
 
-			case BDPROP_TYPE:
-				m_type = pProps.readGChar();
+			case BaddyProp::TYPE:
+				type = static_cast<BaddyType>(pProps.readGChar());
 				break;
 
-			case BDPROP_POWERIMAGE:
+			case BaddyProp::POWERIMAGE:
 			{
-				m_power = pProps.readGChar();
+				power = pProps.readGChar();
 				if (pProps.bytesLeft() != 0)
 				{
 					CString newImage = pProps.readChars(pProps.readGUChar());
 
 					if (newImage.isEmpty())
-						m_image = baddyImages[(int)m_type];
+						image = baddyImages[PROPID(type)];
 					else
 					{
 						// Why we need this I have no idea.
@@ -179,64 +178,61 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 						if (m_hasCustomImage == false)
 						{
 							m_hasCustomImage = true;
-							m_image = newImage;
+							image = newImage;
 						}
 					}
 				}
 			}
 			break;
 
-			case BDPROP_MODE:
-				m_mode = pProps.readGChar();
-				if (m_type == 4 && m_mode == BDMODE_HURT)
+			case BaddyProp::MODE:
+				mode = static_cast<BaddyMode>(pProps.readGChar());
+				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
-					// Workaround for buggy client.  In 2 seconds, set us back to BDMODE_SWAMPSHOT from
-					// inside Level.cpp.
+					// Workaround for buggy client.  In 2 seconds, set us back to BaddyMode::SWAMPSHOT from inside Level.cpp.
 					timeout.setTimeout(2);
 				}
-				else if (m_mode == BDMODE_DIE)
+				else if (mode == BaddyMode::DIE)
 				{
-					// In 2 seconds, set our mode to BDMODE_DEAD inside Level.cpp.
+					// In 2 seconds, set our mode to BaddyMode::DEAD inside Level.cpp.
 					timeout.setTimeout(2);
 
 					// Drop items when dead.
 					if (m_server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
 				}
-				else if (m_mode == BDMODE_DEAD)
+				else if (mode == BaddyMode::DEAD)
 				{
 					if (m_canRespawn)
 						timeout.setTimeout(m_server->getSettings().getInt("baddyrespawntime", 60));
-					else
-					{
-						if (auto lvl = m_level.lock(); lvl)
-							lvl->removeBaddy(m_id);
-						else
-							delete this;
-						return;
-					}
 				}
 				break;
 
-			case BDPROP_ANI:
-				m_ani = pProps.readGChar();
+			case BaddyProp::ANI:
+				animation = pProps.readGChar();
 				break;
 
-			case BDPROP_DIR:
-				m_dir = pProps.readGChar();
+			case BaddyProp::DIR:
+				direction = pProps.readGChar();
 				break;
 
-			case BDPROP_VERSESIGHT:
-			case BDPROP_VERSEHURT:
-			case BDPROP_VERSEATTACK:
+			case BaddyProp::VERSESIGHT:
+			case BaddyProp::VERSEHURT:
+			case BaddyProp::VERSEATTACK:
 			{
 				len = pProps.readGUChar();
-				unsigned int verseId = propId - BDPROP_VERSESIGHT;
-				if (verseId < m_verses.size())
-					m_verses[verseId] = pProps.readChars(len);
+				auto verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
+				if (verseId < verses.size())
+					verses[verseId] = pProps.readChars(len);
 			}
 		}
 	}
+}
+
+void LevelBaddy::setImage(std::string_view image)
+{
+	image = image;
+	m_hasCustomImage = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

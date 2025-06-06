@@ -274,7 +274,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 			}
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 
@@ -285,7 +285,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 				std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
 				CString props;
 				for (char j = 0; j < (char)bverse.size(); ++j)
-					props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+					props >> (char)(PROPID(BaddyProp::VERSESIGHT) + j) >> (char)bverse[j].length() << bverse[j];
 				if (props.length() != 0) baddy->setPropsFromPacket(props);
 			}
 		}
@@ -368,7 +368,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			}
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 
@@ -376,7 +376,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			std::vector<CString> bverse = fileData.readString("\n").tokenize("\\");
 			CString props;
 			for (char j = 0; j < (char)bverse.size(); ++j)
-				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+				props >> (char)(PROPID(BaddyProp::VERSESIGHT) + j) >> (char)bverse[j].length() << bverse[j];
 			if (props.length() != 0) baddy->setPropsFromPacket(props);
 		}
 	}
@@ -582,7 +582,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			int type = strtoint(curLine[3]);
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, type);
+			LevelBaddy* baddy = level->addBaddy((float)x, (float)y, static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 
@@ -597,7 +597,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			}
 			CString props;
 			for (char j = 0; j < (char)bverse.size(); ++j)
-				props >> (char)(BDPROP_VERSESIGHT + j) >> (char)bverse[j].length() << bverse[j];
+				props >> (char)(PROPID(BaddyProp::VERSESIGHT) + j) >> (char)bverse[j].length() << bverse[j];
 			if (props.length() != 0) baddy->setPropsFromPacket(props);
 		}
 		if (i == fileLines.end()) break;
