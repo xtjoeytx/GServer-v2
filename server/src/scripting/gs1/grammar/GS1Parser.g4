@@ -189,7 +189,6 @@ flow_continue
 
 assignment_operator
 	: OP_ASSIGN
-	| OP_ASSIGN2
 	| OP_ASSIGN_MUL
 	| OP_ASSIGN_DIV
 	| OP_ASSIGN_MOD
