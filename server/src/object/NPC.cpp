@@ -1094,6 +1094,37 @@ std::string performClientSideJoinHack(std::string_view code, FileSystem* fs)
 			break;
 		}
 
+		// Look for a newline or the start of a code block so we don't capture the word join in a string.
+		bool join_is_start_of_block = true;
+		if (end != 0)
+		{
+			size_t block_start = end - 1;
+			while (block_start > 0)
+			{
+				// Skip any whitespace before the join.
+				if (code[block_start] == ' ' || code[block_start] == '\t')
+				{
+					--block_start;
+					continue;
+				}
+				// Look for the start of a block or a newline.
+				else if (!(code[block_start] == '\n' || code[block_start] == '\xa7' || code[block_start] == '{'))
+				{
+					join_is_start_of_block = false;
+					break;
+				}
+
+				// We found a new line or a block start.
+				break;
+			}
+			if (!join_is_start_of_block)
+			{
+				result += code.substr(start, end);
+				start = end + 5; // 5 = strlen("join ")
+				continue;
+			}
+		}
+
 		// Copy the code before the join.
 		// Then, add a semi-colon.  We are going to remove the join entirely.
 		result += code.substr(start, end - start);
