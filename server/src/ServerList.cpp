@@ -8,13 +8,14 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include "IConfig.h"
+#include <IConfig.h>
 
-#include "Server.h"
-#include "ServerList.h"
-#include "object/Player.h"
-#include "player/PlayerClient.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <ServerList.h>
+#include <object/Player.h>
+#include <player/PlayerClient.h>
+#include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -310,13 +311,13 @@ void ServerList::addPlayer(PlayerPtr player)
 
 	CString dataPacket;
 	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
-	dataPacket >> (char)PlayerProp::ACCOUNTNAME << player->getPropPacket(PlayerProp::ACCOUNTNAME);
-	dataPacket >> (char)PlayerProp::NICKNAME << player->getPropPacket(PlayerProp::NICKNAME);
-	dataPacket >> (char)PlayerProp::CURLEVEL << player->getPropPacket(PlayerProp::CURLEVEL);
-	dataPacket >> (char)PlayerProp::X << player->getPropPacket(PlayerProp::X);
-	dataPacket >> (char)PlayerProp::Y << player->getPropPacket(PlayerProp::Y);
-	dataPacket >> (char)PlayerProp::ALIGNMENT << player->getPropPacket(PlayerProp::ALIGNMENT);
-	dataPacket >> (char)PlayerProp::IPADDR << player->getPropPacket(PlayerProp::IPADDR);
+	dataPacket >> (char)PlayerProp::ACCOUNTNAME << player->getProp<PlayerProp::ACCOUNTNAME>().serialize();
+	dataPacket >> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize();
+	dataPacket >> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize();
+	dataPacket >> (char)PlayerProp::X << player->getProp<PlayerProp::X>().serialize();
+	dataPacket >> (char)PlayerProp::Y << player->getProp<PlayerProp::Y>().serialize();
+	dataPacket >> (char)PlayerProp::ALIGNMENT << player->getProp<PlayerProp::ALIGNMENT>().serialize();
+	dataPacket >> (char)PlayerProp::IPADDR << player->getProp<PlayerProp::IPADDR>().serialize();
 	sendPacket(dataPacket);
 }
 
@@ -547,7 +548,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 	// Start the profile string.
 	CString profile;
-	profile << p2->getPropPacket(PlayerProp::ACCOUNTNAME) << pPacket.readString("");
+	profile << p2->getProp<PlayerProp::ACCOUNTNAME>().serialize() << pPacket.readString("");
 
 	// Add the time to the profile string.
 	auto time = p2->account.onlineSeconds;
@@ -567,26 +568,24 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		val = CString((int)p2->account.deaths);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getPropPacket(PlayerProp::MAXPOWER).readGUChar());
+		val = CString((int)p2->getProp<PlayerProp::MAXPOWER>().value);
 		profile >> (char)val.length() << val;
 
-		int rating = p2->getPropPacket(PlayerProp::RATING).readGUInt();
-		val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+		auto rating = p2->getProp<PlayerProp::RATING>();
+		val = CString((int)rating.rating) << "/" << CString((int)rating.deviation);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getPropPacket(PlayerProp::ALIGNMENT).readGUChar());
+		val = CString((int)p2->getProp<PlayerProp::ALIGNMENT>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getPropPacket(PlayerProp::RUPEESCOUNT).readGUInt());
+		val = CString((int)p2->getProp<PlayerProp::RUPEESCOUNT>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)(p2->getPropPacket(PlayerProp::SWORDPOWER).readGUChar() - 30));
+		val = CString((int)p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
 		profile >> (char)val.length() << val;
 
-		bool canSpin = ((p2->getPropPacket(PlayerProp::STATUS).readGUChar() & PLSTATUS_HASSPIN) != 0 ? true : false);
-		if (canSpin) val = "true";
-		else
-			val = "false";
+		bool canSpin = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) != 0 ? true : false);
+		val = (canSpin) ? "true" : "false";
 		profile >> (char)val.length() << val;
 	}
 	else if (!p2->isNPCServer())
@@ -603,48 +602,40 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 				// Built-in values.
 				if (val == "playerkills")
-					val = CString((unsigned int)(p2->account.kills));
+					val = CString(p2->account.kills);
 				else if (val == "playerdeaths")
-					val = CString((unsigned int)(p2->account.deaths));
+					val = CString(p2->account.deaths);
 				else if (val == "playerfullhearts")
-					val = CString((int)p2->getPropPacket(PlayerProp::MAXPOWER).readGUChar());
+					val = CString(p2->getProp<PlayerProp::MAXPOWER>().value);
 				else if (val == "playerrating")
 				{
-					int rating = p2->getPropPacket(PlayerProp::RATING).readGUInt();
-					val = CString((int)((rating >> 9) & 0xFFF)) << "/" << CString((int)(rating & 0x1FF));
+					auto rating = p2->getProp<PlayerProp::RATING>();
+					val = CString(rating.rating) << "/" << CString(rating.deviation);
 				}
 				else if (val == "playerap")
-					val = CString((int)p2->getPropPacket(PlayerProp::ALIGNMENT).readGChar());
+					val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
 				else if (val == "playerrupees")
-					val = CString((int)p2->getPropPacket(PlayerProp::RUPEESCOUNT).readGUInt());
+					val = CString(p2->getProp<PlayerProp::RUPEESCOUNT>().value);
 				else if (val == "playerswordpower")
-				{
-					char sp = p2->getPropPacket(PlayerProp::SWORDPOWER).readGChar();
-					if (sp > 4) sp -= 30;
-					val = CString((int)sp);
-				}
+					val = CString(p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
 				else if (val == "canspin")
-					val = ((p2->getPropPacket(PlayerProp::STATUS).readGUChar() & PLSTATUS_HASSPIN) ? "true" : "false");
+					val = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false");
 				else if (val == "playerhearts")
 				{
-					unsigned char power = p2->getPropPacket(PlayerProp::CURPOWER).readGUChar();
-					val = CString((int)(power / 2));
+					auto power = p2->getProp<PlayerProp::CURPOWER>().value;
+					val = CString(power / 2);
 					if (power % 2 == 1) val << ".5";
 				}
 				else if (val == "playerdarts")
-					val = CString((int)p2->getPropPacket(PlayerProp::ARROWSCOUNT).readGUChar());
+					val = CString(p2->getProp<PlayerProp::ARROWSCOUNT>().value);
 				else if (val == "playerbombs")
-					val = CString((int)p2->getPropPacket(PlayerProp::BOMBSCOUNT).readGUChar());
+					val = CString(p2->getProp<PlayerProp::BOMBSCOUNT>().value);
 				else if (val == "playermp")
-					val = CString((int)p2->getPropPacket(PlayerProp::MAGICPOINTS).readGUChar());
+					val = CString(p2->getProp<PlayerProp::MAGICPOINTS>().value);
 				else if (val == "playershieldpower")
-				{
-					char sp = p2->getPropPacket(PlayerProp::SHIELDPOWER).readGChar();
-					if (sp > 3) sp -= 10;
-					val = CString((int)sp);
-				}
+					val = CString(p2->getProp<PlayerProp::SHIELDPOWER>().power.value_or(1));
 				else if (val == "playerglovepower")
-					val = CString((int)p2->getPropPacket(PlayerProp::GLOVEPOWER).readGUChar());
+					val = CString(p2->getProp<PlayerProp::GLOVEPOWER>().value);
 				else
 				{
 					// Find if String-Array
@@ -832,40 +823,34 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
 	if (auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER); p)
 	{
-		PropSetResults result;
+		props::SetResults result;
 		switch (type)
 		{
 			case SVF_HEAD:
-				result = p->setPropFromPacket(PlayerProp::HEADGIF, CString() >> (char)(shortName.length() + 100) << shortName, PropSetBy::SERVER);
+				result = p->setPropWith<PlayerProp::HEADGIF>(props::SetBy::SERVER, shortName.toString());
 				break;
 
 			case SVF_BODY:
-				result = p->setPropFromPacket(PlayerProp::BODYIMG, CString() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				result = p->setPropWith<PlayerProp::BODYIMG>(props::SetBy::SERVER, shortName.toString());
 				break;
 
 			case SVF_SWORD:
-			{
-				CString prop = p->getPropPacket(PlayerProp::SWORDPOWER);
-				result = p->setPropFromPacket(PlayerProp::SWORDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				result = p->setPropWith<PlayerProp::SWORDPOWER>(props::SetBy::SERVER, shortName.toString());
 				break;
-			}
 
 			case SVF_SHIELD:
-			{
-				CString prop = p->getPropPacket(PlayerProp::SHIELDPOWER);
-				result = p->setPropFromPacket(PlayerProp::SHIELDPOWER, CString() >> (char)prop.readGUChar() >> (char)shortName.length() << shortName, PropSetBy::SERVER);
+				result = p->setPropWith<PlayerProp::SHIELDPOWER>(props::SetBy::SERVER, shortName.toString());
 				break;
-			}
 		}
 
 		// Send the prop.
 		uint8_t propId = result.resultPropIds.front();
-		CString prop = p->getPropPacket((PlayerProp)propId);
-		if (result.resultFlags.test(PropSetResults::sendToAll))
+		CString prop = p->getProp((PlayerProp)propId)->serialize();
+		if (result.resultFlags.test(props::SetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
-		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(PropSetResults::sendToLevel))
+		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
 			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player, { pid });
-		if (result.resultFlags.test(PropSetResults::sendToSelf))
+		if (result.resultFlags.test(props::SetResults::sendToSelf))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}
 }

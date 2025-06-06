@@ -84,6 +84,7 @@ set(
 	"include/utilities/IdGenerator.h"
 	"include/utilities/inplace_vector.h"
 	"include/utilities/Log.h"
+	"include/utilities/PropsContainer.h"
 	"include/utilities/ResourceManager.h"
 	"include/utilities/StringUtils.h"
 	"include/utilities/TimeoutGenerator.h"
@@ -136,6 +137,7 @@ set(
 	"src/scripting/gs2/ScriptEngineGS2.cpp"
 	"src/utilities/FilePermissions.cpp"
 	"src/utilities/Log.cpp"
+	"src/utilities/PropsContainer.cpp"
 	"src/utilities/StringUtils.cpp"
 )
 

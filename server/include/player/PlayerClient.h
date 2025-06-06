@@ -67,9 +67,6 @@ public:
 	std::weak_ptr<Map> getMap() const;
 	void setMap(const std::shared_ptr<Map>& map);
 
-	virtual CString getPropPacket(PlayerProp pPropId) const override;
-	virtual bool getPropPacket(CString& buffer, PlayerProp pPropId) const override;
-
 	// Level manipulation
 	std::shared_ptr<Level> getLevel() const;
 	std::pair<int, int> getMapPosition() const;
@@ -82,19 +79,17 @@ public:
 	void resetLevelCache(const Level* level);
 
 	bool hasSeenFile(const std::string& file) const;
+	void setLastChatTime(time_t time) { m_lastChat = time; }
+	void setLastMovementTime(time_t time);
+	void dropItemsOnDeath();
 
+public:
 	void disableWeapons();
 	void enableWeapons();
 	void freezePlayer();
 	void unfreezePlayer();
-	void sendRPGMessage(const CString& message);
-	void sendSignMessage(const CString& message);
-	void setLastChatTime(time_t time) { m_lastChat = time; }
-	void setLastMovementTime(time_t time);
-	void dropItemsOnDeath();
-	NPCID getCarryNpcId() const { return m_carryNpcId; }
-	void setCarryNpcId(NPCID id) { m_carryNpcId = id; }
-	NPCID getAttachedNPC() const { return m_attachNPC; }
+	void sendRPGMessage(std::string_view message);
+	void sendSignMessage(std::string message);
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
@@ -164,12 +159,6 @@ protected:
 	std::weak_ptr<Map> m_pmap;
 	std::weak_ptr<Level> m_currentLevel;
 
-	uint16_t m_udpport = 0;
-
-	uint8_t m_horseBombCount = 0;
-	uint8_t m_carrySprite = -1;		// TODO: Make sure this is correct.
-	NPCID m_attachNPC = 0;
-	NPCID m_carryNpcId = 0;
 	std::unordered_set<std::string> m_knownFiles;
 
 	bool m_grMovementUpdated = false;
@@ -181,11 +170,7 @@ protected:
 
 using PlayerClientPtr = std::shared_ptr<PlayerClient>;
 
-// So stupid that I have to do this.
-inline CString PlayerClient::getPropPacket(PlayerProp pPropId) const
-{
-	return Player::getPropPacket(pPropId);
-}
+//----------------------------
 
 inline const CString& PlayerClient::getGroup() const
 {

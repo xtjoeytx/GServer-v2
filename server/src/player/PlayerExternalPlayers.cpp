@@ -165,11 +165,16 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			if (isRC())
 			{
-				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getPropPacket(PlayerProp::ACCOUNTNAME) >> (char)PlayerProp::NICKNAME << externalPlayer->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp<PlayerProp::ACCOUNTNAME>().serialize()
+					>> (char)PlayerProp::NICKNAME << externalPlayer->getProp<PlayerProp::NICKNAME>().serialize()
+					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 			else
 			{
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId >> (char)PlayerProp::ACCOUNTNAME << externalPlayer->getPropPacket(PlayerProp::ACCOUNTNAME) >> (char)PlayerProp::NICKNAME << externalPlayer->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId
+					>> (char)PlayerProp::ACCOUNTNAME << externalPlayer->getProp<PlayerProp::ACCOUNTNAME>().serialize()
+					>> (char)PlayerProp::NICKNAME << externalPlayer->getProp<PlayerProp::NICKNAME>().serialize()
+					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
 			}
 		}
 	}

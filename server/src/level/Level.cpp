@@ -200,29 +200,26 @@ CString Level::getLinksPacket()
 }
 
 // TODO: Replace with a function in server that sends npc props from a list of ids.
-CString Level::getNpcsPacket(time_t time, int clientVersion)
+void Level::sendNpcsToPlayer(std::shared_ptr<Player> player, time_t time)
 {
-	CString retVal;
-	for (auto& npcId: m_npcs)
+	for (const auto& npcId : m_npcs)
 	{
 		auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
 
-		retVal >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket(time, clientVersion) << "\n";
+		auto packet = npc->getAllPropsPacket(time);
+		if (packet.isEmpty())
+			continue;
 
-		if (clientVersion >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
+		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
 			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
-			if (byteCodePacket[byteCodePacket.length() - 1] != '\n')
-				byteCodePacket << "\n";
-
-			retVal >> (char)PLO_RAWDATA >> (int)byteCodePacket.length() << "\n";
-			retVal << byteCodePacket;
+			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
+			player->sendPacket(byteCodePacket);
 		}
 	}
-
-	return retVal;
 }
 
 CString Level::getSignsPacket(Player* pPlayer = 0)

@@ -8,18 +8,18 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include "IConfig.h"
+#include <IConfig.h>
 
-#include "Account.h"
-#include "Server.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "object/Weapon.h"
-#include "player/PlayerClient.h" // Need to remove once we don't need to use std::dynamic_pointer_cast.
-#include "level/Level.h"
-#include "level/Map.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Account.h>
+#include <Server.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <object/Weapon.h>
+#include <player/PlayerClient.h> // Need to remove once we don't need to use std::dynamic_pointer_cast.
+#include <level/Level.h>
+#include <level/Map.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -407,13 +407,6 @@ bool Player::canSend()
 	return m_fileQueue.canSend();
 }
 
-CString Player::getPropPacket(PlayerProp pPropId) const
-{
-	CString packet;
-	getPropPacket(packet, pPropId);
-	return packet;
-}
-
 /*
 	Socket-Control Functions
 */
@@ -706,9 +699,13 @@ bool Player::sendLogin()
 // Exchange props with everybody on the server.
 void Player::exchangeMyPropsWithOthers()
 {
-	// RC props are send differently.
+	// RC props are sent differently.
 	CString myRCProps;
-	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::CURLEVEL << getPropPacket(PlayerProp::CURLEVEL) >> (char)PlayerProp::PSTATUSMSG << getPropPacket(PlayerProp::PSTATUSMSG) >> (char)PlayerProp::NICKNAME << getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::COMMUNITYNAME << getPropPacket(PlayerProp::COMMUNITYNAME);
+	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
+		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::PSTATUSMSG << getProp<PlayerProp::PSTATUSMSG>().serialize()
+		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
+		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
 	// Get our client props.
 	CString myClientProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
@@ -728,7 +725,7 @@ void Player::exchangeMyPropsWithOthers()
 
 		// Add Player / RC.
 		if (isClient())
-			sendPacket(player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC));
+			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << (player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC)));
 		else
 		{
 			// TODO: Make sure this works when levels get fixed.
@@ -737,7 +734,11 @@ void Player::exchangeMyPropsWithOthers()
 			CString levelName = player->account.level;
 
 			// Get the other player's RC props.
-			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name >> (char)PlayerProp::CURLEVEL >> (char)levelName.length() << levelName >> (char)PlayerProp::PSTATUSMSG << player->getPropPacket(PlayerProp::PSTATUSMSG) >> (char)PlayerProp::NICKNAME << player->getPropPacket(PlayerProp::NICKNAME) >> (char)PlayerProp::COMMUNITYNAME << player->getPropPacket(PlayerProp::COMMUNITYNAME));
+			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name
+				>> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize()
+				>> (char)PlayerProp::PSTATUSMSG << player->getProp<PlayerProp::PSTATUSMSG>().serialize()
+				>> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize()
+				>> (char)PlayerProp::COMMUNITYNAME << player->getProp<PlayerProp::COMMUNITYNAME>().serialize());
 		}
 	}
 }
@@ -887,7 +888,7 @@ void Player::setNick(CString pNickName, bool force)
 
 void Player::setChat(const CString& pChat)
 {
-	setPropsFromPacket(CString() >> (char)PlayerProp::CURCHAT >> (char)pChat.length() << pChat, PropSetBy::SERVER);
+	sendPropsFromResults(setPropWith<PlayerProp::CURCHAT>(props::SetBy::SERVER, pChat.toString()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1097,7 +1098,7 @@ int Player::getVersionIDByVersion(const CString& versionInput) const
 
 HandlePacketResult Player::msgPLI_PLAYERPROPS(CString& pPacket)
 {
-	setPropsFromPacket(pPacket, PropSetBy::CLIENT);
+	setPropsFromPacket(pPacket, props::SetBy::CLIENT);
 	return HandlePacketResult::Handled;
 }
 
@@ -1126,7 +1127,7 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 		if (pid == m_id) continue;
 
 		// See if the player is allowing toalls.
-		unsigned char flags = strtoint(player->getPropPacket(PlayerProp::ADDITFLAGS));
+		auto flags = player->getProp<PlayerProp::ADDITFLAGS>().value;
 		if (flags & PLFLAG_NOTOALL) continue;
 
 		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)m_id >> (char)message.length() << message);
@@ -1180,7 +1181,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			auto pmPlayer = getExternalPlayer(pmPlayerId);
 			if (pmPlayer != nullptr)
 			{
-				log::printLine(log::server, "Sending PM to global player: {}.", pmPlayer->account.nickname);
+				log::printLine(log::server, "Sending PM to global player: {}.", pmPlayer->account.character.nickName);
 				pmMessage.guntokenizeI();
 				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->account.name, pmMessage);
 				pmMessage.gtokenizeI();
@@ -1192,7 +1193,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
 
 			// Don't send to people who don't want mass messages.
-			if (pmPlayerCount != 1 && (pmPlayer->getPropPacket(PlayerProp::ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
+			if (pmPlayerCount != 1 && (pmPlayer->getProp<PlayerProp::ADDITFLAGS>().value & PLFLAG_NOMASSMESSAGE))
 				continue;
 
 			// Send the message.
@@ -1243,5 +1244,4 @@ HandlePacketResult Player::msgPLI_PROFILESET(CString& pPacket)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

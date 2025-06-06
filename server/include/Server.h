@@ -95,7 +95,7 @@ enum class ServerGeneration
 // Player ids 16000 and up is used for players on other servers and "IRC"-channels.
 // The players from other servers should be unique lists for each player as they are fetched depending on
 // what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-constexpr PlayerID PLAYERID_INIT = 2;
+constexpr PlayerID PLAYERID_INIT = 3;
 constexpr NPCID NPCID_INIT = 1000;
 constexpr NPCID NPCID_DATABASE_START = 10000;
 
@@ -255,7 +255,7 @@ public:
 	//void updateClassForPlayers(ScriptClass* pClass);
 
 	// NPC-Server Management
-	bool isNpcServerEnabled() const { return m_playerList.find(0) != m_playerList.end(); }
+	bool isNpcServerEnabled() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
 
 	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source)

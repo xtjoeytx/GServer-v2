@@ -33,7 +33,7 @@ public:
 
 private:
 	void loadClasses();
-	void loadNpcs();
+	void loadDatabaseNpcs();
 
 public:
 	//void saveNpcs();

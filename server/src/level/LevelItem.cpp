@@ -176,8 +176,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 
 		case LevelItemType::SPINATTACK: // spinattack
 		{
-			CString playerProp = player->getPropPacket(PlayerProp::STATUS);
-			char status = playerProp.readGChar();
+			auto status = player->getProp<PlayerProp::STATUS>().value;
 			if (status & PLSTATUS_HASSPIN) return {};
 			status |= PLSTATUS_HASSPIN;
 			return CString() >> (char)PlayerProp::STATUS >> (char)status;

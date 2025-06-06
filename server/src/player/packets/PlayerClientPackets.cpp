@@ -253,7 +253,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
 	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(item, this), PropSetBy::SERVER);
+		this->setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(item, this), props::SetBy::SERVER);
 
 	return HandlePacketResult::Handled;
 }
@@ -274,8 +274,8 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	{
 		// Get some stats we are going to use.
 		// Need to parse the other player's PlayerProp::RATING.
-		unsigned int otherRating = killer->getPropPacket(PlayerProp::RATING).readGUInt();
-		float oldStats[4] = { account.eloRating, account.eloDeviation, (float)((otherRating >> 9) & 0xFFF), (float)(otherRating & 0x1FF) };
+		auto otherRating = killer->getProp<PlayerProp::RATING>();
+		float oldStats[4] = { account.eloRating, account.eloDeviation, (float)otherRating.rating, (float)otherRating.deviation };
 
 		// If the IPs are the same, don't update the rating to prevent cheating.
 		if (CString(m_playerSock->getRemoteIp()) == CString(killer->getSocket()->getRemoteIp()))
@@ -300,19 +300,13 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		tLoseDeviation = clip(tLoseDeviation, 50.0f, 350.0f);
 
 		// Update the Ratings.
-		// setPropsFromPacket will cause it to grab the new rating and send it to everybody in the level.
-		// Therefore, just pass a dummy value.  setPropsFromPacket doesn't alter your rating for packet hacking reasons.
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
-			account.eloRating = tLoseRating;
-			account.eloDeviation = tLoseDeviation;
-			this->setPropsFromPacket(CString() >> (char)PlayerProp::RATING >> (int)0, PropSetBy::SERVER);
+			sendPropsFromResults(setProp<PlayerProp::RATING>(PropertyEloRating{ tLoseRating, tLoseDeviation }, props::SetBy::SERVER));
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
-			killer->account.eloRating = tWinRating;
-			killer->account.eloRating = tWinDeviation;
-			killer->setPropsFromPacket(CString() >> (char)PlayerProp::RATING >> (int)0, PropSetBy::SERVER);
+			killer->sendPropsFromResults(killer->setProp<PlayerProp::RATING>(PropertyEloRating{ tWinRating, tWinDeviation }, props::SetBy::SERVER));
 		}
 		this->account.lastSparTime = std::chrono::system_clock::now();
 		killer->account.lastSparTime = std::chrono::system_clock::now();
@@ -328,7 +322,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		// Now, adjust their AP if allowed.
 		if (settings.getBool("apsystem", true))
 		{
-			signed char oAp = killer->getPropPacket(PlayerProp::ALIGNMENT).readGChar();
+			auto oAp = killer->getProp<PlayerProp::ALIGNMENT>().value;
 
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && account.character.ap > 19)
@@ -339,7 +333,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 				oAp -= (((oAp / 20) + 1) * (account.character.ap / 20));
 				if (oAp < 0) oAp = 0;
 				killer->account.apCounter = (oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4]))));
-				killer->setPropsFromPacket(CString() >> (char)PlayerProp::ALIGNMENT >> (char)oAp, PropSetBy::SERVER);
+				killer->setPropsFromPacket(CString() >> (char)PlayerProp::ALIGNMENT >> (char)oAp, props::SetBy::SERVER);
 			}
 		}
 	}
@@ -540,7 +534,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 			if (!account.hasChest(levelName, cX, cY))
 			{
 				LevelItemType chestItem = chest.value()->getItemIndex();
-				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), PropSetBy::SERVER);
+				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), props::SetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				account.savedChests.insert(std::make_pair(levelName, std::make_pair(cX, cY)));
 			}
@@ -626,7 +620,7 @@ HandlePacketResult PlayerClient::msgPLI_HURTPLAYER(CString& pPacket)
 	if (victim == 0) return HandlePacketResult::Handled;
 
 	// If they are paused, they don't get hurt.
-	if (victim->getPropPacket(PlayerProp::STATUS).readGChar() & PLSTATUS_PAUSED) return HandlePacketResult::Handled;
+	if (victim->getProp<PlayerProp::STATUS>().value & PLSTATUS_PAUSED) return HandlePacketResult::Handled;
 
 	// Send the packet.
 	victim->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)m_id >> (char)hurtdx >> (char)hurtdy >> (char)power >> (int)npc);
@@ -729,7 +723,7 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayer == nullptr || pmPlayer.get() == this) continue;
 
 			// Don't send to people who don't want mass messages.
-			if (pmPlayerCount != 1 && (pmPlayer->getPropPacket(PlayerProp::ADDITFLAGS).readGUChar() & PLFLAG_NOMASSMESSAGE))
+			if (pmPlayerCount != 1 && (pmPlayer->getProp<PlayerProp::ADDITFLAGS>().value & PLFLAG_NOMASSMESSAGE))
 				continue;
 
 			// Jailed people cannot send PMs to normal players.
@@ -1125,7 +1119,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					{
 						++start;
 						CString val = action.subString(start);
-						setPropsFromPacket(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, PropSetBy::SERVER);
+						setPropsFromPacket(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, props::SetBy::SERVER);
 					}
 				}
 			}
@@ -1136,7 +1130,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = strtoint(action.subString(start).trim());
-					setPropsFromPacket(CString() >> (char)PlayerProp::MAXPOWER >> (char)hearts, PropSetBy::SERVER);
+					sendPropsFromResults(setPropWith<PlayerProp::MAXPOWER>(props::SetBy::SERVER, static_cast<uint8_t>(hearts)));
 				}
 			}
 		}

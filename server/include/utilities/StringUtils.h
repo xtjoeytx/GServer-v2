@@ -32,7 +32,7 @@ concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t
 
 // A concept that checks if a type is a forward range, but not a string.
 template <typename T>
-concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringVariant<T>;
+concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVariant<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -201,6 +201,45 @@ inline std::string& trimMutate(std::string& str)
 
 	str = std::move(std::string{ str.begin() + front, str.begin() + back });
 	return str;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline std::string replace(std::string_view in, std::string_view from, std::string_view to)
+{
+	if (from.empty())
+		return std::string{ in };
+
+	std::string out;
+	out.reserve(in.size() + 16); // Reserve some extra space for the new string.
+	size_t pos = 0;
+	while (true)
+	{
+		const auto next_pos = in.find(from, pos);
+		if (next_pos == std::string::npos)
+		{
+			out.append(in.substr(pos));
+			break;
+		}
+		out.append(in.substr(pos, next_pos - pos));
+		out.append(to);
+		pos = next_pos + from.size();
+	}
+	return out;
+}
+
+inline std::string& replaceMutate(std::string& in, std::string_view from, std::string_view to)
+{
+	if (from.empty())
+		return in;
+
+	size_t pos = 0;
+	while ((pos = in.find(from, pos)) != std::string::npos)
+	{
+		in.replace(pos, from.size(), to);
+		pos += to.size();
+	}
+	return in;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

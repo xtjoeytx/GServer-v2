@@ -56,7 +56,6 @@ struct SavedChest
 struct Account
 {
 	std::string name;
-	std::string nickname;
 	std::string communityName;
 	std::string level;
 	Character character;

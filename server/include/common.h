@@ -35,8 +35,15 @@ namespace preagonal
 using PlayerID = uint16_t;
 using NPCID = uint32_t;
 
-inline constexpr PlayerID NPCServerPlayerID = 0;
+inline constexpr PlayerID NPCServerPlayerID = 2;
 inline constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
+
+//-----------------------------------------------
+
+inline constexpr uint8_t operator""_ui8(unsigned long long val)
+{
+	return static_cast<uint8_t>(val);
+}
 
 //-----------------------------------------------
 
@@ -70,6 +77,17 @@ concept VariantContainsType = requires(Va v, Tp t)
 {
 	{ std::holds_alternative<Tp>(v) } -> std::same_as<bool>;
 };
+
+template<class... Ts>
+concept all_same = sizeof...(Ts) < 2 ||
+	std::conjunction_v<
+		std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
+	>;
+
+template<class O, class... Ts>
+concept all_same_as = sizeof...(Ts) < 2 ||
+	(std::conjunction_v<std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...>
+		&& std::same_as<O, std::tuple_element_t<0, std::tuple<Ts...>>>);
 
 //-----------------------------------------------
 

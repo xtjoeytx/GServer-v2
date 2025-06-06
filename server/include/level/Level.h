@@ -68,7 +68,7 @@ public:
 	CString getChestPacket(Player* pPlayer);
 	CString getHorsePacket();
 	CString getLinksPacket();
-	CString getNpcsPacket(time_t time, int clientVersion = CLVER_2_17);
+	void sendNpcsToPlayer(std::shared_ptr<Player> player, time_t time);
 	CString getSignsPacket(Player* pPlayer);
 
 	//! Gets the actual level name.

@@ -169,8 +169,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 					{
 						CString nick = p->account.character.nickName;
 						p->setNick(nick.readString("(").trimI());
-						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::NICKNAME << p->getPropPacket(PlayerProp::NICKNAME));
-						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PlayerProp::NICKNAME << p->getPropPacket(PlayerProp::NICKNAME), { pid });
+						p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::NICKNAME << p->getProp<PlayerProp::NICKNAME>().serialize());
+						sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId() >> (char)PlayerProp::NICKNAME << p->getProp<PlayerProp::NICKNAME>().serialize(), { pid });
 					}
 				}
 			}

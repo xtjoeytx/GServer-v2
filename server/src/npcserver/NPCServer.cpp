@@ -48,8 +48,8 @@ void NPCServer::initialize()
 	log::printLine(log::server, "Loading classes...");
 	loadClasses();
 
-	log::printLine(log::server, "Loading NPCs...");
-	loadNpcs();
+	log::printLine(log::server, "Loading Database NPCs...");
+	loadDatabaseNpcs();
 }
 
 void NPCServer::run(std::chrono::milliseconds timeDelta)
@@ -91,8 +91,9 @@ void NPCServer::run(std::chrono::milliseconds timeDelta)
 			if (auto level = npc->level.lock(); level != nullptr)
 			{
 				propsPacket.clear();
-				propsPacket.writeChar((char)PLO_NPCPROPS) >> (int)npc->id << npc->getModifiedPropsPacket();
-				m_server->sendPacketToLevelArea(propsPacket, level);
+				propsPacket.writeGChar((char)PLO_NPCPROPS) >> (int)npc->id << npc->getModifiedPropsPacket();
+				if (propsPacket.length() > 4)
+					m_server->sendPacketToLevelArea(propsPacket, level);
 			}
 		}
 	}
@@ -124,7 +125,7 @@ void NPCServer::loadClasses()
 	}
 }
 
-void NPCServer::loadNpcs()
+void NPCServer::loadDatabaseNpcs()
 {
 	auto indent = log::server.indent();
 
