@@ -15,9 +15,13 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace source
+{
 ScriptObjectSource FromLevel(LevelPtr level)
 {
-	return std::make_pair(string::string_hash{}(level->getLevelName()), ScriptObjectSourceType::LEVEL);
+	size_t hash = string::string_hash{}(level->getLevelName());
+	return std::make_pair(hash, ScriptObjectSourceType::LEVEL);
+}
 }
 
 ////////////////////////////////////////////////////////////

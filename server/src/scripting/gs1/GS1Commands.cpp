@@ -367,18 +367,15 @@ void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::
 // Attaches player to object (objecttype 0 = npcs, nothing else supported).
 void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto objecttype = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto id = static_cast<NPCID>(visitor->getGameValueAs<double>(*arguments[1]));
+
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, id, objecttype));
 	}
-	*/
-
-	throw std::exception("attachplayertoobj is not implemented yet.");
 }
 
 // blockagain;
@@ -516,18 +513,12 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 // detachplayer;
 void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8));
 	}
-	*/
-
-	throw std::exception("detachplayer is not implemented yet.");
 }
 
 // disabledefmovement;
@@ -799,9 +790,25 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // putcomp baddyname,x,y;
+// Adds a new baddy to the level with the specified parameters.
 void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("putcomp is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::exception("putcomp requires exactly three arguments: baddyname, x, y.");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+				level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname));
+		}
+	}
 }
 
 // putexplosion radius,x,y;
@@ -823,6 +830,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // putnewcomp baddyname,x,y,imagefile,power;
+// Adds a new baddy to the level with the specified parameters.
 void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
@@ -840,7 +848,7 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
-				level->addNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
+				level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
 		}
 	}
 }
@@ -1128,20 +1136,20 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // setbeltcolor color;
+// Sets the player's belt color.
 void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto color = visitor->getGameValueAs<double>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
+			auto colors = player->getProp<PlayerProp::COLORS>();
+			colors.values[4] = static_cast<uint8_t>(color);
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
 		}
 	}
-	*/
-
-	throw std::exception("setbeltcolor is not implemented yet.");
 }
 
 // setbody filename;
@@ -1208,20 +1216,20 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 }
 
 // setcoatcolor color;
+// Sets the player's coat color.
 void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto color = visitor->getGameValueAs<double>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
+			auto colors = player->getProp<PlayerProp::COLORS>();
+			colors.values[1] = static_cast<uint8_t>(color);
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
 		}
 	}
-	*/
-
-	throw std::exception("setcoatcolor is not implemented yet.");
 }
 
 // setgender gender;
@@ -1363,20 +1371,17 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // setplayerprop messagecode,text;
+// Sets a property for the player.
 void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
 		{
+			auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
+			var->assign<std::string>(text);
 		}
 	}
-	*/
-
-	throw std::exception("setplayerprop is not implemented yet.");
 }
 
 // setpm message;
@@ -1412,20 +1417,20 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // setshoecolor color;
+// Sets the player's shoe color.
 void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto color = visitor->getGameValueAs<double>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
+			auto colors = player->getProp<PlayerProp::COLORS>();
+			colors.values[3] = static_cast<uint8_t>(color);
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
 		}
 	}
-	*/
-
-	throw std::exception("setshoecolor is not implemented yet.");
 }
 
 // setshootparams params;
@@ -1435,37 +1440,37 @@ void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const 
 }
 
 // setskincolor color;
+// Sets the player's skin color.
 void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto color = visitor->getGameValueAs<double>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
+			auto colors = player->getProp<PlayerProp::COLORS>();
+			colors.values[0] = static_cast<uint8_t>(color);
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
 		}
 	}
-	*/
-
-	throw std::exception("setskincolor is not implemented yet.");
 }
 
 // setsleevecolor color;
+// Sets the player's sleeve color.
 void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto color = visitor->getGameValueAs<double>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
+			auto colors = player->getProp<PlayerProp::COLORS>();
+			colors.values[2] = static_cast<uint8_t>(color);
+			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
 		}
 	}
-	*/
-
-	throw std::exception("setsleevecolor is not implemented yet.");
 }
 
 // setstring var,text;
@@ -1671,14 +1676,14 @@ void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // tokenize text;
-// Tokenizes a string into tokens using a comma as a delimiter.
+// Tokenizes a string into tokens using spaces as a delimiter.
 void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::exception("tokenize requires exactly one argument: text.");
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
-	visitor->tokenizeTokens = string::splitHard(text, ","sv);
+	visitor->tokenizeTokens = string::splitHard(text, " "sv);
 }
 
 // tokenize2 delims,text;

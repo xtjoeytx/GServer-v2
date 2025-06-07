@@ -19,6 +19,41 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
+{
+	switch (index)
+	{
+		case 1: // #1
+			return PlayerProp::SWORDPOWER;
+		case 2: // #2
+			return PlayerProp::SHIELDPOWER;
+		case 3: // #3
+			return PlayerProp::HEADGIF;
+		case 5: // #5
+			return PlayerProp::HORSEGIF;
+		case 7: // #7
+			return PlayerProp::GANI;
+		case 8: // #8
+			return PlayerProp::BODYIMG;
+		case 9: // #c
+			return PlayerProp::CURCHAT;
+		case 10: // #m
+			return PlayerProp::GANI;
+		case 11: // #n
+			return PlayerProp::NICKNAME;
+	}
+
+	if (index >= 20 && index <= 24)
+		return PlayerProp::COLORS;
+
+	if (index >= 30 && index <= 60)
+		return static_cast<PlayerProp>(GaniAttributePropList[index - 30]);
+
+	return PlayerProp::ID;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 using MessageCodeHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using MessageCodeHandleMap = std::unordered_map<size_t, MessageCodeHandleFunc>;
 
@@ -103,17 +138,83 @@ static MessageCodeHandleMap GenerateMap()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments, std::function<GS1ScriptValue(Character&, std::vector<GS1ScriptValue*> const&)> picker)
+using pickerReturn = std::pair<GameValue, uint8_t>;
+using pickerFunc = std::function<pickerReturn(Character&, std::vector<GS1ScriptValue*> const&)>;
+
+GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, uint8_t index, GameValue& value)
+{
+	PlayerProp propId = GetPlayerPropFromIndex(index);
+	if (propId == PlayerProp::ID)
+		return { GameVariable{ "", std::move(value) }, std::nullopt };
+
+	GameVariable result{ "", std::move(value), {},
+		[visitor, playerId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(playerId); player != nullptr)
+		{
+			if (propId != PlayerProp::COLORS)
+			{
+				auto prop = player->getProp(propId);
+				prop->apply(val);
+				player->sendPropsFromResults(player->setProp(propId, prop, SetBy::SERVER));
+			}
+			else
+			{
+				auto colors = player->getProp<PlayerProp::COLORS>();
+				uint8_t colorVal = 0;
+
+				auto strVal = val.get<std::string>();
+				if (strVal.has_value())
+					colorVal = visitor->getColorValueFromString(strVal.value());
+				else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
+
+				colors.values[propIndex - 20] = colorVal;
+				player->sendPropsFromResults(player->setProp<PlayerProp::COLORS>(colors, SetBy::SERVER));
+			}
+		}
+	} };
+
+	return { std::move(result), std::nullopt };
+}
+
+GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t index, GameValue& value)
+{
+	NPCProp propId = NPCProp::ID;
+	if (propId == NPCProp::ID)
+		return { GameVariable{ "", std::move(value) }, std::nullopt };
+
+	GameVariable result{ "", std::move(value), {},
+		[visitor, npcId, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		{
+			//npc->setProp(propId, val);
+		}
+	} };
+
+	return { std::move(result), std::nullopt };
+}
+
+static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments, pickerFunc picker)
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
 		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-	Character* character = getCharacterFromSource(visitor->getCurrentSource(), index);
+	auto currentSource = visitor->getCurrentSource();
+	Character* character = getCharacterFromSource(currentSource, index);
 	if (character == nullptr)
 		return std::string{};
 
-	return picker(*character, arguments);
+	auto [value, codeIndex] = picker(*character, arguments);
+	if (currentSource.second == ScriptObjectSourceType::PLAYER)
+		return bindPlayerSetter(visitor, static_cast<PlayerID>(currentSource.first), codeIndex, value);
+	else if (currentSource.second == ScriptObjectSourceType::NPC)
+		return bindNPCSetter(visitor, static_cast<NPCID>(currentSource.first), codeIndex, value);
+
+	return value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -163,9 +264,9 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageC
 // Sword image filename of the player.
 GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.swordImage;
+		return std::make_pair(character.swordImage, 1);
 	});
 }
 
@@ -173,9 +274,9 @@ GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std
 // Shield image filename of the player.
 GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.shieldImage;
+		return std::make_pair(character.shieldImage, 2);
 	});
 }
 
@@ -183,9 +284,9 @@ GS1ScriptValue mc_2(GS1Visitor* visitor, std::string_view messageCode, const std
 // Head image filename of the player.
 GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.headImage;
+		return std::make_pair(character.headImage, 3);
 	});
 }
 
@@ -195,9 +296,9 @@ GS1ScriptValue mc_3(GS1Visitor* visitor, std::string_view messageCode, const std
 // Horse image filename of the player.
 GS1ScriptValue mc_5(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.horseImage;
+		return std::make_pair(character.horseImage, 5);
 	});
 }
 
@@ -235,9 +336,9 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 // Bow image filename of the player.
 GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.bowImage;
+		return std::make_pair(character.bowImage, 7);
 	});
 }
 
@@ -245,9 +346,9 @@ GS1ScriptValue mc_7(GS1Visitor* visitor, std::string_view messageCode, const std
 // Body image filename of the player.
 GS1ScriptValue mc_8(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.bodyImage;
+		return std::make_pair(character.bodyImage, 8);
 	});
 }
 
@@ -278,9 +379,9 @@ GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std
 // Current chat text of the player.
 GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.chatMessage;
+		return std::make_pair(character.chatMessage, 9);
 	});
 }
 
@@ -414,9 +515,9 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 // The animation of the player.
 GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.gani;
+		return std::make_pair(character.gani, 10);
 	});
 }
 
@@ -424,9 +525,9 @@ GS1ScriptValue mc_m(GS1Visitor* visitor, std::string_view messageCode, const std
 // The nickname of the player.
 GS1ScriptValue mc_n(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.nickName;
+		return std::make_pair(character.nickName, 11);
 	});
 }
 
@@ -554,9 +655,9 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 // #C4 - belt color
 GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return getCharacterColorName(static_cast<CharacterColors>(character.colors[index]));
+		return std::make_pair(getCharacterColorName(static_cast<CharacterColors>(character.colors[index])), 20 + index);
 	});
 }
 
@@ -564,9 +665,9 @@ GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view message
 // Gani attributes.
 GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> GS1ScriptValue
+	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return character.ganiAttributes[index];
+		return std::make_pair(character.ganiAttributes[index], 30 + index);
 	});
 }
 

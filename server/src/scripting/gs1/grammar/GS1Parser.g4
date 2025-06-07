@@ -135,11 +135,10 @@ user_function
 	;
 
 builtin_function
-	: FUNCTION TOKEN_PAREN_LEFT builtin_function_parameters TOKEN_PAREN_RIGHT				# BuiltInFunctionCall
-	;
-
-builtin_function_parameters
-	: (compound_string | expression) (TOKEN_COMMA (compound_string | expression))*
+	: FUNCTION TOKEN_PAREN_LEFT
+			expression_allow_string
+			(TOKEN_COMMA expression_allow_string?)*
+		TOKEN_PAREN_RIGHT																	# BuiltInFunctionCall
 	;
 
 if_condition

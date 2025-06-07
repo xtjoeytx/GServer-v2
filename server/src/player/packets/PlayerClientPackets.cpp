@@ -236,6 +236,8 @@ HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 {
+	m_server->queueNPCEvent(m_currentLevel.lock(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
+
 	spawnLevelItem(pPacket, true);
 	return HandlePacketResult::Handled;
 }
@@ -346,6 +348,8 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 	auto level = getLevel();
 	if (level == nullptr) return HandlePacketResult::Handled;
 
+	bool livingBaddies = level->hasLivingBaddies();
+
 	unsigned char id = pPacket.readGUChar();
 	CString props = pPacket.readString("");
 
@@ -360,6 +364,10 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 	// Set the props and send to everybody in the level, except the leader.
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, level, { leaderId });
 	baddy->setPropsFromPacket(props);
+
+	if (livingBaddies && !level->hasLivingBaddies())
+		m_server->queueNPCEvent(m_currentLevel.lock(), ScriptEventType::COMPUSDIED, source::FromPlayer(m_id));
+
 	return HandlePacketResult::Handled;
 }
 

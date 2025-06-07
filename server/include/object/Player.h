@@ -331,7 +331,7 @@ public:
 	GameVariableStore variables;
 
 protected:
-	using propSendResults = std::vector<std::tuple<uint8_t, SetResults, std::shared_ptr<PropertyBase>>>;
+	using propSendResults = std::vector<std::pair<SetResults, std::shared_ptr<PropertyBase>>>;
 	SetResults setProp(PlayerProp prop, PropertyBase* base, SetBy setBy = SetBy::CLIENT);
 	bool checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator) const;
 	void sendPropsFromResults(propSendResults& results);
@@ -640,7 +640,7 @@ template<typename... Results> requires all_same_as<SetResults, Results...>
 void Player::sendPropsFromResults(const Results&... results)
 {
 	propSendResults send_results;
-	(send_results.emplace_back(results.propId, results, nullptr), ...);
+	(send_results.emplace_back(results, nullptr), ...);
 	sendPropsFromResults(send_results);
 }
 
@@ -648,7 +648,7 @@ void Player::sendPropsFromResults(std::ranges::forward_range auto&& results)
 {
 	propSendResults send_results;
 	send_results.append_range(results | std::views::transform([](const SetResults& results) {
-		return std::make_tuple(results.propId, results, nullptr);
+		return std::make_pair(results, nullptr);
 	}));
 	sendPropsFromResults(send_results);
 }

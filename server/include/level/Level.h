@@ -205,13 +205,20 @@ public:
 	LevelBaddy* addBaddy(float pX, float pY, BaddyType pType);
 
 	/// @brief Adds a new baddy to the level and sends it to the players inside.
+	//! \param pX X location of the baddy to add.
+	//! \param pY Y location of the baddy to add.
+	//! \param pType The type of baddy to add.
+	//! \return A pointer to the new LevelBaddy.
+	LevelBaddy* putNewBaddy(float x, float y, BaddyType type);
+
+	/// @brief Adds a new baddy to the level and sends it to the players inside.
 	/// @param x The X position of the baddy.
 	/// @param y The Y position of the baddy.
 	/// @param type The type of baddy to add.
 	/// @param power The power of the baddy.
 	/// @param image The custom image to use for the baddy, if any.
 	/// @return A pointer to the new LevelBaddy.
-	LevelBaddy* addNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image = {});
+	LevelBaddy* putNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image = {});
 
 	//! Removes a baddy from the level.
 	//! \param pId ID of the baddy to remove.

@@ -16,6 +16,7 @@
 
 #include <CString.h>
 #include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/inplace_vector.h>
 
 namespace preagonal
@@ -173,6 +174,7 @@ struct PropertyBase
 {
 	virtual CString serialize() const = 0;
 	virtual void deserialize(CString& data) = 0;
+	virtual void apply(const GameValue& gameValue) = 0;
 };
 
 /// @brief A property that does not hold data.
@@ -188,6 +190,11 @@ struct PropertyVoid : public PropertyBase
 	virtual void deserialize(CString& data) override
 	{
 		// No data to read, so do nothing.
+	}
+
+	virtual void apply(const GameValue& gameValue) override
+	{
+		// No data to apply, so do nothing.
 	}
 };
 
@@ -208,6 +215,11 @@ struct PropertyNumeric : public PropertyBase
 		data.readGInto(value);
 	}
 
+	virtual void apply(const GameValue& gameValue) override
+	{
+		value = static_cast<T>(gameValue.get<double>().value_or(0));
+	}
+
 	T value;
 };
 
@@ -222,6 +234,7 @@ struct PropertyString : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	std::string value;
 };
@@ -238,6 +251,7 @@ struct PropertySwordPower : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	std::string image;
 	std::optional<int8_t> power;
@@ -255,6 +269,7 @@ struct PropertyShieldPower : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	std::string image;
 	std::optional<uint8_t> power;
@@ -272,6 +287,7 @@ struct PropertyGaniOrBowGif : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	std::optional<std::string> gani;
 	std::optional<std::pair<std::string, uint8_t>> bowGif;
@@ -286,6 +302,7 @@ struct PropertyHeadGif : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	std::variant<uint8_t, std::string> image;
 };
@@ -336,6 +353,27 @@ struct PropertyArray : public PropertyBase
 		}
 	}
 
+    virtual void apply(const GameValue& gameValue) override
+    {
+		if (gameValue.get<std::vector<double>>().has_value())
+		{
+			auto& vec = gameValue.get<std::vector<double>>().value();
+
+			// Convert all values to type T and insert into the values array.
+			for (size_t i = 0; i < N && i < vec.size(); ++i)
+			{
+				if constexpr (std::is_integral_v<T>)
+				{
+					values[i] = static_cast<T>(vec[i]);
+				}
+				else
+				{
+					values[i] = T(vec[i]);
+				}
+			}
+		}
+    }
+
 	std::array<T, N> values{};
 };
 
@@ -348,6 +386,7 @@ struct PropertyEloRating : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	float rating = 1500.0f;
 	float deviation = 350.0f;
@@ -362,6 +401,7 @@ struct PropertyAttachNPC : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	uint8_t type = 0;
 	NPCID npcId = 0;
@@ -375,6 +415,7 @@ struct PropertyPixelCoordinate : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	int16_t pixelCoordinate = 0;
 };
@@ -388,6 +429,7 @@ struct PropertyTileCoordinate : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	int16_t pixelCoordinate = 0;
 };
@@ -401,6 +443,7 @@ struct PropertyTileCoordinateZ : public PropertyBase
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
 
 	int16_t pixelCoordinate = 0;
 };

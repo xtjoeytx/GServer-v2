@@ -62,7 +62,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 	auto level = player ? player->getLevel() : nullptr;
 	bool restrictedPropAllowed = !m_server->isNpcServerEnabled() || setBy == props::SetBy::SERVER;
 
-	props::SetResults result{ .resultPropIds = { PROPID(prop) } };
+	props::SetResults result{ .propId = { PROPID(prop) } };
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
 	result.resultFlags.set(props::SetResults::sendToSelf, setBy == props::SetBy::SERVER);
 
@@ -269,6 +269,10 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			bool chatChanged = (account.character.chatMessage != strProp->value);
+			if (!chatChanged)
+				break;
+
 			account.character.chatMessage = props::Limits::apply(strProp->value, props::Limits::ChatMessageLength);
 
 			if (player != nullptr)
@@ -278,6 +282,8 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
 				if (!player->processChat(account.character.chatMessage))
 				{
+					m_server->queueNPCEvent(level, ScriptEventType::PLAYERCHATS, source::FromPlayer(m_id));
+
 					CString chat = account.character.chatMessage;
 					int found = m_server->getWordFilter().apply(this, chat, FILTER_CHECK_CHAT);
 					account.character.chatMessage = chat.toString();
@@ -428,6 +434,8 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 					auto leader = m_server->getPlayer(level->getPlayers().front());
 					if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 				}
+
+				m_server->queueNPCEvent(level, ScriptEventType::PLAYERDIES, source::FromPlayer(m_id));
 			}
 			break;
 		}
@@ -901,12 +909,8 @@ void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* ori
 		if (!checkPropSetAccess(propId, setBy, originator))
 			continue;
 
-		results.emplace_back(PROPID(propId), setProp(propId, prop, setBy), prop);
+		results.emplace_back(setProp(propId, prop, setBy), prop);
 	}
-
-	// Sort by increasing ID order.  If a client recieves a prop it doesn't understand, it stops processing them.
-	// This ensures that all the props the client CAN read come before the ones it can't.
-	std::ranges::sort(results, [](const auto& left, const auto& right) { return std::get<0>(left) < std::get<0>(right); });
 
 	if (isLoggedIn() && isLoaded())
 		sendPropsFromResults(results);
@@ -927,11 +931,31 @@ bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator
 
 void Player::sendPropsFromResults(propSendResults& results)
 {
+	static std::vector<std::tuple<uint8_t, SetResults, std::shared_ptr<PropertyBase>>> sendOrder;
+
 	// Serialize the results into our buffers.
 	CString sendAll;
 	CString sendLevel;
 	CString sendSelf;
-	for (const auto& [propId, results, prop] : results)
+
+	// Add all the results to the send order.
+	sendOrder.clear();
+	for (const auto& [result, prop] : results)
+	{
+		if (result.resultFlags.test(SetResults::wasInvalid))
+			continue;
+
+		sendOrder.emplace_back(result.propId, result, prop);
+		for (const auto& additionalPropId : result.resultPropIds)
+			sendOrder.emplace_back(additionalPropId, result, nullptr);
+	}
+
+	// Sort by increasing ID order.  If a client recieves a prop it doesn't understand, it stops processing them.
+	// This ensures that all the props the client CAN read come before the ones it can't.
+	std::ranges::sort(sendOrder, [](const auto& left, const auto& right) { return std::get<0>(left) < std::get<0>(right); });
+
+	// Loop through all the sorted results and add them to the buffers.
+	for (const auto& [propId, results, prop] : sendOrder)
 	{
 		// If the prop is not set, just get the prop from the player.
 		std::shared_ptr<PropertyBase> base = prop;

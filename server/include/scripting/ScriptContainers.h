@@ -236,7 +236,7 @@ struct GameVariable
 	GameVariable(const std::string& name, GameValue&& value)
 		: identifier(name), m_value(std::move(value)) {}
 	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
-		: identifier(name), m_getter(getter), m_setter(setter) {}
+		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
 		: identifier(name), m_getter(getter), m_setter(setter) {}
 	GameVariable(const GameVariable& other)
@@ -486,7 +486,7 @@ constexpr ScriptObjectSource FromNPC(size_t id)
 {
 	return std::make_pair(id, ScriptObjectSourceType::NPC);
 }
-/// @brief Creates a ScriptObjectSource from a LevelPtr by hashing the level's name.
+/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
 ScriptObjectSource FromLevel(LevelPtr level);
 
 /// @brief Creates a ScriptObjectSource for the server.

@@ -13,7 +13,7 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 
 ///////////////////////////////////////////////////////////////////////////////
 }

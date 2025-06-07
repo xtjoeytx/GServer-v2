@@ -12,6 +12,7 @@
 #include <Server.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/gs1/GS1Commands.h>
+#include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <utilities/Log.h>
@@ -194,6 +195,15 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	return {};
 }
 
+double GS1Visitor::getColorValueFromString(std::string_view colorString)
+{
+	auto it = std::ranges::find(colorNames, colorString);
+	if (it == colorNames.end())
+		it = colorNames.begin();
+
+	return static_cast<double>(std::distance(colorNames.begin(), it));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Member functions.
 
@@ -327,6 +337,10 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObjectSource source, GS
 	m_event = &event;
 	m_originalSource = source;
 	m_currentSource.push_back(m_originalSource);
+
+	if (event.initiator != source)
+		m_currentSource.push_back(event.initiator);
+
 	m_serverStore = getGameVariableStoreFromSource(source::FromServer());
 
 	// Execute!
@@ -594,8 +608,11 @@ std::any GS1Visitor::visitCompoundString(GS1Parser::CompoundStringContext* conte
 		}
 		if (auto* gs1Val = std::any_cast<GS1ScriptValue>(&piece); gs1Val != nullptr)
 		{
-			if (auto* gameVal = std::get_if<GameValue>(gs1Val); gameVal != nullptr)
-				compoundString.append(gameVal->get<std::string>().value_or({}));
+			// If this is a GS1GameVariable and the results size is 1, just return the piece.
+			if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(gs1Val); gs1GameVariable != nullptr && results.size() == 1)
+				return piece;
+
+			compoundString.append(getReadOnlyGameValueFromGS1ScriptValue(*gs1Val).get<std::string>().value_or({}));
 		}
 	}
 	string::trimMutate(compoundString);
@@ -677,8 +694,25 @@ std::any GS1Visitor::visitUserFunctionCall(GS1Parser::UserFunctionCallContext* c
 
 std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context)
 {
-	throw std::exception("visitBuiltInFunctionCall not implemented");
-	return {};
+	auto results = visitChildrenAndCollect(this, context);
+
+	// Get the command.
+	auto command = context->FUNCTION()->getText();
+	string::trimRightMutate(command);
+
+	// Process the arguments.
+	std::vector<GS1ScriptValue*> arguments;
+	for (auto& result : results)
+	{
+		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (container == nullptr)
+			throw std::exception("BuiltInFunctionCall argument is not a valid GS1ScriptValue");
+
+		// Add to the arguments.
+		arguments.push_back(container);
+	}
+
+	return processBuiltInFunction(this, command, arguments);
 }
 
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
@@ -970,12 +1004,7 @@ std::any GS1Visitor::visitGenderLiteral(GS1Parser::GenderLiteralContext* context
 
 std::any GS1Visitor::visitColorLiteral(GS1Parser::ColorLiteralContext* context)
 {
-	auto text = context->COLOR()->getText();
-	auto it = std::ranges::find(colorNames, text);
-	if (it == colorNames.end())
-		it = colorNames.begin();
-
-	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(colorNames.begin(), it)));
+	return std::make_any<GS1ScriptValue>(getColorValueFromString(context->COLOR()->getText()));
 }
 
 std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)

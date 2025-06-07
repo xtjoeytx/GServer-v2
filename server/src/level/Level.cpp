@@ -14,6 +14,7 @@
 #include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/ScriptContainers.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -701,7 +702,23 @@ LevelBaddy* Level::addBaddy(float pX, float pY, BaddyType pType)
 	return baddy;
 }
 
-LevelBaddy* Level::addNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image)
+LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type)
+{
+	auto baddy = addBaddy(x, y, type);
+	if (baddy == nullptr)
+		return nullptr;
+
+	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
+	for (auto& player : m_players)
+	{
+		if (auto p = m_server->getPlayer(player); p)
+			p->sendPacket(packet);
+	}
+
+	return baddy;
+}
+
+LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image)
 {
 	auto baddy = addBaddy(x, y, type);
 	if (baddy == nullptr)
@@ -932,6 +949,10 @@ bool Level::doTimedEvents()
 					auto player = m_server->getPlayer(m_players[i]);
 					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 				}
+
+				// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
+				if (!hasLivingBaddies())
+					m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLAYSITEM, source::FromLevel(shared_from_this()));
 			}
 			else
 			{

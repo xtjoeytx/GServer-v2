@@ -127,6 +127,9 @@ void PlayerClient::cleanup()
 {
 	if (m_id >= 0 && m_server != nullptr && m_loaded)
 	{
+		// Queue up the logout event.
+		m_server->queueNPCEvent({}, ScriptEventType::PLAYERLOGOUT, source::FromPlayer(m_id));
+
 		auto level = m_currentLevel.lock();
 
 		// Adjust carried NPC location.
@@ -581,6 +584,9 @@ bool PlayerClient::sendLogin()
 		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
 
 	m_fileQueue.sendCompress(true);
+
+	// Queue up the login event.
+	m_server->queueNPCEvent({}, ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
 
 	return true;
 }
@@ -1103,6 +1109,9 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 				return false;
 		}
 	}
+
+	// TODO(Nalin): Should this happen on any warp?  Should it only trigger the player's weapons?
+	// m_server->queueNPCEvent(m_currentLevel.lock(), ScriptEventType::WARPED, source::FromPlayer(m_id));
 
 	return warpSuccess;
 }

@@ -31,6 +31,11 @@ void PropertyString::deserialize(CString& data)
 	value = data.readChars(data.readGUChar());
 }
 
+void PropertyString::apply(const GameValue& gameValue)
+{
+	value = gameValue.get<std::string>().value_or("");
+}
+
 // -----------------------------------------------
 // PropertySwordPower
 
@@ -68,6 +73,11 @@ void PropertySwordPower::deserialize(CString& data)
 	image = data.readChars(data.readGUChar());
 	if (!image.contains("."))
 		image += ".gif";
+}
+
+void PropertySwordPower::apply(const GameValue& gameValue)
+{
+	image = gameValue.get<std::string>().value_or("");
 }
 
 // -----------------------------------------------
@@ -110,6 +120,11 @@ void PropertyShieldPower::deserialize(CString& data)
 	image = data.readChars(data.readGUChar());
 	if (!image.contains("."))
 		image += ".gif";
+}
+
+void PropertyShieldPower::apply(const GameValue& gameValue)
+{
+	image = gameValue.get<std::string>().value_or("");
 }
 
 // -----------------------------------------------
@@ -157,6 +172,11 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 	}
 }
 
+void PropertyGaniOrBowGif::apply(const GameValue& gameValue)
+{
+	gani = gameValue.get<std::string>().value_or("");
+}
+
 // -----------------------------------------------
 // PropertyHeadGif
 
@@ -187,6 +207,11 @@ void PropertyHeadGif::deserialize(CString& data)
 	image = std::move(headImage.toString());
 }
 
+void PropertyHeadGif::apply(const GameValue& gameValue)
+{
+	image = gameValue.get<std::string>().value_or("");
+}
+
 // -----------------------------------------------
 // PropertyEloRating
 
@@ -203,6 +228,10 @@ void PropertyEloRating::deserialize(CString& data)
 	deviation = (packed & 0x1FF);
 }
 
+void PropertyEloRating::apply(const GameValue& gameValue)
+{
+}
+
 // -----------------------------------------------
 // PropertyAttachNPC
 
@@ -215,6 +244,11 @@ void PropertyAttachNPC::deserialize(CString& data)
 {
 	type = data.readGUChar();
 	npcId = data.readGInt();
+}
+
+void PropertyAttachNPC::apply(const GameValue& gameValue)
+{
+	npcId = static_cast<NPCID>(gameValue.get<double>().value_or(0));
 }
 
 // -----------------------------------------------
@@ -238,6 +272,11 @@ void PropertyPixelCoordinate::deserialize(CString& data)
 		pixelCoordinate = -pixelCoordinate;
 }
 
+void PropertyPixelCoordinate::apply(const GameValue& gameValue)
+{
+	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
+}
+
 // -----------------------------------------------
 // PropertyTileCoordinate
 
@@ -251,6 +290,11 @@ void PropertyTileCoordinate::deserialize(CString& data)
 	pixelCoordinate = data.readGUChar() * 8;
 }
 
+void PropertyTileCoordinate::apply(const GameValue& gameValue)
+{
+	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
+}
+
 // -----------------------------------------------
 // PropertyTileCoordinateZ
 
@@ -262,6 +306,11 @@ CString PropertyTileCoordinateZ::serialize() const
 void PropertyTileCoordinateZ::deserialize(CString& data)
 {
 	pixelCoordinate = (data.readGUChar() - 50) * 8;
+}
+
+void PropertyTileCoordinateZ::apply(const GameValue& gameValue)
+{
+	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

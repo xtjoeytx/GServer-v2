@@ -45,6 +45,9 @@ public:
 	GameVariable* getGameVariableFromVariant(GameVariableVariant& variant);
 	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
+public:
+	double getColorValueFromString(std::string_view colorString);
+
 protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
