@@ -1,33 +1,35 @@
-ARG VER_EXTRA=""
-
-
 FROM amigadev/crosstools:x86_64-linux AS build-env
 ARG VER_EXTRA
 
+# - ROOT -
 USER 0
 
 RUN apt update && \
-	apt install -y libssl-dev libzstd-dev
+	apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre
 
+# - USER -
 USER 1001
+
+ENV VCPKG_ROOT=/tmp/gserver/vcpkg
+ENV VCPKG_FORCE_SYSTEM_BINARIES=1
+ENV VCPKG_DISABLE_METRICS=1
+
 COPY --chown=1001:1001 ./ /tmp/gserver
 
-RUN VCPKG_ROOT=/tmp/vcpkg \
-	&& git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
-	&& cd /tmp/vcpkg \
-	&& sh bootstrap-vcpkg.sh
-
-RUN cd /tmp/gserver \
-    && ln -s /tmp/v8 /tmp/gserver/dependencies/v8 \
-	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset vcpkg -DVCPKG_TARGET_TRIPLET:STRING=x64-linux -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+RUN git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
+	&& cd $VCPKG_ROOT \
+	&& sh bootstrap-vcpkg.sh -disableMetrics \
+	&& cd /tmp/gserver \
+	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Release x64" -DVCPKG_TARGET_TRIPLET:STRING=x64-linux -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --target clean \
 	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& chmod 777 -R /tmp/gserver/dist \
-    && chmod 777 -R /tmp/gserver/build \
-    && rm -rf /tmp/gserver/dist/_CPack_Packages
+	&& chmod 777 -R /tmp/gserver/build \
+	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
+	&& apt purge -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre
 
 # GServer Run Environment
-FROM alpine:3.20
+FROM alpine:3.22
 ARG CACHE_DATE=2021-07-25
 COPY --from=build-env /tmp/gserver/dist /dist
 COPY --from=build-env /tmp/gserver/build /tmp/gserver/build

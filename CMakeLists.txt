@@ -19,7 +19,7 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.24)
 
 # Add custom CMake modules path for external dependencies.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -53,6 +53,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0074 NEW)	# CMP0074: find_package uses PackageName_R
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)	# CMP0077: option() honors normal variables.
 set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
 set(CMAKE_POLICY_DEFAULT_CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
+set(CMAKE_POLICY_DEFAULT_CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
 
 # Get submodules.
 find_package(Git QUIET)
@@ -120,6 +121,31 @@ else()
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 endif()
 
+# Dependency: Threads.
+if(NOT WIN32)
+	# Prefer static linkage.
+	if(STATIC)
+		set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+		set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	endif()
+
+	find_package(Threads REQUIRED)
+
+	# Restore library suffixes.
+	if(STATIC)
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
+	endif()
+endif()
+
+# Fetch.
+add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
+
+# Server.
+add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
+add_subdirectory(${PROJECT_SOURCE_DIR}/server)
+
+###-----------------------###
+
 # Packaging.
 if(APPLE)
 	set(CPACK_GENERATOR DragNDrop)
@@ -148,28 +174,3 @@ set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
-
-# Dependency: Threads.
-if(NOT WIN32)
-	# Prefer static linkage.
-	if(STATIC)
-		set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-		set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	endif()
-
-	find_package(Threads REQUIRED)
-
-	# Restore library suffixes.
-	if(STATIC)
-		set(CMAKE_FIND_LIBRARY_SUFFIXES ${SUFFIXES_ORIG})
-	endif()
-endif()
-
-# Fetch.
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
-
-# Server.
-add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
-add_subdirectory(${PROJECT_SOURCE_DIR}/server)
-
-#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

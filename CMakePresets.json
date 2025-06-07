@@ -1,25 +1,57 @@
 {
-  "version": 2,
+  "version": 5,
   "configurePresets": [
     {
-      "name": "vcpkg",
-      "generator": "Ninja",
+      "name": "Release",
+      "hidden": true,
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "MinSizeRel",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": "TRUE"
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true
       }
     },
     {
-      "name": "vcpkg-debug",
-      "generator": "Ninja",
+      "name": "Debug",
+      "hidden": true,
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "PACKET_LOGGING": false,
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": "TRUE"
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true
+      }
+    },
+    {
+      "name": "Release x64",
+      "inherits": "Release",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "Debug x64",
+      "inherits": "Debug",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "Debug x64 (Packet Logging)",
+      "inherits": "Debug",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "PACKET_LOGGING": true
       }
     }
   ]

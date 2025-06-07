@@ -3,6 +3,7 @@
     "antlr4",
     "bzip2",
     "miniupnpc",
-    "zlib"
+	"zlib",
+	"wolfssl"
   ]
 }

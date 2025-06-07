@@ -144,6 +144,7 @@ set(
 # Create the executable target.
 set(TARGET_NAME "${PROJECT_NAME_LOWER}")
 add_executable(${TARGET_NAME})
+set_target_properties(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
 # Add the sources.
 target_sources(${TARGET_NAME} PUBLIC ${SOURCES})
@@ -191,6 +192,28 @@ FetchContent_MakeAvailable(gs2lib)
 target_link_libraries(${TARGET_NAME} PRIVATE gs2lib)
 target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
 
+# Generate grammar.
+antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
+	FALSE						# 4: Generate listener
+	FALSE						# 5: Generate visitor
+	"preagonal::grammar::gs1"	# 6: Namespace
+)
+message("${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4")
+antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Parser.g4" PARSER
+	FALSE						# 4: Generate listener
+	TRUE						# 5: Generate visitor
+	"preagonal::grammar::gs1"	# 6: Namespace
+	"${ANTLR4_TOKEN_FILES_GS1Lexer}"		# 7: Dependency - Token files
+	"${ANTLR4_TOKEN_DIRECTORY_GS1Lexer}"	# 8: Location of grammars - Token directory
+)
+target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
+target_sources(${TARGET_NAME} PRIVATE ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
+
+# Windows libraries.
+if(WIN32)
+	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
+endif()
+
 # ???
 if(APPLE)
 	# Enable ARC (automatic reference counting) for OS X build
@@ -235,7 +258,14 @@ elseif(WIN32)
 	endif()
 endif()
 
-target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
+# Ignore warnings.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	target_compile_options(${TARGET_NAME} PRIVATE
+		-Wno-attributes=inline
+	)
+endif()
+
+target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
@@ -244,9 +274,9 @@ target_link_libraries(${TARGET_NAME} PRIVATE gs2compiler)
 
 if (MINGW)
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
-	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+	target_link_libraries(${TARGET_NAME} PRIVATE -static-libgcc -static-libstdc++)
+	#target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+	#target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
 
 	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
 
@@ -301,24 +331,3 @@ if (MINGW)
 		endforeach()
 	]])
 endif()
-
-if(WIN32)
-	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
-endif()
-
-# Generate grammar.
-antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
-	FALSE						# 4: Generate listener
-	FALSE						# 5: Generate visitor
-	"preagonal::grammar::gs1"	# 6: Namespace
-)
-message("${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4")
-antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Parser.g4" PARSER
-	FALSE						# 4: Generate listener
-	TRUE						# 5: Generate visitor
-	"preagonal::grammar::gs1"	# 6: Namespace
-	"${ANTLR4_TOKEN_FILES_GS1Lexer}"		# 7: Dependency - Token files
-	"${ANTLR4_TOKEN_DIRECTORY_GS1Lexer}"	# 8: Location of grammars - Token directory
-)
-target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
-target_sources(${TARGET_NAME} PRIVATE ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
