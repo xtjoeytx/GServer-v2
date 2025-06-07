@@ -21,6 +21,48 @@ namespace preagonal::grammar::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr std::array<std::string_view, 10> baddyNames =
+{
+	"graysoldier"sv, "bluesoldier"sv, "redsoldier"sv, "shootingsoldier"sv, "swampsoldier"sv,
+	"frog"sv, "octopus"sv, "goldenwarrior"sv, "lizardon"sv, "dragon"sv
+};
+
+constexpr std::array<std::string_view, 20> colorNames =
+{
+	"white"sv, "yellow"sv, "orange"sv, "pink"sv, "red"sv,
+	"darkred"sv, "lightgreen"sv, "green"sv, "darkgreen"sv, "lightblue"sv,
+	"blue"sv, "darkblue"sv, "brown"sv, "cynober"sv, "purple"sv,
+	"darkpurple"sv, "lightgray"sv, "gray"sv, "black"sv, "transparent"sv
+};
+
+constexpr std::array<std::string_view, 4> directionNames =
+{
+	"up"sv, "left"sv, "down"sv, "right"sv
+};
+
+constexpr std::array<std::string_view, 2> genderNames =
+{
+	"male"sv, "female"sv
+};
+
+constexpr std::array<std::string_view, 11> carryNames =
+{
+	"bush"sv, "sign"sv, "vase"sv, "stone"sv, "blackstone"sv,
+	"bomb"sv, "hotbomb"sv, "superbomb"sv, "joltbomb"sv, "hotjoltbomb"sv,
+	"none"sv
+};
+
+constexpr std::array<std::string_view, 25> itemNames =
+{
+	"greenrupee"sv, "bluerupee"sv, "redrupee"sv, "bombs"sv, "darts"sv,
+	"heart"sv, "glove1"sv, "bow"sv, "bomb"sv, "shield"sv,
+	"sword"sv, "fullheart"sv, "superbomb"sv, "battleaxe"sv, "goldensword"sv,
+	"mirrorshield"sv, "glove2"sv, "lizardshield"sv, "lizardsword"sv, "goldrupee"sv,
+	"fireball"sv, "fireblast"sv, "nukeshot"sv, "joltbomb"sv, "spinattack"sv
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 constexpr size_t MAX_LOOPS = 10000;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -876,6 +918,71 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 		values.push_back(result);
 	}
 	return std::make_any<GS1ScriptValue>(std::move(values));
+}
+
+std::any GS1Visitor::visitItemLiteral(GS1Parser::ItemLiteralContext* context)
+{
+	auto text = context->ITEM()->getText();
+	auto it = std::ranges::find(itemNames, text);
+	if (it == itemNames.end())
+		it = itemNames.begin();
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(itemNames.begin(), it)));
+}
+
+std::any GS1Visitor::visitCarryLiteral(GS1Parser::CarryLiteralContext* context)
+{
+	auto text = context->CARRY()->getText();
+	auto it = std::ranges::find(carryNames, text);
+	if (it == carryNames.end())
+		it = carryNames.begin();
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(carryNames.begin(), it)));
+}
+
+std::any GS1Visitor::visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context)
+{
+	ptrdiff_t index = 0;
+	auto text = context->DIRECTION()->getText();
+	if (auto it = std::ranges::find(directionNames, text); it != directionNames.end())
+		index = std::distance(directionNames.begin(), it);
+	else
+	{
+		index = static_cast<ptrdiff_t>(string::toNumber(text));
+		index = index % 4;
+	}
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(index));
+}
+
+std::any GS1Visitor::visitGenderLiteral(GS1Parser::GenderLiteralContext* context)
+{
+	auto text = context->GENDER()->getText();
+	auto it = std::ranges::find(genderNames, text);
+	if (it == genderNames.end())
+		it = genderNames.begin();
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(genderNames.begin(), it)));
+}
+
+std::any GS1Visitor::visitColorLiteral(GS1Parser::ColorLiteralContext* context)
+{
+	auto text = context->COLOR()->getText();
+	auto it = std::ranges::find(colorNames, text);
+	if (it == colorNames.end())
+		it = colorNames.begin();
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(colorNames.begin(), it)));
+}
+
+std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
+{
+	auto text = context->BADDY()->getText();
+	auto it = std::ranges::find(baddyNames, text);
+	if (it == baddyNames.end())
+		it = baddyNames.begin();
+
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(baddyNames.begin(), it)));
 }
 
 std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)

@@ -94,6 +94,12 @@ public:
 	virtual std::any visitIdentifierLiteral(GS1Parser::IdentifierLiteralContext* context) override;
 	virtual std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
 	virtual std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
+	virtual std::any visitItemLiteral(GS1Parser::ItemLiteralContext* context) override;
+	virtual std::any visitCarryLiteral(GS1Parser::CarryLiteralContext* context) override;
+	virtual std::any visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context) override;
+	virtual std::any visitGenderLiteral(GS1Parser::GenderLiteralContext* context) override;
+	virtual std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
+	virtual std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
 	virtual std::any visitStorageToken(GS1Parser::StorageTokenContext* context) override;
 };
 

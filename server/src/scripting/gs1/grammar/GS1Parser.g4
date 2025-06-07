@@ -122,12 +122,7 @@ builtin_command
 
 builtin_command_expression
 	: expression_allow_string
-	| ITEM
-	| CARRY
-	| DIRECTION
-	| GENDER
-	| COLOR
-	| BADDY
+	| special_literal
 	;
 
 function_definition
@@ -242,6 +237,15 @@ range_literal
 
 array_literal
 	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* TOKEN_BRACE_RIGHT				# ArrayLiteral
+	;
+
+special_literal
+	: ITEM																					# ItemLiteral
+	| CARRY																					# CarryLiteral
+	| DIRECTION																				# DirectionLiteral
+	| GENDER																				# GenderLiteral
+	| COLOR																					# ColorLiteral
+	| BADDY																					# BaddyLiteral
 	;
 
 storage_token

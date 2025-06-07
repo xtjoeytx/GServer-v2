@@ -691,7 +691,7 @@ fragment BADDY
 	| 'dragon'
 	;
 
-fragment COLOR
+fragment COLORS
 	: 'white'
 	| 'yellow'
 	| 'orange'
@@ -712,6 +712,60 @@ fragment COLOR
 	| 'gray'
 	| 'black'
 	| 'transparent'
+	;
+
+fragment DIR
+	: 'up'
+	| 'left'
+	| 'down'
+	| 'right'
+	;
+
+fragment GENDERS
+	: 'male'
+	| 'female'
+	;
+
+fragment CARRYNAMES
+	: 'bush'
+	| 'sign'
+	| 'vase'
+	| 'stone'
+	| 'blackstone'
+	| 'bomb'
+	| 'hotbomb'
+	| 'superbomb'
+	| 'joltbomb'
+	| 'hotjoltbomb'
+	| 'none'
+	;
+
+fragment ITEMNAMES
+	: 'greenrupee'
+	| 'bluerupee'
+	| 'redrupee'
+	| 'bombs'
+	| 'darts'
+	| 'heart'
+	| 'glove1'
+	| 'bow'
+	| 'bomb'
+	| 'shield'
+	| 'sword'
+	| 'fullheart'
+	| 'superbomb'
+	| 'battleaxe'
+	| 'goldensword'
+	| 'mirrorshield'
+	| 'glove2'
+	| 'lizardshield'
+	| 'lizardsword'
+	| 'goldrupee'
+	| 'fireball'
+	| 'fireblast'
+	| 'nukeshot'
+	| 'joltbomb'
+	| 'spinattack'
 	;
 
 fragment LETTERS
@@ -740,33 +794,7 @@ ITEM_WS              : WHITESPACE+ -> skip;
 ITEM_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 ITEM_POP_END         : END -> type(END), popMode;
 ITEM_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
-ITEM
-	: 'greenrupee'
-	| 'bluerupee'
-	| 'redrupee'
-	| 'bombs'
-	| 'darts'
-	| 'heart'
-	| 'glove1'
-	| 'bow'
-	| 'bomb'
-	| 'shield'
-	| 'sword'
-	| 'fullheart'
-	| 'superbomb'
-	| 'battleaxe'
-	| 'goldensword'
-	| 'mirrorshield'
-	| 'glove2'
-	| 'lizardshield'
-	| 'lizardsword'
-	| 'goldrupee'
-	| 'fireball'
-	| 'fireblast'
-	| 'nukeshot'
-	| 'joltbomb'
-	| 'spinattack'
-	;
+ITEM                 : ITEMNAMES;
 
 // --------------------------------------------------------
 mode IN_CARRY;
@@ -774,19 +802,7 @@ mode IN_CARRY;
 CARRY_WS              : WHITESPACE+ -> skip;
 CARRY_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 CARRY_POP_END         : END -> type(END), popMode;
-CARRY
-	: 'bush'
-	| 'sign'
-	| 'vase'
-	| 'stone'
-	| 'blackstone'
-	| 'bomb'
-	| 'hotbomb'
-	| 'superbomb'
-	| 'joltbomb'
-	| 'hotjoltbomb'
-	| 'none'
-	;
+CARRY                 : CARRYNAMES;
 
 // --------------------------------------------------------
 mode IN_DIRECTION;
@@ -795,10 +811,7 @@ DIRECTION_WS              : WHITESPACE+ -> skip;
 DIRECTION_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 DIRECTION_POP_END         : END -> type(END), popMode;
 DIRECTION
-	: 'up'
-	| 'left'
-	| 'down'
-	| 'right'
+	: DIR
 	| [0123]
 	;
 
@@ -808,8 +821,7 @@ mode IN_GENDER;
 GENDER_WS              : WHITESPACE+ -> skip;
 GENDER_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 GENDER_POP_END         : END -> type(END), popMode;
-GENDER
-	: 'male' | 'female' ;
+GENDER                 : GENDERS;
 
 // --------------------------------------------------------
 mode IN_COLOR;
@@ -817,7 +829,7 @@ mode IN_COLOR;
 COLOR_WS              : WHITESPACE+ -> skip;
 COLOR_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 COLOR_POP_END         : END -> type(END), popMode;
-COLOR_                : COLOR ->type(COLOR) ;
+COLOR                 : COLORS;
 
 // --------------------------------------------------------
 mode IN_MS;
