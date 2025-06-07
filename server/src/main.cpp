@@ -247,8 +247,6 @@ int main(int argc, char* argv[])
 void shutdownServer(int signal)
 {
 	log::printLine(log::server, ":: The server is now shutting down...");
-	log::printLine(log::server, "-------------------------------------");
-
 	shutdownProgram = true;
 }
 

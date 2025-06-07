@@ -24,19 +24,15 @@
 #include <loader/INPCLoader.h>
 #include <object/Player.h>
 #include <object/NPC.h>
+#include <misc/UPNP.h>
 #include <misc/WordFilter.h>
+#include <scripting/GS2ScriptManager.h>
+#include <scripting/ScriptClass.h>
 #include <utilities/CommandDispatcher.h>
 #include <utilities/FlagContainer.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
-
-#ifdef UPNP
-	#include <misc/UPNP.h>
-#endif
-
-#include <scripting/GS2ScriptManager.h>
-#include <scripting/ScriptClass.h>
 
 // Resources
 #include <animation/GameAni.h>
@@ -351,10 +347,8 @@ private:
 
 	std::shared_ptr<NPCServer> m_npcServer;
 
-#ifdef UPNP
 	UPNP m_upnp;
 	std::thread m_upnpThread;
-#endif
 };
 
 inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const

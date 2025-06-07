@@ -1,23 +1,22 @@
 #ifndef UPNP_H
 #define UPNP_H
 
-#ifdef UPNP
-
-#include <memory.h>
+#include <memory>
 #include <set>
+#include <string>
+#include <string_view>
 
-#include <CString.h>
-#include "BabyDI.h"
+#include <BabyDI.h>
 
+#ifdef ENABLE_UPNP
 #include <miniupnpc.h>
 #include <miniwget.h>
 #include <upnpcommands.h>
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class Server;
@@ -29,12 +28,12 @@ public:
 	void operator()()
 	{
 		discover();
-		addPortForward(m_localIp, port);
+		addPortForward(m_localIp, m_port);
 	}
 
-	void initialize(const char* m_localIp, const char* port)
+	void initialize(std::string_view localIp, std::string_view port)
 	{
-		m_localIp = m_localIp;
+		m_localIp = localIp;
 		m_port = port;
 	}
 
@@ -42,10 +41,10 @@ public:
 	void discover();
 
 	// Adds a port forward.
-	void addPortForward(const CString& addr, const CString& port);
+	void addPortForward(std::string_view address, std::string_view port);
 
 	// Removes a port forward.
-	void removePortForward(const CString& port);
+	void removePortForward(std::string_view port);
 
 	// Removes all the port forwards created by the addPortForward command.
 	void removeAllForwardedPorts()
@@ -56,7 +55,7 @@ public:
 	}
 
 	// Returns true if the port was successfully forwarded.
-	bool wasPortForwarded(const CString& port)
+	bool wasPortForwarded(std::string_view port)
 	{
 		return m_portsForwarded.find(port) != m_portsForwarded.end();
 	}
@@ -64,16 +63,17 @@ public:
 private:
 	BabyDI_INJECT(Server, m_server);
 
-	std::set<CString> m_portsForwarded;
-	CString m_localIp;
-	CString m_port;
+	std::set<std::string, std::less<>> m_portsForwarded;
+	std::string m_localIp;
+	std::string m_port;
+
+#ifdef ENABLE_UPNP
 	struct UPNPUrls m_urls;
 	struct IGDdatas m_data;
+#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
-#endif // UPNP
 #endif // UPNP_H

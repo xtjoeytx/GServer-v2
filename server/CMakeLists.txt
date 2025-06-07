@@ -177,6 +177,7 @@ set(ANTLR4_JAR_LOCATION "${FETCHCONTENT_BASE_DIR}/antlr-jar/antlr.jar")
 option(UPNP "Enable UPNP support." ON)
 if(UPNP)
 	find_package(miniupnpc CONFIG REQUIRED)
+	target_compile_definitions(${TARGET_NAME} PUBLIC ENABLE_UPNP)
 	target_link_libraries(${TARGET_NAME} PRIVATE miniupnpc::miniupnpc miniupnpc::miniupnpc-private)
 endif()
 

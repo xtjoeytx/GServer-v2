@@ -213,7 +213,7 @@ bool ServerList::connectServer()
 	}
 
 	m_server->getSocketManager().registerSocket((CSocketStub*)this);
-	log::printLine(log::server, ":: {} - Connected.", m_socket.getDescription());
+	log::printLine(log::server, ":: {} - Connected to {}:{}.", m_socket.getDescription(), m_socket.getRemoteIp(), m_socket.getRemotePort());
 
 	// Get Some Stuff
 	CString name(settings.getStr("name"));

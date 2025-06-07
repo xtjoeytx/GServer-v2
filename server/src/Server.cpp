@@ -130,8 +130,14 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 		return ERR_LISTEN;
 	}
 
-#ifdef UPNP
+	// Announce the ports.
+	{
+		auto indent = log::server.indent();
+		log::printLine(log::server, "Listening on: {}:{}.", m_playerSock.getRemoteIp(), m_playerSock.getRemotePort());
+	}
+
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
+#ifdef ENABLE_UPNP
 	log::printLine(log::server, ":: Starting UPnP discovery thread.");
 	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
 	m_upnpThread = std::thread(std::ref(m_upnp));
@@ -171,7 +177,6 @@ void Server::operator()()
 		if (shutdownProgram)
 			running = false;
 	}
-	cleanup();
 }
 
 void Server::cleanupDeletedPlayers()
@@ -199,10 +204,10 @@ void Server::cleanup()
 	// Close our UPNP port forward.
 	// First, make sure the thread has completed already.
 	// This can cause an issue if the server is about to be deleted.
-#ifdef UPNP
+#ifdef ENABLE_UPNP
 	if (m_upnpThread.joinable())
 		m_upnpThread.join();
-	m_upnremoveAllForwardedPortsts();
+	m_upnp.removeAllForwardedPorts();
 #endif
 
 	// Save translations.
@@ -236,6 +241,8 @@ void Server::cleanup()
 
 	m_accountLoader.reset();
 	m_adminSettings.clear();
+
+	log::printLine(log::server, "-------------------------------------");
 }
 
 void Server::restart()

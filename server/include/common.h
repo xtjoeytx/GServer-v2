@@ -78,6 +78,9 @@ concept VariantContainsType = requires(Va v, Tp t)
 	{ std::holds_alternative<Tp>(v) } -> std::same_as<bool>;
 };
 
+template<typename R, typename T>
+concept RangeOf = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
+
 template<class... Ts>
 concept all_same = sizeof...(Ts) < 2 ||
 	std::conjunction_v<

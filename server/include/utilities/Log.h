@@ -8,8 +8,10 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <ranges>
 
-#include "CString.h"
+#include <common.h>
+#include <CString.h>
 
 // Don't change this order.
 // For some reason the compile will fail in Windows for some versions of MSVC.
@@ -19,13 +21,11 @@
 #include <filesystem>
 //
 
-///////////////////////////////////////////////////////////////////////////////
-
 using namespace std::literals::string_view_literals;
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::log
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // The timestamp mode for the log.
@@ -190,10 +190,28 @@ void printLine(Log& log, std::string_view fmt, const Args&... args)
 	print(log, "\n"sv);
 }
 
+void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto const& range)
+{
+	std::lock_guard lock(log.mutex);
+	for (auto& [indentation, text] : range)
+	{
+		auto indent = log.indent(indentation);
+		printLine(log, text);
+	}
+}
+
+void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto&& range)
+{
+	std::lock_guard lock(log.mutex);
+	for (auto& [indentation, text] : range)
+	{
+		auto indent = log.indent(indentation);
+		printLine(log, text);
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal::log
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
