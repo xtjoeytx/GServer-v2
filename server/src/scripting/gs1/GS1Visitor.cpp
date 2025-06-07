@@ -170,15 +170,20 @@ GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& varian
 
 GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
 {
+	// First, check if it is a built-in variable.
+	if (builtInStore != nullptr)
+	{
+		auto builtIn = builtInStore->get(identifier);
+		if (!builtIn.expired())
+			return builtIn;
+	}
+
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
 	{
 		if (auto* store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
 			return store->get_or_stub(identifier);
 	}
-	// Otherwise, try built-in variables.  Built-in variables will never have a storage type.
-	else if (builtInStore != nullptr)
-		return builtInStore->get(identifier);
 
 	// No store found?  Get the original source store.
 	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
