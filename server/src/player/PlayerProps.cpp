@@ -23,6 +23,18 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop) const
+{
+	switch (prop)
+	{
+#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
+		FOR_LIST_OF_PLAYER_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
+	}
+	throw std::exception("Invalid PlayerProp type in constructPropFor");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<PropertyBase> Player::getProp(PlayerProp prop) const
 {
 	switch (prop)

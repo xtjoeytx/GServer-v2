@@ -205,10 +205,8 @@ public:
 
 	/// @brief Constructs a PropertyContainer for PlayerProp prop with the given values.
 	/// @param prop The PlayerProp that determines the type of container to construct.
-	/// @param ...values The values to pass to the container's constructor.
 	/// @return A shared pointer to the constructed property's base class.
-	template<typename... Args>
-	[[inline]] std::shared_ptr<PropertyBase> constructPropFor(PlayerProp prop, Args... values) const;
+	std::shared_ptr<PropertyBase> constructPropFor(PlayerProp prop) const;
 
 	/// @brief Gets the property container for PlayerProp P.
 	/// @tparam P The PlayerProp that determines the type of container to get.
@@ -248,6 +246,10 @@ public:
 	/// @param ...results A list of SetResults results to send.
 	template<typename... Results> requires all_same_as<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(const Results&... results);
+
+	/// @brief Sends the results of setting properties across the network.
+	/// @param results A range of SetResults results to send.
+	void sendPropsFromResults(std::ranges::forward_range auto&& results);
 
 public:
 	/// @brief Sets properties from a packet string.
@@ -613,17 +615,6 @@ PropertyContainer auto Player::constructPropFor(Args... values) const
 	throw std::exception("Invalid PlayerProp type in constructPropFor");
 }
 
-template<typename... Args>
-std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop, Args... values) const
-{
-	switch (prop)
-	{
-#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>(values...);
-		FOR_LIST_OF_PLAYER_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
-	}
-	throw std::exception("Invalid PlayerProp type in constructPropFor");
-}
-
 template<PlayerProp P>
 PropertyContainer auto Player::getProp() const
 {
@@ -650,6 +641,15 @@ void Player::sendPropsFromResults(const Results&... results)
 {
 	propSendResults send_results;
 	(send_results.emplace_back(results.propId, results, nullptr), ...);
+	sendPropsFromResults(send_results);
+}
+
+void Player::sendPropsFromResults(std::ranges::forward_range auto&& results)
+{
+	propSendResults send_results;
+	send_results.append_range(results | std::views::transform([](const SetResults& results) {
+		return std::make_tuple(results.propId, results, nullptr);
+	}));
 	sendPropsFromResults(send_results);
 }
 

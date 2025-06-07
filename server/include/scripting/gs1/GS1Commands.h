@@ -2,6 +2,12 @@
 #define GS1COMMANDS_H
 
 #include <common.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+
+namespace preagonal::grammar::gs1
+{
+class GS1Visitor;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
@@ -10,49 +16,55 @@ namespace preagonal::gs1
 
 constexpr std::array<std::string_view, 199> serverSideCommands =
 {
+	"addguildmember",
 	"addstring",
 	//"addtiledef",
 	//"addtiledef2",
+	"addweapon",
 	"attachplayertoobj",
 	"blockagain",
 	//"blockagainlocal",
-	"callnpc",
+	//"callnpc",
 	//"callweapon",
-	//"canbecarried",
-	//"canbepulled",
-	//"canbepushed",
-	//"cannotbecarried",
-	//"cannotbepulled",
-	//"cannotbepushed",
+	"canbecarried",
+	"canbepulled",
+	"canbepushed",
+	"cannotbecarried",
+	"cannotbepulled",
+	"cannotbepushed",
+	"cannotwarp",
 	"canwarp",
 	"canwarp2",
-	"cannotwarp",
-	//"carryobject",
+	"carryobject",
 	//"changeimgcolors",
 	//"changeimgmode",
 	//"changeimgpart",
 	//"changeimgvis",
 	//"changeimgzoom",
+	"copyflagss",
+	"copylevel",
+	"copystrings",
+	"deletelevel",
 	"deletestring",
 	"destroy",
 	"detachplayer",
-	//"disabledefmovement",
+	"disabledefmovement",
 	//"disablemap",
 	//"disablepause",
-	"disableselectweapons",		// ??
-	"disableweapons",			// PLSTATUS_ALLOWWEAPONS?
+	//"disableselectweapons",
+	"disableweapons",
 	"dontblock",
 	//"dontblocklocal",
-	//"drawaslight",
+	"drawaslight",
 	"drawoverplayer",
 	"drawunderplayer",
-	//"enabledefmovement",
+	"enabledefmovement",
 	//"enablefeatures",
 	//"enablemap",
 	//"enablepause",
-	"enableselectweapons",
+	//"enableselectweapons",
 	"enableweapons",
-	"explodebomb",				// ?? Could maybe work
+	"explodebomb",
 	//"followplayer",
 	//"freezeplayer",
 	"freezeplayer2",
@@ -60,8 +72,8 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	//"hideimg",
 	//"hideimgs",
 	//"hidelocal",
-	"hideplayer",
-	"hidesword",
+	//"hideplayer",
+	//"hidesword",
 	"hitcompu",
 	"hitnpc",
 	"hitobjects",
@@ -83,28 +95,39 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	//"playlooped",
 	"putbomb",
 	"putcomp",
-	"putexplosion",
+	"putexplosion ",
 	"putexplosion2",
 	"puthorse",
-	//"putleaps",				// ??
+	//"putleaps",
 	"putnewcomp",
 	"putnpc",
 	"putnpc2",
-	"putobject",
+	//"putobject",
 	//"reflectarrow",
-	//"removearrow",
+	"removearrow",
 	"removebomb",
 	"removecompus",
 	"removeexplo",
+	"removeguild",
+	"removeguildmember",
 	"removehorse",
 	"removeitem",
 	"removestring",
 	//"removetiledefs",
+	"removeweapon",
 	//"replaceani",
 	"replacestring",
 	//"resetfocus",
-	//"say ",					// ?? - extension possible
+	"saveinfo",
+	"savelog ",
+	"savelog2",
+	//"say ",
 	"say2",
+	"sendpm",
+	"sendrpgmessage",
+	"sendtonc",
+	"sendtorc",
+	"serverwarp",
 	"set ",
 	"setani",
 	"setarray",
@@ -117,8 +140,9 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"setcoatcolor",
 	//"setcoloreffect",
 	//"setcursor ",
+	//"setcursor2",
 	//"seteffect",
-	"seteffectmode ",
+	//"seteffectmode ",
 	//"setfocus",
 	"setgender",
 	"setgif ",
@@ -133,6 +157,7 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	//"setmusicvolume",
 	"setplayerdir",
 	"setplayerprop",
+	"setpm",
 	"setshape",
 	"setshape2",
 	"setshield",
@@ -140,9 +165,12 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"setshootparams",
 	"setskincolor",
 	"setsleevecolor",
+	//"setspritesimage",
+	//"setstatusimage",
 	"setstring",
 	"setsword",
 	//"seturllevel",
+	"setz",
 	//"setzoomeffect",
 	"shoot",
 	"shootarrow",
@@ -154,14 +182,14 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"showani",
 	"showani2",
 	"showcharacter",
-	"showfile",
-	//"showimg",				// Space?
-	//"showimg2",
+	//"showfile",
+	"showimg",
+	"showimg2",
 	//"showlocal",
-	//"showpoly",				// Space?
+	//"showpoly",
 	//"showpoly2",
-	"showstats",				// ??
-	//"showtext",				// Space?
+	"showstats",
+	//"showtext",
 	//"showtext2",
 	"sleep",
 	"spyfire",
@@ -183,40 +211,19 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"unfreezeplayer",
 	"unset ",
 	"updateboard ",
+	"updateboard2 ",
 	"updateterrain",
 	//"wraptext",
 	//"wraptext2",
-	"addweapon",
-	"removeweapon",
-	//"setspritesimage",
-	//"setstatusimage",
-	"addguildmember",
-	"removeguildmember",
-	"removeguild",
-	"copystrings",
-	"copyflagss",				// ?? - Are the double s' intentional?
-	"sendtorc",
-	"sendtonc",
-	"sendpm",
-	"setpm",
-	"sendrpgmessage",
-	"serverwarp",
-	"updateboard2 ",
-	"setz",
-	"setcursor2"
-	"copylevel",
-	"deletelevel",
-	"saveinfo",
-	"savelog ",
-	"savelog2",
 };
 
 /*
 	triggeractions:
 		serverside		- when received from client, triggers the weapon script of the weapon listed in first parameter.
 		server{EVENT}	- invokes an event on the control-npc: if (actionserver{EVENT})
-
 */
+
+void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 
 ///////////////////////////////////////////////////////////////////////////////
 }

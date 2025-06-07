@@ -11,6 +11,7 @@
 
 #include <Server.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/gs1/GS1Commands.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <utilities/Log.h>
@@ -641,22 +642,19 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 	auto command = context->COMMAND()->getText();
 	string::trimRightMutate(command);
 
-	// TODO(Nalin): Actually implement this!
-	if (command == "setstring")
+	// Process the arguments.
+	std::vector<GS1ScriptValue*> arguments;
+	for (auto& result : results)
 	{
-		if (results.size() != 2)
-			throw std::exception("setstring identifier,string;");
+		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (container == nullptr)
+			throw std::exception("BuiltInCommand argument is not a valid GS1ScriptValue");
 
-		// Get the identifier.
-		auto identifier = getGameVariableFromAny(results[0]);
-
-		// Get the value.
-		auto value = getReadOnlyGameValueFromAny(results[1]);
-
-		// Assign the string.
-		if (auto* gameVar = getGameVariableFromVariant(identifier.first); gameVar != nullptr)
-			gameVar->assign<std::string>(value);
+		// Add to the arguments.
+		arguments.push_back(container);
 	}
+
+	processBuiltInCommand(this, command, arguments);
 	return {};
 }
 
@@ -780,7 +778,7 @@ std::any GS1Visitor::visitAssignmentOperation(GS1Parser::AssignmentOperationCont
 
 	auto left = getGameVariableFromAny(results[0]);
 	auto right = getReadOnlyGameValueFromAny(results[1]);
-	
+
 	auto left_var = getGameVariableFromVariant(left.first);
 	if (left_var == nullptr)
 		throw std::exception("AssignmentOperation left side is not a valid assignable value");
