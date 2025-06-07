@@ -110,18 +110,19 @@ int main(int argc, char* argv[])
 			std::cout << ":: Determining the server to start... ";
 			std::filesystem::path cwd = std::filesystem::current_path();
 
-			auto found_server = [&discovery_mode](const std::string& why, std::string_view server, const std::filesystem::path& working_directory)
+			auto found_server = [&discovery_mode](const std::string& why, std::string_view server, std::filesystem::path& working_directory, const std::filesystem::path& test_directory)
 			{
-				if (!working_directory.empty())
+				if (!working_directory.empty() && !test_directory.empty())
 				{
 					// Sanity check.
-					if (!std::filesystem::exists(working_directory))
+					if (!std::filesystem::exists(working_directory / test_directory))
 					{
 						std::cout << "FAILED! " << why << " (" << server << ")" << std::endl;
 						std::cerr << "Failed to start server: working directory does not exist." << std::endl;
 						return false;
 					}
-					std::filesystem::current_path(working_directory);
+					std::filesystem::current_path(working_directory / test_directory);
+					working_directory = std::filesystem::current_path();
 				}
 
 				std::cout << "success! " << why << std::endl;
@@ -133,7 +134,7 @@ int main(int argc, char* argv[])
 			// Current working directory.
 			if (overrideServer.isEmpty())
 			{
-				if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().string(), {}))
+				if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().string(), cwd, {}))
 					return ERR_SETTINGS;
 			}
 
@@ -144,7 +145,7 @@ int main(int argc, char* argv[])
 				startup.load("startupserver.txt");
 				startup = startup.readString("\n").replaceAllI("\r", "");
 
-				if (!startup.isEmpty() && !found_server("(startupserver.txt)", startup.text(), cwd / "servers" / startup.text()))
+				if (!startup.isEmpty() && !found_server("(startupserver.txt)", startup.text(), cwd, cwd / "servers" / startup.text()))
 					return ERR_SETTINGS;
 			}
 
@@ -159,7 +160,7 @@ int main(int argc, char* argv[])
 						servers.push_back(p.path().filename());
 				}
 
-				if (servers.size() == 1 && !found_server("(directory search)", servers.front().string(), cwd / "servers" / servers.front()))
+				if (servers.size() == 1 && !found_server("(directory search)", servers.front().string(), cwd, cwd / "servers" / servers.front()))
 					return ERR_SETTINGS;
 			}
 
