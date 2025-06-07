@@ -11,7 +11,10 @@ unstickmex = 30
 unstickmey = 30.5
 unstickmetime = 30
 
-# Players in these levels can''t warp out nor can they PM other players.
+# List of weapon names (comma separated) that will be given to the player each time they connect.
+protectedweapons = 
+
+# Players in these levels can't warp out nor can they PM other players.
 jaillevels = police2.graal,police4.graal
 
 # Enable/disable explosions.
@@ -57,14 +60,15 @@ respawntime = 15
 horselifetime = 30
 baddyrespawntime = 60
 
-# Allows any player to use the warpto command.
+# Controls who can use the warpto command.
+#   warptoforall - Lets everybody, including players, use warpto.
 warptoforall = false
 
 # Alters the possible status options in the player list.
 playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
 
-# Selects what is displayed in the player''s profile.
-# Name:=variable, where variable can also be a flag on the player''s account.
+# Selects what is displayed in the player's profile.
+# Name:=variable, where variable can also be a flag on the player's account.
 profilevars = Kills:=playerkills,Deaths:=playerdeaths,Maxpower:=playerfullhearts,Rating:=playerrating,Alignment:=playerap,Gralat:=playerrupees,Swordpower:=playerswordpower,Spin Attack:=canspin
 
 # Global guild settings.
@@ -96,24 +100,14 @@ dontchangekills = false
 
 # Flag options.
 # If dontaddserverflags is true, any server. flag changes sent by the client are rejected.
-# If cropflags is true, any client and server flags will be cropped to 223 characters.
-#    The flag name and equal sign are INCLUSIVE!
-#    It is recommended to not turn this off unless you know the repercussions of doing so.
 dontaddserverflags = false
-cropflags = true
 
 # If true, idle players are removed after maxnomovement seconds.
 disconnectifnotmoved = true
 maxnomovement = 1200
 
-# If true, moved push/pull blocks aren''t sent to other players.
-clientsidepushpull = true
-
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
 defaultweapons = true
-
-# List of weapon names (comma separated) that will be given to the player each time they connect.
-protectedweapons = 
 
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
@@ -121,13 +115,6 @@ maps =
 
 # List of gmaps to be used by the server.
 gmaps = 
-
-# List of group instanced maps used by the server.
-# Use full filenames, even for gmaps.
-groupmaps = 
-
-# The head used by RCs on the server.
-staffhead = head25.png
 
 # Sets the bigmap and minimap to use.
 # Setting bigmap will break gmaps.
@@ -140,12 +127,35 @@ bigmap =
 minimap = 
 
 # --------------------------------------------------------------------------------------
+# --- Public Graal Reborn non-standard extensions.                                   ---
+# --------------------------------------------------------------------------------------
+
+# If true, moved push/pull blocks aren't sent to other players.
+clientsidepushpull = true
+
+# List of group instanced maps used by the server.
+# Use full filenames, even for gmaps.
+groupmaps = 
+
+# The head used by RCs on the server.
+staffhead = head25.png
+
+# If cropflags is true, any client and server flags will be cropped to 223 characters.
+#    The flag name and equal sign are INCLUSIVE!
+#    It is recommended to not turn this off unless you know the repercussions of doing so.
+cropflags = true
+
+# --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------
+
 # The server details seen from the server list.
 name = My Server
 description = My Server
 url = http://www.graal.in/
+
+# The NPC-Server nickname.
+nickname = NPC-Server
 
 # The information of the computer hosting the gserver.  This gets sent to people wanting to connect.
 # If myip is set to AUTO, it uses the IP address exposed to the list server.
@@ -172,13 +182,20 @@ onlystaff = false
 # Set to true to disable the folder configuration.
 nofoldersconfig = false
 
-# Determines whether or not to use the old "if (created)" style.
-# In the old style, "if (created)" is called for each player that enters the level for their first time.
-oldcreated = true
-
 # Determines whether the server handles certain things like signs and links.
 # Don't set to true.
 serverside = false
+
+# If folders config is disabled, put additional search directories besides "world" here.
+# Comma delimited array.
+sharefolder = 
+
+# Sets the language.  Currently not implemented.
+language = English
+
+# --------------------------------------------------------------------------------------
+# --- Private Graal Reborn non-standard extensions.                                  ---
+# --------------------------------------------------------------------------------------
 
 # Enables triggeraction hacks.
 triggerhack_weapons = false	# gr.addweapon, gr.deleteweapon
@@ -192,15 +209,139 @@ triggerhack_levels = false	# gr.updatelevel
 
 # Enables flag hacks.
 flaghack_movement = true	# -gr_movement weapon.
-flaghack_ip = false		# gr.ip
+flaghack_ip = false			# gr.ip
 
-# If folders config is disabled, put additional search directories besides "world" here.
-# Comma delimited array.
-sharefolder = 
-
-# Sets the language.  Currently not implemented.
-language = English
+# Determines whether or not to use the old "if (created)" style.
+# In the old style, "if (created)" is called for each player that enters the level for their first time.
+oldcreated = true
 
 # Scripting
 gs2default = false
-nickname = 
+
+# --------------------------------------------------------------------------------------
+# --- Not implemented options.                                                       ---
+# --------------------------------------------------------------------------------------
+
+# Controls who can use the warpto command.
+#   warptoforlowadmins - Allows Global Admin Level 1 to warp (not implemented).
+#   warpto - Enables or disables warpto for all staff, including globals (not implemented).
+#   ignorewarpto - If true, "warpto" chat text is ignored and not processed (not implemented).
+# warptoforlowadmins = true
+# warpto = true
+# ignorewarpto = false
+
+# Controls ghost mode (not implemented).
+# ghostmodeenabled = false
+# ghostmodefornotstaff = false
+
+# Selects whether to disable adding of Bombs, Arrows, and Explosions for Trial accounts.
+# limitfreeplayers2 = false
+
+# How much AP new accounts are given (just update the defaultaccount).
+# startap = 100
+
+# Loads translations into the server for server-side translations.
+# translatedlanguages = en,dn
+
+# The default language of the server.
+# defaultlanguage = en
+
+# Controls if the NPC-Server processes scripts when there are no players.
+# sleepwhennoplayers = true
+
+# Controls if levels use the new tileset layout server-side, or a match list of levels that will.
+# newtilesets = false
+# newtilesetlevels = 
+
+# The order in which weapons will be sent to the player.
+# weaponorder = 
+
+# Enables or disables the checking of account rights for NC usage.
+# npcrights = true
+
+# Percentage of data packets over an internal limit a player is allowed to send before being suspected of hacking.
+# speedhacktolerance = 90
+
+# Lets NPC-Server scripts permanently alter levels.
+# savelevels = false
+
+# Reports to RC if a level is saved.
+# savelevelsmessage = true
+
+# Lets the NPC-Server log to logs/scriptfunctionslog.txt.
+# scriptlogfunctions = write player.nick,write player.guild,call sendtonc,call sendtorc
+
+# Logs script errors to logs/scripterrors.txt instead of the RC chat.
+# logscripterrorstofile = false
+
+# If true, and savelevels is true, then updateboard2 commands are automatically saved to the level file.
+# levelsautosave = true
+
+# List of player attributes to send to all players and not just nearby players.
+# The attribute numbers are the ones from #P / player.attr[].  Like 1, 2, 3, etc.
+# sendtoallattr = 
+
+# Use optimized storage for putnpc2 npcs, activated by setting this.savelocally = true in the NPC script.
+# newnpcstorage = true
+
+# If true, DB NPCs can't be deleted via 'destroy'.  Does not affect putnpc2 NPCs.
+# protectdbnpcs = true
+
+# If true, sends the results of the echo() command to all RC users and not just ones with NC rights.
+# sendechotorc = false
+
+# List of SQLite database files allowed to be used with the requestsql2() function.
+# database = 
+
+# Radius, in tiles, where player props are sent to other players.
+# By default it only works on gmaps, but syncbydistanceinside can allow in non-gmap levels.
+# syncdistancex = 192
+# syncdistancey = 192
+# syncbydistanceinside = false
+
+# Controls if server-side gralats are logged.
+# disablegralatlog = false
+
+# Disables the player z-axis.  Locks player.z to undefined.  Z values outside of |-50, 170| is undefined.
+# lockplayerz = false
+
+# If true, hideplayer() only works while a player is under a bush.
+# nohidewithoutbush = false
+
+# Allows player triggeractions to other players.
+# sendplayertriggers = true
+
+# The type of items that are dropped by bushes or death.
+# Defaults to all items.
+# bushitemtypes = greenrupee,bluerupee
+# deathitemtypes = greenrupee,bluerupee
+
+# If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
+# itemdropevents = false
+
+# Value from 0-100 that determines the percent change the item will drop from bushes or death.
+# spawnrategreenrupee = 
+# spawnratebluerupee = 
+# spawnrate...
+
+# Enables or disables puthorse.
+# puthorseenabled = true
+
+# Lets an RC without a staff guild tag send mass PMs to players who ignore mass PMs.
+# rcofftagoverridesignore = false
+
+# Enables or disables putbomb.
+# Bomb types can be 'all' or a comma separated list of bomb powers (1,2,3).
+# If the filter is enabled, attempts to spawn a restricted bomb will be logged to logs/bombfilter.txt.
+# putbombenabled = true
+# bomballowedtypes = all
+# bombfilterlog = true
+
+# Controls which showimg types are allowed.
+# The type can be 'all' or ani,img,text.
+# The gani/images are a comma separated list (e.g., 'idle,walk,sit' or 'block.png,block2.png')
+# If the filter is enabled, attempts to show a restricted showimg will be logged to logs/showimgsfilter.txt.
+# showimgstypes = all
+# showimgsallowedganis = 
+# showimgsallowedimages = 
+# showimgsfilterlog = true
