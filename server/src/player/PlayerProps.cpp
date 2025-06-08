@@ -30,7 +30,7 @@ std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop) const
 #define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
 	}
-	throw std::exception("Invalid PlayerProp type in constructPropFor");
+	throw std::invalid_argument("Invalid PlayerProp type in constructPropFor");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ std::shared_ptr<PropertyBase> Player::getProp(PlayerProp prop) const
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_GETPROP_CASE);
 	}
 
-	throw std::exception("Invalid PlayerProp type in getProp");
+	throw std::invalid_argument("Invalid PlayerProp type in getProp");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ SetResults Player::setProp(PlayerProp prop, std::shared_ptr<PropertyBase> base, 
 	PropertyBase* basePtr = base.get();
 	if (basePtr != nullptr)
 		return setProp(prop, basePtr, setBy);
-	throw std::exception("setProp called with nullptr base pointer.");
+	throw std::invalid_argument("setProp called with nullptr base pointer.");
 }
 
 SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)

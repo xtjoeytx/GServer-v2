@@ -195,7 +195,6 @@ public:
 	/// @brief Records the current modification time of all properties.
 	[[inline]] void recordCurrentPropModTime();
 
-	
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
 	/// @param ...values The values to pass to the container's constructor.
@@ -612,7 +611,7 @@ PropertyContainer auto Player::constructPropFor(Args... values) const
 #define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ values... };
 	FOR_LIST_OF_PLAYER_PROPS(RETURN_CONSTRUCTPROPSFOR_CONSTEXPR);
 
-	throw std::exception("Invalid PlayerProp type in constructPropFor");
+	throw std::invalid_argument("Invalid PlayerProp type in constructPropFor");
 }
 
 template<PlayerProp P>
@@ -621,7 +620,7 @@ PropertyContainer auto Player::getProp() const
 #define RETURN_GETPROP_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ __VA_ARGS__ };
 	FOR_LIST_OF_PLAYER_PROPS(RETURN_GETPROP_CONSTEXPR);
 
-	throw std::exception("Invalid PlayerProp type in getProp");
+	throw std::invalid_argument("Invalid PlayerProp type in getProp");
 }
 
 template<PlayerProp P>

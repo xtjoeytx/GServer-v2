@@ -224,9 +224,9 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageC
 	static MessageCodeHandleMap map = GenerateMap();
 
 	if (visitor == nullptr)
-		throw std::exception("processMessageCode received an empty visitor");
+		throw std::runtime_error("processMessageCode received an empty visitor");
 	if (messageCode.empty())
-		throw std::exception("processMessageCode received an empty message code");
+		throw std::runtime_error("processMessageCode received an empty message code");
 
 	// #C0 - #C4
 	if (messageCode.starts_with("C"))
@@ -255,7 +255,7 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageC
 			return it->second(visitor, messageCode, arguments);
 	}
 
-	throw std::exception("processMessageCode received an unknown message code");
+	throw std::invalid_argument("processMessageCode received an unknown message code");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -389,7 +389,7 @@ GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std
 // Current file being downloaded | The download position of the specified file.
 GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #D is registered as a clientside message code");
+	throw std::runtime_error("Message Code #D is registered as a clientside message code");
 }
 
 // #e(start_index, length, string)
@@ -397,7 +397,7 @@ GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::exception("Message Code #e requires exactly 3 arguments");
+		throw std::invalid_argument("Message Code #e requires exactly 3 arguments");
 
 	auto startIndex = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	auto length = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
@@ -457,8 +457,7 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 // player.upgradestatus #G(index)
 GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #G is not implemented yet");
-	return std::string{};
+	throw std::runtime_error("Message Code #G is not implemented yet");
 }
 
 // #I(string_list, index)
@@ -466,7 +465,7 @@ GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Message Code #I requires exactly 2 arguments");
+		throw std::invalid_argument("Message Code #I requires exactly 2 arguments");
 
 	auto csvStringList = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[0]));
 	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
@@ -480,21 +479,21 @@ GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 // Displays an image or part of an image when used in a sign.
 GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #i is registered as a clientside message code");
+	throw std::runtime_error("Message Code #i is registered as a clientside message code");
 }
 
 // #K(key_index)
 // The name of the specified key.
 GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #K is registered as a clientside message code");
+	throw std::runtime_error("Message Code #K is registered as a clientside message code");
 }
 
 // #k(key_index)
 // The description of the specified key (in client language/key assignments).
 GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #k is registered as a clientside message code");
+	throw std::runtime_error("Message Code #k is registered as a clientside message code");
 }
 
 // #L  [Read]
@@ -550,7 +549,7 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Message Code #p requires exactly 1 argument");
+		throw std::invalid_argument("Message Code #p requires exactly 1 argument");
 
 	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	if (index < visitor->getEvent().args.size())
@@ -565,8 +564,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 // The nickname for a player in a guild.
 GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Message Code #Q is not implemented yet");
-	return std::string{};
+	throw std::runtime_error("Message Code #Q is not implemented yet");
 }
 
 // #R(string_list)
@@ -587,7 +585,7 @@ GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Message Code #s requires exactly 1 argument");
+		throw std::invalid_argument("Message Code #s requires exactly 1 argument");
 
 	return visitor->getGameValueAs<std::string>(*arguments[0]);
 }
@@ -597,7 +595,7 @@ GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Message Code #t requires exactly 1 argument");
+		throw std::invalid_argument("Message Code #t requires exactly 1 argument");
 
 	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	if (index >= visitor->tokenizeTokens.size())
@@ -611,7 +609,7 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Message Code #T requires exactly 1 argument");
+		throw std::invalid_argument("Message Code #T requires exactly 1 argument");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	string::trim(str);
@@ -623,7 +621,7 @@ GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Message Code #s requires exactly 1 argument");
+		throw std::invalid_argument("Message Code #s requires exactly 1 argument");
 
 	auto number = visitor->getGameValueAs<double>(*arguments[0]);
 	return std::format("{}", number);
@@ -634,7 +632,7 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO(Nalin): #W might not be possible serverside, but #W(index) should be possible.
-	throw std::exception("Message Code #W is registered as a clientside message code");
+	throw std::runtime_error("Message Code #W is registered as a clientside message code");
 }
 
 // #w | #w(index)  [Read]
@@ -642,7 +640,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO(Nalin): #w might not be possible serverside, but #w(index) should be possible.
-	throw std::exception("Message Code #w is registered as a clientside message code");
+	throw std::runtime_error("Message Code #w is registered as a clientside message code");
 }
 
 //----------------------------

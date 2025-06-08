@@ -75,7 +75,7 @@ static GameVariable::func_get prop_get(auto& value)
 		};
 	}
 
-	throw std::exception("NPC prop_get called with an unsupported type.");
+	throw std::invalid_argument("NPC prop_get called with an unsupported type.");
 }
 
 static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
@@ -145,7 +145,7 @@ static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, au
 		};
 	}
 
-	throw std::exception("NPC prop_set called with an unsupported type.");
+	throw std::invalid_argument("NPC prop_set called with an unsupported type.");
 }
 
 //----------------------------
@@ -933,9 +933,9 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::SCRIPT:
 			return &prevent_access_string;
 		case NPCProp::X:
-			throw std::exception("NPC::getPropAccess: use X2 instead of X");
+			throw std::invalid_argument("NPC::getPropAccess: use X2 instead of X");
 		case NPCProp::Y:
-			throw std::exception("NPC::getPropAccess: use Y2 instead of Y");
+			throw std::invalid_argument("NPC::getPropAccess: use Y2 instead of Y");
 		case NPCProp::POWER:
 			return &character.hitpointsInHalves;
 		case NPCProp::RUPEES:
@@ -988,7 +988,7 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::ALIGNMENT:
 			return &character.ap;
 		case NPCProp::IMAGEPART:
-			throw std::exception("NPC::getPropAccess: IMAGEPART is not implemented, is this required?");
+			throw std::invalid_argument("NPC::getPropAccess: IMAGEPART is not implemented, is this required?");
 		case NPCProp::BODYIMAGE:
 			return &character.bodyImage;
 		case NPCProp::GMAPLEVELX:
@@ -996,9 +996,9 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::GMAPLEVELY:
 			return &prevent_access_int;
 		case NPCProp::Z:
-			throw std::exception("NPC::getPropAccess: use Z2 instead of Z");
+			throw std::invalid_argument("NPC::getPropAccess: use Z2 instead of Z");
 		case NPCProp::UNKNOWN48:
-			throw std::exception("NPC::getPropAccess: UNKNOWN48 is not implemented, is this required?");
+			throw std::invalid_argument("NPC::getPropAccess: UNKNOWN48 is not implemented, is this required?");
 		case NPCProp::SCRIPTER:
 			return &m_npcScripter;
 		case NPCProp::NAME:

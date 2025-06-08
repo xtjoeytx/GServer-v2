@@ -132,7 +132,7 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 	auto& [source_id, source_type] = source;
 
 	if (source_type != ScriptObjectSourceType::NPC)
-		throw std::exception("GS1 scripts can only be executed from NPCs.");
+		throw std::invalid_argument("GS1 scripts can only be executed from NPCs.");
 
 	NPCPtr source_npc = server->getNPC(source_id);
 	if (source_npc == nullptr)

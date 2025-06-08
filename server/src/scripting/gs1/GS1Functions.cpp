@@ -173,16 +173,16 @@ GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visit
 	static BuiltInFunctionHandleMap map = GenerateMap();
 
 	if (visitor == nullptr)
-		throw std::exception("processBuiltInFunction received an empty visitor");
+		throw std::runtime_error("processBuiltInFunction received an empty visitor");
 	if (functionName.empty())
-		throw std::exception("processBuiltInFunction received an empty function name");
+		throw std::runtime_error("processBuiltInFunction received an empty function name");
 
 	size_t hash = string::string_hash{}(functionName);
 	auto it = map.find(hash);
 	if (it != map.end())
 		return it->second(visitor, functionName, arguments);
 
-	throw std::exception("processBuiltInFunction received an unknown function");
+	throw std::invalid_argument("processBuiltInFunction received an unknown function");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,7 +191,7 @@ GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visit
 // Translates the string according to the client's language settings.
 GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function _ not implemented");
+	throw std::runtime_error("Built-in function _ not implemented");
 }
 
 // N_(string)
@@ -199,7 +199,7 @@ GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue fn_N_(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function N_ requires exactly one argument");
+		throw std::invalid_argument("Built-in function N_ requires exactly one argument");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 
@@ -215,7 +215,7 @@ GS1ScriptValue fn_N_(GS1Visitor* visitor, std::string_view messageCode, const st
 GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function abs requires exactly one argument");
+		throw std::invalid_argument("Built-in function abs requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	return std::abs(value);
@@ -226,7 +226,7 @@ GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function arctan requires exactly one argument");
+		throw std::invalid_argument("Built-in function arctan requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	return std::atan(value);
@@ -237,7 +237,7 @@ GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function cos requires exactly one argument");
+		throw std::invalid_argument("Built-in function cos requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	return std::cos(value);
@@ -248,7 +248,7 @@ GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function int requires exactly one argument");
+		throw std::invalid_argument("Built-in function int requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	return static_cast<double>(static_cast<int64_t>(value));
@@ -265,7 +265,7 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function log requires exactly one argument");
+		throw std::invalid_argument("Built-in function log requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	if (value <= 0.0)
@@ -279,7 +279,7 @@ GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
 	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
 	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
@@ -295,7 +295,7 @@ GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
 	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
 	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
@@ -311,7 +311,7 @@ GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
 	auto value1 = static_cast<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	auto value2 = static_cast<int64_t>(visitor->getGameValueAs<double>(*arguments[1]));
@@ -329,7 +329,7 @@ GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function sin requires exactly one argument");
+		throw std::invalid_argument("Built-in function sin requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 
@@ -344,7 +344,7 @@ GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function strtofloat requires exactly one argument");
+		throw std::invalid_argument("Built-in function strtofloat requires exactly one argument");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	if (str.empty())
@@ -360,7 +360,7 @@ GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, 
 GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function ascii requires exactly one argument");
+		throw std::invalid_argument("Built-in function ascii requires exactly one argument");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	if (str.empty())
@@ -373,14 +373,14 @@ GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const
 // Decodes a Base64 encoded string.
 GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function base64decode not implemented");
+	throw std::runtime_error("Built-in function base64decode not implemented");
 }
 
 // base64encode(string)
 // Encodes a string to Base64 format.
 GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function base64encode not implemented");
+	throw std::runtime_error("Built-in function base64encode not implemented");
 }
 
 // startswith(prefix, string)
@@ -388,7 +388,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function startswith requires exactly two arguments");
+		throw std::invalid_argument("Built-in function startswith requires exactly two arguments");
 
 	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -401,7 +401,7 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function strcontains requires exactly two arguments");
+		throw std::invalid_argument("Built-in function strcontains requires exactly two arguments");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -414,7 +414,7 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function strequals requires exactly two arguments");
+		throw std::invalid_argument("Built-in function strequals requires exactly two arguments");
 
 	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -427,7 +427,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function strlen requires exactly one argument");
+		throw std::invalid_argument("Built-in function strlen requires exactly one argument");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 
@@ -441,7 +441,7 @@ GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function aindexof requires exactly two arguments");
+		throw std::invalid_argument("Built-in function aindexof requires exactly two arguments");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
 	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[1]);
@@ -459,7 +459,7 @@ GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function arraylen requires exactly one argument");
+		throw std::invalid_argument("Built-in function arraylen requires exactly one argument");
 
 	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[0]);
 
@@ -471,7 +471,7 @@ GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function indexof requires exactly two arguments");
+		throw std::invalid_argument("Built-in function indexof requires exactly two arguments");
 
 	auto substring = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -484,7 +484,7 @@ GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::exception("Built-in function lindexof requires exactly two arguments");
+		throw std::invalid_argument("Built-in function lindexof requires exactly two arguments");
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -503,7 +503,7 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function sarraylen requires exactly one argument");
+		throw std::invalid_argument("Built-in function sarraylen requires exactly one argument");
 
 	auto list = visitor->getGameValueAs<std::string>(*arguments[0]);
 	return static_cast<double>(std::ranges::count(list, ',') + 1);
@@ -513,24 +513,24 @@ GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, c
 
 GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function findnearestplayer not implemented");
+	throw std::runtime_error("Built-in function findnearestplayer not implemented");
 }
 
 GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function findnearestplayers not implemented");
+	throw std::runtime_error("Built-in function findnearestplayers not implemented");
 }
 
 // getangle(dx, dy)
 // Returns the angle in radians from the current position to the position specified by dx and dy.
 GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getangle not implemented");
+	throw std::runtime_error("Built-in function getangle not implemented");
 }
 
 GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getareanpcs not implemented");
+	throw std::runtime_error("Built-in function getareanpcs not implemented");
 }
 
 // getdir(dx, dy)
@@ -540,7 +540,7 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
 	{
 		if (arguments.size() != 2)
-			throw std::exception("Built-in function getdir requires exactly two arguments");
+			throw std::invalid_argument("Built-in function getdir requires exactly two arguments");
 
 		auto dx = visitor->getGameValueAs<double>(*arguments[0]);
 		auto dy = visitor->getGameValueAs<double>(*arguments[1]);
@@ -567,12 +567,12 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 
 GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getnearestplayer not implemented");
+	throw std::runtime_error("Built-in function getnearestplayer not implemented");
 }
 
 GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getnearestplayers not implemented");
+	throw std::runtime_error("Built-in function getnearestplayers not implemented");
 }
 
 // getnpc(name)
@@ -580,7 +580,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function getnpc requires exactly one argument");
+		throw std::invalid_argument("Built-in function getnpc requires exactly one argument");
 
 	auto npcName = visitor->getGameValueAs<std::string>(*arguments[0]);
 
@@ -600,7 +600,7 @@ GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function getplayer requires exactly one argument");
+		throw std::invalid_argument("Built-in function getplayer requires exactly one argument");
 
 	auto playerName = visitor->getGameValueAs<std::string>(*arguments[0]);
 
@@ -617,12 +617,12 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the Z coordinate at the specified X and Y position in the world.
 GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function getz not implemented");
+	throw std::runtime_error("Built-in function getz not implemented");
 }
 
 GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function groundsheight not implemented");
+	throw std::runtime_error("Built-in function groundsheight not implemented");
 }
 
 // hasweapon(name)
@@ -630,7 +630,7 @@ GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view messageCod
 GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::exception("Built-in function hasweapon requires exactly one argument");
+		throw std::invalid_argument("Built-in function hasweapon requires exactly one argument");
 
 	auto weaponName = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
@@ -648,28 +648,28 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the height of the specified image.
 GS1ScriptValue fn_imgheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function imgheight is a clientside function");
+	throw std::runtime_error("Built-in function imgheight is a clientside function");
 }
 
 // imgwidth(image)
 // Returns the width of the specified image.
 GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function imgwidth is a clientside function");
+	throw std::runtime_error("Built-in function imgwidth is a clientside function");
 }
 
 // keycode(key)
 // Returns the key code for the specified key.
 GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function keycode is a clientside function");
+	throw std::runtime_error("Built-in function keycode is a clientside function");
 }
 
 // keydown(key)
 // Checks if the specified key is currently pressed down.  (0..10: up, left, down, right, S, A, D, M, tab, Q, P)
 GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function keydown is a clientside function");
+	throw std::runtime_error("Built-in function keydown is a clientside function");
 }
 
 // keydown2(keycode, ignorecase)
@@ -677,108 +677,108 @@ GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view messageCode, con
 // (ignorecase must be false to check for shift, ctrl, alt)
 GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function keydown2 is a clientside function");
+	throw std::runtime_error("Built-in function keydown2 is a clientside function");
 }
 
 // onmapx(level)
 // The level's X position on the map.
 GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function onmapx not implemented");
+	throw std::runtime_error("Built-in function onmapx not implemented");
 }
 
 // onmapy(level)
 // The level's Y position on the map.
 GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function onmapy not implemented");
+	throw std::runtime_error("Built-in function onmapy not implemented");
 }
 
 // onwall(x, y)
 // Checks if the specified X and Y coordinates are on a wall tile.
 GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function onwall not implemented");
+	throw std::runtime_error("Built-in function onwall not implemented");
 }
 
 // onwall2(x, y, width, height)
 // Checks if the specified rectangle defined by X, Y, width, and height is on a wall tile.
 GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function onwall2 not implemented");
+	throw std::runtime_error("Built-in function onwall2 not implemented");
 }
 
 // onwater(x, y)
 // Checks if the specified X and Y coordinates are on a water tile.
 GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function onwater not implemented");
+	throw std::runtime_error("Built-in function onwater not implemented");
 }
 
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function playersays not implemented");
+	throw std::runtime_error("Built-in function playersays not implemented");
 }
 
 GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function playersays2 not implemented");
+	throw std::runtime_error("Built-in function playersays2 not implemented");
 }
 
 // screenx(x, y)
 // Converts level coordinates (x, y) to the screen's X coordinate.
 GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function screenx is a clientside function");
+	throw std::runtime_error("Built-in function screenx is a clientside function");
 }
 
 // screeny(x, y)
 // Converts level coordinates (x, y) to the screen's Y coordinate.
 GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function screeny is a clientside function");
+	throw std::runtime_error("Built-in function screeny is a clientside function");
 }
 
 // testbomb(x, y)
 // The index of the bomb at level position (x, y), or -1 if there is no bomb at that position.
 GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testbomb not implemented");
+	throw std::runtime_error("Built-in function testbomb not implemented");
 }
 
 // testcompu(x, y)
 // The index of the baddie at level position (x, y), or -1 if there is no baddie at that position.
 GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testcompu not implemented");
+	throw std::runtime_error("Built-in function testcompu not implemented");
 }
 
 // testexplo(x, y)
 // The index of the explosion at level position (x, y), or -1 if there is no explosion at that position.
 GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testexplo not implemented");
+	throw std::runtime_error("Built-in function testexplo not implemented");
 }
 
 // testhorse(x, y)
 // The index of the horse at level position (x, y), or -1 if there is no horse at that position.
 GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testhorse not implemented");
+	throw std::runtime_error("Built-in function testhorse not implemented");
 }
 
 // testitem(x, y)
 // The index of the item at level position (x, y), or -1 if there is no item at that position.
 GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testitem not implemented");
+	throw std::runtime_error("Built-in function testitem not implemented");
 }
 
 // testnpc(x, y)
 // The index of the NPC at level position (x, y), or -1 if there is no NPC at that position.
 GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testnpc not implemented");
+	throw std::runtime_error("Built-in function testnpc not implemented");
 }
 
 // testplayer(x, y)
@@ -786,69 +786,69 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 // -1 is reserved for the current npc if showcharacter is enabled.
 GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testplayer not implemented");
+	throw std::runtime_error("Built-in function testplayer not implemented");
 }
 
 // testsign(x, y)
 // The index of the sign at level position (x, y), or -1 if there is no sign at that position.
 GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function testsign not implemented");
+	throw std::runtime_error("Built-in function testsign not implemented");
 }
 
 // textheight(zoom, font, style)
 // Returns the height of the text in pixels, given the zoom level, font name, and style.
 GS1ScriptValue fn_textheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function textheight is a clientside function");
+	throw std::runtime_error("Built-in function textheight is a clientside function");
 }
 
 // textwidth(zoom, font, style, text)
 // Returns the width of the text in pixels, given the zoom level, font name, style, and text.
 GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function textwidth is a clientside function");
+	throw std::runtime_error("Built-in function textwidth is a clientside function");
 }
 
 // tiletype(x, y)
 // Returns the "new order" tile type used for setshape2 on level position (x, y).
 GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function tiletype not implemented");
+	throw std::runtime_error("Built-in function tiletype not implemented");
 }
 
 // vecx(dir)
 // Returns the X component of the vector for the specified direction (0,-1,0,1) for (up, left, down, right).
 GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function vecx not implemented");
+	throw std::runtime_error("Built-in function vecx not implemented");
 }
 
 // vecy(dir)
 // Returns the Y component of the vector for the specified direction (-1,0,1,0) for (up, left, down, right).
 GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function vecy not implemented");
+	throw std::runtime_error("Built-in function vecy not implemented");
 }
 
 // might just be a flag like gravity
 GS1ScriptValue fn_waterheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function waterheight not implemented");
+	throw std::runtime_error("Built-in function waterheight not implemented");
 }
 
 // worldx(x, y)
 // Converts screen (x, y) to level X.
 GS1ScriptValue fn_worldx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function worldx is a clientside function");
+	throw std::runtime_error("Built-in function worldx is a clientside function");
 }
 
 // worldy(x, y)
 // Converts screen (x, y) to level Y.
 GS1ScriptValue fn_worldy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::exception("Built-in function worldy is a clientside function");
+	throw std::runtime_error("Built-in function worldy is a clientside function");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

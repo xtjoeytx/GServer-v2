@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
+#include <stdexcept>
 #include <map>
 #include <memory>
 #include <optional>
