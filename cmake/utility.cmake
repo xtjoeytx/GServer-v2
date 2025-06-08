@@ -23,6 +23,13 @@ function(set_default_compiler_options target)
 		)
 	endif()
 
+	# Ignore attribute warnings.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		target_compile_options(${TARGET_NAME} PRIVATE
+			-Wno-attributes
+		)
+	endif()
+
 	# If windows, set the standard defines.
 	if(WIN32)
 		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX)

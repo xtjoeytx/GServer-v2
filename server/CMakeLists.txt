@@ -258,13 +258,6 @@ elseif(WIN32)
 	endif()
 endif()
 
-# Ignore warnings.
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	target_compile_options(${TARGET_NAME} PRIVATE
-		-Wno-attributes=inline
-	)
-endif()
-
 target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
