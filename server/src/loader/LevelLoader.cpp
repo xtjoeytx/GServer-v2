@@ -437,7 +437,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fileData)
 {
 	// Load File
-	std::vector<CString> fileLines = fileData.tokenize("\n");
+	std::vector<CString> fileLines = fileData.removeAllI("\r").tokenize("\n");
 	if (fileLines.empty())
 		return nullptr;
 
