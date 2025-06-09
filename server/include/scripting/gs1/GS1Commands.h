@@ -223,7 +223,7 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 		server{EVENT}	- invokes an event on the control-npc: if (actionserver{EVENT})
 */
 
-void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName);
 
 ///////////////////////////////////////////////////////////////////////////////
 }

@@ -31,6 +31,8 @@ public:
 public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
 	[[inline]] const ScriptObjectSource& getCurrentSource() const;
+	[[inline]] const ScriptObjectSource& popSource();
+	[[inline]] const void pushSource(ScriptObjectSource source);
 	[[inline]] const ScriptEvent& getEvent() const;
 	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type);
 
@@ -47,6 +49,9 @@ public:
 
 public:
 	double getColorValueFromString(std::string_view colorString);
+
+public:
+	std::vector<std::any> visitChildrenAndCollect(antlr4::tree::ParseTree* node);
 
 protected:
 	GS1Parser* m_parser = nullptr;
@@ -129,6 +134,17 @@ inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
 inline const ScriptObjectSource& GS1Visitor::getCurrentSource() const
 {
 	return m_currentSource.empty() ? m_originalSource : m_currentSource.back();
+}
+
+inline const ScriptObjectSource& GS1Visitor::popSource()
+{
+	m_currentSource.pop_back();
+	return getCurrentSource();
+}
+
+inline const void GS1Visitor::pushSource(ScriptObjectSource source)
+{
+	m_currentSource.emplace_back(std::move(source));
 }
 
 inline const ScriptEvent& GS1Visitor::getEvent() const

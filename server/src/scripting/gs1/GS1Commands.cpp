@@ -307,7 +307,7 @@ static BuiltInCommandHandleMap GenerateMap()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName)
 {
 	static BuiltInCommandHandleMap map = GenerateMap();
 
@@ -316,13 +316,60 @@ void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, std::st
 	if (commandName.empty())
 		throw std::runtime_error("processBuiltInCommand received an empty command name");
 
+	// Find the command in the map.
 	size_t hash = string::string_hash{}(commandName);
 	auto it = map.find(hash);
-	if (it != map.end())
-		return it->second(visitor, commandName, arguments);
+	if (it == map.end())
+	{
+		log::printLine(log::script, "processBuiltInCommand received an unknown command: {}", commandName);
+		return;
+	}
 
-	// TODO(Nalin): Remove this eventually.
-	throw std::invalid_argument("processBuiltInCommand received an unknown command");
+	// Special case for 'setplayerprop' and 'setcharprop', which need to push a unique context onto the stack.
+	// We need to bring the relevant context to the front so the message code links to the correct player or NPC, since it can touch both.
+	bool popContext = false;
+	if (commandName == "setcharprop")
+	{
+		auto npc = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC);
+		if (!npc.has_value())
+			npc = visitor->getOriginalSource();
+
+		visitor->pushSource(npc.value());
+		popContext = true;
+	}
+	else if (commandName == "setplayerprop")
+	{
+		auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
+		if (!player.has_value())
+		{
+			if (visitor->getEvent().initiator.second != ScriptObjectSourceType::PLAYER)
+				return;
+			player = visitor->getEvent().initiator;
+		}
+
+		visitor->pushSource(player.value());
+		popContext = true;
+	}
+
+	// Collect the arguments from the node.
+	std::vector<GS1ScriptValue*> arguments;
+	auto children = visitor->visitChildrenAndCollect(node);
+	for (auto& result : children)
+	{
+		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (container == nullptr)
+			throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
+
+		// Add to the arguments.
+		arguments.push_back(container);
+	}
+
+	// Execute the command.
+	it->second(visitor, commandName, arguments);
+
+	// If we pushed a context, we need to pop it after the command execution.
+	if (popContext)
+		visitor->popSource();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
