@@ -167,6 +167,7 @@ serverinterface = AUTO
 # its WAN-side IP address.  Leave it as AUTO unless you know what you are doing.
 # If you have a Linux server, you will want to change this, though.
 localip = AUTO
+upnp = true
 
 # Specifies the location of the list server.
 # DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
@@ -238,7 +239,7 @@ gs2default = false
 # limitfreeplayers2 = false
 
 # How much AP new accounts are given (just update the defaultaccount).
-# startap = 100
+# startap = 50
 
 # Loads translations into the server for server-side translations.
 # translatedlanguages = en,dn

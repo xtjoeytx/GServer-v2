@@ -138,9 +138,12 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 #ifdef ENABLE_UPNP
-	log::printLine(log::server, ":: Starting UPnP discovery thread.");
-	m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
-	m_upnpThread = std::thread(std::ref(m_upnp));
+	if (m_settings.getBool("upnp", true))
+	{
+		log::printLine(log::server, ":: Starting UPnP discovery thread.");
+		m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
+		m_upnpThread = std::thread(std::ref(m_upnp));
+	}
 #endif
 
 	// Register ourself with the socket manager.
