@@ -974,7 +974,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket(0);
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket();
 		sendPacketToLevelOnlyGmapArea(packet, level);
 	}
 
@@ -989,7 +989,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket(0);
+		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
 		sendPacketToLevelOnlyGmapArea(packet, npc->level);
 	}
 
@@ -1204,6 +1204,18 @@ bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bo
 		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << value);
 
 	return true;
+}
+
+void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source)
+{
+	CString nPacket = CString() >> (char)PLO_HITOBJECTS;
+	nPacket.writeGShort(source ? source->getId() : 0);
+	nPacket.writeGChar(power);
+
+	sendPacketToOneLevel(CString() << nPacket >> (char)(pos.x() * 2) >> (char)((pos.y() - 2) * 2), level);
+	sendPacketToOneLevel(CString() << nPacket >> (char)(pos.x() * 2) >> (char)((pos.y() + 2) * 2), level);
+	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() - 2) * 2) >> (char)(pos.y() * 2), level);
+	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() + 2) * 2) >> (char)(pos.y() * 2), level);
 }
 
 /*

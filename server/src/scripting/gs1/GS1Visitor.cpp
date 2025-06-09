@@ -172,14 +172,6 @@ GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& varian
 
 GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
 {
-	// First, check if it is a built-in variable.
-	if (builtInStore != nullptr)
-	{
-		auto builtIn = builtInStore->get(identifier);
-		if (!builtIn.expired())
-			return builtIn;
-	}
-
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
 	{
@@ -187,9 +179,44 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 			return store->get_or_stub(identifier);
 	}
 
-	// No store found?  Get the original source store.
+	std::weak_ptr<GameVariable> builtIn;
+
+	// First, try to get a built-in variable.
+	if (builtInStore != nullptr)
+		builtIn = builtInStore->get(identifier);
+
+	// Now look in the original source store.
 	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
+	{
+		// Since we have no built-in variable, we can just return the store's variable.
+		if (builtIn.expired())
 		return store->get_or_stub(identifier);
+
+		// If we have a built-in variable, and the built-in store had a boolean version of it, add the boolean version to the result.
+		// This is required because flags like 'timeout' are also variables on the NPC and the result of the flag might differ from the value.
+		if (auto builtInVar = builtIn.lock(); builtInVar != nullptr)
+		{
+			// If the built-in variable is not a boolean, use the built-in.
+			if (!builtInVar->has<bool>())
+				return builtInVar;
+
+			// Get the variable from the store.
+			// If none was found, we can return the built-in variable.
+			auto sourceResult = store->get(identifier);
+			if (sourceResult.expired())
+				return builtIn;
+
+			// Add the boolean version to the result.
+			if (auto sourceVar = sourceResult.lock(); sourceVar != nullptr)
+			{
+				sourceVar->assign(builtInVar->get<bool>().value_or(false), std::nullopt);
+				return sourceVar;
+			}
+
+			// Sanity check.
+			return builtIn;
+		}
+	}
 
 	// Still nothing?  Just return empty.
 	return {};
@@ -717,7 +744,7 @@ std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallCont
 
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
 {
-	if (getReadOnlyGameValueFromAny(visit(context->expression())))
+	if ((bool)getReadOnlyGameValueFromAny(visit(context->expression())))
 		return visit(context->if_true_block());
 	else
 		return safeVisit(context->else_false_block());
@@ -730,7 +757,7 @@ std::any GS1Visitor::visitForLoop(GS1Parser::ForLoopContext* context)
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getReadOnlyGameValueFromAny(safeVisit(context->expression(0))))
+	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(safeVisit(context->expression(0))))
 	{
 		// Block.
 		try
@@ -751,7 +778,7 @@ std::any GS1Visitor::visitWhileLoop(GS1Parser::WhileLoopContext* context)
 {
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getReadOnlyGameValueFromAny(visit(context->expression())))
+	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(visit(context->expression())))
 	{
 		// Block.
 		try

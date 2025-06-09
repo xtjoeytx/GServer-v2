@@ -41,13 +41,13 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	if (it != eventFlagMap.end())
 	{
 		auto flagName = it->second;
-		variableStore.add(flagName, 1.0);
+		variableStore.add(flagName, true);
 
 		// TODO: Put extensions under a server option?
 		if (event == ScriptEventType::PLAYERTOUCHSME)
-			variableStore.add("playertouchesme", 1.0);
+			variableStore.add("playertouchesme", true);
 		if (event == ScriptEventType::PLAYERTOUCHSOTHER)
-			variableStore.add("playertouchesother", 1.0);
+			variableStore.add("playertouchesother", true);
 	}
 }
 
@@ -57,7 +57,7 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 		return;
 
 	if ((player->account.status & PLSTATUS_HASSPIN) != 0)
-		variableStore.add("canspin", 1.0);
+		variableStore.add("canspin", true);
 
 	/* TODO(Nalin): Carry sprite flags. PLPROP_CARRYSPRITE
 		carrying           the player carries something
@@ -69,15 +69,15 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	*/
 
 	if ((player->account.status & PLSTATUS_ALLOWWEAPONS) != 0)
-		variableStore.add("weaponsenabled", 1.0);
+		variableStore.add("weaponsenabled", true);
 	if ((player->account.status & PLSTATUS_PAUSED) != 0)
-		variableStore.add("playerpaused", 1.0);
+		variableStore.add("playerpaused", true);
 	if ((player->account.status & PLSTATUS_MALE) != 0)
-		variableStore.add("playerismale", 1.0);
+		variableStore.add("playerismale", true);
 	if ((player->account.status & PLSTATUS_MALE) == 0)
-		variableStore.add("playerisfemale", 1.0);
+		variableStore.add("playerisfemale", true);
 	if (!player->account.character.horseImage.empty())
-		variableStore.add("playeronhorse", 1.0);
+		variableStore.add("playeronhorse", true);
 
 	// TODO(Nalin): playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
 	/*
@@ -86,9 +86,9 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	*/
 
 	if (npc != nullptr && player->getAttachedNPC() == npc->id)
-		variableStore.add("playerattached", 1.0);
+		variableStore.add("playerattached", true);
 	if (auto level = player->getLevel(); level != nullptr && level->isPlayerLeader(player->getId()))
-		variableStore.add("isleader", 1.0);
+		variableStore.add("isleader", true);
 }
 
 void setNpcFlags(GameVariableStore& variableStore, NPCPtr npc)
@@ -99,7 +99,7 @@ void setNpcFlags(GameVariableStore& variableStore, NPCPtr npc)
 	// TODO(Nalin): timeout
 
 	if (npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
-		variableStore.add("visible", 1.0);
+		variableStore.add("visible", true);
 
 	// followsplayer - Client side only, unless we go sicko mode in the future.
 
@@ -126,13 +126,13 @@ void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 		return;
 
 	if (level->isSparringZone())
-		variableStore.add("issparringzone", GameValue{ 1.0 });
+		variableStore.add("issparringzone", true);
 	if (level->isNoPkZone())
-		variableStore.add("nopkzone", 1.0);
+		variableStore.add("nopkzone", true);
 	if (level->getMap() != nullptr)
-		variableStore.add("isonmap", 1.0);
+		variableStore.add("isonmap", true);
 	if (!level->hasLivingBaddies())
-		variableStore.add("compsdead", 1.0);
+		variableStore.add("compsdead", true);
 
 	/*
 		levelorgx     level origin(x), can be different to 0, 0 if the player is attached to an npc

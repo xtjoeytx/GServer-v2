@@ -65,7 +65,7 @@ public:
 	CString getChestPacket(Player* pPlayer);
 	CString getHorsePacket();
 	CString getLinksPacket();
-	void sendNpcsToPlayer(std::shared_ptr<Player> player, time_t time);
+	void sendNpcsToPlayer(std::shared_ptr<Player> player, clock::time_point time);
 	CString getSignsPacket(Player* pPlayer);
 
 	//! Gets the actual level name.
@@ -110,19 +110,19 @@ public:
 
 	//! Gets the map x of this level.
 	//! \return The map x of this level on the map
-	int getMapX() const { return m_mapX; }
+	uint8_t getMapX() const { return m_mapX; }
 
 	//! Gets the map y of this level.
 	//! \return The map y of this level on the map
-	int getMapY() const { return m_mapY; }
+	uint8_t getMapY() const { return m_mapY; }
 
 	//! Gets the gmap x of this level or 0 if it doesn't belong to a gmap.
 	//! \return The gmap x of this level on the map or 0 if it doesn't belong to a gmap.
-	int getGmapX() const;
+	uint8_t getGmapX() const;
 
 	//! Gets the gmap y of this level or 0 if it doesn't belong to a gmap.
 	//! \return The gmap y of this level on the map or 0 if it doesn't belong to a gmap.
-	int getGmapY() const;
+	uint8_t getGmapY() const;
 
 	//! Gets a vector full of the players on the level.
 	//! \return The players on the level.
@@ -327,8 +327,8 @@ private:
 	bool m_isSparringZone = false;
 	bool m_isNoPkZone = false;
 	bool m_isSingleplayer = false;
-	int m_mapX = 0;
-	int m_mapY = 0;
+	uint8_t m_mapX = 0;
+	uint8_t m_mapY = 0;
 	std::map<uint8_t, LevelTiles> m_tiles;
 	std::weak_ptr<Map> m_map;
 	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;

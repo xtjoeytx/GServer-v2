@@ -172,9 +172,9 @@ public:
 	time_t getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
-	CString getVersionStr() const { return m_version; }
-	CString getServerName() const { return m_serverName; }
-	const CString& getPlatform() const { return m_os; }
+	const std::string& getVersionStr() const { return m_version; }
+	const std::string& getServerName() const { return m_serverName; }
+	const std::string& getPlatform() const { return m_os; }
 	int64_t getDeviceId() const { return m_deviceId; }
 	float getX() const { return account.character.pixelX / 16.0f; }
 	float getY() const { return account.character.pixelY / 16.0f; }
@@ -194,7 +194,7 @@ public:
 public:
 	/// @brief Records the current modification time of all properties.
 	[[inline]] void recordCurrentPropModTime();
-
+	
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
 	/// @param ...values The values to pass to the container's constructor.
@@ -220,26 +220,26 @@ public:
 
 	/// @brief Sets a property value for a player and returns the result of the operation.
 	/// @tparam P The type of the player property to set.
+	/// @param setBy Specifies who is setting the property.
 	/// @param prop A property container that contains the value to set.
-	/// @param setBy Specifies who is setting the property. Defaults to SetBy::CLIENT.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<PlayerProp P>
-	[[inline]] SetResults setProp(PropertyContainer auto prop, SetBy setBy = SetBy::CLIENT);
-
-	/// @brief Sets a property value for a player with the given values and returns the result of the operation.
-	/// @tparam P The PlayerProp that determines the type of property to set.
-	/// @param setBy Specifies who is setting the property. Defaults to SetBy::CLIENT.
-	/// @param ...values The values to pass to the property container's constructor.
-	/// @return A SetResults value indicating the outcome of the property set operation.
-	template<PlayerProp P, typename... Args>
-	[[inline]] SetResults setPropWith(SetBy setBy, Args... values);
+	[[inline]] SetResults setProp(SetBy setBy, PropertyContainer auto prop);
 
 	/// @brief Sets a property for a player and returns the result of the operation.
 	/// @param prop The player property to set.
 	/// @param base A shared pointer to the base property value to assign.
-	/// @param setBy Indicates who is setting the property. Defaults to SetBy::CLIENT.
+	/// @param setBy Indicates who is setting the property.
 	/// @return A SetResults value indicating the outcome of the property set operation.
-	SetResults setProp(PlayerProp prop, std::shared_ptr<PropertyBase> base, SetBy setBy = SetBy::CLIENT);
+	SetResults setProp(PlayerProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base);
+
+	/// @brief Sets a property value for a player with the given values and returns the result of the operation.
+	/// @tparam P The PlayerProp that determines the type of property to set.
+	/// @param setBy Specifies who is setting the property.
+	/// @param ...values The values to pass to the property container's constructor.
+	/// @return A SetResults value indicating the outcome of the property set operation.
+	template<PlayerProp P, typename... Args>
+	[[inline]] SetResults setPropWith(SetBy setBy, Args... values);
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
@@ -330,10 +330,9 @@ public:
 	GameVariableStore variables;
 
 protected:
-	using propSendResults = std::vector<std::pair<SetResults, std::shared_ptr<PropertyBase>>>;
-	SetResults setProp(PlayerProp prop, PropertyBase* base, SetBy setBy = SetBy::CLIENT);
+	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);
 	bool checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator) const;
-	void sendPropsFromResults(propSendResults& results);
+	void sendPropsFromResults(PropertySendResults& results);
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
@@ -417,7 +416,7 @@ protected:
 	PlayerID m_id = 0;
 	int m_type = PLTYPE_AWAIT;
 	int m_versionId = CLVER_UNKNOWN;
-	CString m_version;
+	std::string m_version;
 	std::string m_os{ "wind" };
 	std::string m_serverName;
 	uint8_t m_statusMsg = 0;
@@ -426,11 +425,11 @@ protected:
 	std::set<std::string> m_channelList;
 	time_t m_lastData;
 	uint8_t m_encryptionKey = 0;
-	uint32_t m_accountIp = 0;
+	int64_t m_accountIp = 0;
 	uint16_t m_udpport = 0;
 	int64_t m_deviceId = 0;
-	std::array<int64_t, PLAYERPROP_COUNT> m_modTime;
-	std::array<int64_t, PLAYERPROP_COUNT> m_savedModTime;
+	std::array<clock::time_point, PLAYERPROP_COUNT> m_modTime;
+	std::array<clock::time_point, PLAYERPROP_COUNT> m_savedModTime;
 
 	uint8_t m_horseBombCount = 0;
 	uint8_t m_carrySprite = 0xFF;
@@ -512,10 +511,6 @@ inline void Player::recordCurrentPropModTime()
 }
 
 //----------------------------
-
-// Renames these properties so they can be used inside the X-macro.
-using PropertyColors = PropertyArray<GBYTE1, 5>;
-using PropertyEffectColors = PropertyArray<GBYTE1, 5, true>;
 
 // Defines the mapping of PlayerProp to PropertyContainer.
 #define FOR_LIST_OF_PLAYER_PROPS(DO) \
@@ -624,31 +619,32 @@ PropertyContainer auto Player::getProp() const
 }
 
 template<PlayerProp P>
-SetResults Player::setProp(PropertyContainer auto prop, SetBy setBy)
+SetResults Player::setProp(SetBy setBy, PropertyContainer auto prop)
 {
-	return setProp(P, &prop, setBy);
+	return setProp(P, setBy, &prop);
 }
 
 template<PlayerProp P, typename... Args>
 SetResults Player::setPropWith(SetBy setBy, Args... values)
 {
-	return setProp<P>(constructPropFor<P>(values...), setBy);
+	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
 
 template<typename... Results> requires all_same_as<SetResults, Results...>
 void Player::sendPropsFromResults(const Results&... results)
 {
-	propSendResults send_results;
+	PropertySendResults send_results;
 	(send_results.emplace_back(results, nullptr), ...);
 	sendPropsFromResults(send_results);
 }
 
 void Player::sendPropsFromResults(std::ranges::forward_range auto&& results)
 {
-	propSendResults send_results;
-	send_results.append_range(results | std::views::transform([](const SetResults& results) {
-		return std::make_pair(results, nullptr);
-	}));
+	PropertySendResults send_results;
+	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
+	for (auto&& r : results_range)
+		send_results.emplace_back(r);
+
 	sendPropsFromResults(send_results);
 }
 

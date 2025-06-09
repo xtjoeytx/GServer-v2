@@ -144,9 +144,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	if (npc->level.lock() != level)
 		return HandlePacketResult::Handled;
 
-	CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npcId;
-	packet << npc->setPropsFromPacket(npcProps, m_versionId);
-	m_server->sendPacketToLevelArea(packet, self(), level, { m_id });
+	npc->setPropsFromPacket(npcProps, shared_from_this());
 
 	return HandlePacketResult::Handled;
 }
@@ -304,11 +302,11 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		// Update the Ratings.
 		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
 		{
-			sendPropsFromResults(setProp<PlayerProp::RATING>(PropertyEloRating{ tLoseRating, tLoseDeviation }, props::SetBy::SERVER));
+			sendPropsFromResults(setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tLoseRating, tLoseDeviation }));
 		}
 		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
 		{
-			killer->sendPropsFromResults(killer->setProp<PlayerProp::RATING>(PropertyEloRating{ tWinRating, tWinDeviation }, props::SetBy::SERVER));
+			killer->sendPropsFromResults(killer->setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tWinRating, tWinDeviation }));
 		}
 		this->account.lastSparTime = std::chrono::system_clock::now();
 		killer->account.lastSparTime = std::chrono::system_clock::now();

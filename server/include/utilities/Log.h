@@ -190,6 +190,15 @@ void printLine(Log& log, std::string_view fmt, const Args&... args)
 	print(log, "\n"sv);
 }
 
+// Prints a message to the log file preventing trailing newlines from starting a new line.
+template <typename ...Args>
+void printBlock(Log& log, std::string_view fmt, const Args&... args)
+{
+	std::lock_guard lock(log.mutex);
+	print(log, fmt, args...);
+	log.atLineStart = false;
+}
+
 void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto const& range)
 {
 	std::lock_guard lock(log.mutex);
@@ -209,6 +218,29 @@ void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto&& range)
 		printLine(log, text);
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Profile
+{
+	Profile(Log& log, std::string_view message)
+		: m_log(log), m_message(message), m_start(std::chrono::high_resolution_clock::now())
+	{}
+
+	~Profile() noexcept
+	{
+		using double_nano = std::chrono::duration<double, std::nano>;
+		using double_milli = std::chrono::duration<double, std::milli>;
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration_ns = double_nano(end - m_start);
+		auto duration_ms = std::chrono::duration_cast<double_milli>(duration_ns);
+		printLine(m_log, "[Profile] {} took {:0.6} ms.", m_message, duration_ms.count());
+	}
+
+	Log& m_log;
+	std::string m_message;
+	std::chrono::high_resolution_clock::time_point m_start;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::log

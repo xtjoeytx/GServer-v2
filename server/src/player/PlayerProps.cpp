@@ -48,15 +48,15 @@ std::shared_ptr<PropertyBase> Player::getProp(PlayerProp prop) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SetResults Player::setProp(PlayerProp prop, std::shared_ptr<PropertyBase> base, SetBy setBy)
+SetResults Player::setProp(PlayerProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base)
 {
 	PropertyBase* basePtr = base.get();
 	if (basePtr != nullptr)
-		return setProp(prop, basePtr, setBy);
+		return setProp(prop, setBy, basePtr);
 	throw std::invalid_argument("setProp called with nullptr base pointer.");
 }
 
-SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
+SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 {
 	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
 	auto level = player ? player->getLevel() : nullptr;
@@ -64,9 +64,10 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 
 	props::SetResults result{ .propId = { PROPID(prop) } };
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
-	result.resultFlags.set(props::SetResults::sendToSelf, setBy == props::SetBy::SERVER);
+	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
-	m_modTime[PROPID(prop)] = currentTimeInSeconds();
+	auto curTime = currentTime();
+	m_modTime[PROPID(prop)] = curTime;
 
 #define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); return result; } while(false)
 
@@ -109,7 +110,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 				account.character.hitpointsInHalves = newMaxHitpoints * 2;
 
 				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
-				result.resultFlags.set(props::SetResults::sendToSelf);
+				result.resultFlags.set(props::SetResults::sendToSource);
 			}
 			break;
 		}
@@ -213,32 +214,29 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (ganiProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (isClient() && m_versionId < CLVER_2_1)
+			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
+			if (m_server->Generation == ServerGeneration::ORIGINAL)
 			{
 				if (!ganiProp->bowGif.has_value())
 					break;
 
-				auto& [image, power] = *ganiProp->bowGif;
+				auto& [image, power] = ganiProp->bowGif.value();
 				account.character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
 				account.character.bowImage = image;
-				if (!account.character.bowImage.empty() && m_versionId < CLVER_2_1 && getExtension(account.character.bowImage).isEmpty())
+				if (!account.character.bowImage.empty() && !account.character.bowImage.contains('.'))
 					account.character.bowImage += ".gif";
 				break;
 			}
 
 			std::string gani = ganiProp->gani.value_or("idle");
 			account.character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
-			if (account.character.gani == "spin" && player != nullptr)
+
+			// Hack to allow spin to hurt things.
+			if (account.character.gani == "spin")
 			{
-				auto curlevel = player->getLevel();
-				CString nPacket;
-				nPacket >> (char)PLO_HITOBJECTS >> (short)m_id >> (char)account.character.swordPower;
-				char hx = (char)((getX() + 1.5f) * 2);
-				char hy = (char)((getY() + 2.0f) * 2);
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy - 4), curlevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx) >> (char)(hy + 4), curlevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx - 4) >> (char)(hy), curlevel, { m_id });
-				m_server->sendPacketToOneLevel(CString() << nPacket >> (char)(hx + 4) >> (char)(hy), curlevel, { m_id });
+				float tX = static_cast<float>(account.character.pixelX / 16.0f);
+				float tY = static_cast<float>(account.character.pixelY / 16.0f);
+				m_server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
 			}
 			break;
 		}
@@ -251,11 +249,11 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}{}", std::get<uint8_t>(headProp->image), (m_versionId < CLVER_2_1 ? ".gif" : ".png"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
 			else
 				img = std::get<std::string>(headProp->image);
 
-			if (!img.empty() && m_versionId < CLVER_2_1 && getExtension(img).isEmpty())
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
 			account.character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
@@ -289,7 +287,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 					account.character.chatMessage = chat.toString();
 
 					if ((found & FILTER_ACTION_REPLACE) || (found & FILTER_ACTION_WARN))
-						result.resultFlags.set(props::SetResults::sendToSelf);
+						result.resultFlags.set(props::SetResults::sendToSource);
 				}
 			}
 			break;
@@ -374,7 +372,8 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			account.character.sprite = numProp->value;
+			// TODO(NALIN): Generations.
+			account.character.sprite = numProp->value % 4;
 
 			// Do collision testing.
 			//doTouchTest = true;
@@ -401,7 +400,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 				account.character.hitpointsInHalves = newPower;
 
 				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
-				result.resultFlags.set(props::SetResults::sendToSelf);
+				result.resultFlags.set(props::SetResults::sendToSource);
 
 				// TODO(Nalin): There could be a race condition on when this packet is sent.  Do we delay until after props are sent to the client?
 				if (level != nullptr && level->isPlayerLeader(m_id))
@@ -468,7 +467,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 				SETPROP_RETURN_ERROR;
 
 			account.character.horseImage = strProp->value;
-			if (!account.character.horseImage.empty() && m_versionId < CLVER_2_1 && getExtension(account.character.horseImage).isEmpty())
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !account.character.horseImage.empty() && !account.character.horseImage.contains('.'))
 				account.character.horseImage += ".gif";
 			break;
 		}
@@ -672,7 +671,10 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
+			if (level == nullptr)
+				break;
+
+			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, level->getMapY());
 				setLevel(newLevelName, -1);
@@ -687,7 +689,10 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (auto cmap = level->getMap(); level && cmap && cmap->isGmap())
+			if (level == nullptr)
+				break;
+
+			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), numProp->value);
 				setLevel(newLevelName, -1);
@@ -761,11 +766,8 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (auto iter = std::ranges::find(GaniAttributePropList, PROPID(prop)); iter != GaniAttributePropList.end())
-			{
-				auto index = std::distance(GaniAttributePropList.begin(), iter);
-				account.character.ganiAttributes[index] = strProp->value;
-			}
+			auto index = std::ranges::distance(GaniAttributePropList.begin(), std::ranges::find(GaniAttributePropList, PROPID(prop)));
+			account.character.ganiAttributes[index] = strProp->value;
 			break;
 		}
 
@@ -890,6 +892,13 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 		}
 	}
 
+	// If we are sending other ids, we need to update the mod time for them too.
+	if (!result.resultPropIds.empty())
+	{
+		for (const auto& id : result.resultPropIds)
+			m_modTime[id] = curTime;
+	}
+
 	return result;
 }
 
@@ -897,7 +906,7 @@ SetResults Player::setProp(PlayerProp prop, PropertyBase* base, SetBy setBy)
 
 void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* originator)
 {
-	propSendResults results;
+	PropertySendResults results;
 
 	while (packet.bytesLeft() > 0)
 	{
@@ -909,7 +918,7 @@ void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* ori
 		if (!checkPropSetAccess(propId, setBy, originator))
 			continue;
 
-		results.emplace_back(setProp(propId, prop, setBy), prop);
+		results.emplace_back(setProp(propId, setBy, prop), prop);
 	}
 
 	if (isLoggedIn() && isLoaded())
@@ -929,46 +938,14 @@ bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator
 	return true;
 }
 
-void Player::sendPropsFromResults(propSendResults& results)
+void Player::sendPropsFromResults(PropertySendResults& results)
 {
-	static std::vector<std::tuple<uint8_t, SetResults, std::shared_ptr<PropertyBase>>> sendOrder;
+	CString sendAll, sendLevel, sendSource;
 
-	// Serialize the results into our buffers.
-	CString sendAll;
-	CString sendLevel;
-	CString sendSelf;
-
-	// Add all the results to the send order.
-	sendOrder.clear();
-	for (const auto& [result, prop] : results)
+	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
 	{
-		if (result.resultFlags.test(SetResults::wasInvalid))
-			continue;
-
-		sendOrder.emplace_back(result.propId, result, prop);
-		for (const auto& additionalPropId : result.resultPropIds)
-			sendOrder.emplace_back(additionalPropId, result, nullptr);
-	}
-
-	// Sort by increasing ID order.  If a client recieves a prop it doesn't understand, it stops processing them.
-	// This ensures that all the props the client CAN read come before the ones it can't.
-	std::ranges::sort(sendOrder, [](const auto& left, const auto& right) { return std::get<0>(left) < std::get<0>(right); });
-
-	// Loop through all the sorted results and add them to the buffers.
-	for (const auto& [propId, results, prop] : sendOrder)
-	{
-		// If the prop is not set, just get the prop from the player.
-		std::shared_ptr<PropertyBase> base = prop;
-		if (base == nullptr)
-			base = getProp((PlayerProp)propId);
-
-		if (results.resultFlags.test(SetResults::sendToSelf))
-			sendSelf >> (char)propId << base->serialize();
-		if (results.resultFlags.test(SetResults::sendToAll))
-			sendAll >> (char)propId << base->serialize();
-		if (results.resultFlags.test(SetResults::sendToLevel))
-			sendLevel >> (char)propId << base->serialize();
-	}
+		return this->getProp((PlayerProp)propId);
+	});
 
 	// Send the buffers out.
 	if (sendAll.length() > 0)
@@ -978,8 +955,8 @@ void Player::sendPropsFromResults(propSendResults& results)
 	if (player != nullptr && sendLevel.length() > 0)
 		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendLevel, player, { m_id });
 
-	if (sendSelf.length() > 0)
-		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSelf);
+	if (sendSource.length() > 0)
+		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSource);
 }
 
 void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)

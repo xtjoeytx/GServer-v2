@@ -850,7 +850,7 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
 			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player, { pid });
-		if (result.resultFlags.test(props::SetResults::sendToSelf))
+		if (result.resultFlags.test(props::SetResults::sendToSource))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}
 }

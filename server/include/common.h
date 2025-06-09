@@ -52,14 +52,20 @@ inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);
 }
-using prop_access = std::variant<int8_t*, uint8_t*, int16_t*, uint16_t*, uint32_t*, uint64_t, float*, std::string*, std::pair<float*, float*>>;
 
 //-----------------------------------------------
 
-inline int64_t currentTimeInSeconds()
+namespace chrono = std::chrono;
+using clock = std::chrono::system_clock;
+
+inline clock::time_point currentTime()
 {
-	using namespace std::chrono;
-	return static_cast<int64_t>(duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+	return clock::now();
+}
+
+inline clock::time_point convertFromTimeT(time_t time)
+{
+	return clock::from_time_t(time);
 }
 
 //-----------------------------------------------

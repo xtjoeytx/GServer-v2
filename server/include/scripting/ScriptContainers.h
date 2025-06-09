@@ -29,7 +29,8 @@ using LevelPtr = std::shared_ptr<Level>;
 
 /// @brief Concept to ensure the value passed to `GameValue` is a valid type.
 template<class T>
-concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, double>
+concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
+	|| std::same_as<std::remove_cvref_t<T>, double>
 	|| std::same_as<std::remove_cvref_t<T>, std::string>
 	|| std::same_as<std::remove_cvref_t<T>, std::vector<double>>;
 
@@ -49,16 +50,16 @@ struct GameValue
 		insert(std::forward<decltype(value)>(value));
 	}
 	GameValue(const GameValue& other)
-		: m_number(other.m_number), m_text(other.m_text), m_array(other.m_array)
+		: m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_boolean(other.m_boolean)
 	{}
 	GameValue(GameValue&& other) noexcept
-		: m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array))
+		: m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_boolean(std::move(other.m_boolean))
 	{}
 
 	GameValue& operator=(const GameValue& other) noexcept;
 	GameValue& operator=(GameValue&& other) noexcept;
 	bool operator==(const GameValue& other) noexcept;
-	explicit operator bool() const;
+	operator bool() const;
 
 public:
 	/// @brief Retrieves the stored value of the specified type, if present.
@@ -99,6 +100,7 @@ public:
 	}
 
 private:
+	std::optional<bool> m_boolean;
 	std::optional<double> m_number;
 	std::optional<std::string> m_text;
 	std::optional<std::vector<double>> m_array;
@@ -120,12 +122,24 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 				return m_array.value().at(index.value());
 			return 0.0;
 		}
-		return m_number;
+		if (m_number.has_value())
+			return m_number.value();
+		if (m_boolean.has_value())
+			return m_boolean.value() ? 1.0 : 0.0;
+		return std::nullopt;
 	}
 	if constexpr (std::same_as<T, std::string>)
 		return m_text;
 	if constexpr (std::same_as<T, std::vector<double>>)
 		return m_array;
+	if constexpr (std::same_as<T, bool>)
+	{
+		if (m_boolean.has_value())
+			return m_boolean.value();
+		if (m_number.has_value())
+			return m_number.value() != 0.0;
+		return std::nullopt;
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
 }
@@ -136,6 +150,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 	static const double empty_number = 0.0;
 	static const std::string empty_string{};
 	static const std::vector<double> empty_array{};
+	static const bool empty_boolean = false;
 
 	if constexpr (std::same_as<T, double>)
 	{
@@ -161,6 +176,12 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		if (!ptr) ptr = &empty_array;
 		return ptr;
 	}
+	if constexpr (std::same_as<T, bool>)
+	{
+		const auto* ptr = &m_boolean.value();
+		if (!ptr) ptr = &empty_boolean;
+		return ptr;
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
 }
@@ -170,6 +191,7 @@ inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<size
 	m_number = std::nullopt;
 	m_text = std::nullopt;
 	m_array = std::nullopt;
+	m_boolean = std::nullopt;
 	return insert(std::forward<decltype(value)>(value), index);
 }
 
@@ -195,6 +217,8 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_text = value;
 	else if constexpr (std::same_as<V, std::vector<double>>)
 		m_array = value;
+	else if constexpr (std::same_as<V, bool>)
+		m_boolean = value;
 	else [[unlikely]]
 		throw std::bad_variant_access();
 	return *this;
@@ -217,6 +241,8 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		m_text = std::move(value);
 	else if constexpr (std::same_as<V, std::vector<double>>)
 		m_array = std::move(value);
+	else if constexpr (std::same_as<V, bool>)
+		m_boolean = value;
 	else [[unlikely]]
 		throw std::bad_variant_access();
 	return *this;
@@ -252,6 +278,7 @@ struct GameVariable
 	[[inline]] auto operator=(const ValidGameValue auto& value) -> GameVariable&;
 	operator double() const;
 	operator std::string() const;
+	operator bool() const;
 
 	// Keeping this in the header since the IDE really hates it when in a separate file.
 	operator std::vector<double>() const
@@ -334,6 +361,12 @@ public:
 		return *this;
 	}
 
+	/// @brief Checks if the GameVariable has a value of the specified type.
+	/// @tparam T The type to check for. Must satisfy the `ValidGameValue` constraint.
+	/// @return True if the GameVariable has a value of the specified type; otherwise, false.
+	template<ValidGameValue T>
+	[[inline]] bool has() const;
+
 private:
 	GameValue& game_value();
 	const GameValue& game_value() const;
@@ -391,6 +424,14 @@ inline GameVariable& GameVariable::assign(ValidGameValue auto&& value, std::opti
 	if (m_setter) [[unlikely]]
 		m_setter(*this, m_value, index);
 	return *this;
+}
+
+template<ValidGameValue T>
+inline bool GameVariable::has() const
+{
+	auto& value = game_value();
+	auto* val = value.get_unsafe<T>();
+	return val != nullptr;
 }
 
 ////////////////////////////////////////////////////////////

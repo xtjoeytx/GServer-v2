@@ -147,12 +147,13 @@ public:
 	// NPC-Server
 	void loadNpcServer();
 
+public:
 	// Save Functions
 	void saveServerFlags();
 	void saveWeapons();
-
 	void reportScriptException(const std::string& error_message);
 
+public:
 	// Get functions.
 	const CString& getName() const { return m_name; }
 	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
@@ -199,6 +200,10 @@ public:
 	ScriptClass* getClass(const std::string& className) const;
 	void updateClass(const std::string& className, const std::string& classCode);
 */
+public:
+	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr);
+
+public:
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);

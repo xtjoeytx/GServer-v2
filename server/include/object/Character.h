@@ -27,6 +27,7 @@ struct Character
 	uint8_t shieldPower = 1;
 	uint8_t bowPower = 1;
 	uint8_t sprite = 2;
+	uint8_t direction = 2;	// 0: up, 1: left, 2: down, 3: right
 	std::array<uint8_t, 5> colors{ 2, 0, 10, 4, 18 };
 	std::string nickName{ "default" };
 	std::string gani{ "idle" };

@@ -196,7 +196,7 @@ CString Level::getLinksPacket()
 }
 
 // TODO: Replace with a function in server that sends npc props from a list of ids.
-void Level::sendNpcsToPlayer(std::shared_ptr<Player> player, time_t time)
+void Level::sendNpcsToPlayer(std::shared_ptr<Player> player, clock::time_point time)
 {
 	for (const auto& npcId : m_npcs)
 	{
@@ -228,14 +228,14 @@ CString Level::getSignsPacket(Player* pPlayer = 0)
 	return retVal;
 }
 
-int Level::getGmapX() const
+uint8_t Level::getGmapX() const
 {
 	if (auto map = m_map.lock(); map && map->isGmap())
 		return m_mapX;
 	return 0;
 }
 
-int Level::getGmapY() const
+uint8_t Level::getGmapY() const
 {
 	if (auto map = m_map.lock(); map && map->isGmap())
 		return m_mapY;

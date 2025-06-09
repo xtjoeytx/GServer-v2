@@ -52,6 +52,39 @@ constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
 	return PlayerProp::ID;
 }
 
+constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
+{
+	switch (index)
+	{
+		case 1: // #1
+			return NPCProp::SWORDIMAGE;
+		case 2: // #2
+			return NPCProp::SHIELDIMAGE;
+		case 3: // #3
+			return NPCProp::HEADIMAGE;
+		case 5: // #5
+			return NPCProp::HORSEIMAGE;
+		case 7: // #7
+			return NPCProp::GANI;
+		case 8: // #8
+			return NPCProp::BODYIMAGE;
+		case 9: // #c
+			return NPCProp::MESSAGE;
+		case 10: // #m
+			return NPCProp::GANI;
+		case 11: // #n
+			return NPCProp::NICKNAME;
+	}
+
+	if (index >= 20 && index <= 24)
+		return NPCProp::COLORS;
+
+	if (index >= 30 && index <= 60)
+		return static_cast<NPCProp>(NpcGaniAttrPackets[index - 30]);
+
+	return NPCProp::ID;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using MessageCodeHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
@@ -149,50 +182,71 @@ GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, uint8_t
 
 	GameVariable result{ "", std::move(value), {},
 		[visitor, playerId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
-	{
-		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(playerId); player != nullptr)
 		{
-			if (propId != PlayerProp::COLORS)
+			auto* server = BabyDI::Get<Server>();
+			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{
-				auto prop = player->getProp(propId);
-				prop->apply(val);
-				player->sendPropsFromResults(player->setProp(propId, prop, SetBy::SERVER));
-			}
-			else
-			{
-				auto colors = player->getProp<PlayerProp::COLORS>();
-				uint8_t colorVal = 0;
+				if (propId != PlayerProp::COLORS)
+				{
+					auto prop = player->getProp(propId);
+					prop->apply(val);
+					player->sendPropsFromResults(player->setProp(propId, SetBy::SERVER, prop));
+				}
+				else
+				{
+					auto colors = player->getProp<PlayerProp::COLORS>();
+					uint8_t colorVal = 0;
 
-				auto strVal = val.get<std::string>();
-				if (strVal.has_value())
-					colorVal = visitor->getColorValueFromString(strVal.value());
-				else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
+					auto strVal = val.get<std::string>();
+					if (strVal.has_value())
+						colorVal = visitor->getColorValueFromString(strVal.value());
+					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
 
-				colors.values[propIndex - 20] = colorVal;
-				player->sendPropsFromResults(player->setProp<PlayerProp::COLORS>(colors, SetBy::SERVER));
+					colors.values[propIndex - 20] = colorVal;
+					player->sendPropsFromResults(player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors));
+				}
 			}
 		}
-	} };
+	};
 
 	return { std::move(result), std::nullopt };
 }
 
 GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t index, GameValue& value)
 {
-	NPCProp propId = NPCProp::ID;
+	NPCProp propId = GetNPCPropFromIndex(index);
 	if (propId == NPCProp::ID)
 		return { GameVariable{ "", std::move(value) }, std::nullopt };
 
 	GameVariable result{ "", std::move(value), {},
-		[visitor, npcId, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
-	{
-		auto* server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		[visitor, npcId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
 		{
-			//npc->setProp(propId, val);
+			auto* server = BabyDI::Get<Server>();
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			{
+				if (propId == NPCProp::COLORS)
+				{
+					auto colors = npc->getProp<NPCProp::COLORS>();
+					uint8_t colorVal = 0;
+
+					auto strVal = val.get<std::string>();
+					if (strVal.has_value())
+						colorVal = visitor->getColorValueFromString(strVal.value());
+					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
+
+					colors.values[propIndex - 20] = colorVal;
+					npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
+
+				}
+				else
+				{
+					auto prop = npc->getProp(propId);
+					prop->apply(val);
+					npc->setProp(propId, SetBy::SERVER, prop);
+				}
+			}
 		}
-	} };
+	};
 
 	return { std::move(result), std::nullopt };
 }

@@ -296,8 +296,8 @@ Player::Player(CSocket* pSocket, PlayerID pId)
 	m_server = BabyDI::Get<Server>();
 	m_lastData = time(0);
 	m_serverName = m_server->getName();
-	m_modTime.fill(0);
-	m_savedModTime.fill(0);
+	m_modTime.fill(clock::time_point::min());
+	m_savedModTime.fill(clock::time_point::min());
 
 	srand((unsigned int)time(0));
 }

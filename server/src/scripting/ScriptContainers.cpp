@@ -35,6 +35,7 @@ GameValue& GameValue::operator=(const GameValue& other) noexcept
 		m_number = other.m_number;
 		m_text = other.m_text;
 		m_array = other.m_array;
+		m_boolean = other.m_boolean;
 	}
 	return *this;
 }
@@ -46,6 +47,7 @@ GameValue& GameValue::operator=(GameValue&& other) noexcept
 		m_number = std::move(other.m_number);
 		m_text = std::move(other.m_text);
 		m_array = std::move(other.m_array);
+		m_boolean = std::move(other.m_boolean);
 	}
 	return *this;
 }
@@ -57,6 +59,8 @@ bool GameValue::operator==(const GameValue& other) noexcept
 
 GameValue::operator bool() const
 {
+	if (m_boolean.has_value())
+		return m_boolean.value();
 	if (m_number.has_value())
 		return m_number.value() != 0.0;
 	return false;
@@ -76,6 +80,15 @@ GameVariable::operator std::string() const
 {
 	auto* value = game_value().get_unsafe<std::string>();
 	return (value != nullptr) ? *value : std::string{};
+}
+
+GameVariable::operator bool() const
+{
+	auto* boolValue = game_value().get_unsafe<bool>();
+	if (boolValue != nullptr)
+		return *boolValue;
+	auto* numberValue = game_value().get_unsafe<double>();
+	return (numberValue != nullptr) ? *numberValue != 0.0 : false;
 }
 
 GameVariable& GameVariable::operator=(const GameVariable& other)

@@ -78,7 +78,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	//	DONTBLOCK 1
 	//	modtime is not being updated for these properties
 
-	time_t updateTime = time(0);
+	auto updateTime = currentTime();
 	CString npcLevel;
 	std::string script;
 

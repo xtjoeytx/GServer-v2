@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sstream>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -68,7 +69,7 @@ struct SetResults
 	std::inplace_vector<uint8_t, 3> resultPropIds{};
 
 	/// @brief The results of the prop set.
-	std::bitset<4> resultFlags{};
+	std::bitset<5> resultFlags{};
 
 	/// @brief Result Flag - Pass the prop changes to everybody.
 	static const size_t sendToAll = 0;
@@ -76,11 +77,14 @@ struct SetResults
 	/// @brief Result Flag - Pass the prop changes to the level.
 	static const size_t sendToLevel = 1;
 
-	/// @brief Result Flag - Pass the prop changes to the player.
-	static const size_t sendToSelf = 2;
+	/// @brief Result Flag - Pass the prop changes back to the source.
+	static const size_t sendToSource = 2;
+
+	/// @brief Result Flag - If this prop is being sent, a fresh copy should be acquired.
+	static const size_t getLatestOnSend = 3;
 
 	/// @brief Result Flag - If true, the prop was invalid, so we should stop processing more props.
-	static const size_t wasInvalid = 3;
+	static const size_t wasInvalid = 4;
 };
 
 //////////////////////////////////////////////////
@@ -175,6 +179,7 @@ struct PropertyBase
 	virtual CString serialize() const = 0;
 	virtual void deserialize(CString& data) = 0;
 	virtual void apply(const GameValue& gameValue) = 0;
+	virtual std::format_context::iterator format(std::format_context& ctx) const = 0;
 };
 
 /// @brief A property that does not hold data.
@@ -195,6 +200,11 @@ struct PropertyVoid : public PropertyBase
 	virtual void apply(const GameValue& gameValue) override
 	{
 		// No data to apply, so do nothing.
+	}
+
+	virtual std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		return std::format_to(ctx.out(), "(void)");
 	}
 };
 
@@ -220,6 +230,11 @@ struct PropertyNumeric : public PropertyBase
 		value = static_cast<T>(gameValue.get<double>().value_or(0));
 	}
 
+	virtual std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		return std::format_to(ctx.out(), "value: {}", value);
+	}
+
 	T value;
 };
 
@@ -228,13 +243,14 @@ struct PropertyString : public PropertyBase
 {
 	PropertyString() = default;
 	PropertyString(const char* value) : value(value) {}
-	PropertyString(std::string_view value) : value(std::string{ value }) {}
-	PropertyString(std::string value) : value(std::move(value)) {}
+	PropertyString(std::string_view value) : value(value) {}
+	PropertyString(const std::string& value) : value(value) {}
 	PropertyString(std::string&& value) : value(std::move(value)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	std::string value;
 };
@@ -252,6 +268,7 @@ struct PropertySwordPower : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	std::string image;
 	std::optional<int8_t> power;
@@ -270,6 +287,7 @@ struct PropertyShieldPower : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	std::string image;
 	std::optional<uint8_t> power;
@@ -288,6 +306,7 @@ struct PropertyGaniOrBowGif : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	std::optional<std::string> gani;
 	std::optional<std::pair<std::string, uint8_t>> bowGif;
@@ -303,6 +322,7 @@ struct PropertyHeadGif : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	std::variant<uint8_t, std::string> image;
 };
@@ -357,22 +377,43 @@ struct PropertyArray : public PropertyBase
     {
 		if (gameValue.get<std::vector<double>>().has_value())
 		{
-			auto& vec = gameValue.get<std::vector<double>>().value();
+			auto* vec = gameValue.get_unsafe<std::vector<double>>();
+			if (vec == nullptr)
+				return;
 
 			// Convert all values to type T and insert into the values array.
-			for (size_t i = 0; i < N && i < vec.size(); ++i)
+			for (size_t i = 0; i < N && i < vec->size(); ++i)
 			{
 				if constexpr (std::is_integral_v<T>)
 				{
-					values[i] = static_cast<T>(vec[i]);
+					values[i] = static_cast<T>((*vec)[i]);
 				}
 				else
 				{
-					values[i] = T(vec[i]);
+					values[i] = T((*vec)[i]);
 				}
 			}
 		}
     }
+
+	virtual std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		std::ostringstream out;
+		for (size_t i = 0; i < N; ++i)
+		{
+			out << std::format("{}", values[i]);
+			if constexpr (StopIfFirstZero)
+			{
+				if (i == 0 && values[i] == 0)
+					break;
+			}
+
+			if (i < N - 1)
+				out << ", ";
+		}
+
+		return std::format_to(ctx.out(), "values: [{}]", out.str());
+	}
 
 	std::array<T, N> values{};
 };
@@ -387,6 +428,7 @@ struct PropertyEloRating : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	float rating = 1500.0f;
 	float deviation = 350.0f;
@@ -402,6 +444,7 @@ struct PropertyAttachNPC : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	uint8_t type = 0;
 	NPCID npcId = 0;
@@ -416,6 +459,7 @@ struct PropertyPixelCoordinate : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	int16_t pixelCoordinate = 0;
 };
@@ -430,6 +474,7 @@ struct PropertyTileCoordinate : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	int16_t pixelCoordinate = 0;
 };
@@ -444,9 +489,79 @@ struct PropertyTileCoordinateZ : public PropertyBase
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
 	int16_t pixelCoordinate = 0;
 };
+
+/// @brief A property that stores an old GS1 script.
+struct PropertyGS1Script : public PropertyBase
+{
+	PropertyGS1Script() = default;
+	PropertyGS1Script(std::string script) : script(std::move(script)) {}
+	PropertyGS1Script(std::string&& script) : script(std::move(script)) {}
+	PropertyGS1Script(std::string_view script) : script(script) {}
+
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+
+	std::string script;
+};
+
+/// @brief A property that stores a hurt direction (dx, dy) for an NPC.
+struct PropertyHurtDxDy : public PropertyBase
+{
+	PropertyHurtDxDy() = default;
+	PropertyHurtDxDy(float dx, float dy)
+		: hurtDX(dx), hurtDY(dy) {}
+
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+
+	float hurtDX = 0.0f;
+	float hurtDY = 0.0f;
+};
+
+/// @brief A property that stores a rectangle for an image part.
+struct PropertyImagePart : public PropertyBase
+{
+	PropertyImagePart() = default;
+	PropertyImagePart(uint16_t x, uint16_t y, uint8_t width, uint8_t height)
+		: imagePart({ x, y }, { width, height }) {}
+	PropertyImagePart(const Rectangle<uint16_t, uint8_t>& imagePart) : imagePart(imagePart) {}
+	PropertyImagePart(Rectangle<uint16_t, uint8_t>&& imagePart) : imagePart(std::move(imagePart)) {}
+
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+
+	Rectangle<uint16_t, uint8_t> imagePart;
+};
+
+/// @brief A property that stores a sprite and its direction.
+struct PropertySprite : public PropertyBase
+{
+	PropertySprite() = default;
+	PropertySprite(uint8_t sprite);
+	PropertySprite(uint8_t sprite, uint8_t direction) : sprite(sprite), direction(direction) {}
+
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+
+	uint8_t sprite = 0;
+	uint8_t direction = 2;
+};
+
+// Renames these properties so they can be used inside the X-macro.
+using PropertyColors = PropertyArray<GBYTE1, 5>;
+using PropertyEffectColors = PropertyArray<GBYTE1, 5, true>;
 
 //////////////////////////////////////////////////
 // Concepts
@@ -460,7 +575,134 @@ concept PropertyContainer = requires(T t, CString& c)
 	t.deserialize(c);
 };
 
+//////////////////////////////////////////////////
+// Sending Results
+//////////////////////////////////////////////////
+
+using PropertySendResults = std::vector<std::pair<SetResults, std::shared_ptr<PropertyBase>>>;
+using PropertyContainerGetter = std::function<std::shared_ptr<PropertyBase>(uint8_t)>;
+
+void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, PropertyContainerGetter getProp);
+
 ////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::props
+
+//////////////////////////////////////////////////
+// Printing
+//////////////////////////////////////////////////
+
+template <>
+struct std::formatter<preagonal::props::PropertyBase> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyBase* prop, std::format_context& ctx) const { return prop->format(ctx); }
+};
+
+template <>
+struct std::formatter<std::shared_ptr<preagonal::props::PropertyBase>> : std::formatter<std::string>
+{
+	auto format(const std::shared_ptr<preagonal::props::PropertyBase>& prop, std::format_context& ctx) const { return prop->format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyVoid> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyVoid& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <typename T>
+struct std::formatter<preagonal::props::PropertyNumeric<T>> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyNumeric<T>& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyString> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyString& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertySwordPower> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertySwordPower& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyShieldPower> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyShieldPower& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyGaniOrBowGif> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyGaniOrBowGif& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyHeadGif> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyHeadGif& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <typename T, size_t N, bool StopIfFirstZero>
+struct std::formatter<preagonal::props::PropertyArray<T, N, StopIfFirstZero>> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyArray<T, N, StopIfFirstZero>& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyEloRating> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyEloRating& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyAttachNPC> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyAttachNPC& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyPixelCoordinate> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyPixelCoordinate& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyTileCoordinate> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyTileCoordinate& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyTileCoordinateZ> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyTileCoordinateZ& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyGS1Script> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyGS1Script& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyHurtDxDy> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyHurtDxDy& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyImagePart> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyImagePart& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertySprite> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertySprite& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
 
 #endif // PROPSCONTAINER_H

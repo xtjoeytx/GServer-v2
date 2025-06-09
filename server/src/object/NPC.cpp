@@ -1,16 +1,18 @@
-#include "object/NPC.h"
-
 #include <math.h>
 #include <IEnums.h>
 
-#include "FileSystem.h"
-#include "Server.h"
-#include "level/Level.h"
-#include "level/Map.h"
-#include "npcserver/NPCServer.h"
+#include <FileSystem.h>
+#include <Server.h>
+#include <level/Level.h>
+#include <level/Map.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <object/Player.h>
 #include <scripting/ScriptContainers.h>
-#include "scripting/SourceCode.h"
-#include "utilities/Log.h"
+#include <scripting/SourceCode.h>
+#include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
+#include <utilities/StringUtils.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -21,6 +23,22 @@ static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28,
 
 static std::string_view toWeaponName(std::string_view code);
 static std::string performClientSideJoinHack(std::string_view code, FileSystem* fs);
+
+//----------------------------
+
+#ifdef PACKETLOGGING
+#define DO_PACKETLOG(LOG) LOG
+#else
+#define DO_PACKETLOG(LOG)
+#endif
+
+#define PRINT_NPCPROP(prop, ...) #prop ##sv,
+constexpr std::array<std::string_view, NPCPROP_COUNT> npcPropNames =
+{
+	FOR_LIST_OF_NPC_PROPS(PRINT_NPCPROP)
+};
+
+//----------------------------
 
 template<typename T>
 concept ValidGameValueCallable = requires(T t)
@@ -39,6 +57,7 @@ void copyToArrayAs(const auto& vec, auto& propvalue)
 	}
 }
 
+/// @brief A getter function for a property that gets its results from another getter function.
 static GameVariable::func_get prop_get(ValidGameValueCallable auto getter)
 {
 	return [getter](std::string_view identifier) -> GameValue
@@ -47,12 +66,14 @@ static GameVariable::func_get prop_get(ValidGameValueCallable auto getter)
 	};
 }
 
+/// @brief A getter function for a property that gets its results from a property directly.
 static GameVariable::func_get prop_get(auto& value)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
 	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V>,
 				  "NPC prop_get called with an unsupported type. Supported types are integral, floats, string, or ranges.");
 
+	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
 		return [&value](std::string_view identifier) -> GameValue
@@ -60,6 +81,7 @@ static GameVariable::func_get prop_get(auto& value)
 			return GameValue{ static_cast<double>(value) };
 		};
 	}
+	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
 		return [&value](std::string_view identifier) -> GameValue
@@ -67,10 +89,12 @@ static GameVariable::func_get prop_get(auto& value)
 			return GameValue{ std::string{ value } };
 		};
 	}
+	// Array.
 	else if constexpr (std::ranges::forward_range<V>)
 	{
 		return [&value](std::string_view identifier) -> GameValue
 		{
+			// Transform the range to a vector of doubles.
 			return GameValue{ value | std::views::transform([](const auto& v) { return static_cast<double>(v); }) | std::ranges::to<std::vector<double>>() };
 		};
 	}
@@ -78,48 +102,58 @@ static GameVariable::func_get prop_get(auto& value)
 	throw std::invalid_argument("NPC prop_get called with an unsupported type.");
 }
 
+/// @brief A setter function for a property that needs an additional setter function to write the values.
 static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
 {
 	return [who, prop, setter](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
 	{
+		// Call the setter function.
 		setter(value, index);
+
+		// Record the modification time for the property.
 		if (prop.has_value() && who != nullptr)
 		{
+			// Normal properties.
 			if (prop.value() != NPCProp::SAVE0)
-				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+				who->modTime[PROPID(prop.value())] = currentTime();
 			else if (index.has_value() && index.value() <= 9)
 			{
+				// Special handling for save properties since it is an array in script, but the props are stored individually.
 				auto propIndex = PROPID(NPCProp::SAVE0) + index.value();
-				who->modTime[propIndex] = currentTimeInSeconds();
+				who->modTime[propIndex] = currentTime();
 			}
 		}
 	};
 }
 
+/// @brief A setter function for a property that can directly set to a value.
 static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, auto& propvalue)
 {
 	using V = std::remove_cvref_t<decltype(propvalue)>;
 	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::random_access_range<V>,
 		"NPC prop_get called with an unsupported type. Supported types are integral, floats, string, or ranges.");
 
+	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
 		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
 		{
 			propvalue = static_cast<V>(value.get<double>().value_or(0.0));
 			if (prop.has_value())
-				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+				who->modTime[PROPID(prop.value())] = currentTime();
 		};
 	}
+	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
 		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
 		{
 			propvalue = value.get<std::string>().value_or({});
 			if (prop.has_value())
-				who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+				who->modTime[PROPID(prop.value())] = currentTime();
 		};
 	}
+	// Array.
 	else if constexpr (std::ranges::random_access_range<V>)
 	{
 		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
@@ -128,18 +162,21 @@ static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, au
 			if (propvalue_size > 0)
 			{
 				using value_type = std::remove_cvref_t<decltype(propvalue[0])>;
+
+				// Setting an individual index in an array.
 				if (index.has_value() && index.value() < propvalue_size)
 				{
 					propvalue[index.value()] = static_cast<value_type>(value.get<double>().value_or(0.0));
 					if (prop.has_value())
-						who->modTime[PROPID(prop.value()) + index.value()] = currentTimeInSeconds();
+						who->modTime[PROPID(prop.value()) + index.value()] = currentTime();
 				}
+				// Setting the whole array.
 				else if (!index.has_value())
 				{
 					auto vec = value.get<std::vector<double>>().value();
 					copyToArrayAs<value_type>(vec, propvalue);
 					if (prop.has_value())
-						who->modTime[PROPID(prop.value())] = currentTimeInSeconds();
+						who->modTime[PROPID(prop.value())] = currentTime();
 				}
 			}
 		};
@@ -154,12 +191,12 @@ NPC::NPC(NPCID id, NPCType type)
 	: id(id), type(type), m_savedModTime()
 {
 	saves.fill(0);
-	modTime.fill(0);
+	modTime.fill(clock::time_point::min());
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2 });
-	std::ranges::for_each(props, [this, now = currentTimeInSeconds()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::CURLEVEL, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
+	std::ranges::for_each(props, [this, now = currentTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
 
@@ -174,7 +211,6 @@ NPC::NPC(NPCID id, NPCType type)
 	scripting.variables.add(GameVariable{ "glovepower", prop_get(character.glovePower), prop_set(this, NPCProp::GLOVEPOWER, character.glovePower) });
 	scripting.variables.add(GameVariable{ "swordpower", prop_get(character.swordPower), prop_set(this, NPCProp::SWORDIMAGE, character.swordPower) });
 	scripting.variables.add(GameVariable{ "shieldpower", prop_get(character.shieldPower), prop_set(this, NPCProp::SHIELDIMAGE, character.shieldPower) });
-	scripting.variables.add(GameVariable{ "sprite", prop_get(character.sprite), prop_set(this, NPCProp::SPRITE, character.sprite) });
 	scripting.variables.add(GameVariable{ "ap", prop_get(character.ap), prop_set(this, NPCProp::ALIGNMENT, character.ap) });
 	scripting.variables.add(GameVariable{ "hurtdx", prop_get(hurtX), prop_set(this, NPCProp::HURTDXDY, hurtX) });
 	scripting.variables.add(GameVariable{ "hurtdy", prop_get(hurtY), prop_set(this, NPCProp::HURTDXDY, hurtY) });
@@ -189,17 +225,50 @@ NPC::NPC(NPCID id, NPCType type)
 		prop_get([this]() { return character.pixelZ / 16.0; }),
 		prop_set(this, NPCProp::Z2, [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }) });
 	scripting.variables.add(GameVariable{ "timeout",
-		prop_get([this]() { return timeout.count() / 1000.0; }),
-		prop_set(this, std::nullopt, [this](const GameValue& value, std::optional<size_t>) { timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000)); }) });
+		prop_get(
+			[this]()
+			{
+				return timeout.count() / 1000.0;
+			}),
+		prop_set(this, std::nullopt,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000));
+			})
+		});
+	scripting.variables.add(GameVariable{ "sprite",
+		prop_get(character.sprite),
+		prop_set(this, NPCProp::SPRITE,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
+
+				auto server = BabyDI::Get<Server>();
+				if (character.sprite >= 4 && server->Generation != ServerGeneration::ORIGINAL)
+				{
+					character.gani = std::format("def[{}]", character.sprite);
+					//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
+					modTime[PROPID(NPCProp::GANI)] = currentTime();
+					//modTime[PROPID(NPCProp::VISFLAGS)] = currentTime();
+				}
+			})
+		});
 	scripting.variables.add(GameVariable{ "dir",
-		prop_get([this]() { return static_cast<double>(character.sprite % 4); }),
-		prop_set(this, NPCProp::SPRITE, [this](const GameValue& value, std::optional<size_t>) { character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0)) % 4; }) });
+		prop_get([this]() { return static_cast<double>(character.direction); }),
+		prop_set(this, NPCProp::SPRITE,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
+			})
+		});
 }
 
 //----------------------------
 
 void NPC::setScript(std::string_view script)
 {
+	//auto profile = log::Profile(log::server, "NPC::setScript");
+
 	m_script = std::move(SourceCode{ script });
 
 	auto clientside = m_script.getClientSide();
@@ -244,736 +313,404 @@ void NPC::setScript(std::string_view script)
 
 //----------------------------
 
-CString NPC::getModifiedPropsPacket(int clientVersion) const
+std::string NPC::getLevelName() const
 {
-	CString result;
-	for (auto i = 0; i < NPCPROP_COUNT; ++i)
-	{
-		if (modTime[i] != m_savedModTime[i])
-			result >> (char)i << getPropPacket((NPCProp)i, clientVersion);
-	}
-	return result;
-}
-
-CString NPC::getAllPropsPacket(time_t newTime, int clientVersion) const
-{
-	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
-	CString retVal;
-	int pmax = NPCPROP_COUNT;
-	if (clientVersion < CLVER_2_1) pmax = 36;
-
-	for (int i = 0; i < pmax; i++)
-	{
-		if (modTime[i] != 0 && modTime[i] >= newTime)
-		{
-			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == 0)
-				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
-			else
-				retVal >> (char)i << getPropPacket((NPCProp)i, clientVersion);
-		}
-	}
-	if (clientVersion > CLVER_1_411)
-	{
-		if (modTime[PROPID(NPCProp::GANI)] == 0 && image == "#c#")
-			retVal >> (char)NPCProp::GANI >> (char)4 << "idle";
-	}
-
-	return retVal;
+	if (auto levelPtr = level.lock())
+		return levelPtr->getLevelName().toString();
+	return {};
 }
 
 //----------------------------
 
-CString NPC::getPropPacket(NPCProp pId, int clientVersion) const
+std::shared_ptr<PropertyBase> NPC::constructPropFor(NPCProp prop) const
 {
-	switch (pId)
+	switch (prop)
 	{
-		case NPCProp::IMAGE:
-			return CString() >> (char)image.length() << image;
-
-		case NPCProp::SCRIPT:
-		{
-			// Modern sends scripts in a different way.
-			if (m_server->Generation == ServerGeneration::MODERN)
-				return CString() >> (short)0;
-
-			// We have bytecode set so send it.
-			if (const auto& client = m_script.getClientByteCode(); !client.empty())
-			{
-				// TODO: Proper handling of bytecode that is too large.
-				assert(client.size() <= 0x705F);
-				return CString() >> (short)client.size() << std::string_view{ reinterpret_cast<const char*>(client.data()), client.size() };
-			}
-
-			// Fallback to sending the script itself.
-			auto clientside = m_script.getClientSide();
-			return CString() >> (short)(clientside.length() > 0x705F ? 0x705F : clientside.length()) << clientside.substr(0, 0x705F);
-		}
-
-		case NPCProp::X:
-			return CString() >> (char)(character.pixelX / 8);
-
-		case NPCProp::Y:
-			return CString() >> (char)(character.pixelY / 8);
-
-		case NPCProp::Z:
-			// range: -25 to 85
-			return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (character.pixelZ / 8))) + 50);
-
-		case NPCProp::POWER:
-			return CString() >> (char)(character.hitpointsInHalves);
-
-		case NPCProp::RUPEES:
-			return CString() >> (int)character.gralats;
-
-		case NPCProp::ARROWS:
-			return CString() >> (char)character.arrows;
-
-		case NPCProp::BOMBS:
-			return CString() >> (char)character.bombs;
-
-		case NPCProp::GLOVEPOWER:
-			return CString() >> (char)character.glovePower;
-
-		case NPCProp::BOMBPOWER:
-			return CString() >> (char)character.bombPower;
-
-		case NPCProp::SWORDIMAGE:
-			if (character.swordPower == 0)
-				return CString() >> (char)0;
-			else
-				return CString() >> (char)(character.swordPower + 30) >> (char)character.swordImage.length() << character.swordImage;
-
-		case NPCProp::SHIELDIMAGE:
-			if (character.shieldPower + 10 > 10)
-				return CString() >> (char)(character.shieldPower + 10) >> (char)character.shieldImage.length() << character.shieldImage;
-			else
-				return CString() >> (char)0;
-
-		case NPCProp::GANI:
-			if (clientVersion < CLVER_2_1)
-			{
-				if (character.bowPower < 10)
-					return CString() >> (char)character.bowPower;
-				else
-					return CString() >> (char)(character.bowImage.length() + 10) << character.bowImage;
-			}
-			if (isCharacter())
-				return CString() >> (char)character.gani.length() << character.gani;
-			else return CString() >> (char)0;
-
-		case NPCProp::VISFLAGS:
-			return CString() >> (char)visFlags;
-
-		case NPCProp::BLOCKFLAGS:
-			return CString() >> (char)blockFlags;
-
-		case NPCProp::MESSAGE:
-			return CString() >> (char)character.chatMessage.length() << character.chatMessage;
-
-		case NPCProp::HURTDXDY:
-			return CString() >> (char)((hurtX * 32) + 32) >> (char)((hurtY * 32) + 32);
-
-		case NPCProp::ID:
-			return CString() >> (int)id;
-
-		// Sprite is deprecated and has been replaced by def.gani.
-		// Sprite now holds the direction of the npc.  sprite % 4 gives backwards compatibility.
-		case NPCProp::SPRITE:
-		{
-			if (clientVersion < CLVER_2_1)
-				return CString() >> (char)character.sprite;
-			else
-				return CString() >> (char)(character.sprite % 4);
-		}
-
-		case NPCProp::COLORS:
-			return CString() >> (char)character.colors[0] >> (char)character.colors[1] >> (char)character.colors[2] >> (char)character.colors[3] >> (char)character.colors[4];
-
-		case NPCProp::NICKNAME:
-			return CString() >> (char)character.nickName.length() << character.nickName;
-
-		case NPCProp::HORSEIMAGE:
-			return CString() >> (char)character.horseImage.length() << character.horseImage;
-
-		case NPCProp::HEADIMAGE:
-			return CString() >> (char)(character.headImage.length() + 100) << character.headImage;
-
-		case NPCProp::SAVE0:
-		case NPCProp::SAVE1:
-		case NPCProp::SAVE2:
-		case NPCProp::SAVE3:
-		case NPCProp::SAVE4:
-		case NPCProp::SAVE5:
-		case NPCProp::SAVE6:
-		case NPCProp::SAVE7:
-		case NPCProp::SAVE8:
-		case NPCProp::SAVE9:
-		{
-			auto index = static_cast<size_t>(PROPID(pId)) - PROPID(NPCProp::SAVE0);
-			return CString() >> (char)saves[index];
-		}
-
-		case NPCProp::ALIGNMENT:
-			return CString() >> (char)character.ap;
-
-		case NPCProp::IMAGEPART:
-			return CString() >> (short)imagePart.position.x() >> (short)imagePart.position.y() >> (char)imagePart.size.width() >> (char)imagePart.size.height();
-
-		case NPCProp::BODYIMAGE:
-			return CString() >> (char)character.bodyImage.length() << character.bodyImage;
-
-		case NPCProp::GMAPLEVELX:
-		{
-			auto lvl = level.lock();
-			return CString() >> (char)(lvl ? lvl->getGmapX() : 0);
-		}
-
-		case NPCProp::GMAPLEVELY:
-		{
-			auto lvl = level.lock();
-			return CString() >> (char)(lvl ? lvl->getGmapY() : 0);
-		}
-
-		case NPCProp::SCRIPTER:
-			return CString() >> (char)m_npcScripter.length() << m_npcScripter;
-
-		case NPCProp::NAME:
-			return CString() >> (char)name.length() << name;
-
-		case NPCProp::TYPE:
-			return CString() >> (char)m_npcScriptType.length() << m_npcScriptType;
-
-		case NPCProp::CURLEVEL:
-		{
-			auto lvl = level.lock();
-			CString tmpLevelName = (lvl ? lvl->getLevelName() : "");
-			return CString() >> (char)tmpLevelName.length() << tmpLevelName;
-		}
-
-		case NPCProp::CLASS:
-		{
-			CString classList;
-
-			if (!classList.isEmpty())
-				classList.removeI(classList.length() - 1);
-			return CString() >> (short)classList.length() << classList;
-		}
-
-		case NPCProp::X2:
-		{
-			uint16_t val = ((uint16_t)std::abs(character.pixelX)) << 1;
-			if (character.pixelX < 0)
-				val |= 0x0001;
-			return CString().writeGShort(val);
-		}
-
-		case NPCProp::Y2:
-		{
-			uint16_t val = ((uint16_t)std::abs(character.pixelY)) << 1;
-			if (character.pixelY < 0)
-				val |= 0x0001;
-			return CString().writeGShort(val);
-		}
-
-		case NPCProp::Z2:
-		{
-			// range: -25 to 85
-			uint16_t val = std::min<int16_t>(85 * 16, std::max<int16_t>(-25 * 16, character.pixelZ));
-			val = std::abs(val) << 1;
-			if (character.pixelZ < 0)
-				val |= 0x0001;
-			return CString().writeGShort(val);
-		}
-
-		case NPCProp::GATTRIB1:
-		case NPCProp::GATTRIB2:
-		case NPCProp::GATTRIB3:
-		case NPCProp::GATTRIB4:
-		case NPCProp::GATTRIB5:
-		case NPCProp::GATTRIB6:
-		case NPCProp::GATTRIB7:
-		case NPCProp::GATTRIB8:
-		case NPCProp::GATTRIB9:
-		case NPCProp::GATTRIB10:
-		case NPCProp::GATTRIB11:
-		case NPCProp::GATTRIB12:
-		case NPCProp::GATTRIB13:
-		case NPCProp::GATTRIB14:
-		case NPCProp::GATTRIB15:
-		case NPCProp::GATTRIB16:
-		case NPCProp::GATTRIB17:
-		case NPCProp::GATTRIB18:
-		case NPCProp::GATTRIB19:
-		case NPCProp::GATTRIB20:
-		case NPCProp::GATTRIB21:
-		case NPCProp::GATTRIB22:
-		case NPCProp::GATTRIB23:
-		case NPCProp::GATTRIB24:
-		case NPCProp::GATTRIB25:
-		case NPCProp::GATTRIB26:
-		case NPCProp::GATTRIB27:
-		case NPCProp::GATTRIB28:
-		case NPCProp::GATTRIB29:
-		case NPCProp::GATTRIB30:
-		{
-			auto index = std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(pId)));
-			return CString() >> (char)character.ganiAttributes[index].length() << character.ganiAttributes[index];
-		}
+#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
+		FOR_LIST_OF_NPC_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
 	}
-
-	return CString();
+	throw std::invalid_argument("Invalid NPCProp type in constructPropFor");
 }
-
-CString NPC::setPropsFromPacket(CString& pProps, int clientVersion, bool pForward)
-{
-	bool hasMoved = false;
-
-	// TODO(joey): Most of these props will eventually be ignored
-
-	CString ret;
-	int len = 0;
-	while (pProps.bytesLeft() > 0)
-	{
-		NPCProp propId = (NPCProp)pProps.readGUChar();
-		CString oldProp = getPropPacket(propId);
-		//printf( "propId: %d\n", propId );
-		switch (propId)
-		{
-			case NPCProp::IMAGE:
-				visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
-				image = pProps.readChars(pProps.readGUChar()).text();
-				if (!image.empty() && clientVersion < CLVER_2_1 && getExtension(image).isEmpty())
-					image.append(".gif");
-				break;
-
-			case NPCProp::SCRIPT:
-				pProps.readChars(pProps.readGUShort());
-
-				// TODO(joey): is this used for putnpcs?
-				//clientScript = pProps.readChars(pProps.readGUShort());
-				break;
-
-			case NPCProp::X:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGChar();
-					continue;
-				}
-				character.pixelX = pProps.readGChar() * 8;
-				hasMoved = true;
-				break;
-
-			case NPCProp::Y:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGChar();
-					continue;
-				}
-				character.pixelY = pProps.readGChar() * 8;
-				hasMoved = true;
-				break;
-				
-			case NPCProp::Z:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGChar();
-					continue;
-				}
-				character.pixelZ = (pProps.readGChar() - 50) * 8;
-				hasMoved = true;
-				break;
-
-			case NPCProp::POWER:
-				character.hitpointsInHalves = pProps.readGUChar();
-				break;
-
-			case NPCProp::RUPEES:
-				character.gralats = pProps.readGUInt();
-				break;
-
-			case NPCProp::ARROWS:
-				character.arrows = pProps.readGUChar();
-				break;
-
-			case NPCProp::BOMBS:
-				character.bombs = pProps.readGUChar();
-				break;
-
-			case NPCProp::GLOVEPOWER:
-				character.glovePower = pProps.readGUChar();
-				break;
-
-			case NPCProp::BOMBPOWER:
-				character.bombPower = pProps.readGUChar();
-				break;
-
-			case NPCProp::SWORDIMAGE:
-			{
-				int sp = pProps.readGUChar();
-				if (sp <= 4)
-					character.swordImage = (CString() << "sword" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-				else
-				{
-					sp -= 30;
-					len = pProps.readGUChar();
-					if (len > 0)
-					{
-						character.swordImage = pProps.readChars(len).toString();
-						if (!character.swordImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.swordImage).isEmpty())
-							character.swordImage += ".gif";
-					}
-					else
-						character.swordImage = "";
-					//character.swordPower = clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
-				}
-				character.swordPower = sp;
-				break;
-			}
-
-			case NPCProp::SHIELDIMAGE:
-			{
-				int sp = pProps.readGUChar();
-				if (sp <= 3)
-					character.shieldImage = (CString() << "shield" << CString(sp) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-				else
-				{
-					sp -= 10;
-					len = pProps.readGUChar();
-					if (len > 0)
-					{
-						character.shieldImage = pProps.readChars(len).toString();
-						if (!character.shieldImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.shieldImage).isEmpty())
-							character.shieldImage += ".gif";
-					}
-					else
-						character.shieldImage = "";
-				}
-				character.shieldPower = std::min<uint8_t>(sp, 3);
-				break;
-			}
-
-			case NPCProp::GANI:
-			{
-				if (clientVersion < CLVER_2_1)
-				{
-					// Older clients don't use ganis.  This is the bow power and image instead.
-					character.bowPower = pProps.readGUChar();
-					if (character.bowPower >= 10)
-					{
-						character.bowImage = pProps.readChars(character.bowPower - 10).toString();
-						if (!character.bowImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.bowImage).isEmpty())
-							character.bowImage += ".gif";
-					}
-					break;
-				}
-				character.gani = pProps.readChars(pProps.readGUChar()).text();
-				break;
-			}
-
-			case NPCProp::VISFLAGS:
-				visFlags = pProps.readGUChar();
-				break;
-
-			case NPCProp::BLOCKFLAGS:
-				blockFlags = pProps.readGUChar();
-				break;
-
-			case NPCProp::MESSAGE:
-				character.chatMessage = pProps.readChars(pProps.readGUChar()).text();
-				break;
-
-			case NPCProp::HURTDXDY:
-				hurtX = ((float)(pProps.readGUChar() - 32)) / 32;
-				hurtY = ((float)(pProps.readGUChar() - 32)) / 32;
-				break;
-
-			case NPCProp::ID:
-				pProps.readGUInt();
-				break;
-
-			case NPCProp::SPRITE:
-			{
-				auto sprite = pProps.readGUChar();
-				if (clientVersion < CLVER_2_1)
-					character.sprite = sprite;
-				else character.sprite = sprite % 4;
-				break;
-			}
-
-			case NPCProp::COLORS:
-				for (int i = 0; i < 5; i++)
-					character.colors[i] = pProps.readGUChar();
-				break;
-
-			case NPCProp::NICKNAME:
-				character.nickName = pProps.readChars(pProps.readGUChar()).text();
-				break;
-
-			case NPCProp::HORSEIMAGE:
-				character.horseImage = pProps.readChars(pProps.readGUChar()).toString();
-				if (!character.horseImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.horseImage).isEmpty())
-					character.horseImage += ".gif";
-				break;
-
-			case NPCProp::HEADIMAGE:
-				len = pProps.readGUChar();
-				if (len < 100)
-					character.headImage = (CString() << "head" << CString(len) << (clientVersion < CLVER_2_1 ? ".gif" : ".png")).toString();
-				else
-				{
-					character.headImage = pProps.readChars(len - 100).toString();
-					if (!character.headImage.empty() && clientVersion < CLVER_2_1 && getExtension(character.headImage).isEmpty())
-						character.headImage += ".gif";
-				}
-				break;
-
-			case NPCProp::ALIGNMENT:
-				character.ap = pProps.readGUChar();
-				character.ap = clip(character.ap, 0, 100);
-				break;
-
-			case NPCProp::IMAGEPART:
-			{
-				Position<uint16_t> pos = { pProps.readGUShort(), pProps.readGUShort() };
-				Dimension<uint8_t> size = { pProps.readGUChar(), pProps.readGUChar() };
-				imagePart = Rectangle<uint16_t, uint8_t>(pos, size);
-				break;
-			}
-
-			case NPCProp::BODYIMAGE:
-				character.bodyImage = pProps.readChars(pProps.readGUChar()).toString();
-				break;
-
-			case NPCProp::GMAPLEVELX:
-				pProps.readGUChar();
-				break;
-
-			case NPCProp::GMAPLEVELY:
-				pProps.readGUChar();
-				break;
-
-			case NPCProp::SCRIPTER:
-				m_npcScripter = pProps.readChars(pProps.readGUChar());
-				break;
-
-			case NPCProp::NAME:
-				name = pProps.readChars(pProps.readGUChar()).text();
-				break;
-
-			case NPCProp::TYPE:
-				m_npcScriptType = pProps.readChars(pProps.readGUChar());
-				break;
-
-			case NPCProp::CURLEVEL:
-				pProps.readChars(pProps.readGUChar());
-				break;
-
-			case NPCProp::CLASS:
-				pProps.readChars(pProps.readGShort());
-				break;
-
-				// Location, in pixels, of the npc on the level in 2.3+ clients.
-				// Bit 0x0001 controls if it is negative or not.
-				// Bits 0xFFFE are the actual value.
-			case NPCProp::X2:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGUShort();
-					continue;
-				}
-
-				len = pProps.readGUShort();
-				character.pixelX = (len >> 1);
-
-				// If the first bit is 1, our position is negative.
-				if ((uint16_t)len & 0x0001)
-					character.pixelX = -character.pixelX;
-
-				hasMoved = true;
-				break;
-
-			case NPCProp::Y2:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGUShort();
-					continue;
-				}
-
-				len = pProps.readGUShort();
-				character.pixelY = (len >> 1);
-
-				// If the first bit is 1, our position is negative.
-				if ((uint16_t)len & 0x0001)
-					character.pixelY = -character.pixelY;
-
-				hasMoved = true;
-				break;
-
-			case NPCProp::Z2:
-				if (m_blockPositionUpdates)
-				{
-					pProps.readGUShort();
-					continue;
-				}
-
-				len = pProps.readGUShort();
-				character.pixelZ = (len >> 1);
-
-				// If the first bit is 1, our position is negative.
-				if ((uint16_t)len & 0x0001)
-					character.pixelZ = -character.pixelZ;
-
-				hasMoved = true;
-				break;
-
-			case NPCProp::SAVE0:
-			case NPCProp::SAVE1:
-			case NPCProp::SAVE2:
-			case NPCProp::SAVE3:
-			case NPCProp::SAVE4:
-			case NPCProp::SAVE5:
-			case NPCProp::SAVE6:
-			case NPCProp::SAVE7:
-			case NPCProp::SAVE8:
-			case NPCProp::SAVE9:
-			{
-				int index = PROPID(propId) - PROPID(NPCProp::SAVE0);
-				saves[index] = pProps.readGUChar();
-				break;
-			}
-
-			case NPCProp::GATTRIB1:
-			case NPCProp::GATTRIB2:
-			case NPCProp::GATTRIB3:
-			case NPCProp::GATTRIB4:
-			case NPCProp::GATTRIB5:
-			case NPCProp::GATTRIB6:
-			case NPCProp::GATTRIB7:
-			case NPCProp::GATTRIB8:
-			case NPCProp::GATTRIB9:
-			case NPCProp::GATTRIB10:
-			case NPCProp::GATTRIB11:
-			case NPCProp::GATTRIB12:
-			case NPCProp::GATTRIB13:
-			case NPCProp::GATTRIB14:
-			case NPCProp::GATTRIB15:
-			case NPCProp::GATTRIB16:
-			case NPCProp::GATTRIB17:
-			case NPCProp::GATTRIB18:
-			case NPCProp::GATTRIB19:
-			case NPCProp::GATTRIB20:
-			case NPCProp::GATTRIB21:
-			case NPCProp::GATTRIB22:
-			case NPCProp::GATTRIB23:
-			case NPCProp::GATTRIB24:
-			case NPCProp::GATTRIB25:
-			case NPCProp::GATTRIB26:
-			case NPCProp::GATTRIB27:
-			case NPCProp::GATTRIB28:
-			case NPCProp::GATTRIB29:
-			case NPCProp::GATTRIB30:
-			{
-				auto index = std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(propId)));
-				character.ganiAttributes[index] = pProps.readChars(pProps.readGUChar()).toString();
-				break;
-			}
-
-			default:
-			{
-				printf("NPC %ud (%.2f, %.2f): ", id, (float)character.pixelX / 16.0f, (float)character.pixelY / 16.0f);
-				printf("Unknown prop: %ud, readPos: %d\n", propId, pProps.readPos());
-				for (int i = 0; i < pProps.length(); ++i)
-					printf("%02x ", (unsigned char)pProps[i]);
-				printf("\n");
-				return ret;
-			}
-		}
-
-		// If a prop changed, adjust its mod time.
-		if ((int)propId < NPCPROP_COUNT)
-		{
-			if (oldProp != getPropPacket(propId))
-				modTime[PROPID(propId)] = time(0);
-		}
-
-		// Add to ret.
-		ret >> (char)propId << getPropPacket(propId, clientVersion);
-	}
-
-	if (pForward)
-	{
-		// Send the props.
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << ret, level);
-	}
-
-	return ret;
-}
-
-/*
-void NPC::setPropModTime(NPCProp pid, time_t time)
-{
-	if (PROPID(pid) >= NPCPROP_COUNT)
-		return;
-	modTime[PROPID(pid)] = time;
-}
-*/
 
 //----------------------------
 
-prop_access NPC::getPropAccess(NPCProp prop)
+std::shared_ptr<PropertyBase> NPC::getProp(NPCProp prop) const
 {
-	static uint32_t prevent_access_int = 0;
-	static float prevent_access_float = 0.0f;
-	static std::string prevent_access_string;
+	switch (prop)
+	{
+#define GENERATE_GETPROP_CASE(prop, type, ...) case prop: return std::make_shared<type>( __VA_ARGS__ );
+		FOR_LIST_OF_NPC_PROPS(GENERATE_GETPROP_CASE);
+	}
+
+	throw std::invalid_argument("Invalid NPCProp type in getProp");
+}
+
+//----------------------------
+
+SetResults NPC::setProp(NPCProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base)
+{
+	PropertyBase* basePtr = base.get();
+	if (basePtr != nullptr)
+		return setProp(prop, setBy, basePtr);
+	throw std::invalid_argument("setProp called with nullptr base pointer.");
+}
+
+SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
+{
+	auto levelPtr = level.lock();
+	bool canUpdatePosition = !m_blockPositionUpdates || setBy == props::SetBy::SERVER;
+
+	props::SetResults result{ .propId = { PROPID(prop) } };
+	result.resultFlags.set(props::SetResults::sendToLevel, true);
+	result.resultFlags.set(props::SetResults::sendToSource, false);
+
+	auto curTime = currentTime();
+	modTime[PROPID(prop)] = curTime;
+
+#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); return result; } while(false)
 
 	switch (prop)
 	{
 		case NPCProp::IMAGE:
-			return &image;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
+			result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
+
+			if (strProp->value == "#c#" && image != "#c")
+			{
+				character.gani = "idle";
+				result.resultPropIds.push_back(PROPID(NPCProp::GANI));
+			}
+
+			image = strProp->value;
+			break;
+		}
+
 		case NPCProp::SCRIPT:
-			return &prevent_access_string;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			// Only allow the server to set the script.
+			if (setBy == props::SetBy::SERVER)
+			{
+				setScript(strProp->value);
+			}
+			break;
+		}
+
 		case NPCProp::X:
-			throw std::invalid_argument("NPC::getPropAccess: use X2 instead of X");
+		{
+			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			if (coordProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelX = coordProp->pixelCoordinate;
+
+			// Do collision testing.
+			//doTouchTest = true;
+
+			// Let 2.30+ clients see pre-2.30 movement.
+			result.resultPropIds.push_back(PROPID(NPCProp::X2));
+			break;
+		}
+
 		case NPCProp::Y:
-			throw std::invalid_argument("NPC::getPropAccess: use Y2 instead of Y");
+		{
+			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			if (coordProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelY = coordProp->pixelCoordinate;
+
+			// Do collision testing.
+			//doTouchTest = true;
+
+			// Let 2.30+ clients see pre-2.30 movement.
+			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
+			break;
+		}
+
+		case NPCProp::Z:
+		{
+			PropertyTileCoordinateZ* zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
+			if (zProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelZ = zProp->pixelCoordinate;
+
+			// Do collision testing.
+			//doTouchTest = true;
+
+			// Let 2.30+ clients see pre-2.30 movement.
+			result.resultPropIds.push_back(PROPID(NPCProp::Z2));
+			break;
+		}
+
 		case NPCProp::POWER:
-			return &character.hitpointsInHalves;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.hitpointsInHalves = numProp->value;
+			break;
+		}
+
 		case NPCProp::RUPEES:
-			return &character.gralats;
+		{
+			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.gralats = numProp->value;
+			break;
+		}
+
 		case NPCProp::ARROWS:
-			return &character.arrows;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.arrows = numProp->value;
+			break;
+		}
+
 		case NPCProp::BOMBS:
-			return &character.bombs;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.bombs = numProp->value;
+			break;
+		}
+
 		case NPCProp::GLOVEPOWER:
-			return &character.glovePower;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.glovePower = numProp->value;
+			break;
+		}
+
 		case NPCProp::BOMBPOWER:
-			return &character.bombPower;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.bombPower = numProp->value;
+			break;
+		}
+
 		case NPCProp::SWORDIMAGE:
-			return &character.swordImage;
+		{
+			PropertySwordPower* swordProp = dynamic_cast<PropertySwordPower*>(base);
+			if (swordProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (swordProp->power.has_value())
+				character.swordPower = props::Limits::applySwordPower(swordProp->power.value_or(1));
+
+			character.swordImage = props::Limits::apply(swordProp->image, props::Limits::SwordImageLength);
+			break;
+		}
+
 		case NPCProp::SHIELDIMAGE:
-			return &character.shieldImage;
+		{
+			PropertyShieldPower* shieldProp = dynamic_cast<PropertyShieldPower*>(base);
+			if (shieldProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (shieldProp->power.has_value())
+				character.shieldPower = props::Limits::applyShieldPower(shieldProp->power.value_or(1));
+
+			character.shieldImage = props::Limits::apply(shieldProp->image, props::Limits::ShieldImageLength);
+			break;
+		}
+
 		case NPCProp::GANI:
-			return &character.gani;
+		{
+			PropertyGaniOrBowGif* ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
+			if (ganiProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
+			if (m_server->Generation == ServerGeneration::ORIGINAL)
+			{
+				if (!ganiProp->bowGif.has_value())
+					break;
+
+				auto& [image, power] = ganiProp->bowGif.value();
+				character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
+				character.bowImage = image;
+				if (!character.bowImage.empty() && !character.bowImage.contains('.'))
+					character.bowImage += ".gif";
+				break;
+			}
+
+			// Set the gani.
+			std::string gani = ganiProp->gani.value_or("idle");
+			character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
+			result.resultFlags.set(SetResults::getLatestOnSend);
+
+			// If we are not in a legacy sprite gani and our sprite is not 0, reset the sprite.
+			if (!character.gani.starts_with("def[") && character.sprite != 0)
+			{
+				character.sprite = 0;
+				//visFlags &= ~static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
+				result.resultPropIds.push_back(PROPID(NPCProp::SPRITE));
+				//result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
+			}
+
+			// Hack to allow spin to hurt things.
+			if (character.gani == "spin")
+			{
+				float tX = static_cast<float>(character.pixelX / 16.0f);
+				float tY = static_cast<float>(character.pixelY / 16.0f);
+				m_server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, character.swordPower, level, nullptr);
+			}
+			break;
+		}
+
 		case NPCProp::VISFLAGS:
-			return &visFlags;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			visFlags = numProp->value;
+			break;
+		}
+
 		case NPCProp::BLOCKFLAGS:
-			return &blockFlags;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			blockFlags = numProp->value;
+			break;
+		}
+
 		case NPCProp::MESSAGE:
-			return &character.chatMessage;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.chatMessage = strProp->value;
+			break;
+		}
+
 		case NPCProp::HURTDXDY:
-			return std::make_pair(&hurtX, &hurtY);
+		{
+			PropertyHurtDxDy* hurtProp = dynamic_cast<PropertyHurtDxDy*>(base);
+			if (hurtProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			hurtX = hurtProp->hurtDX;
+			hurtY = hurtProp->hurtDY;
+			break;
+		}
+
 		case NPCProp::ID:
-			return &prevent_access_int;
+			break;
+
 		case NPCProp::SPRITE:
-			return &character.sprite;
+		{
+			PropertySprite* spriteProp = dynamic_cast<PropertySprite*>(base);
+			if (spriteProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.direction = spriteProp->direction;
+			character.sprite = spriteProp->sprite;
+
+			// If we manually set a sprite, change the gani.
+			auto server = BabyDI::Get<Server>();
+			if (server->Generation != ServerGeneration::ORIGINAL && character.sprite != 0)
+			{
+				auto gani = std::format("def[{}]", character.sprite);
+				//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
+				result.resultPropIds.push_back(PROPID(NPCProp::GANI));
+				//result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
+			}
+
+			result.resultFlags.set(SetResults::getLatestOnSend);
+			break;
+		}
+
 		case NPCProp::COLORS:
-			return &character.colors.at(0);
+		{
+			PropertyColors* colorProp = dynamic_cast<PropertyColors*>(base);
+			if (colorProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.colors = colorProp->values;
+			break;
+		}
+
 		case NPCProp::NICKNAME:
-			return &character.nickName;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.nickName = strProp->value;
+			break;
+		}
+
 		case NPCProp::HORSEIMAGE:
-			return &character.horseImage;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.horseImage = strProp->value;
+
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
+				character.horseImage += ".gif";
+			break;
+		}
+
 		case NPCProp::HEADIMAGE:
-			return &character.headImage;
+		{
+			PropertyHeadGif* headProp = dynamic_cast<PropertyHeadGif*>(base);
+			if (headProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			std::string img;
+			if (std::holds_alternative<uint8_t>(headProp->image))
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+			else
+				img = std::get<std::string>(headProp->image);
+
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
+				img += ".gif";
+
+			character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
+			result.resultFlags.set(SetResults::getLatestOnSend);
+			break;
+		}
+
 		case NPCProp::SAVE0:
 		case NPCProp::SAVE1:
 		case NPCProp::SAVE2:
@@ -984,37 +721,150 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::SAVE7:
 		case NPCProp::SAVE8:
 		case NPCProp::SAVE9:
-			return &saves[static_cast<size_t>(PROPID(prop)) - PROPID(NPCProp::SAVE0)];
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			auto index = PROPID(prop) - PROPID(NPCProp::SAVE0);
+			saves[index] = numProp->value;
+			break;
+		}
+
 		case NPCProp::ALIGNMENT:
-			return &character.ap;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.ap = numProp->value;
+			break;
+		}
+
 		case NPCProp::IMAGEPART:
-			throw std::invalid_argument("NPC::getPropAccess: IMAGEPART is not implemented, is this required?");
+		{
+			PropertyImagePart* imgPartProp = dynamic_cast<PropertyImagePart*>(base);
+			if (imgPartProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			imagePart = imgPartProp->imagePart;
+			break;
+		}
+
 		case NPCProp::BODYIMAGE:
-			return &character.bodyImage;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			character.bodyImage = strProp->value;
+			break;
+		}
+
 		case NPCProp::GMAPLEVELX:
-			return &prevent_access_int;
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (levelPtr == nullptr || !canUpdatePosition)
+				break;
+
+			if (warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
+			{
+				// TODO(Nalin): Clamp the NPC to the level bounds.
+				break;
+			}
+
+			// TODO(Nalin): The server needs a warp function for NPCs to handle leave props.
+			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
+			{
+				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
+				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+				{
+					levelPtr->removeNPC(id);
+					newLevel->addNPC(id);
+					level = newLevel;
+				}
+			}
+			break;
+		}
+
 		case NPCProp::GMAPLEVELY:
-			return &prevent_access_int;
-		case NPCProp::Z:
-			throw std::invalid_argument("NPC::getPropAccess: use Z2 instead of Z");
+		{
+			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (levelPtr == nullptr || !canUpdatePosition)
+				break;
+
+			if (warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
+			{
+				// TODO(Nalin): Clamp the NPC to the level bounds.
+				break;
+			}
+
+			// TODO(Nalin): The server needs a warp function for NPCs to handle leave props.
+			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
+			{
+				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
+				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+				{
+					levelPtr->removeNPC(id);
+					newLevel->addNPC(id);
+					level = newLevel;
+				}
+			}
+			break;
+		}
+
 		case NPCProp::UNKNOWN48:
-			throw std::invalid_argument("NPC::getPropAccess: UNKNOWN48 is not implemented, is this required?");
+			break;
+
 		case NPCProp::SCRIPTER:
-			return &m_npcScripter;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+			break;
+
+			m_npcScripter = strProp->value;
+		}
+
 		case NPCProp::NAME:
-			return &name;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			name = strProp->value;
+			break;
+		}
+
 		case NPCProp::TYPE:
-			return &m_npcScriptType;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			m_npcScriptType = strProp->value;
+			break;
+		}
+
 		case NPCProp::CURLEVEL:
-			return &prevent_access_string;
-		case NPCProp::CLASS:
-			return &m_npcClass;
-		case NPCProp::X2:
-			return &character.pixelX;
-		case NPCProp::Y2:
-			return &character.pixelY;
-		case NPCProp::Z2:
-			return &character.pixelZ;
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			// TODO: Level warp?
+			break;
+		}
+
 		case NPCProp::GATTRIB1:
 		case NPCProp::GATTRIB2:
 		case NPCProp::GATTRIB3:
@@ -1045,10 +895,241 @@ prop_access NPC::getPropAccess(NPCProp prop)
 		case NPCProp::GATTRIB28:
 		case NPCProp::GATTRIB29:
 		case NPCProp::GATTRIB30:
-			return &character.ganiAttributes[std::ranges::distance(npcGaniAttrPackets.begin(), std::ranges::find(npcGaniAttrPackets, PROPID(prop)))];
-	};
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
 
-	return &prevent_access_int; // Should never be reached, but prevents compiler warnings.
+			auto index = std::ranges::distance(NpcGaniAttrPackets.begin(), std::ranges::find(NpcGaniAttrPackets, PROPID(prop)));
+			character.ganiAttributes[index] = strProp->value;
+			break;
+		}
+
+		case NPCProp::CLASS:
+		{
+			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			if (strProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			m_npcClass = strProp->value;
+			break;
+		}
+
+		case NPCProp::X2:
+		{
+			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			if (pixelProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelX = pixelProp->pixelCoordinate;
+			result.resultPropIds.push_back(PROPID(PlayerProp::X));
+
+			//doTouchTest = true;
+			break;
+		}
+
+		case NPCProp::Y2:
+		{
+			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			if (pixelProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelY = pixelProp->pixelCoordinate;
+			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
+
+			//doTouchTest = true;
+			break;
+		}
+
+		case NPCProp::Z2:
+		{
+			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			if (pixelProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			if (!canUpdatePosition)
+				break;
+
+			character.pixelZ = pixelProp->pixelCoordinate;
+			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
+
+			//doTouchTest = true;
+			break;
+		}
+	}
+
+	// If we are sending other ids, we need to update the mod time for them too.
+	if (!result.resultPropIds.empty())
+	{
+		for (const auto& id : result.resultPropIds)
+			modTime[id] = curTime;
+	}
+
+	return result;
+}
+
+//----------------------------
+
+void NPC::sendPropsFromResults(PropertySendResults& results, PlayerPtr source)
+{
+	CString sendAll, sendLevel, sendSource;
+
+	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
+	{
+		return this->getProp((NPCProp)propId);
+	});
+
+	// Send the buffers out.
+	if (sendAll.length() > 0)
+		m_server->sendPacketToAll(CString() >> (char)PLO_NPCPROPS >> (int)id << sendAll);
+
+	PlayerID exclude = 0;
+	if (source != nullptr)
+		exclude = source->getId();
+
+	if (sendLevel.length() > 0 && !level.expired())
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, level, { exclude });
+
+	if (sendSource.length() > 0 && source != nullptr)
+		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
+}
+
+//----------------------------
+
+void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
+{
+	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::setPropsFromPacket:\n"));
+
+	PropertySendResults results;
+	auto setBy = (source != nullptr ? SetBy::CLIENT : SetBy::SERVER);
+
+	while (packet.bytesLeft() > 0)
+	{
+		NPCProp propId = (NPCProp)packet.readGUChar();
+
+		DO_PACKETLOG(size_t oldPos = packet.readPos());
+
+		auto prop = constructPropFor(propId);
+		prop->deserialize(packet);
+
+#ifdef PACKETLOGGING
+		size_t currentPos = packet.readPos();
+		CString rawData = packet.subString(oldPos, currentPos - oldPos);
+
+		log::printBlock(log::networkdump, "  {}: {} |", npcPropNames[PROPID(propId)], prop);
+		for (size_t i = 0; i < rawData.length(); ++i)
+		{
+			log::printBlock(log::networkdump, " {:02x}", (unsigned char)rawData[i]);
+		}
+		log::printBlock(log::networkdump, "\n");
+#endif
+
+		results.emplace_back(setProp(propId, setBy, prop), prop);
+	}
+
+	sendPropsFromResults(results, source);
+
+	DO_PACKETLOG(log::print(log::networkdump, "\n"));
+}
+
+//----------------------------
+
+CString NPC::getModifiedPropsPacket() const
+{
+	DO_PACKETLOG(bool printedHeader = false);
+
+	CString result;
+	for (auto i = 0; i < NPCPROP_COUNT; ++i)
+	{
+		if (modTime[i] != m_savedModTime[i])
+		{
+			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); });
+
+			if (i == PROPID(NPCProp::GANI) && !isCharacter())
+			{
+				DO_PACKETLOG(log::printBlock(log::networkdump, "  NPCProp::GANI: (empty)\n"));
+				result >> (char)i >> (char)0;
+			}
+			else
+			{
+#ifdef PACKETLOGGING
+				auto prop = getProp((NPCProp)i);
+				CString data = prop->serialize();
+
+				log::printBlock(log::networkdump, "  {}: {}", npcPropNames[i], prop);
+				if ((NPCProp)i != NPCProp::SCRIPT)
+				{
+					log::printBlock(log::networkdump, " |");
+					for (size_t i = 0; i < data.length(); ++i)
+						log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+				}
+				log::printBlock(log::networkdump, "\n");
+
+				result >> (char)i << data;
+#else
+				result >> (char)i << getProp((NPCProp)i)->serialize();
+#endif
+			}
+		}
+	}
+
+	DO_PACKETLOG(if (printedHeader) log::print(log::networkdump, "\n"));
+	return result;
+}
+
+CString NPC::getAllPropsPacket(clock::time_point newTime) const
+{
+	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
+
+	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
+	CString retVal;
+	int pmax = NPCPROP_COUNT;
+
+	for (int i = 0; i < pmax; i++)
+	{
+		if (modTime[i] != clock::time_point::min() && modTime[i] >= newTime)
+		{
+			/*
+			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == clock::time_point::min())
+			{
+				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
+			}
+			else*/ if (i == PROPID(NPCProp::GANI) && !isCharacter())
+			{
+				DO_PACKETLOG(log::printBlock(log::networkdump, "  NPCProp::GANI: (empty)\n"));
+				retVal >> (char)i >> (char)0;
+			}
+			else
+			{
+#ifdef PACKETLOGGING
+				auto prop = getProp((NPCProp)i);
+				CString data = prop->serialize();
+
+				log::printBlock(log::networkdump, "  {}: {}", npcPropNames[i], prop);
+				if ((NPCProp)i != NPCProp::SCRIPT)
+				{
+					log::printBlock(log::networkdump, " |");
+					for (size_t i = 0; i < data.length(); ++i)
+						log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+				}
+				log::printBlock(log::networkdump, "\n");
+
+				retVal >> (char)i << data;
+#else
+				retVal >> (char)i << getProp((NPCProp)i)->serialize();
+#endif
+			}
+		}
+	}
+
+	DO_PACKETLOG(log::print(log::networkdump, "\n"));
+	return retVal;
 }
 
 //----------------------------

@@ -54,6 +54,8 @@ void NPCServer::initialize()
 
 void NPCServer::run(std::chrono::milliseconds timeDelta)
 {
+	//auto profile = log::Profile(log::server, "NPCServer::run");
+
 	// Save all NPC mod times and update timeouts.
 	{
 		for (auto& [id, npc] : m_server->getNPCList())

@@ -130,7 +130,8 @@ void PlayerClient::cleanup()
 		// Queue up the logout event.
 		m_server->queueNPCEvent({}, ScriptEventType::PLAYERLOGOUT, source::FromPlayer(m_id));
 
-		auto level = m_currentLevel.lock();
+		// Remove from the level.
+		leaveLevel();
 
 		// Adjust carried NPC location.
 		if (m_carryNpcId != 0)
@@ -138,15 +139,13 @@ void PlayerClient::cleanup()
 			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
 			{
 				auto curtime = time(0);
-				npc->setProp(NPCProp::X2, static_cast<int16_t>(account.character.pixelX + 8));
-				npc->setProp(NPCProp::Y2, static_cast<int16_t>(account.character.pixelY + 16));
-				m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket(curtime), self(), level, {m_id});
+				npc->sendPropsFromResults(
+					npc->setPropWith<NPCProp::X2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelX + 8)),
+					npc->setPropWith<NPCProp::Y2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelY + 16))
+				);
 			}
 			m_carryNpcId = 0;
 		}
-
-		// Remove from the level.
-		if (level != nullptr) leaveLevel();
 	}
 
 	// Clean up.
@@ -576,8 +575,8 @@ bool PlayerClient::sendLogin()
 	exchangeMyPropsWithOthers();
 
 	// Record prop mod time.
-	auto currentTime = currentTimeInSeconds();
-	std::ranges::for_each(m_modTime, [&currentTime](int64_t& modTime) { modTime = currentTime; });
+	auto curTime = currentTime();
+	std::ranges::for_each(m_modTime, [&curTime](auto& modTime) { modTime = curTime; });
 
 	// Ask for processes. This causes windows v6 clients to crash
 	if (m_versionId < CLVER_6_015)
@@ -1245,6 +1244,7 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
 		>> (char)PlayerProp::X << getProp<PlayerProp::X>().serialize()
 		>> (char)PlayerProp::Y << getProp<PlayerProp::Y>().serialize();
+
 	for (const auto& [pid, player] : players_of_type<PlayerClient>(m_server->getPlayerList()))
 	{
 		if (pid == this->getId())
@@ -1329,7 +1329,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		else
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
 
-		pLevel->sendNpcsToPlayer(shared_from_this(), l_time);
+		pLevel->sendNpcsToPlayer(shared_from_this(), convertFromTimeT(l_time));
 	}
 
 	// Move the carry NPC to the new level.
@@ -1343,7 +1343,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			// Send the carry NPC props to other players.
 			if (!pLevel->isSingleplayer())
 			{
-				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket(0);
+				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket();
 				m_server->sendPacketToLevelArea(carryNpcProps, self(), { m_id });
 			}
 		}
@@ -1449,7 +1449,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 
 	// Send NPCs.
 	if (!fromAdjacent)
-		pLevel->sendNpcsToPlayer(shared_from_this(), l_time);
+		pLevel->sendNpcsToPlayer(shared_from_this(), convertFromTimeT(l_time));
 
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)

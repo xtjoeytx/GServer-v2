@@ -37,6 +37,7 @@
 #include <type_traits>  // for aligned_storage and all meta-functions
 #include <stdio.h>      // for assertion diagnostics
 #include <stdlib.h>     // for abort
+#include <version>      // for feature testing
 
 // Optimizer allowed to assume that EXPR evaluates to true
 #define __IV_ASSUME(__EXPR) \
@@ -59,7 +60,7 @@
 
 // BUGBUG workaround for libstdc++ not providing from_range_t / from_range yet
 namespace std {
-    #if defined(__GLIBCXX__) || defined(__GLIBCPP__)
+	#ifndef __cpp_lib_containers_ranges
     struct from_range_t {};
     inline constexpr from_range_t from_range;
     #endif  

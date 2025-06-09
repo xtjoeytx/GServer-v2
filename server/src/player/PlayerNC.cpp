@@ -167,7 +167,10 @@ bool PlayerNC::sendLogin()
 			auto npc = npcPtr.lock();
 			if (npc == nullptr) continue;
 
-			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->id >> (char)NPCProp::NAME << npc->getPropPacket(NPCProp::NAME) >> (char)NPCProp::TYPE << npc->getPropPacket(NPCProp::TYPE) >> (char)NPCProp::CURLEVEL << npc->getPropPacket(NPCProp::CURLEVEL);
+			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->id
+				>> (char)NPCProp::NAME << npc->getProp<NPCProp::NAME>().serialize()
+				>> (char)NPCProp::TYPE << npc->getProp<NPCProp::TYPE>().serialize()
+				>> (char)NPCProp::CURLEVEL << npc->getProp<NPCProp::CURLEVEL>().serialize();
 			sendPacket(npcPacket);
 		}
 

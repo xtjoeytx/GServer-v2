@@ -47,7 +47,7 @@ statement
 	| flow_return END?
 	| flow_break END?
 	| flow_continue END?
-	| assignment_operation
+	| assignment_operation END?
 	| expression END?
 	| END
 	;
