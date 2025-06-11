@@ -190,6 +190,7 @@ public:
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
+	void moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options);
 
 public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
@@ -215,6 +216,7 @@ public:
 
 public:
 	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr);
+	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source);
 	void logToFile(const std::string& fileName, const std::string& message) const;
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;

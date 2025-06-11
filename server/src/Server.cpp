@@ -1036,6 +1036,28 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	return true;
 }
 
+void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options)
+{
+	if (npc == nullptr)
+		return;
+
+	if (auto level = npc->level.lock(); level != nullptr)
+	{
+		auto moveDX = static_cast<int8_t>((dx * 2) + 100);
+		auto moveDY = static_cast<int8_t>((dy * 2) + 100);
+		auto timeIn50msIncrements = static_cast<uint16_t>(duration / 0.05);
+
+		CString packet;
+		packet >> (char)(npc->character.pixelX / 8.0f) >> (char)(npc->character.pixelY / 8.0f);
+		packet >> (char)moveDX >> (char)moveDY;
+		packet >> (short)timeIn50msIncrements;
+		packet >> (char)options;
+
+		//sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
+		sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
+	}
+}
+
 bool Server::addPlayer(PlayerPtr player, PlayerID id)
 {
 	assert(player);
@@ -1213,7 +1235,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 
 		// No change.
 		if (!flagValue.has_value())
-		return true;
+			return true;
 
 		// If flag value is empty, delete.
 		if (isStringFlag && flagValue.value().empty())
@@ -1251,6 +1273,15 @@ void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<
 	sendPacketToOneLevel(CString() << nPacket >> (char)(pos.x() * 2) >> (char)((pos.y() + 2) * 2), level);
 	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() - 2) * 2) >> (char)(pos.y() * 2), level);
 	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() + 2) * 2) >> (char)(pos.y() * 2), level);
+}
+
+void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source)
+{
+	auto player = getPlayer(playerId);
+	if (player == nullptr)
+		return;
+
+	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(fromX * 2) >> (char)(fromY * 2) >> (char)power >> (int)source->id);
 }
 
 /*

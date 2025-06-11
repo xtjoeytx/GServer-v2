@@ -14,7 +14,7 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 199> builtInCommands = {
+constexpr std::array<std::string_view, 200> builtInCommands = {
     "addguildmember",
     "addstring",
     "addtiledef",
@@ -40,7 +40,7 @@ constexpr std::array<std::string_view, 199> builtInCommands = {
     "changeimgpart",
     "changeimgvis",
     "changeimgzoom",
-    "copyflagss",
+    "copyflags",
     "copylevel",
     "copystrings",
     "deletelevel",
@@ -56,6 +56,7 @@ constexpr std::array<std::string_view, 199> builtInCommands = {
     "dontblocklocal",
     "drawaslight",
     "drawoverplayer",
+	"drawovertrees",
     "drawunderplayer",
     "enabledefmovement",
     "enablefeatures",
@@ -300,6 +301,7 @@ CMD_SHOW                 : 'show'                 -> type(COMMAND);
 CMD_DONTBLOCK            : 'dontblock'            -> type(COMMAND);
 CMD_BLOCKAGAIN           : 'blockagain'           -> type(COMMAND);
 CMD_DRAWOVERPLAYER       : 'drawoverplayer'       -> type(COMMAND);
+CMD_DRAWOVERTREES        : 'drawovertrees'        -> type(COMMAND);
 CMD_DRAWUNDERPLAYER      : 'drawunderplayer'      -> type(COMMAND);
 CMD_DRAWASLIGHT          : 'drawaslight'          -> type(COMMAND);
 CMD_SETEFFECTMODE        : 'seteffectmode '       -> type(COMMAND);
@@ -466,7 +468,7 @@ CMD_ADDGUILDMEMBER       : 'addguildmember'       -> type(COMMAND), pushMode(IN_
 CMD_REMOVEGUILDMEMBER    : 'removeguildmember'    -> type(COMMAND), pushMode(IN_SSS);
 CMD_REMOVEGUILD          : 'removeguild'          -> type(COMMAND), pushMode(IN_S);
 CMD_COPYSTRINGS          : 'copystrings'          -> type(COMMAND), pushMode(IN_SS);
-CMD_COPYFLAGSS           : 'copyflagss'           -> type(COMMAND), pushMode(IN_SS);
+CMD_COPYFLAGS            : 'copyflags'            -> type(COMMAND), pushMode(IN_SS);
 CMD_SENDTORC             : 'sendtorc'             -> type(COMMAND), pushMode(IN_S);
 CMD_SENDTONC             : 'sendtonc'             -> type(COMMAND), pushMode(IN_S);
 CMD_SENDPM               : 'sendpm'               -> type(COMMAND), pushMode(IN_S);
@@ -578,6 +580,8 @@ STORAGE_THIS    : 'this.';
 STORAGE_THISO   : 'thiso.';
 STORAGE_CLIENT  : 'client.';
 STORAGE_CLIENTR : 'clientr.';
+STORAGE_CLIENTO : 'cliento.';
+STORAGE_CLIENTRO: 'clientro.';
 STORAGE_SERVER  : 'server.';
 STORAGE_SERVERR : 'serverr.';
 STORAGE_LEVEL   : 'level.';

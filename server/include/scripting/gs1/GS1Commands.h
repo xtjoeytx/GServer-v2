@@ -9,7 +9,7 @@ namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr std::array<std::string_view, 199> serverSideCommands =
+constexpr std::array<std::string_view, 200> serverSideCommands =
 {
 	"addguildmember",
 	"addstring",
@@ -43,17 +43,18 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 	"deletestring",
 	"destroy",
 	"detachplayer",
-	"disabledefmovement",
+	//"disabledefmovement",
 	//"disablemap",
 	//"disablepause",
 	//"disableselectweapons",
 	"disableweapons",
 	"dontblock",
 	//"dontblocklocal",
-	"drawaslight",
+	//"drawaslight",
 	"drawoverplayer",
+	"drawovertrees",	// technically clientside, but can supported
 	"drawunderplayer",
-	"enabledefmovement",
+	//"enabledefmovement",
 	//"enablefeatures",
 	//"enablemap",
 	//"enablepause",

@@ -912,7 +912,7 @@ void Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 		account.variables.add(flagName, true);
 		sendPacket(CString() >> (char)PLO_FLAGSET << flagName);
 	}
-		else
+	else
 	{
 		account.variables.add(flagName, flagValue.value());
 		sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
@@ -994,6 +994,19 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 CString Player::translate(const CString& pKey) const
 {
 	return m_server->TS_Translate(account.language, pKey);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Player::sendPrivateMessage(PlayerID from, std::string_view message)
+{
+	if (message.empty())
+		return;
+
+	auto lines = string::splitHard(message, "\n"sv);
+	auto finalMessage = string::toCSV(lines, true);
+
+	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -42,20 +42,18 @@ static void fn_cannotwarp(GS1Visitor* visitor, std::string_view commandName, con
 static void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_copyflagss(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_copyflags(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_disabledefmovement(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_disableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_drawaslight(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_enabledefmovement(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_freezeplayer2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -182,20 +180,18 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("canwarp"), &fn_canwarp },
 		{ hash("canwarp2"), &fn_canwarp2 },
 		{ hash("carryobject"), &fn_carryobject },
-		{ hash("copyflagss"), &fn_copyflagss },
+		{ hash("copyflags"), &fn_copyflags },
 		{ hash("copylevel"), &fn_copylevel },
 		{ hash("copystrings"), &fn_copystrings },
 		{ hash("deletelevel"), &fn_deletelevel },
 		{ hash("deletestring"), &fn_deletestring },
 		{ hash("destroy"), &fn_destroy },
 		{ hash("detachplayer"), &fn_detachplayer },
-		{ hash("disabledefmovement"), &fn_disabledefmovement },
 		{ hash("disableweapons"), &fn_disableweapons },
 		{ hash("dontblock"), &fn_dontblock },
-		{ hash("drawaslight"), &fn_drawaslight },
 		{ hash("drawoverplayer"), &fn_drawoverplayer },
+		{ hash("drawovertrees"), &fn_drawovertrees },
 		{ hash("drawunderplayer"), &fn_drawunderplayer },
-		{ hash("enabledefmovement"), &fn_enabledefmovement },
 		{ hash("enableweapons"), &fn_enableweapons },
 		{ hash("explodebomb"), &fn_explodebomb },
 		{ hash("freezeplayer2"), &fn_freezeplayer2 },
@@ -452,7 +448,10 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, static_cast<uint8_t>(NPCBlockFlags::BLOCK));
+		{
+			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::NOBLOCK);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
 	}
 }
 
@@ -460,42 +459,90 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 // Flags as carryable.
 void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("canbecarried is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBECARRIED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // canbepulled;
 // Flags as pullable.
 void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("canbepulled is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPULLED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // canbepushed;
 // Flags as pushable.
 void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("canbepushed is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPUSHED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // cannotbecarried;
 // Flags as not carryable.
 void fn_cannotbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("cannotbecarried is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBECARRIED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // cannotbepulled;
 // Flags as not pullable.
 void fn_cannotbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("cannotbepulled is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPULLED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // cannotbepushed;
 // Flags as not pushable.
 void fn_cannotbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("cannotbepushed is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPUSHED);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
 }
 
 // cannotwarp;
@@ -537,13 +584,21 @@ void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::v
 // carryobject carryobjecttype;
 void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("carryobject is not implemented yet.");
+	/*
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto carryObjectTypeId = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, carryObjectTypeId);
+	}
+	*/
 }
 
-// copyflagss fromprefix,toprefix;
-void fn_copyflagss(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+// copyflags fromprefix,toprefix;
+void fn_copyflags(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("copyflagss is not implemented yet.");
+	throw std::runtime_error("copyflags is not implemented yet.");
 }
 
 // copylevel oldfile,newfile;
@@ -567,7 +622,28 @@ void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std
 // deletestring list,index;
 void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("deletestring is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("deletestring requires exactly two arguments: list and index.");
+
+	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	{
+		auto list = string::splitHard(listVar->get<std::string>().value_or({}), ","sv);
+		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+
+		// Check for out of bounds.
+		if (index >= list.size())
+			return;
+
+		// Move the iterator to the index we want to delete.
+		auto it = list.begin();
+		std::advance(it, index);
+
+		// Delete the string.
+		list.erase(it);
+
+		// Write it back.
+		listVar->assign(string::join(list, ","));
+	}
 }
 
 // destroy;
@@ -585,22 +661,6 @@ void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const st
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 			player->sendPropsFromResults(player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8));
 	}
-}
-
-// disabledefmovement;
-void fn_disabledefmovement(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
-	{
-		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
-	}
-	*/
-
-	throw std::runtime_error("disabledefmovement is not implemented yet.");
 }
 
 // disableweapons;
@@ -623,15 +683,11 @@ void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, static_cast<uint8_t>(NPCBlockFlags::NOBLOCK));
+		{
+			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::NOBLOCK);
+			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
 	}
-}
-
-// drawaslight;
-// Draws the object as a light source.
-void fn_drawaslight(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::runtime_error("drawaslight is not implemented yet.");
 }
 
 // drawoverplayer;
@@ -645,6 +701,21 @@ void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const 
 	}
 }
 
+// drawovertrees;
+void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			auto visFlags = npc->visFlags;
+			visFlags &= ~(PROPID(NPCVisFlags::DRAWOVERPLAYER) | PROPID(NPCVisFlags::DRAWUNDERPLAYER));
+			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(visFlags | PROPID(NPCVisFlags::VISIBLE)));
+		}
+	}
+}
+
 // drawunderplayer;
 void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -654,22 +725,6 @@ void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & (PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::VISIBLE))));
 	}
-}
-
-// enabledefmovement;
-void fn_enabledefmovement(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
-	{
-		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
-	}
-	*/
-
-	throw std::runtime_error("enabledefmovement is not implemented yet.");
 }
 
 // enableweapons;
@@ -722,50 +777,67 @@ void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::v
 // hitnpc index,halfhearts,fromx,fromy;
 void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	// Could probably emulate with move().
 	throw std::runtime_error("hitnpc is not implemented yet.");
 }
 
 // hitobjects power,x,y;
+// Hit objects at a location.
 void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("hitobjects is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto power = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			server->hitObjectsAtPoint({ x, y }, power, npc->level);
+	}
 }
 
 // hitplayer index,halfhearts,fromx,fromy;
+// Hits a player in the level.
 void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto halfhearts = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto fromx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto fromy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
+
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				auto playerIdIter = level->getPlayers().begin();
+				std::advance(playerIdIter, index);
+				if (playerIdIter != level->getPlayers().end())
+					server->hitPlayer(*playerIdIter, halfhearts, fromx, fromy, npc);
+			}
 		}
 	}
-	*/
-
-	throw std::runtime_error("hitplayer is not implemented yet.");
 }
 
 // hurt halfhearts;
+// Hurts a player.
 void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto halfhearts = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto npcId = visitor->getOriginalSource().first;
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			server->hitPlayer(player->getId(), halfhearts, player->getX() + 1.5, player->getY() + 2, server->getNPC(npcId));
 	}
-	*/
-
-	throw std::runtime_error("hurt is not implemented yet.");
 }
 
 // insertstring list,index,text;
+// Inserts a string into a string array at the given position.
 void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
@@ -819,6 +891,7 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // message text;
+// Sets the NPC message.
 void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
@@ -834,9 +907,30 @@ void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // move dx,dy,time,options;
+// Moves an NPC smoothly on the client.
 void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("move is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("move requires exactly four arguments: dx, dy, time, options.");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto dx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto dy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto time = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto options = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+
+		auto pixelDX = static_cast<int16_t>(dx * 16);
+		auto pixelDY = static_cast<int16_t>(dy * 16);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			server->moveNPC(npc, dx, dy, time, options);
+			npc->setPropWith<NPCProp::X2>(SetBy::SERVER, static_cast<int16_t>(npc->character.pixelX + pixelDX));
+			npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, static_cast<int16_t>(npc->character.pixelY + pixelDY));
+		}
+	}
 }
 
 // noplayeronwall;
@@ -1084,20 +1178,16 @@ void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // sendpm message;
+// Sends a private message to the player.
 void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			player->sendPrivateMessage(NPCServerPlayerID, string::replaceMutate(message, "#b", "\n"));
 	}
-	*/
-
-	throw std::runtime_error("sendpm is not implemented yet.");
 }
 
 // sendrpgmessage message;
@@ -1114,21 +1204,34 @@ void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const 
 }
 
 // sendtonc message;
+// Sends a message to the NC (NPC Control).
 void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("sendtonc is not implemented yet.");
+	auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+	server->sendToNC(message);
 }
 
 // sendtorc message;
+// Sends a message to the RC (Remote Control).
 void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("sendtorc is not implemented yet.");
+	auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+	server->sendToRC(message);
 }
 
 // serverwarp servername;
+// Warps a player to a different server.
 void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("serverwarp is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto servername = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+			server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)player->getId() << servername);
+	}
 }
 
 // set flag;
@@ -1182,6 +1285,7 @@ void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vec
 }
 
 // setarray var,size;
+// Creates an array of the given size.
 void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -1229,6 +1333,7 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // setcharani gani;
 // setcharani gani,params;
+// Sets the NPC character's animation.
 void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() == 0)
@@ -1257,13 +1362,30 @@ void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // setchargender gender;
+// Sets the NPC character's gender (controls which voice is used).
 void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// Did gender get an NPC prop?
-	throw std::runtime_error("setchargender is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("fn_setchargender requires at least one argument: gender.");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto gender = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			auto visFlags = npc->visFlags;
+			if (gender == 0)
+				visFlags |= PROPID(NPCVisFlags::MALE);
+			else visFlags &= ~PROPID(NPCVisFlags::MALE);
+
+			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, visFlags);
+		}
+	}
 }
 
 // setcharprop messagecode,text;
+// Sets an NPC' character property.
 void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -1295,6 +1417,7 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // setgender gender;
+// Set's the player's gender (controls which voice is used).
 void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
@@ -1690,6 +1813,7 @@ void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // takeplayercarry;
+// Takes the carried object from the player.
 void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	/*
@@ -1697,35 +1821,36 @@ void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, 0xFF);
 	}
 	*/
-
-	throw std::runtime_error("takeplayercarry is not implemented yet.");
 }
 
 // takeplayerhorse;
+// Takes the horse from the player.
 void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+			player->setPropWith<PlayerProp::HORSEGIF>(SetBy::SERVER, std::string{});
+	}
+}
+
+// throwcarry;
+// Throws the carried object.
+// Assuming NPC?
+void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-		}
+			player->setPropWith<PlayerProp::CARRYNPC>(SetBy::SERVER, static_cast<uint32_t>(0));
 	}
 	*/
-
-	throw std::runtime_error("takeplayerhorse is not implemented yet.");
-}
-
-// throwcarry;
-// Throws the carried object.
-void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::runtime_error("throwcarry is not implemented yet.");
 }
 
 // timershow;
