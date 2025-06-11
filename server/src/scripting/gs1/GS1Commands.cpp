@@ -1235,20 +1235,32 @@ void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // set flag;
+// Sets a flag on the player.
 void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (arguments.size() != 1)
+		throw std::invalid_argument("set requires exactly one argument: flag.");
+
+	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))
 		{
+			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+			{
+				if (auto player = server->getPlayer(source.value().first); player != nullptr)
+					player->setFlag(flag->identifier, std::nullopt, true);
+			}
+		}
+		else if (flag->identifier.starts_with("server.") || flag->identifier.starts_with("serverr."))
+		{
+			server->setFlag(flag->identifier, std::nullopt);
+		}
+		else
+		{
+			flag->assign<bool>(true);
 		}
 	}
-	*/
-
-	throw std::runtime_error("set is not implemented yet.");
 }
 
 // setani gani;
@@ -1659,6 +1671,7 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 }
 
 // setstring var,text;
+// Sets a string variable with the given text.
 void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -1668,7 +1681,32 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
 		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
-		var->assign<std::string>(text);
+
+		// Special handling for prefixed variables.
+		// Maybe think of a way to do this automatically on the assign rather than doing this.
+		auto* server = BabyDI::Get<Server>();
+		if (var->identifier.starts_with("client.") || var->identifier.starts_with("clientr."))
+		{
+			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+			{
+				if (auto player = server->getPlayer(source.value().first); player != nullptr)
+				{
+					if (text.empty())
+						player->deleteFlag(var->identifier, true);
+					else player->setFlag(var->identifier, text, true);
+				}
+			}
+		}
+		else if (var->identifier.starts_with("server.") || var->identifier.starts_with("serverr."))
+		{
+			if (text.empty())
+				server->deleteFlag(var->identifier, true);
+			else server->setFlag(std::format("{}={}", var->identifier, text), true);
+		}
+		else
+		{
+			var->assign<std::string>(text);
+		}
 	}
 }
 
@@ -1916,18 +1954,29 @@ void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const 
 // Unsets a player's flag.
 void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (arguments.size() != 1)
+		throw std::invalid_argument("unset requires exactly one argument: flag.");
+
+	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
-		auto first = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))
 		{
+			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+			{
+				if (auto player = server->getPlayer(source.value().first); player != nullptr)
+					player->deleteFlag(flag->identifier, true);
+			}
+		}
+		else if (flag->identifier.starts_with("server.") || flag->identifier.starts_with("serverr."))
+		{
+			server->deleteFlag(flag->identifier);
+		}
+		else
+		{
+			flag->assign<bool>(false);
 		}
 	}
-	*/
-
-	throw std::runtime_error("unset is not implemented yet.");
 }
 
 // updateboard x,y,width,height;

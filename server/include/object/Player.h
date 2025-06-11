@@ -275,8 +275,9 @@ public:
 	void exchangeMyPropsWithOthers();
 
 public:
-	void deleteFlag(std::string_view flagName, bool sendToPlayer = false);
-	void setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
+	bool deleteFlag(std::string_view flagName, bool sendToPlayer = false);
+	bool setFlag(std::string_view flagPair, bool sendToPlayers = false);
+	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
 
 	virtual bool setLevel(const CString& pLevelName, time_t modTime = 0);
 
