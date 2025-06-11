@@ -23,6 +23,7 @@ server  = stored on the server
 level   = stored on the level
 player  = stored on the player
 npc     = stored on the npc
+class   = stored on the script/class
 
 client.flag     (client) [->] player
                 (server) [<-] player
@@ -44,13 +45,27 @@ this.flag       (client) [  ] npc
                 (server) [  ] npc
 this.var        (client) [  ] npc
                 (server) [  ] npc
-flag            (client) [  ] level
+flag            (client) [  ] player
                 (server) [  ] player
 var             (client) [  ] level
-                (server) [  ] (GS1) npc (GS2) global
+                (server) [  ] (GS1) class (GS2) global
 
 In classic mode, all flags (except local.flags) are sent to the server from the client.
 Global mode variables are not saved.
+
+unset flag;			looks for flag and deletes if found.
+setstring flag,;	looks for flag= and deletes if found.
+
+set flag;
+setstring flag,value;	overwrites flag with flag=value.
+
+setstring flag,value;
+set flag;				does not erase flag's value, since it is technically already set.
+
+FLAG name
+FLAG name=value
+VAR name=value
+VAR name={value,value}
 */
 
 ///////////////////////////////////////////////////////////////////////////////

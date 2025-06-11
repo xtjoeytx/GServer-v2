@@ -974,13 +974,9 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	setPropsFromPacket(props, props::SetBy::SERVER, rc);
 
 	// Clear flags
-	for (const auto& [flag, value] : account.flags.container)
-	{
-		outPacket >> (char)PLO_FLAGDEL << flag;
-		if (!value.empty()) outPacket << "=" << value;
-		outPacket << "\n";
-	}
-	account.flags.clear();
+	for (const auto& [flag, value] : account.variables.store)
+		outPacket >> (char)PLO_FLAGDEL << flag << "\n";
+	account.variables.store.clear();
 
 	// Clear Weapons
 	for (const auto& weapon : account.weapons)
@@ -1014,14 +1010,15 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 
 	// Re-populate the flag list.
 	auto flagCount = pPacket.readGUShort();
-	while (flagCount > 0)
+	while (flagCount-- > 0)
 	{
 		CString flag = pPacket.readChars(pPacket.readGUChar());
-		std::string name = flag.readString("=").text();
-		CString val = flag.readString("");
+		std::string name = flag.readString("=").toString();
+		std::string val = flag.readString("").toString();
 
-		setFlag(name, val, isLoaded());
-		--flagCount;
+		if (val.empty())
+			setFlag(name, std::nullopt, isLoaded());
+		else setFlag(name, val, isLoaded());
 	}
 
 	// Clear the chests and re-populate the chest list.
@@ -1104,18 +1101,11 @@ CString Player::getPropsForRCPacket()
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
-	ret >> (short)account.flags.container.size();
-	for (const auto& [flag, value] : account.flags.container)
+	ret >> (short)account.variables.store.size();
+	for (const auto& [flag, value] : account.variables.store)
 	{
-		std::string computedFlag{ flag };
-		if (!value.empty())
-			computedFlag += std::format("={}", value);
-
-		// Truncate the flag if it is too long.
-		if (computedFlag.length() > 223)
-			computedFlag.erase(223);
-
-		ret >> (char)computedFlag.length() << computedFlag;
+		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
+			ret >> (char)(std::min((size_t)223, computedFlag.value().length())) << computedFlag.value().substr(0, 223);
 	}
 
 	// Add the player's chests.
@@ -1134,5 +1124,4 @@ CString Player::getPropsForRCPacket()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

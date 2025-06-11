@@ -13,20 +13,19 @@
 
 #include <CString.h>
 
-#include "IConfig.h"
+#include <IConfig.h>
 
-#include "Server.h"
-#include "level/Level.h"
-#include "player/PlayerClient.h"
-#include "player/PlayerRC.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerRC.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 static void updateFile(Player* player, Server* server, const CString& dir, const CString& file)
@@ -449,12 +448,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 	CString ret;
-	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Flags.container.size();
-	for (const auto& [flag, value] : m_server->Flags.container)
+	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Scripting.variables.store.size();
+	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
 	{
-		CString flagString = CString() << flag << "=" << value;
-		ret >> (char)flagString.length() << flagString;
+		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
+			ret >> (char)serialized.value().length() << serialized.value();
 	}
+
 	sendPacket(ret);
 	return HandlePacketResult::Handled;
 }
@@ -468,52 +468,72 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	unsigned short count = pPacket.readGUShort();
-	auto& serverFlags = m_server->Flags.container;
-
-	// Save server flags.
-	auto oldFlags = serverFlags;
-
-	// Delete server flags.
-	serverFlags.clear();
-
-	// Assemble the new server flags.
-	for (unsigned int i = 0; i < count; ++i)
-		m_server->setFlag(pPacket.readChars(pPacket.readGUChar()), false);
-
-	// Send flag changes to all players.
-	for (auto i = serverFlags.begin(); i != serverFlags.end(); ++i)
+	// Collect the new flags.
+	std::unordered_map<std::string, std::string, string::string_hash, std::equal_to<>> flagMap;
+	uint16_t count = pPacket.readGUShort();
+	for (auto i = 0; i < count; ++i)
 	{
-		bool found = false;
-		for (auto j = oldFlags.begin(); j != oldFlags.end();)
+		std::string flagPair = string::trimMutate(pPacket.readChars(pPacket.readGUChar()).toString());
+		if (!flagPair.contains('='))
+			flagMap.try_emplace(std::move(flagPair), std::string{});
+		else
 		{
-			// Flag name
-			if (i->first == j->first)
-			{
-				// Check to see if the values are the same.
-				// If they are, set found to true so we don't send it to the player again.
-				if (i->second == j->second)
-					found = true;
-				oldFlags.erase(j++);
-				if (found) break;
-			}
-			else
-				++j;
-		}
-
-		// If we didn't find a match, this is either a new flag, or a changed flag.
-		if (!found)
-		{
-			if (i->second.empty())
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first);
-			else
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << i->first << "=" << i->second);
+			std::string flagValue = string::trimLeftMutate(flagPair.substr(flagPair.find('=') + 1));
+			string::trimRightMutate(flagPair.erase(flagPair.find('=')));
+			flagMap.try_emplace(std::move(flagPair), std::move(flagValue));
 		}
 	}
 
-	// If any flags were deleted, tell that to the players now.
-	for (auto i = oldFlags.begin(); i != oldFlags.end(); ++i)
-		m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << i->first);
+	std::vector<std::string> removedFlags;
+
+	// Iterate through all the server flags finding deleted flags and sending changes.
+	for (auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
+	{
+		auto search = flagMap.find(flag);
+
+		// The server variable is not in the map, so it was deleted.
+		if (search == flagMap.end())
+			removedFlags.emplace_back(flag);
+		else
+		// The server variable was changed.
+		{
+			if (search->second.empty())
+			{
+				value->unassign<std::string>();
+				value->assign<bool>(true);
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
+			}
+			else
+			{
+				value->unassign<bool>();
+				value->assign<std::string>(search->second);
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
+			}
+			flagMap.erase(search);
+		}
+	}
+
+	// Delete all the removed flags.
+	for (const auto& flag : removedFlags)
+	{
+		auto& store = m_server->Scripting.variables.store;
+		if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
+		{
+			if (search->second->has<bool>() && !search->second->has<std::string>())
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
+			else
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=");
+			store.erase(search);
+		}
+	}
+
+	// Add the new flags.
+	for (auto& [flag, value] : flagMap)
+	{
+		if (value.empty())
+			m_server->Scripting.variables.add(flag, true);
+		else m_server->Scripting.variables.add(flag, value);
+	}
 
 	log::printLine(log::rc, "{} has updated the server flags.", account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has updated the server flags.");
@@ -2007,5 +2027,4 @@ HandlePacketResult PlayerRC::msgPLI_RC_UNKNOWN162(CString& pPacket)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

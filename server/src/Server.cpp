@@ -66,7 +66,7 @@ Server::Server(const CString& pName)
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
 	m_lastTimer = m_lastNpcServerTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
-	calculateServerTime();
+	calculateNWTime();
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
@@ -321,7 +321,7 @@ bool Server::doTimedEvents()
 	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_lastNewWorldTimer);
 	if (time_diff.count() >= 5)
 	{
-		calculateServerTime();
+		calculateNWTime();
 
 		m_lastNewWorldTimer = m_lastTimer;
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
@@ -864,8 +864,11 @@ void Server::loadNpcServer()
 void Server::saveServerFlags()
 {
 	CString out;
-	for (auto& [flag, value] : Flags.container)
-		out << flag << "=" << value << "\r\n";
+	for (auto& [flag, value] : Scripting.variables.store)
+	{
+		if (auto serialized = value->serializeModern(flag); serialized.has_value())
+			out << serialized.value() << "\r\n";
+	}
 	out.save(CString() << "serverflags.txt");
 }
 
@@ -920,11 +923,6 @@ std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
 	if (iter == std::end(m_weaponList))
 		return nullptr;
 	return iter->second;
-}
-
-std::string Server::getFlag(std::string_view flagName) const
-{
-	return Flags.get(flagName);
 }
 
 FileSystem* Server::getFileSystemByType(CString& type)
@@ -1097,7 +1095,7 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 	return true;
 }
 
-void Server::playerLoggedIn(PlayerPtr player)
+void Server::recordPlayerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
@@ -1117,7 +1115,7 @@ bool Server::warpPlayerToSafePlace(PlayerID playerId)
 	// TODO: Maybe try the default account level?
 }
 
-void Server::calculateServerTime()
+void Server::calculateNWTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000
 	// this is likely the actual start time of timevar
@@ -1158,53 +1156,87 @@ void Server::logToFile(const std::string& fileName, const std::string& message) 
 /*
 	Server: Server Flag Management
 */
-bool Server::deleteFlag(const std::string& pFlagName, bool pSendToPlayers)
+
+std::optional<std::string> Server::getFlag(std::string_view flagName) const
+{
+	auto flagVal = Scripting.variables.get(flagName);
+	if (auto flag = flagVal.lock(); flag != nullptr)
+		return flag->get<std::string>();
+	return std::nullopt;
+}
+
+bool Server::deleteFlag(std::string_view flagName, bool sendToPlayers)
 {
 	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
-	if (Flags.remove(pFlagName))
+	if (Scripting.variables.remove(flagName))
 	{
-		if (pSendToPlayers)
-			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << pFlagName);
+		if (sendToPlayers)
+			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
 		return true;
 	}
 
 	return false;
 }
 
-bool Server::setFlag(CString pFlag, bool pSendToPlayers)
+bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
 {
-	std::string flagName = pFlag.readString("=").text();
-	CString flagValue = pFlag.readString("");
-	return this->setFlag(flagName, (flagValue.isEmpty() ? "1" : flagValue), pSendToPlayers);
+	if (!flagPair.contains('='))
+		return setFlag(flagPair, std::nullopt, sendToPlayers);
+
+	auto separator = flagPair.find('=');
+	auto flagName = string::trim(flagPair.substr(0, separator));
+	auto flagValue = string::trim(flagPair.substr(separator + 1));
+	return setFlag(flagName, std::string{ flagValue }, sendToPlayers);
 }
 
-bool Server::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers)
+bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
 {
 	if (m_settings.getBool("dontaddserverflags", false))
 		return false;
 
-	// If the value is empty, we are deleting the flag.
-	if (pFlagValue.isEmpty())
-		return deleteFlag(pFlagName);
+	// Function to crop flags.
+	auto cropFlag = [this, &flagName](std::string& value)
+	{
+		if (m_settings.getBool("cropflags", true))
+			value.erase(std::min(value.length(), 223 - 1 - flagName.length()));
+		return value;
+	};
 
-	// Make sure it changed.
-	if (Flags.get(pFlagName) == pFlagValue)
+	// Alter the flag if it exists.
+	auto existing = Scripting.variables.get(flagName).lock();
+	if (existing != nullptr)
+	{
+		bool isFlag = existing->has<bool>() && !existing->has<std::string>();
+		bool isStringFlag = existing->has<std::string>();
+
+		// No change.
+		if (!flagValue.has_value())
 		return true;
 
-	std::string_view value{ pFlagValue.toStringView() };
+		// If flag value is empty, delete.
+		if (isStringFlag && flagValue.value().empty())
+			return deleteFlag(flagName);
 
-	// Check if we should crop the value.
-	if (m_settings.getBool("cropflags", true))
-		value = value.substr(0, std::max(0, 223 - 1 - (int)pFlagName.length()));
-
-	// Set the flag.
-	Flags.set(pFlagName, value);
+		// Alter value.
+		existing->assign<std::string>(cropFlag(flagValue.value()));
+	}
+	// New flag.
+	else
+	{
+		if (!flagValue.has_value())
+			Scripting.variables.add(flagName, true);
+		else Scripting.variables.add(flagName, cropFlag(flagValue.value()));
+	}
 
 	// And share it.
 	if (pSendToPlayers)
-		sendPacketToAll(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << value);
+	{
+		if (!flagValue.has_value())
+			sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagName);
+		else sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
+	}
 
 	return true;
 }

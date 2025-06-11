@@ -73,11 +73,6 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
 
-	// TODO(joey): implement
-	// 	JOINEDCLASSES staffblock (not really needed for us, so)
-	//	DONTBLOCK 1
-	//	modtime is not being updated for these properties
-
 	auto updateTime = currentTime();
 	CString npcLevel;
 	std::string script;
@@ -259,15 +254,24 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
 		}
+		// TODO(Nalin): This should be split up in stuff like DONTBLOCK 1, but I don't know all the fields.
+		else if (curCommand == "BLOCKFLAGS")
+		{
+			npc->blockFlags = strtoint(curLine.readString(""));
+		}
+		else if (curCommand == "VISFLAGS")
+		{
+			npc->visFlags = strtoint(curLine.readString(""));
+		}
 		else if (curCommand == "TIMEOUT")
 		{
 			npc->timeout = std::chrono::milliseconds(strtoint(curLine.readString("")) * 20);
 		}
 		else if (curCommand == "FLAG")
 		{
-			CString flagName = curLine.readString("=");
-			CString flagValue = curLine.readString("");
-			npc->flags.set(flagName.toStringView(), flagValue.toStringView());
+			std::string flagName = curLine.readString("=").toString();
+			std::string flagValue = curLine.readString("").toString();
+			npc->scripting.variables.add(GameVariable::deserialize(flagName, flagValue));
 		}
 		else if (curCommand.subString(0, 4) == "ATTR")
 		{
@@ -279,6 +283,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 				npc->character.ganiAttributes[idx] = curLine.readString("").toString();
 				npc->modTime[attrPackets[idx]] = updateTime;
 			}
+		}
+		else if (curCommand == "JOINEDCLASSES")
+		{
+			;
 		}
 		else if (curCommand == "NPCSCRIPT")
 		{
@@ -371,11 +379,13 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "LAYER 0" << NL;
 	fileData << "SHAPETYPE 0" << NL;
 	fileData << "SHAPE " << CString(npc->imageSize.width()) << " " << CString(npc->imageSize.height()) << NL;
+	fileData << "BLOCKFLAGS " << CString(npc->blockFlags) << NL;
+	fileData << "VISFLAGS " << CString(npc->visFlags) << NL;
 
-	/*
-	if (m_blockFlags & NPCBLOCKFLAG_NOBLOCK)
-		fileData << "DONTBLOCK 1" << NL;
-	*/
+	if (npc->warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
+		fileData << "CANWARP" << NL;
+	if (npc->warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD)
+		fileData << "CANWARP2" << NL;
 
 	fileData << "SAVEARR " << CString((int)npc->saves[0]) << "," << CString((int)npc->saves[1]) << "," << CString((int)npc->saves[2]) << ","
 		<< CString((int)npc->saves[3]) << "," << CString((int)npc->saves[4]) << "," << CString((int)npc->saves[5]) << ","
@@ -388,8 +398,28 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			fileData << "ATTR" << std::to_string(i + 1) << " " << npc->character.ganiAttributes[i] << NL;
 	}
 
-	for (auto it = npc->flags.container.begin(); it != npc->flags.container.end(); ++it)
-		fileData << "FLAG " << (*it).first << "=" << (*it).second << NL;
+	auto* server = BabyDI::Get<Server>();
+	for (auto& [flag, value] : npc->scripting.variables.store)
+	{
+		// Ignore flags.
+		if (value->has<bool>() && !value->has_many()) continue;
+
+		// Ignore temporary variables.
+		if (value->temporary) continue;
+
+		// Serialize the variable entirely.
+		if (server->Generation == ServerGeneration::MODERN)
+		{
+			auto var = npc->scripting.variables.serializeModern(flag);
+			if (var.has_value())
+				fileData << "FLAG " << var.value() << NL;
+		}
+		else
+		{
+			for (const auto& serialized : npc->scripting.variables.serialize(flag))
+				fileData << serialized << NL;
+		}
+	}
 
 	fileData << "NPCSCRIPT" << NL << CString(npc->getScript().getOriginalSource()).replaceAll("\n", NL);
 	if (fileData[fileData.length() - 1] != '\n')

@@ -66,6 +66,15 @@ GameValue::operator bool() const
 	return false;
 }
 
+bool GameValue::testAsFlag() const
+{
+	if (m_boolean.has_value())
+		return m_boolean.value();
+	if (m_text.has_value())
+		return !m_text.value().empty();
+	return false;
+}
+
 ////////////////////////////////////////////////////////////
 // GameVariable
 ////////////////////////////////////////////////////////////
@@ -84,11 +93,8 @@ GameVariable::operator std::string() const
 
 GameVariable::operator bool() const
 {
-	auto* boolValue = game_value().get_unsafe<bool>();
-	if (boolValue != nullptr)
-		return *boolValue;
-	auto* numberValue = game_value().get_unsafe<double>();
-	return (numberValue != nullptr) ? *numberValue != 0.0 : false;
+	auto& value = game_value();
+	return (bool)value;
 }
 
 GameVariable& GameVariable::operator=(const GameVariable& other)
@@ -113,6 +119,12 @@ GameVariable& GameVariable::operator=(GameVariable&& other) noexcept
 		m_setter = std::move(other.m_setter);
 	}
 	return *this;
+}
+
+bool GameVariable::testAsFlag() const
+{
+	auto& value = game_value();
+	return value.testAsFlag();
 }
 
 //----------------------------
@@ -149,6 +161,53 @@ const GameValue& GameVariable::game_value() const
 		return m_value;
 	m_value = std::move(m_getter(identifier));
 	return m_value;
+}
+
+//----------------------------
+
+std::optional<GameVariable> GameVariable::deserialize(std::string_view line)
+{
+	if (line.starts_with("FLAG"))
+	{
+		auto data = string::trim(line.substr(5));
+		auto separator = data.find('=');
+		if (separator == std::string_view::npos)
+			return GameVariable{ std::string{ string::trim(data) }, true };
+		return GameVariable{ std::string{ string::trim(data.substr(0, separator)) }, std::string{ string::trim(data.substr(separator + 1)) } };
+	}
+	else if (line.starts_with("VAR"))
+	{
+		auto data = string::trim(line.substr(4));
+		auto separator = data.find('=');
+		if (separator == std::string_view::npos)
+			return std::nullopt;
+
+		auto identifier = string::trim(data.substr(0, separator));
+		auto value = string::trim(data.substr(separator + 1));
+		if (value.empty())
+			return std::nullopt;
+		if (value[0] != '{')
+			return GameVariable{ std::string{ identifier }, string::toDouble(std::string{ value }) };
+
+		std::vector<double> array;
+		for (auto& number : string::splitHard(value.substr(1, value.length() - 2), ","sv))
+			array.emplace_back(string::toDouble(number));
+		return GameVariable{ std::string{ identifier }, std::move(array) };
+	}
+
+	return std::nullopt;
+}
+
+std::optional<std::string> GameVariable::serializeModern(std::string_view name) const noexcept
+{
+	auto& value = game_value();
+	auto* boolVal = value.get_unsafe<bool>();
+	auto* stringVal = value.get_unsafe<std::string>();
+	if (boolVal != nullptr && stringVal == nullptr && *boolVal == true)
+		return std::string{ name };
+	if (stringVal != nullptr)
+		return std::format("{}={}", name, *stringVal);
+	return std::nullopt;
 }
 
 ////////////////////////////////////////////////////////////
@@ -225,6 +284,35 @@ void GameVariableStore::stub_new(GameVariable& variable, const GameValue& value)
 {
 	auto new_variable = add(variable.identifier, GameValue{ value });
 	variable.setCallbacks(variable.getCallbackGetter(), {});
+}
+
+std::optional<std::string> GameVariableStore::serializeModern(std::string_view name) const noexcept
+{
+	auto var = get(name);
+	if (auto variable = var.lock(); variable != nullptr)
+		return variable->serializeModern(name);
+
+	return std::nullopt;
+}
+
+std::vector<std::string> GameVariableStore::serialize(std::string_view name) const noexcept
+{
+	std::vector<std::string> results;
+	auto var = get(name);
+	if (auto variable = var.lock(); variable != nullptr)
+	{
+		if (variable->has<bool>() && !variable->has<std::string>() && variable->get<bool>().value_or(false))
+			results.emplace_back(std::format("FLAG {}", name));
+		else if (variable->has<std::string>())
+			results.emplace_back(std::format("FLAG {}={}", name, variable->serialize<std::string>()));
+
+		if (variable->has<double>())
+			results.emplace_back(std::format("VAR {}={}", name, variable->serialize<double>()));
+		if (variable->has<std::vector<double>>())
+			results.emplace_back(std::format("VAR {}={}", name, variable->serialize<std::vector<double>>()));
+	}
+
+	return results;
 }
 
 ////////////////////////////////////////////////////////////

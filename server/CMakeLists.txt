@@ -80,7 +80,6 @@ set(
 	"include/scripting/gs2/ScriptEngineGS2.h"
 	"include/utilities/CommandDispatcher.h"
 	"include/utilities/FilePermissions.h"
-	"include/utilities/FlagContainer.h"
 	"include/utilities/IdGenerator.h"
 	"include/utilities/inplace_vector.h"
 	"include/utilities/Log.h"

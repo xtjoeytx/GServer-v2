@@ -451,21 +451,17 @@ bool PlayerClient::sendLogin()
 		this->setFlag("gr.ip", account.ipAddress, true);
 
 	// Send the player's flags.
-	for (const auto& [flag, value] : account.flags.container)
+	for (const auto& [flag, value] : account.variables.store)
 	{
-		if (value.empty())
-			sendPacket(CString() >> (char)PLO_FLAGSET << flag);
-		else
-			sendPacket(CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+		if (auto serialized = account.variables.serializeModern(flag); serialized.has_value())
+			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
 	}
 
 	// Send the server's flags to the player.
-	for (const auto& [flag, value] : m_server->Flags.container)
+	for (const auto& [flag, value] : m_server->Scripting.variables.store)
 	{
-		if (value.empty())
-			sendPacket(CString() >> (char)PLO_FLAGSET << flag);
-		else
-			sendPacket(CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
+			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
 	}
 
 	// Delete the bomb and bow.  They get automagically added by the client for

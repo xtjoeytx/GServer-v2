@@ -275,9 +275,8 @@ public:
 	void exchangeMyPropsWithOthers();
 
 public:
-	void deleteFlag(const std::string& pFlagName, bool sendToPlayer = false);
-	void setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer = false);
-	CString getFlag(const std::string& pFlagName) const;
+	void deleteFlag(std::string_view flagName, bool sendToPlayer = false);
+	void setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
 
 	virtual bool setLevel(const CString& pLevelName, time_t modTime = 0);
 
@@ -327,7 +326,7 @@ public:
 
 public:
 	Account account;
-	GameVariableStore variables;
+	ScriptEventQueue events;
 
 protected:
 	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);

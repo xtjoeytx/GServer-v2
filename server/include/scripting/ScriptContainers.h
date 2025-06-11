@@ -99,6 +99,27 @@ public:
 		return *this;
 	}
 
+	/// @brief Unassigns a value type from the GameValue.
+	/// @tparam Type The value type to unassign.
+	/// @return A reference to the modified GameValue object.
+	template<ValidGameValue Type>
+	GameValue& unassign()
+	{
+		if constexpr (std::same_as<Type, bool>)
+			m_boolean = std::nullopt;
+		if constexpr (std::same_as<Type, double>)
+			m_number = std::nullopt;
+		if constexpr (std::same_as<Type, std::string>)
+			m_text = std::nullopt;
+		if constexpr (std::same_as<Type, std::vector<double>>)
+			m_array = std::nullopt;
+		return *this;
+	}
+
+	/// @brief Tests the GameValue as a flag check.
+	/// @return True if the GameValue has a boolean value or a non-empty string value, false otherwise.
+	bool testAsFlag() const;
+
 private:
 	std::optional<bool> m_boolean;
 	std::optional<double> m_number;
@@ -160,24 +181,28 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 				return &m_array.value().at(index.value());
 			return &empty_number;
 		}
+		if (!m_number.has_value()) return nullptr;
 		const auto* ptr = &m_number.value();
 		if (!ptr) ptr = &empty_number;
 		return ptr;
 	}
 	if constexpr (std::same_as<T, std::string>)
 	{
+		if (!m_text.has_value()) return nullptr;
 		const auto* ptr = &m_text.value();
 		if (!ptr) ptr = &empty_string;
 		return ptr;
 	}
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
+		if (!m_array.has_value()) return nullptr;
 		const auto* ptr = &m_array.value();
 		if (!ptr) ptr = &empty_array;
 		return ptr;
 	}
 	if constexpr (std::same_as<T, bool>)
 	{
+		if (!m_boolean.has_value()) return nullptr;
 		const auto* ptr = &m_boolean.value();
 		if (!ptr) ptr = &empty_boolean;
 		return ptr;
@@ -214,7 +239,11 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_number = value;
 	}
 	else if constexpr (std::same_as<V, std::string>)
-		m_text = value;
+	{
+		if (value.empty())
+			m_text = std::nullopt;
+		else m_text = value;
+	}
 	else if constexpr (std::same_as<V, std::vector<double>>)
 		m_array = value;
 	else if constexpr (std::same_as<V, bool>)
@@ -238,7 +267,11 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		m_number = value;
 	}
 	else if constexpr (std::same_as<V, std::string>)
+	{
+		if (value.empty())
+			m_text = std::nullopt;
 		m_text = std::move(value);
+	}
 	else if constexpr (std::same_as<V, std::vector<double>>)
 		m_array = std::move(value);
 	else if constexpr (std::same_as<V, bool>)
@@ -287,9 +320,30 @@ struct GameVariable
 		return (value != nullptr) ? *value : std::vector<double>{};
 	}
 
+	/// @brief Tests the GameVariable as a flag check.
+	/// @return True if the GameVariable has a boolean value or a non-empty string value, false otherwise.
+	bool testAsFlag() const;
+
 public:
 	/// @brief The identifier of the variable.
 	std::string identifier;
+
+	/// @brief A temporary variable that doesn't get saved.
+	bool temporary = false;
+
+public:
+	/// @brief Deserializes a variable.
+	/// @tparam T The data type of the variable.
+	/// @param identifier The identifier name of the variable.
+	/// @param data The data to deserialize.
+	/// @return A reference to this.
+	template<ValidGameValue T = std::string>
+	static GameVariable deserialize(std::string identifier, std::string_view data);
+
+	/// @brief Deserializes a variable.
+	/// @param line The data to deserialize (should include the full data line, e.g.: VAR identifier=1,2,3).
+	/// @return A reference to this.
+	static std::optional<GameVariable> deserialize(std::string_view line);
 
 public:
 	/// @brief Sets the callbacks for getting and setting the variable's value.
@@ -361,11 +415,36 @@ public:
 		return *this;
 	}
 
+	/// @brief Unassigns types from the GameValue.
+	/// @tparam ...Types A list of types to unassign.
+	/// @return A reference to the modified GameVariable object.
+	template<ValidGameValue... Types>
+	GameVariable& unassign()
+	{
+		auto& value = game_value();
+		(value.unassign<Types>(), ...);
+		return *this;
+	}
+
 	/// @brief Checks if the GameVariable has a value of the specified type.
 	/// @tparam T The type to check for. Must satisfy the `ValidGameValue` constraint.
 	/// @return True if the GameVariable has a value of the specified type; otherwise, false.
 	template<ValidGameValue T>
 	[[inline]] bool has() const;
+
+	/// @brief Checks if the GameVariable has multiple values.
+	/// @return True if the GameVariable has multiple values; otherwise, false.
+	[[inline]] bool has_many() const;
+
+	/// @brief Serializes a variable for distribution.
+	/// @param name The name of the game variable to serialize.
+	/// @return An optional string that contains the serialized variable.
+	virtual std::optional<std::string> serializeModern(std::string_view name) const noexcept;
+
+	/// @brief Serializes the variable for saving.
+	/// @return A serialized string for writing to disk.
+	template<ValidGameValue T = std::string>
+	[[inline]] std::string serialize() const;
 
 private:
 	GameValue& game_value();
@@ -381,6 +460,26 @@ private:
 /// Normally, you would receive a weak pointer to a GameVariable from the store,
 /// but when a variable is not assigned to a store yet, a normal GameVariable object is used.
 using GameVariableVariant = std::variant<std::weak_ptr<GameVariable>, GameVariable>;
+
+//----------------------------
+
+template<ValidGameValue T>
+static GameVariable GameVariable::deserialize(std::string identifier, std::string_view data)
+{
+	if constexpr (std::same_as<T, bool>)
+		return GameVariable{ std::move(identifier), true };
+	if constexpr (std::same_as<T, double>)
+		return GameVariable{ std::move(identifier), string::toNumber(data) };
+	if constexpr (std::same_as<T, std::string>)
+		return GameVariable{ std::move(identifier), std::string{ data } };
+	if constexpr (std::same_as<T, std::vector<double>>)
+	{
+		std::vector<double> array;
+		for (auto& number : string::splitHard(data, ","sv))
+			array.emplace_back(string::toDouble(number));
+		return GameVariable{ std::move(identifier), std::move(array) };
+	}
+}
 
 //----------------------------
 
@@ -434,6 +533,47 @@ inline bool GameVariable::has() const
 	return val != nullptr;
 }
 
+inline bool GameVariable::has_many() const
+{
+	auto& value = game_value();
+	int count = 0;
+	if (auto* val = value.get_unsafe<bool>(); val != nullptr)
+		++count;
+	if (auto* val = value.get_unsafe<double>(); val != nullptr)
+		++count;
+	if (auto* val = value.get_unsafe<std::string>(); val != nullptr)
+		++count;
+	if (auto* val = value.get_unsafe<std::vector<double>>(); val != nullptr)
+		++count;
+	return count < 2;
+}
+
+template<ValidGameValue T>
+inline std::string GameVariable::serialize() const
+{
+	auto& value = game_value();
+	if constexpr (std::same_as<T, bool>)
+		return {};
+	if constexpr (std::same_as<T, double>)
+		return std::format("{}", value.get<double>().value_or(0.0));
+	if constexpr (std::same_as<T, std::string>)
+		return value.get<std::string>().value_or({});
+	if constexpr (std::same_as<T, std::vector<double>>)
+	{
+		std::string array;
+		if (auto* valueArray = value.get_unsafe<std::vector<double>>())
+		{
+			for (size_t i = 0; i < valueArray->size(); ++i)
+			{
+				array += std::format("{}", (*valueArray)[i]);
+				if (i != valueArray->size() - 1)
+					array += ",";
+			}
+		}
+		return array;
+	}
+}
+
 ////////////////////////////////////////////////////////////
 // GameVariableStore
 ////////////////////////////////////////////////////////////
@@ -485,6 +625,16 @@ public:
 	/// @param name The name of the game variable to retrieve.
 	/// @return A GameVariableVariant containing the value of the variable if found, with a stub setter that adds the variable to the store if not found.
 	virtual GameVariableVariant get_or_stub(std::string_view name) noexcept;
+
+	/// @brief Serializes a variable for distribution.
+	/// @param name The name of the game variable to serialize.
+	/// @return An optional string that contains the serialized variable.
+	virtual std::optional<std::string> serializeModern(std::string_view name) const noexcept;
+
+	/// @brief Fully serializes a variable for writing to the disk.
+	/// @param name The name of a game variable to serialize.
+	/// @return A list of serialized data.
+	virtual std::vector<std::string> serialize(std::string_view name) const noexcept;
 
 public:
 	/// @brief Marks the container as not accepting any new variables, nor deleting existing ones.
@@ -604,6 +754,22 @@ struct ScriptContainer
 	ScriptEventQueue events;
 	GameVariableStore variables;
 };
+
+////////////////////////////////////////////////////////////
+// Ranges
+////////////////////////////////////////////////////////////
+
+/// @brief Provides views that manipulate variables.
+namespace variables
+{
+
+/// @brief A view that filters out temporary variables.
+inline constexpr auto no_temporary = std::views::filter([](const decltype(GameVariableStore::store)::value_type& pair) -> bool { return !pair.second->temporary; });
+
+/// @brief A view that filters out optional that don't have a value.
+inline constexpr auto with_value = std::views::filter([](const auto& opt) -> bool { return opt.has_value(); });
+
+} // end namespace preagonal::variables
 
 ////////////////////////////////////////////////////////////
 // Functions

@@ -414,7 +414,10 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 	CSettings& settings = m_server->getSettings();
 	CString flagPacket = pPacket.readString("");
 	CString flagName, flagValue;
-	if (flagPacket.find("=") != -1)
+
+	if (flagPacket.find("=") == -1)
+		flagName = flagPacket;
+	else
 	{
 		flagName = flagPacket.readString("=");
 		flagValue = flagPacket.readString("");
@@ -426,8 +429,6 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			return msgPLI_FLAGDEL(pPacket);
 		}
 	}
-	else
-		flagName = flagPacket;
 
 	// Add a little hack for our special gr.strings.
 	if (flagName.find("gr.") != -1)
@@ -487,43 +488,72 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 	if (flagName.find("serverr.") != -1) return HandlePacketResult::Handled;
 
 	// Server flags are handled differently than client flags.
-	if (flagName.find("server.") != -1)
+	// If we have an npc-server, clients can't set server flags.
+	if (!m_server->isNpcServerEnabled())
 	{
-		m_server->setFlag(flagName.text(), flagValue);
-		return HandlePacketResult::Handled;
+		if (flagName.find("server.") != -1)
+		{
+			m_server->setFlag(flagName.toStringView(), flagValue.toString());
+			return HandlePacketResult::Handled;
+		}
 	}
 
 	// Set Flag
-	this->setFlag(flagName.text(), flagValue, (m_versionId > CLVER_2_31));
+	if (flagValue.isEmpty())
+		setFlag(flagName.toStringView(), std::nullopt, (m_versionId > CLVER_2_31));
+	else setFlag(flagName.toStringView(), flagValue.toString(), (m_versionId > CLVER_2_31));
+
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 {
 	CString flagPacket = pPacket.readString("");
-	std::string flagName;
-	if (flagPacket.find("=") != -1)
-		flagName = flagPacket.readString("=").trim().text();
+
+	std::string_view flagName;
+	bool hasValue = false;
+
+	if (flagPacket.find('=') == -1)
+		flagName = flagPacket.toStringView();
 	else
-		flagName = flagPacket.text();
+	{
+		flagName = flagPacket.toStringView();
+		flagName = flagName.substr(0, flagName.find('='));
+		hasValue = true;
+	}
 
 	// this.flags should never be in any server flag list, so just exit.
-	if (flagName.find("this.") != std::string::npos) return HandlePacketResult::Handled;
+	if (flagName.find("this.") != std::string_view::npos) return HandlePacketResult::Handled;
 
 	// Don't allow anybody to alter read-only strings.
-	if (flagName.find("clientr.") != std::string::npos) return HandlePacketResult::Handled;
-	if (flagName.find("serverr.") != std::string::npos) return HandlePacketResult::Handled;
+	if (flagName.find("clientr.") != std::string_view::npos) return HandlePacketResult::Handled;
+	if (flagName.find("serverr.") != std::string_view::npos) return HandlePacketResult::Handled;
 
 	// Server flags are handled differently than client flags.
 	// TODO: check serveroptions
-	if (flagName.find("server.") != std::string::npos)
+	if (!m_server->isNpcServerEnabled())
 	{
-		m_server->deleteFlag(flagName);
-		return HandlePacketResult::Handled;
+		if (flagName.find("server.") != std::string_view::npos)
+		{
+			m_server->deleteFlag(std::string{ flagName });
+			return HandlePacketResult::Handled;
+		}
 	}
 
-	// Remove Flag
-	this->deleteFlag(flagName);
+	// Try to remove the flag.
+	if (auto flag = account.variables.get(flagName).lock(); flag != nullptr)
+	{
+		if (flag->has<std::string>())
+		{
+			if (hasValue)
+				account.variables.remove(flagName);
+		}
+		else if (flag->has<bool>())
+		{
+			if (!hasValue)
+				account.variables.remove(flagName);
+		}
+	}
 	return HandlePacketResult::Handled;
 }
 

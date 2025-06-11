@@ -687,7 +687,7 @@ bool Player::sendLogin()
 
 	// TODO(joey): Placing this here so warp doesn't queue events for this player before
 	//	the login is finished. The server should get first dibs on the player.
-	m_server->playerLoggedIn(shared_from_this());
+	m_server->recordPlayerLoggedIn(shared_from_this());
 
 	// Set loaded to true so our account is saved when we leave.
 	// This also lets us send data.
@@ -895,37 +895,28 @@ void Player::setChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Player::deleteFlag(const std::string& pFlagName, bool sendToPlayer)
+void Player::deleteFlag(std::string_view flagName, bool sendToPlayer)
 {
-	account.flags.remove(pFlagName);
+	account.variables.remove(flagName);
 
 	if (sendToPlayer)
 	{
-		sendPacket(CString() >> (char)PLO_FLAGDEL << pFlagName);
+		sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
 	}
 }
 
-void Player::setFlag(const std::string& pFlagName, const CString& pFlagValue, bool sendToPlayer)
+void Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer)
 {
-	// Call Default Set Flag
-	account.flags.set(std::make_pair(pFlagName, pFlagValue.toString()));
-
-	// Send to Player
-	if (sendToPlayer)
+	if (!flagValue.has_value())
 	{
-		if (pFlagValue.isEmpty())
-			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName);
+		account.variables.add(flagName, true);
+		sendPacket(CString() >> (char)PLO_FLAGSET << flagName);
+	}
 		else
-			sendPacket(CString() >> (char)PLO_FLAGSET << pFlagName << "=" << pFlagValue);
+	{
+		account.variables.add(flagName, flagValue.value());
+		sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
 	}
-}
-
-CString Player::getFlag(const std::string& pFlagName) const
-{
-	auto it = account.flags.container.find(pFlagName);
-	if (it == account.flags.container.end())
-		return CString();
-	return it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

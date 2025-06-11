@@ -100,7 +100,7 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource sour
 	{
 		case ScriptObjectSourceType::PLAYER:
 			if (auto player = server->getPlayer(source.first); player != nullptr)
-				return &player->variables;
+				return &player->account.variables;
 			break;
 		case ScriptObjectSourceType::NPC:
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
@@ -110,12 +110,12 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource sour
 		{
 			auto& levelList = server->getLevelList();
 			if (auto it = levelList.find(source.first); it != levelList.end())
-				return &it->second->variables;
+				return &it->second->scripting.variables;
 			log::printLine(log::script, "Could not find level for source.");
 			return &invalidStore;
 		}
 		case ScriptObjectSourceType::SERVER:
-			return &server->Variables;
+			return &server->Scripting.variables;
 	}
 	return nullptr;
 }
@@ -300,7 +300,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			};
 
 			auto level = std::visit(picker, pair.value());
-			return &level->variables;
+			return &level->scripting.variables;
 		}
 	}
 	return store;

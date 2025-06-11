@@ -12,8 +12,8 @@
 #include <BabyDI.h>
 
 #include <object/Character.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/FilePermissions.h>
-#include <utilities/FlagContainer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -73,7 +73,7 @@ struct Account
 	std::array<std::string, 30> ganiAttributes;
 	std::vector<std::string> weapons;
 	std::unordered_multimap<std::string, std::pair<int8_t, int8_t>> savedChests;
-	FlagContainer flags;
+	GameVariableStore variables;
 	bool banned = false;
 	std::string banReason;
 	std::string banLength;

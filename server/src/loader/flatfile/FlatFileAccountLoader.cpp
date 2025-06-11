@@ -178,7 +178,11 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		else if (section == "LASTSPARTIME")
 			account.lastSparTime = system_clock::from_time_t(string::toNumber<time_t>(val));
 		else if (section == "FLAG")
-			account.flags.set(decomposeFlag(val));
+		{
+			auto variable = GameVariable::deserialize(i.toString());
+			if (variable.has_value())
+				account.variables.add(std::move(variable.value()));
+		}
 		else if (section.starts_with("ATTR"))
 		{
 			if (auto idx = toByte(section.substr(4)); idx > 0 && idx <= 30)
@@ -327,12 +331,10 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 		writeLine(newFile, "WEAPON", weapon);
 
 	// Flags
-	for (const auto& [flag, value] : account.flags.container)
+	for (const auto& [variable, value] : account.variables.store | variables::no_temporary)
 	{
-		if (value.empty())
-			writeLine(newFile, "FLAG", flag);
-		else
-			writeLine(newFile, "FLAG", flag + "=" + value);
+		if (auto serialized = account.variables.serializeModern(variable); serialized.has_value())
+			writeLine(newFile, "FLAG", serialized.value());
 	}
 
 	// Account Settings

@@ -203,6 +203,21 @@ inline std::string& trimMutate(std::string& str)
 	return str;
 }
 
+inline std::string&& trimLeftMutate(std::string&& str)
+{
+	return std::move(trimLeftMutate(str));
+}
+
+inline std::string&& trimRightMutate(std::string&& str)
+{
+	return std::move(trimRightMutate(str));
+}
+
+inline std::string&& trimMutate(std::string&& str)
+{
+	return std::move(trimMutate(str));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline std::string replace(std::string_view in, std::string_view from, std::string_view to)

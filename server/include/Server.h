@@ -29,7 +29,6 @@
 #include <scripting/GS2ScriptManager.h>
 #include <scripting/ScriptClass.h>
 #include <utilities/CommandDispatcher.h>
-#include <utilities/FlagContainer.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
@@ -154,7 +153,6 @@ public:
 	void reportScriptException(const std::string& error_message);
 
 public:
-	// Get functions.
 	const CString& getName() const { return m_name; }
 	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
 	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
@@ -169,10 +167,6 @@ public:
 	AnimationManager& getAnimationManager() { return m_animationManager; }
 	PackageManager& getPackageManager() { return m_packageManager; }
 	unsigned int getNWTime() const { return m_serverTime; }
-	void calculateServerTime();
-
-	//std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() { return m_classList; }
-	//std::unordered_map<std::string, std::weak_ptr<NPC>>& getNPCNameList() { return m_npcNameList; }
 	auto& getWeaponList() { return m_weaponList; }
 	auto& getPlayerList() { return m_playerList; }
 	auto& getNPCList() { return m_npcList; }
@@ -181,46 +175,51 @@ public:
 	const auto& getStatusList() const { return m_statusList; }
 	const auto& getAllowedVersions() const { return m_allowedVersions; }
 	auto& getGroupLevels() { return m_groupLevels; }
-
 	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
 	INPCLoader& getNPCLoader() { return *m_npcLoader; }
-
 	FileSystem* getFileSystemByType(CString& type);
-	std::string getFlag(std::string_view flagName) const;
+	std::chrono::system_clock::time_point getServerStartTime() const { return m_serverStartTime; }
+	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
+
+public:
 	std::shared_ptr<Level> getLevel(const std::string& pLevel);
+
+public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
-
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
-
-/*
-	bool deleteClass(const std::string& className);
-	bool hasClass(const std::string& className) const;
-	ScriptClass* getClass(const std::string& className) const;
-	void updateClass(const std::string& className, const std::string& classCode);
-*/
-public:
-	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr);
-
-public:
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
+
+public:
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
+
+	bool addPlayer(PlayerPtr player, PlayerID id = USHRT_MAX);
+	bool deletePlayer(PlayerPtr player);
+	bool swapPlayer(PlayerPtr old_player, PlayerPtr new_player);
+	void recordPlayerLoggedIn(PlayerPtr player);
+	bool warpPlayerToSafePlace(PlayerID playerId);
+
+public:
+	std::optional<std::string> getFlag(std::string_view flagName) const;
+	bool deleteFlag(std::string_view flagName, bool sendToPlayers = true);
+	bool setFlag(std::string_view flagPair, bool sendToPlayers = true);
+	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayers = true);
+
+public:
+	void calculateNWTime();
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
+
+public:
+	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr);
 	void logToFile(const std::string& fileName, const std::string& message) const;
-
-	bool deleteFlag(const std::string& pFlagName, bool pSendToPlayers = true);
-	bool setFlag(CString pFlag, bool pSendToPlayers = true);
-	bool setFlag(const std::string& pFlagName, const CString& pFlagValue, bool pSendToPlayers = true);
-
-	// Admin chat functions
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 
-	// Packet sending.
+public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
 	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
@@ -235,19 +234,14 @@ public:
 	// Specific packet sending
 	void sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
 
-	// Player Management
-	bool addPlayer(PlayerPtr player, PlayerID id = USHRT_MAX);
-	bool deletePlayer(PlayerPtr player);
-	bool swapPlayer(PlayerPtr old_player, PlayerPtr new_player);
-	void playerLoggedIn(PlayerPtr player);
-	bool warpPlayerToSafePlace(PlayerID playerId);
-
+public:
 	// Translation Management
 	bool TS_Load(const CString& pLanguage, const CString& pFileName);
 	CString TS_Translate(const CString& pLanguage, const CString& pKey);
 	void TS_Reload();
 	void TS_Save();
 
+public:
 	// Weapon Management
 	std::shared_ptr<Weapon> getWeapon(const std::string& name);
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
@@ -255,7 +249,7 @@ public:
 	void updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon);
 	//void updateClassForPlayers(ScriptClass* pClass);
 
-	// NPC-Server Management
+public:
 	bool isNpcServerEnabled() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
 
@@ -280,16 +274,7 @@ public:
 		}
 	}
 
-	std::chrono::system_clock::time_point getServerStartTime() const
-	{
-		return m_serverStartTime;
-	}
-
-	TriggerDispatcher getTriggerDispatcher() const
-	{
-		return m_triggerActionDispatcher;
-	}
-
+public:
 	void setShootParams(const std::string& params)
 	{
 		m_shootParams = params;
@@ -302,8 +287,7 @@ public:
 
 public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
-	FlagContainer Flags;
-	GameVariableStore Variables;
+	ScriptContainer Scripting;
 
 private:
 	bool doTimedEvents();
@@ -321,22 +305,23 @@ private:
 	PackageManager m_packageManager;
 	CString m_allowedVersionString, m_name, m_serverMessage;
 	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
-
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
 
-	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
-	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
-	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_INIT };
+	std::unique_ptr<IAccountLoader> m_accountLoader;
+	std::unique_ptr<INPCLoader> m_npcLoader;
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
 	std::unordered_map<std::string, std::shared_ptr<Level>, string::string_hash, string::string_hash_equal> m_levelList;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
+	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
+	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
+	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_INIT };
+
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
 
-	ServerList m_serverlist;
 	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNpcServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
 	std::chrono::system_clock::time_point m_serverStartTime;
 	unsigned int m_serverTime;
@@ -347,10 +332,8 @@ private:
 
 	std::string m_shootParams;
 
-	std::unique_ptr<IAccountLoader> m_accountLoader;
-	std::unique_ptr<INPCLoader> m_npcLoader;
-
 	std::shared_ptr<NPCServer> m_npcServer;
+	ServerList m_serverlist;
 
 	UPNP m_upnp;
 	std::thread m_upnpThread;

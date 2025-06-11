@@ -9,7 +9,6 @@
 #include <object/Character.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/SourceCode.h>
-#include <utilities/FlagContainer.h>
 #include <utilities/PropsContainer.h>
 
 using namespace preagonal::props;
@@ -278,11 +277,7 @@ public:
 	std::array<uint8_t, 10> saves;
 	std::array<clock::time_point, NPCPROP_COUNT> modTime;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
-	FlagContainer flags;
 	ScriptContainer scripting;
-
-private:
-	//prop_access getPropAccess(NPCProp prop);
 
 private:
 	BabyDI_INJECT(Server, m_server);
