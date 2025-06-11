@@ -519,10 +519,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		auto& store = m_server->Scripting.variables.store;
 		if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
 		{
-			if (search->second->has<bool>() && !search->second->has<std::string>())
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
-			else
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=");
+			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
 			store.erase(search);
 		}
 	}
