@@ -13,7 +13,7 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <utilities/StringUtils.h>
 
-using namespace preagonal::grammar::gs1;
+using namespace preagonal::gs1::grammar;
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
@@ -103,10 +103,12 @@ Character* getCharacterFromSource(const ScriptObjectSource& source, std::optiona
 GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
 {
 	input = std::make_shared<antlr4::ANTLRInputStream>(script);
-	lexer = std::make_shared<preagonal::grammar::gs1::GS1Lexer>(input.get());
+	lexer = std::make_shared<GS1Lexer>(input.get());
 	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
-	parser = std::make_shared<preagonal::grammar::gs1::GS1Parser>(tokens.get());
+	parser = std::make_shared<GS1Parser>(tokens.get());
+	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
+	visitor->builtInStore = &variables;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -152,27 +154,15 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 	if (npc != nullptr)
 		level = npc->level.lock();
 
-	GameVariableStore builtInStore;
-
 	// Set flags.
-	setEventFlags(event.type, builtInStore);
-	setPlayerFlags(builtInStore, npc, player);
-	setNpcFlags(builtInStore, npc);
-	setLevelFlags(builtInStore, npc, level);
-	setOtherFlags(builtInStore, npc, player, level);
-
-	// This can be uncommented when a proper default store is implemented.
-	builtInStore.static_container = true;
-
-	// TODO(Nalin): Link to the server variable handler.
-
-	// For debugging.
-	// log::printLine(log::server, wrapper->program->toStringTree(wrapper->parser.get(), true));
+	setEventFlags(event.type, wrapper->variables);
+	setPlayerFlags(wrapper->variables, npc, player);
+	setNpcFlags(wrapper->variables, npc);
+	setLevelFlags(wrapper->variables, npc, level);
+	setOtherFlags(wrapper->variables, npc, player, level);
 
 	// Execute the script.
-	GS1Visitor visitor;
-	visitor.builtInStore = &builtInStore;
-	visitor.execute(event, source, *wrapper->parser.get(), *wrapper->program);
+	wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
 
 	return false;
 }

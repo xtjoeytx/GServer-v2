@@ -4,13 +4,8 @@
 #include <common.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 
-namespace preagonal::grammar::gs1
-{
-class GS1Visitor;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -223,8 +218,10 @@ constexpr std::array<std::string_view, 199> serverSideCommands =
 		server{EVENT}	- invokes an event on the control-npc: if (actionserver{EVENT})
 */
 
-void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName);
+class GS1Visitor;
+void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName);
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // end namespace preagonal::gs1::grammar
+
 #endif // GS1COMMANDS_H

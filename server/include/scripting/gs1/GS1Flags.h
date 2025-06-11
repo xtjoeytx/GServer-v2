@@ -19,5 +19,6 @@ void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 void setOtherFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // end namespace preagonal::gs1
+
 #endif // GS1FLAGS_H

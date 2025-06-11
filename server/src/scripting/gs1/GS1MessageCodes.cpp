@@ -1,3 +1,5 @@
+#include <array>
+#include <algorithm>
 #include <random>
 
 #include <common.h>
@@ -12,10 +14,8 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/StringUtils.h>
 
-using namespace preagonal::grammar::gs1;
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -169,6 +169,12 @@ static MessageCodeHandleMap GenerateMap()
 	return map;
 }
 
+constexpr std::array<std::string_view, 8> flagProcessingMessageCodes =
+{
+	"I"sv,
+	"s"sv,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using pickerReturn = std::pair<GameValue, uint8_t>;
@@ -273,7 +279,7 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view messageCode)
 {
 	static MessageCodeHandleMap map = GenerateMap();
 
@@ -281,6 +287,26 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, std::string_view messageC
 		throw std::runtime_error("processMessageCode received an empty visitor");
 	if (messageCode.empty())
 		throw std::runtime_error("processMessageCode received an empty message code");
+
+	// Record if we are expecting a flag.
+	bool oldExpectingFlag = visitor->expectingFlag;
+	visitor->expectingFlag = (std::ranges::find(flagProcessingMessageCodes, messageCode) != std::ranges::end(flagProcessingMessageCodes));
+
+	// Collect the arguments from the node.
+	std::vector<GS1ScriptValue*> arguments;
+	auto children = visitor->visitChildrenAndCollect(node);
+	for (auto& result : children)
+	{
+		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (container == nullptr)
+			throw std::runtime_error("BuiltInFunction argument is not a valid GS1ScriptValue");
+
+		// Add to the arguments.
+		arguments.push_back(container);
+	}
+
+	// Reset the expectingFlag toggle back to normal.
+	visitor->expectingFlag = oldExpectingFlag;
 
 	// #C0 - #C4
 	if (messageCode.starts_with("C"))
@@ -724,4 +750,4 @@ GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view message
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal::gs1
+} // end namespace preagonal::gs1::grammar

@@ -12,10 +12,8 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 
-using namespace preagonal::gs1;
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::grammar::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +25,7 @@ public:
 public:
 	std::vector<std::string> tokenizeTokens;
 	GameVariableStore* builtInStore = nullptr;
+	bool expectingFlag = false;
 
 public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
@@ -185,6 +184,6 @@ inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal::grammar::gs1
+} // end namespace preagonal::gs1::grammar
 
 #endif // GS1VISITOR_H

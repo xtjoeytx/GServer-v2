@@ -1,3 +1,5 @@
+#include <array>
+#include <algorithm>
 #include <random>
 #include <numbers>
 #include <numeric>
@@ -17,10 +19,8 @@
 #include <utilities/StringUtils.h>
 #include <utilities/Log.h>
 
-using namespace preagonal::grammar::gs1;
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -305,9 +305,21 @@ static BuiltInCommandHandleMap GenerateMap()
 	return map;
 }
 
+constexpr std::array<std::string_view, 8> flagProcessingCommands =
+{
+	"addstring"sv,
+	"deletestring"sv,
+	"insertstring"sv,
+	"removestring"sv,
+	"replacestring"sv,
+	"set"sv,
+	"setstring"sv,
+	"unset"sv,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName)
+void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName)
 {
 	static BuiltInCommandHandleMap map = GenerateMap();
 
@@ -351,6 +363,9 @@ void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4:
 		popContext = true;
 	}
 
+	// Record if we are expecting a flag.
+	visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
+
 	// Collect the arguments from the node.
 	std::vector<GS1ScriptValue*> arguments;
 	auto children = visitor->visitChildrenAndCollect(node);
@@ -363,6 +378,9 @@ void processBuiltInCommand(preagonal::grammar::gs1::GS1Visitor* visitor, antlr4:
 		// Add to the arguments.
 		arguments.push_back(container);
 	}
+
+	// Unset the expecting flag.
+	visitor->expectingFlag = false;
 
 	// Execute the command.
 	it->second(visitor, commandName, arguments);
@@ -1806,4 +1824,4 @@ void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const s
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal::gs1
+} // end namespace preagonal::gs1::grammar

@@ -23,6 +23,12 @@
 #include <GS1Lexer.h>
 #include <GS1Parser.h>
 
+// Forward declare.
+namespace preagonal::gs1::grammar
+{
+class GS1Visitor;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
 {
@@ -55,10 +61,12 @@ struct GS1ScriptWrapper
 	GS1ScriptWrapper(std::string_view script);
 
 	std::shared_ptr<antlr4::ANTLRInputStream> input;
-	std::shared_ptr<preagonal::grammar::gs1::GS1Lexer> lexer;
+	std::shared_ptr<grammar::GS1Lexer> lexer;
 	std::shared_ptr<antlr4::CommonTokenStream> tokens;
-	std::shared_ptr<preagonal::grammar::gs1::GS1Parser> parser;
-	preagonal::grammar::gs1::GS1Parser::ProgramContext* program = nullptr;
+	std::shared_ptr<grammar::GS1Parser> parser;
+	std::shared_ptr<grammar::GS1Visitor> visitor;
+	grammar::GS1Parser::ProgramContext* program = nullptr;
+	GameVariableStore variables;
 };
 
 //----------------------------

@@ -1,3 +1,5 @@
+#include <array>
+#include <algorithm>
 #include <random>
 #include <numbers>
 
@@ -14,10 +16,8 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/StringUtils.h>
 
-using namespace preagonal::grammar::gs1;
-
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -166,9 +166,15 @@ static BuiltInFunctionHandleMap GenerateMap()
 	return map;
 }
 
+constexpr std::array<std::string_view, 2> flagProcessingFunctions =
+{
+	"lindexof"sv,
+	"sarraylen"sv,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments)
+GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view functionName)
 {
 	static BuiltInFunctionHandleMap map = GenerateMap();
 
@@ -177,12 +183,37 @@ GS1ScriptValue processBuiltInFunction(preagonal::grammar::gs1::GS1Visitor* visit
 	if (functionName.empty())
 		throw std::runtime_error("processBuiltInFunction received an empty function name");
 
+	// Find the command in the map.
 	size_t hash = string::string_hash{}(functionName);
 	auto it = map.find(hash);
-	if (it != map.end())
-		return it->second(visitor, functionName, arguments);
+	if (it == map.end())
+	{
+		log::printLine(log::script, "processBuiltInFunction received an unknown function: {}", functionName);
+		return {};
+	}
 
-	throw std::invalid_argument("processBuiltInFunction received an unknown function");
+	// Record if we are expecting a flag.
+	bool oldExpectingFlag = visitor->expectingFlag;
+	visitor->expectingFlag = (std::ranges::find(flagProcessingFunctions, functionName) != std::ranges::end(flagProcessingFunctions));
+
+	// Collect the arguments from the node.
+	std::vector<GS1ScriptValue*> arguments;
+	auto children = visitor->visitChildrenAndCollect(node);
+	for (auto& result : children)
+	{
+		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (container == nullptr)
+			throw std::runtime_error("BuiltInFunction argument is not a valid GS1ScriptValue");
+
+		// Add to the arguments.
+		arguments.push_back(container);
+	}
+
+	// Reset the expectingFlag toggle back to normal.
+	visitor->expectingFlag = oldExpectingFlag;
+
+	// Execute the command.
+	return it->second(visitor, functionName, arguments);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -852,4 +883,4 @@ GS1ScriptValue fn_worldy(GS1Visitor* visitor, std::string_view messageCode, cons
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal::gs1
+} // end namespace preagonal::gs1::grammar

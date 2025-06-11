@@ -15,11 +15,12 @@
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace preagonal::grammar::gs1
+namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -125,6 +126,30 @@ static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
 	if (auto* gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return *gs1ScriptValue;
 	return {};
+}
+
+static void applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier)
+{
+	if (!storage.has_value())
+		return;
+
+	switch (storage.value())
+	{
+		case GS1Parser::STORAGE_CLIENT:
+		case GS1Parser::STORAGE_CLIENTO:
+			identifier = std::format("client.{}", identifier);
+			break;
+		case GS1Parser::STORAGE_CLIENTR:
+		case GS1Parser::STORAGE_CLIENTRO:
+			identifier = std::format("clientr.{}", identifier);
+			break;
+		case GS1Parser::STORAGE_SERVER:
+			identifier = std::format("server.{}", identifier);
+			break;
+		case GS1Parser::STORAGE_SERVERR:
+			identifier = std::format("serverr.{}", identifier);
+			break;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,6 +305,8 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			break;
 		case GS1Parser::STORAGE_CLIENT:
 		case GS1Parser::STORAGE_CLIENTR:
+		case GS1Parser::STORAGE_CLIENTO:	// Not supported yet.  GR extension.
+		case GS1Parser::STORAGE_CLIENTRO:	// Not supported yet.  GR extension.
 			store = findGameVariableStoreFromSourceStack(ScriptObjectSourceType::PLAYER);
 			break;
 		case GS1Parser::STORAGE_SERVER:
@@ -592,8 +619,17 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		index = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
 	}
 
+	// Append the storage modifier to certain variable names.
+	// This is because they have special considerations.
+	if (storage.has_value())
+		applyStorageToIdentifier(storage.value(), *identifier);
+
+	// If we have no storage value, and we are expecting a flag, force client storage.
+	if (!storage.has_value() && expectingFlag)
+		storage = GS1Parser::STORAGE_CLIENT;
+
 	// Get the game variable store for the identifier.
-	// If there is no storage type, it gets set on the original source NPC.
+	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).
 	auto variable = getGameVariableFromStorage(*identifier, storage);
 	auto* gameVariable = getGameVariableFromVariant(variable);
 	if (gameVariable != nullptr)
@@ -711,20 +747,8 @@ std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallCont
 	auto command = context->FUNCTION()->getText();
 	string::trimRightMutate(command);
 
-	// Process the arguments.
-	std::vector<GS1ScriptValue*> arguments;
-	for (auto& result : results)
-	{
-		auto* container = std::any_cast<GS1ScriptValue>(&result);
-		if (container == nullptr)
-			throw std::runtime_error("BuiltInFunctionCall argument is not a valid GS1ScriptValue");
-
-		// Add to the arguments.
-		arguments.push_back(container);
+	return processBuiltInFunction(this, context, command);
 	}
-
-	return processBuiltInFunction(this, command, arguments);
-}
 
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
 {
@@ -904,20 +928,8 @@ std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 	if (messageCodeView.starts_with('#'))
 		messageCodeView.remove_prefix(1);
 
-	// Process the arguments.
-	std::vector<GS1ScriptValue*> arguments;
-	for (auto& result : results)
-	{
-		auto* container = std::any_cast<GS1ScriptValue>(&result);
-		if (container == nullptr)
-			throw std::runtime_error("MessageCode argument is not a valid GS1ScriptValue");
-
-		// Add to the arguments.
-		arguments.push_back(container);
-	}
-
 	// Process the message code.
-	return std::make_any<GS1ScriptValue>(preagonal::gs1::processMessageCode(this, messageCodeView, arguments));
+	return processMessageCode(this, context, messageCodeView);
 }
 
 std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)
@@ -1034,4 +1046,4 @@ std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal::grammar::gs1
+} // end namespace preagonal::gs1::grammar

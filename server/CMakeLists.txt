@@ -195,13 +195,13 @@ target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include"
 antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
 	FALSE						# 4: Generate listener
 	FALSE						# 5: Generate visitor
-	"preagonal::grammar::gs1"	# 6: Namespace
+	"preagonal::gs1::grammar"	# 6: Namespace
 )
 message("${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/GS1Parser.g4")
 antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Parser.g4" PARSER
 	FALSE						# 4: Generate listener
 	TRUE						# 5: Generate visitor
-	"preagonal::grammar::gs1"	# 6: Namespace
+	"preagonal::gs1::grammar"	# 6: Namespace
 	"${ANTLR4_TOKEN_FILES_GS1Lexer}"		# 7: Dependency - Token files
 	"${ANTLR4_TOKEN_DIRECTORY_GS1Lexer}"	# 8: Location of grammars - Token directory
 )
