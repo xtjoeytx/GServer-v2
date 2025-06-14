@@ -1363,7 +1363,7 @@ void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std:
 				auto params = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[1]));
 				for (auto i = 0; i < params.size() && i < 30; ++i)
 				{
-					auto propId = static_cast<NPCProp>(NpcGaniAttrPackets.at(i));
+					auto propId = static_cast<NPCProp>(NPCGaniAttrPackets.at(i));
 					auto prop = npc->getProp(propId);
 					prop->apply(params[i]);
 					npc->setProp(propId, SetBy::SERVER, prop);

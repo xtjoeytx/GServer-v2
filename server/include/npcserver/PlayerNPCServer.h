@@ -1,20 +1,18 @@
 #ifndef PLAYERNPCSERVER_H
 #define PLAYERNPCSERVER_H
 
-#include "object/Player.h"
+#include <object/Player.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
-class PlayerNpcServer : public Player
+class PlayerNPCServer : public Player
 {
 public:
-	PlayerNpcServer(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerNpcServer() override;
+	PlayerNPCServer(CSocket* pSocket, PlayerID pId);
+	virtual ~PlayerNPCServer() override;
 
 public:
 	virtual bool onRecv() override;
@@ -28,7 +26,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // PLAYERNPCSERVER_H

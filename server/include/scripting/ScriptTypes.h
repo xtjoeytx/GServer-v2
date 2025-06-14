@@ -10,18 +10,19 @@ namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// The type of script.
+/// The type of script.
 enum class ScriptType
 {
+	NPC,
 	CLASS,
 	WEAPON,
 	SERVER,
 
 	COUNT
 };
-constexpr size_t SCRIPT_TYPE_COUNT = static_cast<size_t>(ScriptType::COUNT);
+constexpr size_t SCRIPTTYPE_COUNT = static_cast<size_t>(ScriptType::COUNT);
 
-// The script events known by the server.
+/// The script events known by the server.
 enum class ScriptEventType : uint8_t
 {
 	CUSTOM = 0,
@@ -52,7 +53,7 @@ enum class ScriptEventType : uint8_t
 
 	COUNT
 };
-constexpr size_t SCRIPT_EVENT_TYPE_COUNT = static_cast<size_t>(ScriptEventType::COUNT);
+constexpr size_t SCRIPTEVENTTYPE_COUNT = static_cast<size_t>(ScriptEventType::COUNT);
 
 ///////////////////////////////////////////////////////////////////////////////
 

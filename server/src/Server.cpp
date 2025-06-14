@@ -13,7 +13,7 @@
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
 #include <npcserver/NPCServer.h>
-#include <npcserver/PlayerNpcServer.h>
+#include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
@@ -65,7 +65,7 @@ Server::Server(const CString& pName)
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	auto time_now = std::chrono::high_resolution_clock::now();
-	m_lastTimer = m_lastNpcServerTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
+	m_lastTimer = m_lastNPCServerTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateNWTime();
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
@@ -84,7 +84,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	if (ret) return ret;
 
 	// Load the NPC-Server.
-	loadNpcServer();
+	loadNPCServer();
 
 	// Load the server objects.
 	ret = loadServerObjects();
@@ -262,12 +262,12 @@ bool Server::doMain()
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
 	// NPC-Server runs every 100ms.
-	if (isNpcServerEnabled())
+	if (hasNPCServer())
 	{
-		auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastNpcServerTimer);
+		auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastNPCServerTimer);
 		if (time_diff.count() >= 100)
 		{
-			m_lastNpcServerTimer = currentTimer;
+			m_lastNPCServerTimer = currentTimer;
 			m_npcServer->run(time_diff);
 		}
 	}
@@ -840,7 +840,7 @@ void Server::loadMaps(bool print)
 	}
 }
 
-void Server::loadNpcServer()
+void Server::loadNPCServer()
 {
 	if (m_settings.getBool("serverside", true))
 	{
@@ -946,17 +946,17 @@ FileSystem* Server::getFileSystemByType(CString& type)
 
 std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers)
 {
-	// Get available NPC Id.
+	// Get available NPC ID.
 	NPCID newId = m_npcIdGenerator.getAvailableId();
 
-	// New Npc
+	// New NPC
 	auto newNPC = std::make_shared<NPC>(newId, type);
 
 	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(newId, newNPC));
 
 	// Set the default warp type.
-	newNPC->warpRestrictions = isNpcServerEnabled() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// Set NPC props.
 	newNPC->level = level;
@@ -967,7 +967,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->recordInitialState();
 
 	// Created event.
-	if (isNpcServerEnabled())
+	if (hasNPCServer())
 	{
 		newNPC->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 	}

@@ -7,8 +7,8 @@
 #include <common.h>
 
 #include <object/Character.h>
+#include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
-#include <scripting/SourceCode.h>
 #include <utilities/PropsContainer.h>
 
 using namespace preagonal::props;
@@ -18,7 +18,7 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-inline constexpr std::array<uint8_t, 30> NpcGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
+inline constexpr std::array<uint8_t, 30> NPCGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
 class Server;
 class Level;
@@ -178,7 +178,7 @@ public:
 	~NPC() = default;
 
 	void setScript(std::string_view script);
-	const SourceCode& getScript() const noexcept { return m_script; }
+	const Script& getScript() const noexcept { return m_script; }
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -290,7 +290,7 @@ private:
 	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;
 	bool m_blockPositionUpdates = false;
 
-	SourceCode m_script;
+	Script m_script;
 
 	std::string m_initialImage;
 	std::weak_ptr<Level> m_initialLevel;

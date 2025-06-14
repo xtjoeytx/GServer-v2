@@ -91,7 +91,7 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 		variableStore.add("isleader", true);
 }
 
-void setNpcFlags(GameVariableStore& variableStore, NPCPtr npc)
+void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 {
 	if (npc == nullptr)
 		return;

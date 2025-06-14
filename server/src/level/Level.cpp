@@ -196,7 +196,7 @@ CString Level::getLinksPacket()
 }
 
 // TODO: Replace with a function in server that sends npc props from a list of ids.
-void Level::sendNpcsToPlayer(std::shared_ptr<Player> player, clock::time_point time)
+void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time)
 {
 	for (const auto& npcId : m_npcs)
 	{

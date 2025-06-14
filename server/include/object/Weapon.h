@@ -7,16 +7,14 @@
 #include <string>
 
 #include <CString.h>
-#include "BabyDI.h"
+#include <BabyDI.h>
 
-#include "level/LevelItem.h"
-#include "scripting/SourceCode.h"
+#include <level/LevelItem.h>
+#include <scripting/Script.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class Server;
@@ -38,7 +36,7 @@ public:
 	CString getWeaponPacket(int clientVersion) const;
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
 	LevelItemType getWeaponId() const { return m_weaponDefault; }
-	const SourceCode& getSource() const { return m_source; }
+	const Script& getSource() const { return m_source; }
 	const std::string& getByteCodeFile() const { return m_bytecodeFile; }
 	const std::string& getImage() const { return m_weaponImage; }
 	const std::string& getName() const { return m_weaponName; }
@@ -54,7 +52,7 @@ protected:
 	LevelItemType m_weaponDefault;
 	time_t m_modTime;
 
-	SourceCode m_source;
+	Script m_source;
 	std::string m_bytecodeFile;
 
 	std::string m_weaponImage;
@@ -64,7 +62,6 @@ protected:
 using TWeaponPtr = std::shared_ptr<Weapon>;
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // WEAPON_H

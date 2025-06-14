@@ -68,7 +68,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	auto npc = std::make_shared<NPC>(id, NPCType::DBNPC);
 
 	// Set the default warp type.
-	if (server->isNpcServerEnabled())
+	if (server->hasNPCServer())
 	{
 		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
@@ -402,7 +402,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	for (auto& [flag, value] : npc->scripting.variables.store)
 	{
 		// Ignore flags.
-		if (value->has<bool>() && !value->has_many()) continue;
+		if (value->has<bool>() && !value->has<std::string>()) continue;
 
 		// Ignore temporary variables.
 		if (value->temporary) continue;

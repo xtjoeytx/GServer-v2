@@ -60,7 +60,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 {
 	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
 	auto level = player ? player->getLevel() : nullptr;
-	bool restrictedPropAllowed = !m_server->isNpcServerEnabled() || setBy == props::SetBy::SERVER;
+	bool restrictedPropAllowed = !m_server->hasNPCServer() || setBy == props::SetBy::SERVER;
 
 	props::SetResults result{ .propId = { PROPID(prop) } };
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
@@ -498,7 +498,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			NPCID newNpcId = numProp->value;
+			NPCID newNPCID = numProp->value;
 
 			if (player == nullptr)
 				break;
@@ -516,7 +516,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			}
 
 			// Picked up.
-			if (player->getCarryNpcId() == 0 && newNpcId != 0)
+			if (player->getCarryNPC() == 0 && newNPCID != 0)
 			{
 				// TODO: Remove when an npcserver is created.
 				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
@@ -527,22 +527,22 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 						for (auto& [otherId, other] : playerList)
 						{
 							if (other.get() == this) continue;
-							if (other->getProp<PlayerProp::CARRYNPC>().value == newNpcId)
+							if (other->getProp<PlayerProp::CARRYNPC>().value == newNPCID)
 							{
 								// Somebody else got this NPC first.  Force the player to throw his down
 								// and tell the player to remove the NPC from memory.
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPC >> (int)0);
-								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNpcId);
+								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNPCID);
 								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player, { m_id });
 								isOwner = false;
-								newNpcId = 0;
+								newNPCID = 0;
 								break;
 							}
 						}
 					}
 				}
 			}
-			player->setCarryNpcId(newNpcId);
+			player->setCarryNPC(newNPCID);
 			break;
 		}
 

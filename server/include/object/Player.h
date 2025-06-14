@@ -179,7 +179,7 @@ public:
 	float getX() const { return account.character.pixelX / 16.0f; }
 	float getY() const { return account.character.pixelY / 16.0f; }
 	float getZ() const { return account.character.pixelZ / 16.0f; }
-	NPCID getCarryNpcId() const { return m_carryNpcId; }
+	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 
 	// Set Properties
@@ -189,7 +189,7 @@ public:
 	void setServerName(CString& tmpServerName) { m_serverName = tmpServerName; }
 	void setChat(const CString& pChat);
 	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
-	void setCarryNpcId(NPCID id) { m_carryNpcId = id; }
+	void setCarryNPC(NPCID id) { m_carryNPC = id; }
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -437,7 +437,7 @@ protected:
 	uint8_t m_carrySprite = 0xFF;
 	PlayerListCategory m_playerListCategory = PlayerListCategory::PLAYERLIST;
 	NPCID m_attachNPC = 0;
-	NPCID m_carryNpcId = 0;
+	NPCID m_carryNPC = 0;
 	std::array<uint8_t, 5> m_effectColors{ 0, 0, 0, 0, 0 };
 
 	std::vector<CString> m_privateMessageServerList;
@@ -540,7 +540,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::HORSEGIF,	PropertyString,				account.character.horseImage) \
 	DO(PlayerProp::HORSEBUSHES,	PropertyNumeric<GBYTE1>,	m_horseBombCount) \
 	DO(PlayerProp::EFFECTCOLORS,PropertyEffectColors,		m_effectColors) \
-	DO(PlayerProp::CARRYNPC,	PropertyNumeric<GBYTE3>,	m_carryNpcId) \
+	DO(PlayerProp::CARRYNPC,	PropertyNumeric<GBYTE3>,	m_carryNPC) \
 	DO(PlayerProp::APCOUNTER,	PropertyNumeric<GBYTE2>,	account.apCounter) \
 	DO(PlayerProp::MAGICPOINTS,	PropertyNumeric<GBYTE1>,	account.character.mp) \
 	DO(PlayerProp::KILLSCOUNT,	PropertyNumeric<GBYTE3>,	account.kills) \

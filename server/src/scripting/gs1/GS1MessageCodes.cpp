@@ -80,7 +80,7 @@ constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
 		return NPCProp::COLORS;
 
 	if (index >= 30 && index <= 60)
-		return static_cast<NPCProp>(NpcGaniAttrPackets[index - 30]);
+		return static_cast<NPCProp>(NPCGaniAttrPackets[index - 30]);
 
 	return NPCProp::ID;
 }
@@ -398,10 +398,10 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 	{
 		[](PlayerPtr& player) -> std::string
 		{
-			if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr && client->getCarryNpcId() != 0)
+			if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr && client->getCarryNPC() != 0)
 			{
 				auto* server = BabyDI::Get<Server>();
-				if (auto npc = server->getNPC(client->getCarryNpcId()); npc != nullptr)
+				if (auto npc = server->getNPC(client->getCarryNPC()); npc != nullptr)
 					return npc->image;
 			}
 			return std::string{};

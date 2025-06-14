@@ -1,16 +1,15 @@
-#include "Server.h"
-#include "level/Level.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "object/Weapon.h"
-#include "player/PlayerClient.h"
-#include "utilities/StringUtils.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <object/Weapon.h>
+#include <player/PlayerClient.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
@@ -314,5 +313,4 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

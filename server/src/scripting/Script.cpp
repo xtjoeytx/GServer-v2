@@ -1,9 +1,8 @@
-#include <scripting/SourceCode.h>
 
 #include <BabyDI.h>
 
 #include <Server.h>
-#include <npcserver/NPCServer.h>
+#include <scripting/Script.h>
 #include <scripting/IScriptEngine.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -11,7 +10,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
+const ScriptByteCode& Script::getClientByteCode() const noexcept
 {
 	static ScriptByteCode empty;
 
@@ -24,12 +23,12 @@ const ScriptByteCode& SourceCode::getClientByteCode() const noexcept
 	return empty;
 }
 
-void SourceCode::executeEvents(ScriptContainer& container, ScriptObjectSource source) const
+void Script::executeEvents(ScriptContainer& container, ScriptObjectSource source) const
 {
 	return executeEvents(container.events, source);
 }
 
-void SourceCode::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+void Script::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
@@ -42,7 +41,7 @@ void SourceCode::executeEvents(ScriptEventQueue& events, ScriptObjectSource sour
 	}
 }
 
-std::string SourceCode::minify(const std::string& src) noexcept
+std::string Script::minify(const std::string& src) noexcept
 {
 	if (src.empty())
 		return src;
@@ -101,7 +100,7 @@ std::string SourceCode::minify(const std::string& src) noexcept
 	return minified;
 }
 
-void SourceCode::split(std::string& source) noexcept
+void Script::split(std::string& source) noexcept
 {
 	static constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
 
@@ -109,7 +108,7 @@ void SourceCode::split(std::string& source) noexcept
 	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
 	auto server = BabyDI::Get<Server>();
 	bool hasServerSide = true;
-	if (server && !server->isNpcServerEnabled())
+	if (server && !server->hasNPCServer())
 		hasServerSide = false;
 
 	// If we have serverside code, find the start of the clientside terminator.

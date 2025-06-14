@@ -11,7 +11,7 @@ namespace preagonal::gs2
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-inline constexpr std::array<std::string_view, SCRIPT_TYPE_COUNT> scriptTypeStrings =
+inline constexpr std::array<std::string_view, SCRIPTTYPE_COUNT> scriptTypeStrings =
 {
 	/* ScriptType::CLASS */ "class",
 	/* ScriptType::WEAPON */ "weapon"

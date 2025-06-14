@@ -1,20 +1,19 @@
 #include <CString.h>
 
-#include "IConfig.h"
+#include <IConfig.h>
 
-#include "Server.h"
-#include "level/Level.h"
-#include "object/NPC.h"
-#include "object/Weapon.h"
-#include "player/PlayerNC.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <object/Weapon.h>
+#include <player/PlayerNC.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -592,5 +591,4 @@ HandlePacketResult PlayerNC::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

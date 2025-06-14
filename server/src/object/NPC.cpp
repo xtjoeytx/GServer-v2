@@ -8,8 +8,8 @@
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
-#include <scripting/SourceCode.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
@@ -269,16 +269,16 @@ void NPC::setScript(std::string_view script)
 {
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
-	m_script = std::move(SourceCode{ script });
+	m_script = std::move(Script{ script });
 
 	auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
-	if (m_server->isNpcServerEnabled() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
+	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
 
 	// If there is no npc-server, emulate script joins.
-	if (!m_server->isNpcServerEnabled() && m_server->Generation == ServerGeneration::CLASSIC)
+	if (!m_server->hasNPCServer() && m_server->Generation == ServerGeneration::CLASSIC)
 	{
 		auto joinedScript = performClientSideJoinHack(clientside, m_server->getFileSystem());
 		m_script.setModifiedSource(joinedScript);
@@ -286,15 +286,15 @@ void NPC::setScript(std::string_view script)
 	}
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
-	if (!m_server->isNpcServerEnabled())
+	if (!m_server->hasNPCServer())
 	{
 		m_weaponName = toWeaponName(clientside);
 	}
 
 	// If we have an npc-server, compile the scripts.
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 	{
-		auto npcServer = m_server->getNpcServer();
+		auto npcServer = m_server->getNPCServer();
 		if (m_server->Generation == ServerGeneration::CLASSIC)
 		{
 			m_script.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()));
@@ -900,7 +900,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			auto index = std::ranges::distance(NpcGaniAttrPackets.begin(), std::ranges::find(NpcGaniAttrPackets, PROPID(prop)));
+			auto index = std::ranges::distance(NPCGaniAttrPackets.begin(), std::ranges::find(NPCGaniAttrPackets, PROPID(prop)));
 			character.ganiAttributes[index] = strProp->value;
 			break;
 		}

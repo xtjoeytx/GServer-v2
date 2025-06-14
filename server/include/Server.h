@@ -45,7 +45,7 @@ namespace preagonal
 
 //class Player;
 class PlayerClient;
-class PlayerNpcServer;
+class PlayerNPCServer;
 class Level;
 class ScriptClass;
 class Map;
@@ -144,7 +144,7 @@ public:
 	void loadFolderConfig();
 
 	// NPC-Server
-	void loadNpcServer();
+	void loadNPCServer();
 
 public:
 	// Save Functions
@@ -252,8 +252,8 @@ public:
 	//void updateClassForPlayers(ScriptClass* pClass);
 
 public:
-	bool isNpcServerEnabled() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
-	std::shared_ptr<NPCServer> getNpcServer() const { return m_npcServer; }
+	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
+	std::shared_ptr<NPCServer> getNPCServer() const { return m_npcServer; }
 
 	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source)
 	{
@@ -324,7 +324,7 @@ private:
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
 
-	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNpcServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
+	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNPCServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
 	std::chrono::system_clock::time_point m_serverStartTime;
 	unsigned int m_serverTime;
 

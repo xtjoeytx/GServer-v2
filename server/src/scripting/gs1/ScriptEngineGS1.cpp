@@ -157,7 +157,7 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 	// Set flags.
 	setEventFlags(event.type, wrapper->variables);
 	setPlayerFlags(wrapper->variables, npc, player);
-	setNpcFlags(wrapper->variables, npc);
+	setNPCFlags(wrapper->variables, npc);
 	setLevelFlags(wrapper->variables, npc, level);
 	setOtherFlags(wrapper->variables, npc, player, level);
 

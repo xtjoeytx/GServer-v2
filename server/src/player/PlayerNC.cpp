@@ -7,21 +7,20 @@
 
 #include <IEnums.h>
 
-#include "IConfig.h"
+#include <IConfig.h>
 
-#include "Server.h"
-#include "level/Level.h"
-#include "npcserver/NPCServer.h"
-#include "object/NPC.h"
-#include "player/PlayerNC.h"
-#include "network/IPacketHandler.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <player/PlayerNC.h>
+#include <network/IPacketHandler.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 using PacketHandleFunc = HandlePacketResult(PlayerNC::*)(CString&);
@@ -158,10 +157,10 @@ bool PlayerNC::sendLogin()
 	if (Player::sendLogin() == false)
 		return false;
 
-	if (auto npcServer = m_server->getNpcServer(); npcServer != nullptr)
+	if (auto npcServer = m_server->getNPCServer(); npcServer != nullptr)
 	{
 		// Send database npcs
-		auto& npcList = npcServer->getGlobalNpcList();
+		auto& npcList = npcServer->getGlobalNPCList();
 		for (auto& [npcName, npcPtr] : npcList)
 		{
 			auto npc = npcPtr.lock();
@@ -197,5 +196,4 @@ bool PlayerNC::sendLogin()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

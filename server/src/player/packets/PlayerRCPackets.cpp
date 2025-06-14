@@ -1098,12 +1098,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
 				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
 				// TODO(NPCSERVER): Save NPCs to disk.
-				//m_server->saveNpcs();
+				//m_server->saveNPCs();
 			}
 			else if (words[0] == "/stats" && words.size() == 1)
 			{
 				// TODO(NPCSERVER): Execution stats.
-				//auto npcStats = m_server->calculateNpcStats();
+				//auto npcStats = m_server->calculateNPCStats();
 
 				sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
 

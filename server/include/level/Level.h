@@ -65,7 +65,7 @@ public:
 	CString getChestPacket(Player* pPlayer);
 	CString getHorsePacket();
 	CString getLinksPacket();
-	void sendNpcsToPlayer(std::shared_ptr<Player> player, clock::time_point time);
+	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time);
 	CString getSignsPacket(Player* pPlayer);
 
 	//! Gets the actual level name.

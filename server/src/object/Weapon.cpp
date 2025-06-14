@@ -4,29 +4,25 @@
 // GS2 Compiler includes
 #include <GS2Context.h>
 
-#include "Server.h"
-#include "object/NPC.h"
-#include "object/Weapon.h"
-#include "level/LevelItem.h"
-#include "npcserver/NPCServer.h"
-#include "scripting/SourceCode.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <level/LevelItem.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <object/Weapon.h>
+#include <scripting/Script.h>
+#include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
-// -- Constructor: Default Weapons -- //
 Weapon::Weapon(LevelItemType pId)
 	: m_modTime(0), m_weaponDefault(pId)
 {
 	m_weaponName = LevelItem::getItemName(m_weaponDefault);
 }
 
-// -- Constructor: Weapon Script -- //
 Weapon::Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
 	: m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
 {
@@ -38,7 +34,6 @@ Weapon::~Weapon()
 {
 }
 
-// -- Function: Load Weapon -- //
 std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 {
 	// File Path
@@ -135,7 +130,6 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	return weapon;
 }
 
-// -- Function: Save Weapon -- //
 bool Weapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
@@ -177,7 +171,6 @@ bool Weapon::saveWeapon()
 	return output.save(filename);
 }
 
-// -- Function: Get Player Packet -- //
 CString Weapon::getWeaponPacket(int clientVersion) const
 {
 	if (this->isDefault())
@@ -208,17 +201,16 @@ CString Weapon::getWeaponPacket(int clientVersion) const
 	return weaponPacket;
 }
 
-// -- Function: Update Weapon Image/Script -- //
 void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
 {
-	m_source = std::move(SourceCode{ std::move(pCode) });
+	m_source = std::move(Script{ std::move(pCode) });
 	m_weaponImage = std::move(pImage);
 	setModTime(pModTime == 0 ? time(0) : pModTime);
 
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 	{
 		// If we have an npc-server, compile the scripts.
-		auto npcServer = m_server->getNpcServer();
+		auto npcServer = m_server->getNPCServer();
 		if (m_server->Generation == ServerGeneration::CLASSIC)
 		{
 			m_source.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()));
@@ -236,5 +228,4 @@ void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pM
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

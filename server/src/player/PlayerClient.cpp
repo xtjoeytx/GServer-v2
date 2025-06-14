@@ -134,9 +134,9 @@ void PlayerClient::cleanup()
 		leaveLevel();
 
 		// Adjust carried NPC location.
-		if (m_carryNpcId != 0)
+		if (m_carryNPC != 0)
 		{
-			if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+			if (auto npc = m_server->getNPC(m_carryNPC); npc)
 			{
 				auto curtime = time(0);
 				npc->sendPropsFromResults(
@@ -144,7 +144,7 @@ void PlayerClient::cleanup()
 					npc->setPropWith<NPCProp::Y2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelY + 16))
 				);
 			}
-			m_carryNpcId = 0;
+			m_carryNPC = 0;
 		}
 	}
 
@@ -1304,7 +1304,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
-	if (!m_server->isNpcServerEnabled())
+	if (!m_server->hasNPCServer())
 	{
 		if (!fromAdjacent || !m_pmap.expired())
 		{
@@ -1325,22 +1325,22 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		else
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
 
-		pLevel->sendNpcsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
 	}
 
 	// Move the carry NPC to the new level.
-	if (m_carryNpcId != 0)
+	if (m_carryNPC != 0)
 	{
-		pLevel->addNPC(m_carryNpcId);
-		if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+		pLevel->addNPC(m_carryNPC);
+		if (auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			npc->level = pLevel;
 
 			// Send the carry NPC props to other players.
 			if (!pLevel->isSingleplayer())
 			{
-				CString carryNpcProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNpcId << npc->getAllPropsPacket();
-				m_server->sendPacketToLevelArea(carryNpcProps, self(), { m_id });
+				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
+				m_server->sendPacketToLevelArea(carryNPCProps, self(), { m_id });
 			}
 		}
 	}
@@ -1445,7 +1445,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 
 	// Send NPCs.
 	if (!fromAdjacent)
-		pLevel->sendNpcsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
 
 	// Send connecting player props to players in nearby levels.
 	if (!pLevel->isSingleplayer() && !fromAdjacent)
@@ -1495,12 +1495,12 @@ bool PlayerClient::leaveLevel(bool resetCache)
 	}
 
 	// If I am carrying an NPC, tell others the NPC left the level.
-	if (m_carryNpcId != 0)
+	if (m_carryNPC != 0)
 	{
-		if (auto npc = m_server->getNPC(m_carryNpcId); npc)
+		if (auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
-			levelp->removeNPC(m_carryNpcId);
-			CString deletePacket = CString() >> (char)PLO_NPCDEL << (short)m_carryNpcId;
+			levelp->removeNPC(m_carryNPC);
+			CString deletePacket = CString() >> (char)PLO_NPCDEL << (short)m_carryNPC;
 			m_server->sendPacketToOneLevel(deletePacket, levelp, { m_id });
 		}
 	}

@@ -2,17 +2,15 @@
 
 #include <Server.h>
 #include <npcserver/NPCServer.h>
-#include <npcserver/PlayerNpcServer.h>
+#include <npcserver/PlayerNPCServer.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/gs2/ScriptEngineGS2.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void NPCServer::initialize()
@@ -21,6 +19,7 @@ void NPCServer::initialize()
 	scripting.defaultScriptEngine = "GS1";
 
 	m_npcServerPlayer = std::make_shared<PlayerNpcServer>(nullptr, NPCServerPlayerID);
+	m_npcServerPlayer = std::make_shared<PlayerNPCServer>(nullptr, NPCServerPlayerID);
 	m_npcServerPlayer->setType(PLTYPE_NPCSERVER);
 
 	auto& settings = m_server->getSettings();
@@ -49,8 +48,10 @@ void NPCServer::initialize()
 	loadClasses();
 
 	log::printLine(log::server, "Loading Database NPCs...");
-	loadDatabaseNpcs();
+	loadDatabaseNPCs();
 }
+
+//----------------------------
 
 void NPCServer::run(std::chrono::milliseconds timeDelta)
 {
@@ -127,7 +128,7 @@ void NPCServer::loadClasses()
 	}
 }
 
-void NPCServer::loadDatabaseNpcs()
+void NPCServer::loadDatabaseNPCs()
 {
 	auto indent = log::server.indent();
 
@@ -153,7 +154,7 @@ void NPCServer::loadDatabaseNpcs()
 
 std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 {
-	for (const auto& [_, npc] : m_globalNpcList)
+	for (const auto& [_, npc] : m_globalNPCList)
 	{
 		if (npc.lock()->name == name)
 		{
@@ -229,5 +230,4 @@ void NPCServer::updateClass(const std::string& className, const std::string& cla
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

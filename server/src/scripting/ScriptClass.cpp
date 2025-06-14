@@ -1,26 +1,18 @@
-#include "BabyDI.h"
+#include <common.h>
 
-#include <GS2Context.h>
-
-#include "Server.h"
-#include "npcserver/NPCServer.h"
-#include "scripting/ScriptClass.h"
+#include <Server.h>
+#include <npcserver/NPCServer.h>
+#include <scripting/ScriptClass.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 ScriptClass::ScriptClass(std::string_view className, std::string_view classSource)
-	: m_className(className)
+	: name(className)
 {
 	parseScripts(classSource);
-}
-
-ScriptClass::~ScriptClass()
-{
 }
 
 void ScriptClass::parseScripts(std::string_view classSource)
@@ -30,7 +22,7 @@ void ScriptClass::parseScripts(std::string_view classSource)
 	m_source = { classSource };
 
 	// Compile the scripts.
-	auto npcServer = server->getNpcServer();
+	auto npcServer = server->getNPCServer();
 	if (auto clientResults = npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, m_className, m_source.getClientSide()); clientResults != nullptr)
 	{
 		m_source.setClientCompiledScript(clientResults);
@@ -61,5 +53,4 @@ CString ScriptClass::getClassPacket() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

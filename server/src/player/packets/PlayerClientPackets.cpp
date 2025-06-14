@@ -125,7 +125,7 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 {
 	// Don't accept if we have an npc-server.
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	unsigned int npcId = pPacket.readGUInt();
@@ -489,7 +489,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 
 	// Server flags are handled differently than client flags.
 	// If we have an npc-server, clients can't set server flags.
-	if (!m_server->isNpcServerEnabled())
+	if (!m_server->hasNPCServer())
 	{
 		if (flagName.find("server.") != -1)
 		{
@@ -531,7 +531,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 
 	// Server flags are handled differently than client flags.
 	// TODO: check serveroptions
-	if (!m_server->isNpcServerEnabled())
+	if (!m_server->hasNPCServer())
 	{
 		if (flagName.find("server.") != std::string_view::npos)
 		{
@@ -583,7 +583,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 {
 	// Don't accept if we have an npc-server.
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	CSettings& settings = m_server->getSettings();
@@ -609,7 +609,7 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_NPCDEL(CString& pPacket)
 {
 	// Don't accept if we have an npc-server.
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	unsigned int nid = pPacket.readGUInt();
@@ -788,7 +788,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 {
 	// Don't accept if we have an npc-server.
-	if (m_server->isNpcServerEnabled())
+	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	unsigned char type = pPacket.readGUChar();
@@ -1414,10 +1414,10 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 
 	log::printLine(log::server, "PLI_UPDATECLASS: \"{}\"\n", className);
 
-	if (!m_server->isNpcServerEnabled())
+	if (!m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	auto npcServer = m_server->getNpcServer();
+	auto npcServer = m_server->getNPCServer();
 	if (auto classObj = npcServer->getClass(className); classObj != nullptr)
 	{
 		auto bytecode = classObj->getSource().getClientByteCode();

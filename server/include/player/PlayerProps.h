@@ -7,9 +7,9 @@
 #include <concepts>
 #include <cstdint>
 
-#include "BabyDI.h"
+#include <BabyDI.h>
 
-#include "utilities/inplace_vector.h"
+#include <utilities/inplace_vector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

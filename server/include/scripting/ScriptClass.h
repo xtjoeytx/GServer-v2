@@ -6,43 +6,40 @@
 
 #include <CString.h>
 
-#include "scripting/SourceCode.h"
+#include <scripting/Script.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class ScriptClass
 {
 public:
 	ScriptClass(std::string_view className, std::string_view classSource);
-	~ScriptClass();
+	~ScriptClass() = default;
 
-	// Functions -> Inline Get-Functions
 	CString getClassPacket() const;
 
-	const std::string& getName() const
-	{
-		return m_className;
-	}
+	[[inline]] const Script& getSource() const;
 
-	const SourceCode& getSource() const
-	{
-		return m_source;
-	}
+public:
+	const std::string name;
 
 private:
 	void parseScripts(std::string_view classSource);
 
-	std::string m_className;
-	SourceCode m_source;
+	Script m_source;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+//----------------------------
 
+inline const Script& ScriptClass::getSource() const
+{
+	return m_source;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
 #endif // SCRIPTCLASS_H

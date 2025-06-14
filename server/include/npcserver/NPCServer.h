@@ -1,16 +1,14 @@
 #ifndef NPCSERVER_H
 #define NPCSERVER_H
 
-#include "common.h"
+#include <common.h>
 
-#include "npcserver/PlayerNpcServer.h"
-#include "scripting/ScriptSystem.h"
+#include <npcserver/PlayerNPCServer.h>
+#include <scripting/ScriptSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class Server;
@@ -33,18 +31,18 @@ public:
 
 private:
 	void loadClasses();
-	void loadDatabaseNpcs();
+	void loadDatabaseNPCs();
 
 public:
-	//void saveNpcs();
-	//std::vector<std::pair<double, std::string>> calculateNpcStats();
+	//void saveNPCs();
+	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
 public:
 	[[inline]] std::shared_ptr<Player> getPlayer() const;
-	[[inline]] std::shared_ptr<PlayerNpcServer> getPlayerNpcServer() const;
+	[[inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
 
 public:
-	[[inline]] const std::unordered_map<NPCID, std::weak_ptr<NPC>>& getGlobalNpcList() const noexcept;
+	[[inline]] const std::unordered_map<NPCID, std::weak_ptr<NPC>>& getGlobalNPCList() const noexcept;
 	[[inline]] const std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& getClassList() const noexcept;
 
 public:
@@ -62,11 +60,11 @@ public:
 private:
 	BabyDI_INJECT(Server, m_server);
 
-	std::shared_ptr<PlayerNpcServer> m_npcServerPlayer;
+	std::shared_ptr<PlayerNPCServer> m_npcServerPlayer;
 
 	std::chrono::high_resolution_clock::time_point m_lastUpdate;
 
-	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNpcList;
+	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;
 };
 
@@ -75,14 +73,14 @@ inline std::shared_ptr<Player> NPCServer::getPlayer() const
 	return std::dynamic_pointer_cast<Player>(m_npcServerPlayer);
 }
 
-inline std::shared_ptr<PlayerNpcServer> NPCServer::getPlayerNpcServer() const
+inline std::shared_ptr<PlayerNPCServer> NPCServer::getPlayerNPCServer() const
 {
 	return m_npcServerPlayer;
 }
 
-inline const std::unordered_map<NPCID, std::weak_ptr<NPC>>& NPCServer::getGlobalNpcList() const noexcept
+inline const std::unordered_map<NPCID, std::weak_ptr<NPC>>& NPCServer::getGlobalNPCList() const noexcept
 {
-	return m_globalNpcList;
+	return m_globalNPCList;
 }
 
 inline const std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& NPCServer::getClassList() const noexcept
@@ -91,7 +89,6 @@ inline const std::unordered_map<std::string, std::unique_ptr<ScriptClass>>& NPCS
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // NPCSERVER_H

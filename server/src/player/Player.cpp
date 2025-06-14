@@ -649,7 +649,7 @@ bool Player::sendLogin()
 		// Tell the client if we have an npc-server, which disables certain features on the client (like sending NPC prop modifications).
 		// Later clients don't send this because all client-side functionality was removed.
 		// There isn't any harm in always sending it, though.
-		if (m_server->isNpcServerEnabled())
+		if (m_server->hasNPCServer())
 			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 		// This seems to inform the client that they have logged in.
