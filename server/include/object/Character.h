@@ -1,9 +1,12 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
+#include <array>
 #include <cstdint>
 #include <string>
-#include <array>
+#include <unordered_map>
+
+#undef TRANSPARENT
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -43,7 +46,6 @@ struct Character
 
 //----------------------------
 
-#undef TRANSPARENT
 enum class CharacterColors : uint8_t
 {
 	WHITE = 0,

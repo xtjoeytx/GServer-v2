@@ -1,10 +1,19 @@
 #ifndef NPCSERVER_H
 #define NPCSERVER_H
 
-#include <common.h>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 
+#include <level/Level.h>
 #include <npcserver/PlayerNPCServer.h>
+#include <scripting/ScriptClass.h>
 #include <scripting/ScriptSystem.h>
+#include <utilities/TimeoutGenerator.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -14,7 +23,6 @@ namespace preagonal
 class Server;
 class NPC;
 class Player;
-class ScriptClass;
 
 class NPCServer
 {

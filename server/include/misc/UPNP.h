@@ -1,25 +1,19 @@
 #ifndef UPNP_H
 #define UPNP_H
 
-#include <memory>
+#include <functional>
 #include <set>
-#include <string>
 #include <string_view>
-
-#include <BabyDI.h>
+#include <string>
 
 #ifdef ENABLE_UPNP
 #include <miniupnpc.h>
-#include <miniwget.h>
-#include <upnpcommands.h>
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
-
-class Server;
 
 class UPNP
 {
@@ -61,8 +55,6 @@ public:
 	}
 
 private:
-	BabyDI_INJECT(Server, m_server);
-
 	std::set<std::string, std::less<>> m_portsForwarded;
 	std::string m_localIp;
 	std::string m_port;

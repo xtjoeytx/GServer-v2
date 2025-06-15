@@ -1,16 +1,21 @@
 #ifndef SCRIPTCONTAINERS_H
 #define SCRIPTCONTAINERS_H
 
-#include <queue>
 #include <any>
-#include <map>
-#include <variant>
+#include <concepts>
+#include <format>
 #include <functional>
+#include <map>
+#include <memory>
 #include <optional>
-#include <vector>
+#include <queue>
+#include <ranges>
+#include <string_view>
+#include <string>
+#include <type_traits>
 #include <utility>
-
-#include <common.h>
+#include <variant>
+#include <vector>
 
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>

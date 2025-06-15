@@ -1,8 +1,13 @@
 #ifndef FLATFILEACCOUNTLOADER_H
 #define FLATFILEACCOUNTLOADER_H
 
-#include <common.h>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
+#include <Account.h>
 #include <loader/IAccountLoader.h>
 
 ///////////////////////////////////////////////////////////////////////////////

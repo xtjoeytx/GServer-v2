@@ -1,13 +1,24 @@
-#include <CString.h>
+#include <algorithm>
+#include <format>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include <IConfig.h>
+#include <CString.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
 #include <Server.h>
 #include <level/Level.h>
+#include <network/IPacketHandler.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Weapon.h>
 #include <player/PlayerNC.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 

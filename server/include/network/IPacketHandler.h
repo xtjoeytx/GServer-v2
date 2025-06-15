@@ -2,15 +2,16 @@
 #define IPACKETHANDLER_H
 
 #include <array>
-#include <optional>
 #include <cstdint>
+#include <optional>
+#include <string>
 
-#include <CString.h>
 #include <CEncryption.h>
+#include <CString.h>
 #include <IEnums.h>
 
 #ifdef PACKETLOGGING
-#include "utilities/Log.h"
+#include <utilities/Log.h>
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

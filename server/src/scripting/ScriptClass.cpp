@@ -1,8 +1,14 @@
-#include <common.h>
+#include <ctime>
+#include <string_view>
 
+#include <CString.h>
+#include <IEnums.h>
+
+#include <BabyDI.h>
 #include <Server.h>
 #include <npcserver/NPCServer.h>
 #include <scripting/ScriptClass.h>
+#include <scripting/ScriptTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

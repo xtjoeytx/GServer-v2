@@ -1,24 +1,39 @@
-#include <math.h>
-#include <stdio.h>
 #include <sys/stat.h>
-#include <time.h>
-#include <array>
-#include <type_traits>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <vector>
+
+#include <BabyDI.h>
+#include <CSettings.h>
+#include <CSocket.h>
+#include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include <IConfig.h>
-
 #include <Account.h>
+#include <FileSystem.h>
 #include <Server.h>
-#include <object/NPC.h>
+#include <level/LevelItem.h>
+#include <misc/WordFilter.h>
+#include <network/IPacketHandler.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
-#include <player/PlayerClient.h> // Need to remove once we don't need to use std::dynamic_pointer_cast.
-#include <level/Level.h>
-#include <level/Map.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

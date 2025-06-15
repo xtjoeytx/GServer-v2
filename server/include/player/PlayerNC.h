@@ -1,7 +1,15 @@
 #ifndef PLAYERNC_H
 #define PLAYERNC_H
 
+#include <cstdint>
+#include <optional>
+
+#include <CSocket.h>
+#include <CString.h>
+
+#include <network/IPacketHandler.h>
 #include <object/Player.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

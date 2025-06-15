@@ -1,17 +1,36 @@
-#include <array>
 #include <algorithm>
+#include <any>
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <format>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <optional>
 #include <random>
+#include <stdexcept>
+#include <string_view>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
 
-#include <common.h>
+#include <tree/ParseTree.h>
 
 #include <Server.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,7 +38,7 @@ namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
+static constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
 {
 	switch (index)
 	{
@@ -52,7 +71,7 @@ constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
 	return PlayerProp::ID;
 }
 
-constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
+static constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
 {
 	switch (index)
 	{
@@ -180,7 +199,7 @@ constexpr std::array<std::string_view, 8> flagProcessingMessageCodes =
 using pickerReturn = std::pair<GameValue, uint8_t>;
 using pickerFunc = std::function<pickerReturn(Character&, std::vector<GS1ScriptValue*> const&)>;
 
-GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, uint8_t index, GameValue& value)
+static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, uint8_t index, GameValue& value)
 {
 	PlayerProp propId = GetPlayerPropFromIndex(index);
 	if (propId == PlayerProp::ID)
@@ -218,7 +237,7 @@ GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, uint8_t
 	return { std::move(result), std::nullopt };
 }
 
-GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t index, GameValue& value)
+static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t index, GameValue& value)
 {
 	NPCProp propId = GetNPCPropFromIndex(index);
 	if (propId == NPCProp::ID)

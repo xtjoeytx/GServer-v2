@@ -1,17 +1,19 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <cstdint>
-#include <string>
-#include <string_view>
-#include <format>
 #include <chrono>
+#include <cstdint>
+#include <format>
 #include <memory>
 #include <mutex>
-#include <ranges>
+#include <ratio>
+#include <string_view>
+#include <string>
+#include <utility>
 
-#include <common.h>
 #include <CString.h>
+
+#include <utilities/CommonTypes.h>
 
 // Don't change this order.
 // For some reason the compile will fail in Windows for some versions of MSVC.

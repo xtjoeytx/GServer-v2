@@ -1,8 +1,24 @@
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <filesystem>
 #include <format>
+#include <memory>
+#include <string_view>
+#include <string>
+#include <tuple>
 
+#include <BabyDI.h>
+#include <CString.h>
+#include <FileSystem.h>
 #include <Server.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
 #include <object/NPC.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -228,14 +244,14 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "COLORS")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (int idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
+			for (size_t idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
 				npc->character.colors[idx] = strtoint(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}
 		else if (curCommand == "SAVEARR")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (int idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
+			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
 				npc->saves[idx] = (unsigned char)strtoint(tokens[idx]);
 				npc->modTime[PROPID(NPCProp::SAVE0) + idx] = updateTime;

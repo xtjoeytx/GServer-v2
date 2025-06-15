@@ -1,12 +1,13 @@
-#include "utilities/FilePermissions.h"
-#include <iostream>
+#include <regex>
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include <utilities/FilePermissions.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const char FOLDER_SEPARATOR = '/';
@@ -101,5 +102,4 @@ bool FilePermissions::match(const std::string& path, const FilePermissions::Perm
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

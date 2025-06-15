@@ -1,25 +1,24 @@
-#include <map>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <vector>
 #include <array>
-#include <type_traits>
+#include <cstdint>
+#include <format>
+#include <optional>
+#include <vector>
 
+#include <CEncryption.h>
+#include <CString.h>
+#include <IConfig.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
-#include "IConfig.h"
-
-#include "Server.h"
-#include "level/Level.h"
-#include "player/PlayerRC.h"
-#include "network/IPacketHandler.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <network/IPacketHandler.h>
+#include <object/Player.h>
+#include <player/PlayerRC.h>
+#include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 using PacketHandleFunc = HandlePacketResult(PlayerRC::*)(CString&);
@@ -260,5 +259,4 @@ bool PlayerRC::sendLogin()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

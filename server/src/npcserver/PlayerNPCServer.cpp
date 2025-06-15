@@ -1,11 +1,13 @@
 #include <cstdint>
 #include <optional>
 
-#include <CString.h>
 #include <CSocket.h>
+#include <CString.h>
 
 #include <network/IPacketHandler.h>
 #include <npcserver/PlayerNPCServer.h>
+#include <object/Player.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

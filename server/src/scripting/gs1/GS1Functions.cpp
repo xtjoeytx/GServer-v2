@@ -1,19 +1,31 @@
-#include <array>
 #include <algorithm>
-#include <random>
+#include <any>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
 #include <numbers>
+#include <random>
+#include <stdexcept>
+#include <string_view>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include <common.h>
+#include <tree/ParseTree.h>
+
+#include <IEnums.h>
 
 #include <Server.h>
-#include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
-#include <player/PlayerClient.h>
-#include <scripting/ScriptContainers.h>
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

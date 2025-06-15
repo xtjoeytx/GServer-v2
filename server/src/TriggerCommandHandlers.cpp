@@ -1,10 +1,21 @@
+#include <cstdint>
+#include <cstdio>
+#include <vector>
+
+#include <CString.h>
+#include <IEnums.h>
+
+#include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
-#include <object/Weapon.h>
 #include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommandDispatcher.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

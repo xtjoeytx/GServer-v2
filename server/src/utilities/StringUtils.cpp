@@ -1,32 +1,40 @@
-#include "utilities/StringUtils.h"
+#include <string>
+#include <vector>
+#include <CString.h>
+#include <utilities/StringUtils.h>
 
+////////////////////////////////////////////////////////////////////////////////
 namespace utilities
 {
-	std::string retokenizeArray(const std::vector<CString>& triggerData, int start_idx)
+////////////////////////////////////////////////////////////////////////////////
+
+std::string retokenizeArray(const std::vector<CString>& triggerData, int start_idx)
+{
+	std::string ret;
+	for (auto i = start_idx; i < triggerData.size(); i++)
 	{
-		std::string ret;
-		for (auto i = start_idx; i < triggerData.size(); i++)
-		{
-			if (!ret.empty())
-				ret.append(",");
+		if (!ret.empty())
+			ret.append(",");
 
-			ret.append(triggerData[i].gtokenize().toString());
-		}
-
-		return ret;
+		ret.append(triggerData[i].gtokenize().toString());
 	}
 
-	CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx)
+	return ret;
+}
+
+CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx)
+{
+	CString ret;
+	for (auto i = start_idx; i < triggerData.size(); i++)
 	{
-		CString ret;
-		for (auto i = start_idx; i < triggerData.size(); i++)
-		{
-			if (!ret.isEmpty())
-				ret << ",";
+		if (!ret.isEmpty())
+			ret << ",";
 
-			ret << triggerData[i].gtokenize();
-		}
-
-		return ret;
+		ret << triggerData[i].gtokenize();
 	}
-} // namespace utilities
+
+	return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+} // end namespace utilities

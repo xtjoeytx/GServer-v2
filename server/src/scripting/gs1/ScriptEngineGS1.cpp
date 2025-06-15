@@ -1,17 +1,27 @@
 #include <any>
-#include <functional>
-#include <unordered_map>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string_view>
+#include <string>
 
-#include <scripting/gs1/ScriptEngineGS1.h>
+#include <ANTLRInputStream.h>
+#include <CommonTokenStream.h>
+#include <GS1Lexer.h>
+#include <GS1Parser.h>
 
-#include <common.h>
+#include <BabyDI.h>
 #include <Server.h>
 #include <level/Level.h>
+#include <object/Character.h>
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
 #include <scripting/gs1/GS1Visitor.h>
-#include <utilities/StringUtils.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 using namespace preagonal::gs1::grammar;
 

@@ -1,27 +1,35 @@
 #include <algorithm>
+#include <cassert>
 #include <cmath>
-#include <vector>
-#include <string>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <format>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include <CCommon.h>
+#include <CEncryption.h>
+#include <CSocket.h>
+#include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
 #include <IConfig.h>
 
+#include <FileSystem.h>
 #include <Server.h>
-#include <ServerList.h>
+#include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <ServerList.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -1009,5 +1017,4 @@ void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

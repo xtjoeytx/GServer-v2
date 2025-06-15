@@ -1,13 +1,15 @@
-#include <cstdint>
+#include <format>
 #include <functional>
+#include <memory>
 #include <optional>
-#include <vector>
-#include <string>
 #include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include <Server.h>
 #include <level/Level.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,7 +24,7 @@ ScriptObjectSource FromLevel(LevelPtr level)
 	size_t hash = string::string_hash{}(level->getLevelName());
 	return std::make_pair(hash, ScriptObjectSourceType::LEVEL);
 }
-}
+} // end namespace source
 
 ////////////////////////////////////////////////////////////
 // GameValue

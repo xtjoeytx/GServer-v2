@@ -1,5 +1,26 @@
-#include <math.h>
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <concepts>
+#include <cstdint>
+#include <format>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <ranges>
+#include <stdexcept>
+#include <string_view>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+#include <BabyDI.h>
+#include <CString.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
 #include <FileSystem.h>
 #include <Server.h>
@@ -8,8 +29,11 @@
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <player/PlayerProps.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>

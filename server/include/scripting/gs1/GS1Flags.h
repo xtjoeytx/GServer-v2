@@ -1,7 +1,6 @@
 #ifndef GS1FLAGS_H
 #define GS1FLAGS_H
 
-#include <level/Level.h>
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/ScriptContainers.h>

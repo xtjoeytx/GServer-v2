@@ -1,28 +1,22 @@
 #ifndef SCRIPTSYSTEM_H
 #define SCRIPTSYSTEM_H
 
-#include <cassert>
-#include <cstdint>
-#include <unordered_map>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <vector>
-#include <set>
-#include <variant>
 #include <any>
+#include <functional>
+#include <memory>
+#include <string_view>
+#include <string>
+#include <unordered_map>
+#include <variant>
 
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
 
-///////////////////////////////////////////////////////////////////////////////
-
 using namespace std::literals::string_view_literals;
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class IScriptEngine;
@@ -38,6 +32,7 @@ struct ScriptExecutionContext
 using CompiledScriptResult = std::variant<ScriptExecutionContext, std::string>;
 using CompiledScriptResultPtr = std::shared_ptr<ScriptExecutionContext>;
 
+//----------------------------
 
 class ScriptSystem
 {
@@ -64,7 +59,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // SCRIPTSYSTEM_H

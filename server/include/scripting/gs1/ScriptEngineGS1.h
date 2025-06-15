@@ -1,27 +1,29 @@
 #ifndef SCRIPTENGINEGS1_H
 #define SCRIPTENGINEGS1_H
 
-#include <cstdint>
+#include <array>
+#include <memory>
 #include <optional>
-#include <variant>
 #include <string_view>
 #include <string>
-#include <memory>
-
-#include <object/Character.h>
-#include <object/NPC.h>
-#include <object/Player.h>
-#include <player/PlayerClient.h>
-#include <scripting/IScriptEngine.h>
-#include <scripting/ScriptContainers.h>
+#include <utility>
+#include <variant>
 
 // Stupid Windows.h defines
 #undef ERROR
 #undef TRANSPARENT
-#include <antlr4-runtime.h>
-
+#include <ANTLRInputStream.h>
+#include <CommonTokenStream.h>
 #include <GS1Lexer.h>
 #include <GS1Parser.h>
+
+#include <object/Character.h>
+#include <object/NPC.h>
+#include <player/PlayerClient.h>
+#include <scripting/IScriptEngine.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 // Forward declare.
 namespace preagonal::gs1::grammar

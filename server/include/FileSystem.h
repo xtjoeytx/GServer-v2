@@ -1,17 +1,17 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
-#include <map>
+#include <vector>
+#include <string>
 #include <mutex>
+#include <map>
 
 #include <CString.h>
-#include "BabyDI.h"
+#include <BabyDI.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class Server;
@@ -31,7 +31,7 @@ public:
 	void clear();
 
 	void addDir(const CString& dir, const CString& wildcard = "*", bool forceRecursive = false);
-	void removeDir(const CString& dir);
+	//void removeDir(const CString& dir);
 	void addFile(CString file);
 	void removeFile(const CString& file);
 	void resync();
@@ -73,7 +73,6 @@ constexpr char FileSystem::getPathSeparator()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // FILESYSTEM_H

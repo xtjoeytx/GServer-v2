@@ -1,9 +1,21 @@
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <format>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
-#include <utilities/PropsContainer.h>
+#include <BabyDI.h>
+#include <CString.h>
 
 #include <Server.h>
-#include <object/Player.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/PropsContainer.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal::props

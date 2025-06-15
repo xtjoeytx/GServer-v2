@@ -1,15 +1,8 @@
 #ifndef PLAYERPROPS_H
 #define PLAYERPROPS_H
 
-#include <algorithm>
 #include <array>
-#include <bitset>
-#include <concepts>
 #include <cstdint>
-
-#include <BabyDI.h>
-
-#include <utilities/inplace_vector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

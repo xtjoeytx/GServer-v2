@@ -1,59 +1,68 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef COMMONTYPES_H
+#define COMMONTYPES_H
 
-#include <utility>
-#include <algorithm>
+#include <chrono>
 #include <concepts>
-#include <cstddef>
 #include <cstdint>
-#include <ctime>
-#include <stdexcept>
-#include <map>
-#include <memory>
-#include <optional>
 #include <ranges>
-#include <set>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <tuple>
+#include <type_traits>
 #include <variant>
 
-// TODO: Replace time.h with <chrono> across the program.
-#include <chrono>
-#include <time.h>
-
-#include "BabyDI.h"
+#include <BabyDI.h>
 
 using namespace std::literals;
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+//----------------------------
+// ID types
 
 using PlayerID = uint16_t;
 using NPCID = uint32_t;
 
+//----------------------------
+// ID constants
+
 inline constexpr PlayerID NPCServerPlayerID = 2;
+
+//----------------------------
+// ID start constants
+
+// Player IDs 0 and 1 break things, and 2 is reserved for the NPC server player.
+inline constexpr PlayerID PLAYERID_INIT = 3;
+
+// Player IDs 16000 and up is used for players on other servers and "IRC"-channels.
+// The players from other servers should be unique lists for each player as they are fetched depending on
+// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
 inline constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
 
-//-----------------------------------------------
+// NPC IDs under 1000 can't be deleted, so start there.
+inline constexpr NPCID NPCID_INIT = 1000;
+inline constexpr NPCID NPCID_DATABASE_START = 10000;
+inline constexpr uint8_t BADDYID_INIT = 1;
+
+//----------------------------
+// User-defined literals
 
 inline constexpr uint8_t operator""_ui8(unsigned long long val)
 {
 	return static_cast<uint8_t>(val);
 }
 
-//-----------------------------------------------
+//----------------------------
+// Property helpers
 
 inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);
 }
 
-//-----------------------------------------------
+//----------------------------
+// Time helpers
 
 namespace chrono = std::chrono;
 using clock = std::chrono::system_clock;
@@ -68,7 +77,8 @@ inline clock::time_point convertFromTimeT(time_t time)
 	return clock::from_time_t(time);
 }
 
-//-----------------------------------------------
+//----------------------------
+// Concepts
 
 template<class P>
 concept Pair = requires(P p)
@@ -89,17 +99,18 @@ template<typename R, typename T>
 concept RangeOf = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
 
 template<class... Ts>
-concept all_same = sizeof...(Ts) < 2 ||
+concept AllSame = sizeof...(Ts) < 2 ||
 	std::conjunction_v<
-		std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
+	std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
 	>;
 
 template<class O, class... Ts>
-concept all_same_as = sizeof...(Ts) < 2 ||
+concept AllSameAs = sizeof...(Ts) < 2 ||
 	(std::conjunction_v<std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...>
 		&& std::same_as<O, std::tuple_element_t<0, std::tuple<Ts...>>>);
 
-//-----------------------------------------------
+//----------------------------
+// Variant helpers
 
 template<class... Ts>
 struct visit_functions : Ts...
@@ -107,7 +118,8 @@ struct visit_functions : Ts...
 	using Ts::operator()...;
 };
 
-//-----------------------------------------------
+//----------------------------
+// Dimensions and Positions
 
 // TODO: Move to somewhere appropriate.
 template <typename T>
@@ -139,9 +151,7 @@ struct Rectangle
 	Dimension<S> size{};
 };
 
-///////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal
+////////////////////////////////////////////////////////////////////////////////
+}; // end namespace preagonal
 
-#undef ERROR
-
-#endif // COMMON_H
+#endif // COMMONTYPES_H

@@ -1,19 +1,23 @@
 #ifndef GS2SCRIPTMANAGER_H
 #define GS2SCRIPTMANAGER_H
 
+#include <cstdint>
+#include <functional>
+#include <future>
 #include <mutex>
 #include <queue>
-#include <future>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include <CompilerThreadJob.h>
 #include <GS2Context.h>
+#include <exceptions/GS2CompilerError.h>
 #include <utils/ContextThreadPool.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // Custom thread pool callback that returns a future to a CompilerResponse, while also allowing a callback.
@@ -88,7 +92,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // GS2SCRIPTMANAGER_H

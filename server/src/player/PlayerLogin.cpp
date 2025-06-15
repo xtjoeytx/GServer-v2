@@ -1,31 +1,25 @@
-#include <math.h>
-#include <vector>
-#include <chrono>
-#include <format>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
-#include <IUtil.h>
+#include <CSocket.h>
+#include <CString.h>
+#include <IEnums.h>
 
-#include "IConfig.h"
-
-#include "Server.h"
-#include "npcserver/PlayerNPCServer.h"
-#include "object/NPC.h"
-#include "object/Weapon.h"
-#include "player/PlayerClient.h"
-#include "player/PlayerLogin.h"
-#include "player/PlayerNC.h"
-#include "player/PlayerRC.h"
-#include "player/PlayerProps.h"
-#include "level/Level.h"
-#include "level/Map.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Server.h>
+#include <network/IPacketHandler.h>
+#include <npcserver/PlayerNPCServer.h>
+#include <object/Player.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerLogin.h>
+#include <player/PlayerNC.h>
+#include <player/PlayerRC.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 PlayerLogin::PlayerLogin(CSocket* pSocket, PlayerID pId)
@@ -102,5 +96,4 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

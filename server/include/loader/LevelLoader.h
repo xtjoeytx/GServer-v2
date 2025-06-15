@@ -3,8 +3,9 @@
 
 #include <filesystem>
 
-#include <common.h>
-#include <level/Level.h>
+#include <CString.h>
+#include <FileSystem.h>
+#include <scripting/ScriptContainers.h>
 
 namespace preagonal
 {

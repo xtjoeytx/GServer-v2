@@ -1,9 +1,21 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <chrono>
 #include <climits>
-#include <filesystem>
+#include <concepts>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <set>
+#include <string_view>
+#include <string>
 #include <thread>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include <CSettings.h>
 #include <CSocket.h>
@@ -11,42 +23,33 @@
 #include <CTranslationManager.h>
 #include <IEnums.h>
 
-#undef ERROR
-#undef TRANSPARENT
-
-#include <common.h>
-
 #include <Account.h>
 #include <FileSystem.h>
 #include <ServerList.h>
+#include <UpdatePackage.h>
+#include <animation/GameAni.h>
 #include <level/Level.h>
 #include <loader/IAccountLoader.h>
 #include <loader/INPCLoader.h>
-#include <object/Player.h>
-#include <object/NPC.h>
 #include <misc/UPNP.h>
 #include <misc/WordFilter.h>
-#include <scripting/GS2ScriptManager.h>
-#include <scripting/ScriptClass.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommandDispatcher.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/IdGenerator.h>
-#include <utilities/Log.h>
-#include <utilities/StringUtils.h>
-
-// Resources
-#include <animation/GameAni.h>
 #include <utilities/ResourceManager.h>
-#include <UpdatePackage.h>
+#include <utilities/StringUtils.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-//class Player;
 class PlayerClient;
-class PlayerNPCServer;
-class Level;
 class ScriptClass;
 class Map;
 class Weapon;
@@ -84,15 +87,6 @@ enum class ServerGeneration
 	// 5.1 and up
 	MODERN
 };
-
-// Player ids 0 and 1 break things.
-// NPC ids under 1000 can't be deleted, so start there.
-// Player ids 16000 and up is used for players on other servers and "IRC"-channels.
-// The players from other servers should be unique lists for each player as they are fetched depending on
-// what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-constexpr PlayerID PLAYERID_INIT = 3;
-constexpr NPCID NPCID_INIT = 1000;
-constexpr NPCID NPCID_DATABASE_START = 10000;
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
 using PackageManager = ResourceManager<UpdatePackage, Server*>;
@@ -337,7 +331,7 @@ private:
 	std::shared_ptr<NPCServer> m_npcServer;
 	ServerList m_serverlist;
 
-	UPNP m_upnp;
+	std::unique_ptr<UPNP> m_upnp;
 	std::thread m_upnpThread;
 };
 

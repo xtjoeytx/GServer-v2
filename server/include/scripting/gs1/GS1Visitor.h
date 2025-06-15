@@ -1,16 +1,23 @@
 #ifndef GS1VISITOR_H
 #define GS1VISITOR_H
 
-#include <optional>
-#include <string_view>
 #include <any>
 #include <deque>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #undef ERROR
+#include <GS1Parser.h>
 #include <GS1ParserBaseVisitor.h>
+#include <tree/ParseTree.h>
 
-#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar

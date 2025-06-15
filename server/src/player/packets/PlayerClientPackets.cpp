@@ -1,32 +1,49 @@
+#include <algorithm>
 #include <chrono>
-#include <ranges>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include <CSettings.h>
 #include <CString.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
-#include "FileSystem.h"
-#include "Server.h"
-#include "UpdatePackage.h"
-
-#include "level/Level.h"
-#include "level/LevelBaddy.h"
-#include "level/LevelBoardChange.h"
-#include "level/LevelChest.h"
-#include "level/LevelHorse.h"
-#include "level/Map.h"
-#include "npcserver/NPCServer.h"
-#include "object/NPC.h"
-#include "object/Weapon.h"
-#include "player/PlayerClient.h"
-#include "player/PlayerProps.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <FileSystem.h>
+#include <Server.h>
+#include <UpdatePackage.h>
+#include <level/Level.h>
+#include <level/LevelBaddy.h>
+#include <level/LevelChest.h>
+#include <level/LevelItem.h>
+#include <level/Map.h>
+#include <misc/WordFilter.h>
+#include <network/IPacketHandler.h>
+#include <npcserver/NPCServer.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <object/Weapon.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <scripting/ScriptClass.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
@@ -1501,5 +1518,4 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacke
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

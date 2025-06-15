@@ -1,7 +1,19 @@
 #ifndef PLAYERRC_H
 #define PLAYERRC_H
 
+#include <array>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <string_view>
+
+#include <CSocket.h>
+#include <CString.h>
+
+#include <Account.h>
+#include <network/IPacketHandler.h>
 #include <object/Player.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

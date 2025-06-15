@@ -1,15 +1,22 @@
+#include <cstdlib>
+#include <memory>
+#include <string_view>
+
+#include <BabyDI.h>
+#include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include "Server.h"
-#include "level/Level.h"
-#include "level/LevelBaddy.h"
+#include <Server.h>
+#include <level/Level.h>
+#include <level/LevelBaddy.h>
+#include <level/LevelItem.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 constexpr int baddytypes = 10;
@@ -46,7 +53,7 @@ void LevelBaddy::reset()
 	m_hasCustomImage = false;
 }
 
-void LevelBaddy::dropItem()
+void LevelBaddy::dropItem() const
 {
 	// 41.66...% chance of a green gralat.
 	// 41.66...% chance of something else.
@@ -76,7 +83,10 @@ void LevelBaddy::dropItem()
 		if (auto lvl = m_level.lock(); lvl)
 		{
 			if (lvl->addItem(this->x, this->y, itemType))
-				m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)LevelItem::getItemTypeId(itemType), m_level);
+			{
+				auto server = BabyDI::Get<Server>();
+				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)LevelItem::getItemTypeId(itemType), m_level);
+			}
 		}
 	}
 }
@@ -138,6 +148,7 @@ CString LevelBaddy::getProps(int clientVersion) const
 
 void LevelBaddy::setPropsFromPacket(CString& pProps)
 {
+	auto server = BabyDI::Get<Server>();
 	int len = 0;
 	while (pProps.bytesLeft())
 	{
@@ -198,13 +209,13 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					timeout.setTimeout(2);
 
 					// Drop items when dead.
-					if (m_server->getSettings().getBool("baddyitems", false) == true)
+					if (server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
 				}
 				else if (mode == BaddyMode::DEAD)
 				{
 					if (m_canRespawn)
-						timeout.setTimeout(m_server->getSettings().getInt("baddyrespawntime", 60));
+						timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
 				}
 				break;
 
@@ -236,5 +247,4 @@ void LevelBaddy::setImage(std::string_view image)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

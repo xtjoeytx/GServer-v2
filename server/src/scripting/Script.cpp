@@ -1,9 +1,16 @@
+#include <algorithm>
+#include <any>
+#include <iterator>
+#include <string>
+#include <string_view>
 
 #include <BabyDI.h>
 
 #include <Server.h>
-#include <scripting/Script.h>
 #include <scripting/IScriptEngine.h>
+#include <scripting/Script.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

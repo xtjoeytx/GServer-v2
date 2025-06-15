@@ -1,13 +1,20 @@
-#include "FileSystem.h"
-#include "Server.h"
-#include "object/Player.h"
-#include "utilities/StringUtils.h"
+#include <iterator>
+#include <memory>
+#include <vector>
+
+#include <CString.h>
+#include <IEnums.h>
+
+#include <Server.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <player/PlayerProps.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 std::vector<CString> Player::getPMServerList()
@@ -226,5 +233,4 @@ PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) cons
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

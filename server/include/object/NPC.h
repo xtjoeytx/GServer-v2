@@ -1,15 +1,25 @@
 #ifndef NPC_H
 #define NPC_H
 
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <ranges>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
 #include <CString.h>
-#include <IUtil.h>
 
-#include <common.h>
-
+#include <BabyDI.h>
 #include <object/Character.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/PropsContainer.h>
+#include <utilities/CommonTypes.h>
 
 using namespace preagonal::props;
 
@@ -232,7 +242,7 @@ public:
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
-	template<typename... Results> requires all_same_as<SetResults, Results...>
+	template<typename... Results> requires AllSameAs<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
@@ -427,7 +437,7 @@ SetResults NPC::setPropWith(SetBy setBy, Args... values)
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
 
-template<typename... Results> requires all_same_as<SetResults, Results...>
+template<typename... Results> requires AllSameAs<SetResults, Results...>
 void NPC::sendPropsFromResults(const Results&... results)
 {
 	PropertySendResults send_results;

@@ -1,6 +1,3 @@
-#include <sys/stat.h>
-#include <time.h>
-
 #if defined(_WIN32) || defined(_WIN64)
 #include <direct.h>
 #define mkdir _mkdir
@@ -9,17 +6,40 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <filesystem>
 #include <format>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <string_view>
+#include <string>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <CString.h>
-
 #include <IConfig.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
+#include <Account.h>
+#include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
+#include <network/IPacketHandler.h>
+#include <npcserver/NPCServer.h>
+#include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerRC.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 

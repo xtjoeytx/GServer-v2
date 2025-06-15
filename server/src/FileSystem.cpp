@@ -1,6 +1,8 @@
-#include <map>
-#include <sys/stat.h>
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
+	#include <Windows.h>
 	#include <sys/utime.h>
 	#define _utime utime
 	#define _utimbuf utimbuf;
@@ -9,23 +11,22 @@
 	#include <utime.h>
 #endif
 
+#include <sys/stat.h>
+
+#include <filesystem>
+#include <map>
+#include <mutex>
+#include <string>
+
+#include <CString.h>
 #include <IUtil.h>
 
-#include "FileSystem.h"
-#include "Server.h"
-
-#if defined(_WIN32) || defined(_WIN64)
-	#ifndef __GNUC__ // rain
-		#include <mutex>
-		#include <condition_variable>
-	#endif
-#endif
+#include <FileSystem.h>
+#include <Server.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 FileSystem::FileSystem()
@@ -308,5 +309,4 @@ CString FileSystem::getDirByExtension(const std::string& extension) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

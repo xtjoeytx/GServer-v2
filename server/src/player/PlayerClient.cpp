@@ -1,19 +1,44 @@
+#include <algorithm>
+#include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <CEncryption.h>
+#include <CSettings.h>
+#include <CSocket.h>
+#include <CString.h>
+#include <IConfig.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
-#include "IConfig.h"
-
-#include "Server.h"
-#include "level/Level.h"
-#include "level/LevelItem.h"
-#include "level/Map.h"
-#include "object/NPC.h"
-#include "object/Player.h"
-#include "object/Weapon.h"
-#include "player/PlayerClient.h"
-#include "player/PlayerProps.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <Account.h>
+#include <FileSystem.h>
+#include <Server.h>
+#include <level/Level.h>
+#include <level/LevelItem.h>
+#include <level/Map.h>
+#include <misc/WordFilter.h>
+#include <network/IPacketHandler.h>
+#include <object/NPC.h>
+#include <object/Player.h>
+#include <object/Weapon.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

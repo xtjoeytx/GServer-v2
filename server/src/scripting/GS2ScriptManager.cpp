@@ -1,10 +1,16 @@
-#include "scripting/GS2ScriptManager.h"
+#include <cstdint>
+#include <future>
+#include <queue>
+#include <string>
+#include <utility>
+
+#include <GS2Context.h>
+
+#include <scripting/GS2ScriptManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const uint32_t THREADPOOL_WORKERS = 0;
@@ -90,5 +96,4 @@ void GS2ScriptManager::runQueue()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

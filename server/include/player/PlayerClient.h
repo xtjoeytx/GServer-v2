@@ -1,7 +1,27 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
+#include <array>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include <CSocket.h>
+#include <CString.h>
+
+#include <level/Level.h>
+#include <level/LevelItem.h>
+#include <level/Map.h>
+#include <network/IPacketHandler.h>
 #include <object/Player.h>
+#include <utilities/CommonTypes.h>
 
 using namespace std::literals::string_view_literals;
 
@@ -10,9 +30,6 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-	Default Files.
-*/
 template<class... Arrays>
 consteval auto join_arrays(Arrays... arrays)
 {
@@ -36,6 +53,7 @@ constexpr std::array<std::string_view, 30> DefaultWavs = {
 constexpr std::array<std::string_view, 1> DefaultPngs = { "pics1.png" };
 constexpr std::array DefaultFiles = join_arrays(DefaultGanis, DefaultBodies, DefaultSwords, DefaultShields, DefaultWavs, DefaultPngs);
 
+//----------------------------
 
 class PlayerClient : public Player
 {

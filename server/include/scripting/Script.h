@@ -2,15 +2,14 @@
 #define SCRIPT_H
 
 #include <cstdint>
-#include <string>
+#include <memory>
 #include <string_view>
-#include <set>
-#include <vector>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include <utilities/StringUtils.h>
 
 using namespace std::literals;
 

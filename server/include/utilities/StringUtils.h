@@ -1,25 +1,28 @@
 #ifndef STRINGUTILS_H
 #define STRINGUTILS_H
 
-#include <string>
-#include <string_view>
-#include <vector>
-#include <ranges>
 #include <algorithm>
-#include <concepts>
+#include <array>
 #include <cctype>
+#include <concepts>
+#include <cstdint>
 #include <cstdlib>
+#include <iterator>
+#include <ranges>
 #include <sstream>
+#include <string_view>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <CString.h>
 
-///////////////////////////////////////////////////////////////////////////////
-
 using namespace std::literals::string_view_literals;
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::string
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // A concept that checks if a type is a string.
@@ -36,7 +39,7 @@ concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVari
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// A hash function for strings that can be used with heterogeneous lookups.
+/// A hash function for strings that can be used with heterogeneous lookups.
 struct string_hash
 {
 	using hash_type = std::hash<std::string_view>;
@@ -64,7 +67,7 @@ struct string_hash
 	}
 };
 
-// An comparator function for strings that can be used with heterogeneous lookups.
+/// A comparator function for strings that can be used with heterogeneous lookups.
 struct string_hash_equal
 {
 	using is_transparent = void;
@@ -92,7 +95,9 @@ struct string_hash_equal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Trims whitespace from the start of the string.
+/// @brief Trims whitespace from the start of a string.
+/// @param str A string or string_view to trim.
+/// @return A string_view to the trimmed string.
 std::string_view trimLeft(StringViewVariant auto const& str)
 {
 	std::string_view view{ str };
@@ -105,7 +110,9 @@ std::string_view trimLeft(StringViewVariant auto const& str)
 	return {};
 }
 
-// Trims whitespace from the end of the string.
+/// @brief Trims whitespace from the end of a string.
+/// @param str A string or string_view to trim.
+/// @return A string_view to the trimmed string.
 std::string_view trimRight(StringViewVariant auto const& str)
 {
 	std::string_view view{ str };
@@ -117,13 +124,17 @@ std::string_view trimRight(StringViewVariant auto const& str)
 	return {};
 }
 
-// Trims whitespace from the start and end of the string.
+/// @brief Trims whitespace from the start and end of a string.
+/// @param str A string or string_view to trim.
+/// @return A string_view to the trimmed string.
 std::string_view trim(StringViewVariant auto const& str)
 {
 	return trimLeft(trimRight(str));
 }
 
-// Trims whitespace from the start of a string, mutating it.
+/// @brief Trims whitespace from the start of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string& trimLeftMutate(std::string& str)
 {
 	if (str.empty()) return str;
@@ -149,7 +160,9 @@ inline std::string& trimLeftMutate(std::string& str)
 	return str;
 }
 
-// Trims whitespace from the end of a string, mutating it.
+/// @brief Trims whitespace from the end of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string& trimRightMutate(std::string& str)
 {
 	if (str.empty()) return str;
@@ -175,7 +188,9 @@ inline std::string& trimRightMutate(std::string& str)
 	return str;
 }
 
-// Trims whitespace from the start and end of the string, mutating it.
+/// @brief Trims whitespace from the start and end of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string& trimMutate(std::string& str)
 {
 	if (str.empty()) return str;
@@ -203,16 +218,25 @@ inline std::string& trimMutate(std::string& str)
 	return str;
 }
 
+/// @brief Trims whitespace from the start of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string&& trimLeftMutate(std::string&& str)
 {
 	return std::move(trimLeftMutate(str));
 }
 
+/// @brief Trims whitespace from the end of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string&& trimRightMutate(std::string&& str)
 {
 	return std::move(trimRightMutate(str));
 }
 
+/// @brief Trims whitespace from the start and end of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
 inline std::string&& trimMutate(std::string&& str)
 {
 	return std::move(trimMutate(str));
@@ -220,6 +244,11 @@ inline std::string&& trimMutate(std::string&& str)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Replaces all occurrences of a substring within a string with another substring.
+/// @param in The input string to process.
+/// @param from The substring to search for and replace.
+/// @param to The substring to replace each occurrence of 'from' with.
+/// @return A new string with all occurrences of 'from' replaced by 'to'.
 inline std::string replace(std::string_view in, std::string_view from, std::string_view to)
 {
 	if (from.empty())
@@ -243,6 +272,11 @@ inline std::string replace(std::string_view in, std::string_view from, std::stri
 	return out;
 }
 
+/// @brief Replaces all occurrences of a substring with another substring in a given string, modifying the original string.
+/// @param in The string to perform replacements on. This string will be modified in place.
+/// @param from The substring to search for and replace.
+/// @param to The substring to replace each occurrence of 'from' with.
+/// @return A reference to the modified input string after all replacements have been made.
 inline std::string& replaceMutate(std::string& in, std::string_view from, std::string_view to)
 {
 	if (from.empty())
@@ -259,7 +293,9 @@ inline std::string& replaceMutate(std::string& in, std::string_view from, std::s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Escapes quotes in a string.
+/// @brief Escapes quotes in a string using a CSV-like format.
+/// @param str The input string or string_view to escape quotes in.
+/// @return A new string with quotes escaped.
 auto escapeQuotes(StringViewVariant auto const str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
@@ -288,7 +324,9 @@ auto escapeQuotes(StringViewVariant auto const str)
 	return ret;
 }
 
-// Unescapes quotes in a string.
+/// @brief Unescapes quotes in a string that were escaped using a CSV-like format.
+/// @param str The input string or string_view to unescape quotes in.
+/// @return A new string with quotes unescaped.
 auto unescapeQuotes(StringVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
@@ -353,14 +391,17 @@ auto split(std::string_view str, std::string_view delim = "\n"sv)
 }
 */
 
-// Splits a string on the specified delimiter from a list, returning a vector of string_views.
+/// @brief Splits a string into tokens based on a set of delimiter characters, returning the results as a vector.
+/// @tparam T The type of each token in the resulting vector. Defaults to std::string.
+/// @param str The input string to split. Can be any type compatible with string view semantics.
+/// @param delims A set of delimiter characters used to split the string. Defaults to whitespace characters (space, tab, newline, carriage return).
+/// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
 template <typename T = std::string>
 std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims = " \t\n\r"sv)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 
-	//std::vector<std::basic_string_view<Elem, Traits>> tokens{};
 	std::vector<T> tokens{};
 	std::basic_string_view<Elem, Traits> strview{ str };
 
@@ -388,11 +429,10 @@ std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant au
 	return tokens;
 }
 
-// Transforms a view to a std::string.
-// Useful in combination with split.
-const auto as_string = std::views::transform([](std::string_view s) { return std::string(s); });
-
-// Joins a range of strings with the specified delimiter.
+/// @brief Joins the elements of a range into a single string, separated by a specified delimiter.
+/// @param range A forward range containing elements to join. The elements must be streamable to std::ostringstream.
+/// @param delim The delimiter string to insert between elements. Defaults to ','.
+/// @return A string containing the joined elements of the range, separated by the specified delimiter.
 std::string join(std::ranges::forward_range auto&& range, std::string_view delim = ",")
 {
 	std::ostringstream oss;
@@ -409,7 +449,10 @@ std::string join(std::ranges::forward_range auto&& range, std::string_view delim
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Converts a range of strings to a CSV string.
+/// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed.
+/// @param range A forward range of string-like elements to be converted to CSV format.
+/// @param force_quoted If true, all fields will be quoted regardless of content. Defaults to false.
+/// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
 auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 {
 	constexpr std::array<char, 3> complexChars = { '"', ',', '\\' };
@@ -454,14 +497,21 @@ auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 	return result;
 }
 
-// Converts a string to a CSV string, splitting on the specified delimiter.
+/// @brief Converts a string or string-like object into CSV format, splitting it by a specified delimiter.
+/// @param str The input string or string-like object to be converted to CSV.
+/// @param delim The character used to split the input string into fields. Defaults to newline ('\n').
+/// @param force_quoted If true, all fields will be quoted in the resulting CSV. Defaults to false.
+/// @return A CSV-formatted string constructed from the split fields of the input.
 auto toCSV(StringViewVariant auto const& str, char delim = '\n', bool force_quoted = false)
 {
 	auto s = splitHard(str, std::string_view(&delim, 1));
 	return toCSV(s, force_quoted);
 }
 
-// Converts a CSV string to a vector of strings.
+/// @brief Parses a CSV-formatted string into a vector of strings, handling quoted fields and optional leading whitespace.
+/// @param str The input string or string view containing CSV data to parse.
+/// @param ignoreLeadingWhitespace If true, leading spaces and tabs before each field are ignored. Defaults to false.
+/// @return A vector of strings, each representing a parsed field from the CSV input.
 std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreLeadingWhitespace = false)
 {
 	std::vector<std::string> tokens{};
@@ -555,7 +605,10 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Compares two strings, ignoring case.
+/// @brief Performs a case-insensitive comparison of two string-like objects.
+/// @param str1 The first string-like object to compare.
+/// @param str2 The second string-like object to compare.
+/// @return An integer less than, equal to, or greater than zero if str1 is found, respectively, to be less than, to match, or be greater than str2 in a case-insensitive comparison.
 int comparei(StringViewVariant auto str1, StringViewVariant auto str2)
 {
 	auto it1 = str1.begin();
@@ -570,7 +623,11 @@ int comparei(StringViewVariant auto str1, StringViewVariant auto str2)
 	return str1.size() - str2.size();
 }
 
-// Finds the first occurrence of a substring in a string, ignoring case.
+/// @brief Finds the first occurrence of a substring within a string, ignoring case, starting from a specified position.
+/// @param str The string to search within.
+/// @param substr The substring to search for.
+/// @param pos The position in the string to start the search from. Defaults to 0.
+/// @return The index of the first occurrence of the substring (case-insensitive) in the string after the specified position, or std::string::npos if not found.
 size_t findi(StringViewVariant auto str, StringViewVariant auto substr, size_t pos = 0)
 {
 	if (pos >= str.size())
@@ -590,8 +647,10 @@ size_t findi(StringViewVariant auto str, StringViewVariant auto substr, size_t p
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// To uppercase.
-std::string toUpper(StringViewVariant auto str)
+/// @brief Converts all characters in the input string to uppercase, using the current C locale (not locale-aware).
+/// @param str The input string or string view to convert to uppercase. Accepts any type compatible with StringViewVariant.
+/// @return A new string with all characters converted to uppercase, preserving the original string's character type and traits.
+auto toUpper(StringViewVariant auto str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -604,8 +663,10 @@ std::string toUpper(StringViewVariant auto str)
 	return ret;
 }
 
-// To lowercase.
-std::string toLower(StringViewVariant auto str)
+/// @brief Converts all characters in the input string to lowercase, using the current C locale (not locale-aware).
+/// @param str The input string or string view to be converted to lowercase. Accepts any type compatible with StringViewVariant.
+/// @return A new string with all characters from the input converted to lowercase, preserving the original character and traits types.
+auto toLower(StringViewVariant auto str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -620,6 +681,11 @@ std::string toLower(StringViewVariant auto str)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Attempts to convert a string to a number of the specified integral type.
+/// @tparam T The integral type to convert the string to. Defaults to int32_t.
+/// @param str The string to convert to a number.
+/// @param result Reference to a variable where the converted number will be stored if the conversion succeeds.
+/// @return true if the conversion was successful; false otherwise.
 template <std::integral T = int32_t>
 bool toNumber(const std::string& str, T& result)
 {
@@ -632,6 +698,10 @@ bool toNumber(const std::string& str, T& result)
 	return true;
 }
 
+/// @brief Converts a string to a number of the specified integral type.
+/// @tparam T The integral type to convert the string to. Defaults to int32_t.
+/// @param str The string to convert to a number.
+/// @return The converted number if the conversion succeeds; otherwise, returns 0 of the specified type.
 template <std::integral T = int32_t>
 T toNumber(const std::string& str)
 {
@@ -642,6 +712,10 @@ T toNumber(const std::string& str)
 	return static_cast<T>(0);
 }
 
+/// @brief Attempts to convert a string to a float value.
+/// @param str The input string to convert to a float.
+/// @param result Reference to a float variable where the converted value will be stored if the conversion succeeds.
+/// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
 inline bool toFloat(const std::string& str, float& result)
 {
 	char* p_end = nullptr;
@@ -653,6 +727,9 @@ inline bool toFloat(const std::string& str, float& result)
 	return true;
 }
 
+/// @brief Converts a string to a float value.
+/// @param str The string to convert to a float.
+/// @return The float value represented by the string, or 0.0f if the conversion fails.
 inline float toFloat(const std::string& str)
 {
 	float result;
@@ -662,6 +739,10 @@ inline float toFloat(const std::string& str)
 	return 0.0f;
 }
 
+/// @brief Attempts to convert a string to a double-precision floating-point number.
+/// @param str The input string to convert.
+/// @param result Reference to a double where the converted value will be stored if the conversion succeeds.
+/// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
 inline bool toDouble(const std::string& str, double& result)
 {
 	char* p_end = nullptr;
@@ -673,6 +754,9 @@ inline bool toDouble(const std::string& str, double& result)
 	return true;
 }
 
+/// @brief Converts a string to a double-precision floating-point number.
+/// @param str The string to convert to a double.
+/// @return The converted double value if the conversion is successful; otherwise, returns 0.0.
 inline double toDouble(const std::string& str)
 {
 	double result;
@@ -684,6 +768,10 @@ inline double toDouble(const std::string& str)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Extracts the next line or substring from a string view, using a specified delimiter.
+/// @param str A reference to the string view to extract from. This will be updated to remove the extracted line.
+/// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
+/// @return A string containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the remainder of the string.
 inline std::string extractLine(std::string_view& str, char delim = '\n')
 {
 	auto pos = str.find(delim);
@@ -700,8 +788,18 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal::string
+
+///////////////////////////////////////////////////////////////////////////////
+namespace preagonal::range
+{
+///////////////////////////////////////////////////////////////////////////////
+
+/// Transforms a range of std::string_view to std::string.
+const auto as_string = std::views::transform([](std::string_view s) { return std::string(s); });
+
+///////////////////////////////////////////////////////////////////////////////
+} // end namespace preagonal::range
 
 namespace utilities
 {

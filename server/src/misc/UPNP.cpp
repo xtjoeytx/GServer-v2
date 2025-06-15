@@ -1,23 +1,23 @@
 #define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
-#include <memory.h>
-
-#include <common.h>
-#include <Server.h>
-
-#if defined(_WIN32) || defined(_WIN64)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-
-	#ifndef __GNUC__ // rain
-		#pragma comment(lib, "ws2_32.lib")
-	#endif
-
-	#include <windows.h>
-#endif
+#include <cstdint>
+#include <cstring>
+#include <format>
+#include <malloc.h>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <misc/UPNP.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
+
+#ifdef ENABLE_UPNP
+#include <miniupnpc.h>
+#include <miniwget.h>
+#include <upnpcommands.h>
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -32,8 +32,8 @@ void UPNP::discover()
 	char* xmlDescription;
 	int xmlDescriptionSize = 0, responseCode = 0;
 
-	memset(&m_urls, 0, sizeof(UPNPUrls));
-	memset(&m_data, 0, sizeof(IGDdatas));
+	std::memset(&m_urls, 0, sizeof(UPNPUrls));
+	std::memset(&m_data, 0, sizeof(IGDdatas));
 
 	std::vector<std::pair<uint8_t, std::string>> logbatch;
 	logbatch.emplace_back(0_ui8, ":: Discovering UPNP devices:");

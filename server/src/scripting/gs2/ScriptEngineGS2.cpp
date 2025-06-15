@@ -1,9 +1,23 @@
-#include <scripting/gs2/ScriptEngineGS2.h>
+#include <any>
+#include <array>
+#include <cstdint>
+#include <format>
+#include <memory>
+#include <ranges>
+#include <string_view>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include <common.h>
+#include <GS2Context.h>
 
 #include <Server.h>
-#include <scripting/ScriptClass.h>
+#include <exceptions/GS2CompilerError.h>
+#include <scripting/gs2/ScriptEngineGS2.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

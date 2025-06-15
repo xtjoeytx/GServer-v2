@@ -1,16 +1,17 @@
 #ifndef LEVELITEM_H
 #define LEVELITEM_H
 
+#include <cstdint>
 #include <ctime>
+#include <string>
+#include <type_traits>
 
 #include <CString.h>
 #include <CTimeout.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class LevelItemType
@@ -115,7 +116,6 @@ inline bool LevelItem::isRupeeType(LevelItemType itemType)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // LEVELITEM_H

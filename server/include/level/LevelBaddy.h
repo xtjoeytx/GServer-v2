@@ -1,13 +1,15 @@
 #ifndef LEVELBADDY_H
 #define LEVELBADDY_H
 
+#include <cstdint>
 #include <memory>
+#include <string_view>
+#include <string>
 #include <vector>
 
 #include <CString.h>
 #include <CTimeout.h>
 #include <IUtil.h>
-#include "BabyDI.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -72,15 +74,15 @@ constexpr size_t BADDYMODE_COUNT = static_cast<size_t>(BaddyMode::COUNT);
 
 //----------------------------
 
-class Server;
 class Level;
+
 class LevelBaddy
 {
 public:
 	LevelBaddy(float x, float y, BaddyType type, std::weak_ptr<Level> level);
 
 	void reset();
-	void dropItem();
+	void dropItem() const;
 	bool canRespawn() const { return m_canRespawn; }
 	bool canBeReplaced() const { return !m_canRespawn && mode == BaddyMode::DEAD; }
 
@@ -108,8 +110,6 @@ public:
 	CTimeout timeout;
 
 private:
-	BabyDI_INJECT(Server, m_server);
-
 	std::weak_ptr<Level> m_level;
 	int8_t m_originalX, m_originalY;
 	bool m_canRespawn = true;

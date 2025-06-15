@@ -1,24 +1,28 @@
 #ifndef PROPSCONTAINER_H
 #define PROPSCONTAINER_H
 
+#include <array>
 #include <bitset>
 #include <concepts>
 #include <cstdint>
-#include <stdexcept>
-#include <string>
-#include <string_view>
+#include <format>
+#include <functional>
+#include <memory>
+#include <optional>
 #include <sstream>
-#include <tuple>
+#include <stdexcept>
+#include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
-
-#include <common.h>
+#include <vector>
 
 #include <CString.h>
-#include <player/PlayerProps.h>
+
 #include <scripting/ScriptContainers.h>
 #include <utilities/inplace_vector.h>
+#include <utilities/CommonTypes.h>
 
 namespace preagonal
 {

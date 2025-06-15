@@ -2,18 +2,12 @@
 #define LEVELCHEST_H
 
 #include <memory>
-#include <vector>
-
-#include <CString.h>
+#include <level/LevelItem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
-
-enum class LevelItemType;
 
 class LevelChest : public std::enable_shared_from_this<LevelChest>
 {
@@ -71,7 +65,6 @@ private:
 using LevelChestPtr = std::shared_ptr<LevelChest>;
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // LEVELCHEST_H

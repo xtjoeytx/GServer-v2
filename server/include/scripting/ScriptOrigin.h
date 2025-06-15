@@ -4,16 +4,14 @@
 #include <format>
 #include <string>
 
-#include "object/NPC.h"
-#include "object/Weapon.h"
-#include "level/Level.h"
-#include "scripting/ScriptClass.h"
+#include <level/Level.h>
+#include <object/NPC.h>
+#include <object/Weapon.h>
+#include <scripting/ScriptClass.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal::scripting
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string getErrorOrigin(const NPC& npc)
@@ -57,7 +55,6 @@ std::string getErrorOrigin(const Weapon& npc)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // namespace preagonal::scripting
 
 #endif // SCRIPTORIGIN_H

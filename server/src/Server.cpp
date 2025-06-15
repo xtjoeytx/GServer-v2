@@ -1,28 +1,52 @@
+#include <algorithm>
 #include <atomic>
-#include <functional>
-#include <format>
+#include <cassert>
 #include <chrono>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <ctime>
 #include <filesystem>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <string_view>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
+#include <CSocket.h>
 #include <CString.h>
+#include <CTranslationManager.h>
+#include <IEnums.h>
 #include <IUtil.h>
 
+#include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
+#include <level/LevelItem.h>
 #include <level/Map.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
+#include <misc/UPNP.h>
 #include <npcserver/NPCServer.h>
-#include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
-#include <player/PlayerLogin.h>
 #include <player/PlayerClient.h>
-#include <scripting/ScriptClass.h>
-#include <scripting/ScriptOrigin.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/gs2/ScriptEngineGS2.h>
+#include <player/PlayerLogin.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -141,8 +165,9 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	if (m_settings.getBool("upnp", true))
 	{
 		log::printLine(log::server, ":: Starting UPnP discovery thread.");
-		m_upnp.initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
-		m_upnpThread = std::thread(std::ref(m_upnp));
+		m_upnp = std::make_unique<UPNP>();
+		m_upnp->initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
+		m_upnpThread = std::thread(std::ref(*m_upnp.get()));
 	}
 #endif
 
@@ -210,7 +235,8 @@ void Server::cleanup()
 #ifdef ENABLE_UPNP
 	if (m_upnpThread.joinable())
 		m_upnpThread.join();
-	m_upnp.removeAllForwardedPorts();
+	if (m_upnp)
+		m_upnp->removeAllForwardedPorts();
 #endif
 
 	// Save translations.

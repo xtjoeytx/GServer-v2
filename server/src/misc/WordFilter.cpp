@@ -1,15 +1,18 @@
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include <CString.h>
 #include <IEnums.h>
 
-#include "Server.h"
-#include "object/Player.h"
-#include "misc/WordFilter.h"
-#include "utilities/Log.h"
+#include <Server.h>
+#include <misc/WordFilter.h>
+#include <object/Player.h>
+#include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 char bypass[] = {
@@ -396,5 +399,4 @@ WordFilterActions:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

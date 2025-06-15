@@ -1,6 +1,8 @@
 #ifndef GS1MESSAGECODES_H
 #define GS1MESSAGECODES_H
 
+#include <string_view>
+#include <tree/ParseTree.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 
 ///////////////////////////////////////////////////////////////////////////////

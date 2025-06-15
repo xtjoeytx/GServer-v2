@@ -1,11 +1,10 @@
 #ifndef INPCLOADER_H
 #define INPCLOADER_H
 
-#include <string>
 #include <string_view>
-#include <vector>
 
 #include <object/NPC.h>
+#include <filesystem>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

@@ -1,14 +1,17 @@
+#include <cstdint>
 #include <filesystem>
+#include <optional>
+#include <string>
 
-#include "FileSystem.h"
-#include "Server.h"
-#include "UpdatePackage.h"
+#include <CString.h>
+
+#include <FileSystem.h>
+#include <Server.h>
+#include <UpdatePackage.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
@@ -73,5 +76,4 @@ void UpdatePackage::reload(Server* const server)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

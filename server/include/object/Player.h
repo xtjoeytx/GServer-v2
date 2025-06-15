@@ -1,19 +1,32 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <CEncryption.h>
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <ranges>
+#include <set>
+#include <stdexcept>
+#include <string_view>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <CFileQueue.h>
 #include <CSocket.h>
 #include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include <common.h>
-
 #include <Account.h>
-#include <player/PlayerProps.h>
 #include <network/IPacketHandler.h>
+#include <player/PlayerProps.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/PropsContainer.h>
 
@@ -243,7 +256,7 @@ public:
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
-	template<typename... Results> requires all_same_as<SetResults, Results...>
+	template<typename... Results> requires AllSameAs<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
@@ -632,7 +645,7 @@ SetResults Player::setPropWith(SetBy setBy, Args... values)
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
 
-template<typename... Results> requires all_same_as<SetResults, Results...>
+template<typename... Results> requires AllSameAs<SetResults, Results...>
 void Player::sendPropsFromResults(const Results&... results)
 {
 	PropertySendResults send_results;

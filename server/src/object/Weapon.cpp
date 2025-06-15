@@ -1,15 +1,20 @@
+#include <ctime>
+#include <memory>
+#include <string_view>
+#include <string>
+#include <utility>
+
+#include <CString.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
-// GS2 Compiler includes
-#include <GS2Context.h>
-
+#include <FileSystem.h>
 #include <Server.h>
 #include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Weapon.h>
 #include <scripting/Script.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/Log.h>
 
 ///////////////////////////////////////////////////////////////////////////////

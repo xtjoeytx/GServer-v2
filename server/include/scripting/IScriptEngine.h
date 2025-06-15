@@ -1,16 +1,12 @@
 #ifndef ISCRIPTENGINE_H
 #define ISCRIPTENGINE_H
 
-#include <cstdint>
-#include <memory>
-#include <string>
 #include <string_view>
-#include <vector>
-#include <unordered_set>
-#include <variant>
+#include <string>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 // Until CString is erased, we have to remove Windows.h includes.
 #undef CALLBACK

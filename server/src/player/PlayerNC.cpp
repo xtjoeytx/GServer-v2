@@ -1,22 +1,21 @@
-#include <map>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <vector>
 #include <array>
-#include <type_traits>
+#include <cstdint>
+#include <optional>
+#include <vector>
 
-#include <IEnums.h>
-
+#include <CEncryption.h>
+#include <CString.h>
 #include <IConfig.h>
+#include <IEnums.h>
+#include <IUtil.h>
 
 #include <Server.h>
-#include <level/Level.h>
+#include <network/IPacketHandler.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <player/PlayerNC.h>
-#include <network/IPacketHandler.h>
 #include <utilities/Log.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

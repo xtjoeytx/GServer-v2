@@ -1,13 +1,16 @@
+#include <cstdint>
+#include <string>
+
+#include <CString.h>
 #include <IEnums.h>
 
-#include "object/Player.h"
-#include "level/LevelItem.h"
+#include <level/LevelItem.h>
+#include <object/Player.h>
+#include <player/PlayerProps.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const char* __itemList[] = {
@@ -37,7 +40,6 @@ const char* __itemList[] = {
 	"joltbomb",     // 23
 	"spinattack"    // 24
 };
-
 const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
 
 CString LevelItem::getItemStr() const

@@ -1,18 +1,30 @@
-#include <vector>
-#include <ranges>
 #include <algorithm>
+#include <cstdint>
+#include <ctime>
 #include <format>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
+#include <CString.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
-#include <BabyDI.h>
+#include <Account.h>
 #include <Server.h>
-#include <object/NPC.h>
-#include <object/Player.h>
-#include <player/PlayerClient.h>
 #include <level/Level.h>
 #include <level/Map.h>
+#include <misc/WordFilter.h>
+#include <object/Player.h>
+#include <player/PlayerClient.h>
+#include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 

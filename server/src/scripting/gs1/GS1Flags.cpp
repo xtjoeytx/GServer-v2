@@ -1,6 +1,15 @@
+#include <string_view>
+#include <unordered_map>
+
+#include <IEnums.h>
+
 #include <Server.h>
+#include <object/NPC.h>
+#include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1

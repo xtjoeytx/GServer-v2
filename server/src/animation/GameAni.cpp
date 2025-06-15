@@ -1,15 +1,17 @@
-#include <filesystem>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <vector>
 
-#include <GS2Context.h>
+#include <CString.h>
+#include <IEnums.h>
 
-#include "animation/GameAni.h"
-#include "Server.h"
+#include <Server.h>
+#include <animation/GameAni.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
@@ -118,5 +120,4 @@ CString GameAni::getBytecodePacket() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

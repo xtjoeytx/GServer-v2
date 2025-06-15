@@ -1,16 +1,19 @@
-#include "scripting/ScriptSystem.h"
-
 #include <cassert>
+#include <memory>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <variant>
 
-#include "scripting/IScriptEngine.h"
-#include "utilities/StringUtils.h"
-#include "utilities/Log.h"
+#include <scripting/IScriptEngine.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void ScriptSystem::registerScriptEngine(std::string_view name, std::shared_ptr<IScriptEngine> engine)
@@ -87,5 +90,4 @@ CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, S
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

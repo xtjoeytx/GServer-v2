@@ -1,8 +1,25 @@
+#include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <span>
+#include <vector>
+
 #include <CString.h>
+#include <IUtil.h>
 
+#include <BabyDI.h>
+#include <FileSystem.h>
 #include <Server.h>
+#include <level/Level.h>
+#include <level/LevelBaddy.h>
+#include <level/LevelItem.h>
+#include <level/LevelTiles.h>
 #include <loader/LevelLoader.h>
+#include <object/NPC.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 
+///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////

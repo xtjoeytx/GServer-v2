@@ -1,12 +1,34 @@
-#include <common.h>
+#include <chrono>
+#include <filesystem>
+#include <format>
+#include <functional>
+#include <map>
+#include <memory>
+#include <string_view>
+#include <string>
 
+#include <CString.h>
+#include <IEnums.h>
+#include <IUtil.h>
+
+#include <Account.h>
+#include <FileSystem.h>
 #include <Server.h>
+#include <level/Level.h>
 #include <npcserver/NPCServer.h>
 #include <npcserver/PlayerNPCServer.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/gs2/ScriptEngineGS2.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/gs2/ScriptEngineGS2.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptClass.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

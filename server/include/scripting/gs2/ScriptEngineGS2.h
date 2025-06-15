@@ -1,13 +1,17 @@
 #ifndef SCRIPTENGINEGS2_H
 #define SCRIPTENGINEGS2_H
 
-#include <unordered_map>
-#include <string>
 #include <string_view>
+#include <string>
+
+#include <exceptions/GS2CompilerError.h>
 
 #include <BabyDI.h>
-#include <scripting/IScriptEngine.h>
 #include <scripting/GS2ScriptManager.h>
+#include <scripting/IScriptEngine.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 namespace preagonal
 {
@@ -46,4 +50,5 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs2
+
 #endif // SCRIPTENGINEGS2_H

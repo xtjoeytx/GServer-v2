@@ -1,21 +1,33 @@
-#include <cstdint>
+#include <algorithm>
+#include <any>
 #include <cmath>
-#include <variant>
-#include <format>
-#include <string>
-#include <string_view>
+#include <cstdint>
 #include <exception>
+#include <format>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string_view>
+#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
-#include <ranges>
+
+#include <BabyDI.h>
+#include <GS1Parser.h>
+#include <tree/ParseTree.h>
+#include <tree/TerminalNode.h>
 
 #include <Server.h>
-#include <scripting/ScriptContainers.h>
+#include <object/NPC.h>
 #include <scripting/gs1/GS1Commands.h>
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 

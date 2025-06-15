@@ -1,21 +1,20 @@
 #ifndef SERVERLIST_H
 #define SERVERLIST_H
 
-#include <assert.h>
+#include <cstdint>
 #include <map>
 #include <memory>
-#include <time.h>
+#include <string>
+#include <vector>
 
+#include <BabyDI.h>
 #include <CFileQueue.h>
 #include <CSocket.h>
 #include <CString.h>
-#include "BabyDI.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum
@@ -126,7 +125,6 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
 
 #endif // SERVERLIST_H

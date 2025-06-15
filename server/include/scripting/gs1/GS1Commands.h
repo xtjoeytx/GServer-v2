@@ -1,8 +1,9 @@
 #ifndef GS1COMMANDS_H
 #define GS1COMMANDS_H
 
-#include <common.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
+#include <array>
+#include <string_view>
+#include <tree/ParseTree.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar

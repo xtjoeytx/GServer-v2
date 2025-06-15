@@ -1,14 +1,18 @@
-#include "FileSystem.h"
-#include "Server.h"
-#include "object/Player.h"
-#include "utilities/Log.h"
-#include "utilities/StringUtils.h"
+#include <vector>
+
+#include <CString.h>
+#include <IEnums.h>
+
+#include <Server.h>
+#include <network/IPacketHandler.h>
+#include <object/Player.h>
+#include <player/PlayerProps.h>
+#include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
@@ -250,5 +254,4 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal

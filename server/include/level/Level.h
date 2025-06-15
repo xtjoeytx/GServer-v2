@@ -1,12 +1,18 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
+#include <chrono>
+#include <cstdint>
 #include <deque>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <string>
+#include <vector>
 
 #include <CString.h>
 #include <IUtil.h>
-
-#include <common.h>
 
 #include <level/LevelBaddy.h>
 #include <level/LevelBoardChange.h>
@@ -17,17 +23,13 @@
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-// Starting baddy id.  Baddy id 0 breaks the client so always start here.
-constexpr uint8_t BADDYID_INIT = 1;
-
-
-class Server;
 class Player;
 class NPC;
 class Map;
@@ -321,8 +323,6 @@ private:
 	Level(short fillTile = 0);
 
 private:
-	BabyDI_INJECT(Server, m_server);
-
 	time_t m_modTime = 0;
 	bool m_isSparringZone = false;
 	bool m_isNoPkZone = false;

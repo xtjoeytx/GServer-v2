@@ -1,6 +1,8 @@
 #ifndef GS1FUNCTIONS_H
 #define GS1FUNCTIONS_H
 
+#include <string_view>
+#include <tree/ParseTree.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 
 ///////////////////////////////////////////////////////////////////////////////

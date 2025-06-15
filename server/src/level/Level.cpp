@@ -1,20 +1,45 @@
-#include <cmath>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <ctime>
+#include <deque>
+#include <filesystem>
 #include <fstream>
 #include <list>
-#include <set>
+#include <memory>
+#include <optional>
+#include <ostream>
+#include <string_view>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include <BabyDI.h>
+#include <CString.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
+#include <FileSystem.h>
 #include <Server.h>
-#include <level/tiletypes.h>
 #include <level/Level.h>
+#include <level/LevelBaddy.h>
+#include <level/LevelBoardChange.h>
+#include <level/LevelChest.h>
+#include <level/LevelHorse.h>
+#include <level/LevelItem.h>
+#include <level/LevelLink.h>
+#include <level/LevelSign.h>
+#include <level/LevelTiles.h>
 #include <level/Map.h>
+#include <level/tiletypes.h>
 #include <loader/LevelLoader.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
-#include <scripting/ScriptTypes.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -49,14 +74,16 @@ Level::Level(short fillTile)
 
 Level::~Level()
 {
+	auto server = BabyDI::Get<Server>();
+
 	// Delete NPCs.
 	{
 		// Remove every NPC in the level.
 		for (auto& levelNPC: m_npcs)
 		{
 			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
-			if (auto npc = m_server->getNPC(levelNPC); npc && npc->type == NPCType::LEVELNPC)
-				m_server->deleteNPC(npc, false);
+			if (auto npc = server->getNPC(levelNPC); npc && npc->type == NPCType::LEVELNPC)
+				server->deleteNPC(npc, false);
 		}
 		m_npcs.clear();
 	}
@@ -79,7 +106,7 @@ Level::~Level()
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
 		for (auto& player: m_players)
 		{
-			if (auto p = m_server->getPlayer(player); p)
+			if (auto p = server->getPlayer(player); p)
 				p->sendPacket(packet);
 		}
 	}
@@ -198,9 +225,10 @@ CString Level::getLinksPacket()
 // TODO: Replace with a function in server that sends npc props from a list of ids.
 void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time)
 {
+	auto server = BabyDI::Get<Server>();
 	for (const auto& npcId : m_npcs)
 	{
-		auto npc = m_server->getNPC(npcId);
+		auto npc = server->getNPC(npcId);
 		if (!npc) continue;
 
 		auto packet = npc->getAllPropsPacket(time);
@@ -247,6 +275,8 @@ uint8_t Level::getGmapY() const
 */
 bool Level::reload()
 {
+	auto server = BabyDI::Get<Server>();
+
 	// Delete NPCs.
 	// Don't delete NPCs if this level is on a gmap!  If we are on a gmap, just set them
 	// back to their original positions.
@@ -254,10 +284,10 @@ bool Level::reload()
 		// Remove every NPC in the level.
 		for (auto it = m_npcs.begin(); it != m_npcs.end();)
 		{
-			auto npc = m_server->getNPC(*it);
+			auto npc = server->getNPC(*it);
 			if (!npc || npc->type == NPCType::LEVELNPC)
 			{
-				m_server->deleteNPC(npc, false);
+				server->deleteNPC(npc, false);
 				it = m_npcs.erase(it);
 			}
 			else
@@ -289,7 +319,7 @@ bool Level::reload()
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
 		for (auto& playerId: m_players)
 		{
-			if (auto player = m_server->getPlayer(playerId); player)
+			if (auto player = server->getPlayer(playerId); player)
 				player->sendPacket(packet);
 		}
 	}
@@ -306,12 +336,12 @@ bool Level::reload()
 	std::deque<PlayerID> oldplayers = m_players;
 	for (auto& id: oldplayers)
 	{
-		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
+		if (auto p = server->getPlayer<PlayerClient>(id); p)
 			p->leaveLevel(true);
 	}
 
 	// Reset the level cache for all the players on the server.
-	auto& playerList = m_server->getPlayerList();
+	auto& playerList = server->getPlayerList();
 	for (const auto& [id, p]: players_of_type<PlayerClient>(playerList))
 	{
 		p->resetLevelCache(this);
@@ -322,12 +352,12 @@ bool Level::reload()
 	bool ret = level != nullptr;
 
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
-	CString uLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
-	float uX = m_server->getSettings().getFloat("unstickmex", 30.0f);
-	float uY = m_server->getSettings().getFloat("unstickmey", 35.0f);
+	CString uLevel = server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
+	float uX = server->getSettings().getFloat("unstickmex", 30.0f);
+	float uY = server->getSettings().getFloat("unstickmey", 35.0f);
 	for (auto& id: oldplayers)
 	{
-		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
+		if (auto p = server->getPlayer<PlayerClient>(id); p)
 			p->warp((ret ? m_levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
 	}
 
@@ -344,7 +374,8 @@ std::shared_ptr<Level> Level::clone() const
 */
 std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbsolute)
 {
-	auto& levelList = m_server->getLevelList();
+	auto server = BabyDI::Get<Server>();
+	auto& levelList = server->getLevelList();
 
 	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
 	// 	this is still going to break on the first occurrence.
@@ -356,9 +387,9 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 
 	if (loadAbsolute)
 	{
-		FileSystem* fileSystem = m_server->getFileSystem();
-		if (!m_server->getSettings().getBool("nofoldersconfig", false))
-			fileSystem = m_server->getFileSystem(FS_LEVEL);
+		FileSystem* fileSystem = server->getFileSystem();
+		if (!server->getSettings().getBool("nofoldersconfig", false))
+			fileSystem = server->getFileSystem(FS_LEVEL);
 
 		if (fileSystem->find(pLevelName).trim().length() == 0)
 		{
@@ -372,7 +403,7 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 	if (level == nullptr)
 		return nullptr;
 
-	auto& mapList = m_server->getMapList();
+	auto& mapList = server->getMapList();
 	for (const auto& map: mapList)
 	{
 		int mx, my;
@@ -393,7 +424,8 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 */
 std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& levelName)
 {
-	auto& levelList = m_server->getLevelList();
+	auto server = BabyDI::Get<Server>();
+	auto& levelList = server->getLevelList();
 
 	// Load New Level
 	auto level = std::shared_ptr<Level>(new Level(fillTile));
@@ -409,9 +441,10 @@ std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& lev
 */
 void Level::saveLevel(const std::string& filename)
 {
-	FileSystem* fileSystem = m_server->getFileSystem();
-	if (!m_server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = m_server->getFileSystem(FS_LEVEL);
+	auto server = BabyDI::Get<Server>();
+	FileSystem* fileSystem = server->getFileSystem();
+	if (!server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	auto actualFilename = getFilename(filename);
 
@@ -509,7 +542,7 @@ void Level::saveLevel(const std::string& filename)
 
 	for (const auto& npcId: getNPCs())
 	{
-		auto npc = m_server->getNPC(npcId);
+		auto npc = server->getNPC(npcId);
 
 		// Don't save PUTNPC's or DBNPC's in the level file
 		if (npc->type != NPCType::LEVELNPC)
@@ -533,7 +566,8 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 		pX + pWidth > 64 || pY + pHeight > 64)
 		return false;
 
-	auto& settings = m_server->getSettings();
+	auto server = BabyDI::Get<Server>();
+	auto& settings = server->getSettings();
 
 	// Do the check for the push-pull block.
 	if (pWidth == 4 && pHeight == 4 && settings.getBool("clientsidepushpull", true))
@@ -655,7 +689,8 @@ LevelItemType Level::removeItem(float pX, float pY)
 
 bool Level::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
 {
-	auto horseLife = m_server->getSettings().getInt("horselifetime", 30);
+	auto server = BabyDI::Get<Server>();
+	auto horseLife = server->getSettings().getInt("horselifetime", 30);
 	m_horses.push_back(LevelHorse(horseLife, pImage, pX, pY, pDir, pBushes));
 	return true;
 }
@@ -708,10 +743,11 @@ LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type)
 	if (baddy == nullptr)
 		return nullptr;
 
+	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
 	for (auto& player : m_players)
 	{
-		if (auto p = m_server->getPlayer(player); p)
+		if (auto p = server->getPlayer(player); p)
 			p->sendPacket(packet);
 	}
 
@@ -726,11 +762,12 @@ LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type, uint8_t power, 
 
 	baddy->setImage(image);
 	baddy->power = power;
-	
+
+	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
 	for (auto& player : m_players)
 	{
-		if (auto p = m_server->getPlayer(player); p)
+		if (auto p = server->getPlayer(player); p)
 			p->sendPacket(packet);
 	}
 
@@ -750,16 +787,18 @@ void Level::removeBaddy(uint8_t pId)
 	baddy->setRespawn(false);
 
 	// Set the baddy as dead for all the other players in the level.
+	auto server = BabyDI::Get<Server>();
 	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 	for (const auto& playerId : m_players)
 	{
-		auto player = m_server->getPlayer(playerId);
+		auto player = server->getPlayer(playerId);
 		player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 	}
 }
 
 void Level::removeAllBaddies()
 {
+	auto server = BabyDI::Get<Server>();
 	CString propsPacket;
 	for (auto& baddy : m_baddies)
 	{
@@ -771,7 +810,7 @@ void Level::removeAllBaddies()
 		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy->id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 		for (const auto& playerId : m_players)
 		{
-			auto player = m_server->getPlayer(playerId);
+			auto player = server->getPlayer(playerId);
 			player->sendPacket(propsPacket);
 		}
 	}
@@ -791,7 +830,8 @@ int Level::addPlayer(PlayerID id)
 	m_players.push_back(id);
 
 	// Set the player enters event on all the NPCs.
-	m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
+	auto server = BabyDI::Get<Server>();
+	server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
 
 	return static_cast<int>(m_players.size() - 1);
 }
@@ -801,7 +841,8 @@ void Level::removePlayer(PlayerID id)
 	std::erase(m_players, id);
 
 	// Set the player leaves event on all the NPCs.
-	m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
+	auto server = BabyDI::Get<Server>();
+	server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 }
 
 bool Level::isPlayerLeader(PlayerID id)
@@ -826,19 +867,20 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	if (script.starts_with("singleplayer"))
 		setSingleplayer(true);
 
+	if (npc->isCharacter())
+	{
+		// Set the player enters event on all the NPCs.
+		auto server = BabyDI::Get<Server>();
+		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromNPC(npc->id));
+	}
+
 	return true;
 }
 
 bool Level::addNPC(NPCID npcId)
 {
-	auto npc = m_server->getNPC(npcId);
-
-	if (npc->isCharacter())
-	{
-		// Set the player enters event on all the NPCs.
-		m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromNPC(npc->id));
-	}
-
+	auto server = BabyDI::Get<Server>();
+	auto npc = server->getNPC(npcId);
 	return addNPC(npc);
 }
 
@@ -852,13 +894,15 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 	if (npc->isCharacter())
 	{
 		// Set the player leaves event on all the NPCs.
-		m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromNPC(npc->id));
+		auto server = BabyDI::Get<Server>();
+		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromNPC(npc->id));
 	}
 }
 
 void Level::removeNPC(NPCID npcId)
 {
-	auto npc = m_server->getNPC(npcId);
+	auto server = BabyDI::Get<Server>();
+	auto npc = server->getNPC(npcId);
 	removeNPC(npc);
 }
 
@@ -871,6 +915,8 @@ void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
 
 bool Level::doTimedEvents()
 {
+	auto server = BabyDI::Get<Server>();
+
 	// Check if we should revert any board changes.
 	for (auto& change: m_boardChanges)
 	{
@@ -882,7 +928,7 @@ bool Level::doTimedEvents()
 			// change, the client won't get the new data.
 			change.swapTiles();
 			change.setModTime(time(0));
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
+			server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
 		}
 	}
 
@@ -908,7 +954,7 @@ bool Level::doTimedEvents()
 		int deleteTimer = horse.timeout.doTimeout();
 		if (deleteTimer == 0)
 		{
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2), this->shared_from_this());
+			server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2), this->shared_from_this());
 			i = m_horses.erase(i);
 		}
 		else
@@ -931,7 +977,7 @@ bool Level::doTimedEvents()
 					baddy->setPropsFromPacket(props);
 					for (unsigned int i = 1; i < m_players.size(); ++i)
 					{
-						auto player = m_server->getPlayer(m_players[i]);
+						auto player = server->getPlayer(m_players[i]);
 						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 					}
 				}
@@ -940,26 +986,26 @@ bool Level::doTimedEvents()
 			{
 				baddy->mode = BaddyMode::DEAD;
 				if (baddy->canRespawn())
-					baddy->timeout.setTimeout(m_server->getSettings().getInt("baddyrespawntime", 60));
+					baddy->timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
 
 				// Set the baddy as dead for all the other players in the level.
 				CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 				for (unsigned int i = 1; i < m_players.size(); ++i)
 				{
-					auto player = m_server->getPlayer(m_players[i]);
+					auto player = server->getPlayer(m_players[i]);
 					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 				}
 
 				// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 				if (!hasLivingBaddies())
-					m_server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLAYSITEM, source::FromLevel(shared_from_this()));
+					server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLAYSITEM, source::FromLevel(shared_from_this()));
 			}
 			else
 			{
 				baddy->reset();
 				for (auto p: m_players)
 				{
-					auto player = m_server->getPlayer(p);
+					auto player = server->getPlayer(p);
 					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(player->getVersion()));
 				}
 			}
@@ -972,9 +1018,7 @@ bool Level::doTimedEvents()
 bool Level::isOnWall(int pX, int pY)
 {
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
-	{
 		return true;
-	}
 
 	return tiletypes[getTiles(0)[pY * 64 + pX]] >= 20;
 }
@@ -986,9 +1030,7 @@ bool Level::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags)
 		for (int cx = pX; cx < pX + pWidth; ++cx)
 		{
 			if (isOnWall(cx, cy))
-			{
 				return true;
-			}
 		}
 	}
 
@@ -1019,9 +1061,7 @@ std::optional<LevelChest*> Level::getChest(int x, int y) const
 	for (const auto& chest: m_chests)
 	{
 		if (chest->getX() == x && chest->getY() == y)
-		{
 			return std::make_optional(chest.get());
-		}
 	}
 
 	return std::nullopt;

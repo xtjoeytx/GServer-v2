@@ -1,15 +1,17 @@
-#include <map>
+#include <cassert>
+#include <string>
+#include <utility>
 #include <vector>
 
-#include "FileSystem.h"
-#include "Server.h"
-#include "level/Map.h"
+#include <CString.h>
+
+#include <FileSystem.h>
+#include <Server.h>
+#include <level/Map.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace preagonal
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 Map::Map(MapType pType, bool pGroupMap)
@@ -306,5 +308,4 @@ void Map::loadMapLevels() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // end namespace preagonal
