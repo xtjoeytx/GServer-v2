@@ -88,12 +88,55 @@ Server::Server(const CString& pName)
 	: running(false), m_doRestart(false), m_name(pName), m_animationManager(this), m_packageManager(this), m_serverStartTime(),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
-	auto time_now = std::chrono::high_resolution_clock::now();
-	m_lastTimer = m_lastNPCServerTimer = m_lastNewWorldTimer = m_last1mTimer = m_last5mTimer = m_last3mTimer = time_now;
 	calculateNWTime();
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
+
+	m_timedEvents.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
+	m_timedSave.callbackIterations = std::bind(&Server::saveServerFlags, this);
+	m_timedNWTime.callbackIterations = [this](int)
+	{
+		calculateNWTime();
+		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+	};
+	m_timedMaintenance.callbackIterations = [this](int)
+	{
+		// Reload some server settings.
+		loadAllowedVersions();
+		loadServerMessage();
+		loadIPBans();
+
+		// Save some stuff.
+		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
+		saveWeapons();
+
+		// Check all of the instanced maps to see if the players have left.
+		if (!m_groupLevels.empty())
+		{
+			std::unordered_set<std::string> groupKeys;
+			std::for_each(std::begin(m_groupLevels), std::end(m_groupLevels), [&groupKeys](auto& pair)
+			{
+				groupKeys.insert(pair.first);
+			});
+
+			for (auto& groupName : groupKeys)
+			{
+				bool playersFound = false;
+				auto range = m_groupLevels.equal_range(groupName);
+				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
+				{
+					if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
+						playersFound = true;
+				});
+
+				if (!playersFound)
+				{
+					m_groupLevels.erase(groupName);
+				}
+			}
+		}
+	};
 }
 
 Server::~Server()
@@ -176,6 +219,12 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::now();
+
+	// Start the timers.
+	m_timedEvents.start();
+	m_timedNWTime.start();
+	m_timedSave.start();
+	m_timedMaintenance.start();
 
 	return 0;
 }
@@ -287,29 +336,22 @@ bool Server::doMain()
 	// Current time
 	auto currentTimer = std::chrono::high_resolution_clock::now();
 
-	// NPC-Server runs every 100ms.
+	// Update the NPC server.
 	if (hasNPCServer())
 	{
-		auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastNPCServerTimer);
-		if (time_diff.count() >= 100)
-		{
-			m_lastNPCServerTimer = currentTimer;
-			m_npcServer->run(time_diff);
-		}
+		m_npcServer->update(currentTimer);
 	}
 
-	// Every second, do some events.
-	auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - m_lastTimer);
-	if (time_diff.count() >= 1000)
-	{
-		m_lastTimer = currentTimer;
-		doTimedEvents();
-	}
+	// Update our events.
+	m_timedEvents.update(currentTimer);
+	m_timedSave.update(currentTimer);
+	m_timedNWTime.update(currentTimer);
+	m_timedMaintenance.update(currentTimer);
 
 	return true;
 }
 
-bool Server::doTimedEvents()
+bool Server::doTimedEvents(int)
 {
 	// Do serverlist events.
 	m_serverlist.doTimedEvents();
@@ -340,82 +382,6 @@ bool Server::doTimedEvents()
 		{
 			if (auto level = levelPtr.lock(); level)
 				level->doTimedEvents();
-		}
-	}
-
-	// Send NW time.
-	auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_lastNewWorldTimer);
-	if (time_diff.count() >= 5)
-	{
-		calculateNWTime();
-
-		m_lastNewWorldTimer = m_lastTimer;
-		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-	}
-
-	// Stuff that happens every minute.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last1mTimer);
-	if (time_diff.count() >= 60)
-	{
-		m_last1mTimer = m_lastTimer;
-
-		// Save server flags.
-		this->saveServerFlags();
-	}
-
-	// Stuff that happens every 3 minutes.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last3mTimer);
-	if (time_diff.count() >= 180)
-	{
-		m_last3mTimer = m_lastTimer;
-
-		// TODO(joey): probably a better way to do this..
-
-		// Resynchronize the file systems.
-		m_filesystemAccounts.resync();
-		for (auto& i: m_filesystem)
-			i.resync();
-	}
-
-	// Save stuff every 5 minutes.
-	time_diff = std::chrono::duration_cast<std::chrono::seconds>(m_lastTimer - m_last5mTimer);
-	if (time_diff.count() >= 300)
-	{
-		m_last5mTimer = m_lastTimer;
-
-		// Reload some server settings.
-		loadAllowedVersions();
-		loadServerMessage();
-		loadIPBans();
-
-		// Save some stuff.
-		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
-		saveWeapons();
-
-		// Check all of the instanced maps to see if the players have left.
-		if (!m_groupLevels.empty())
-		{
-			std::unordered_set<std::string> groupKeys;
-			std::for_each(std::begin(m_groupLevels), std::end(m_groupLevels), [&groupKeys](auto& pair)
-						  {
-							  groupKeys.insert(pair.first);
-						  });
-
-			for (auto& groupName: groupKeys)
-			{
-				bool playersFound = false;
-				auto range = m_groupLevels.equal_range(groupName);
-				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
-							  {
-								  if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
-									  playersFound = true;
-							  });
-
-				if (!playersFound)
-				{
-					m_groupLevels.erase(groupName);
-				}
-			}
 		}
 	}
 

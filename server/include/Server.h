@@ -286,7 +286,7 @@ public:
 	ScriptContainer Scripting;
 
 private:
-	bool doTimedEvents();
+	bool doTimedEvents(int iterations);
 	void cleanupDeletedPlayers();
 
 	bool m_doRestart;
@@ -318,7 +318,10 @@ private:
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
 
-	std::chrono::high_resolution_clock::time_point m_lastTimer, m_lastNPCServerTimer, m_lastNewWorldTimer, m_last1mTimer, m_last5mTimer, m_last3mTimer;
+	TimeoutGenerator m_timedEvents{ 1s, true };
+	TimeoutGenerator m_timedNWTime{ 5s, true };
+	TimeoutGenerator m_timedSave{ 1min, true };
+	TimeoutGenerator m_timedMaintenance{ 5min, true };
 	std::chrono::system_clock::time_point m_serverStartTime;
 	unsigned int m_serverTime;
 

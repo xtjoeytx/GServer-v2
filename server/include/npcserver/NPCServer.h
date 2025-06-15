@@ -35,7 +35,12 @@ public:
 
 public:
 	void initialize();
-	void run(std::chrono::milliseconds timeDelta);
+
+public:
+	void update(TimeoutGenerator::time_point currentTime = std::chrono::high_resolution_clock::now());
+
+private:
+	void run(TimeoutGenerator::time_delta delta);
 
 private:
 	void loadClasses();
@@ -70,7 +75,7 @@ private:
 
 	std::shared_ptr<PlayerNPCServer> m_npcServerPlayer;
 
-	std::chrono::high_resolution_clock::time_point m_lastUpdate;
+	TimeoutGenerator m_runTimeout{ 100ms, true };
 
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	std::unordered_map<std::string, std::unique_ptr<ScriptClass>> m_classList;

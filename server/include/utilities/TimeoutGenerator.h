@@ -11,33 +11,51 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief A utility struct for generating periodic timeouts and invoking a callback after a specified interval.
 struct TimeoutGenerator
 {
-	std::chrono::milliseconds timeout = 5ms;
-	bool repeated = true;
-	std::function<void(int)> callback = nullptr;
+	using time_point = std::chrono::high_resolution_clock::time_point;
+	using time_delta = std::chrono::milliseconds;
+
+	TimeoutGenerator() = default;
+
+	template<typename Rep, typename Period>
+	TimeoutGenerator(std::chrono::duration<Rep, Period> timeout, bool repeated = false)
+		: timeout(std::chrono::duration_cast<time_delta>(timeout)), repeated(repeated) {}
 
 public:
-	int update()
+	time_delta timeout = 5ms;
+	bool repeated = true;
+	std::function<void(int)> callbackIterations = nullptr;
+	std::function<void(time_delta)> callbackDuration = nullptr;
+
+public:
+	int update(time_point now = std::chrono::high_resolution_clock::now())
 	{
 		if (!m_running)
 			return 0;
 
-		auto now = std::chrono::high_resolution_clock::now();
-		int iterations = (now - m_lastTimeout) / timeout;
+		auto duration = now - m_lastTimeout;
+		int iterations = duration / timeout;
 		if (iterations > 0)
 		{
 			m_lastTimeout = now;
 			if (!repeated)
+			{
 				m_running = false;
-			if (callback)
-				callback(iterations);
+				iterations = 1;
+			}
+
+			if (callbackIterations)
+				callbackIterations(iterations);
+			if (callbackDuration)
+				callbackDuration(std::chrono::duration_cast<time_delta>(duration));
 		}
 
 		return iterations;
 	}
 
-	void setLastTimeout(std::chrono::steady_clock::time_point lastTimeout = std::chrono::high_resolution_clock::now())
+	void setLastTimeout(time_point lastTimeout = std::chrono::high_resolution_clock::now())
 	{
 		m_lastTimeout = lastTimeout;
 	}
@@ -60,7 +78,7 @@ public:
 
 protected:
 	bool m_running = false;
-	std::chrono::high_resolution_clock::time_point m_lastTimeout = std::chrono::high_resolution_clock::now();
+	time_point m_lastTimeout = std::chrono::high_resolution_clock::now();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

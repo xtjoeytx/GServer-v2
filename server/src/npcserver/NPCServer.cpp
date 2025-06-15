@@ -71,11 +71,21 @@ void NPCServer::initialize()
 
 	log::printLine(log::server, "Loading Database NPCs...");
 	loadDatabaseNPCs();
+
+	m_runTimeout.callbackDuration = std::bind(&NPCServer::run, this, std::placeholders::_1);
+
+	// TODO(Nalin): Need an event system and this should be called after the Server sends an "all done loading" event.
+	m_runTimeout.start();
 }
 
 //----------------------------
 
-void NPCServer::run(std::chrono::milliseconds timeDelta)
+void NPCServer::update(TimeoutGenerator::time_point currentTime)
+{
+	m_runTimeout.update(currentTime);
+}
+
+void NPCServer::run(TimeoutGenerator::time_delta delta)
 {
 	//auto profile = log::Profile(log::server, "NPCServer::run");
 
@@ -84,9 +94,11 @@ void NPCServer::run(std::chrono::milliseconds timeDelta)
 		for (auto& [id, npc] : m_server->getNPCList())
 		{
 			npc->recordCurrentPropModTime();
+
+			// TODO(Nalin): Replace with TimeoutGenerator.
 			if (npc->timeout.count() != 0)
 			{
-				npc->timeout -= timeDelta;
+				npc->timeout -= delta;
 				if (npc->timeout < std::chrono::milliseconds::zero())
 				{
 					npc->timeout = 0ms;
