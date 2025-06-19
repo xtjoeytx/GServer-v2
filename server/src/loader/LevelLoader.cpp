@@ -68,7 +68,14 @@ GR-V1.03
 	chests
 	signs
 
+GR-V1.04
+
+GR-V1.05
+	tile layers
+
 GLEVNW01
+
+GWEBL001
 
 GSERVL01
 	saves modified npcs in 'levelnpcs/levelfilename.save`
@@ -101,7 +108,7 @@ static constexpr int getBase64Position(char c)
 	return 0;
 }
 
-static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles& outputTiles)
+static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles& outputTiles, bool isExtraLayer)
 {
 	uint32_t buffer = 0;
 	uint32_t read = 0;
@@ -145,6 +152,10 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 		// If our count is 1, just read in a tile.  This is the default mode.
 		if (tileReadAmount == 1)
 		{
+			// Extra layer tiles are 0xFFFF.
+			if (isExtraLayer && code == 0xFFF)
+				code = ~0;
+
 			outputTiles[boardWriteIndex++] = code;
 			continue;
 		}
@@ -163,11 +174,20 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 			// Read in our second tile.
 			rleTiles[1] = code;
 
+			// Determine the actual tiles we are going to write.
+			// Tiles on additional layers are 0xFFFF if not set, so handle that.
+			uint16_t first = ~0;
+			uint16_t second = rleTiles[1];
+			if (!isExtraLayer || rleTiles[0] != 0xFFF)
+				first = rleTiles[0];
+			if (isExtraLayer && rleTiles[1] == 0xFFF)
+				second = ~0;
+
 			// Add the tiles now.
 			for (int i = 0; i < tileReadAmount && boardWriteIndex < MAX_TILE_COUNT - 1; ++i)
 			{
-				outputTiles[boardWriteIndex++] = rleTiles[0];
-				outputTiles[boardWriteIndex++] = rleTiles[1];
+				outputTiles[boardWriteIndex++] = first;
+				outputTiles[boardWriteIndex++] = second;
 			}
 
 			// Clean up.
@@ -179,7 +199,13 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 		else
 		{
 			for (int i = 0; i < tileReadAmount && boardWriteIndex < MAX_TILE_COUNT; ++i)
+			{
+				// Extra layer tiles are 0xFFFF.
+				if (isExtraLayer && code == 0xFFF)
+					code = ~0;
+
 				outputTiles[boardWriteIndex++] = code;
+			}
 			tileReadAmount = 1;
 		}
 	}
@@ -226,9 +252,9 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 	// Load the level.
 	if (fileVersion == "GLEVNW01")
 		return loadNW(level, fileSystem, fileData);
-	if (fileVersion == "GR-V1.03" || fileVersion == "GR-V1.02" || fileVersion == "GR-V1.01" || fileVersion == "GR-V1.00")
+	if (fileVersion.subString(0, 3) == "GR-")
 		return loadGraal(level, fileSystem, fileData);
-	if (fileVersion == "Z3-V1.04" || fileVersion == "Z3-V1.03")
+	if (fileVersion.subString(0, 3) == "Z3-")
 		return loadZelda(level, fileSystem, fileData);
 
 	// Bad level version.
@@ -249,7 +275,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 
 	// Load tiles.
 	std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
-	auto read = readBinaryTiles(12, tiles, level->m_tiles[0]);
+	auto read = readBinaryTiles(12, tiles, level->m_tiles[0], false);
 	fileData.setRead(fileData.readPos() + read);
 
 	// Load the links.
@@ -338,13 +364,25 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 		version = 2;
 	else if (level->m_fileVersion == "GR-V1.03")
 		version = 3;
+	else if (level->m_fileVersion == "GR-V1.05")
+		version = 5;
 
 	if (version == -1) return nullptr;
 
+	uint8_t layers = 1;
+	if (version >= 5)
+	{
+		// Read the layer count.
+		layers = fileData.readGUChar();
+	}
+
 	// Load tiles.
-	std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
-	auto read = readBinaryTiles(version > 1 ? 13 : 12, tiles, level->m_tiles[0]);
-	fileData.setRead(fileData.readPos() + read);
+	for (uint8_t i = 0; i < layers; ++i)
+	{
+		std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
+		auto read = readBinaryTiles(version > 1 ? 13 : 12, tiles, level->m_tiles[i], i != 0);
+		fileData.setRead(fileData.readPos() + read);
+	}
 
 	// Load the links.
 	{
