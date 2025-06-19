@@ -134,7 +134,6 @@ static void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, c
 static void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setshape2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -272,7 +271,6 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("setplayerprop"), &fn_setplayerprop },
 		{ hash("setpm"), &fn_setpm },
 		{ hash("setshape"), &fn_setshape },
-		{ hash("setshape2"), &fn_setshape2 },
 		{ hash("setshield"), &fn_setshield },
 		{ hash("setshoecolor"), &fn_setshoecolor },
 		{ hash("setshootparams"), &fn_setshootparams },
@@ -1615,13 +1613,21 @@ void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vect
 // type 1 = rectangle
 void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setshape is not implemented yet.");
-}
+	if (arguments.size() != 3)
+		throw std::invalid_argument("setshape requires exactly three arguments: type, width, height.");
 
-// setshape2 width,height,{tiletypes...};
-void fn_setshape2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::runtime_error("setshape2 is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto type = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		if (type != 1)
+			return;
+
+		auto width = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto height = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->shape = { width, height };
+	}
 }
 
 // setshield image,power;
