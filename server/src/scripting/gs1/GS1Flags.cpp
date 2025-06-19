@@ -46,18 +46,13 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 		{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
 	};
 
-	auto it = eventFlagMap.find(event);
-	if (it != eventFlagMap.end())
-	{
-		auto flagName = it->second;
-		variableStore.add(flagName, true);
+	// Set all our built-in event flags.
+	for (auto& [eventType, flagName] : eventFlagMap)
+		variableStore.add(flagName, event == eventType);
 
-		// TODO: Put extensions under a server option?
-		if (event == ScriptEventType::PLAYERTOUCHSME)
-			variableStore.add("playertouchesme", true);
-		if (event == ScriptEventType::PLAYERTOUCHSOTHER)
-			variableStore.add("playertouchesother", true);
-	}
+	// TODO: Put extensions under a server option?
+	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
+	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
 }
 
 void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player)
@@ -65,8 +60,7 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	if (player == nullptr)
 		return;
 
-	if ((player->account.status & PLSTATUS_HASSPIN) != 0)
-		variableStore.add("canspin", true);
+	variableStore.add("canspin", (player->account.status & PLSTATUS_HASSPIN) != 0);
 
 	/* TODO(Nalin): Carry sprite flags. PLPROP_CARRYSPRITE
 		carrying           the player carries something
@@ -77,16 +71,11 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 		carriesvase        the player carries a vase
 	*/
 
-	if ((player->account.status & PLSTATUS_ALLOWWEAPONS) != 0)
-		variableStore.add("weaponsenabled", true);
-	if ((player->account.status & PLSTATUS_PAUSED) != 0)
-		variableStore.add("playerpaused", true);
-	if ((player->account.status & PLSTATUS_MALE) != 0)
-		variableStore.add("playerismale", true);
-	if ((player->account.status & PLSTATUS_MALE) == 0)
-		variableStore.add("playerisfemale", true);
-	if (!player->account.character.horseImage.empty())
-		variableStore.add("playeronhorse", true);
+	variableStore.add("weaponsenabled", (player->account.status & PLSTATUS_ALLOWWEAPONS) != 0);
+	variableStore.add("playerpaused", (player->account.status & PLSTATUS_PAUSED) != 0);
+	variableStore.add("playerismale", (player->account.status & PLSTATUS_MALE) != 0);
+	variableStore.add("playerisfemale", (player->account.status & PLSTATUS_MALE) == 0);
+	variableStore.add("playeronhorse", !player->account.character.horseImage.empty());
 
 	// TODO(Nalin): playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
 	/*
@@ -94,10 +83,10 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 		playertrial
 	*/
 
-	if (npc != nullptr && player->getAttachedNPC() == npc->id)
-		variableStore.add("playerattached", true);
-	if (auto level = player->getLevel(); level != nullptr && level->isPlayerLeader(player->getId()))
-		variableStore.add("isleader", true);
+	variableStore.add("playerattached", npc != nullptr && player->getAttachedNPC() == npc->id);
+
+	auto level = player->getLevel();
+	variableStore.add("isleader", level != nullptr && level->isPlayerLeader(player->getId()));
 }
 
 void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
@@ -105,10 +94,7 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 	if (npc == nullptr)
 		return;
 
-	// TODO(Nalin): timeout
-
-	if (npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
-		variableStore.add("visible", true);
+	variableStore.add("visible", npc->visFlags != PROPID(NPCVisFlags::HIDDEN));
 
 	// followsplayer - Client side only, unless we go sicko mode in the future.
 
@@ -131,17 +117,10 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 {
-	if (level == nullptr)
-		return;
-
-	if (level->isSparringZone())
-		variableStore.add("issparringzone", true);
-	if (level->isNoPkZone())
-		variableStore.add("nopkzone", true);
-	if (level->getMap() != nullptr)
-		variableStore.add("isonmap", true);
-	if (!level->hasLivingBaddies())
-		variableStore.add("compsdead", true);
+	variableStore.add("issparringzone", level != nullptr && level->isSparringZone());
+	variableStore.add("nopkzone", level != nullptr && level->isNoPkZone());
+	variableStore.add("isonmap", level != nullptr && level->getMap() != nullptr);
+	variableStore.add("compsdead", level != nullptr && !level->hasLivingBaddies());
 
 	/*
 		levelorgx     level origin(x), can be different to 0, 0 if the player is attached to an npc

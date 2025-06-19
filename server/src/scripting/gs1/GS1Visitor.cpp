@@ -415,24 +415,45 @@ std::any GS1Visitor::visitComparisonExpression(GS1Parser::ComparisonExpressionCo
 	if (!op.has_value())
 		throw std::runtime_error("ComparisonExpression does not have an operator");
 
-	auto left = getReadOnlyGameValueFromAnyAs<double>(results[0]);
-	auto right = getReadOnlyGameValueFromAnyAs<double>(results[1]);
+	auto left = getReadOnlyGameValueFromAny(results[0]);
+	auto right = getReadOnlyGameValueFromAny(results[1]);
 
+	auto* left_vector = left.get_unsafe<std::vector<double>>();
+	auto* right_vector = right.get_unsafe<std::vector<double>>();
+
+	// Vector equality checks.
+	if (left_vector != nullptr && right_vector != nullptr)
+	{
+		switch (op.value())
+		{
+			case GS1Parser::OP_EQUAL:
+			case GS1Parser::OP_ASSIGN:
+				return std::make_any<GS1ScriptValue>((*left_vector == *right_vector) ? 1.0 : 0.0);
+			case GS1Parser::OP_NOTEQ:
+				return std::make_any<GS1ScriptValue>((*left_vector != *right_vector) ? 1.0 : 0.0);
+		}
+	}
+
+	// Otherwise, we compare the doubles.
+	auto left_double = left.get<double>().value_or(0.0);
+	auto right_double = right.get<double>().value_or(0.0);
+
+	// Do the comparison.
 	switch (op.value())
 	{
 		case GS1Parser::OP_EQUAL:
 		case GS1Parser::OP_ASSIGN:
-			return std::make_any<GS1ScriptValue>((left == right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double == right_double) ? 1.0 : 0.0);
 		case GS1Parser::OP_NOTEQ:
-			return std::make_any<GS1ScriptValue>((left != right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double != right_double) ? 1.0 : 0.0);
 		case GS1Parser::OP_LESS:
-			return std::make_any<GS1ScriptValue>((left < right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double < right_double) ? 1.0 : 0.0);
 		case GS1Parser::OP_GREAT:
-			return std::make_any<GS1ScriptValue>((left > right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double > right_double) ? 1.0 : 0.0);
 		case GS1Parser::OP_LESS_EQ:
-			return std::make_any<GS1ScriptValue>((left <= right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double <= right_double) ? 1.0 : 0.0);
 		case GS1Parser::OP_GREAT_EQ:
-			return std::make_any<GS1ScriptValue>((left >= right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>((left_double >= right_double) ? 1.0 : 0.0);
 	}
 
 	throw std::runtime_error("ComparisonExpression has an unknown operator");

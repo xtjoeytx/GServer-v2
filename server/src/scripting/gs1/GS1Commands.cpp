@@ -918,12 +918,12 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // Sets the NPC message.
 void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 1)
-		throw std::invalid_argument("message requires exactly one argument: text.");
-
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
+		std::string text{};
+		if (arguments.size() != 0)
+			text = visitor->getGameValueAs<std::string>(*arguments[0]);
+
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::MESSAGE>(SetBy::SERVER, text);
@@ -1627,6 +1627,9 @@ void fn_setshape2(GS1Visitor* visitor, std::string_view commandName, const std::
 // setshield image,power;
 void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("setshield requires exactly two arguments: image and power.");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1641,6 +1644,9 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 // Sets the player's shoe color.
 void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("setshoecolor requires exactly one argument: color.");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
@@ -1664,6 +1670,9 @@ void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const 
 // Sets the player's skin color.
 void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("setskincolor requires exactly one argument: color.");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
@@ -1681,6 +1690,9 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 // Sets the player's sleeve color.
 void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("setsleevecolor requires exactly one argument: color.");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);

@@ -657,6 +657,7 @@ ALLFEATURES
 	: 'allfeatures'
 	;
 
+// TODO: Identifiers can be numbers, so a redesign will be required.
 IDENTIFIER
 	: [a-zA-Z_][a-zA-Z0-9_]* {!isBuiltInCommand(getText())}?
 	;
