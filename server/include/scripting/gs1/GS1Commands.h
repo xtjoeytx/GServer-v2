@@ -156,7 +156,7 @@ constexpr std::array<std::string_view, 200> serverSideCommands =
 	"setplayerprop",
 	"setpm",
 	"setshape",
-	"setshape2",
+	//"setshape2",
 	"setshield",
 	"setshoecolor",
 	"setshootparams",

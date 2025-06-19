@@ -2,15 +2,13 @@
 #define SCRIPTSYSTEM_H
 
 #include <any>
-#include <functional>
 #include <memory>
 #include <string_view>
 #include <string>
 #include <unordered_map>
 #include <variant>
 
-#include <scripting/ScriptTypes.h>
-#include <utilities/StringUtils.h>
+#include <utilities/CommonTypes.h>
 
 using namespace std::literals::string_view_literals;
 
@@ -42,20 +40,20 @@ public:
 public:
 	// Gets the compiled client script.
 	// Forces the script to be compiled with the GS2 engine, as the client only understands GS2 bytecode.
-	CompiledScriptResultPtr getCompiledClientScript(ScriptType type, std::string_view name, std::string_view source);
+	CompiledScriptResultPtr getCompiledClientScript(std::string_view source);
 
 	// Gets the compiled server script.
-	CompiledScriptResultPtr getCompiledServerScript(ScriptType type, std::string_view name, std::string_view source);
+	CompiledScriptResultPtr getCompiledServerScript(std::string_view source);
 
 public:
 	std::string defaultScriptEngine = "GS2";
 
 private:
-	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, ScriptType type, std::string_view name, std::string_view source);
+	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, std::string_view source);
 
 private:
-	std::unordered_map<std::string, std::shared_ptr<IScriptEngine>, string::string_hash, std::equal_to<>> m_script_engines;
-	std::unordered_map<size_t, CompiledScriptResultPtr> m_script_cache;
+	string_map<std::shared_ptr<IScriptEngine>> m_script_engines;
+	hash_map<CompiledScriptResultPtr> m_script_cache;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

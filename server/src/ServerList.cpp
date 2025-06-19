@@ -346,7 +346,10 @@ void ServerList::sendPlayers()
 	for (auto& [id, player] : playerList)
 	{
 		if (!player->isNC())
+		{
 			addPlayer(player);
+			player->sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
+		}
 	}
 }
 

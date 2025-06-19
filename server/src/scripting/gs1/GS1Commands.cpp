@@ -887,9 +887,19 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // join class;
+// Joins a class.
 void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("join is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("join requires exactly one argument: class.");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->joinClass(class_);
+	}
 }
 
 // lay itemname;

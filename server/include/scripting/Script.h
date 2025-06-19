@@ -10,6 +10,7 @@
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <utilities/StringUtils.h>
 
 using namespace std::literals;
 
@@ -25,21 +26,21 @@ class Script
 {
 public:
 	Script() = default;
-	Script(const Script& o) noexcept : Script(o.m_original_source) {}
-	Script(Script&& o) noexcept : Script(std::move(o.m_original_source)) {}
 	Script(const std::string& src) noexcept : Script(std::move(std::string{ src })) {}
 	Script(std::string_view src) noexcept : Script(std::move(std::string{ src })) {}
+	Script(const Script& o) noexcept { *this = o; }
+	Script(Script&& o) noexcept { *this = std::move(o); }
 
 	Script(std::string&& src) noexcept
-		: m_original_source(std::move(src))
 	{
-		setModifiedSource(m_original_source);
+		setOriginalSource(std::move(src));
 	}
 
 	[[inline]] Script& operator=(const Script& o) noexcept;
 	[[inline]] Script& operator=(Script&& o) noexcept;
 
 public:
+	[[inline]] const size_t getHash() const noexcept;
 	[[inline]] const std::string& getOriginalSource() const noexcept;
 	[[inline]] const std::string& getModifiedSource() const noexcept;
 	[[inline]] std::string_view getClientSide() const noexcept;
@@ -47,10 +48,11 @@ public:
 	const ScriptByteCode& getClientByteCode() const noexcept;
 
 public:
-	[[inline]] void setOriginalSource(const std::string& source) noexcept;
-	[[inline]] void setModifiedSource(const std::string& source) noexcept;
-	[[inline]] void setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
-	[[inline]] void setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
+	[[inline]] Script& setOriginalSource(std::string&& source) noexcept;
+	[[inline]] Script& setOriginalSource(const std::string& source) noexcept;
+	[[inline]] Script& setModifiedSource(const std::string& source) noexcept;
+	[[inline]] Script& setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
+	[[inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
 	void executeEvents(ScriptContainer& container, ScriptObjectSource source) const;
@@ -66,9 +68,17 @@ private:
 	std::string_view m_serverside;
 	CompiledScriptResultPtr m_client_script;
 	CompiledScriptResultPtr m_server_script;
+	size_t m_hash = 0;
 
 	void split(std::string& source) noexcept;
 };
+
+//----------------------------
+
+inline const size_t Script::getHash() const noexcept
+{
+	return m_hash;
+}
 
 inline Script& Script::operator=(const Script& o) noexcept
 {
@@ -76,6 +86,7 @@ inline Script& Script::operator=(const Script& o) noexcept
 	setModifiedSource(m_original_source);
 	m_client_script = o.m_client_script;
 	m_server_script = o.m_server_script;
+	m_hash = o.m_hash;
 	return *this;
 }
 
@@ -87,6 +98,7 @@ inline Script& Script::operator=(Script&& o) noexcept
 	m_serverside = std::move(o.m_serverside);
 	m_client_script = std::move(o.m_client_script);
 	m_server_script = std::move(o.m_server_script);
+	m_hash = o.m_hash;
 	return *this;
 }
 
@@ -110,26 +122,39 @@ inline std::string_view Script::getServerSide() const noexcept
 	return m_serverside;
 }
 
-inline void Script::setOriginalSource(const std::string& source) noexcept
+//----------------------------
+
+inline Script& Script::setOriginalSource(std::string&& source) noexcept
 {
-	m_original_source = source;
-	setModifiedSource(m_original_source);
+	m_original_source = std::move(source);
+	m_hash = string::string_hash{}(m_original_source);
+	return setModifiedSource(m_original_source);
 }
 
-inline void Script::setModifiedSource(const std::string& source) noexcept
+inline Script& Script::setOriginalSource(const std::string& source) noexcept
+{
+	m_original_source = source;
+	m_hash = string::string_hash{}(m_original_source);
+	return setModifiedSource(m_original_source);
+}
+
+inline Script& Script::setModifiedSource(const std::string& source) noexcept
 {
 	m_modified_source = std::move(minify(source));
 	split(m_modified_source);
+	return *this;
 }
 
-inline void Script::setClientCompiledScript(CompiledScriptResultPtr script) noexcept
+inline Script& Script::setClientCompiledScript(CompiledScriptResultPtr script) noexcept
 {
 	m_client_script = script;
+	return *this;
 }
 
-inline void Script::setServerCompiledScript(CompiledScriptResultPtr script) noexcept
+inline Script& Script::setServerCompiledScript(CompiledScriptResultPtr script) noexcept
 {
 	m_server_script = script;
+	return *this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

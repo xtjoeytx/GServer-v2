@@ -31,7 +31,9 @@ protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
-	/*
+	HandlePacketResult msgPLI_RC_CHAT(CString& pPacket);
+
+public:
 	HandlePacketResult msgPLI_NC_NPCGET(CString& pPacket);
 	HandlePacketResult msgPLI_NC_NPCDELETE(CString& pPacket);
 	HandlePacketResult msgPLI_NC_NPCRESET(CString& pPacket);
@@ -50,7 +52,6 @@ public:
 	HandlePacketResult msgPLI_NC_WEAPONDELETE(CString& pPacket);
 	HandlePacketResult msgPLI_NC_CLASSDELETE(CString& pPacket);
 	HandlePacketResult msgPLI_NC_LEVELLISTGET(CString& pPacket);
-	*/
 };
 
 ///////////////////////////////////////////////////////////////////////////////

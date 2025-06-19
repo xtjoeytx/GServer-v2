@@ -104,6 +104,7 @@ GameVariable& GameVariable::operator=(const GameVariable& other)
 	if (this != &other)
 	{
 		identifier = other.identifier;
+		temporary = other.temporary;
 		m_value = other.m_value;
 		m_getter = other.m_getter;
 		m_setter = other.m_setter;
@@ -116,6 +117,7 @@ GameVariable& GameVariable::operator=(GameVariable&& other) noexcept
 	if (this != &other)
 	{
 		identifier = std::move(other.identifier);
+		temporary = other.temporary;
 		m_value = std::move(other.m_value);
 		m_getter = std::move(other.m_getter);
 		m_setter = std::move(other.m_setter);

@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <string_view>
-#include <string>
 #include <utility>
 #include <variant>
 
@@ -23,7 +22,6 @@
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 
 // Forward declare.
 namespace preagonal::gs1::grammar
@@ -126,7 +124,7 @@ public:
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
 public:
-	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) override;
+	virtual CompiledScriptResult compileScript(std::string_view script) override;
 	virtual bool reset() override { return false; }
 
 public:

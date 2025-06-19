@@ -46,12 +46,11 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	{
 		if (triggerData.size() > 2)
 		{
-			// TODO(NPCSERVER): Implement triggeraction servernpc.
-			/*
-			auto npcObject = this->getNPCByName(triggerData[1].toString());
-			if (npcObject != nullptr)
-			npcObject->queueNpcTrigger(triggerData[2].toString(), player, utilities::retokenizeArray(triggerData, 3));
-			*/
+			if (auto npcServer = getNPCServer(); npcServer != nullptr)
+			{
+				if (auto npc = npcServer->getNPCByName(triggerData[1].toString()).lock(); npc != nullptr)
+					npc->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromPlayer(player->getId()), "actionserverside", utilities::retokenizeArray(triggerData, 2));
+			}
 		}
 		return true;
 	});

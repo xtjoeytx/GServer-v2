@@ -30,7 +30,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	PacketHandleArray handlers{};
 	handlers.fill(nullptr);
 
-	/*
+	handlers[PLI_RC_CHAT] = &PlayerNC::msgPLI_RC_CHAT;
 	handlers[PLI_NC_NPCGET] = &PlayerNC::msgPLI_NC_NPCGET;
 	handlers[PLI_NC_NPCDELETE] = &PlayerNC::msgPLI_NC_NPCDELETE;
 	handlers[PLI_NC_NPCRESET] = &PlayerNC::msgPLI_NC_NPCRESET;
@@ -49,7 +49,6 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_NC_WEAPONDELETE] = &PlayerNC::msgPLI_NC_WEAPONDELETE;
 	handlers[PLI_NC_CLASSDELETE] = &PlayerNC::msgPLI_NC_CLASSDELETE;
 	handlers[PLI_NC_LEVELLISTGET] = &PlayerNC::msgPLI_NC_LEVELLISTGET;
-	*/
 
 	return handlers;
 }

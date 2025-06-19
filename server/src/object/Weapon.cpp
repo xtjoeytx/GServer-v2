@@ -1,9 +1,14 @@
-#include <ctime>
+#include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <string_view>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include <zlib.h>
+
+#include <BabyDI.h>
 #include <CString.h>
 #include <IEnums.h>
 
@@ -14,30 +19,22 @@
 #include <object/NPC.h>
 #include <object/Weapon.h>
 #include <scripting/Script.h>
-#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-Weapon::Weapon(LevelItemType pId)
-	: m_modTime(0), m_weaponDefault(pId)
+Weapon::Weapon(std::string_view name, std::string_view image, std::string_view script)
+	: name(name), modTime(clock::now()), m_weaponDefault(LevelItemType::INVALID)
 {
-	m_weaponName = LevelItem::getItemName(m_weaponDefault);
+	updateWeapon(image, script);
 }
 
-Weapon::Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime, bool pSaveWeapon)
-	: m_weaponName(std::move(pName)), m_modTime(pModTime), m_weaponDefault(LevelItemType::INVALID)
-{
-	// Update Weapon
-	this->updateWeapon(std::move(pImage), std::move(pScript), pModTime, pSaveWeapon);
-}
-
-Weapon::~Weapon()
-{
-}
+//----------------------------
 
 std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 {
@@ -61,8 +58,9 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 		return nullptr;
 
 	// Definitions
-	CString byteCodeData;
-	std::string byteCodeFile, weaponImage, weaponName, weaponScript;
+	std::string weaponName, weaponImage, weaponScript;
+	//std::string byteCodeFile;
+	//CString byteCodeData;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -74,16 +72,20 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 
 		// Parse Line
 		if (curCommand == "REALNAME")
+		{
 			weaponName = curLine.readString("").toString();
+		}
 		else if (curCommand == "IMAGE")
 			weaponImage = curLine.readString("").toString();
 		else if (curCommand == "BYTECODE")
 		{
+			/*
 			CString fileName = curLine.readString("");
 
 			byteCodeData.load(CString() << "weapon_bytecode/" << fileName);
 			if (!byteCodeData.isEmpty())
 				byteCodeFile = fileName.toString();
+			*/
 		}
 		else if (curCommand == "SCRIPT")
 		{
@@ -112,14 +114,21 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 		log::printLine(log::server, "SCRIPTEND needs to be on its own line.");
 	}
 
+	// Create the weapon.
+	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript);
+
+	// Set the mod time to the file mod time.
+	weapon->modTime = clock::from_time_t(std::filesystem::last_write_time(fileName.toString()).time_since_epoch().count());
+
 	// Give a warning if both a script and a bytecode was found.
+	/*
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
 	{
-		log::printLine(log::server, "WARNING: Weapon {} includes both script and bytecode.  Using bytecode.", weaponName);
+		log::printLine(log::server, "WARNING: Weapon {} includes both script and bytecode.  Using bytecode.", weapon->name);
 		weaponScript.clear();
 	}
+	*/
 
-	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript, 0);
 	/*
 	* TODO(Nalin): Figure out how to reimplement this.
 	if (!byteCodeData.isEmpty())
@@ -135,35 +144,37 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	return weapon;
 }
 
+//----------------------------
+
 bool Weapon::saveWeapon()
 {
 	// Don't save default weapons / empty weapons
-	if (this->isDefault() || m_weaponName.empty())
+	if (this->isDefault() || name.empty())
 		return false;
 
 	// If the bytecode filename is set, the weapon is treated as read-only so it can't be saved
-	if (!m_bytecodeFile.empty())
-		return false;
+	//if (!m_bytecodeFile.empty())
+	//	return false;
 
 	// Prevent the loading/saving of filenames with illegal characters.
-	CString name = m_weaponName;
-	name.replaceAllI("\\", "_");
-	name.replaceAllI("/", "_");
-	name.replaceAllI("*", "@");
-	name.replaceAllI(":", ";");
-	name.replaceAllI("?", "!");
-	CString filename = CString() << "weapons" << FileSystem::getPathSeparator() << "weapon" << name << ".txt";
+	CString escapedName = name;
+	escapedName.replaceAllI("\\", "_");
+	escapedName.replaceAllI("/", "_");
+	escapedName.replaceAllI("*", "@");
+	escapedName.replaceAllI(":", ";");
+	escapedName.replaceAllI("?", "!");
+	CString filename = CString() << "weapons" << FileSystem::getPathSeparator() << "weapon" << escapedName << ".txt";
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
-	output << "REALNAME " << m_weaponName << "\r\n";
-	output << "IMAGE " << m_weaponImage << "\r\n";
+	output << "REALNAME " << name << "\r\n";
+	output << "IMAGE " << image << "\r\n";
 
-	const auto& originalSource = m_source.getOriginalSource();
+	const auto& originalSource = m_script.getOriginalSource();
 	if (!originalSource.empty())
 	{
 		output << "SCRIPT\r\n";
-		output << CString(originalSource).replaceAll("\n", "\r\n");
+		output << CString(originalSource).removeAllI("\r").replaceAllI("\n", "\r\n");
 
 		// Append a new line to the end of the script if one doesn't exist.
 		if (originalSource.back() != '\n')
@@ -176,60 +187,127 @@ bool Weapon::saveWeapon()
 	return output.save(filename);
 }
 
-CString Weapon::getWeaponPacket(int clientVersion) const
+Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
+{
+	m_script = std::move(Script{ script });
+	this->image = image;
+	modTime = clock::now();
+
+	// Set the cryptographic key to be the script's hash.
+	string::string_hash hash{};
+	uint64_t scriptHash = static_cast<uint64_t>(hash(script));
+
+	// Package the key into two GYBTE5's.
+	uint32_t* hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
+	CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
+	m_desKey = key.toString();
+
+	// CRC32 checksum.
+	m_checksum = crc32(0L, Z_NULL, 0);
+	m_checksum = crc32(m_checksum, (const uint8_t*)script.data(), script.length());
+
+	// Create the header.
+	// [GBYTE2 length_header_and_bytecode]
+	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] checksum]]
+	std::vector<std::string> headerParts =
+	{
+		"weapon",
+		name,
+		"1",
+		m_desKey,
+		CString(m_checksum).toString()
+	};
+	m_header = string::toCSV(headerParts);
+
+	return *this;
+}
+
+//----------------------------
+
+CString Weapon::getAddWeaponPacket() const
 {
 	if (this->isDefault())
 		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)m_weaponDefault;
 
 	CString weaponPacket;
-	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)m_weaponName.length() << m_weaponName >> (char)NPCProp::IMAGE >> (char)m_weaponImage.length() << m_weaponImage;
-
-	const auto& bytecode = m_source.getClientByteCode();
+	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
 	// Classic weapons.
-	if (m_source.getClientByteCode().empty())
+	if (m_script.getClientByteCode().empty())
 	{
-		weaponPacket >> (char)NPCProp::SCRIPT >> (short)m_source.getClientSide().length() << m_source.getClientSide();
+		weaponPacket >> (char)NPCProp::SCRIPT >> (short)m_script.getClientSide().length() << m_script.getClientSide();
 	}
 	// If we have bytecode, send the weapon headers.
 	else
 	{
-		// Weapons don't have a class.
-		// Maybe?  Confused about this.
-		weaponPacket >> (char)NPCProp::CLASS >> (short)0 << "\n";
+		auto classes = getJoinedClasses();
+		weaponPacket >> (char)NPCProp::CLASS >> (char)classes.length() << classes << "\n";
 
-		// Extract the header and send it.
-		CString header = std::string_view{ reinterpret_cast<const char*>(bytecode.data()), bytecode.size() };
-		weaponPacket >> (char)PLO_UNKNOWN197 << header.readChars(header.readGUShort()) << "," >> (long long)time(0) << "\n";
+		// Send the bytecode.
+		weaponPacket << getWeaponByteCodePacket();
 	}
 
 	return weaponPacket;
 }
 
-void Weapon::updateWeapon(std::string pImage, std::string pCode, const time_t pModTime, bool pSaveWeapon)
+CString Weapon::getWeaponByteCodePacket() const
 {
-	m_source = std::move(Script{ std::move(pCode) });
-	m_weaponImage = std::move(pImage);
-	setModTime(pModTime == 0 ? time(0) : pModTime);
-
-	if (m_server->hasNPCServer())
+	// Send the bytecode.
+	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
 	{
-		// If we have an npc-server, compile the scripts.
-		auto npcServer = m_server->getNPCServer();
-		if (m_server->Generation == ServerGeneration::CLASSIC)
+		const char* bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
+		std::string_view bytecodeView(bytecodePtr, bytecode.size());
+
+		return CString() >> (char)PLO_LOADSCRIPT >> (char)m_header.length() << m_header << bytecodeView;
+	}
+	return CString();
+}
+
+std::string Weapon::getJoinedClasses() const
+{
+	std::string result;
+	for (const auto& classPtr : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			m_source.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()));
-		}
-		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
-		{
-			m_source.setClientCompiledScript(npcServer->scripting.getCompiledClientScript(ScriptType::WEAPON, m_weaponName, m_source.getClientSide()));
-			m_source.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::WEAPON, m_weaponName, m_source.getServerSide()));
+			result += scriptClass->name;
+			result += ",";
 		}
 	}
+	result.pop_back();
+	return result;
+}
 
-	// Save Weapon
-	if (pSaveWeapon)
-		saveWeapon();
+void Weapon::setJoinedClasses(std::string_view classes)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer()) return;
+
+	m_joinedClasses.clear();
+	while (!classes.empty())
+	{
+		auto className = string::extractLine(classes, ',');
+		if (className.empty())
+			continue;
+
+		className = string::trim(className);
+		auto scriptClass = server->getNPCServer()->getClass(className);
+		if (!scriptClass.expired())
+			m_joinedClasses.push_back(scriptClass);
+
+		// TODO(Nalin): Need a way to handle this on weapons.
+		// modTime[PROPID(NPCProp::CLASS)] = currentTime();
+	}
+}
+
+void Weapon::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+{
+	m_script.executeEvents(events, source);
+	for (auto& scriptClassPtr : m_joinedClasses)
+	{
+		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
+			scriptClass->getScript().executeEvents(events, source);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

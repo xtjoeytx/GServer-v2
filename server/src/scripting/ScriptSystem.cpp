@@ -7,7 +7,6 @@
 
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -26,7 +25,7 @@ void ScriptSystem::registerScriptEngine(std::string_view name, std::shared_ptr<I
 	m_script_engines.insert_or_assign(std::string{ name }, engine);
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -35,14 +34,14 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(ScriptType type, s
 
 	// We are using GS2.
 	if (auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
-		return getCompiledScript(it->second.get(), type, name, trimmed);
+		return getCompiledScript(it->second.get(), trimmed);
 
 	// Throw at this point.  We should always have a GS2 engine.
 	assert(false);
 	return {};
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -62,14 +61,14 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(ScriptType type, s
 
 	// Find the script engine.
 	if (auto it = m_script_engines.find(script_engine); it != m_script_engines.end())
-		return getCompiledScript(it->second.get(), type, name, trimmed);
+		return getCompiledScript(it->second.get(), trimmed);
 
 	return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, ScriptType type, std::string_view name, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, std::string_view source)
 {
 	// Check for a cached script.
 	size_t script_hash = string::string_hash{}(source);
@@ -77,7 +76,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, S
 		return it->second;
 
 	// Compile the script.
-	auto result = engine->compileScript(type, name, std::string{ source });
+	auto result = engine->compileScript(source);
 	if (std::holds_alternative<ScriptExecutionContext>(result))
 	{
 		auto& context = std::get<ScriptExecutionContext>(result);

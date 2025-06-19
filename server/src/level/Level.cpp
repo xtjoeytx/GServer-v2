@@ -480,7 +480,7 @@ void Level::saveLevel(const std::string& filename)
 			int currentStart = 0;
 			for (int x = 0; x < 64 /*tiles.get_width()*/; x++)
 			{
-				auto tile = tiles[x + y * 64];
+				auto tile = tiles[x + static_cast<size_t>(y) * 64];
 				if (tile == -2)
 				{
 					if (!data.empty())
@@ -642,7 +642,7 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 	// These are things like signs, bushes, pots, etc.
 	int respawnTime = settings.getInt("respawntime", 15);
 	bool doRespawn = false;
-	short testTile = m_tiles[0][pX + (pY * 64)];
+	short testTile = m_tiles[0][pX + (static_cast<size_t>(pY) * 64)];
 	int tileCount = sizeof(respawningTiles) / sizeof(short);
 	for (int i = 0; i < tileCount; ++i)
 		if (testTile == respawningTiles[i]) doRespawn = true;
@@ -654,7 +654,7 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 		for (int j = pY; j < pY + pHeight; ++j)
 		{
 			for (int i = pX; i < pX + pWidth; ++i)
-				oldTiles.writeGShort(m_tiles[0][i + (j * 64)]);
+				oldTiles.writeGShort(m_tiles[0][i + (static_cast<size_t>(j) * 64)]);
 		}
 	}
 
@@ -780,7 +780,7 @@ void Level::removeBaddy(uint8_t pId)
 	if (pId < 1 || pId > 50 || (pId >= m_baddies.size())) return;
 
 	// Find the baddy.
-	auto& baddy = m_baddies.at(pId - 1);
+	auto& baddy = m_baddies.at(static_cast<size_t>(pId) - 1);
 
 	// Erase the baddy.
 	baddy->mode = BaddyMode::DEAD;
@@ -867,12 +867,14 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	if (script.starts_with("singleplayer"))
 		setSingleplayer(true);
 
+	/*
 	if (npc->isCharacter())
 	{
 		// Set the player enters event on all the NPCs.
 		auto server = BabyDI::Get<Server>();
 		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromNPC(npc->id));
 	}
+	*/
 
 	return true;
 }
@@ -1020,7 +1022,7 @@ bool Level::isOnWall(int pX, int pY)
 	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
 		return true;
 
-	return tiletypes[getTiles(0)[pY * 64 + pX]] >= 20;
+	return tiletypes[getTiles(0)[static_cast<size_t>(pY) * 64 + pX]] >= 20;
 }
 
 bool Level::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags)
@@ -1039,7 +1041,7 @@ bool Level::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags)
 
 bool Level::isOnWater(int pX, int pY)
 {
-	return (tiletypes[getTiles(0)[pY * 64 + pX]] == 11);
+	return (tiletypes[getTiles(0)[static_cast<size_t>(pY) * 64 + pX]] == 11);
 }
 
 std::optional<LevelLink*> Level::getLink(int pX, int pY) const

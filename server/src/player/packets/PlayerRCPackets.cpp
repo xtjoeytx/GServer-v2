@@ -1,9 +1,9 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <direct.h>
-#define mkdir _mkdir
-#define rmdir _rmdir
+	#include <direct.h>
+	#define mkdir _mkdir
+	#define rmdir _rmdir
 #else
-#include <unistd.h>
+	#include <unistd.h>
 #endif
 
 #include <algorithm>
@@ -258,7 +258,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		{
 			player->sendPacket(outPacket);
 
-			// TODO(NPCSERVER): Send the NC address information.
+			// Send the NC address information.
+			if (m_server->hasNPCServer())
+				m_server->getNPCServer()->sendNCLoginToPlayer(player);
 		}
 	}
 
@@ -940,7 +942,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 #endif
 			if (words[0] == "/help" && words.size() == 1)
 			{
-				std::vector<CString> commands = CString::loadToken("config/rchelp.txt", "", true);
+				std::vector<CString> commands = CString::loadToken("config/rchelp.txt", "\n", true);
 				for (auto& command : commands)
 					sendPacket(CString() >> (char)PLO_RC_CHAT << command);
 			}
@@ -1323,9 +1325,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 				if (auto pNC = m_server->getPlayer(acc, PLTYPE_ANYNC); pNC)
 					pNC->disconnect();
 			}
-			// TODO(NPCSERVER): Send NC address to RC.
-			//else
-			//	pRC->sendNCAddr();
+			else if (m_server->hasNPCServer())
+			{
+				m_server->getNPCServer()->sendNCLoginToPlayer(pRC);
+			}
 		}
 
 		// If they are using the File Browser, reload it.
@@ -2025,14 +2028,18 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_NPCSERVERQUERY(CString& pPacket)
 {
+	if (!m_server->hasNPCServer())
+		return HandlePacketResult::Handled;
+
 	// Read Packet Data
-	unsigned short pid = pPacket.readGUShort();
+	PlayerID pid = static_cast<PlayerID>(pPacket.readGUShort());
 	CString message = pPacket.readString("");
 
-	// TODO(NPCSERVER): Send NC address.
 	// Enact upon the message.
-	//if (message == "location")
-	//	sendNCAddr();
+	if (message == "location")
+		m_server->getNPCServer()->sendNCLoginToPlayer(shared_from_this());
+	else
+		log::printLine(log::server, "[RC] Received unknown PLI_NPCSERVERQUERY message: {}", message);
 
 	return HandlePacketResult::Handled;
 }

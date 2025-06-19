@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <string>
+#include <utility>
 
 #include <ANTLRInputStream.h>
 #include <CommonTokenStream.h>
@@ -21,7 +22,6 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 
 using namespace preagonal::gs1::grammar;
 
@@ -118,7 +118,6 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
-	visitor->builtInStore = &variables;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,10 +126,10 @@ ScriptEngineGS1::ScriptEngineGS1()
 {
 }
 
-CompiledScriptResult ScriptEngineGS1::compileScript(ScriptType type, std::string_view name, const std::string& script)
+CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view script)
 {
 	ScriptExecutionContext result{ .engine = this };
-	result.script = std::make_shared<std::any>(GS1ScriptWrapper{ script });
+	result.script = std::make_shared<std::any>(std::make_any<GS1ScriptWrapper>(script));
 	return result;
 }
 
@@ -153,6 +152,9 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 	PlayerClientPtr player = nullptr;
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
+
+	// Set the built-in store.
+	wrapper->visitor->builtInStore = &wrapper->variables;
 
 	// Get whatever links we can.
 	if (source_type == ScriptObjectSourceType::PLAYER)

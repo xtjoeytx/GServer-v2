@@ -36,6 +36,7 @@ class Map;
 
 class Level : public std::enable_shared_from_this<Level>
 {
+public:
 	friend class LevelLoader;
 
 public:

@@ -7,6 +7,7 @@
 #include <BabyDI.h>
 
 #include <Server.h>
+#include <npcserver/NPCServer.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
@@ -154,6 +155,20 @@ void Script::split(std::string& source) noexcept
 
 	m_client_script.reset();
 	m_server_script.reset();
+
+	if (server && server->hasNPCServer())
+	{
+		auto npcServer = server->getNPCServer();
+		if (server->Generation == ServerGeneration::CLASSIC)
+		{
+			m_server_script = npcServer->scripting.getCompiledServerScript(m_serverside);
+		}
+		else if (server->Generation == ServerGeneration::NEWMAIN || server->Generation == ServerGeneration::MODERN)
+		{
+			m_client_script = npcServer->scripting.getCompiledClientScript(m_clientside);
+			m_server_script = npcServer->scripting.getCompiledServerScript(m_serverside);
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -9,7 +9,6 @@
 
 #include <CString.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
 #include <Account.h>
 #include <FileSystem.h>
@@ -40,7 +39,13 @@ void NPCServer::initialize()
 	// TODO(Nalin): This needs to be an option somewhere.
 	scripting.defaultScriptEngine = "GS1";
 
-	m_npcServerPlayer = std::make_shared<PlayerNpcServer>(nullptr, NPCServerPlayerID);
+	// NC options.
+	m_ncHost = m_server->getAdminSettings().getStr("ns_ip", "auto").toLower().toString();
+	m_ncPort = m_server->getSettings().getInt("serverport", 14900);
+	if (m_ncHost == "auto")
+		m_ncHost = m_server->getServerList().getServerIP();
+
+	// Make the NPC server player.
 	m_npcServerPlayer = std::make_shared<PlayerNPCServer>(nullptr, NPCServerPlayerID);
 	m_npcServerPlayer->setType(PLTYPE_NPCSERVER);
 
@@ -78,6 +83,19 @@ void NPCServer::initialize()
 	m_runTimeout.start();
 }
 
+void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
+{
+	// RC's only!
+	if (!player->isRC() || !player->account.hasRight(PLPERM_NPCCONTROL))
+		return;
+
+	// Grab NPCServer & Send
+	// If the player is connecting from the same IP as the NPC server, use that IP.
+	std::string connectString = std::format("{},{}", (player->account.ipAddress == player->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
+
+	player->sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)m_npcServerPlayer->getId() << connectString);
+}
+
 //----------------------------
 
 void NPCServer::update(TimeoutGenerator::time_point currentTime)
@@ -108,16 +126,17 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 		}
 	}
 
-	// Save all player prop mod times.
+	// Save all player prop mod times and run all player weapon scripts.
 	for (auto& [id, player] : m_server->getPlayerList())
 	{
 		player->recordCurrentPropModTime();
+		player->executeEvents(player->events, source::FromPlayer(id));
 	}
 
 	// Run all NPC scripts.
+	for (auto& [id, npc] : m_server->getNPCList())
 	{
-		for (auto& [id, npc] : m_server->getNPCList())
-			npc->getScript().executeEvents(npc->scripting.events, source::FromNPC(id));
+		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
 	}
 
 	// Send all changed NPC props.
@@ -155,7 +174,10 @@ void NPCServer::loadClasses()
 
 		CString scriptData;
 		scriptData.load(scriptFile.second);
-		m_classList[className] = std::make_unique<ScriptClass>(className, scriptData.text());
+
+		auto scriptClass = std::make_shared<ScriptClass>(className, scriptData.text());
+		scriptClass->modTime = clock::from_time_t(scriptFS.getModTime(scriptFile.second));
+		m_classList[className] = scriptClass;
 
 		log::printLine(log::server, "{}", className);
 		//updateClassForPlayers(getClass(className));
@@ -175,16 +197,37 @@ void NPCServer::loadDatabaseNPCs()
 	for (const auto& [npcName, fileName] : npcFileList)
 	{
 		auto npc = npcLoader.loadNPC(std::filesystem::path{ fileName.toString()});
-
 		if (npc)
 		{
 			log::printLine(log::server, "[{}] {}", npc->id, npcName);
 			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
+			m_globalNPCList[npc->id] = npc;
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location)
+{
+	NPCPtr npc = nullptr;
+
+	if (type == "LOCALN")
+		npc = std::make_shared<NPC>(id, NPCType::LEVELNPC);
+	else npc = std::make_shared<NPC>(id, NPCType::DBNPC);
+
+	npc->name = name;
+	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, type);
+	npc->setPropWith<NPCProp::SCRIPTER>(SetBy::SERVER, scripter);
+	npc->setPropWith<NPCProp::X>(SetBy::SERVER, location.x());
+	npc->setPropWith<NPCProp::Y>(SetBy::SERVER, location.y());
+	npc->level = level;
+	level->addNPC(npc);
+	m_server->addNPC(npc, true);
+	m_globalNPCList[npc->id] = npc;
+
+	return npc;
+}
 
 std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 {
@@ -199,38 +242,60 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 	return {};
 }
 
-bool NPCServer::hasClass(const std::string& name) const
+//----------------------------
+
+bool NPCServer::hasClass(std::string_view name) const
 {
 	return m_classList.find(name) != m_classList.end();
 }
 
-ScriptClass* NPCServer::getClass(const std::string& name) const
+std::weak_ptr<ScriptClass> NPCServer::getClass(std::string_view name) const
 {
 	auto classIter = m_classList.find(name);
 	if (classIter == m_classList.end())
-		return nullptr;
+		return {};
 
-	return classIter->second.get();
+	return classIter->second;
 }
 
-bool NPCServer::deleteClass(const std::string& className)
+bool NPCServer::deleteClass(std::string_view className)
 {
 	auto classIter = m_classList.find(className);
 	if (classIter == m_classList.end())
 		return false;
 
 	m_classList.erase(classIter);
-	std::filesystem::remove(std::filesystem::path{ "scripts" } / (className + ".txt"));
+	std::filesystem::remove(std::filesystem::path{ "scripts" } / std::format("{}.txt", className));
 
 	// TODO: Send blank class?
 
 	return true;
 }
 
-void NPCServer::updateClass(const std::string& className, const std::string& classCode)
+std::weak_ptr<ScriptClass> NPCServer::addClass(std::string_view className, std::string_view classCode)
 {
-	m_classList[className] = std::make_unique<ScriptClass>(className, classCode);
-	auto pClass = getClass(className);
+	CString filePath = CString("scripts/") << className << ".txt";
+	FileSystem::fixPathSeparators(filePath);
+
+	CString fileData(classCode);
+	fileData.save(filePath);
+
+	auto scriptClass = std::make_shared<ScriptClass>(className, classCode);
+	scriptClass->modTime = clock::now();
+	m_classList[std::string{ className }] = scriptClass;
+
+	m_server->updateClassForPlayers(scriptClass);
+	return scriptClass;
+}
+
+void NPCServer::updateClass(std::string_view className, std::string_view classCode)
+{
+	auto it = m_classList.find(className);
+	if (it == m_classList.end())
+		return;
+
+	auto& scriptClass = it->second;
+	scriptClass->setScript(classCode);
 
 	CString filePath = CString("scripts/") << className << ".txt";
 	FileSystem::fixPathSeparators(filePath);
@@ -238,29 +303,12 @@ void NPCServer::updateClass(const std::string& className, const std::string& cla
 	CString fileData(classCode);
 	fileData.save(filePath);
 
+	// Classic servers were GS1 only and did not support GS2 classes.
+	if (m_server->Generation == ServerGeneration::CLASSIC)
+		return;
+
 	// Update players.
-	for (auto& [id, player] : m_server->getPlayerList())
-	{
-		if (!player->isClient())
-			continue;
-
-		if (player->getVersion() >= CLVER_4_0211)
-		{
-			if (pClass != nullptr)
-			{
-				const auto& bytecode = pClass->getSource().getClientByteCode();
-				if (!bytecode.empty())
-				{
-					CString out;
-					out >> (char)PLO_RAWDATA >> (int)bytecode.size() << "\n";
-					out >> (char)PLO_NPCWEAPONSCRIPT;
-					out.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-
-					player->sendPacket(out);
-				}
-			}
-		}
-	}
+	m_server->updateClassForPlayers(scriptClass);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

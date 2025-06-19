@@ -23,7 +23,6 @@
 
 #include <Account.h>
 #include <FileSystem.h>
-#include <Server.h>
 #include <level/LevelItem.h>
 #include <misc/WordFilter.h>
 #include <network/IPacketHandler.h>
@@ -31,6 +30,8 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
+#include <Server.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
@@ -137,7 +138,7 @@ namespace preagonal
 	DO(PLO_UPDATEPACKAGEDONE) \
 	DO(PLO_BOARDLAYER) \
 	DO(PLO_UNKNOWN109) \
-	DO(PLO_UNKNOWN111) \
+	DO(PLO_SETNETCOOKIE) \
 	DO(PLO_UNKNOWN124) \
 	DO(PLO_NPCBYTECODE) \
 	DO(PLO_UNKNOWN132) \
@@ -159,7 +160,7 @@ namespace preagonal
 	DO(PLO_NC_CLASSADD) \
 	DO(PLO_NC_LEVELDUMP) \
 	DO(PLO_MOVE) \
-	DO(PLO_UNKNOWN166) \
+	DO(PLO_SHOWIMGPROPS) \
 	DO(PLO_NC_WEAPONLISTGET) \
 	DO(PLO_UNKNOWN168) \
 	DO(PLO_UNKNOWN169) \
@@ -169,7 +170,7 @@ namespace preagonal
 	DO(PLO_GHOSTTEXT) \
 	DO(PLO_GHOSTICON) \
 	DO(PLO_SHOOT) \
-	DO(PLO_FULLSTOP) \
+	DO(PLO_DISABLECLASSICMODE) \
 	DO(PLO_FULLSTOP2) \
 	DO(PLO_SERVERWARP) \
 	DO(PLO_RPGWINDOW) \
@@ -183,19 +184,19 @@ namespace preagonal
 	DO(PLO_UPDATEPACKAGEISUPDATED) \
 	DO(PLO_NC_CLASSDELETE) \
 	DO(PLO_MOVE2) \
-	DO(PLO_UNKNOWN190) \
+	DO(PLO_SERVERLISTCONNECTED) \
 	DO(PLO_SHOOT2) \
 	DO(PLO_NC_WEAPONGET) \
 	DO(PLO_UNKNOWN193) \
 	DO(PLO_CLEARWEAPONS) \
-	DO(PLO_UNKNOWN195) \
-	DO(PLO_UNKNOWN197) \
+	DO(PLO_LOADGANI) \
+	DO(PLO_LOADSCRIPT) \
 	DO(PLO_UNKNOWN198) \
 	DO(PLO_SET_ENC_KEY) \
 	DO(PLO_BUNDLE)
 #define FILL_OUTPUT_ARRAY(name) names[(uint8_t)name] = #name;
 
-constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
+static constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
 {
 	std::array<std::string, 255> names;
 	names.fill("(unknown packet)");
@@ -655,7 +656,7 @@ bool Player::sendLogin()
 	// TODO: Don't hardcode this.
 	if (m_server->getName().findi("login") > -1)
 	{
-		sendPacket(CString() >> (char)PLO_FULLSTOP);
+		sendPacket(CString() >> (char)PLO_DISABLECLASSICMODE);
 		sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
 	}
 
@@ -981,13 +982,13 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 	if (weapon == nullptr) return false;
 
 	// See if the player already has the weapon.
-	if (!account.hasWeapon(weapon->getName()))
+	if (!account.hasWeapon(weapon->name))
 	{
-		account.weapons.push_back(weapon->getName());
+		account.weapons.push_back(weapon->name);
 		if (m_id == 0) return true;
 
 		// Send weapon.
-		sendPacket(weapon->getWeaponPacket(m_versionId));
+		sendPacket(weapon->getAddWeaponPacket());
 	}
 
 	return true;
@@ -1010,12 +1011,12 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 	if (weapon == nullptr) return false;
 
 	// Remove the weapon.
-	if (std::erase(account.weapons, weapon->getName()) != 0)
+	if (std::erase(account.weapons, weapon->name) != 0)
 	{
 		if (m_id == 0) return true;
 
 		// Send delete notice.
-		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->getName());
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->name);
 	}
 
 	return true;
@@ -1049,6 +1050,19 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	account.level = pLevelName.toString();
 	return true;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Player::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+{
+	for (const auto& weaponName : account.weapons)
+	{
+		if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
+			weapon->executeEvents(events, source);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 /*
 	Player: Packet functions

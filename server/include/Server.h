@@ -184,7 +184,7 @@ public:
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
-	void moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options);
+	void moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options) const;
 
 public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
@@ -209,8 +209,8 @@ public:
 	bool isStaff(const CString& accountName);
 
 public:
-	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr);
-	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source);
+	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr) const;
+	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
 	void logToFile(const std::string& fileName, const std::string& message) const;
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
@@ -242,8 +242,8 @@ public:
 	std::shared_ptr<Weapon> getWeapon(const std::string& name);
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
 	bool NC_DelWeapon(const std::string& pWeaponName);
-	void updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon);
-	//void updateClassForPlayers(ScriptClass* pClass);
+	void updateWeaponForPlayers(std::shared_ptr<Weapon> weapon);
+	void updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass);
 
 public:
 	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
@@ -312,11 +312,11 @@ private:
 
 	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
-	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_INIT };
+	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_MANUAL };
 
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
-	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_INIT };
+	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_GEN };
 
 	TimeoutGenerator m_timedEvents{ 1s, true };
 	TimeoutGenerator m_timedNWTime{ 5s, true };

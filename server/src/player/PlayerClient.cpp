@@ -510,7 +510,7 @@ bool PlayerClient::sendLogin()
 			}
 			continue;
 		}
-		sendPacket(weapon->getWeaponPacket(m_versionId));
+		sendPacket(weapon->getAddWeaponPacket());
 	}
 
 	// Send any protected weapons we do not have.
@@ -528,8 +528,9 @@ bool PlayerClient::sendLogin()
 		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)1 << "-" >> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
-	// Was blank.  Sent before weapon list.
-	sendPacket(CString() >> (char)PLO_UNKNOWN190);
+	// Tell the client if the server is connected to the listserver.
+	if (m_server->getServerList().getConnected())
+		sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.

@@ -80,7 +80,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Lay items when you destroy objects.
-	short oldTile = (getLevel()->getTiles())[loc[0] + (loc[1] * 64)];
+	short oldTile = (getLevel()->getTiles())[loc[0] + static_cast<size_t>(loc[1] * 64)];
 	bool bushitems = settings.getBool("bushitems", true);
 	bool vasesdrop = settings.getBool("vasesdrop", true);
 	int tiledroprate = settings.getInt("tiledroprate", 50);
@@ -840,23 +840,24 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getClientSide() }, level->getModTime(), true);
+			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getClientSide() });
+			weapon->saveWeapon();
 			m_server->NC_AddWeapon(weapon);
 		}
 
 		// Check and see if the weapon has changed recently.  If it has, we should
 		// send the new NPC to everybody on the server.  After updating the script, of course.
-		if (weapon->getModTime() < level->getModTime())
+		if (weapon->modTime < clock::from_time_t(level->getModTime()))
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getClientSide() }, level->getModTime());
+			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getClientSide() }).saveWeapon();
 
 			// Send to Players
 			m_server->updateWeaponForPlayers(weapon);
 		}
 
 		// Send the weapon to the player now.
-		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->getName()) == std::ranges::end(account.weapons))
+		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->name) == std::ranges::end(account.weapons))
 			this->addWeapon(weapon);
 	}
 
@@ -1394,8 +1395,8 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEGANI(CString& pPacket)
 	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
 		sendPacket(findAni->getBytecodePacket());
 
-	// v4 and up needs this for some reason.
-	sendPacket(CString() >> (char)PLO_UNKNOWN195 >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
+	// Tell the client to load the gani.
+	sendPacket(CString() >> (char)PLO_LOADGANI >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
 	return HandlePacketResult::Handled;
 }
 
@@ -1403,49 +1404,30 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
 	CString weaponName = pPacket.readString("");
 
-	log::printLine(log::server, "PLI_UPDATESCRIPT: \"{}\"\n", weaponName);
-
 	if (auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
-	{
-		if (auto bytecode = weaponObj->getSource().getClientByteCode(); !bytecode.empty())
-		{
-			CString b;
-			b.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-
-			CString out;
-			out >> (char)PLO_RAWDATA >> (int)b.length() << "\n";
-			out >> (char)PLO_NPCWEAPONSCRIPT << b;
-
-			sendPacket(out);
-		}
-	}
+		sendPacket(weaponObj->getWeaponByteCodePacket());
 
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 {
-	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGInt5();
+	// Get the checksum and class name.
+	uint32_t checkSum = pPacket.readGInt5();
 	std::string className = pPacket.readString("").toString();
-
-	log::printLine(log::server, "PLI_UPDATECLASS: \"{}\"\n", className);
 
 	if (!m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	auto npcServer = m_server->getNPCServer();
-	if (auto classObj = npcServer->getClass(className); classObj != nullptr)
+	if (auto classObj = npcServer->getClass(className).lock(); classObj != nullptr)
 	{
-		auto bytecode = classObj->getSource().getClientByteCode();
-		if (bytecode.empty())
+		if (classObj->getCheckSum() == checkSum)
 			return HandlePacketResult::Handled;
 
-		CString out;
-		out >> (char)PLO_RAWDATA >> (int)bytecode.size() << "\n";
-		out >> (char)PLO_NPCWEAPONSCRIPT;
-		out.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-		sendPacket(out);
+		CString classPacket = classObj->getClassPacket();
+		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)classPacket.length());
+		sendPacket(classPacket);
 	}
 	else
 	{
@@ -1455,10 +1437,9 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 		headerData.push_back('1');
 		headerData.push_back(CString() >> (long long)0 >> (long long)0);
 		headerData.push_back(CString() >> (long long)0);
-
 		CString gstr = utilities::retokenizeCStringArray(headerData);
 
-		// Should technically be PLO_UNKNOWN197 but for some reason the client breaks player.join() scripts
+		// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
 		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by
 		// sending an empty bytecode
 		sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)gstr.length() << gstr);

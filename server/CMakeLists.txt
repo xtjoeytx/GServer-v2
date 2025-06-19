@@ -66,7 +66,6 @@ set(
 	"include/scripting/IScriptEngine.h"
 	"include/scripting/ScriptClass.h"
 	"include/scripting/ScriptContainers.h"
-	"include/scripting/ScriptOrigin.h"
 	"include/scripting/ScriptSystem.h"
 	"include/scripting/ScriptTypes.h"
 	"include/scripting/Script.h"
@@ -144,6 +143,7 @@ set(
 set(TARGET_NAME "${PROJECT_NAME_LOWER}")
 add_executable(${TARGET_NAME})
 set_target_properties(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 # Add the sources.
 target_sources(${TARGET_NAME} PUBLIC ${SOURCES})
@@ -190,6 +190,25 @@ FetchContent_Declare(gs2lib
 FetchContent_MakeAvailable(gs2lib)
 target_link_libraries(${TARGET_NAME} PRIVATE gs2lib)
 target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
+
+# Dependency: libtommath
+FetchContent_Declare(libtommath
+	GIT_REPOSITORY https://github.com/libtom/libtommath.git
+	GIT_TAG        develop
+)
+FetchContent_MakeAvailable(libtommath)
+#target_link_libraries(${TARGET_NAME} PRIVATE libtommath)
+target_include_directories(${TARGET_NAME} PRIVATE "${libtommath_SOURCE_DIR}")
+
+# Dependency: libtomcrypt-preagonal.
+FetchContent_Declare(tomcrypt
+	GIT_REPOSITORY https://github.com/Preagonal/libtomcrypt.git
+	GIT_TAG        develop
+	FIND_PACKAGE_ARGS CONFIG
+)
+FetchContent_MakeAvailable(tomcrypt)
+target_link_libraries(${TARGET_NAME} PRIVATE tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+target_include_directories(${TARGET_NAME} PRIVATE "${libtomcrypt_SOURCE_DIR}/src/headers")
 
 # Generate grammar.
 antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
@@ -261,7 +280,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
-add_dependencies(${TARGET_NAME} gs2compiler)
+add_dependencies(${TARGET_NAME} gs2compiler libtomcrypt)
 target_link_libraries(${TARGET_NAME} PRIVATE gs2compiler)
 
 if (MINGW)

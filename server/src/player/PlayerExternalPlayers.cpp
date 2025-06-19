@@ -174,14 +174,14 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 			{
 				sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)externalId << externalPlayer->getProp<PlayerProp::ACCOUNTNAME>().serialize()
 					>> (char)PlayerProp::NICKNAME << externalPlayer->getProp<PlayerProp::NICKNAME>().serialize()
-					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL);
 			}
 			else
 			{
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)externalId
 					>> (char)PlayerProp::ACCOUNTNAME << externalPlayer->getProp<PlayerProp::ACCOUNTNAME>().serialize()
 					>> (char)PlayerProp::NICKNAME << externalPlayer->getProp<PlayerProp::NICKNAME>().serialize()
-					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS);
+					>> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL);
 			}
 		}
 	}

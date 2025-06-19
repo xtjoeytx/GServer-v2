@@ -250,9 +250,7 @@ time_t FileSystem::getModTime(const CString& file) const
 	CString fileName = find(file);
 	if (fileName.length() == 0) return 0;
 
-	struct stat fileStat
-	{
-	};
+	struct stat fileStat{};
 	if (stat(fileName.text(), &fileStat) != -1)
 		return (time_t)fileStat.st_mtime;
 	return 0;

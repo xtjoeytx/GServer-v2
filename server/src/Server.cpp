@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <functional>
 #include <iterator>
 #include <map>
@@ -89,6 +90,10 @@ Server::Server(const CString& pName)
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	calculateNWTime();
+
+	m_npcIdGenerator.createSegment(NPCID_GEN_LOCAL);
+	m_npcIdGenerator.createSegment(NPCID_GEN_DATABASE);
+	//m_playerIdGenerator.createSegment(PLAYERID_GEN_EXTERNAL);
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
@@ -299,14 +304,12 @@ void Server::cleanup()
 
 	m_playerList.clear();
 	m_deletedPlayers.clear();
-	m_playerIdGenerator.resetAndSetNext(PLAYERID_INIT);
 
 	m_levelList.clear();
 	m_mapList.clear();
 	m_groupLevels.clear();
 
 	m_npcList.clear();
-	m_npcIdGenerator.resetAndSetNext(NPCID_INIT);
 
 	saveWeapons();
 	m_weaponList.clear();
@@ -667,36 +670,38 @@ void Server::loadWeapons(bool print)
 		auto weapon = Weapon::loadWeapon(weaponFile.first);
 		if (weapon == nullptr) continue;
 
+		/*
 		if (weapon->getByteCodeFile().empty())
 			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
 		else
 			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
+		*/
 
 		// Check if the weapon exists.
-		if (m_weaponList.find(weapon->getName()) == m_weaponList.end())
+		if (m_weaponList.find(weapon->name) == m_weaponList.end())
 		{
-			m_weaponList[weapon->getName()] = weapon;
-			if (print) log::printLine(log::server, weapon->getName());
+			m_weaponList[weapon->name] = weapon;
+			if (print) log::printLine(log::server, weapon->name);
 		}
 		else
 		{
 			// If the weapon exists, and the version on disk is newer, reload it.
-			auto& w = m_weaponList[weapon->getName()];
-			if (w->getModTime() < weapon->getModTime())
+			auto& w = m_weaponList[weapon->name];
+			if (w->modTime < weapon->modTime)
 			{
-				m_weaponList[weapon->getName()] = weapon;
+				m_weaponList[weapon->name] = weapon;
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					log::printLine(log::server, "{} [updated]", weapon->getName());
-					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->getName() << " ");
+					log::printLine(log::server, "{} [updated]", weapon->name);
+					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->name << " ");
 				}
 			}
 			else
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) log::printLine(log::server, "{} [skipped]", weapon->getName());
+				if (print) log::printLine(log::server, "{} [skipped]", weapon->name);
 			}
 		}
 	}
@@ -877,12 +882,12 @@ void Server::saveWeapons()
 
 		// TODO(joey): add a function to weapon to get the filename?
 		CString weaponFile = CString("weapon") << weaponName << ".txt";
-		time_t mod = weaponFS.getModTime(weaponFile);
-		if (weapon->getModTime() > mod)
+		auto mod = clock::from_time_t(weaponFS.getModTime(weaponFile));
+		if (weapon->modTime > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
 			weapon->saveWeapon();
-			weaponFS.setModTime(weaponFS.find(weaponFile), weapon->getModTime());
+			weaponFS.setModTime(weaponFS.find(weaponFile), weapon->modTime.time_since_epoch().count());
 		}
 	}
 }
@@ -938,6 +943,14 @@ FileSystem* Server::getFileSystemByType(CString& type)
 
 std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers)
 {
+	LevelPtr levelPtr = nullptr;
+	if (type == NPCType::LEVELNPC)
+	{
+		levelPtr = level.lock();
+		if (levelPtr == nullptr)
+			return nullptr;
+	}
+
 	// Get available NPC ID.
 	NPCID newId = m_npcIdGenerator.getAvailableId();
 
@@ -949,6 +962,18 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Set the default warp type.
 	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
+	// Set the NPC's name.
+	if (type == NPCType::LEVELNPC)
+	{
+		std::string npcNamePrefix = std::format("localnpc_{}_{}_", removeExtension(levelPtr->getLevelName()), m_serverTime);
+		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
+		{
+			return pair.second->name.starts_with(npcNamePrefix);
+		});
+
+		newNPC->name = std::format("{}{}", npcNamePrefix, (count + 1));
+	}
 
 	// Set NPC props.
 	newNPC->level = level;
@@ -1028,7 +1053,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	return true;
 }
 
-void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options)
+void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options) const
 {
 	if (npc == nullptr)
 		return;
@@ -1214,7 +1239,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	auto cropFlag = [this, &flagName](std::string& value)
 	{
 		if (m_settings.getBool("cropflags", true))
-			value.erase(std::min(value.length(), 223 - 1 - flagName.length()));
+			value.erase(std::min(value.length(), static_cast<size_t>(223 - 1) - flagName.length()));
 		return value;
 	};
 
@@ -1255,7 +1280,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	return true;
 }
 
-void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source)
+void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
 {
 	CString nPacket = CString() >> (char)PLO_HITOBJECTS;
 	nPacket.writeGShort(source ? source->getId() : 0);
@@ -1267,7 +1292,7 @@ void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<
 	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() + 2) * 2) >> (char)(pos.y() * 2), level);
 }
 
-void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source)
+void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const
 {
 	auto player = getPlayer(playerId);
 	if (player == nullptr)
@@ -1540,7 +1565,7 @@ bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
 	if (pWeaponObj == nullptr)
 		return false;
 
-	m_weaponList[pWeaponObj->getName()] = pWeaponObj;
+	m_weaponList[pWeaponObj->name] = pWeaponObj;
 	return true;
 }
 
@@ -1570,19 +1595,37 @@ bool Server::NC_DelWeapon(const std::string& pWeaponName)
 	return true;
 }
 
-void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> pWeapon)
+void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
 {
+	CString weaponPacket = weapon->getAddWeaponPacket();
+
 	// Update Weapons
 	for (auto& [id, player]: m_playerList)
 	{
 		if (!player->isClient())
 			continue;
 
-		if (player->account.hasWeapon(pWeapon->getName()))
+		if (player->account.hasWeapon(weapon->name))
 		{
-			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << pWeapon->getName());
-			player->sendPacket(pWeapon->getWeaponPacket(player->getVersion()));
+			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->name);
+			player->sendPacket(weaponPacket);
 		}
+	}
+}
+
+// TODO(Nalin): This should probably be in the NPCServer class.
+void Server::updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass)
+{
+	CString classPacket = scriptClass->getClassPacket();
+
+	// Update players.
+	for (auto& [id, player] : m_playerList)
+	{
+		if (!player->isClient())
+			continue;
+
+		player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)classPacket.length());
+		player->sendPacket(classPacket);
 	}
 }
 

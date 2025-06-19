@@ -341,6 +341,9 @@ public:
 	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 public:
+	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+
+public:
 	Account account;
 	ScriptEventQueue events;
 
@@ -455,7 +458,7 @@ protected:
 
 	std::vector<CString> m_privateMessageServerList;
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_externalPlayers;
-	IdGenerator<PlayerID> m_externalPlayerIdGenerator{ EXTERNALPLAYERID_INIT };
+	IdGenerator<PlayerID> m_externalPlayerIdGenerator{ PLAYERID_GEN_EXTERNAL };
 
 	bool m_loaded = false;
 	bool m_isExternal = false;

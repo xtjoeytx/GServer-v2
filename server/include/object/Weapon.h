@@ -1,15 +1,20 @@
 #ifndef WEAPON_H
 #define WEAPON_H
 
+#include <chrono>
+#include <cstdint>
 #include <memory>
-#include <vector>
+#include <string_view>
 #include <string>
+#include <vector>
 
 #include <CString.h>
 #include <BabyDI.h>
 
 #include <level/LevelItem.h>
 #include <scripting/Script.h>
+#include <scripting/ScriptClass.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -20,43 +25,49 @@ class Server;
 class Weapon
 {
 public:
-	// -- Constructor | Destructor -- //
-	Weapon(LevelItemType itemType);
-	Weapon(std::string pName, std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = false);
-	~Weapon();
+	Weapon(LevelItemType itemType) : name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType) {}
+	Weapon(std::string_view name, std::string_view image, std::string_view script);
+	~Weapon() = default;
 
-	// -- Functions -- //
-	bool saveWeapon();
-	void updateWeapon(std::string pImage, std::string pScript, const time_t pModTime = 0, bool pSaveWeapon = true);
+private:
+	Weapon() = default;
 
+public:
 	static std::shared_ptr<Weapon> loadWeapon(const CString& pWeapon);
 
-	// Functions -> Inline Get-Functions
-	CString getWeaponPacket(int clientVersion) const;
+public:
+	bool saveWeapon();
+	Weapon& updateWeapon(std::string_view image, std::string_view script);
+
+public:
+	CString getAddWeaponPacket() const;
+	CString getWeaponByteCodePacket() const;
+
+public:
+	std::string getJoinedClasses() const;
+	void setJoinedClasses(std::string_view classes);
+	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+
+public:
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
 	LevelItemType getWeaponId() const { return m_weaponDefault; }
-	const Script& getSource() const { return m_source; }
-	const std::string& getByteCodeFile() const { return m_bytecodeFile; }
-	const std::string& getImage() const { return m_weaponImage; }
-	const std::string& getName() const { return m_weaponName; }
-	time_t getModTime() const { return m_modTime; }
+	const Script& getScript() const { return m_script; }
 
-	// Functions -> Set Variables
-	void setModTime(time_t pModTime) { m_modTime = pModTime; }
+public:
+	const std::string name;
+	std::string image;
+	clock::time_point modTime;
 
 protected:
 	BabyDI_INJECT(Server, m_server);
 
-	// Varaibles -> Weapon Data
 	LevelItemType m_weaponDefault;
-	time_t m_modTime;
+	Script m_script;
+	uint32_t m_checksum;
+	std::string m_desKey;
+	std::string m_header;
 
-	Script m_source;
-	std::string m_bytecodeFile;
-
-	std::string m_weaponImage;
-	std::string m_weaponName;
-	std::vector<std::string> m_joinedClasses;
+	std::vector<std::weak_ptr<ScriptClass>> m_joinedClasses;
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
 

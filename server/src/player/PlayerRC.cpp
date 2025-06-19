@@ -218,7 +218,9 @@ bool PlayerRC::sendLogin()
 	for (const auto& i : rcmessage)
 		sendPacket(CString() >> (char)PLO_RC_CHAT << i);
 
-	sendPacket(CString() >> (char)PLO_UNKNOWN190);
+	// Tell the client if the server is connected to the listserver.
+	if (m_server->getServerList().getConnected())
+		sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
 
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << account.name);
 

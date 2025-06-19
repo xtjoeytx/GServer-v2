@@ -25,16 +25,10 @@ namespace preagonal::gs2
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-inline constexpr std::array<std::string_view, SCRIPTTYPE_COUNT> scriptTypeStrings =
-{
-	/* ScriptType::CLASS */ "class",
-	/* ScriptType::WEAPON */ "weapon"
-};
-
-CompiledScriptResult ScriptEngineGS2::compileScript(ScriptType type, std::string_view name, const std::string& script)
+CompiledScriptResult ScriptEngineGS2::compileScript(std::string_view script)
 {
 	// Compile the script.
-	auto result = m_scriptManager.compileScript(script);
+	auto result = m_scriptManager.compileScript(std::string{ script });
 	auto response = result.get();
 
 	// Error.
@@ -51,9 +45,7 @@ CompiledScriptResult ScriptEngineGS2::compileScript(ScriptType type, std::string
 	}
 
 	// Generate the bytecode.
-	auto bytecodeWithHeader = GS2Context::CreateHeader(response.bytecode, std::string{ scriptTypeStrings.at(static_cast<size_t>(type)) }, std::string{ name }, true);
 	std::vector<uint8_t> bytecode;
-	bytecode.insert(bytecode.end(), bytecodeWithHeader.buffer(), bytecodeWithHeader.buffer() + bytecodeWithHeader.length());
 	bytecode.insert(bytecode.end(), response.bytecode.buffer(), response.bytecode.buffer() + response.bytecode.length());
 
 	// Wrap the bytecode.

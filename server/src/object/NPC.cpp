@@ -31,8 +31,8 @@
 #include <object/Player.h>
 #include <player/PlayerProps.h>
 #include <scripting/Script.h>
+#include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
@@ -197,7 +197,7 @@ static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, au
 				// Setting the whole array.
 				else if (!index.has_value())
 				{
-					auto vec = value.get<std::vector<double>>().value();
+					const std::vector<double> vec = value.get<std::vector<double>>().value();
 					copyToArrayAs<value_type>(vec, propvalue);
 					if (prop.has_value())
 						who->modTime[PROPID(prop.value())] = currentTime();
@@ -214,77 +214,7 @@ static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, au
 NPC::NPC(NPCID id, NPCType type)
 	: id(id), type(type), m_savedModTime()
 {
-	saves.fill(0);
-	modTime.fill(clock::time_point::min());
-
-	// We need to alter the modTime of the following props as they should be always sent.
-	// If we don't, they won't be sent until the prop gets modified.
-	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::CURLEVEL, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now = currentTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
-
-	m_savedModTime = modTime;
-
-	// Create variable store links.
-	scripting.variables.add(GameVariable{ "id", prop_get([this]() { return static_cast<double>(this->id); }), {} });
-	scripting.variables.add(GameVariable{ "width", prop_get([this]() { return static_cast<double>(imageSize.width()); }), {} });
-	scripting.variables.add(GameVariable{ "height", prop_get([this]() { return static_cast<double>(imageSize.height()); }), {} });
-	scripting.variables.add(GameVariable{ "rupees", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
-	scripting.variables.add(GameVariable{ "gralats", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
-	scripting.variables.add(GameVariable{ "bombs", prop_get(character.bombs), prop_set(this, NPCProp::BOMBS, character.bombs) });
-	scripting.variables.add(GameVariable{ "darts", prop_get(character.arrows), prop_set(this, NPCProp::ARROWS, character.arrows) });
-	scripting.variables.add(GameVariable{ "glovepower", prop_get(character.glovePower), prop_set(this, NPCProp::GLOVEPOWER, character.glovePower) });
-	scripting.variables.add(GameVariable{ "swordpower", prop_get(character.swordPower), prop_set(this, NPCProp::SWORDIMAGE, character.swordPower) });
-	scripting.variables.add(GameVariable{ "shieldpower", prop_get(character.shieldPower), prop_set(this, NPCProp::SHIELDIMAGE, character.shieldPower) });
-	scripting.variables.add(GameVariable{ "ap", prop_get(character.ap), prop_set(this, NPCProp::ALIGNMENT, character.ap) });
-	scripting.variables.add(GameVariable{ "hurtdx", prop_get(hurtX), prop_set(this, NPCProp::HURTDXDY, hurtX) });
-	scripting.variables.add(GameVariable{ "hurtdy", prop_get(hurtY), prop_set(this, NPCProp::HURTDXDY, hurtY) });
-	scripting.variables.add(GameVariable{ "save", prop_get(saves), prop_set(this, NPCProp::SAVE0, saves) });
-	scripting.variables.add(GameVariable{ "x",
-		prop_get([this]() { return character.pixelX / 16.0; }),
-		prop_set(this, NPCProp::X2, [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }) });
-	scripting.variables.add(GameVariable{ "y",
-		prop_get([this]() { return character.pixelY / 16.0; }),
-		prop_set(this, NPCProp::Y2, [this](const GameValue& value, std::optional<size_t>) { character.pixelY = value.get<double>().value_or(0.0) * 16; }) });
-	scripting.variables.add(GameVariable{ "z",
-		prop_get([this]() { return character.pixelZ / 16.0; }),
-		prop_set(this, NPCProp::Z2, [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }) });
-	scripting.variables.add(GameVariable{ "timeout",
-		prop_get(
-			[this]()
-			{
-				return timeout.count() / 1000.0;
-			}),
-		prop_set(this, std::nullopt,
-			[this](const GameValue& value, std::optional<size_t>)
-			{
-				timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000));
-			})
-		});
-	scripting.variables.add(GameVariable{ "sprite",
-		prop_get(character.sprite),
-		prop_set(this, NPCProp::SPRITE,
-			[this](const GameValue& value, std::optional<size_t>)
-			{
-				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
-
-				auto server = BabyDI::Get<Server>();
-				if (character.sprite >= 4 && server->Generation != ServerGeneration::ORIGINAL)
-				{
-					character.gani = std::format("def[{}]", character.sprite);
-					//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
-					modTime[PROPID(NPCProp::GANI)] = currentTime();
-					//modTime[PROPID(NPCProp::VISFLAGS)] = currentTime();
-				}
-			})
-		});
-	scripting.variables.add(GameVariable{ "dir",
-		prop_get([this]() { return static_cast<double>(character.direction); }),
-		prop_set(this, NPCProp::SPRITE,
-			[this](const GameValue& value, std::optional<size_t>)
-			{
-				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
-			})
-		});
+	resetToInitialState();
 }
 
 //----------------------------
@@ -315,31 +245,49 @@ void NPC::setScript(std::string_view script)
 		m_weaponName = toWeaponName(clientside);
 	}
 
-	// If we have an npc-server, compile the scripts.
-	if (m_server->hasNPCServer())
-	{
-		auto npcServer = m_server->getNPCServer();
-		if (m_server->Generation == ServerGeneration::CLASSIC)
-		{
-			m_script.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()));
-		}
-		else if (m_server->Generation == ServerGeneration::NEWMAIN || m_server->Generation == ServerGeneration::MODERN)
-		{
-			m_script.setClientCompiledScript(npcServer->scripting.getCompiledClientScript(ScriptType::CLASS, name, m_script.getClientSide()));
-			m_script.setServerCompiledScript(npcServer->scripting.getCompiledServerScript(ScriptType::CLASS, name, m_script.getServerSide()));
-		}
-	}
-
 	// Just a little warning for people who don't know.
 	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
+}
+
+void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+{
+	ScriptEventQueue npcQueue{ events };
+	m_script.executeEvents(npcQueue, source);
+
+	// Execute classes.
+	for (auto& scriptClassPtr : m_joinedClasses)
+	{
+		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
+		{
+			ScriptEventQueue classQueue{ events };
+			scriptClass->getScript().executeEvents(classQueue, source);
+		}
+	}
+
+	// Erase the event queue.
+	while (!events.queue().empty())
+		events.queue().pop();
+}
+
+//----------------------------
+
+bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
+{
+	sendPropsFromResults(
+		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->getLevelName().toString()),
+		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
+		setPropWith<NPCProp::Y2>(SetBy::SERVER, y)
+		);
+
+	return true;
 }
 
 //----------------------------
 
 std::string NPC::getLevelName() const
 {
-	if (auto levelPtr = level.lock())
+	if (auto levelPtr = level.lock(); levelPtr != nullptr)
 		return levelPtr->getLevelName().toString();
 	return {};
 }
@@ -401,9 +349,15 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			// No change.
+			if (strProp->value == image)
+				break;
+
+			// Make visible.
 			visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
 			result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 
+			// If we are changing to a character, set the gani to idle.
 			if (strProp->value == "#c#" && image != "#c")
 			{
 				character.gani = "idle";
@@ -800,12 +754,12 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 			}
 
-			// TODO(Nalin): The server needs a warp function for NPCs to handle leave props.
 			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
 				{
+					result.resultFlags.set(SetResults::sendToAll);
 					levelPtr->removeNPC(id);
 					newLevel->addNPC(id);
 					level = newLevel;
@@ -829,12 +783,12 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 			}
 
-			// TODO(Nalin): The server needs a warp function for NPCs to handle leave props.
 			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
 				{
+					result.resultFlags.set(SetResults::sendToAll);
 					levelPtr->removeNPC(id);
 					newLevel->addNPC(id);
 					level = newLevel;
@@ -885,7 +839,36 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (!canUpdatePosition)
 				break;
 
-			// TODO: Level warp?
+			// No change?  Don't do anything.
+			if (auto curLevel = level.lock(); curLevel != nullptr && curLevel->getLevelName() == strProp->value)
+				break;
+
+			// See if the level exists.
+			auto newLevel = m_server->getLevel(strProp->value);
+			if (newLevel == nullptr)
+				break;
+
+			// Tell everybody the change in our level.
+			result.resultFlags.set(SetResults::sendToAll);
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+
+			// Remove ourself from the old level.
+			auto oldLevel = level.lock();
+			if (oldLevel != nullptr)
+				oldLevel->removeNPC(id);
+
+			// Send our props to people in the new level.
+			level = newLevel;
+			newLevel->addNPC(id);
+			m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), newLevel);
+
+			// Tell NCs about our new position.
+			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id
+				>> (char)NPCProp::NAME << getProp<NPCProp::NAME>().serialize()
+				>> (char)NPCProp::TYPE << getProp<NPCProp::TYPE>().serialize()
+				>> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
+			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 			break;
 		}
 
@@ -935,7 +918,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			m_npcClass = strProp->value;
+			setJoinedClasses(strProp->value);
 			break;
 		}
 
@@ -1000,7 +983,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 //----------------------------
 
-void NPC::sendPropsFromResults(PropertySendResults& results, PlayerPtr source)
+void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source) const
 {
 	CString sendAll, sendLevel, sendSource;
 
@@ -1057,7 +1040,7 @@ void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
 		results.emplace_back(setProp(propId, setBy, prop), prop);
 	}
 
-	sendPropsFromResults(results, source);
+	sendPropsFromSendResults(results, source);
 
 	DO_PACKETLOG(log::print(log::networkdump, "\n"));
 }
@@ -1154,6 +1137,172 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 
 	DO_PACKETLOG(log::print(log::networkdump, "\n"));
 	return retVal;
+}
+
+//----------------------------
+
+std::string NPC::getJoinedClasses() const
+{
+	std::string result;
+	for (const auto& classPtr : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+		{
+			result += scriptClass->name;
+			result += ",";
+		}
+	}
+	result.pop_back();
+	return result;
+}
+
+void NPC::setJoinedClasses(std::string_view classes)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer()) return;
+
+	m_joinedClasses.clear();
+	while (!classes.empty())
+	{
+		auto className = string::extractLine(classes, ',');
+		if (className.empty())
+			continue;
+
+		className = string::trim(className);
+		auto scriptClass = server->getNPCServer()->getClass(className);
+		if (!scriptClass.expired())
+			m_joinedClasses.push_back(scriptClass);
+
+		modTime[PROPID(NPCProp::CLASS)] = currentTime();
+	}
+}
+
+void NPC::joinClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) {
+		return classPtr.lock()->name == className;
+	});
+	if (it != m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
+		return;
+
+	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
+	if (scriptClass.expired())
+	{
+		log::print(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+		return;
+	}
+
+	m_joinedClasses.push_back(scriptClass);
+	modTime[PROPID(NPCProp::CLASS)] = currentTime();
+}
+
+void NPC::leaveClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) {
+		return classPtr.lock()->name == className;
+	});
+	if (it == m_joinedClasses.end())
+		return;
+
+	m_joinedClasses.erase(it);
+	modTime[PROPID(NPCProp::CLASS)] = currentTime();
+}
+
+void NPC::resetToInitialState()
+{
+	image = m_initialImage;
+	shape = {};
+	imagePart = {};
+	visFlags = 1;
+	blockFlags = 0;
+	hurtX = 0.0f;
+	hurtY = 0.0f;
+	noPlayerOnWall = false;
+	timeout = 0ms;
+	character = m_initialCharacter;
+	saves.fill(0);
+	modTime.fill(clock::time_point::min());
+	warpRestrictions = m_server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
+	// We need to alter the modTime of the following props as they should be always sent.
+	// If we don't, they won't be sent until the prop gets modified.
+	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::CURLEVEL, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
+	std::ranges::for_each(props, [this, now = currentTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+
+	m_savedModTime = modTime;
+
+	// Create variable store links.
+	scripting.variables.store.clear();
+	scripting.variables.add(GameVariable{ set_temporary, "id", prop_get([this]() { return static_cast<double>(this->id); }), {} });
+	scripting.variables.add(GameVariable{ set_temporary, "width", prop_get([this]() { return static_cast<double>(shape.width()); }), {} });
+	scripting.variables.add(GameVariable{ set_temporary, "height", prop_get([this]() { return static_cast<double>(shape.height()); }), {} });
+	scripting.variables.add(GameVariable{ set_temporary, "rupees", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
+	scripting.variables.add(GameVariable{ set_temporary, "gralats", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
+	scripting.variables.add(GameVariable{ set_temporary, "bombs", prop_get(character.bombs), prop_set(this, NPCProp::BOMBS, character.bombs) });
+	scripting.variables.add(GameVariable{ set_temporary, "darts", prop_get(character.arrows), prop_set(this, NPCProp::ARROWS, character.arrows) });
+	scripting.variables.add(GameVariable{ set_temporary, "glovepower", prop_get(character.glovePower), prop_set(this, NPCProp::GLOVEPOWER, character.glovePower) });
+	scripting.variables.add(GameVariable{ set_temporary, "swordpower", prop_get(character.swordPower), prop_set(this, NPCProp::SWORDIMAGE, character.swordPower) });
+	scripting.variables.add(GameVariable{ set_temporary, "shieldpower", prop_get(character.shieldPower), prop_set(this, NPCProp::SHIELDIMAGE, character.shieldPower) });
+	scripting.variables.add(GameVariable{ set_temporary, "ap", prop_get(character.ap), prop_set(this, NPCProp::ALIGNMENT, character.ap) });
+	scripting.variables.add(GameVariable{ set_temporary, "hurtdx", prop_get(hurtX), prop_set(this, NPCProp::HURTDXDY, hurtX) });
+	scripting.variables.add(GameVariable{ set_temporary, "hurtdy", prop_get(hurtY), prop_set(this, NPCProp::HURTDXDY, hurtY) });
+	scripting.variables.add(GameVariable{ set_temporary, "save", prop_get(saves), prop_set(this, NPCProp::SAVE0, saves) });
+	scripting.variables.add(GameVariable{ set_temporary, "x",
+		prop_get([this]() { return character.pixelX / 16.0; }),
+		prop_set(this, NPCProp::X2, [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ set_temporary, "y",
+		prop_get([this]() { return character.pixelY / 16.0; }),
+		prop_set(this, NPCProp::Y2, [this](const GameValue& value, std::optional<size_t>) { character.pixelY = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ set_temporary, "z",
+		prop_get([this]() { return character.pixelZ / 16.0; }),
+		prop_set(this, NPCProp::Z2, [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }) });
+	scripting.variables.add(GameVariable{ set_temporary, "timeout",
+		prop_get(
+			[this]()
+			{
+				return timeout.count() / 1000.0;
+			}),
+		prop_set(this, std::nullopt,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000));
+			})
+		});
+	scripting.variables.add(GameVariable{ set_temporary, "sprite",
+		prop_get(character.sprite),
+		prop_set(this, NPCProp::SPRITE,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
+
+				auto server = BabyDI::Get<Server>();
+				if (character.sprite >= 4 && server->Generation != ServerGeneration::ORIGINAL)
+				{
+					character.gani = std::format("def[{}]", character.sprite);
+					//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
+					modTime[PROPID(NPCProp::GANI)] = currentTime();
+					//modTime[PROPID(NPCProp::VISFLAGS)] = currentTime();
+				}
+			})
+		});
+	scripting.variables.add(GameVariable{ set_temporary, "dir",
+		prop_get([this]() { return static_cast<double>(character.direction); }),
+		prop_set(this, NPCProp::SPRITE,
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
+			})
+		});
+
+	// Warp.
+	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
+	{
+		warp(initialLevel, character.pixelX, character.pixelY);
+	}
 }
 
 //----------------------------
@@ -1257,6 +1406,151 @@ std::string performClientSideJoinHack(std::string_view code, FileSystem* fs)
 		c.removeAllI("\r");
 		result += "\n";
 		result += c.toStringView();
+	}
+
+	return result;
+}
+
+std::vector<std::string> NPC::getVariableDump() const
+{
+	constexpr std::array<std::string_view, NPCPROP_COUNT> propNames =
+	{
+		"image", "script", "x", "y", "power",
+		"rupees", "arrows", "bombs", "glovepower", "bombpower",
+		"sword", "shield", "animation", "visibility flags", "blocking flags",
+		"message", "hurtdxdy", "id", "sprite", "colors",
+
+		"nickname", "horse", "head", "save[0]", "save[1]",
+		"save[2]", "save[3]", "save[4]", "save[5]", "save[6]",
+		"save[7]", "save[8]", "save[9]", "alignment", "imagepart",
+		"body", "ganiattr1", "ganiattr2", "ganiattr3", "ganiattr4",
+
+		"ganiattr5", "mapx", "mapy", "z", "ganiattr6",
+		"ganiattr7", "ganiattr8", "ganiattr9", "UNKNOWN48", "scripter",
+		"name", "type", "level", "ganiattr10", "ganiattr11",
+		"ganiattr12", "ganiattr13", "ganiattr14", "ganiattr15",
+
+		"ganiattr16", "ganiattr17", "ganiattr18", "ganiattr19", "ganiattr20",
+		"ganiattr21", "ganiattr22", "ganiattr23", "ganiattr24", "ganiattr25",
+		"ganiattr26", "ganiattr27", "ganiattr28", "ganiattr29", "ganiattr30",
+		"joinedclasses", "xprecise", "yprecise", "zprecise"
+	};
+
+	constexpr std::array<NPCProp, 57> propSendOrder =
+	{
+		NPCProp::ID, NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::VISFLAGS, NPCProp::BLOCKFLAGS,
+		NPCProp::HEADIMAGE, NPCProp::BODYIMAGE, NPCProp::SWORDIMAGE, NPCProp::SHIELDIMAGE,
+		NPCProp::NICKNAME, NPCProp::SPRITE, NPCProp::GANI,
+		NPCProp::GATTRIB1, NPCProp::GATTRIB2, NPCProp::GATTRIB3, NPCProp::GATTRIB4, NPCProp::GATTRIB5,
+		NPCProp::GATTRIB6, NPCProp::GATTRIB7, NPCProp::GATTRIB8, NPCProp::GATTRIB9, NPCProp::GATTRIB10,
+		NPCProp::GATTRIB11, NPCProp::GATTRIB12, NPCProp::GATTRIB13, NPCProp::GATTRIB14, NPCProp::GATTRIB15,
+		NPCProp::GATTRIB16, NPCProp::GATTRIB17, NPCProp::GATTRIB18, NPCProp::GATTRIB19, NPCProp::GATTRIB20,
+		NPCProp::GATTRIB21, NPCProp::GATTRIB22, NPCProp::GATTRIB23, NPCProp::GATTRIB24, NPCProp::GATTRIB25,
+		NPCProp::GATTRIB26, NPCProp::GATTRIB27, NPCProp::GATTRIB28, NPCProp::GATTRIB29, NPCProp::GATTRIB30,
+		NPCProp::SAVE0, NPCProp::SAVE1, NPCProp::SAVE2, NPCProp::SAVE3, NPCProp::SAVE4,
+		NPCProp::SAVE5, NPCProp::SAVE6, NPCProp::SAVE7, NPCProp::SAVE8, NPCProp::SAVE9,
+		NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2
+	};
+
+	std::vector<std::string> result;
+
+	std::string npcname = (!name.empty() ? name : std::format("npcs[{}]", id));
+
+	result.emplace_back(std::format("Variables dump from npc {}", npcname));
+	result.emplace_back();
+	if (!m_npcScriptType.empty())
+		result.emplace_back(std::format("{}.type: {}", npcname, m_npcScriptType));
+	if (!m_npcScripter.empty())
+		result.emplace_back(std::format("{}.scripter: {}", npcname, m_npcScripter));
+	if (auto curLevel = level.lock(); curLevel != nullptr)
+		result.emplace_back(std::format("{}.level: {}", npcname, curLevel->getLevelName()));
+	result.emplace_back();
+	result.emplace_back("Attributes:");
+
+	std::string nameprop;
+	for (const auto& prop : propSendOrder)
+	{
+		auto propId = PROPID(prop);
+		nameprop.assign(std::format("{}.{}", npcname, propNames[propId]));
+
+		switch (prop)
+		{
+			case NPCProp::SCRIPT:
+				result.emplace_back(std::format("{}: size: {}", nameprop, m_script.getOriginalSource().length()));
+				break;
+
+			case NPCProp::SWORDIMAGE:
+			{
+				std::string swordImage = character.swordImage;
+				if (swordImage.empty() && character.swordPower > 0 && character.swordPower <= 4)
+					swordImage = std::format("sword{}.png", character.swordPower);
+
+				result.emplace_back(std::format("{}: {} ({})", nameprop, swordImage, character.swordPower));
+				break;
+			}
+
+			case NPCProp::SHIELDIMAGE:
+			{
+				std::string shieldImage = character.shieldImage;
+				if (shieldImage.empty() && character.shieldPower > 0 && character.shieldPower <= 3)
+					shieldImage = std::format("shield{}.png", character.shieldPower);
+
+				result.emplace_back(std::format("{}: {} ({})", nameprop, shieldImage, character.shieldPower));
+				break;
+			}
+
+			case NPCProp::VISFLAGS:
+			{
+				std::string activeVisFlags{ (visFlags & PROPID(NPCVisFlags::VISIBLE) ? "visible" : "hidden") };
+				if (visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
+					activeVisFlags += ", drawoverplayer";
+				if (visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
+					activeVisFlags += ", drawunderplayer";
+				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT4))
+					activeVisFlags += ", unknownbit4";
+				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT5))
+					activeVisFlags += ", unknownbit5";
+				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT6))
+					activeVisFlags += ", unknownbit6";
+				activeVisFlags += (visFlags & PROPID(NPCVisFlags::MALE) ? ", male" : ", female");
+				
+				result.emplace_back(std::format("{}: {}", nameprop, activeVisFlags));
+				break;
+			}
+
+			case NPCProp::BLOCKFLAGS:
+			{
+				std::string activeBlockFlags{ (blockFlags & PROPID(NPCBlockFlags::NOBLOCK) ? "noblock" : "block") };
+				if (blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
+					activeBlockFlags += ", canbecarried";
+				if (blockFlags & PROPID(NPCBlockFlags::CANBEPULLED))
+					activeBlockFlags += ", canbepulled";
+				if (blockFlags & PROPID(NPCBlockFlags::CANBEPUSHED))
+					activeBlockFlags += ", canbepushed";
+
+				result.emplace_back(std::format("{}: {}", nameprop, activeBlockFlags));
+				break;
+			};
+
+			default:
+				result.emplace_back(std::format("{}: {}", nameprop, getProp(prop)));
+				break;
+		}
+	}
+
+	if (timeout != 0ms)
+		result.emplace_back(std::format("{}.timeout: {}ms", npcname, timeout.count()));
+	//npcDump << npcNameStr << ".scripttime (in the last min): " << CString(executionData.second) << "\n";
+	//npcDump << npcNameStr << ".scriptcalls: " << CString(executionData.first) << "\n";
+
+	result.emplace_back();
+	result.emplace_back("npc.Flags:");
+
+	for (const auto& [flag, value] : scripting.variables.store | variables::only_flags)
+	{
+		if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
+			result.emplace_back(std::format("{}.flags[{}]: true", npcname, flag));
+		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, value->get<std::string>().value_or({})));
 	}
 
 	return result;

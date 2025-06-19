@@ -2,11 +2,9 @@
 #define ISCRIPTENGINE_H
 
 #include <string_view>
-#include <string>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 
 // Until CString is erased, we have to remove Windows.h includes.
 #undef CALLBACK
@@ -38,7 +36,7 @@ public:
 	virtual ScriptExecutionType getExecutionType() = 0;
 
 public:
-	virtual CompiledScriptResult compileScript(ScriptType type, std::string_view name, const std::string& script) = 0;
+	virtual CompiledScriptResult compileScript(std::string_view script) = 0;
 	virtual bool reset() = 0;
 
 public:

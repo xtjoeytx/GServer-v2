@@ -600,6 +600,10 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 		}
 	}
 
+	// Push the last token if it exists.
+	if (!token.empty())
+		tokens.push_back(token);
+
 	return tokens;
 }
 
@@ -777,7 +781,7 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 	auto pos = str.find(delim);
 	if (pos == std::string::npos)
 	{
-		auto line = str;
+		std::string_view line = str;
 		str = {};
 		return std::string(line);
 	}

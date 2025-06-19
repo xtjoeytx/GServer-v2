@@ -103,9 +103,11 @@ constexpr int PLAYERPROP_COUNT = static_cast<int>(PlayerProp::PLAYERPROP_COUNT);
 
 enum class PlayerListCategory : uint8_t
 {
-	PLAYERLIST = 0b0000,
-	SERVERS    = 0b0001,
-	CHANNELS   = 0b0011,
+	PLAYERLIST  = 0b0000,
+	EXTERNAL    = 0b0001,
+	CHANNEL     = 0b0010,
+	CHANNELUSER = 0b0100,
+	CHANNELOPEN = 0b1000,
 };
 
 // Gani attributes in order of their property number.

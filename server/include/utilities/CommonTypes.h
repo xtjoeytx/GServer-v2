@@ -4,12 +4,15 @@
 #include <chrono>
 #include <concepts>
 #include <cstdint>
+#include <functional>
 #include <ranges>
+#include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <variant>
 
-#include <BabyDI.h>
+#include <utilities/StringUtils.h>
 
 using namespace std::literals;
 
@@ -17,6 +20,15 @@ using namespace std::literals;
 namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
+
+//----------------------------
+// Aliases
+
+template<class T>
+using string_map = std::unordered_map<std::string, T, string::string_hash, std::equal_to<>>;
+
+template<class T>
+using hash_map = std::unordered_map<size_t, T, string::string_hash, std::equal_to<>>;
 
 //----------------------------
 // ID types
@@ -33,17 +45,18 @@ inline constexpr PlayerID NPCServerPlayerID = 2;
 // ID start constants
 
 // Player IDs 0 and 1 break things, and 2 is reserved for the NPC server player.
-inline constexpr PlayerID PLAYERID_INIT = 3;
+inline constexpr PlayerID PLAYERID_GEN = 3;
 
 // Player IDs 16000 and up is used for players on other servers and "IRC"-channels.
 // The players from other servers should be unique lists for each player as they are fetched depending on
 // what the player chooses to see (buddies, "global guilds" tab, "other servers" tab)
-inline constexpr PlayerID EXTERNALPLAYERID_INIT = 16000;
+inline constexpr PlayerID PLAYERID_GEN_EXTERNAL = 16000;
 
-// NPC IDs under 1000 can't be deleted, so start there.
-inline constexpr NPCID NPCID_INIT = 1000;
-inline constexpr NPCID NPCID_DATABASE_START = 10000;
-inline constexpr uint8_t BADDYID_INIT = 1;
+// NPC IDs under 1000 can't be deleted, so require manual assignment.
+inline constexpr NPCID NPCID_GEN_MANUAL = 3;
+inline constexpr NPCID NPCID_GEN_LOCAL = 1000;
+inline constexpr NPCID NPCID_GEN_DATABASE = 10000;
+inline constexpr uint8_t BADDYID_GEN = 1;
 
 //----------------------------
 // User-defined literals

@@ -12,6 +12,7 @@
 
 #include <BabyDI.h>
 #include <CString.h>
+
 #include <FileSystem.h>
 #include <Server.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
@@ -19,6 +20,7 @@
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -64,10 +66,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		idStr.trimI();
 		id = std::strtol(idStr.text(), nullptr, 10);
 
-		if (id < NPCID_INIT)
+		if (id < NPCID_GEN_MANUAL)
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", filePath.filename().string(), NPCID_INIT);
+			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", filePath.filename().string(), NPCID_GEN_MANUAL);
 		}
 		else if (server->m_npcIdGenerator.isIdUsed(id))
 		{
@@ -78,7 +80,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	}
 
 	if (id == 0)
-		id = server->m_npcIdGenerator.getAvailableId();
+		id = server->m_npcIdGenerator.getAvailableId(NPCID_GEN_DATABASE);
 
 	// Make the NPC.
 	auto npc = std::make_shared<NPC>(id, NPCType::DBNPC);
@@ -124,6 +126,16 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			npc->image = curLine.readString("").text();
 			npc->modTime[PROPID(NPCProp::IMAGE)] = updateTime;
+		}
+		else if (curCommand == "IMGPART")
+		{
+			auto parts = curLine.tokenize();
+			if (parts.size() >= 4)
+			{
+				npc->imagePart.position = { static_cast<uint16_t>(strtoint(parts[0])), static_cast<uint16_t>(strtoint(parts[1])) };
+				npc->imagePart.size = { static_cast<uint8_t>(strtoint(parts[2])), static_cast<uint8_t>(strtoint(parts[3])) };
+				npc->modTime[PROPID(NPCProp::IMAGEPART)] = updateTime;
+			}
 		}
 		else if (curCommand == "STARTLEVEL")
 			npcInitialLevel = curLine.readString("");
@@ -231,6 +243,13 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->character.horseImage = curLine.readString("").toString();
 			npc->modTime[PROPID(NPCProp::HORSEIMAGE)] = updateTime;
 		}
+		else if (curCommand == "COLORS")
+		{
+			auto tokens = curLine.readString("").tokenize(",");
+			for (size_t idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
+				npc->character.colors[idx] = strtoint(tokens[idx]);
+			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
+		}
 		else if (curCommand == "SPRITE")
 		{
 			npc->character.sprite = strtoint(curLine.readString(""));
@@ -241,12 +260,36 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->character.ap = strtoint(curLine.readString(""));
 			npc->modTime[PROPID(NPCProp::ALIGNMENT)] = updateTime;
 		}
-		else if (curCommand == "COLORS")
+		else if (curCommand == "TIMEOUT")
 		{
-			auto tokens = curLine.readString("").tokenize(",");
-			for (size_t idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
-				npc->character.colors[idx] = strtoint(tokens[idx]);
-			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
+			npc->timeout = std::chrono::milliseconds(strtoint(curLine.readString("")) * 20);
+		}
+		else if (curCommand == "LAYER")
+		{
+			auto layer = strtoint(curLine.readString(""));
+			if (layer == -1)
+				npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
+			if (layer == 1)
+				npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
+			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+		}
+		else if (curCommand == "SHAPETYPE")
+		{
+			// Only shape type 1 is supported, but we just look at the dimension of the shape data.
+		}
+		else if (curCommand == "SHAPE")
+		{
+			std::get<0>(npc->shape.data) = strtoint(curLine.readString(" "));
+			std::get<1>(npc->shape.data) = strtoint(curLine.readString(" "));
+		}
+		else if (curCommand == "DONTBLOCK")
+		{
+			npc->blockFlags = strtoint(curLine.readString(""));
+			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+		}
+		else if (curCommand == "NOPLAYERONWALL")
+		{
+			npc->noPlayerOnWall = strtoint(curLine.readString("")) != 0;
 		}
 		else if (curCommand == "SAVEARR")
 		{
@@ -257,11 +300,6 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 				npc->modTime[PROPID(NPCProp::SAVE0) + idx] = updateTime;
 			}
 		}
-		else if (curCommand == "SHAPE")
-		{
-			std::get<0>(npc->imageSize.data) = strtoint(curLine.readString(" "));
-			std::get<1>(npc->imageSize.data) = strtoint(curLine.readString(" "));
-		}
 		else if (curCommand == "CANWARP")
 		{
 			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ALLOWED : npc->warpRestrictions;
@@ -269,19 +307,6 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "CANWARP2")
 		{
 			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
-		}
-		// TODO(Nalin): This should be split up in stuff like DONTBLOCK 1, but I don't know all the fields.
-		else if (curCommand == "BLOCKFLAGS")
-		{
-			npc->blockFlags = strtoint(curLine.readString(""));
-		}
-		else if (curCommand == "VISFLAGS")
-		{
-			npc->visFlags = strtoint(curLine.readString(""));
-		}
-		else if (curCommand == "TIMEOUT")
-		{
-			npc->timeout = std::chrono::milliseconds(strtoint(curLine.readString("")) * 20);
 		}
 		else if (curCommand == "FLAG")
 		{
@@ -302,7 +327,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "JOINEDCLASSES")
 		{
-			;
+			auto classes = string::fromCSV(curLine.readString("").toString());
+			for (const auto& className : classes)
+			{
+				if (!className.empty())
+					npc->joinClass(className);
+			}
 		}
 		else if (curCommand == "NPCSCRIPT")
 		{
@@ -353,6 +383,22 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	CString levelName = level ? level->getLevelName() : "";
 	CString initialLevelName = initialLevel ? initialLevel->getLevelName() : "";
 
+	int layer = 0;
+	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
+		layer = -1;
+	else if (npc->visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
+		layer = 1;
+
+	// Create a list of our gani and all of its attributes.
+	std::vector<std::string> ganis = { npc->character.gani };
+	for (const auto& attr : npc->character.ganiAttributes)
+		ganis.push_back(attr);
+
+	// Find last non-empty string in the ganis vector and erase everything after it.
+	auto lastNonEmpty = std::find_if(ganis.rbegin(), ganis.rend(), [](const std::string& str) { return !str.empty(); });
+	if (lastNonEmpty != ganis.rend())
+		ganis.erase(lastNonEmpty.base(), ganis.end());
+
 	static const char* NL = "\r\n";
 	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
@@ -361,6 +407,12 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "TYPE " << npc->m_npcScriptType << NL;
 	fileData << "SCRIPTER " << npc->m_npcScripter << NL;
 	fileData << "IMAGE " << npc->image << NL;
+	if (npc->imagePart.size.width() > 0 && npc->imagePart.size.height() > 0)
+	{
+		fileData << "IMGPART "
+			<< CString(npc->imagePart.position.x()) << " " << CString(npc->imagePart.position.y()) << " "
+			<< CString(npc->imagePart.size.width()) << " " << CString(npc->imagePart.size.height()) << NL;
+	}
 	fileData << "STARTLEVEL " << initialLevelName << NL;
 	fileData << "STARTX " << CString((float)npc->m_initialCharacter.pixelX / 16.0f) << NL;
 	fileData << "STARTY " << CString((float)npc->m_initialCharacter.pixelY / 16.0f) << NL;
@@ -373,7 +425,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		fileData << "Z " << CString((float)npc->character.pixelZ / 16.0f) << NL;
 	}
 	fileData << "NICK " << npc->character.nickName << NL;
-	fileData << "ANI " << npc->character.gani << NL;
+	fileData << "ANI " << string::toCSV(ganis) << NL;
 	fileData << "HP " << CString(npc->character.hitpointsInHalves / 2.0f) << NL;
 	fileData << "GRALATS " << CString(npc->character.gralats) << NL;
 	fileData << "ARROWS " << CString(npc->character.arrows) << NL;
@@ -381,8 +433,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "GLOVEP " << CString(npc->character.glovePower) << NL;
 	fileData << "SWORDP " << CString(npc->character.swordPower) << NL;
 	fileData << "SHIELDP " << CString(npc->character.shieldPower) << NL;
-	fileData << "BOWP" << CString(npc->character.bowPower) << NL;
-	fileData << "BOW" << npc->character.bowImage << NL;
+	fileData << "BOWP " << CString(npc->character.bowPower) << NL;
+	fileData << "BOW " << npc->character.bowImage << NL;
 	fileData << "HEAD " << npc->character.headImage << NL;
 	fileData << "BODY " << npc->character.bodyImage << NL;
 	fileData << "SWORD " << npc->character.swordImage << NL;
@@ -392,12 +444,13 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "SPRITE " << CString(npc->character.sprite) << NL;
 	fileData << "AP " << CString(npc->character.ap) << NL;
 	fileData << "TIMEOUT " << CString(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
-	fileData << "LAYER 0" << NL;
-	fileData << "SHAPETYPE 0" << NL;
-	fileData << "SHAPE " << CString(npc->imageSize.width()) << " " << CString(npc->imageSize.height()) << NL;
-	fileData << "BLOCKFLAGS " << CString(npc->blockFlags) << NL;
-	fileData << "VISFLAGS " << CString(npc->visFlags) << NL;
+	fileData << "LAYER " << CString(layer) << NL;
+	fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
+	fileData << "SHAPE " << CString(npc->shape.width()) << " " << CString(npc->shape.height()) << NL;
+	fileData << "DONTBLOCK " << CString(npc->blockFlags) << NL;
 
+	if (npc->noPlayerOnWall)
+		fileData << "NOPLAYERONWALL 1" << NL;
 	if (npc->warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
 		fileData << "CANWARP" << NL;
 	if (npc->warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD)
@@ -415,13 +468,10 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	}
 
 	auto* server = BabyDI::Get<Server>();
-	for (auto& [flag, value] : npc->scripting.variables.store)
+	for (auto& [flag, value] : npc->scripting.variables.store | variables::no_temporary)
 	{
 		// Ignore flags.
 		if (value->has<bool>() && !value->has<std::string>()) continue;
-
-		// Ignore temporary variables.
-		if (value->temporary) continue;
 
 		// Serialize the variable entirely.
 		if (server->Generation == ServerGeneration::MODERN)
@@ -435,6 +485,11 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			for (const auto& serialized : npc->scripting.variables.serialize(flag))
 				fileData << serialized << NL;
 		}
+	}
+
+	if (!npc->m_joinedClasses.empty())
+	{
+		fileData << "JOINEDCLASSES " << npc->getJoinedClasses() << NL;
 	}
 
 	fileData << "NPCSCRIPT" << NL << CString(npc->getScript().getOriginalSource()).replaceAll("\n", NL);

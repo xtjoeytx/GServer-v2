@@ -290,6 +290,9 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 // GameVariable
 ////////////////////////////////////////////////////////////
 
+struct set_temporary_t {};
+inline constexpr set_temporary_t set_temporary;
+
 /// @brief Represents a variable with an identifier and an associated value.
 struct GameVariable
 {
@@ -303,11 +306,13 @@ struct GameVariable
 		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
 		: identifier(name), m_getter(getter), m_setter(setter) {}
+	GameVariable(set_temporary_t, const std::string& name, func_get getter, func_set setter)
+		: identifier(name), temporary(true), m_getter(getter), m_setter(setter) {}
 	GameVariable(const GameVariable& other)
-		: identifier(other.identifier), m_value(other.m_value),
+		: identifier(other.identifier), temporary(other.temporary), m_value(other.m_value),
 		  m_getter(other.m_getter), m_setter(other.m_setter) {}
 	GameVariable(GameVariable&& other) noexcept
-		: identifier(std::move(other.identifier)), m_value(std::move(other.m_value)),
+		: identifier(std::move(other.identifier)), temporary(other.temporary), m_value(std::move(other.m_value)),
 		  m_getter(std::move(other.m_getter)), m_setter(std::move(other.m_setter)) {}
 
 	GameVariable& operator=(const GameVariable& other);
@@ -772,7 +777,10 @@ namespace variables
 inline constexpr auto no_temporary = std::views::filter([](const decltype(GameVariableStore::store)::value_type& pair) -> bool { return !pair.second->temporary; });
 
 /// @brief A view that filters out optional that don't have a value.
-inline constexpr auto with_value = std::views::filter([](const auto& opt) -> bool { return opt.has_value(); });
+//inline constexpr auto with_value = std::views::filter([](const auto& opt) -> bool { return opt.has_value(); });
+
+/// @brief Only gets variables that identify as flags.
+inline constexpr auto only_flags = std::views::filter([](const decltype(GameVariableStore::store)::value_type& pair) -> bool { return pair.second->testAsFlag(); });
 
 } // end namespace preagonal::variables
 

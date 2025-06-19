@@ -330,6 +330,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (player != nullptr)
 				player->setLastMovementTime(time(0));
 
+			// TODO(Nalin): If attached, our X/Y needs to be relative to the attached NPC...
+
 			// Do collision testing.
 			//doTouchTest = true;
 
@@ -1097,7 +1099,7 @@ CString Player::getPropsPacketFromList(const PropList& props) const
 	}
 
 	if (m_isExternal)
-		propPacket >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::SERVERS;
+		propPacket >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL;
 
 	return propPacket;
 }

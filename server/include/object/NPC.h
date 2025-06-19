@@ -187,8 +187,13 @@ public:
 	NPC(NPCID id, NPCType type);
 	~NPC() = default;
 
+public:
 	void setScript(std::string_view script);
 	const Script& getScript() const noexcept { return m_script; }
+	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+
+public:
+	bool warp(LevelPtr level, int16_t x, int16_t y);
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -251,7 +256,7 @@ public:
 
 protected:
 	SetResults setProp(NPCProp prop, SetBy setBy, PropertyBase* base);
-	void sendPropsFromResults(PropertySendResults& results, PlayerPtr source = nullptr);
+	void sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source = nullptr) const;
 
 public:
 	/// @brief Sets properties from a packet string.
@@ -262,10 +267,20 @@ public:
 	CString getModifiedPropsPacket() const;
 	CString getAllPropsPacket(clock::time_point newTime = clock::time_point::min()) const;
 
+	template<NPCProp... Props>
+	[[inline]] CString getPropsPacketFor() const;
+
+public:
+	std::string getJoinedClasses() const;
+	void setJoinedClasses(std::string_view classes);
+	void joinClass(std::string_view className);
+	void leaveClass(std::string_view className);
+
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 	bool isCharacter() const noexcept { return image == "#c#"; }
 	std::string getLevelName() const;
+	std::vector<std::string> getVariableDump() const;
 
 	// Records the current state as the initial state of the NPC.
 	void recordInitialState()
@@ -275,18 +290,22 @@ public:
 		m_initialCharacter = character;
 	}
 
+	/// @brief Resets the NPC to its initial state.
+	void resetToInitialState();
+
 public:
 	const NPCID id;
 	const NPCType type;
 	std::string name;
 	std::string image;
 	std::weak_ptr<Level> level;
-	Dimension<uint16_t> imageSize;
+	Dimension<uint16_t> shape;
 	Rectangle<uint16_t, uint8_t> imagePart;
 	uint8_t visFlags = 1;
 	uint8_t blockFlags = 0;
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;
+	bool noPlayerOnWall = false;
 	std::chrono::milliseconds timeout = 0ms;
 	Character character;
 	std::array<uint8_t, 10> saves;
@@ -301,6 +320,7 @@ private:
 	bool m_blockPositionUpdates = false;
 
 	Script m_script;
+	std::vector<std::weak_ptr<ScriptClass>> m_joinedClasses;
 
 	std::string m_initialImage;
 	std::weak_ptr<Level> m_initialLevel;
@@ -309,7 +329,6 @@ private:
 	std::string m_weaponName;
 	std::string m_npcScripter;
 	std::string m_npcScriptType;
-	std::string m_npcClass;
 };
 
 using NPCPtr = std::shared_ptr<NPC>;
@@ -367,8 +386,8 @@ inline void NPC::recordCurrentPropModTime()
 	DO(NPCProp::GATTRIB3,	PropertyString,				character.ganiAttributes[2]) \
 	DO(NPCProp::GATTRIB4,	PropertyString,				character.ganiAttributes[3]) \
 	DO(NPCProp::GATTRIB5,	PropertyString,				character.ganiAttributes[4]) \
-	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0 : (level.lock()->getGmapX()))) \
-	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0 : (level.lock()->getGmapY()))) \
+	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0_ui8 : static_cast<uint8_t>(level.lock()->getGmapX()))) \
+	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0_ui8 : static_cast<uint8_t>(level.lock()->getGmapY()))) \
 	DO(NPCProp::Z,			PropertyTileCoordinateZ,	character.pixelZ) \
 	DO(NPCProp::GATTRIB6,	PropertyString,				character.ganiAttributes[5]) \
 	DO(NPCProp::GATTRIB7,	PropertyString,				character.ganiAttributes[6]) \
@@ -400,7 +419,7 @@ inline void NPC::recordCurrentPropModTime()
 	DO(NPCProp::GATTRIB28,	PropertyString,				character.ganiAttributes[27]) \
 	DO(NPCProp::GATTRIB29,	PropertyString,				character.ganiAttributes[28]) \
 	DO(NPCProp::GATTRIB30,	PropertyString,				character.ganiAttributes[29]) \
-	DO(NPCProp::CLASS,		PropertyString,				m_npcClass) \
+	DO(NPCProp::CLASS,		PropertyString,				getJoinedClasses()) \
 	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.pixelX) \
 	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.pixelY) \
 	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.pixelZ)
@@ -442,7 +461,7 @@ void NPC::sendPropsFromResults(const Results&... results)
 {
 	PropertySendResults send_results;
 	(send_results.emplace_back(results, nullptr), ...);
-	sendPropsFromResults(send_results);
+	sendPropsFromSendResults(send_results);
 }
 
 void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
@@ -452,7 +471,15 @@ void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
 	for (auto& r : results_range)
 		send_results.emplace_back(r);
 
-	sendPropsFromResults(send_results);
+	sendPropsFromSendResults(send_results);
+}
+
+template<NPCProp... Props>
+inline CString NPC::getPropsPacketFor() const
+{
+	CString packet;
+	((packet >> (char)Props << getProp<Props>().serialize()), ...);
+	return packet;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
