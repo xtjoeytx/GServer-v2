@@ -54,7 +54,7 @@ private:
 	void loadDatabaseNPCs();
 
 public:
-	//void saveNPCs();
+	void saveNPCs();
 	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
 public:
@@ -93,6 +93,7 @@ private:
 	uint16_t m_ncPort = 14900;
 
 	TimeoutGenerator m_runTimeout{ 100ms, true };
+	TimeoutGenerator m_timedSave{ 5min, true };
 
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	string_map<std::shared_ptr<ScriptClass>> m_classList;

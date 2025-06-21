@@ -1117,10 +1117,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			}
 			else if (words[0] == "/savenpcs" && words.size() == 1)
 			{
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
-				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
-				// TODO(NPCSERVER): Save NPCs to disk.
-				//m_server->saveNPCs();
+				if (m_server->hasNPCServer())
+				{
+					m_server->getNPCServer()->saveNPCs();
+					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
+					log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
+				}
 			}
 			else if (words[0] == "/stats" && words.size() == 1)
 			{

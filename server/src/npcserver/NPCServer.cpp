@@ -79,9 +79,11 @@ void NPCServer::initialize()
 	loadDatabaseNPCs();
 
 	m_runTimeout.callbackDuration = std::bind(&NPCServer::run, this, std::placeholders::_1);
+	m_timedSave.callbackDuration = std::bind(&NPCServer::saveNPCs, this);
 
 	// TODO(Nalin): Need an event system and this should be called after the Server sends an "all done loading" event.
 	m_runTimeout.start();
+	m_timedSave.start();
 }
 
 void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
@@ -102,6 +104,7 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 void NPCServer::update(TimeoutGenerator::time_point currentTime)
 {
 	m_runTimeout.update(currentTime);
+	m_timedSave.update(currentTime);
 }
 
 void NPCServer::run(TimeoutGenerator::time_delta delta)
@@ -209,6 +212,18 @@ void NPCServer::loadDatabaseNPCs()
 			log::print(log::server, "[{}] {}", npc->id, npcName);
 			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
 			m_globalNPCList[npc->id] = npc;
+		}
+	}
+}
+
+void NPCServer::saveNPCs()
+{
+	log::printLine(log::server, "Saving NPCs...");
+	for (const auto& [npcId, npcPtr] : m_globalNPCList)
+	{
+		if (auto npc = npcPtr.lock(); npc != nullptr)
+		{
+			m_server->getNPCLoader().saveNPC(npc);
 		}
 	}
 }
