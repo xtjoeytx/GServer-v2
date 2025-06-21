@@ -9,12 +9,14 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string_view>
 #include <string>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <CSettings.h>
@@ -229,8 +231,8 @@ public:
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 
-	// Specific packet sending
-	void sendShootToOneLevel(const std::weak_ptr<Level>& sharedPtr, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const;
+public:
+	void sendShootToOneLevel(std::shared_ptr<Level> level, float x, float y, float z, float angle, float zangle, float strength, std::string_view gani, std::string_view ganiArgs) const;
 
 public:
 	// Translation Management
@@ -262,12 +264,19 @@ public:
 	}
 
 public:
-	void setShootParams(const std::string& params)
+	void setShootParams(std::vector<std::string>&& params)
 	{
-		m_shootParams = params;
+		m_shootParams = std::move(params);
 	}
 
-	const std::string& getShootParams() const
+	void setShootParams(std::ranges::forward_range auto&& params)
+		requires std::same_as<std::ranges::range_value_t<decltype(params)>, std::string>
+	{
+		m_shootParams.clear();
+		m_shootParams.assign_range(params);
+	}
+
+	const std::vector<std::string>& getShootParams() const
 	{
 		return m_shootParams;
 	}
@@ -320,7 +329,7 @@ private:
 	TriggerDispatcher m_triggerActionDispatcher;
 	void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
 
-	std::string m_shootParams;
+	std::vector<std::string> m_shootParams;
 
 	std::shared_ptr<NPCServer> m_npcServer;
 	ServerList m_serverlist;

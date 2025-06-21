@@ -132,9 +132,9 @@ struct ShootPacketNew
 	int8_t sanglez;
 	int8_t speed;
 	int8_t gravity;
-	CString gani;
-	CString ganiArgs;
-	CString shootParams;
+	std::string gani;
+	std::string ganiArgs;
+	std::string shootParams;
 
 	CString constructShootV1() const;
 	CString constructShootV2() const;

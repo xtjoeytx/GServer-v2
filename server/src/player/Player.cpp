@@ -211,21 +211,23 @@ std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray
 
 void ShootPacketNew::debug()
 {
-	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx / 16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.text(), gani.length());
+	/*
+	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx / 16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.c_str(), gani.length());
 	printf("\t Offset: %d, %d\n", offsetx, offsety);
 	printf("\t Angle: %d\n", sangle);
 	printf("\t Z-Angle: %d\n", sanglez);
 	printf("\t Power: %d\n", speed);
 	printf("\t Gravity: %d\n", gravity);
-	printf("\t Gani: %s (len: %d)\n", gani.text(), gani.length());
-	printf("\t Shoot Params: %s (len: %d)\n", shootParams.text(), shootParams.length());
+	printf("\t Gani: %s (len: %d)\n", gani.c_str(), gani.length());
+	printf("\t Shoot Params: %s (len: %d)\n", shootParams.c_str(), shootParams.length());
+	*/
 }
 
 CString ShootPacketNew::constructShootV1() const
 {
 	CString ganiTemp{};
 	ganiTemp << gani;
-	if (!ganiArgs.isEmpty())
+	if (!ganiArgs.empty())
 	{
 		ganiTemp << "," << ganiArgs;
 	}
@@ -248,7 +250,7 @@ CString ShootPacketNew::constructShootV2() const
 {
 	CString ganiTemp{};
 	ganiTemp << gani;
-	if (!ganiArgs.isEmpty())
+	if (!ganiArgs.empty())
 	{
 		ganiTemp << "," << ganiArgs;
 	}

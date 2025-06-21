@@ -1666,9 +1666,15 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // setshootparams params;
+// Sets the shoot parameters that calls to the shoot command will use.
 void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setshootparams is not implemented yet.");
+	if (arguments.size() != 1)
+		return;
+
+	auto params = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+	server->setShootParams(string::fromCSV(params));
 }
 
 // setskincolor color;
@@ -1771,10 +1777,30 @@ void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	throw std::runtime_error("setz is not implemented yet.");
 }
 
-// shoot x,z,y,angle,zangle,power,gani,ganiparams;
+// shoot x,y,z,angle,zangle,power,gani,ganiparams;
 void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shoot is not implemented yet.");
+	if (arguments.size() < 7)
+		return;
+
+	auto level = visitor->findCurrentLevel();
+	if (level == nullptr)
+		return;
+
+	auto x = visitor->getGameValueAs<double>(*arguments[0]);
+	auto y = visitor->getGameValueAs<double>(*arguments[1]);
+	auto z = visitor->getGameValueAs<double>(*arguments[2]);
+	auto angle = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
+	auto zangle = static_cast<float>(visitor->getGameValueAs<double>(*arguments[4]));
+	auto power = static_cast<float>(visitor->getGameValueAs<double>(*arguments[5]));
+	auto gani = visitor->getGameValueAs<std::string>(*arguments[6]);
+
+	std::string ganiparams;
+	if (arguments.size() > 7)
+		ganiparams = visitor->getGameValueAs<std::string>(*arguments[7]);
+
+	auto* server = BabyDI::Get<Server>();
+	server->sendShootToOneLevel(level, x, y, z, angle, zangle, power, gani, ganiparams);
 }
 
 // shootarrow dir;

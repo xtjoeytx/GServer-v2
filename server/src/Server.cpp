@@ -270,6 +270,11 @@ void Server::cleanupDeletedPlayers()
 		// Value copy so the shared_ptr exists until the end.
 		PlayerPtr player = *i;
 
+		/* TODO(Nalin): The player needs to stay in memory until this runs, find some way to keep the shared_ptr alive (and don't call Player::cleanup() yet).
+		if (hasNPCServer())
+			getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGOUT, source::FromPlayer(player->getId()));
+		*/
+
 		// Get rid of the player now.
 		m_playerIdGenerator.freeId(player->getId());
 		if (player->getSocket() != nullptr)
@@ -1139,6 +1144,9 @@ void Server::recordPlayerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
+
+	if (hasNPCServer())
+		getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(player->getId()));
 }
 
 bool Server::warpPlayerToSafePlace(PlayerID playerId)
@@ -1768,9 +1776,11 @@ void Server::TS_Save()
 	}
 }
 
-void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, float y, float z, float angle, float zangle, float strength, const std::string& ani, const std::string& aniArgs) const
+void Server::sendShootToOneLevel(std::shared_ptr<Level> level, float x, float y, float z, float angle, float zangle, float strength, std::string_view gani, std::string_view ganiArgs) const
 {
-	auto levelLock = level.lock();
+	if (level == nullptr)
+		return;
+
 	ShootPacketNew newPacket{};
 	newPacket.pixelx = (int16_t)(x * 16);
 	newPacket.pixely = (int16_t)(y * 16);
@@ -1781,21 +1791,15 @@ void Server::sendShootToOneLevel(const std::weak_ptr<Level>& level, float x, flo
 	newPacket.sanglez = (int8_t)zangle;
 	newPacket.speed = (int8_t)strength;
 	newPacket.gravity = 8;
-	newPacket.gani = ani;
-	newPacket.ganiArgs = aniArgs;
-	newPacket.shootParams = getShootParams();
+	newPacket.gani = gani;
+	newPacket.ganiArgs = ganiArgs;
+	newPacket.shootParams = string::toCSV(getShootParams());
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
-	sendPacketToLevelArea(oldPacketBuf, levelLock, { 0 }, [](const auto pl)
-						  {
-							  return pl->getVersion() < CLVER_5_07;
-						  });
-	sendPacketToLevelArea(newPacketBuf, levelLock, { 0 }, [](const auto pl)
-						  {
-							  return pl->getVersion() >= CLVER_5_07;
-						  });
+	sendPacketToLevelArea(oldPacketBuf, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	sendPacketToLevelArea(newPacketBuf, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

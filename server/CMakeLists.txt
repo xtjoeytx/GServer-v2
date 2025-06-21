@@ -192,6 +192,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE gs2lib)
 target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
 
 # Dependency: libtommath
+#[[
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
 	GIT_TAG        develop
@@ -209,6 +210,8 @@ FetchContent_Declare(tomcrypt
 FetchContent_MakeAvailable(tomcrypt)
 target_link_libraries(${TARGET_NAME} PRIVATE tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
 target_include_directories(${TARGET_NAME} PRIVATE "${libtomcrypt_SOURCE_DIR}/src/headers")
+add_dependencies(${TARGET_NAME} libtomcrypt)
+]]
 
 # Generate grammar.
 antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
@@ -280,7 +283,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
-add_dependencies(${TARGET_NAME} gs2compiler libtomcrypt)
+add_dependencies(${TARGET_NAME} gs2compiler)
 target_link_libraries(${TARGET_NAME} PRIVATE gs2compiler)
 
 if (MINGW)
