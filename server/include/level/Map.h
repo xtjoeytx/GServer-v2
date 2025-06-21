@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <CString.h>
-#include <BabyDI.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -40,8 +39,6 @@ struct MapLevel
 	int mapy = -1;
 };
 
-class Server;
-
 class Map
 {
 public:
@@ -67,8 +64,6 @@ public:
 private:
 	bool loadBigMap(const CString& pFileName);
 	bool loadGMap(const CString& pFileName);
-
-	BabyDI_INJECT(Server, m_server);
 
 	MapType m_type;
 	time_t m_modTime = 0;

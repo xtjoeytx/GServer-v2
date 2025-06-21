@@ -7,6 +7,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -618,7 +619,7 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 	code.removeAllI("\r");
 
 	// Add NPC to level
-	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, NPCType::PUTNPC, true);
+	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, NPCStorageType::LEVEL, true);
 
 	return HandlePacketResult::Handled;
 }
@@ -974,70 +975,66 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f,
 		(float)pPacket.readGUChar() / 2.0f
 	};
-	CString action = pPacket.readString("").trim();
 
-	// Split action data into tokens
-	std::vector<CString> triggerActionData = action.gCommaStrTokens();
-	if (triggerActionData.empty())
-	{
+	// Tokenize the actions.
+	auto actionData = pPacket.readString("").toString();
+	auto actions = string::fromCSV(actionData);
+	if (actions.empty())
 		return HandlePacketResult::Handled;
-	}
 
-	// Grab action name
-	std::string actualActionName = triggerActionData[0].toLower().toString();
+	// Grab action name.
+	auto actualActionName{ string::trimMutate(string::toLower(actions[0])) };
 
 	// (int)(loc[0]) % 64 == 0.0f, for gmap?
 	// TODO(joey): move into trigger command dispatcher, some use private player vars.
-	if (loc[0] == 0.0f && loc[1] == 0.0f)
+	// if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
 		CSettings& settings = m_server->getSettings();
-
 		if (settings.getBool("triggerhack_execscript", false))
 		{
-			if (action.find("gr.es_clear") == 0)
+			if (actualActionName == "gr.es_clear")
 			{
 				// Clear the parameters.
 				m_grExecParameterList.clear();
 				return HandlePacketResult::Handled;
 			}
-			else if (action.find("gr.es_set") == 0)
+			else if (actualActionName == "gr.es_set")
 			{
 				// Add the parameter to our saved parameter list.
-				CString parameters = action.subString(9);
+				CString parameters = string::join(actions | std::views::drop(1));
 				if (m_grExecParameterList.isEmpty())
 					m_grExecParameterList = parameters;
 				else
 					m_grExecParameterList << "," << parameters;
 				return HandlePacketResult::Handled;
 			}
-			else if (action.find("gr.es_append") == 0)
+			else if (actualActionName == "gr.es_append")
 			{
 				// Append doesn't add the beginning comma.
-				CString parameters = action.subString(9);
+				CString parameters = string::join(actions | std::views::drop(1));
 				if (m_grExecParameterList.isEmpty())
 					m_grExecParameterList = parameters;
 				else
 					m_grExecParameterList << parameters;
 				return HandlePacketResult::Handled;
 			}
-			else if (action.find("gr.es") == 0)
+			else if (actualActionName == "gr.es")
 			{
-				std::vector<CString> actionParts = action.tokenize(",");
-				if (actionParts.size() != 1)
+				if (actions.size() > 2)
 				{
-					CString account = actionParts[1];
-					CString wepname = CString() << "-gr_exec_" << removeExtension(actionParts[2]);
+					CString account = actions[1];
+					CString wepname = CString() << "-gr_exec_" << removeExtension(actions[2]);
 					CString wepimage = "wbomb1.png";
 
 					// Load in all the execscripts.
 					FileSystem execscripts;
 					execscripts.addDir("execscripts");
-					CString wepscript = execscripts.load(actionParts[2]);
+					CString wepscript = execscripts.load(actions[2]);
 
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
 					{
-						log::printLine(log::server, "Error: Player {} tried to load execscript {}, but the script was not found.", this->account.name, actionParts[2]);
+						log::printLine(log::server, "Error: Player {} tried to load execscript {}, but the script was not found.", this->account.name, actions[2]);
 						return HandlePacketResult::Handled;
 					}
 
@@ -1064,11 +1061,11 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					CString weapon_packet = CString() >> (char)PLO_NPCWEAPONADD >> (char)wepname.length() << wepname >> (char)0 >> (char)wepimage.length() << wepimage >> (char)1 >> (short)wepscript.length() << wepscript;
 
 					// Send it to the players now.
-					if (actionParts[1] == "ALLPLAYERS")
+					if (account == "ALLPLAYERS")
 						m_server->sendPacketToType(PLTYPE_ANYCLIENT, weapon_packet);
 					else
 					{
-						auto p = m_server->getPlayer(actionParts[1], PLTYPE_ANYCLIENT);
+						auto p = m_server->getPlayer(account, PLTYPE_ANYCLIENT);
 						if (p) p->sendPacket(weapon_packet);
 					}
 					m_grExecParameterList.clear();
@@ -1079,15 +1076,15 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 		if (settings.getBool("triggerhack_files", false))
 		{
-			if (action.find("gr.appendfile") == 0)
+			if (actualActionName == "gr.appendfile")
 			{
-				int start = action.find(",") + 1;
+				int start = actionData.find(",") + 1;
 				if (start == 0) return HandlePacketResult::Handled;
-				int finish = action.find(",", start) + 1;
+				int finish = actionData.find(",", start) + 1;
 				if (finish == 0) return HandlePacketResult::Handled;
 
 				// Assemble the file name.
-				CString filename = action.subString(start, finish - start - 1);
+				CString filename = actionData.substr(start, finish - start - 1);
 				filename.removeAllI("../");
 				filename.removeAllI("..\\");
 
@@ -1096,36 +1093,36 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				file.load(CString() << "logs/" << filename);
 
 				// Save the file.
-				file << action.subString(finish) << "\r\n";
+				file << actionData.substr(finish) << "\r\n";
 				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
-			else if (action.find("gr.writefile") == 0)
+			else if (actualActionName == "gr.writefile")
 			{
-				int start = action.find(",") + 1;
+				int start = actionData.find(",") + 1;
 				if (start == 0) return HandlePacketResult::Handled;
-				int finish = action.find(",", start) + 1;
+				int finish = actionData.find(",", start) + 1;
 				if (finish == 0) return HandlePacketResult::Handled;
 
 				// Grab the filename.
-				CString filename = action.subString(start, finish - start - 1);
+				CString filename = actionData.substr(start, finish - start - 1);
 				filename.removeAllI("../");
 				filename.removeAllI("..\\");
 
 				// Save the file.
-				CString file = action.subString(finish) << "\r\n";
+				CString file = CString(actionData.substr(finish)) << "\r\n";
 				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
-			else if (action.find("gr.readfile") == 0)
+			else if (actualActionName == "gr.readfile")
 			{
-				int start = action.find(",") + 1;
+				int start = actionData.find(",") + 1;
 				if (start == 0) return HandlePacketResult::Handled;
-				int finish = action.find(",", start) + 1;
+				int finish = actionData.find(",", start) + 1;
 				if (finish == 0) return HandlePacketResult::Handled;
 
 				// Grab the filename.
-				CString filename = action.subString(start, finish - start - 1);
+				CString filename = actionData.substr(start, finish - start - 1);
 				filename.removeAllI("../");
 				filename.removeAllI("..\\");
 
@@ -1140,7 +1137,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				// Find the line.
 				int id = rand() % 0xFFFF;
 				CString error;
-				size_t line = strtoint(action.subString(finish));
+				size_t line = string::toNumber(actionData.substr(finish));
 				if (line >= tokens.size())
 				{
 					// We asked for a line that doesn't exist.  Mark it as an error!
@@ -1163,27 +1160,27 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 		if (settings.getBool("triggerhack_props", false))
 		{
-			if (action.find("gr.attr") == 0)
+			if (actualActionName == "gr.attr")
 			{
-				int start = action.find(",");
+				int start = actionData.find(",");
 				if (start != -1)
 				{
-					int attrNum = strtoint(action.subString(7, start - 7));
+					int attrNum = string::toNumber(actionData.substr(7, std::max(0, start - 7)));
 					if (attrNum > 0 && attrNum <= 30)
 					{
 						++start;
-						CString val = action.subString(start);
+						CString val = actionData.substr(start);
 						setPropsFromPacket(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, props::SetBy::SERVER);
 					}
 				}
 			}
-			if (action.find("gr.fullhearts") == 0)
+			if (actualActionName == "gr.fullhearts")
 			{
-				int start = action.find(",");
+				int start = actionData.find(",");
 				if (start != -1)
 				{
 					++start;
-					int hearts = strtoint(action.subString(start).trim());
+					int hearts = string::toNumber(string::trimMutate(actionData.substr(start)));
 					sendPropsFromResults(setPropWith<PlayerProp::MAXPOWER>(props::SetBy::SERVER, static_cast<uint8_t>(hearts)));
 				}
 			}
@@ -1191,14 +1188,14 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 		if (settings.getBool("triggerhack_levels", false))
 		{
-			if (action.find("gr.updatelevel") == 0)
+			if (actualActionName == "gr.updatelevel")
 			{
 				auto level = getLevel();
-				int start = action.find(",");
+				int start = actionData.find(",");
 				if (start != -1)
 				{
 					++start;
-					CString levelName = action.subString(start).trim();
+					CString levelName = string::trimMutate(actionData.substr(start));
 					if (levelName.isEmpty())
 						level->reload();
 					else
@@ -1218,14 +1215,24 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		}
 	}
 
-	bool handled = m_server->getTriggerDispatcher().execute(actualActionName, this, triggerActionData);
-
+	bool handled = m_server->getTriggerDispatcher().execute(actualActionName, this, actions);
 	if (!handled)
 	{
+		if (actualActionName.starts_with("server") && m_server->hasNPCServer())
+		{
+			// TODO(Nalin): We really should be sending this to the NPC-Server player, not directly calling the NPC-Server.
+			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), actions);
+			return HandlePacketResult::Handled;
+		}
+
 		if (auto level = getLevel(); level)
 		{
 			// Send to the level.
 			m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
+
+			// Trigger on level NPCs.
+			if (m_server->hasNPCServer())
+				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::CUSTOM, source::FromPlayer(m_id), level, { static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) }, actions);
 		}
 	}
 

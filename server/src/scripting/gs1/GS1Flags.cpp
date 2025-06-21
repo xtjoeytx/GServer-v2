@@ -1,15 +1,19 @@
+#include <any>
+#include <format>
+#include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 #include <IEnums.h>
 
-#include <Server.h>
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
@@ -53,6 +57,43 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	// TODO: Put extensions under a server option?
 	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
+}
+
+void setCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
+{
+	if (event.args.empty())
+		return;
+
+	std::string action;
+	if (auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
+		action = *actionStr;
+	else if (auto* actionStr = std::any_cast<const char*>(&event.args[0]); actionStr != nullptr)
+		action = *actionStr;
+	else if (auto* actionStr = std::any_cast<std::string_view>(&event.args[0]); actionStr != nullptr)
+		action = std::string(*actionStr);
+
+	if (!action.empty())
+	{
+		// Set the action flag.
+		// Set both the original action and a lowercased version.
+		variableStore.add(GameVariable{ set_temporary, std::format("action{}", action), true });
+		variableStore.add(GameVariable{ set_temporary, string::toLower(std::format("action{}", action)), true });
+
+		// If there are just two arguments, try to unpack the second argument.
+		if (event.args.size() == 2)
+		{
+			if (auto* params = std::any_cast<std::string>(&event.args[1]); params != nullptr)
+			{
+				// Split the parameters by commas.
+				auto tokens = string::fromCSV(*params);
+				if (tokens.size() > 1)
+				{
+					event.args.erase(event.args.begin() + 1);
+					event.args.append_range(tokens);
+				}
+			}
+		}
+	}
 }
 
 void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player)

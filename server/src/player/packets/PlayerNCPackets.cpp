@@ -72,7 +72,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCDELETE(CString& pPacket)
 	NPCID npcId = pPacket.readGUInt();
 	auto npc = m_server->getNPC(npcId);
 
-	if (npc != nullptr && npc->type == NPCType::DBNPC)
+	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
 		// TODO: NPCServer delete
 		bool result = m_server->deleteNPC(npc, true);
@@ -100,7 +100,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 	NPCID npcId = pPacket.readGUInt();
 
 	auto npc = m_server->getNPC(npcId);
-	if (npc != nullptr && npc->type == NPCType::DBNPC)
+	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
 		npc->resetToInitialState();
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());

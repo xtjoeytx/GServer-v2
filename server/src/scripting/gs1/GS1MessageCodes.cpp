@@ -19,6 +19,7 @@
 
 #include <tree/ParseTree.h>
 
+#include <BabyDI.h>
 #include <Server.h>
 #include <object/Character.h>
 #include <object/NPC.h>
@@ -66,7 +67,7 @@ static constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
 		return PlayerProp::COLORS;
 
 	if (index >= 30 && index <= 60)
-		return static_cast<PlayerProp>(GaniAttributePropList[index - 30]);
+		return static_cast<PlayerProp>(GaniAttributePropList[std::max(0, index - 30)]);
 
 	return PlayerProp::ID;
 }
@@ -99,7 +100,7 @@ static constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
 		return NPCProp::COLORS;
 
 	if (index >= 30 && index <= 60)
-		return static_cast<NPCProp>(NPCGaniAttrPackets[index - 30]);
+		return static_cast<NPCProp>(NPCGaniAttrPackets[std::max(0, index - 30)]);
 
 	return NPCProp::ID;
 }
@@ -227,7 +228,7 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 						colorVal = visitor->getColorValueFromString(strVal.value());
 					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
 
-					colors.values[propIndex - 20] = colorVal;
+					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					player->sendPropsFromResults(player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors));
 				}
 			}
@@ -259,7 +260,7 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 						colorVal = visitor->getColorValueFromString(strVal.value());
 					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
 
-					colors.values[propIndex - 20] = colorVal;
+					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
 
 				}
@@ -282,7 +283,7 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 	if (arguments.size() == 1)
 		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-	auto currentSource = visitor->getCurrentSource();
+	const auto& currentSource = visitor->getCurrentSource();
 	Character* character = getCharacterFromSource(currentSource, index);
 	if (character == nullptr)
 		return std::string{};
@@ -650,7 +651,8 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Message Code #p requires exactly 1 argument");
 
-	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	// The first event argument is the name of the triggeraction, so add +1 to get to the params.
+	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0])) + 1;
 	if (index < visitor->getEvent().args.size())
 	{
 		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)

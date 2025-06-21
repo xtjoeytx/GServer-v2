@@ -8,9 +8,6 @@
 #include <utility>
 #include <variant>
 
-// Stupid Windows.h defines
-#undef ERROR
-#undef TRANSPARENT
 #include <ANTLRInputStream.h>
 #include <CommonTokenStream.h>
 #include <GS1Lexer.h>
@@ -128,7 +125,7 @@ public:
 	virtual bool reset() override { return false; }
 
 public:
-	virtual bool execute(const ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) override;
+	virtual bool execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

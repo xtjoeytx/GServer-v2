@@ -211,8 +211,8 @@ static GameVariable::func_set prop_set(NPC* who, std::optional<NPCProp> prop, au
 
 //----------------------------
 
-NPC::NPC(NPCID id, NPCType type)
-	: id(id), type(type), m_savedModTime()
+NPC::NPC(NPCID id, NPCStorageType storageType)
+	: id(id), storageType(storageType), m_savedModTime()
 {
 	resetToInitialState();
 }
@@ -223,24 +223,25 @@ void NPC::setScript(std::string_view script)
 {
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
+	auto server = BabyDI::Get<Server>();
 	m_script = std::move(Script{ script });
 
 	auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
-	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
+	if (server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
 
 	// If there is no npc-server, emulate script joins.
-	if (!m_server->hasNPCServer() && m_server->Generation == ServerGeneration::CLASSIC)
+	if (!server->hasNPCServer() && server->Generation == ServerGeneration::CLASSIC)
 	{
-		auto joinedScript = performClientSideJoinHack(clientside, m_server->getFileSystem());
+		auto joinedScript = performClientSideJoinHack(clientside, server->getFileSystem());
 		m_script.setModifiedSource(joinedScript);
 		clientside = m_script.getClientSide();
 	}
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
-	if (!m_server->hasNPCServer())
+	if (!server->hasNPCServer())
 	{
 		m_weaponName = toWeaponName(clientside);
 	}
@@ -252,6 +253,9 @@ void NPC::setScript(std::string_view script)
 
 void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
 {
+	if (events.queue().empty())
+		return;
+
 	ScriptEventQueue npcQueue{ events };
 	m_script.executeEvents(npcQueue, source);
 
@@ -361,6 +365,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp->value == "#c#" && image != "#c")
 			{
 				character.gani = "idle";
+				shape = { 48, 48 };
 				result.resultPropIds.push_back(PROPID(NPCProp::GANI));
 			}
 
@@ -532,7 +537,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
-			if (m_server->Generation == ServerGeneration::ORIGINAL)
+			auto server = BabyDI::Get<Server>();
+			if (server->Generation == ServerGeneration::ORIGINAL)
 			{
 				if (!ganiProp->bowGif.has_value())
 					break;
@@ -564,7 +570,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			{
 				float tX = static_cast<float>(character.pixelX / 16.0f);
 				float tY = static_cast<float>(character.pixelY / 16.0f);
-				m_server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, character.swordPower, level, nullptr);
+				server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, character.swordPower, level, nullptr);
 			}
 			break;
 		}
@@ -664,7 +670,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.horseImage = strProp->value;
 
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
+			auto server = BabyDI::Get<Server>();
+			if (server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
 				character.horseImage += ".gif";
 			break;
 		}
@@ -675,13 +682,14 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (headProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			auto server = BabyDI::Get<Server>();
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
 			else
 				img = std::get<std::string>(headProp->image);
 
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
+			if (server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
 			character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
@@ -756,8 +764,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
 			{
+				auto server = BabyDI::Get<Server>();
 				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
-				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+				if (auto newLevel = server->getLevel(newLevelName); newLevel != nullptr)
 				{
 					result.resultFlags.set(SetResults::sendToAll);
 					levelPtr->removeNPC(id);
@@ -785,8 +794,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
 			{
+				auto server = BabyDI::Get<Server>();
 				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
-				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+				if (auto newLevel = server->getLevel(newLevelName); newLevel != nullptr)
 				{
 					result.resultFlags.set(SetResults::sendToAll);
 					levelPtr->removeNPC(id);
@@ -807,7 +817,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 			break;
 
-			m_npcScripter = strProp->value;
+			scripter = strProp->value;
 		}
 
 		case NPCProp::NAME:
@@ -826,7 +836,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			m_npcScriptType = strProp->value;
+			scriptType = strProp->value;
 			break;
 		}
 
@@ -844,7 +854,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 
 			// See if the level exists.
-			auto newLevel = m_server->getLevel(strProp->value);
+			auto server = BabyDI::Get<Server>();
+			auto newLevel = server->getLevel(strProp->value);
 			if (newLevel == nullptr)
 				break;
 
@@ -861,14 +872,14 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Send our props to people in the new level.
 			level = newLevel;
 			newLevel->addNPC(id);
-			m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), newLevel);
+			server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), newLevel);
 
 			// Tell NCs about our new position.
 			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id
 				>> (char)NPCProp::NAME << getProp<NPCProp::NAME>().serialize()
 				>> (char)NPCProp::TYPE << getProp<NPCProp::TYPE>().serialize()
 				>> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
-			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+			server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 			break;
 		}
 
@@ -986,6 +997,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source) const
 {
 	CString sendAll, sendLevel, sendSource;
+	auto server = BabyDI::Get<Server>();
 
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
 	{
@@ -994,14 +1006,14 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 	// Send the buffers out.
 	if (sendAll.length() > 0)
-		m_server->sendPacketToAll(CString() >> (char)PLO_NPCPROPS >> (int)id << sendAll);
+		server->sendPacketToAll(CString() >> (char)PLO_NPCPROPS >> (int)id << sendAll);
 
 	PlayerID exclude = 0;
 	if (source != nullptr)
 		exclude = source->getId();
 
 	if (sendLevel.length() > 0 && !level.expired())
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, level, { exclude });
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, level, { exclude });
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
@@ -1094,7 +1106,8 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 {
 	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
 
-	bool oldcreated = m_server->getSettings().getBool("oldcreated", "false");
+	auto server = BabyDI::Get<Server>();
+	bool oldcreated = server->getSettings().getBool("oldcreated", "false");
 	CString retVal;
 	int pmax = NPCPROP_COUNT;
 
@@ -1179,9 +1192,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 
 void NPC::joinClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) {
-		return classPtr.lock()->name == className;
-	});
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
 	if (it != m_joinedClasses.end())
 		return;
 
@@ -1202,10 +1213,12 @@ void NPC::joinClass(std::string_view className)
 
 void NPC::leaveClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) {
-		return classPtr.lock()->name == className;
-	});
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
 	if (it == m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
 		return;
 
 	m_joinedClasses.erase(it);
@@ -1226,7 +1239,9 @@ void NPC::resetToInitialState()
 	character = m_initialCharacter;
 	saves.fill(0);
 	modTime.fill(clock::time_point::min());
-	warpRestrictions = m_server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
+	auto server = BabyDI::Get<Server>();
+	warpRestrictions = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
@@ -1458,10 +1473,10 @@ std::vector<std::string> NPC::getVariableDump() const
 
 	result.emplace_back(std::format("Variables dump from npc {}", npcname));
 	result.emplace_back();
-	if (!m_npcScriptType.empty())
-		result.emplace_back(std::format("{}.type: {}", npcname, m_npcScriptType));
-	if (!m_npcScripter.empty())
-		result.emplace_back(std::format("{}.scripter: {}", npcname, m_npcScripter));
+	if (!scriptType.empty())
+		result.emplace_back(std::format("{}.type: {}", npcname, scriptType));
+	if (!scripter.empty())
+		result.emplace_back(std::format("{}.scripter: {}", npcname, scripter));
 	if (auto curLevel = level.lock(); curLevel != nullptr)
 		result.emplace_back(std::format("{}.level: {}", npcname, curLevel->getLevelName()));
 	result.emplace_back();

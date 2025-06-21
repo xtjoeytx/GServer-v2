@@ -971,7 +971,7 @@ bool Player::addWeapon(LevelItemType defaultWeapon)
 	return this->addWeapon(weapon);
 }
 
-bool Player::addWeapon(const std::string& name)
+bool Player::addWeapon(std::string_view name)
 {
 	auto weapon = m_server->getWeapon(name);
 	return this->addWeapon(weapon);
@@ -1000,7 +1000,7 @@ bool Player::deleteWeapon(LevelItemType defaultWeapon)
 	return this->deleteWeapon(weapon);
 }
 
-bool Player::deleteWeapon(const std::string& name)
+bool Player::deleteWeapon(std::string_view name)
 {
 	auto weapon = m_server->getWeapon(name);
 	return this->deleteWeapon(weapon);
@@ -1049,17 +1049,6 @@ bool Player::setLevel(const CString& pLevelName, time_t modTime)
 	// TODO: Check if level exists.
 	account.level = pLevelName.toString();
 	return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void Player::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
-{
-	for (const auto& weaponName : account.weapons)
-	{
-		if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
-			weapon->executeEvents(events, source);
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

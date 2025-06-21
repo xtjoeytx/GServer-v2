@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -19,6 +20,7 @@
 #include <object/NPC.h>
 #include <object/Weapon.h>
 #include <scripting/Script.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
@@ -263,6 +265,8 @@ CString Weapon::getWeaponByteCodePacket() const
 	return CString();
 }
 
+//----------------------------
+
 std::string Weapon::getJoinedClasses() const
 {
 	std::string result;
@@ -300,8 +304,48 @@ void Weapon::setJoinedClasses(std::string_view classes)
 	}
 }
 
+void Weapon::joinClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	if (it != m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
+		return;
+
+	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
+	if (scriptClass.expired())
+	{
+		log::print(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+		return;
+	}
+
+	m_joinedClasses.push_back(scriptClass);
+	server->updateWeaponForPlayers(server->getWeapon(name));
+}
+
+void Weapon::leaveClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	if (it == m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
+		return;
+
+	m_joinedClasses.erase(it);
+	server->updateWeaponForPlayers(server->getWeapon(name));
+}
+
+//----------------------------
+
 void Weapon::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
 {
+	if (events.queue().empty())
+		return;
+
 	m_script.executeEvents(events, source);
 	for (auto& scriptClassPtr : m_joinedClasses)
 	{

@@ -25,7 +25,6 @@
 #include <Account.h>
 #include <network/IPacketHandler.h>
 #include <player/PlayerProps.h>
-#include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/PropsContainer.h>
@@ -316,10 +315,10 @@ public:
 	void setExternal(bool val) { m_isExternal = val; }
 
 	bool addWeapon(LevelItemType defaultWeapon);
-	bool addWeapon(const std::string& name);
+	bool addWeapon(std::string_view name);
 	bool addWeapon(std::shared_ptr<Weapon> weapon);
 	bool deleteWeapon(LevelItemType defaultWeapon);
-	bool deleteWeapon(const std::string& name);
+	bool deleteWeapon(std::string_view name);
 	bool deleteWeapon(std::shared_ptr<Weapon> weapon);
 
 	CString translate(const CString& pKey) const;
@@ -341,11 +340,7 @@ public:
 	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
 
 public:
-	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
-
-public:
 	Account account;
-	ScriptEventQueue events;
 
 protected:
 	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);

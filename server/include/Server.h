@@ -90,7 +90,7 @@ enum class ServerGeneration
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
 using PackageManager = ResourceManager<UpdatePackage, Server*>;
-using TriggerDispatcher = CommandDispatcher<std::string, Player*, std::vector<CString>&>;
+using TriggerDispatcher = CommandDispatcher<std::string, Player*, std::vector<std::string>&>;
 
 class Server : public CSocketStub
 {
@@ -176,11 +176,11 @@ public:
 	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 
 public:
-	std::shared_ptr<Level> getLevel(const std::string& pLevel);
+	std::shared_ptr<Level> getLevel(std::string_view pLevel);
 
 public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
-	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers = false);
+	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
@@ -214,6 +214,8 @@ public:
 	void logToFile(const std::string& fileName, const std::string& message) const;
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
+	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const;
+	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const;
 
 public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
@@ -239,9 +241,9 @@ public:
 
 public:
 	// Weapon Management
-	std::shared_ptr<Weapon> getWeapon(const std::string& name);
+	std::shared_ptr<Weapon> getWeapon(std::string_view name);
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
-	bool NC_DelWeapon(const std::string& pWeaponName);
+	bool NC_DelWeapon(std::string_view pWeaponName);
 	void updateWeaponForPlayers(std::shared_ptr<Weapon> weapon);
 	void updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass);
 
@@ -249,24 +251,13 @@ public:
 	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNPCServer() const { return m_npcServer; }
 
-	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source)
+	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source, auto&&... args)
 	{
 		if (level == nullptr) return;
 		for (auto& npcid : level->getNPCs())
 		{
 			if (auto npc = getNPC(npcid); npc)
-				npc->scripting.events.addEvent(type, source);
-		}
-	}
-
-	template<class ...Args>
-	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source, Args... args)
-	{
-		if (level == nullptr) return;
-		for (auto& npcid : level->getNPCs())
-		{
-			if (auto npc = getNPC(npcid); npc)
-				npc->scripting.events.addEvent(type, source, std::forward<Args>(args)...);
+				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
 		}
 	}
 
@@ -307,10 +298,10 @@ private:
 	std::unique_ptr<INPCLoader> m_npcLoader;
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
-	std::unordered_map<std::string, std::shared_ptr<Level>, string::string_hash, string::string_hash_equal> m_levelList;
+	string_map<std::shared_ptr<Level>> m_levelList;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
-	std::unordered_map<std::string, std::shared_ptr<Weapon>> m_weaponList;
+	string_map<std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
 	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_MANUAL };
 

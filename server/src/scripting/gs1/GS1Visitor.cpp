@@ -20,7 +20,9 @@
 #include <tree/TerminalNode.h>
 
 #include <Server.h>
+#include <level/Level.h>
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <scripting/gs1/GS1Commands.h>
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1MessageCodes.h>
@@ -167,6 +169,10 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	if (builtInStore != nullptr)
 		builtIn = builtInStore->get(identifier);
 
+	// We found a built-in variable, so return it.
+	if (!builtIn.expired())
+		return builtIn;
+
 	// Now look in the original source store.
 	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
 	{
@@ -236,7 +242,7 @@ std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
 	return visit(node);
 }
 
-std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type)
+std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type) const
 {
 	auto it = m_currentSource.rbegin();
 	while (it != m_currentSource.rend())
@@ -246,6 +252,33 @@ std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromS
 		++it;
 	}
 	return std::nullopt;
+}
+
+std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
+{
+	auto* server = BabyDI::Get<Server>();
+	auto it = m_currentSource.rbegin();
+	while (it != m_currentSource.rend())
+	{
+		if (it->second == ScriptObjectSourceType::NPC)
+		{
+			if (auto npc = server->getNPC(it->first); npc != nullptr)
+				return npc->level.lock();
+		}
+		else if (it->second == ScriptObjectSourceType::PLAYER)
+		{
+			if (auto player = server->getPlayer(it->first); player != nullptr)
+				return server->getLevel(player->account.level);
+		}
+		else if (it->second == ScriptObjectSourceType::LEVEL)
+		{
+			auto& levelList = server->getLevelList();
+			if (auto level = levelList.find(it->first); level != levelList.end())
+				return level->second;
+		}
+		++it;
+	}
+	return nullptr;
 }
 
 GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectSourceType type)

@@ -70,9 +70,10 @@ const std::string& Map::getLevelAt(int mx, int my) const
 bool Map::loadBigMap(const CString& pFileName)
 {
 	// Get the appropriate filesystem.
-	FileSystem* fileSystem = m_server->getFileSystem();
-	if (!m_server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = m_server->getFileSystem(FS_FILE);
+	auto server = BabyDI::Get<Server>();
+	FileSystem* fileSystem = server->getFileSystem();
+	if (!server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = server->getFileSystem(FS_FILE);
 
 	CString fileName = fileSystem->find(pFileName);
 	m_modTime = fileSystem->getModTime(pFileName);
@@ -142,9 +143,10 @@ bool Map::loadBigMap(const CString& pFileName)
 bool Map::loadGMap(const CString& pFileName)
 {
 	// Get the appropriate filesystem.
-	FileSystem* fileSystem = m_server->getFileSystem();
-	if (!m_server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = m_server->getFileSystem(FS_LEVEL);
+	auto server = BabyDI::Get<Server>();
+	FileSystem* fileSystem = server->getFileSystem();
+	if (!server->getSettings().getBool("nofoldersconfig", false))
+		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	CString fileName = fileSystem->find(pFileName);
 	m_modTime = fileSystem->getModTime(pFileName);
@@ -288,20 +290,22 @@ void Map::loadMapLevels() const
 {
 	if (m_loadFullMap)
 	{
+		auto server = BabyDI::Get<Server>();
 		for (const auto& levelName: m_levelList)
 		{
 			if (!levelName.empty())
 			{
-				auto lvl = m_server->getLevel(levelName);
+				auto lvl = server->getLevel(levelName);
 				assert(lvl);
 			}
 		}
 	}
 	else if (!m_preloadLevelList.empty())
 	{
+		auto server = BabyDI::Get<Server>();
 		for (auto& level: m_preloadLevelList)
 		{
-			auto lvl = m_server->getLevel(level);
+			auto lvl = server->getLevel(level);
 			assert(lvl);
 		}
 	}

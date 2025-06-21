@@ -33,10 +33,10 @@ namespace preagonal
 class Player;
 class NPC;
 class Map;
+class LevelLoader;
 
 class Level : public std::enable_shared_from_this<Level>
 {
-public:
 	friend class LevelLoader;
 
 public:

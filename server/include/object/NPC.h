@@ -14,7 +14,6 @@
 
 #include <CString.h>
 
-#include <BabyDI.h>
 #include <object/Character.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
@@ -30,10 +29,10 @@ namespace preagonal
 
 inline constexpr std::array<uint8_t, 30> NPCGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
-class Server;
 class Level;
 class Player;
 class ScriptClass;
+class FlatFileNPCLoader;
 
 using PlayerPtr = std::shared_ptr<Player>;
 
@@ -169,13 +168,18 @@ enum class NPCWarpRestrictions
 	ONLYOVERWORLD,
 };
 
-//! NPC type
-enum class NPCType
+/// @brief NPC storage types.
+enum class NPCStorageType
 {
-	LEVELNPC, // npcs found in a level
-	PUTNPC,   // npcs created via script (putnpc), is this needed still?
-	DBNPC     // npcs created in RC (Database-NPCs)
+	/// @brief NPC stored in the level.
+	LEVEL,
+
+	/// @brief NPC stored in the database.
+	DATABASE
 };
+
+inline constexpr std::string_view NPCTYPE_LOCAL = "LOCALN"sv;
+inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------
 
@@ -184,7 +188,7 @@ class NPC
 	friend class FlatFileNPCLoader;
 
 public:
-	NPC(NPCID id, NPCType type);
+	NPC(NPCID id, NPCStorageType storageType);
 	~NPC() = default;
 
 public:
@@ -295,7 +299,7 @@ public:
 
 public:
 	const NPCID id;
-	const NPCType type;
+	const NPCStorageType storageType;
 	std::string name;
 	std::string image;
 	std::weak_ptr<Level> level;
@@ -312,10 +316,10 @@ public:
 	std::array<clock::time_point, NPCPROP_COUNT> modTime;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	ScriptContainer scripting;
+	std::string scripter;
+	std::string scriptType;
 
 private:
-	BabyDI_INJECT(Server, m_server);
-
 	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;
 	bool m_blockPositionUpdates = false;
 
@@ -327,8 +331,6 @@ private:
 	Character m_initialCharacter;
 
 	std::string m_weaponName;
-	std::string m_npcScripter;
-	std::string m_npcScriptType;
 };
 
 using NPCPtr = std::shared_ptr<NPC>;
@@ -394,9 +396,9 @@ inline void NPC::recordCurrentPropModTime()
 	DO(NPCProp::GATTRIB8,	PropertyString,				character.ganiAttributes[7]) \
 	DO(NPCProp::GATTRIB9,	PropertyString,				character.ganiAttributes[8]) \
 	DO(NPCProp::UNKNOWN48,	PropertyVoid) \
-	DO(NPCProp::SCRIPTER,	PropertyString,				m_npcScripter) \
+	DO(NPCProp::SCRIPTER,	PropertyString,				scripter) \
 	DO(NPCProp::NAME,		PropertyString,				name) \
-	DO(NPCProp::TYPE,		PropertyString,				m_npcScriptType) \
+	DO(NPCProp::TYPE,		PropertyString,				scriptType) \
 	DO(NPCProp::CURLEVEL,	PropertyString,				getLevelName()) \
 	DO(NPCProp::GATTRIB10,	PropertyString,				character.ganiAttributes[9]) \
 	DO(NPCProp::GATTRIB11,	PropertyString,				character.ganiAttributes[10]) \

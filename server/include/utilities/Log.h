@@ -225,8 +225,8 @@ void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto&& range)
 
 struct Profile
 {
-	Profile(Log& log, std::string_view message)
-		: m_log(log), m_message(message), m_start(std::chrono::high_resolution_clock::now())
+	Profile(Log& log, std::string_view message, std::string_view format = "[Profile] {} took {:0.6} ms.")
+		: m_log(log), m_message(message), m_format(format), m_start(std::chrono::high_resolution_clock::now())
 	{}
 
 	~Profile() noexcept
@@ -236,11 +236,12 @@ struct Profile
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration_ns = double_nano(end - m_start);
 		auto duration_ms = std::chrono::duration_cast<double_milli>(duration_ns);
-		printLine(m_log, "[Profile] {} took {:0.6} ms.", m_message, duration_ms.count());
+		printLine(m_log, m_format, m_message, duration_ms.count());
 	}
 
 	Log& m_log;
 	std::string m_message;
+	std::string m_format;
 	std::chrono::high_resolution_clock::time_point m_start;
 };
 

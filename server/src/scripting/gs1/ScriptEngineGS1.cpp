@@ -3,7 +3,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string_view>
-#include <string>
 #include <utility>
 
 #include <ANTLRInputStream.h>
@@ -133,7 +132,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view script)
 	return result;
 }
 
-bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context)
+bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context)
 {
 	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
 	if (wrapper == nullptr)
@@ -142,18 +141,15 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 	auto* server = BabyDI::Get<Server>();
 	auto& [source_id, source_type] = source;
 
-	if (source_type != ScriptObjectSourceType::NPC)
-		throw std::invalid_argument("GS1 scripts can only be executed from NPCs.");
-
-	NPCPtr source_npc = server->getNPC(source_id);
-	if (source_npc == nullptr)
-		return false;
+	if (source_type != ScriptObjectSourceType::NPC && source_type != ScriptObjectSourceType::WEAPON)
+		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
 
 	PlayerClientPtr player = nullptr;
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
 
 	// Set the built-in store.
+	wrapper->variables.clearTemporary();
 	wrapper->visitor->builtInStore = &wrapper->variables;
 
 	// Get whatever links we can.
@@ -167,6 +163,7 @@ bool ScriptEngineGS1::execute(const ScriptEvent& event, ScriptObjectSource sourc
 		level = npc->level.lock();
 
 	// Set flags.
+	setCustomEventFlags(event, wrapper->variables);
 	setEventFlags(event.type, wrapper->variables);
 	setPlayerFlags(wrapper->variables, npc, player);
 	setNPCFlags(wrapper->variables, npc);

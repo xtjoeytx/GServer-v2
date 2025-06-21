@@ -9,6 +9,7 @@
 #include <string_view>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <BabyDI.h>
 #include <CString.h>
@@ -83,7 +84,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		id = server->m_npcIdGenerator.getAvailableId(NPCID_GEN_DATABASE);
 
 	// Make the NPC.
-	auto npc = std::make_shared<NPC>(id, NPCType::DBNPC);
+	auto npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
 	// Set the default warp type.
 	if (server->hasNPCServer())
@@ -116,10 +117,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "ID")
 			; // npc->m_id = strtoint(curLine.readString(""));
 		else if (curCommand == "TYPE")
-			npc->m_npcScriptType = curLine.readString("");
+			npc->scriptType = curLine.readString("");
 		else if (curCommand == "SCRIPTER")
 		{
-			npc->m_npcScripter = curLine.readString("");
+			npc->scripter = curLine.readString("");
 			npc->modTime[PROPID(NPCProp::SCRIPTER)] = updateTime;
 		}
 		else if (curCommand == "IMAGE")
@@ -348,6 +349,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 	}
 
+	// If the NPC is a character, force the shape to be 48x48.
+	if (npc->isCharacter())
+		npc->shape = { 48, 48 };
+
 	// Add the NPC to the server.
 	server->addNPC(npc, false);
 
@@ -368,7 +373,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 {
-	if (npc->type != NPCType::DBNPC)
+	if (npc->storageType != NPCStorageType::DATABASE)
 		return false;
 
 	// TODO(joey): check if properties have been modified before deciding to save
@@ -404,8 +409,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	CString fileData = CString("GRNPC001") << NL;
 	fileData << "NAME " << npc->name << NL;
 	fileData << "ID " << CString(npc->id) << NL;
-	fileData << "TYPE " << npc->m_npcScriptType << NL;
-	fileData << "SCRIPTER " << npc->m_npcScripter << NL;
+	fileData << "TYPE " << npc->scriptType << NL;
+	fileData << "SCRIPTER " << npc->scripter << NL;
 	fileData << "IMAGE " << npc->image << NL;
 	if (npc->imagePart.size.width() > 0 && npc->imagePart.size.height() > 0)
 	{

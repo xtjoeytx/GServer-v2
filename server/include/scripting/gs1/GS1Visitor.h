@@ -11,13 +11,17 @@
 #include <utility>
 #include <vector>
 
-#undef ERROR
 #include <GS1Parser.h>
 #include <GS1ParserBaseVisitor.h>
 #include <tree/ParseTree.h>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+
+namespace preagonal
+{
+class Level;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -40,7 +44,8 @@ public:
 	[[inline]] const ScriptObjectSource& popSource();
 	[[inline]] const void pushSource(ScriptObjectSource source);
 	[[inline]] const ScriptEvent& getEvent() const;
-	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type);
+	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type) const;
+	std::shared_ptr<Level> findCurrentLevel() const;
 
 public:
 	template<ValidGameValue T>

@@ -37,6 +37,9 @@ concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t
 template <typename T>
 concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVariant<T>;
 
+template<typename T>
+concept NotForwardRangeNotString = !ForwardRangeNotString<T>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /// A hash function for strings that can be used with heterogeneous lookups.
@@ -71,6 +74,11 @@ struct string_hash
 struct string_hash_equal
 {
 	using is_transparent = void;
+	[[nodiscard]] bool operator()(const std::string& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	//
 	[[nodiscard]] bool operator()(const char* lhs, const std::string& rhs) const noexcept
 	{
 		return lhs == rhs;
@@ -79,15 +87,72 @@ struct string_hash_equal
 	{
 		return lhs == rhs;
 	}
-	[[nodiscard]] bool operator()(const std::string& lhs, const std::string& rhs) const noexcept
-	{
-		return lhs == rhs;
-	}
 	[[nodiscard]] bool operator()(const CString& lhs, const std::string& rhs) const noexcept
 	{
 		return lhs == rhs;
 	}
 	[[nodiscard]] bool operator()(const size_t& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
+	}
+	//
+	[[nodiscard]] bool operator()(const std::string& lhs, const char* rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string& lhs, const std::string_view& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string& lhs, const CString& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string& lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+};
+
+/// A comparator function for hashes that can be used with heterogeneous lookups.
+struct hash_string_equal
+{
+	using is_transparent = void;
+	[[nodiscard]] bool operator()(const size_t& lhs, const size_t& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	//
+	[[nodiscard]] bool operator()(const char* lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string_view& lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::string& lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+	[[nodiscard]] bool operator()(const CString& lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+	//
+	[[nodiscard]] bool operator()(const size_t& lhs, const char* rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
+	}
+	[[nodiscard]] bool operator()(const size_t& lhs, const std::string_view& rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
+	}
+	[[nodiscard]] bool operator()(const size_t& lhs, const std::string& rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
+	}
+	[[nodiscard]] bool operator()(const size_t& lhs, const CString& rhs) const noexcept
 	{
 		return lhs == string_hash{}(rhs);
 	}

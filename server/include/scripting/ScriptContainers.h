@@ -26,7 +26,9 @@ namespace preagonal
 ////////////////////////////////////////////////////////////////////////////////
 
 class Level;
+class Weapon;
 using LevelPtr = std::shared_ptr<Level>;
+using WeaponPtr = std::shared_ptr<Weapon>;
 
 ////////////////////////////////////////////////////////////
 // GameValue
@@ -302,6 +304,8 @@ struct GameVariable
 	GameVariable() = default;
 	GameVariable(const std::string& name, GameValue&& value)
 		: identifier(name), m_value(std::move(value)) {}
+	GameVariable(set_temporary_t, const std::string& name, GameValue&& value)
+		: identifier(name), temporary(true), m_value(std::move(value)) {}
 	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
 		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
@@ -636,6 +640,9 @@ public:
 	/// @return A GameVariableVariant containing the value of the variable if found, with a stub setter that adds the variable to the store if not found.
 	virtual GameVariableVariant get_or_stub(std::string_view name) noexcept;
 
+	/// @brief Clears all temporary variables from the store.
+	virtual void clearTemporary() noexcept;
+
 	/// @brief Serializes a variable for distribution.
 	/// @param name The name of the game variable to serialize.
 	/// @return An optional string that contains the serialized variable.
@@ -664,9 +671,10 @@ private:
 /// @brief Identifies an object type that may be used by a scripting language.
 enum class ScriptObjectSourceType
 {
-	PLAYER,
 	NPC,
+	WEAPON,
 	LEVEL,
+	PLAYER,
 	SERVER
 };
 
@@ -677,18 +685,22 @@ using ScriptObjectSource = std::pair<size_t, ScriptObjectSourceType>;
 
 namespace source
 {
-/// @brief Creates a ScriptObjectSource for a player with the given id.
-constexpr ScriptObjectSource FromPlayer(size_t id)
-{
-	return std::make_pair(id, ScriptObjectSourceType::PLAYER);
-}
 /// @brief Creates a ScriptObjectSource for an NPC with the given id.
 constexpr ScriptObjectSource FromNPC(size_t id)
 {
 	return std::make_pair(id, ScriptObjectSourceType::NPC);
 }
 /// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
+ScriptObjectSource FromWeapon(WeaponPtr weapon);
+
+/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
 ScriptObjectSource FromLevel(LevelPtr level);
+
+/// @brief Creates a ScriptObjectSource for a player with the given id.
+constexpr ScriptObjectSource FromPlayer(size_t id)
+{
+	return std::make_pair(id, ScriptObjectSourceType::PLAYER);
+}
 
 /// @brief Creates a ScriptObjectSource for the server.
 constexpr ScriptObjectSource FromServer()
@@ -731,7 +743,13 @@ public:
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param ...args A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObjectSource initiator, auto&&... args);
+	[[inline]] void addEvent(ScriptEventType type, ScriptObjectSource initiator, string::NotForwardRangeNotString auto&&... args);
+
+	/// @brief Adds an event to the queue with the specified type, initiator, and additional arguments.
+	/// @param type The type of the script event to add.
+	/// @param initiator Who initiated the event.
+	/// @param range A list of additional arguments to be passed with the event.
+	[[inline]] void addEvent(ScriptEventType type, ScriptObjectSource initiator, string::ForwardRangeNotString auto&& range);
 
 private:
 	void addEvent(const ScriptEvent& event);
@@ -748,9 +766,16 @@ inline std::queue<ScriptEvent>& ScriptEventQueue::queue()
 	return m_eventQueue;
 }
 
-inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, auto&&... args)
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, string::NotForwardRangeNotString auto&&... args)
 {
 	ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::forward<decltype(args)>(args)... } };
+	addEvent(std::move(event));
+}
+
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, string::ForwardRangeNotString auto&& range)
+{
+	ScriptEvent event{ .type = type, .initiator = initiator };
+	event.args.append_range(range | std::views::transform([](const auto& arg) -> std::any { return std::any{ arg }; }));
 	addEvent(std::move(event));
 }
 

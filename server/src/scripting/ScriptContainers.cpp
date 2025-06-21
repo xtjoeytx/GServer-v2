@@ -1,5 +1,6 @@
 #include <format>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -8,6 +9,7 @@
 #include <vector>
 
 #include <level/Level.h>
+#include <object/Weapon.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
@@ -19,6 +21,11 @@ namespace preagonal
 
 namespace source
 {
+ScriptObjectSource FromWeapon(WeaponPtr weapon)
+{
+	size_t hash = string::string_hash{}(weapon->name);
+	return std::make_pair(hash, ScriptObjectSourceType::WEAPON);
+}
 ScriptObjectSource FromLevel(LevelPtr level)
 {
 	size_t hash = string::string_hash{}(level->getLevelName());
@@ -288,6 +295,12 @@ void GameVariableStore::stub_new(GameVariable& variable, const GameValue& value)
 {
 	auto new_variable = add(variable.identifier, GameValue{ value });
 	variable.setCallbacks(variable.getCallbackGetter(), {});
+}
+
+void GameVariableStore::clearTemporary() noexcept
+{
+	if (store.empty()) return;
+	std::erase_if(store, [](const auto& pair) { return pair.second->temporary; });
 }
 
 std::optional<std::string> GameVariableStore::serializeModern(std::string_view name) const noexcept

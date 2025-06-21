@@ -9,11 +9,11 @@
 #include <vector>
 
 #include <CString.h>
-#include <BabyDI.h>
 
 #include <level/LevelItem.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,11 +21,12 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+// TODO: Weapon should probably just be inherited from NPC.
 class Server;
 class Weapon
 {
 public:
-	Weapon(LevelItemType itemType) : name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType) {}
+	Weapon(LevelItemType itemType) : name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType), m_checksum(0) {}
 	Weapon(std::string_view name, std::string_view image, std::string_view script);
 	~Weapon() = default;
 
@@ -46,6 +47,10 @@ public:
 public:
 	std::string getJoinedClasses() const;
 	void setJoinedClasses(std::string_view classes);
+	void joinClass(std::string_view className);
+	void leaveClass(std::string_view className);
+
+public:
 	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
 public:
@@ -57,10 +62,9 @@ public:
 	const std::string name;
 	std::string image;
 	clock::time_point modTime;
+	ScriptContainer scripting;
 
 protected:
-	BabyDI_INJECT(Server, m_server);
-
 	LevelItemType m_weaponDefault;
 	Script m_script;
 	uint32_t m_checksum;

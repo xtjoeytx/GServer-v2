@@ -6,9 +6,6 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 
-// Until CString is erased, we have to remove Windows.h includes.
-#undef CALLBACK
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
@@ -40,7 +37,7 @@ public:
 	virtual bool reset() = 0;
 
 public:
-	virtual bool execute(const ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) = 0;
+	virtual bool execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

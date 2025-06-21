@@ -82,7 +82,7 @@ Level::~Level()
 		for (auto& levelNPC: m_npcs)
 		{
 			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
-			if (auto npc = server->getNPC(levelNPC); npc && npc->type == NPCType::LEVELNPC)
+			if (auto npc = server->getNPC(levelNPC); npc && npc->storageType == NPCStorageType::LEVEL)
 				server->deleteNPC(npc, false);
 		}
 		m_npcs.clear();
@@ -285,7 +285,7 @@ bool Level::reload()
 		for (auto it = m_npcs.begin(); it != m_npcs.end();)
 		{
 			auto npc = server->getNPC(*it);
-			if (!npc || npc->type == NPCType::LEVELNPC)
+			if (!npc || npc->storageType == NPCStorageType::LEVEL)
 			{
 				server->deleteNPC(npc, false);
 				it = m_npcs.erase(it);
@@ -545,7 +545,7 @@ void Level::saveLevel(const std::string& filename)
 		auto npc = server->getNPC(npcId);
 
 		// Don't save PUTNPC's or DBNPC's in the level file
-		if (npc->type != NPCType::LEVELNPC)
+		if (npc->storageType != NPCStorageType::LEVEL)
 			continue;
 
 		std::string image = npc->image;

@@ -43,6 +43,7 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerLogin.h>
+#include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -909,12 +910,12 @@ static std::string transformString(const std::string& str)
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::getLevel(const std::string& pLevel)
+std::shared_ptr<Level> Server::getLevel(std::string_view pLevel)
 {
 	return Level::findLevel(pLevel);
 }
 
-std::shared_ptr<Weapon> Server::getWeapon(const std::string& name)
+std::shared_ptr<Weapon> Server::getWeapon(std::string_view name)
 {
 	auto iter = m_weaponList.find(name);
 	if (iter == std::end(m_weaponList))
@@ -941,10 +942,10 @@ FileSystem* Server::getFileSystemByType(CString& type)
 	return &m_filesystem[fs];
 }
 
-std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCType type, bool sendToPlayers)
+std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers)
 {
 	LevelPtr levelPtr = nullptr;
-	if (type == NPCType::LEVELNPC)
+	if (storageType == NPCStorageType::LEVEL)
 	{
 		levelPtr = level.lock();
 		if (levelPtr == nullptr)
@@ -955,7 +956,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	NPCID newId = m_npcIdGenerator.getAvailableId();
 
 	// New NPC
-	auto newNPC = std::make_shared<NPC>(newId, type);
+	auto newNPC = std::make_shared<NPC>(newId, storageType);
 
 	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(newId, newNPC));
@@ -964,7 +965,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// Set the NPC's name.
-	if (type == NPCType::LEVELNPC)
+	if (storageType == NPCStorageType::LEVEL)
 	{
 		std::string npcNamePrefix = std::format("localnpc_{}_{}_", removeExtension(levelPtr->getLevelName()), m_serverTime);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
@@ -1301,6 +1302,25 @@ void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY
 	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(fromX * 2) >> (char)(fromY * 2) >> (char)power >> (int)source->id);
 }
 
+void Server::sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const
+{
+	auto player = getPlayer(toPlayerId);
+	if (player == nullptr)
+		return;
+
+	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(pixelPosition.x() / 8.0f) >> (char)(pixelPosition.y() / 8.0f) << action << "," << params;
+	player->sendPacket(packet);
+}
+
+void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const
+{
+	if (toLevel == nullptr)
+		return;
+
+	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(pixelPosition.x() / 8.0f) >> (char)(pixelPosition.y() / 8.0f) << action << "," << params;
+	sendPacketToLevelArea(packet, toLevel);
+}
+
 /*
 	Packet-Sending Functions
 */
@@ -1569,7 +1589,7 @@ bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
 	return true;
 }
 
-bool Server::NC_DelWeapon(const std::string& pWeaponName)
+bool Server::NC_DelWeapon(std::string_view pWeaponName)
 {
 	// Definitions
 	auto weaponObj = getWeapon(pWeaponName);

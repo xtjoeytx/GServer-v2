@@ -1,10 +1,10 @@
 #ifndef COMMONTYPES_H
 #define COMMONTYPES_H
 
+#include <array>
 #include <chrono>
 #include <concepts>
 #include <cstdint>
-#include <functional>
 #include <ranges>
 #include <string>
 #include <tuple>
@@ -25,10 +25,10 @@ namespace preagonal
 // Aliases
 
 template<class T>
-using string_map = std::unordered_map<std::string, T, string::string_hash, std::equal_to<>>;
+using string_map = std::unordered_map<std::string, T, string::string_hash, string::string_hash_equal>;
 
 template<class T>
-using hash_map = std::unordered_map<size_t, T, string::string_hash, std::equal_to<>>;
+using hash_map = std::unordered_map<size_t, T, string::string_hash, string::hash_string_equal>;
 
 //----------------------------
 // ID types
@@ -132,10 +132,18 @@ struct visit_functions : Ts...
 };
 
 //----------------------------
+// Range helpers
+
+auto toRange(AllSame auto&&... range)
+{
+	return std::array{ std::forward<decltype(range)>(range)... };
+}
+
+//----------------------------
 // Dimensions and Positions
 
 // TODO: Move to somewhere appropriate.
-template <typename T>
+template<typename T>
 struct Position
 {
 	Position() : data(T{}, T{}) {}
@@ -145,7 +153,7 @@ struct Position
 	T y() const { return std::get<1>(data); }
 };
 
-template <typename T>
+template<typename T>
 struct Dimension
 {
 	Dimension() : data(T{}, T{}) {}
@@ -155,7 +163,7 @@ struct Dimension
 	T height() const { return std::get<1>(data); }
 };
 
-template <typename P, typename S>
+template<typename P, typename S>
 struct Rectangle
 {
 	Rectangle() {}
@@ -163,6 +171,13 @@ struct Rectangle
 	Position<P> position{};
 	Dimension<S> size{};
 };
+
+template<typename Pos, typename RectPos, typename RectDim>
+inline constexpr bool positionInRectangle(const Position<Pos>& pos, const Rectangle<RectPos, RectDim>& rect)
+{
+	return pos.x() >= rect.position.x() && pos.x() <= (rect.position.x() + rect.size.width())
+		&& pos.y() >= rect.position.y() && pos.y() <= (rect.position.y() + rect.size.height());
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal

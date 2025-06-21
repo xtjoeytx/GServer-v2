@@ -18,6 +18,7 @@
 #include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/Weapon.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/gs2/ScriptEngineGS2.h>
 #include <scripting/ScriptContainers.h>
@@ -126,11 +127,16 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 		}
 	}
 
-	// Save all player prop mod times and run all player weapon scripts.
+	// Save all player prop mod times.
 	for (auto& [id, player] : m_server->getPlayerList())
 	{
 		player->recordCurrentPropModTime();
-		player->executeEvents(player->events, source::FromPlayer(id));
+	}
+
+	// Run all weapon scripts.
+	for (auto& [name, weapon] : m_server->getWeaponList())
+	{
+		weapon->executeEvents(weapon->scripting.events, source::FromWeapon(weapon));
 	}
 
 	// Run all NPC scripts.
@@ -196,10 +202,11 @@ void NPCServer::loadDatabaseNPCs()
 	auto& npcFileList = npcFS.getFileList();
 	for (const auto& [npcName, fileName] : npcFileList)
 	{
+		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 		auto npc = npcLoader.loadNPC(std::filesystem::path{ fileName.toString()});
 		if (npc)
 		{
-			log::printLine(log::server, "[{}] {}", npc->id, npcName);
+			log::print(log::server, "[{}] {}", npc->id, npcName);
 			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
 			m_globalNPCList[npc->id] = npc;
 		}
@@ -212,9 +219,9 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 {
 	NPCPtr npc = nullptr;
 
-	if (type == "LOCALN")
-		npc = std::make_shared<NPC>(id, NPCType::LEVELNPC);
-	else npc = std::make_shared<NPC>(id, NPCType::DBNPC);
+	if (type == NPCTYPE_LOCAL)
+		npc = std::make_shared<NPC>(id, NPCStorageType::LEVEL);
+	else npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
 	npc->name = name;
 	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, type);

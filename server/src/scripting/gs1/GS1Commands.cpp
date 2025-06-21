@@ -6,6 +6,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string_view>
 #include <string>
@@ -18,11 +19,13 @@
 #include <CString.h>
 #include <IEnums.h>
 
+#include <BabyDI.h>
 #include <Server.h>
 #include <level/LevelBaddy.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
 #include <scripting/gs1/GS1Visitor.h>
@@ -797,15 +800,14 @@ void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 // Hit objects at a location.
 void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto power = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 
 		auto* server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			server->hitObjectsAtPoint({ x, y }, power, npc->level);
+		server->hitObjectsAtPoint({ x, y }, power, level);
 	}
 }
 
@@ -842,6 +844,9 @@ void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	{
 		auto halfhearts = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto npcId = visitor->getOriginalSource().first;
+		if (visitor->getOriginalSource().second != ScriptObjectSourceType::NPC)
+			npcId = 0;
+
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 			server->hitPlayer(player->getId(), halfhearts, player->getX() + 1.5, player->getY() + 2, server->getNPC(npcId));
@@ -891,12 +896,19 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	if (arguments.size() != 1)
 		throw std::invalid_argument("join requires exactly one argument: class.");
 
+	auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->joinClass(class_);
+	}
+	else if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::WEAPON); source.has_value())
+	{
+		auto& weaponList = server->getWeaponList();
+		if (auto weapon = weaponList.find(source.value().first); weapon != weaponList.end())
+			weapon->second->joinClass(class_);
 	}
 }
 
@@ -956,9 +968,15 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // noplayeronwall;
+// Disables onwall checks from detecting players.
 void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("noplayeronwall is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->noPlayerOnWall = true;
+	}
 }
 
 // putbomb power,x,y;
@@ -974,18 +992,12 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (arguments.size() != 3)
 		throw std::invalid_argument("putcomp requires exactly three arguments: baddyname, x, y.");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-
-		auto* server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-		{
-			if (auto level = npc->level.lock(); level != nullptr)
-				level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname));
-		}
+		level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname));
 	}
 }
 
@@ -1014,20 +1026,14 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (arguments.size() != 5)
 		throw std::invalid_argument("putnewcomp requires exactly five arguments: baddyname, x, y, imagefile, and power.");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[3]);
 		auto power = visitor->getGameValueAs<double>(*arguments[4]);
-
-		auto* server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-		{
-			if (auto level = npc->level.lock(); level != nullptr)
-				level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
-		}
+		level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
 	}
 }
 
@@ -1059,15 +1065,8 @@ void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std:
 // Removes all baddies from the level.
 void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
-	{
-		auto* server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-		{
-			if (auto level = npc->level.lock(); level != nullptr)
-				level->removeAllBaddies();
-		}
-	}
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+		level->removeAllBaddies();
 }
 
 // removeexplo index;
@@ -1963,21 +1962,33 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // triggeraction x,y,action,params;
+// Sends out a trigger action.
 void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
-	if (arguments.size() != 4)
-		throw std::invalid_argument("triggeraction requires four arguments.");
+	if (arguments.size() < 3)
+		throw std::invalid_argument("triggeraction requires at least three arguments: x, y, action.");
 
 	auto x = visitor->getGameValueAs<double>(*arguments[0]);
 	auto y = visitor->getGameValueAs<double>(*arguments[1]);
 	auto action = visitor->getGameValueAs<std::string>(*arguments[2]);
-	auto params = visitor->getGameValueAs<std::string>(*arguments[3]);
+	auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([&visitor](GS1ScriptValue* value) { return visitor->getGameValueAs<std::string>(*value); }));
 
 	auto* server = BabyDI::Get<Server>();
-	*/
-
-	throw std::runtime_error("triggeraction is not implemented yet.");
+	if (action == "clientside")
+	{
+		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+			server->sendTriggerAction(source.value().first, 0, { 0, 0 }, action, params);
+	}
+	else
+	{
+		const auto& currentSource = visitor->getCurrentSource();
+		LevelPtr targetLevel = visitor->findCurrentLevel();
+		uint32_t npcId = 0;
+		if (currentSource.second == ScriptObjectSourceType::NPC)
+			npcId = currentSource.first;
+		if (targetLevel != nullptr)
+			server->sendTriggerAction(targetLevel, npcId, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) }, action, params);
+	}
 }
 
 // unfreezeplayer;
