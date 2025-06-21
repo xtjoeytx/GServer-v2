@@ -68,6 +68,8 @@ VAR name=value
 VAR name={value,value}
 */
 
+void setReadOnlyGlobalVariables(GameVariableStore& variableStore);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1
 

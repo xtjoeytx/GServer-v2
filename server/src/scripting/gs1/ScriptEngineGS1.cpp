@@ -17,6 +17,7 @@
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
+#include <scripting/gs1/GS1Variables.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
@@ -117,6 +118,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
+	setReadOnlyGlobalVariables(variables);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
