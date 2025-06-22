@@ -164,9 +164,11 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (npc != nullptr)
 		level = npc->level.lock();
 
-	// Set flags.
-	setCustomEventFlags(event, wrapper->variables);
+	// Set events.
+	setTriggerActionAndCustomEventFlags(event, wrapper->variables);
 	setEventFlags(event.type, wrapper->variables);
+
+	// Set flags.
 	setPlayerFlags(wrapper->variables, npc, player);
 	setNPCFlags(wrapper->variables, npc);
 	setLevelFlags(wrapper->variables, npc, level);

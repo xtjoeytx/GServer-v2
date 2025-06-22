@@ -12,7 +12,7 @@ namespace preagonal::gs1
 ///////////////////////////////////////////////////////////////////////////////
 
 void setEventFlags(ScriptEventType event, GameVariableStore& variableStore);
-void setCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore);
+void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore);
 void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player);
 void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc);
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level);

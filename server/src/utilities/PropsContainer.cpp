@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -604,7 +606,10 @@ uint8_t Limits::applyShieldPower(uint8_t shieldPower)
 
 void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, PropertyContainerGetter getProp)
 {
-	static std::vector<std::tuple<uint8_t, SetResults, std::shared_ptr<PropertyBase>>> sendOrder;
+	// The map allows us to to sort the results by increasing ID order.  If the client receives a prop it doesn't understand, it stops processing them.
+	// This ensures that all the props the client CAN read come before the ones it can't.
+	// Using a map also allows us to avoid duplicates, as the key is the prop ID.
+	static std::map<uint8_t, std::tuple<SetResults, std::shared_ptr<PropertyBase>>, std::less<>> sendOrder;
 
 	// Add all the results to the send order.
 	sendOrder.clear();
@@ -613,28 +618,26 @@ void collectPacketsFromResults(const PropertySendResults& results, CString& outA
 		if (result.resultFlags.test(SetResults::wasInvalid))
 			continue;
 
-		sendOrder.emplace_back(result.propId, result, prop);
+		sendOrder[result.propId] = std::make_tuple(result, prop);
 		for (const auto& additionalPropId : result.resultPropIds)
-			sendOrder.emplace_back(additionalPropId, result, nullptr);
+			sendOrder[additionalPropId] = std::make_tuple(result, nullptr);
 	}
 
-	// Sort by increasing ID order.  If a client recieves a prop it doesn't understand, it stops processing them.
-	// This ensures that all the props the client CAN read come before the ones it can't.
-	std::ranges::sort(sendOrder, [](const auto& left, const auto& right) { return std::get<0>(left) < std::get<0>(right); });
-
 	// Loop through all the sorted results and add them to the buffers.
-	for (const auto& [propId, results, prop] : sendOrder)
+	for (const auto& [propId, resultTuple] : sendOrder)
 	{
+		auto& setResults = std::get<0>(resultTuple);
+
 		// If the prop is not set, just get the prop from the player.
-		std::shared_ptr<PropertyBase> base = prop;
-		if (base == nullptr || results.resultFlags.test(SetResults::getLatestOnSend))
+		std::shared_ptr<PropertyBase> base = std::get<1>(resultTuple);
+		if (base == nullptr || setResults.resultFlags.test(SetResults::getLatestOnSend))
 			base = getProp(propId);
 
-		if (results.resultFlags.test(SetResults::sendToAll))
+		if (setResults.resultFlags.test(SetResults::sendToAll))
 			outAll >> (char)propId << base->serialize();
-		if (results.resultFlags.test(SetResults::sendToLevel))
+		if (setResults.resultFlags.test(SetResults::sendToLevel))
 			outLevel >> (char)propId << base->serialize();
-		if (results.resultFlags.test(SetResults::sendToSource))
+		if (setResults.resultFlags.test(SetResults::sendToSource))
 			outSource >> (char)propId << base->serialize();
 	}
 }

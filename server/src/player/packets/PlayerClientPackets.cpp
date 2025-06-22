@@ -975,6 +975,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f,
 		(float)pPacket.readGUChar() / 2.0f
 	};
+	Position<int16_t> pixelLoc = { static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) };
 
 	// Tokenize the actions.
 	auto actionData = pPacket.readString("").toString();
@@ -985,9 +986,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	// Grab action name.
 	auto actualActionName{ string::trimMutate(string::toLower(actions[0])) };
 
-	// (int)(loc[0]) % 64 == 0.0f, for gmap?
 	// TODO(joey): move into trigger command dispatcher, some use private player vars.
-	// if (loc[0] == 0.0f && loc[1] == 0.0f)
 	{
 		CSettings& settings = m_server->getSettings();
 		if (settings.getBool("triggerhack_execscript", false))
@@ -1221,7 +1220,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (actualActionName.starts_with("server") && m_server->hasNPCServer())
 		{
 			// TODO(Nalin): We really should be sending this to the NPC-Server player, not directly calling the NPC-Server.
-			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), actions);
+			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), actions);
 			return HandlePacketResult::Handled;
 		}
 
@@ -1232,7 +1231,20 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 			// Trigger on level NPCs.
 			if (m_server->hasNPCServer())
-				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::CUSTOM, source::FromPlayer(m_id), level, { static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) }, actions);
+				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), level, pixelLoc, actions);
+
+			// If the event touches players, trigger their weapons.
+			for (const auto& playerId : level->getPlayers())
+			{
+				if (auto player = m_server->getPlayer(playerId, PLTYPE_ANYPLAYER); player != nullptr && positionInRectangle(pixelLoc, player->getBoundingBox()))
+				{
+					for (const auto& weaponName : account.weapons)
+					{
+						if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
+							weapon->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), actions);
+					}
+				}
+			}
 		}
 	}
 

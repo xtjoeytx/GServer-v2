@@ -39,7 +39,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			// triggeraction 0,0,serverside,weaponname,params...;
 			// Triggers on a player's weapons.
 			if (auto weapon = getWeapon(triggerData[1]); weapon != nullptr)
-				weapon->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
+				weapon->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
 		}
 		return true;
 	});
@@ -55,7 +55,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			if (auto npcServer = getNPCServer(); npcServer != nullptr)
 			{
 				if (auto npc = npcServer->getNPCByName(triggerData[1]).lock(); npc != nullptr)
-					npc->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
+					npc->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
 			}
 		}
 		return true;

@@ -1,5 +1,4 @@
 #include <any>
-#include <format>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -59,9 +58,9 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
 }
 
-void setCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
+void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
 {
-	if (event.args.empty())
+	if (event.args.empty() || (event.type != ScriptEventType::TRIGGERACTION && event.type != ScriptEventType::CUSTOM))
 		return;
 
 	std::string action;
@@ -74,10 +73,13 @@ void setCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
 
 	if (!action.empty())
 	{
+		if (event.type == ScriptEventType::TRIGGERACTION)
+			action.insert(0, "action");
+
 		// Set the action flag.
 		// Set both the original action and a lowercased version.
-		variableStore.add(GameVariable{ set_temporary, std::format("action{}", action), true });
-		variableStore.add(GameVariable{ set_temporary, string::toLower(std::format("action{}", action)), true });
+		variableStore.add(GameVariable{ set_temporary, action, true });
+		variableStore.add(GameVariable{ set_temporary, string::toLower(action), true });
 
 		// If there are just two arguments, try to unpack the second argument.
 		if (event.args.size() == 2)

@@ -279,12 +279,16 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 
 bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
 {
+	auto* server = BabyDI::Get<Server>();
+	server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
+
 	sendPropsFromResults(
 		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->getLevelName().toString()),
 		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
 		setPropWith<NPCProp::Y2>(SetBy::SERVER, y)
 		);
 
+	scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
 	return true;
 }
 
@@ -746,27 +750,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (levelPtr == nullptr || !canUpdatePosition)
-				break;
-
-			if (warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
-			{
-				// TODO(Nalin): Clamp the NPC to the level bounds.
-				break;
-			}
-
-			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
-			{
-				auto server = BabyDI::Get<Server>();
-				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
-				if (auto newLevel = server->getLevel(newLevelName); newLevel != nullptr)
-				{
-					result.resultFlags.set(SetResults::sendToAll);
-					levelPtr->removeNPC(id);
-					newLevel->addNPC(id);
-					level = newLevel;
-				}
-			}
+			// Don't do anything.
+			// The X/Y properties will trigger the change in gmap position.
 			break;
 		}
 
@@ -776,27 +761,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (levelPtr == nullptr || !canUpdatePosition)
-				break;
-
-			if (warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
-			{
-				// TODO(Nalin): Clamp the NPC to the level bounds.
-				break;
-			}
-
-			if (auto cmap = levelPtr->getMap(); cmap && cmap->isGmap())
-			{
-				auto server = BabyDI::Get<Server>();
-				auto& newLevelName = cmap->getLevelAt(numProp->value, levelPtr->getMapY());
-				if (auto newLevel = server->getLevel(newLevelName); newLevel != nullptr)
-				{
-					result.resultFlags.set(SetResults::sendToAll);
-					levelPtr->removeNPC(id);
-					newLevel->addNPC(id);
-					level = newLevel;
-				}
-			}
+			// Don't do anything.
+			// The X/Y properties will trigger the change in gmap position.
 			break;
 		}
 
@@ -852,10 +818,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (newLevel == nullptr)
 				break;
 
-			// Tell everybody the change in our level.
-			result.resultFlags.set(SetResults::sendToAll);
-			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
-			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+			// Tell everybody we are moving.
+			server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
 
 			// Remove ourself from the old level.
 			auto oldLevel = level.lock();
@@ -868,10 +832,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), newLevel);
 
 			// Tell NCs about our new position.
-			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id
-				>> (char)NPCProp::NAME << getProp<NPCProp::NAME>().serialize()
-				>> (char)NPCProp::TYPE << getProp<NPCProp::TYPE>().serialize()
-				>> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
+			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
 			server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 			break;
 		}

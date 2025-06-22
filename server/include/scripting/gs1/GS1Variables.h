@@ -68,6 +68,10 @@ VAR name=value
 VAR name={value,value}
 */
 
+/*
+players[index]		On gmaps, it includes players in a 3x3 area around the player.  Probably limited by syncdistancex / syncdistancey.
+*/
+
 void setReadOnlyGlobalVariables(GameVariableStore& variableStore);
 
 ///////////////////////////////////////////////////////////////////////////////
