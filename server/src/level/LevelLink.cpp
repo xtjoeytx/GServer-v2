@@ -75,10 +75,21 @@ Position<int16_t> LevelLink::getDestinationForCharacter(Character& character) co
 	Position<int16_t> result;
 	auto& [x, y] = result.data;
 
-	x = (m_destinationX == "playerx" ? character.pixelX : string::toNumber(m_destinationX));
-	y = (m_destinationY == "playery" ? character.pixelY : string::toNumber(m_destinationY));
+	x = (m_destinationX == "playerx" ? character.pixelX : static_cast<int16_t>(string::toNumber(m_destinationX) * 16));
+	y = (m_destinationY == "playery" ? character.pixelY : static_cast<int16_t>(string::toNumber(m_destinationY) * 16));
 
 	return result;
+}
+
+//----------------------------
+
+bool LevelLink::isProbableMapLink() const
+{
+	if ((m_boundingBox.position.x() == 0 || m_boundingBox.position.x() == 63) && m_boundingBox.size.width() == 1 && m_destinationY == "playery")
+		return true;
+	if ((m_boundingBox.position.y() == 0 || m_boundingBox.position.y() == 63) && m_boundingBox.size.height() == 1 && m_destinationX == "playerx")
+		return true;
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

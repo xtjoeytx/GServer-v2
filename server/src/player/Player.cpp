@@ -23,6 +23,7 @@
 
 #include <Account.h>
 #include <FileSystem.h>
+#include <level/Level.h>
 #include <level/LevelItem.h>
 #include <misc/WordFilter.h>
 #include <network/IPacketHandler.h>
@@ -915,14 +916,10 @@ void Player::setChat(const CString& pChat)
 
 bool Player::deleteFlag(std::string_view flagName, bool sendToPlayer)
 {
-	bool result = account.variables.remove(flagName);
-
 	if (sendToPlayer)
-	{
 		sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
-	}
 
-	return result;
+	return account.variables.remove(flagName);
 }
 
 bool Player::setFlag(std::string_view flagPair, bool sendToPlayers)
@@ -940,16 +937,17 @@ bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 {
 	if (!flagValue.has_value())
 	{
-		account.variables.add(flagName, true);
 		sendPacket(CString() >> (char)PLO_FLAGSET << flagName);
+		account.variables.add(flagName, true);
 	}
 	else
 	{
-		if (flagValue.value().empty())
-			return deleteFlag(flagName, sendToPlayer);
-
-		account.variables.add(flagName, flagValue.value());
 		sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
+
+		std::string flag{ flagName };
+		if (flagValue.value().empty())
+			return deleteFlag(flag, sendToPlayer);
+		account.variables.add(flag, flagValue.value());
 	}
 	return true;
 }
@@ -1046,10 +1044,10 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::setLevel(const CString& pLevelName, time_t modTime)
+bool Player::setLevel(std::shared_ptr<Level> level, time_t modTime)
 {
 	// TODO: Check if level exists.
-	account.level = pLevelName.toString();
+	account.level = level->getLevelName().toString();
 	return true;
 }
 

@@ -292,7 +292,7 @@ public:
 	bool setFlag(std::string_view flagPair, bool sendToPlayers = false);
 	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
 
-	virtual bool setLevel(const CString& pLevelName, time_t modTime = 0);
+	virtual bool setLevel(std::shared_ptr<Level> level, time_t modTime = 0);
 
 	// Socket-Functions
 	void sendPacket(CString pPacket, bool appendNL = true);

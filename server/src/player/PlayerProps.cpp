@@ -428,7 +428,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				result.resultFlags.set(props::SetResults::sendToSource);
 
 				// TODO(Nalin): There could be a race condition on when this packet is sent.  Do we delay until after props are sent to the client?
-				if (level != nullptr && level->isPlayerLeader(m_id))
+				if (!m_server->hasNPCServer() && level != nullptr && level->isPlayerLeader(m_id))
 					sendPacket(CString() >> (char)PLO_ISLEADER);
 
 				/*
@@ -455,8 +455,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					level->removePlayer(m_id);
 					level->addPlayer(m_id);
 
-					auto leader = m_server->getPlayer(level->getPlayers().front());
-					if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+					if (!m_server->hasNPCServer())
+					{
+						auto leader = m_server->getPlayer(level->getPlayers().front());
+						if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+					}
 				}
 
 				m_server->queueNPCEvent(level, ScriptEventType::PLAYERDIES, source::FromPlayer(m_id));
@@ -702,8 +705,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, level->getMapY());
-				setLevel(newLevelName, -1);
-				level = player->getLevel();
+				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+					setLevel(m_server->getLevel(newLevelName), player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}
@@ -720,8 +723,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), numProp->value);
-				setLevel(newLevelName, -1);
-				level = player->getLevel();
+				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
+					setLevel(m_server->getLevel(newLevelName), player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}

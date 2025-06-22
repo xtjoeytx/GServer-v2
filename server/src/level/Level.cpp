@@ -1024,13 +1024,16 @@ bool Level::doTimedEvents()
 	return true;
 }
 
-std::optional<LevelLink*> Level::getLink(int pX, int pY) const
+std::optional<LevelLink*> Level::getLink(const Position<uint8_t>& position, bool excludeOverworld) const
 {
 	for (const auto& link: m_links)
 	{
+		if (excludeOverworld && link->isProbableMapLink())
+			continue;
+
 		auto& bbox = link->getBoundingBox();
-		if ((pX >= bbox.position.x() && pX <= bbox.position.y() + bbox.size.width())
-			&& (pY >= bbox.position.y() && pY <= bbox.position.y() + bbox.size.height()))
+		if ((position.x() >= bbox.position.x() && position.x() <= bbox.position.x() + bbox.size.width())
+			&& (position.y() >= bbox.position.y() && position.y() <= bbox.position.y() + bbox.size.height()))
 		{
 			return std::make_optional(link.get());
 		}

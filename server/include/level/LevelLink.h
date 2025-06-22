@@ -45,6 +45,9 @@ public:
 	[[inline]] void setDestinationX(std::string_view newX);
 	[[inline]] void setDestinationY(std::string_view newY);
 
+public:
+	bool isProbableMapLink() const;
+
 private:
 	std::string m_destinationLevel, m_destinationX, m_destinationY;
 	Rectangle<uint8_t, uint8_t> m_boundingBox;

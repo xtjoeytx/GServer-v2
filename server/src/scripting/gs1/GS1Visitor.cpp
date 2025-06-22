@@ -774,9 +774,9 @@ std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallCont
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
 {
 	if ((bool)getReadOnlyGameValueFromAny(visit(context->expression())))
-		return visit(context->if_true_block());
+		return visit(context->block(0));
 	else
-		return safeVisit(context->else_false_block());
+		return safeVisit(context->block(1));
 }
 
 std::any GS1Visitor::visitForLoop(GS1Parser::ForLoopContext* context)

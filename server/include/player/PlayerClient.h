@@ -88,7 +88,7 @@ public:
 	std::shared_ptr<Level> getLevel() const;
 	std::pair<int, int> getMapPosition() const;
 	bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
-	virtual bool setLevel(const CString& pLevelName, time_t modTime = 0) override;
+	virtual bool setLevel(std::shared_ptr<Level> level, time_t modTime = 0) override;
 	bool sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
 	bool sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
 	bool leaveLevel(bool resetCache = false);
@@ -107,7 +107,11 @@ public:
 	void unfreezePlayer();
 	void sendRPGMessage(std::string_view message);
 	void sendSignMessage(std::string message);
+
+public:
 	void testForTouch(SetResults& result, uint8_t movementDirection);
+	bool testForSigns(SetResults& result, uint8_t movementDirection);
+	bool testForLinks(SetResults& result, uint8_t movementDirection);
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;

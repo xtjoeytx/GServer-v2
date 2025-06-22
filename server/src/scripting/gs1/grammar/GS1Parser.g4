@@ -28,8 +28,8 @@ void add_user_function(std::string funcName, antlr4::tree::ParseTree* treeNode)
 }
 
 program
-	: (statement | block)+
-	| EOF
+	: EOF
+	| (statement | block)+
 	;
 
 block
@@ -118,7 +118,8 @@ assignment
 	;
 
 builtin_command
-	: COMMAND WS*? builtin_command_expression? (TOKEN_COMMA builtin_command_expression?)*	# BuiltInCommand
+	: COMMAND builtin_command_expression (TOKEN_COMMA builtin_command_expression?)*			# BuiltInCommand
+	| COMMAND																				# BuiltInCommand
 	;
 
 builtin_command_expression
@@ -143,15 +144,7 @@ builtin_function
 	;
 
 if_condition
-	: KW_IF TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT if_true_block else_false_block?	# IfCondition
-	;
-
-if_true_block
-	: block
-	;
-
-else_false_block
-	: KW_ELSE block
+	: KW_IF TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT block (KW_ELSE block)?			# IfCondition
 	;
 
 for_loop

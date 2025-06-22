@@ -1160,7 +1160,7 @@ void NPC::joinClass(std::string_view className)
 	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
 	if (scriptClass.expired())
 	{
-		log::print(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+		log::printLine(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
 		return;
 	}
 
@@ -1316,12 +1316,13 @@ void NPC::testForLinks(SetResults& result)
 	// Overworld links.
 	// We test the NPC's x/y position to see if they walked out of the bounds of the current map.
 	// If they did, we warp them to the new map, if allowed.
-	if (auto map = levelPtr->getMap(); map)
+	auto map = levelPtr->getMap();
+	if (map != nullptr)
 	{
-		uint32_t gmapPixelX = character.pixelX + 1024 * levelPtr->getMapX();
-		uint32_t gmapPixelY = character.pixelY + 1024 * levelPtr->getMapY();
-		uint8_t mapx = static_cast<uint8_t>(gmapPixelX / 1024);
-		uint8_t mapy = static_cast<uint8_t>(gmapPixelY / 1024);
+		uint32_t mapPixelX = character.pixelX + 1024 * levelPtr->getMapX();
+		uint32_t mapPixelY = character.pixelY + 1024 * levelPtr->getMapY();
+		uint8_t mapx = static_cast<uint8_t>(mapPixelX / 1024);
+		uint8_t mapy = static_cast<uint8_t>(mapPixelY / 1024);
 
 		if (levelPtr->getMapX() != mapx || levelPtr->getMapY() != mapy)
 		{
@@ -1330,8 +1331,8 @@ void NPC::testForLinks(SetResults& result)
 				if (auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy)); newLevel != nullptr)
 				{
 					level = newLevel;
-					character.pixelX = gmapPixelX % 1024;
-					character.pixelY = gmapPixelY % 1024;
+					character.pixelX = mapPixelX % 1024;
+					character.pixelY = mapPixelY % 1024;
 					informNPCWarped();
 				}
 			}
@@ -1348,9 +1349,8 @@ void NPC::testForLinks(SetResults& result)
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
 	{
 		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
-
-		auto linkTouched = levelPtr->getLink((int)(character.pixelX / 16) + touchTest[character.direction].x(), (int)(character.pixelY / 16) + touchTest[character.direction].y());
-		if (linkTouched)
+		Position<uint8_t> testPos{ (uint8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (uint8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
+		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
 			{

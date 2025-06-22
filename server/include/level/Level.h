@@ -311,7 +311,7 @@ public:
 	bool doTimedEvents();
 
 	std::optional<LevelChest*> getChest(int x, int y) const;
-	std::optional<LevelLink*> getLink(int pX, int pY) const;
+	std::optional<LevelLink*> getLink(const Position<uint8_t>& position, bool excludeOverworld = false) const;
 	CString getChestStr(LevelChest* chest) const;
 	bool hasLivingBaddies() const;
 

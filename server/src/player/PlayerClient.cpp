@@ -1084,14 +1084,19 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 	// If we are warping to the same level, just update the player's location.
 	if (currentLevel != nullptr && newLevel == currentLevel)
 	{
-		setPropsFromPacket(CString() >> (char)PlayerProp::X >> (char)(pX * 2) >> (char)PlayerProp::Y >> (char)(pY * 2), props::SetBy::SERVER);
+		sendPropsFromResults(
+			setPropWith<PlayerProp::X>(props::SetBy::SERVER, (int16_t)(pX * 16)),
+			setPropWith<PlayerProp::Y>(props::SetBy::SERVER, (int16_t)(pY * 16))
+		);
 		return true;
 	}
 
-	// Find the unstickme level.
-	auto unstickLevel = Level::findLevel(settings.getStr("unstickmelevel", "onlinestartlocal.nw"), m_server);
-	float unstickX = settings.getFloat("unstickmex", 30.0f);
-	float unstickY = settings.getFloat("unstickmey", 35.0f);
+	// Check if the new level exists.
+	if (newLevel == nullptr)
+	{
+		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
+		return false;
+	}
 
 	// See if the new level is on a gmap.
 	m_pmap.reset();
@@ -1103,38 +1108,33 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 	account.character.pixelX = pX * 16;
 	account.character.pixelY = pY * 16;
 
-	// Try warping to the new level.
-	bool warpSuccess = setLevel(pLevelName, modTime);
-	if (!warpSuccess)
+	// Tell the client their new level.
+	// TODO(Nalin): Need to refactor all of this for the NPC-Server.
+	//if (modTime == 0 || m_versionId < CLVER_2_1 || (m_server->hasNPCServer() && !m_server->getSettings().getBool("clientsidelinks", false)))
 	{
-		// Failed, so try warping back to our old level.
-		bool warped = true;
-		if (currentLevel == nullptr) warped = false;
+		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
+			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
 		else
-		{
-			account.character.pixelX = oldX * 16;
-			account.character.pixelY = oldY * 16;
-			m_pmap = currentLevel->getMap();
-			warped = setLevel(currentLevel->getLevelName());
-		}
-		if (!warped)
-		{
-			// Failed, so try warping to the unstick level.  If that fails, we disconnect.
-			if (unstickLevel == 0) return false;
-
-			// Try to warp to the unstick me level.
-			account.character.pixelX = unstickX * 16;
-			account.character.pixelY = unstickY * 16;
-			m_pmap = unstickLevel->getMap();
-			if (!setLevel(unstickLevel->getLevelName()))
-				return false;
-		}
+			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << pLevelName);
 	}
 
-	// TODO(Nalin): Should this happen on any warp?  Should it only trigger the player's weapons?
-	// m_server->queueNPCEvent(m_currentLevel.lock(), ScriptEventType::WARPED, source::FromPlayer(m_id));
+	// Set the level.
+	setLevel(newLevel, modTime);
 
-	return warpSuccess;
+	// Tell the player their current map position.
+	sendPropsFromResults(
+		setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, newLevel->getMapX()),
+		setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, newLevel->getMapY())
+	);
+
+	// TODO(Nalin): Should this happen on any warp?  Should it only trigger the player's weapons?
+	for (const auto& weaponName : account.weapons)
+	{
+		if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
+			weapon->scripting.events.addEvent(ScriptEventType::WARPED, source::FromPlayer(m_id));
+	}
+
+	return true;
 }
 
 std::shared_ptr<Level> PlayerClient::getLevel() const
@@ -1156,29 +1156,21 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 	return {};
 }
 
-bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
+bool PlayerClient::setLevel(std::shared_ptr<Level> level, time_t modTime)
 {
-	// Open Level
-	auto newLevel = Level::findLevel(pLevelName, m_server);
-	if (newLevel == nullptr)
-	{
-		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
-		return false;
-	}
-
 	leaveLevel();
-	m_currentLevel = newLevel;
+	m_currentLevel = level;
 
 	// Check if the level is a singleplayer level.
 	// If so, see if we have been there before.  If not, duplicate it.
-	if (newLevel->isSingleplayer())
+	if (level->isSingleplayer())
 	{
-		auto nl = (m_singleplayerLevels.find(newLevel->getLevelName()) != m_singleplayerLevels.end() ? m_singleplayerLevels[newLevel->getLevelName()] : nullptr);
+		auto nl = (m_singleplayerLevels.find(level->getLevelName()) != m_singleplayerLevels.end() ? m_singleplayerLevels[level->getLevelName()] : nullptr);
 		if (nl == nullptr)
 		{
-			newLevel = newLevel->clone();
-			m_currentLevel = newLevel;
-			m_singleplayerLevels[newLevel->getLevelName()] = newLevel;
+			level = level->clone();
+			m_currentLevel = level;
+			m_singleplayerLevels[level->getLevelName()] = level;
 		}
 		else
 			m_currentLevel = nl;
@@ -1190,18 +1182,18 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 		if (!m_levelGroup.isEmpty())
 		{
 			// If any players are in this level, they might have been cached on the client.  Solve this by manually removing them.
-			auto& plist = newLevel->getPlayers();
+			auto& plist = level->getPlayers();
 			for (auto id : plist)
 			{
 				auto p = m_server->getPlayer(id);
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId()
-					>> (char)PlayerProp::CURLEVEL >> (char)(newLevel->getLevelName().length() + 1 + 7) << newLevel->getLevelName() << ".unknown"
+					>> (char)PlayerProp::CURLEVEL >> (char)(level->getLevelName().length() + 1 + 7) << level->getLevelName() << ".unknown"
 					>> (char)PlayerProp::X << p->getProp<PlayerProp::X>().serialize()
 					>> (char)PlayerProp::Y << p->getProp<PlayerProp::Y>().serialize());
 			}
 
 			// Set the correct level now.
-			const auto& levelName = newLevel->getLevelName();
+			const auto& levelName = level->getLevelName();
 			auto& groupLevels = m_server->getGroupLevels();
 			auto [start, end] = groupLevels.equal_range(levelName.toString());
 			while (start != end)
@@ -1218,44 +1210,35 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 			}
 			if (start == end)
 			{
-				newLevel = newLevel->clone();
-				m_currentLevel = newLevel;
-				newLevel->setLevelName(levelName);
-				groupLevels.insert(std::make_pair(levelName.toString(), newLevel));
+				level = level->clone();
+				m_currentLevel = level;
+				level->setLevelName(levelName);
+				groupLevels.insert(std::make_pair(levelName.toString(), level));
 			}
 		}
 	}
 
 	// Add myself to the level playerlist.
-	newLevel->addPlayer(m_id);
-	account.level = newLevel->getLevelName().toStringView();
-
-	// Tell the client their new level.
-	if (modTime == 0 || m_versionId < CLVER_2_1)
-	{
-		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
-		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << account.level);
-	}
+	level->addPlayer(m_id);
+	account.level = level->getLevelName().toStringView();
 
 	// Send the level now.
 	bool succeed = true;
 	if (m_versionId >= CLVER_2_1)
-		succeed = sendLevel(newLevel, modTime, false);
+		succeed = sendLevel(level, modTime, false);
 	else
-		succeed = sendLevel141(newLevel, modTime, false);
+		succeed = sendLevel141(level, modTime, false);
 
 	if (!succeed)
 	{
 		leaveLevel();
-		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->getLevelName());
 		return false;
 	}
 
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
-	if (newLevel->isSparringZone() && account.character.ap == 100)
+	if (level->isSparringZone() && account.character.ap == 100)
 	{
 		account.apCounter = 1;
 		sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, 99_ui8));
@@ -1283,12 +1266,14 @@ bool PlayerClient::setLevel(const CString& pLevelName, time_t modTime)
 bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent)
 {
 	if (pLevel == nullptr) return false;
-	CSettings& settings = m_server->getSettings();
 
-	// Send Level
-	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+	CSettings& settings = m_server->getSettings();
 	time_t l_time = getCachedLevelModTime(pLevel.get());
 	if (modTime == -1) modTime = pLevel->getModTime();
+	auto map = m_pmap.lock();
+
+	// Send board data.
+	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
 	if (l_time == 0)
 	{
 		if (modTime != pLevel->getModTime())
@@ -1305,9 +1290,16 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			}
 		}
 
-		// Send links, signs, and mod time.
-		sendPacket(CString() << pLevel->getLinksPacket());
-		sendPacket(CString() << pLevel->getSignsPacket(this));
+		// Send links (if applicable).
+		// We need to send links for bigmaps due to the overflow issues.
+		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false) || (map && map->getType() == MapType::BIGMAP))
+			sendPacket(CString() << pLevel->getLinksPacket());
+
+		// Send signs (if applicable).
+		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidesigns", false))
+			sendPacket(CString() << pLevel->getSignsPacket(this));
+
+		// Send the level mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
 	}
 
@@ -1319,8 +1311,6 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		sendPacket(CString() << pLevel->getHorsePacket());
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
-
-	auto map = m_pmap.lock();
 
 	// If we are on a gmap, change our level back to the gmap.
 	if (map && map->getType() == MapType::GMAP)
@@ -1514,10 +1504,13 @@ bool PlayerClient::leaveLevel(bool resetCache)
 	levelp->removePlayer(m_id);
 
 	// Send PLO_ISLEADER to new level leader.
-	if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
+	if (!m_server->hasNPCServer())
 	{
-		auto leader = m_server->getPlayer(levelPlayerList.front());
-		leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+		if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
+		{
+			auto leader = m_server->getPlayer(levelPlayerList.front());
+			leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+		}
 	}
 
 	// If I am carrying an NPC, tell others the NPC left the level.
@@ -1642,26 +1635,20 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	movementDirection %= 4;
 
 	// Test for signs.
-	if (account.character.direction == 0 && movementDirection == 0)
-	{
-		if (auto level = getLevel(); level != nullptr)
-		{
-			for (const auto& sign : level->getSigns())
-			{
-				Position<float> signTilePos = { static_cast<float>(sign->getX()), static_cast<float>(sign->getY()) };
-				if (getY() == signTilePos.y() && getX() >= signTilePos.x() - 1.5f && getX() <= signTilePos.x() + 0.5f)
-					sendSignMessage(sign->getUText().toString());
-			}
-		}
-	}
+	if (testForSigns(result, movementDirection))
+		return;
 
-	// Test for NPC touch.
+	// Set for links.
+	if (testForLinks(result, movementDirection))
+		return;
+
 	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+	Position<int16_t> testPosPixels = { static_cast<int16_t>(account.character.pixelX + touchTest[movementDirection].x()), static_cast<int16_t>(account.character.pixelY + touchTest[movementDirection].y()) };
 	if (auto level = getLevel(); level != nullptr)
 	{
-		Position<int16_t> testPos = { static_cast<int16_t>(account.character.pixelX + touchTest[movementDirection].x()), static_cast<int16_t>(account.character.pixelY + touchTest[movementDirection].y()) };
+		// Test for NPC touch.
 		bool touchedNPC = false;
-		auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPos);
+		auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPosPixels);
 		for (const auto& npcId : intersectingNPCs)
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
@@ -1682,6 +1669,57 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 			}
 		}
 	}
+}
+
+bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
+{
+	if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidesigns", false))
+		return false;
+
+	// Test for signs.
+	if (account.character.direction == 0 && movementDirection == 0)
+	{
+		if (auto level = getLevel(); level != nullptr)
+		{
+			for (const auto& sign : level->getSigns())
+			{
+				Position<float> signTilePos = { static_cast<float>(sign->getX()), static_cast<float>(sign->getY()) };
+				if (getY() == signTilePos.y() && getX() >= signTilePos.x() - 1.5f && getX() <= signTilePos.x() + 0.5f)
+				{
+					sendSignMessage(sign->getUText().toString());
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
+{
+	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+
+	if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false))
+		return false;
+
+	auto level = getLevel();
+	if (level == nullptr)
+		return false;
+
+	// Test for links.
+	auto map = level->getMap();
+	Position<uint8_t> testPosTiles = { (uint8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (uint8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
+	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
+	{
+		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
+		{
+			auto pos = linkTouched.value()->getDestinationForCharacter(account.character);
+			warp(newLevel->getLevelName(), pos.x() / 16.0f, pos.y() / 16.0f, getCachedLevelModTime(newLevel.get()));
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void PlayerClient::dropItemsOnDeath()

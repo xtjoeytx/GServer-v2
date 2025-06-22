@@ -387,12 +387,14 @@ std::format_context::iterator PropertyPixelCoordinate::format(std::format_contex
 
 CString PropertyTileCoordinate::serialize() const
 {
-	return CString() >> (char)(pixelCoordinate / 8);
+	CString result;
+	result.writeGCharUnsafe(pixelCoordinate / 8);
+	return result;
 }
 
 void PropertyTileCoordinate::deserialize(CString& data)
 {
-	pixelCoordinate = data.readGUChar() * 8;
+	pixelCoordinate = static_cast<int16_t>(std::clamp(data.readGChar() * 8, -20 * 16, 84 * 16));
 }
 
 void PropertyTileCoordinate::apply(const GameValue& gameValue)

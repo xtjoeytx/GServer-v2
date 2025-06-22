@@ -187,6 +187,12 @@ nofoldersconfig = false
 # Don't set to true.
 serverside = false
 
+# If true, level signs are sent to players (only takes effect if serverside is true).
+clientsidesigns = false
+
+# If true, level links are sent to players (only takes effect if serverside is true).
+clientsidelinks = false
+
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
 sharefolder = 
