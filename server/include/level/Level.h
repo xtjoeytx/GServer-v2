@@ -310,13 +310,14 @@ public:
 	//! \return Currently, it always returns true.
 	bool doTimedEvents();
 
-	bool hasLivingBaddies() const;
-	bool isOnWall(int pX, int pY);
-	bool isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags = 0);
-	bool isOnWater(int pX, int pY);
 	std::optional<LevelChest*> getChest(int x, int y) const;
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
+	bool hasLivingBaddies() const;
+
+	bool isOnWall(const Position<uint8_t>& tilePosition);
+	bool isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags = 0);
+	bool isOnWater(const Position<uint8_t>& tilePosition);
 	std::vector<NPCID> findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible = false);
 	std::vector<NPCID> findIntersectingNPCs(const Rectangle<int16_t, uint16_t>& area, bool includeInvisible = false);
 	std::vector<NPCID> findIntersectingNPCsForCollision(const Position<int16_t>& position);

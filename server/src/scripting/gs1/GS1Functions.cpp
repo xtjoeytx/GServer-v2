@@ -6,16 +6,20 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <limits>
+#include <map>
 #include <numbers>
 #include <random>
 #include <stdexcept>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
 #include <tree/ParseTree.h>
 
+#include <BabyDI.h>
 #include <IEnums.h>
 
 #include <Server.h>
@@ -25,6 +29,7 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -554,11 +559,42 @@ GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, c
 
 //----------------------------
 
+// findnearestplayer(x, y)
+// Finds the nearest player to the specified position and returns a player source.
 GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function findnearestplayer not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function findnearestplayer requires exactly two arguments");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = visitor->getGameValueAs<double>(*arguments[0]);
+		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+
+		// Find the nearest player.
+		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
+		auto* server = BabyDI::Get<Server>();
+		for (const auto& id : level->getPlayers())
+		{
+			if (auto player = server->getPlayer(id); player != nullptr)
+			{
+				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				if (distance < std::get<1>(nearestPlayer))
+					nearestPlayer = { id, distance };
+			}
+		}
+
+		// Return the closest player.
+		if (std::get<0>(nearestPlayer) != 0)
+			return ScriptObjectSource{ std::get<0>(nearestPlayer), ScriptObjectSourceType::PLAYER };
+	}
+
+	return 0.0;
 }
 
+// findnearestplayers(x, y)
+// Finds all players in the level, orders them by distance from the specified position, and returns a list of player sources.
+// Probably not supported in GS1.
 GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::runtime_error("Built-in function findnearestplayers not implemented");
@@ -571,9 +607,26 @@ GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, co
 	throw std::runtime_error("Built-in function getangle not implemented");
 }
 
+// getareanpcs(x, y, width, height)
+// Returns the indices of all NPCS in the area specified.
 GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function getareanpcs not implemented");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("Built-in function getareanpcs requires exactly four arguments");
+
+	std::vector<double> result;
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+		auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+		auto width = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
+		auto height = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+
+		auto npcs = level->findIntersectingNPCs({ { x, y }, { width, height } }, true);
+		for (auto id : npcs)
+			result.emplace_back(static_cast<double>(id));
+	}
+	return result;
 }
 
 // getdir(dx, dy)
@@ -608,14 +661,79 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 	return 2.0;
 }
 
+// getnearestplayer(x, y)
+// Finds the nearest player to the specified position and returns the player index.
 GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function getnearestplayer not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function getnearestplayer requires exactly two arguments");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = visitor->getGameValueAs<double>(*arguments[0]);
+		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+
+		// Find the nearest player.
+		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
+		auto* server = BabyDI::Get<Server>();
+		for (const auto& id : level->getPlayers())
+		{
+			if (auto player = server->getPlayer(id); player != nullptr)
+			{
+				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				if (distance < std::get<1>(nearestPlayer))
+					nearestPlayer = { id, distance };
+			}
+		}
+
+		// Return the closest player.
+		if (std::get<0>(nearestPlayer) != 0)
+			return static_cast<double>(std::get<0>(nearestPlayer));
+	}
+
+	return 0.0;
 }
 
+// getnearestplayers(x, y, flag)
+// Returns an array of all the level players sorted by how close they are to the specified position, containing the optional flag.
 GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function getnearestplayers not implemented");
+	if (arguments.size() < 2)
+		throw std::invalid_argument("Built-in function getnearestplayers requires two or three arguments");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = visitor->getGameValueAs<double>(*arguments[0]);
+		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+
+		std::string flag;
+		if (arguments.size() > 2)
+			flag = visitor->getGameValueAs<std::string>(*arguments[2]);
+
+		std::map<double, PlayerID> playersByDistance;
+		auto* server = BabyDI::Get<Server>();
+		for (const auto& id : level->getPlayers())
+		{
+			if (auto player = server->getPlayer(id); player != nullptr)
+			{
+				if (!flag.empty() && !player->account.variables.contains(flag))
+					continue;
+
+				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				playersByDistance.emplace(distance, id);
+			}
+		}
+
+		// Construct the player ID array.
+		std::vector<double> playerIds;
+		for (const auto& [distance, id] : playersByDistance)
+			playerIds.push_back(static_cast<double>(id));
+
+		// Return it.
+		return playerIds;
+	}
+
+	return std::vector<double>();
 }
 
 // getnpc(name)
@@ -727,35 +845,89 @@ GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view messageCode, co
 // The level's X position on the map.
 GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function onmapx not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function onmapx requires exactly one argument");
+
+	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
+		return static_cast<double>(levelPtr->getMapX());
+
+	return 0.0;
 }
 
 // onmapy(level)
 // The level's Y position on the map.
 GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function onmapy not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function onmapy requires exactly one argument");
+
+	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto* server = BabyDI::Get<Server>();
+	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
+		return static_cast<double>(levelPtr->getMapY());
+
+	return 0.0;
 }
 
 // onwall(x, y)
 // Checks if the specified X and Y coordinates are on a wall tile.
 GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function onwall not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function onwall requires exactly two arguments");
+
+	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (level->isOnWall({ x, y }))
+			return 1.0;
+	}
+	return 0.0;
 }
 
 // onwall2(x, y, width, height)
 // Checks if the specified rectangle defined by X, Y, width, and height is on a wall tile.
 GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function onwall2 not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function onwall2 requires exactly four arguments");
+
+	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto width = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[2]));
+	auto height = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (level->isOnWall2({ { x, y }, { width, height } }))
+			return 1.0;
+	}
+	return 0.0;
 }
 
 // onwater(x, y)
 // Checks if the specified X and Y coordinates are on a water tile.
 GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function onwater not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function onwater requires exactly two arguments");
+
+	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (level->isOnWater({ x, y }))
+			return 1.0;
+	}
+	return 0.0;
 }
 
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -793,6 +965,21 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 // The index of the baddie at level position (x, y), or -1 if there is no baddie at that position.
 GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testcompu requires exactly two arguments");
+
+	/*
+	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto* server = BabyDI::Get<Server>();
+		// TODO: Need a way to iterate through the level baddies.
+	}
+	return 0.0;
+	*/
+
 	throw std::runtime_error("Built-in function testcompu not implemented");
 }
 
@@ -821,7 +1008,26 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 // The index of the NPC at level position (x, y), or -1 if there is no NPC at that position.
 GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testnpc not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testnpc requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& npcs = level->getNPCs();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < npcs.size(); ++i)
+		{
+			if (auto npc = server->getNPC(npcs[i]); npc != nullptr)
+			{
+				if (positionInRectangle(Position<int16_t>{ x, y }, npc->getBoundingBox()))
+					return static_cast<double>(i);
+			}
+		}
+	}
+	return -1.0;
 }
 
 // testplayer(x, y)
@@ -829,14 +1035,51 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 // -1 is reserved for the current npc if showcharacter is enabled.
 GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testplayer not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testplayer requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& players = level->getPlayers();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < players.size(); ++i)
+		{
+			if (auto player = server->getPlayer(players[i]); player != nullptr)
+			{
+				auto bbox = player->getBoundingBox();
+				if (positionInRectangle(Position<int16_t>{ x, y }, bbox))
+					return static_cast<double>(i);
+			}
+		}
+	}
+	return -2.0;
 }
 
 // testsign(x, y)
 // The index of the sign at level position (x, y), or -1 if there is no sign at that position.
 GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testsign not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& signs = level->getSigns();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < signs.size(); ++i)
+		{
+			auto& sign = signs[i];
+			if (sign->getX() == x && sign->getY() == y)
+				return static_cast<double>(i);
+		}
+	}
+	return -1.0;
 }
 
 // textheight(zoom, font, style)
@@ -864,14 +1107,24 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 // Returns the X component of the vector for the specified direction (0,-1,0,1) for (up, left, down, right).
 GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function vecx not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function vecx requires exactly one argument");
+
+	static double vecValues[] = { 0.0, -1.0, 0.0, 1.0 };
+	auto dir = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	return vecValues[dir];
 }
 
 // vecy(dir)
 // Returns the Y component of the vector for the specified direction (-1,0,1,0) for (up, left, down, right).
 GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function vecy not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function vecy requires exactly one argument");
+
+	static double vecValues[] = { -1.0, 0.0, 1.0, 0.0 };
+	auto dir = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	return vecValues[dir];
 }
 
 // might just be a flag like gravity

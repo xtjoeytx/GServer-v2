@@ -31,6 +31,7 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
@@ -49,6 +50,7 @@ static void fn_addstring(GS1Visitor* visitor, std::string_view commandName, cons
 static void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -109,6 +111,7 @@ static void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, 
 static void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -186,6 +189,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("addweapon"), &fn_addweapon },
 		{ hash("attachplayertoobj"), &fn_attachplayertoobj },
 		{ hash("blockagain"), &fn_blockagain },
+		{ hash("callnpc"), &fn_callnpc },
 		{ hash("canbecarried"), &fn_canbecarried },
 		{ hash("canbepulled"), &fn_canbepulled },
 		{ hash("canbepushed"), &fn_canbepushed },
@@ -246,6 +250,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("saveinfo"), &fn_saveinfo },
 		{ hash("savelog"), &fn_savelog },
 		{ hash("savelog2"), &fn_savelog2 },
+		{ hash("say"), &fn_say },
 		{ hash("say2"), &fn_say2 },
 		{ hash("sendpm"), &fn_sendpm },
 		{ hash("sendrpgmessage"), &fn_sendrpgmessage },
@@ -466,6 +471,36 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 		{
 			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::NOBLOCK);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
+		}
+	}
+}
+
+// callnpc index,eventname,params;
+// Sends an event to an NPC.
+void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("callnpc requires at least two arguments: index and eventname.");
+
+	NPCID sourceNPC = 0;
+	if (visitor->getOriginalSource().second == ScriptObjectSourceType::NPC)
+		sourceNPC = visitor->getOriginalSource().first;
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+		std::vector<std::string> eventAndParams;
+		eventAndParams.emplace_back(visitor->getGameValueAs<std::string>(*arguments[1]));
+		if (arguments.size() > 2)
+			eventAndParams.append_range(string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[2])));
+
+		auto* server = BabyDI::Get<Server>();
+		auto& levelNPCs = level->getNPCs();
+		if (index < levelNPCs.size())
+		{
+			if (auto npc = server->getNPC(levelNPCs[index]); npc != nullptr)
+				npc->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(sourceNPC), eventAndParams);
 		}
 	}
 }
@@ -1186,7 +1221,31 @@ void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::v
 	throw std::runtime_error("savelog2 is not implemented yet.");
 }
 
+// say signindex;
+// Displays the text of a sign at the specified index to the player.
+void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("say requires exactly one argument: signindex.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto signIndex = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		if (signIndex < level->getSigns().size())
+		{
+			auto& sign = level->getSigns()[signIndex];
+			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+			{
+				auto* server = BabyDI::Get<Server>();
+				if (auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+					player->sendSignMessage(sign->getUText().toString());
+			}
+		}
+	}
+}
+
 // say2 message;
+// Displays a custom sign message to the player.
 void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())

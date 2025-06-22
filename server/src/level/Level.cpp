@@ -1024,33 +1024,6 @@ bool Level::doTimedEvents()
 	return true;
 }
 
-bool Level::isOnWall(int pX, int pY)
-{
-	if (pX < 0 || pY < 0 || pX > 63 || pY > 63)
-		return true;
-
-	return tiletypes[getTiles(0)[static_cast<size_t>(pY) * 64 + pX]] >= 20;
-}
-
-bool Level::isOnWall2(int pX, int pY, int pWidth, int pHeight, uint8_t flags)
-{
-	for (int cy = pY; cy < pY + pHeight; ++cy)
-	{
-		for (int cx = pX; cx < pX + pWidth; ++cx)
-		{
-			if (isOnWall(cx, cy))
-				return true;
-		}
-	}
-
-	return false;
-}
-
-bool Level::isOnWater(int pX, int pY)
-{
-	return (tiletypes[getTiles(0)[static_cast<size_t>(pY) * 64 + pX]] == 11);
-}
-
 std::optional<LevelLink*> Level::getLink(int pX, int pY) const
 {
 	for (const auto& link: m_links)
@@ -1191,6 +1164,33 @@ bool Level::hasLivingBaddies() const
 			return true;
 	}
 	return false;
+}
+
+bool Level::isOnWall(const Position<uint8_t>& tilePosition)
+{
+	if (tilePosition.x() > 63 || tilePosition.y() > 63)
+		return true;
+
+	return tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] >= 20;
+}
+
+bool Level::isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags)
+{
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
+	{
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
+		{
+			if (isOnWall({ cx, cy }))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+bool Level::isOnWater(const Position<uint8_t>& tilePosition)
+{
+	return (tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] == 11);
 }
 
 std::vector<NPCID> Level::findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible)
