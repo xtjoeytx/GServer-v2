@@ -283,6 +283,8 @@ public:
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 	bool isCharacter() const noexcept { return image == "#c#"; }
+	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
+	[[inline]] Rectangle<int16_t, uint16_t> getCollisionBoundingBox() const noexcept;
 	std::string getLevelName() const;
 	std::vector<std::string> getVariableDump() const;
 
@@ -296,6 +298,10 @@ public:
 
 	/// @brief Resets the NPC to its initial state.
 	void resetToInitialState();
+
+public:
+	void testForLinks(SetResults& result);
+	void testForTouch(SetResults& result);
 
 public:
 	const NPCID id;
@@ -341,6 +347,20 @@ using NPCWeakPtr = std::weak_ptr<NPC>;
 inline void NPC::recordCurrentPropModTime()
 {
 	m_savedModTime = modTime;
+}
+
+inline Rectangle<int16_t, uint16_t> NPC::getBoundingBox() const noexcept
+{
+	return { { character.pixelX, character.pixelY }, shape };
+}
+
+inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcept
+{
+	// Character NPCs have a specific bounding box.
+	if (isCharacter())
+		return { { character.pixelX + 8, character.pixelY + 16 }, { 32, 32 } };
+
+	return { { character.pixelX, character.pixelY }, shape };
 }
 
 //----------------------------

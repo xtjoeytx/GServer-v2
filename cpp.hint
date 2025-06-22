@@ -1,3 +1,6 @@
 #define BabyDI_INJECT(c,v)
 #define BabyDI_PROVIDE(c,v)
 #define SCRIPTENV_D(x, y)
+#define SETPROP_RETURN_ERROR
+#define FOR_LIST_OF_NPC_PROPS(DO)
+#define FOR_LIST_OF_PLAYER_PROPS(DO)

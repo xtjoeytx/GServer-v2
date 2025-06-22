@@ -3,8 +3,15 @@
 
 #include <memory>
 #include <vector>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <tuple>
 
 #include <CString.h>
+
+#include <object/Character.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -22,30 +29,25 @@ public:
 	CString getLinkStr() const;
 	void parseLinkStr(const std::vector<CString>& pLink);
 
-	// get private variables
-	inline CString getNewLevel() const;
-	inline CString getNewX() const;
-	inline CString getNewY() const;
-	inline int getX() const;
-	inline int getY() const;
-	inline int getWidth() const;
-	inline int getHeight() const;
+public:
+	[[inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
+	[[inline]] void setX(uint8_t posX = 0);
+	[[inline]] void setY(uint8_t posY = 0);
+	[[inline]] void setWidth(uint8_t width = 0);
+	[[inline]] void setHeight(uint8_t height = 0);
 
-	// set private variables
-	inline void setNewLevel(const CString& _newLevel);
-	inline void setNewX(const CString& _newX);
-	inline void setNewY(const CString& _newY);
-	inline void setX(int posX = 0);
-	inline void setY(int posY = 0);
-	inline void setWidth(int _width = 0);
-	inline void setHeight(int _height = 0);
+public:
+	Position<int16_t> getDestinationForCharacter(Character& character) const;
+	[[inline]] const std::string& getDestinationLevel() const;
+	[[inline]] const std::string& getDestinationX() const;
+	[[inline]] const std::string& getDestinationY() const;
+	[[inline]] void setDestinationLevel(std::string_view level);
+	[[inline]] void setDestinationX(std::string_view newX);
+	[[inline]] void setDestinationY(std::string_view newY);
 
 private:
-	CString m_newLevel, m_newX, m_newY;
-	int m_x = 0;
-	int m_y = 0;
-	int m_width = 0;
-	int m_height = 0;
+	std::string m_destinationLevel, m_destinationX, m_destinationY;
+	Rectangle<uint8_t, uint8_t> m_boundingBox;
 	bool m_constantX = false;
 	bool m_constantY = false;
 };
@@ -55,77 +57,60 @@ using LevelLinkPtr = std::shared_ptr<LevelLink>;
 /*
 	LevelLink: Get Private Variables
 */
-inline CString LevelLink::getNewLevel() const
+inline const std::string& LevelLink::getDestinationLevel() const
 {
-	return m_newLevel;
+	return m_destinationLevel;
 }
 
-inline CString LevelLink::getNewX() const
+inline const std::string& LevelLink::getDestinationX() const
 {
-	return m_newX;
+	return m_destinationX;
 }
 
-inline CString LevelLink::getNewY() const
+inline const std::string& LevelLink::getDestinationY() const
 {
-	return m_newY;
+	return m_destinationY;
 }
 
-inline int LevelLink::getX() const
+
+inline const Rectangle<uint8_t, uint8_t>& LevelLink::getBoundingBox() const
 {
-	return m_x;
+	return m_boundingBox;
 }
 
-inline int LevelLink::getY() const
+inline void LevelLink::setDestinationLevel(std::string_view level)
 {
-	return m_y;
+	m_destinationLevel = level;
 }
 
-inline int LevelLink::getWidth() const
+inline void LevelLink::setDestinationX(std::string_view newX)
 {
-	return m_width;
+	m_destinationX = newX;
 }
 
-inline int LevelLink::getHeight() const
+inline void LevelLink::setDestinationY(std::string_view newY)
 {
-	return m_height;
+	m_destinationY = newY;
 }
 
-/*
-	LevelLink: Set Private Variables
-*/
-inline void LevelLink::setNewLevel(const CString& _newLevel)
+inline void LevelLink::setX(uint8_t posX)
 {
-	m_newLevel = _newLevel;
+	std::get<0>(m_boundingBox.position.data) = posX;
 }
 
-inline void LevelLink::setNewX(const CString& _newX)
+inline void LevelLink::setY(uint8_t posY)
 {
-	m_newX = _newX;
+	std::get<1>(m_boundingBox.position.data) = posY;
 }
 
-inline void LevelLink::setNewY(const CString& _newY)
+inline void LevelLink::setWidth(uint8_t width)
 {
-	m_newY = _newY;
+	std::get<0>(m_boundingBox.size.data) = width;
 }
 
-inline void LevelLink::setX(int posX)
+inline void LevelLink::setHeight(uint8_t height)
 {
-	m_x = posX;
-}
-
-inline void LevelLink::setY(int posY)
-{
-	m_y = posY;
-}
-
-inline void LevelLink::setWidth(int _width)
-{
-	m_width = _width;
-}
-
-inline void LevelLink::setHeight(int _height)
-{
-	m_height = _height;
+	std::get<1>(m_boundingBox.size.data) = height;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

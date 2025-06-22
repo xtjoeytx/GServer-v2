@@ -93,19 +93,19 @@ public:
 
 	//! Gets a vector full of all the level chests.
 	//! \return The level chests.
-	std::vector<LevelChestPtr>& getChests() { return m_chests; }
+	auto& getChests() { return m_chests; }
 
 	//! Gets a vector full of the level npc ids.
 	//! \return The level npcs.
-	std::vector<NPCID>& getNPCs() { return m_npcs; }
+	auto& getNPCs() { return m_npcs; }
 
 	//! Gets a vector full of the level signs.
 	//! \return The level signs.
-	std::vector<LevelSignPtr>& getSigns() { return m_signs; }
+	auto& getSigns() { return m_signs; }
 
 	//! Gets a vector full of the level links.
 	//! \return The level links.
-	std::vector<LevelLinkPtr>& getLinks() { return m_links; }
+	auto& getLinks() { return m_links; }
 
 	//! Gets the gmap this level belongs to.
 	//! \return The gmap this level belongs to.
@@ -317,6 +317,10 @@ public:
 	std::optional<LevelChest*> getChest(int x, int y) const;
 	std::optional<LevelLink*> getLink(int pX, int pY) const;
 	CString getChestStr(LevelChest* chest) const;
+	std::vector<NPCID> findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible = false);
+	std::vector<NPCID> findIntersectingNPCs(const Rectangle<int16_t, uint16_t>& area, bool includeInvisible = false);
+	std::vector<NPCID> findIntersectingNPCsForCollision(const Position<int16_t>& position);
+	std::vector<NPCID> findIntersectingNPCsForCollision(const Rectangle<int16_t, uint16_t>& area);
 
 	ScriptContainer scripting;
 

@@ -33,6 +33,7 @@
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
@@ -397,12 +398,10 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 
 			character.pixelX = coordProp->pixelCoordinate;
+			result.resultPropIds.push_back(PROPID(NPCProp::X2));
 
 			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PROPID(NPCProp::X2));
+			testForTouch(result);
 			break;
 		}
 
@@ -416,12 +415,10 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 
 			character.pixelY = coordProp->pixelCoordinate;
+			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
 
 			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
+			testForTouch(result);
 			break;
 		}
 
@@ -435,12 +432,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				break;
 
 			character.pixelZ = zProp->pixelCoordinate;
-
-			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
 			result.resultPropIds.push_back(PROPID(NPCProp::Z2));
+
+			// No collision testing for Z movement.
 			break;
 		}
 
@@ -627,6 +621,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.direction = spriteProp->direction;
 			character.sprite = spriteProp->sprite;
+			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
 			auto server = BabyDI::Get<Server>();
@@ -637,8 +632,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				result.resultPropIds.push_back(PROPID(NPCProp::GANI));
 				//result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 			}
-
-			result.resultFlags.set(SetResults::getLatestOnSend);
 			break;
 		}
 
@@ -945,7 +938,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			character.pixelX = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::X));
 
-			//doTouchTest = true;
+			// Do collision testing.
+			testForTouch(result);
 			break;
 		}
 
@@ -961,7 +955,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			character.pixelY = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
 
-			//doTouchTest = true;
+			// Do collision testing.
+			testForTouch(result);
 			break;
 		}
 
@@ -977,7 +972,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			character.pixelZ = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
 
-			//doTouchTest = true;
+			// Do collision testing.
+			testForTouch(result);
 			break;
 		}
 	}
@@ -1319,6 +1315,100 @@ void NPC::resetToInitialState()
 	{
 		warp(initialLevel, character.pixelX, character.pixelY);
 	}
+}
+
+//----------------------------
+
+void NPC::testForLinks(SetResults& result)
+{
+	auto levelPtr = level.lock();
+	if (levelPtr == nullptr) return;
+
+	auto* server = BabyDI::Get<Server>();
+
+	// The NPC changed their level and position.
+	auto informNPCWarped = [&server, &result, this]()
+	{
+		// Tell NCs about our new position.
+		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
+		server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+
+		// Tell players that we changed level.
+		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), level);
+
+		// Add a scripting event for the warp.
+		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
+	};
+
+	// The NPC only changed their position, not their level.
+	auto informNPCOnlyMoved = [&server, &result, this]()
+	{
+		result.resultPropIds.push_back(PROPID(NPCProp::X));
+		result.resultPropIds.push_back(PROPID(NPCProp::Y));
+		result.resultPropIds.push_back(PROPID(NPCProp::X2));
+		result.resultPropIds.push_back(PROPID(NPCProp::Y2));
+	};
+
+	// TODO: Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
+
+	// Overworld links.
+	// We test the NPC's x/y position to see if they walked out of the bounds of the current map.
+	// If they did, we warp them to the new map, if allowed.
+	if (auto map = levelPtr->getMap(); map)
+	{
+		uint32_t gmapPixelX = character.pixelX + 1024 * levelPtr->getMapX();
+		uint32_t gmapPixelY = character.pixelY + 1024 * levelPtr->getMapY();
+		uint8_t mapx = static_cast<uint8_t>(gmapPixelX / 1024);
+		uint8_t mapy = static_cast<uint8_t>(gmapPixelY / 1024);
+
+		if (levelPtr->getMapX() != mapx || levelPtr->getMapY() != mapy)
+		{
+			if (warpRestrictions != NPCWarpRestrictions::NOTALLOWED)
+			{
+				if (auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy)); newLevel != nullptr)
+				{
+					level = newLevel;
+					character.pixelX = gmapPixelX % 1024;
+					character.pixelY = gmapPixelY % 1024;
+					informNPCWarped();
+				}
+			}
+			else
+			{
+				character.pixelX = std::clamp(character.pixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+				character.pixelY = std::clamp(character.pixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+				informNPCOnlyMoved();
+			}
+			return;
+		}
+	}
+
+	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
+	{
+		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
+
+		auto linkTouched = levelPtr->getLink((int)(character.pixelX / 16) + touchTest[character.direction].x(), (int)(character.pixelY / 16) + touchTest[character.direction].y());
+		if (linkTouched)
+		{
+			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
+			{
+				level = newLevel;
+				auto pos = linkTouched.value()->getDestinationForCharacter(character);
+				character.pixelX = pos.x();
+				character.pixelY = pos.y();
+				informNPCWarped();
+			}
+		}
+	}
+}
+
+void NPC::testForTouch(SetResults& result)
+{
+	if (level.expired())
+		return;
+
+	testForLinks(result);
 }
 
 //----------------------------

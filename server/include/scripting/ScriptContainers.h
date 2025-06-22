@@ -818,7 +818,7 @@ inline constexpr auto only_flags = std::views::filter([](const decltype(GameVari
 // Functions
 ////////////////////////////////////////////////////////////
 
-void stupid_ide()
+inline void stupid_ide()
 {
 	auto not_transitive = std::format("");
 }

@@ -70,7 +70,7 @@ struct SetResults
 	uint8_t propId = 0;
 
 	/// @brief The additional props to send back out as the result of setting this prop.
-	std::inplace_vector<uint8_t, 4> resultPropIds{};
+	std::inplace_vector<uint8_t, 10> resultPropIds{};
 
 	/// @brief The results of the prop set.
 	std::bitset<5> resultFlags{};

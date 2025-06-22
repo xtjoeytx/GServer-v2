@@ -22,6 +22,7 @@
 #include <network/IPacketHandler.h>
 #include <object/Player.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/PropsContainer.h>
 
 using namespace std::literals::string_view_literals;
 
@@ -106,6 +107,7 @@ public:
 	void unfreezePlayer();
 	void sendRPGMessage(std::string_view message);
 	void sendSignMessage(std::string message);
+	void testForTouch(SetResults& result, uint8_t movementDirection);
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
@@ -157,11 +159,6 @@ public:
 	HandlePacketResult msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 
 protected:
-	// Collision detection stuff.
-	bool testSign();
-	void testTouch();
-
-	// Misc.
 	bool spawnLevelItem(CString& pPacket, bool playerDrop = true);
 	bool removeItem(LevelItemType itemType);
 

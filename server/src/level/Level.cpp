@@ -4,6 +4,7 @@
 #include <ctime>
 #include <deque>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <list>
 #include <memory>
@@ -511,9 +512,15 @@ void Level::saveLevel(const std::string& filename)
 
 	for (const auto& link: getLinks())
 	{
-		fileStream << "LINK" << s << link->getNewLevel().text() << s << link->getX() << s << link->getY()
-				   << s << link->getWidth() << s << link->getHeight() << s << link->getNewX().text()
-				   << s << link->getNewY().text() << std::endl;
+		auto& bbox = link->getBoundingBox();
+		fileStream
+			<< std::format("LINK {} {} {} {} {} {} {}",
+				link->getDestinationLevel(),
+				bbox.position.x(), bbox.position.y(),
+				bbox.size.width(), bbox.size.height(),
+				link->getDestinationX(), link->getDestinationY()
+			)
+			<< std::endl;
 	}
 
 	for (const auto& sign: getSigns())
@@ -1048,8 +1055,9 @@ std::optional<LevelLink*> Level::getLink(int pX, int pY) const
 {
 	for (const auto& link: m_links)
 	{
-		if ((pX >= link->getX() && pX <= link->getX() + link->getWidth()) &&
-			(pY >= link->getY() && pY <= link->getY() + link->getHeight()))
+		auto& bbox = link->getBoundingBox();
+		if ((pX >= bbox.position.x() && pX <= bbox.position.y() + bbox.size.width())
+			&& (pY >= bbox.position.y() && pY <= bbox.position.y() + bbox.size.height()))
 		{
 			return std::make_optional(link.get());
 		}
@@ -1183,6 +1191,60 @@ bool Level::hasLivingBaddies() const
 			return true;
 	}
 	return false;
+}
+
+std::vector<NPCID> Level::findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible)
+{
+	return findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible);
+}
+
+std::vector<NPCID> Level::findIntersectingNPCs(const Rectangle<int16_t, uint16_t>& area, bool includeInvisible)
+{
+	std::vector<NPCID> results;
+
+	auto* server = BabyDI::Get<Server>();
+	for (const auto& npcId : m_npcs)
+	{
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		{
+			// If the NPC is invisible and we don't want to include invisible NPCs, skip it.
+			if (!includeInvisible && (npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
+				continue;
+
+			// Check if the NPC intersects with the area.
+			if (rectanglesIntersect(area, npc->getBoundingBox()))
+				results.push_back(npcId);
+		}
+	}
+
+	return results;
+}
+
+std::vector<NPCID> Level::findIntersectingNPCsForCollision(const Position<int16_t>& position)
+{
+	return findIntersectingNPCsForCollision({ { position.x(), position.y() }, { 0, 0 } });
+}
+
+std::vector<NPCID> Level::findIntersectingNPCsForCollision(const Rectangle<int16_t, uint16_t>& area)
+{
+	std::vector<NPCID> results;
+
+	auto* server = BabyDI::Get<Server>();
+	for (const auto& npcId : m_npcs)
+	{
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		{
+			// If the NPC is invisible, skip it.
+			if ((npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
+				continue;
+
+			// Check if the NPC intersects with the area.
+			if (rectanglesIntersect(area, npc->getCollisionBoundingBox()))
+				results.push_back(npcId);
+		}
+	}
+
+	return results;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

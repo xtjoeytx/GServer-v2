@@ -193,6 +193,7 @@ public:
 	float getZ() const { return account.character.pixelZ / 16.0f; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
+	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -499,6 +500,11 @@ inline void Player::setId(PlayerID pId)
 	m_id = pId;
 }
 
+inline Rectangle<int16_t, uint16_t> Player::getBoundingBox() const noexcept
+{
+	return { { account.character.pixelX, account.character.pixelY }, { 48, 48 } };
+}
+
 inline bool Player::inChatChannel(const std::string& channel) const
 {
 	return m_channelList.find(channel) != m_channelList.end();
@@ -544,7 +550,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::ID,			PropertyNumeric<GBYTE2>,	m_id) \
 	DO(PlayerProp::X,			PropertyTileCoordinate,		account.character.pixelX) \
 	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.pixelY) \
-	DO(PlayerProp::SPRITE,		PropertyNumeric<GBYTE1>,	account.character.sprite) \
+	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
 	DO(PlayerProp::CARRYSPRITE,	PropertyNumeric<GBYTE1>,	m_carrySprite) \
 	DO(PlayerProp::CURLEVEL,	PropertyString,				account.level) \

@@ -1633,33 +1633,55 @@ void PlayerClient::sendSignMessage(std::string message)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PlayerClient::testSign()
+void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 {
-	CSettings& settings = m_server->getSettings();
-	if (!settings.getBool("serverside", false)) return true; // TODO: NPC server check instead
+	if (!m_server->hasNPCServer())
+		return;
 
-	// Check for sign collisions.
-	if ((account.character.sprite % 4) == 0)
+	// Don't allow improper directions.
+	movementDirection %= 4;
+
+	// Test for signs.
+	if (account.character.direction == 0 && movementDirection == 0)
 	{
-		auto level = getLevel();
-		if (level)
+		if (auto level = getLevel(); level != nullptr)
 		{
-			const auto& signs = level->getSigns();
-			for (const auto& sign : signs)
+			for (const auto& sign : level->getSigns())
 			{
-				float signLoc[] = { (float)sign->getX(), (float)sign->getY() };
-				if (getY() == signLoc[1] && inrange(getX(), signLoc[0] - 1.5f, signLoc[0] + 0.5f))
+				Position<float> signTilePos = { static_cast<float>(sign->getX()), static_cast<float>(sign->getY()) };
+				if (getY() == signTilePos.y() && getX() >= signTilePos.x() - 1.5f && getX() <= signTilePos.x() + 0.5f)
+					sendSignMessage(sign->getUText().toString());
+			}
+		}
+	}
+
+	// Test for NPC touch.
+	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+	if (auto level = getLevel(); level != nullptr)
+	{
+		Position<int16_t> testPos = { static_cast<int16_t>(account.character.pixelX + touchTest[movementDirection].x()), static_cast<int16_t>(account.character.pixelY + touchTest[movementDirection].y()) };
+		bool touchedNPC = false;
+		auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPos);
+		for (const auto& npcId : intersectingNPCs)
+		{
+			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+			{
+				npc->scripting.events.addEvent(ScriptEventType::PLAYERTOUCHSME, source::FromPlayer(m_id));
+				touchedNPC = true;
+			}
+		}
+		if (touchedNPC)
+		{
+			for (const auto& npcId : level->getNPCs())
+			{
+				if (!std::ranges::contains(intersectingNPCs, npcId))
 				{
-					sendPacket(CString() >> (char)PLO_SAY2 << sign->getUText().replaceAll("\n", "#b"));
+					if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+						npc->scripting.events.addEvent(ScriptEventType::PLAYERTOUCHSOTHER, source::FromPlayer(m_id));
 				}
 			}
 		}
 	}
-	return true;
-}
-
-void PlayerClient::testTouch()
-{
 }
 
 void PlayerClient::dropItemsOnDeath()

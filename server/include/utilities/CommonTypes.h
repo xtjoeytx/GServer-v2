@@ -179,6 +179,12 @@ inline constexpr bool positionInRectangle(const Position<Pos>& pos, const Rectan
 		&& pos.y() >= rect.position.y() && pos.y() <= (rect.position.y() + rect.size.height());
 }
 
+template<typename RectPosL, typename RectDimL, typename RectPosR, typename RectDimR>
+inline constexpr bool rectanglesIntersect(const Rectangle<RectPosL, RectDimL>& left, const Rectangle<RectPosR, RectDimR>& right)
+{
+	return positionInRectangle(left.position, right) || positionInRectangle(right.position, left);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
 

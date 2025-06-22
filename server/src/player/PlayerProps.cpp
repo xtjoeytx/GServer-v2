@@ -324,19 +324,19 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			if (account.character.pixelX == coordProp->pixelCoordinate)
+				break;
+
+			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(coordProp->pixelCoordinate - account.character.pixelX, -1, 1));
 			account.character.pixelX = coordProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
+			result.resultPropIds.push_back(PROPID(PlayerProp::X2));
 
 			if (player != nullptr)
+			{
 				player->setLastMovementTime(time(0));
-
-			// TODO(Nalin): If attached, our X/Y needs to be relative to the attached NPC...
-
-			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PROPID(PlayerProp::X2));
+				player->testForTouch(result, movementDirection);
+			}
 			break;
 		}
 
@@ -346,17 +346,19 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			if (account.character.pixelY == coordProp->pixelCoordinate)
+				break;
+
+			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(coordProp->pixelCoordinate - account.character.pixelY, -1, 1));
 			account.character.pixelY = coordProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Y2));
 
 			if (player != nullptr)
+			{
 				player->setLastMovementTime(time(0));
-
-			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PROPID(PlayerProp::Y2));
+				player->testForTouch(result, movementDirection);
+			}
 			break;
 		}
 
@@ -368,29 +370,38 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			account.character.pixelZ = zProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
 
 			if (player != nullptr)
 				player->setLastMovementTime(time(0));
-
-			// Do collision testing.
-			//doTouchTest = true;
-
-			// Let 2.30+ clients see pre-2.30 movement.
-			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
 			break;
 		}
 
 		case PlayerProp::SPRITE:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
+			PropertySprite* spriteProp = dynamic_cast<PropertySprite*>(base);
+			if (spriteProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			// TODO(NALIN): Generations.
-			account.character.sprite = numProp->value % 4;
+			if (account.character.sprite == spriteProp->sprite && account.character.direction == spriteProp->direction)
+				break;
+
+			bool directionChanged = (account.character.direction != spriteProp->direction);
+			account.character.direction = spriteProp->direction;
+			account.character.sprite = spriteProp->sprite;
+			result.resultFlags.set(SetResults::getLatestOnSend);
+
+			// If we manually set a sprite, change the gani.
+			if (m_server->Generation != ServerGeneration::ORIGINAL && account.character.sprite != 0)
+			{
+				auto gani = std::format("def[{}]", account.character.sprite);
+				result.resultPropIds.push_back(PROPID(PlayerProp::GANI));
+				result.resultFlags.set(SetResults::sendToSource);
+			}
 
 			// Do collision testing.
-			//doTouchTest = true;
+			if (player != nullptr && directionChanged)
+				player->testForTouch(result, account.character.direction);
 			break;
 		}
 
@@ -822,17 +833,19 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			account.character.pixelX = pixelProp->pixelCoordinate;
+			if (account.character.pixelX == pixelProp->pixelCoordinate)
+				break;
 
-			// Let pre-2.30+ clients see 2.30+ movement.
+			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(pixelProp->pixelCoordinate - account.character.pixelX, -1, 1));
+			account.character.pixelX = pixelProp->pixelCoordinate;
+			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::X));
 
-			account.status &= (~PLSTATUS_PAUSED);
-
 			if (player != nullptr)
+			{
 				player->setLastMovementTime(time(0));
-
-			//doTouchTest = true;
+				player->testForTouch(result, movementDirection);
+			}
 			break;
 		}
 
@@ -842,18 +855,19 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			account.character.pixelY = pixelProp->pixelCoordinate;
+			if (account.character.pixelY == pixelProp->pixelCoordinate)
+				break;
 
-			// Let pre-2.30+ clients see 2.30+ movement.
+			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(pixelProp->pixelCoordinate - account.character.pixelY, -1, 1));
+			account.character.pixelY = pixelProp->pixelCoordinate;
+			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
 
-			account.status &= (~PLSTATUS_PAUSED);
-
 			if (player != nullptr)
+			{
 				player->setLastMovementTime(time(0));
-
-			// Do collision testing.
-			//doTouchTest = true;
+				player->testForTouch(result, movementDirection);
+			}
 			break;
 		}
 
@@ -864,17 +878,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			account.character.pixelZ = pixelProp->pixelCoordinate;
-
-			// Let pre-2.30+ clients see 2.30+ movement.
-			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
-
 			account.status &= (~PLSTATUS_PAUSED);
+			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
 
 			if (player != nullptr)
 				player->setLastMovementTime(time(0));
-
-			// Do collision testing.
-			//doTouchTest = true;
 			break;
 		}
 
