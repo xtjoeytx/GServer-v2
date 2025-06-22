@@ -529,7 +529,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 					char top = curLine[5].readChar();
 					short tile = getBase64Position(left) << 6;
 					tile += getBase64Position(top);
-					level->m_tiles[layer][static_cast<size_t>(ii + y) * 64] = tile;
+					level->m_tiles[layer][ii + static_cast<size_t>(y * 64)] = tile;
 				}
 			}
 		}

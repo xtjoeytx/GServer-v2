@@ -1284,7 +1284,8 @@ void NPC::resetToInitialState()
 		prop_set(this, std::nullopt,
 			[this](const GameValue& value, std::optional<size_t>)
 			{
-				timeout = std::chrono::milliseconds(static_cast<int>(value.get<double>().value_or(0.0) * 1000));
+				if (auto* doubleValue = value.get_unsafe<double>(); doubleValue != nullptr)
+					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
 			})
 		});
 	scripting.variables.add(GameVariable{ set_temporary, "sprite",

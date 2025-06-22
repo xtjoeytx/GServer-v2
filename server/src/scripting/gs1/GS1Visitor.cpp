@@ -169,10 +169,6 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	if (builtInStore != nullptr)
 		builtIn = builtInStore->get(identifier);
 
-	// We found a built-in variable, so return it.
-	if (!builtIn.expired())
-		return builtIn;
-
 	// Now look in the original source store.
 	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
 	{
@@ -200,11 +196,12 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 				sourceVar->assign(builtInVar->get<bool>().value_or(false), std::nullopt);
 				return sourceVar;
 			}
-
-			// Sanity check.
-			return builtIn;
 		}
 	}
+
+	// We have a built-in variable, but our original source doesn't have a store, just return it.
+	if (!builtIn.expired())
+		return builtIn;
 
 	// Still nothing?  Just return empty.
 	return {};

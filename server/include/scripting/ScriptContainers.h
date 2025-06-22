@@ -338,6 +338,9 @@ struct GameVariable
 	/// @return True if the GameVariable has a boolean value or a non-empty string value, false otherwise.
 	bool testAsFlag() const;
 
+	/// @brief Updates the GameVariable's value by calling the getter function.
+	void update();
+
 public:
 	/// @brief The identifier of the variable.
 	std::string identifier;
@@ -525,17 +528,19 @@ inline const T* GameVariable::get_unsafe(std::optional<size_t> index) const
 
 inline GameVariable& GameVariable::set(ValidGameValue auto&& value, std::optional<size_t> index)
 {
-	m_value.set(std::forward<decltype(value)>(value), index);
+	auto& gvalue = game_value();
+	gvalue.set(std::forward<decltype(value)>(value), index);
 	if (m_setter) [[unlikely]]
-		m_setter(*this, m_value, index);
+		m_setter(*this, gvalue, index);
 	return *this;
 }
 
 inline GameVariable& GameVariable::assign(ValidGameValue auto&& value, std::optional<size_t> index)
 {
-	m_value.assign(std::forward<decltype(value)>(value), index);
+	auto& gvalue = game_value();
+	gvalue.assign(std::forward<decltype(value)>(value), index);
 	if (m_setter) [[unlikely]]
-		m_setter(*this, m_value, index);
+		m_setter(*this, gvalue, index);
 	return *this;
 }
 
@@ -813,7 +818,10 @@ inline constexpr auto only_flags = std::views::filter([](const decltype(GameVari
 // Functions
 ////////////////////////////////////////////////////////////
 
-
+void stupid_ide()
+{
+	auto not_transitive = std::format("");
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

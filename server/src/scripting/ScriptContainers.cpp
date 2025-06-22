@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <BabyDI.h>
+#include <Server.h>
 #include <level/Level.h>
 #include <object/Weapon.h>
 #include <scripting/ScriptContainers.h>
@@ -90,20 +92,19 @@ bool GameValue::testAsFlag() const
 
 GameVariable::operator double() const
 {
-	auto* value = game_value().get_unsafe<double>();
+	auto* value = m_value.get_unsafe<double>();
 	return (value != nullptr) ? *value : 0.0;
 }
 
 GameVariable::operator std::string() const
 {
-	auto* value = game_value().get_unsafe<std::string>();
+	auto* value = m_value.get_unsafe<std::string>();
 	return (value != nullptr) ? *value : std::string{};
 }
 
 GameVariable::operator bool() const
 {
-	auto& value = game_value();
-	return (bool)value;
+	return (bool)m_value;
 }
 
 GameVariable& GameVariable::operator=(const GameVariable& other)
@@ -134,8 +135,12 @@ GameVariable& GameVariable::operator=(GameVariable&& other) noexcept
 
 bool GameVariable::testAsFlag() const
 {
-	auto& value = game_value();
-	return value.testAsFlag();
+	return m_value.testAsFlag();
+}
+
+void GameVariable::update()
+{
+	m_value = game_value();
 }
 
 //----------------------------
@@ -148,12 +153,12 @@ void GameVariable::setCallbacks(func_get getter, func_set setter)
 
 GameValue& GameVariable::get_underlying()
 {
-	return game_value();
+	return m_value;
 }
 
 const GameValue& GameVariable::get_underlying() const
 {
-	return game_value();
+	return m_value;
 }
 
 //----------------------------
@@ -259,6 +264,7 @@ std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) noexce
 	if (store.empty()) return {};
 	auto it = store.find(name);
 	if (it == store.end()) return {};
+	it->second->update();
 	return it->second;
 }
 
@@ -267,6 +273,7 @@ const std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) 
 	if (store.empty()) return {};
 	auto it = store.find(name);
 	if (it == store.end()) return {};
+	it->second->update();
 	return it->second;
 }
 
@@ -275,7 +282,11 @@ std::weak_ptr<GameVariable> GameVariableStore::get_or_add(std::string_view name)
 	if (!store.empty())
 	{
 		auto it = store.find(name);
-		if (it != store.end()) return it->second;
+		if (it != store.end())
+		{
+			it->second->update();
+			return it->second;
+		}
 	}
 	return add(std::move(name), GameValue{ 0.0 });
 }
@@ -286,7 +297,10 @@ GameVariableVariant GameVariableStore::get_or_stub(std::string_view name) noexce
 	{
 		auto it = store.find(name);
 		if (it != store.end())
+		{
+			it->second->update();
 			return std::weak_ptr<GameVariable>(it->second);
+		}
 	}
 	return GameVariable(std::string{ name }, GameValue{ 0.0 }, nullptr, std::bind(&GameVariableStore::stub_new, this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -338,17 +352,23 @@ std::vector<std::string> GameVariableStore::serialize(std::string_view name) con
 
 void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator)
 {
-	m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
+	auto* server = BabyDI::Get<Server>();
+	if (server != nullptr && server->hasNPCServer())
+		m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
 }
 
 void ScriptEventQueue::addEvent(const ScriptEvent& event)
 {
-	m_eventQueue.push(event);
+	auto* server = BabyDI::Get<Server>();
+	if (server != nullptr && server->hasNPCServer())
+		m_eventQueue.push(event);
 }
 
 void ScriptEventQueue::addEvent(ScriptEvent&& event)
 {
-	m_eventQueue.push(std::move(event));
+	auto* server = BabyDI::Get<Server>();
+	if (server != nullptr && server->hasNPCServer())
+		m_eventQueue.push(std::move(event));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

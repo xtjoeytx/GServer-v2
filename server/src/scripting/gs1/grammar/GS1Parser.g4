@@ -28,7 +28,8 @@ void add_user_function(std::string funcName, antlr4::tree::ParseTree* treeNode)
 }
 
 program
-	: (statement | block)+ EOF
+	: (statement | block)+
+	| EOF
 	;
 
 block
