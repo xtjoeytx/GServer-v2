@@ -757,16 +757,51 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 // Image filename of a player's weapon.
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// TODO(Nalin): #W might not be possible serverside, but #W(index) should be possible.
-	throw std::runtime_error("Message Code #W is registered as a clientside message code");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source->first); player != nullptr)
+		{
+			auto& weaponList = player->account.weapons;
+			if (weaponList.empty())
+				return std::string{};
+
+			int32_t index = 0;
+			if (arguments.size() == 1)
+				index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+			if (index < weaponList.size())
+			{
+				if (auto weapon = server->getWeapon(weaponList[index]); weapon != nullptr)
+					return weapon->image;
+			}
+		}
+	}
+	return std::string{};
 }
 
 // #w | #w(index)  [Read]
 // The name of the player's weapon.
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// TODO(Nalin): #w might not be possible serverside, but #w(index) should be possible.
-	throw std::runtime_error("Message Code #w is registered as a clientside message code");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source->first); player != nullptr)
+		{
+			auto& weaponList = player->account.weapons;
+			if (weaponList.empty())
+				return std::string{};
+
+			int32_t index = 0;
+			if (arguments.size() == 1)
+				index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+			if (index < weaponList.size())
+				return weaponList[index];
+		}
+	}
+	return std::string{};
 }
 
 //----------------------------
