@@ -1820,14 +1820,18 @@ bool PlayerClient::spawnLevelItem(CString& pPacket, bool playerDrop)
 	LevelItemType itemType = LevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
-		auto level = getLevel();
-		if (level->addItem(loc[0], loc[1], itemType))
+		if (removeItem(itemType) || !playerDrop)
 		{
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
-		}
-		else
-		{
-			sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+			if (auto level = getLevel(); level && level->addItem(loc[0], loc[1], itemType))
+			{
+				// TODO(NPCServer): Does 5.1+ really not support this?
+				if (m_server->Generation != ServerGeneration::MODERN)
+					m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
+			}
+			else
+			{
+				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
+			}
 		}
 	}
 
@@ -1838,109 +1842,109 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 {
 	switch (itemType)
 	{
-	case LevelItemType::GREENRUPEE: // greenrupee
-	case LevelItemType::BLUERUPEE:  // bluerupee
-	case LevelItemType::REDRUPEE:   // redrupee
-	case LevelItemType::GOLDRUPEE:  // goldrupee
-	{
-		int gralatsRequired;
-		if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
-		else if (itemType == LevelItemType::REDRUPEE)
-			gralatsRequired = 30;
-		else if (itemType == LevelItemType::BLUERUPEE)
-			gralatsRequired = 5;
-		else
-			gralatsRequired = 1;
-
-		if (account.character.gralats >= gralatsRequired)
+		case LevelItemType::GREENRUPEE: // greenrupee
+		case LevelItemType::BLUERUPEE:  // bluerupee
+		case LevelItemType::REDRUPEE:   // redrupee
+		case LevelItemType::GOLDRUPEE:  // goldrupee
 		{
-			account.character.gralats -= gralatsRequired;
-			return true;
+			int gralatsRequired;
+			if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
+			else if (itemType == LevelItemType::REDRUPEE)
+				gralatsRequired = 30;
+			else if (itemType == LevelItemType::BLUERUPEE)
+				gralatsRequired = 5;
+			else
+				gralatsRequired = 1;
+
+			if (account.character.gralats >= gralatsRequired)
+			{
+				account.character.gralats -= gralatsRequired;
+				return true;
+			}
+
+			return false;
 		}
 
-		return false;
-	}
-
-	case LevelItemType::BOMBS:
-	{
-		if (account.character.bombs >= 5)
+		case LevelItemType::BOMBS:
 		{
-			account.character.bombs -= 5;
-			return true;
+			if (account.character.bombs >= 5)
+			{
+				account.character.bombs -= 5;
+				return true;
+			}
+			return false;
 		}
-		return false;
-	}
 
-	case LevelItemType::DARTS:
-	{
-		if (account.character.arrows >= 5)
+		case LevelItemType::DARTS:
 		{
-			account.character.arrows -= 5;
-			return true;
+			if (account.character.arrows >= 5)
+			{
+				account.character.arrows -= 5;
+				return true;
+			}
+			return false;
 		}
-		return false;
-	}
 
-	case LevelItemType::HEART:
-	{
-		if (account.character.hitpointsInHalves > 2)
+		case LevelItemType::HEART:
 		{
-			account.character.hitpointsInHalves -= 2;
-			return true;
+			if (account.character.hitpointsInHalves > 2)
+			{
+				account.character.hitpointsInHalves -= 2;
+				return true;
+			}
+			return false;
 		}
-		return false;
-	}
 
-	// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
-	// same is true for sword/shield. assuming its true for the weapon-items, but
-	// its currently not tested.
-	case LevelItemType::GLOVE1:
-	case LevelItemType::GLOVE2:
-	{
-		if (account.character.glovePower > 1)
+		// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
+		// same is true for sword/shield. assuming its true for the weapon-items, but
+		// its currently not tested.
+		case LevelItemType::GLOVE1:
+		case LevelItemType::GLOVE2:
 		{
-			account.character.glovePower--;
-			return true;
+			if (account.character.glovePower > 1)
+			{
+				account.character.glovePower--;
+				return true;
+			}
+			return false;
 		}
-		return false;
-	}
 
-	/*
-case LevelItemType::BOW:		// bow
-case LevelItemType::BOMB:		// bomb
-	return false;
+		/*
+		case LevelItemType::BOW:		// bow
+		case LevelItemType::BOMB:		// bomb
+			return false;
 
-case LevelItemType::SUPERBOMB:	// superbomb
-case LevelItemType::FIREBALL:	// fireball
-case LevelItemType::FIREBLAST:	// fireblast
-case LevelItemType::NUKESHOT:	// nukeshot
-case LevelItemType::JOLTBOMB:	// joltbomb
-	return false;
+		case LevelItemType::SUPERBOMB:	// superbomb
+		case LevelItemType::FIREBALL:	// fireball
+		case LevelItemType::FIREBLAST:	// fireblast
+		case LevelItemType::NUKESHOT:	// nukeshot
+		case LevelItemType::JOLTBOMB:	// joltbomb
+			return false;
 
-case LevelItemType::SHIELD:			// shield
-case LevelItemType::MIRRORSHIELD:	// mirrorshield
-case LevelItemType::LIZARDSHIELD:	// lizardshield
-	return false;
+		case LevelItemType::SHIELD:			// shield
+		case LevelItemType::MIRRORSHIELD:	// mirrorshield
+		case LevelItemType::LIZARDSHIELD:	// lizardshield
+			return false;
 
-case LevelItemType::SWORD:			// sword
-case LevelItemType::BATTLEAXE:		// battleaxe
-case LevelItemType::LIZARDSWORD:	// lizardsword
-case LevelItemType::GOLDENSWORD:	// goldensword
-	return false;
+		case LevelItemType::SWORD:			// sword
+		case LevelItemType::BATTLEAXE:		// battleaxe
+		case LevelItemType::LIZARDSWORD:	// lizardsword
+		case LevelItemType::GOLDENSWORD:	// goldensword
+			return false;
 
-case LevelItemType::FULLHEART:	// fullheart
-	return false;
-*/
+		case LevelItemType::FULLHEART:	// fullheart
+			return false;
+		*/
 
-	case LevelItemType::SPINATTACK:
-	{
-		if (account.status & PLSTATUS_HASSPIN)
+		case LevelItemType::SPINATTACK:
 		{
-			account.status &= ~PLSTATUS_HASSPIN;
-			return true;
+			if (account.status & PLSTATUS_HASSPIN)
+			{
+				account.status &= ~PLSTATUS_HASSPIN;
+				return true;
+			}
+			return false;
 		}
-		return false;
-	}
 	}
 
 	return false;

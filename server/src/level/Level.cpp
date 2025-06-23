@@ -34,12 +34,14 @@
 #include <level/Map.h>
 #include <level/tiletypes.h>
 #include <loader/LevelLoader.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -673,7 +675,45 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 
 bool Level::addItem(float pX, float pY, LevelItemType pItem)
 {
-	// TODO(NPCSERVER): Gralat NPC.
+	auto server = BabyDI::Get<Server>();
+	if (server->hasNPCServer())
+	{
+		if (LevelItem::isRupeeType(pItem))
+		{
+			if (server->getNPCServer()->getClass("gralats").expired())
+				return false;
+
+			NPC* gralatNPC = nullptr;
+
+			// Determine the NPC location.
+			float loc[2] = { pX - 0.5f, pY - 1.0f };
+
+			// Find existing rupees, and add to the npc
+			auto pixelX = static_cast<int16_t>((loc[0] - 2) * 16);
+			auto pixelY = static_cast<int16_t>((loc[1] - 2) * 16);
+
+			auto npcList = findIntersectingNPCs({ { pixelX, pixelY }, { 6 * 16, 6 * 16 } });
+			for (auto& npcId : npcList)
+			{
+				if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass("gralats"))
+					gralatNPC = npc.get();
+			}
+
+			// Create a new gralat npc for these rupees
+			if (!gralatNPC)
+			{
+				auto npc = server->addNPC("", "if (created) join gralats;", pX - 0.5f, pY - 1.0f, shared_from_this(), NPCStorageType::LEVEL, true);
+				addNPC(npc);
+				gralatNPC = npc.get();
+			}
+
+			// Update rupees
+			gralatNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, gralatNPC->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(pItem));
+			gralatNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(gralatNPC->id), "updategani");
+		}
+		return false;
+	}
+
 	m_items.push_back(LevelItem(pX, pY, pItem));
 	return true;
 }
