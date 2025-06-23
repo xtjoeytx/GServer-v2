@@ -702,8 +702,7 @@ bool Level::addItem(float pX, float pY, LevelItemType pItem)
 			// Create a new gralat npc for these rupees
 			if (!gralatNPC)
 			{
-				auto npc = server->addNPC("", "if (created) join gralats;", pX - 0.5f, pY - 1.0f, shared_from_this(), NPCStorageType::LEVEL, true);
-				addNPC(npc);
+				auto npc = server->getNPCServer()->addNPC("", "if (created) join gralats;", shared_from_this(), { loc[0], loc[1] });
 				gralatNPC = npc.get();
 			}
 

@@ -1,4 +1,5 @@
 #include <chrono>
+#include <format>
 #include <iterator>
 #include <ranges>
 #include <utility>
@@ -50,14 +51,44 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 
 void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player)
 {
+	if (player == nullptr)
+		return;
+
+	auto* server = BabyDI::Get<Server>();
+
 	// weaponscount
 	variableStore.add(GameVariable{ "weaponscount", [&player](auto) -> GameValue { return static_cast<double>(player->account.weapons.size()); }, {} });
 
 	// playerhurtpower
+
+	// levelorigx / levelorigy
+	variableStore.add(GameVariable{ "levelorigx",
+		[server, &player](auto) -> GameValue
+		{
+			if (auto npc = server->getNPC(player->getAttachedNPC()); npc != nullptr)
+				return -npc->character.pixelX / 16.0;
+			return 0.0;
+		}, {}
+	});
+	variableStore.add(GameVariable{ "levelorigy",
+		[server, &player](auto) -> GameValue
+		{
+			if (auto npc = server->getNPC(player->getAttachedNPC()); npc != nullptr)
+				return -npc->character.pixelY / 16.0;
+			return 0.0;
+		}, {}
+	});
+
+	// all the player property shortcuts
+	for (const auto& [name, variable] : player->scriptObjectParameters)
+		variableStore.add(GameVariable{ set_temporary, std::format("player{}", name), variable.getCallbackGetter(), variable.getCallbackSetter() });
 }
 
-void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+void setLevelVariables(GameVariableStore& variableStore, LevelPtr level)
 {
+	if (level == nullptr)
+		return;
+
 	auto* server = BabyDI::Get<Server>();
 
 	// players
@@ -99,28 +130,16 @@ void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClien
 	// signs
 
 	// board[]
+	variableStore.add(GameVariable{ "board",
+		[&level](auto) -> GameValue
+		{
+			std::vector<double> tiles;
+			tiles.append_range(level->getTiles(0).tiles());
+			return tiles;
+		}, {}
+	});
 
 	// tiles[x,y]
-
-	// paramscount
-
-	// levelorigx / levelorigy
-	variableStore.add(GameVariable{ "levelorigx",
-		[server, &player](auto) -> GameValue
-		{
-			if (auto npc = server->getNPC(player->getAttachedNPC()); npc != nullptr)
-				return -npc->character.pixelX / 16.0;
-			return 0.0;
-		}, {}
-	});
-	variableStore.add(GameVariable{ "levelorigy",
-		[server, &player](auto) -> GameValue
-		{
-			if (auto npc = server->getNPC(player->getAttachedNPC()); npc != nullptr)
-				return -npc->character.pixelY / 16.0;
-			return 0.0;
-		}, {}
-	});
 }
 
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)

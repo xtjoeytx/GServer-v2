@@ -854,7 +854,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			character.pixelX = pixelProp->pixelCoordinate;
-			result.resultPropIds.push_back(PROPID(PlayerProp::X));
+			result.resultPropIds.push_back(PROPID(NPCProp::X));
 
 			// Do collision testing.
 			testForTouch(result);
@@ -868,7 +868,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			character.pixelY = pixelProp->pixelCoordinate;
-			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
+			result.resultPropIds.push_back(PROPID(NPCProp::Y));
 
 			// Do collision testing.
 			testForTouch(result);
@@ -882,7 +882,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			character.pixelZ = pixelProp->pixelCoordinate;
-			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
+			result.resultPropIds.push_back(PROPID(NPCProp::Z));
 
 			// Do collision testing.
 			testForTouch(result);

@@ -217,7 +217,7 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 		name,
 		"1",
 		m_desKey,
-		CString(m_checksum).toString()
+		(CString() >> (long long)m_checksum).toString()
 	};
 	m_header = string::toCSV(headerParts);
 

@@ -91,6 +91,7 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 		carrying           the player carries something
 		carriesblackstone  the player carries a blackstone
 		carriesbush        the player carries a bush
+		carriesnpc         the player carries an npc
 		carriessign        the player carries a sign
 		carriesstone       the player carries a stone
 		carriesvase        the player carries a vase

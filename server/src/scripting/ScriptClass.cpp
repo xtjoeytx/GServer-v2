@@ -49,7 +49,7 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 		name,
 		"1",
 		m_desKey,
-		CString(m_checksum).toString()
+		(CString() >> (long long)m_checksum).toString()
 	};
 	m_header = string::toCSV(headerParts);
 
