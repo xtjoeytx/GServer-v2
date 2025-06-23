@@ -956,13 +956,9 @@ FileSystem* Server::getFileSystemByType(CString& type)
 
 std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers)
 {
-	LevelPtr levelPtr = nullptr;
-	if (storageType == NPCStorageType::LEVEL)
-	{
-		levelPtr = level.lock();
-		if (levelPtr == nullptr)
-			return nullptr;
-	}
+	LevelPtr levelPtr = level.lock();
+	if (storageType == NPCStorageType::LEVEL && levelPtr == nullptr)
+		return nullptr;
 
 	// Get available NPC ID.
 	NPCID newId = m_npcIdGenerator.getAvailableId();
@@ -977,7 +973,6 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// Set the NPC's name.
-	if (storageType == NPCStorageType::LEVEL)
 	{
 		std::string npcNamePrefix = std::format("localnpc_{}_{}_", removeExtension(levelPtr->getLevelName()), m_serverTime);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
@@ -986,8 +981,11 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 		});
 
 		newNPC->name = std::format("{}{}", npcNamePrefix, (count + 1));
-		newNPC->scriptType = NPCTYPE_LOCAL;
 	}
+
+	// Set the script type.
+	if (storageType == NPCStorageType::LEVEL)
+		newNPC->scriptType = NPCTYPE_LOCAL;
 	else newNPC->scriptType = NPCTYPE_OBJECT;
 
 	// Set NPC props.
@@ -997,6 +995,10 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->image = image;
 	newNPC->setScript(script);
 	newNPC->recordInitialState();
+
+	// Add the NPC to the level.
+	if (levelPtr != nullptr)
+		levelPtr->addNPC(newNPC);
 
 	// Created event.
 	if (hasNPCServer())

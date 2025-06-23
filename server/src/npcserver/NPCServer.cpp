@@ -264,6 +264,14 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 	return {};
 }
 
+std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location)
+{
+	auto npc = m_server->addNPC(image, script, location.x(), location.y(), level, NPCStorageType::DATABASE, true);
+	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, NPCTYPE_LOCAL);
+	m_globalNPCList[npc->id] = npc;
+	return npc;
+}
+
 std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location)
 {
 	NPCPtr npc = nullptr;
@@ -281,6 +289,12 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	level->addNPC(npc);
 	m_server->addNPC(npc, true);
 	m_globalNPCList[npc->id] = npc;
+
+	if (type != NPCTYPE_LOCAL)
+	{
+		CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::CURLEVEL>();
+		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
+	}
 
 	return npc;
 }

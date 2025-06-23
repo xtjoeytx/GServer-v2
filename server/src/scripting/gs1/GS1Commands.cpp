@@ -1089,7 +1089,37 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 // putnpc imagefile,scriptfile,x,y;
 void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("putnpc is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("putnpc requires exactly four arguments: imagefile, scriptfile, x, and y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto scriptfile = visitor->getGameValueAs<std::string>(*arguments[1]);
+		auto x = visitor->getGameValueAs<double>(*arguments[2]);
+		auto y = visitor->getGameValueAs<double>(*arguments[3]);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto* fs = server->getFileSystem(FS_FILE); fs != nullptr)
+		{
+			auto filepath = fs->findi(scriptfile);
+			if (!filepath.isEmpty())
+			{
+				auto script = fs->load(filepath);
+				server->addNPC(imagefile, script.toStringView(), x, y, level, NPCStorageType::LEVEL, true);
+				return;
+			}
+		}
+
+		if (server->getSettings().getBool("scripthack_putnpc_class", false) == true)
+		{
+			if (server->getNPCServer()->hasClass(scriptfile))
+			{
+				auto script = std::format("if (created) join {};", scriptfile);
+				server->getNPCServer()->addNPC(imagefile, script, level, { (float)x, (float)y });
+			}
+		}
+	}
 }
 
 // putnpc2 x,y,{ script };
