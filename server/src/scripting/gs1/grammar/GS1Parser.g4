@@ -8,10 +8,39 @@ options
 @parser::header
 {
 // --------------------------------------------------------
+#include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
-#include <optional>
+// --------------------------------------------------------
+}
+
+@parser::context
+{
+// --------------------------------------------------------
+struct string_hash
+{
+	using hash_type = std::hash<std::string_view>;
+	using is_transparent = void;
+
+	[[nodiscard]] size_t operator()(const char* str) const noexcept
+	{
+		return hash_type{}(str);
+	}
+	[[nodiscard]] size_t operator()(const std::string_view& str) const noexcept
+	{
+		return hash_type{}(str);
+	}
+	[[nodiscard]] size_t operator()(const std::string& str) const noexcept
+	{
+		return hash_type{}(str);
+	}
+	[[nodiscard]] size_t operator()(const size_t& hash) const noexcept
+	{
+		return hash;
+	}
+};
 // --------------------------------------------------------
 }
 
@@ -19,10 +48,15 @@ options
 {
 // --------------------------------------------------------
 std::map<std::string, antlr4::tree::ParseTree*> userFunctions;
+std::unordered_set<std::string, string_hash, std::equal_to<>> identifiers;
 // --------------------------------------------------------
 void add_user_function(std::string funcName, antlr4::tree::ParseTree* treeNode)
 {
 	userFunctions.insert_or_assign(funcName, treeNode);
+}
+void add_identifier(std::string identifier)
+{
+	identifiers.insert(identifier);
 }
 // --------------------------------------------------------
 }
@@ -93,9 +127,11 @@ identifier_access
 	;
 
 identifier_value
-	: compound_identifier (TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?		# IdentifierValue
+	: compound_identifier (TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?
+		{add_identifier($compound_identifier.ctx->getText());}								# IdentifierValue
 	| storage_token compound_identifier
-		(TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?							# IdentifierValue
+		(TOKEN_BRACKET_LEFT unary_expression TOKEN_BRACKET_RIGHT)?
+		{add_identifier($compound_identifier.ctx->getText());}								# IdentifierValue
 	;
 
 compound_identifier

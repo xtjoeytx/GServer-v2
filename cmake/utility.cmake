@@ -25,9 +25,16 @@ function(set_default_compiler_options target)
 
 	# Ignore attribute warnings.
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		target_compile_options(${TARGET_NAME} PRIVATE
+		target_compile_options(${target} PRIVATE
 			-Wno-attributes
 		)
+	endif()
+
+	# Debug definitions.
+	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+		target_compile_definitions(${target} PUBLIC DEBUG _DEBUG)
+	else()
+		target_compile_definitions(${target} PUBLIC NDEBUG _NDEBUG)
 	endif()
 
 	# If windows, set the standard defines.

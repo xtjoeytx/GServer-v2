@@ -9,6 +9,7 @@
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -21,34 +22,6 @@ namespace preagonal::gs1
 
 void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 {
-	static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
-	{
-		{ ScriptEventType::CREATED, "created"},
-		{ ScriptEventType::INITIALIZED, "initialized" },
-		{ ScriptEventType::PLAYERLOGIN, "playerlogin"},
-		{ ScriptEventType::PLAYERLOGOUT, "playerlogout" },
-		{ ScriptEventType::PLAYERENTERS, "playerenters" },
-		{ ScriptEventType::PLAYERLEAVES, "playerleaves" },
-		{ ScriptEventType::PLAYERTOUCHSME, "playertouchsme" },
-		{ ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother" },
-		{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
-		{ ScriptEventType::PLAYERCHATS, "playerchats" },
-		{ ScriptEventType::PLAYERDIES, "playerdies" },
-		{ ScriptEventType::PLAYERENDREADING, "playerendreading" },
-		{ ScriptEventType::WEAPONFIRED, "weaponfired" },
-		{ ScriptEventType::FIREDONHORSE, "firedonhorse" },
-		{ ScriptEventType::COMPUSDIED, "compusdied" },
-		{ ScriptEventType::WARPED, "warped" },
-		{ ScriptEventType::NPCWARPED, "npcwarped" },
-		{ ScriptEventType::EXPLODED, "exploded" },
-		{ ScriptEventType::WASHIT, "washit" },
-		{ ScriptEventType::WASSHOT, "wasshot" },
-		{ ScriptEventType::WASPELT, "waspelt" },
-		{ ScriptEventType::TIMEOUT, "timeout" },
-		//
-		{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
-	};
-
 	// Set all our built-in event flags.
 	for (auto& [eventType, flagName] : eventFlagMap)
 		variableStore.add(flagName, event == eventType);

@@ -13,7 +13,6 @@
 #include <GS1Parser.h>
 
 #include <BabyDI.h>
-#include <Server.h>
 #include <level/Level.h>
 #include <object/Character.h>
 #include <object/NPC.h>
@@ -26,6 +25,11 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <Server.h>
+
+#ifdef DEBUG
+#include <utilities/Log.h>
+#endif
 
 using namespace preagonal::gs1::grammar;
 
@@ -150,6 +154,13 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (wrapper == nullptr)
 		return false;
 
+#ifndef DEBUG
+	// If the event is not in the NPC script, don't bother executing it.
+	const auto& eventName = eventFlagMap.at(event.type);
+	if (!wrapper->parser->identifiers.contains(eventName))
+		return false;
+#endif
+
 	auto* server = BabyDI::Get<Server>();
 	auto& [source_id, source_type] = source;
 
@@ -160,10 +171,6 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	NPCPtr npc = nullptr;
 	WeaponPtr weapon = nullptr;
 	LevelPtr level = nullptr;
-
-	// Set the built-in store.
-	wrapper->variables.clearTemporary();
-	wrapper->visitor->builtInStore = &wrapper->variables;
 
 	// Get whatever links we can.
 	if (source_type == ScriptObjectSourceType::PLAYER)
@@ -180,17 +187,6 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (npc != nullptr)
 		level = npc->level.lock();
 
-	// Set events.
-	setTriggerActionAndCustomEventFlags(event, wrapper->variables);
-	setEventFlags(event.type, wrapper->variables);
-
-	// Set flags.
-	setPlayerFlags(wrapper->variables, npc, player);
-	setNPCFlags(wrapper->variables, npc);
-	setLevelFlags(wrapper->variables, npc, level);
-	setWeaponFlags(event, source, wrapper->variables);
-	setOtherFlags(event, source, wrapper->variables, npc, player, level);
-
 	// Determine the "who" for error messages.
 	if (npc != nullptr)
 		wrapper->visitor->who = npc->name;
@@ -201,6 +197,30 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	else
 		wrapper->visitor->who = "unknown";
 
+#ifdef DEBUG
+	// Log some testing stuff.
+	const auto& eventName = eventFlagMap.at(event.type);
+	if (!wrapper->parser->identifiers.contains(eventName))
+	{
+		log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
+		return false;
+	}
+#endif
+
+	// Set the built-in store.
+	wrapper->variables.clearTemporary();
+	wrapper->visitor->builtInStore = &wrapper->variables;
+
+	// Set events.
+	setTriggerActionAndCustomEventFlags(event, wrapper->variables);
+	setEventFlags(event.type, wrapper->variables);
+
+	// Set flags.
+	setPlayerFlags(wrapper->variables, npc, player);
+	setNPCFlags(wrapper->variables, npc);
+	setLevelFlags(wrapper->variables, npc, level);
+	setWeaponFlags(event, source, wrapper->variables);
+	setOtherFlags(event, source, wrapper->variables, npc, player, level);
 	try
 	{
 		// Execute the script.

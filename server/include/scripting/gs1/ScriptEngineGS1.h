@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -16,10 +17,11 @@
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
+#include <scripting/gs1/GS1ErrorListener.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include "scripting/gs1/GS1ErrorListener.h"
+#include <scripting/ScriptTypes.h>
 
 // Forward declare.
 namespace preagonal::gs1::grammar
@@ -70,6 +72,34 @@ inline constexpr std::array<std::string_view, 25> itemNames =
 	"sword"sv, "fullheart"sv, "superbomb"sv, "battleaxe"sv, "goldensword"sv,
 	"mirrorshield"sv, "glove2"sv, "lizardshield"sv, "lizardsword"sv, "goldrupee"sv,
 	"fireball"sv, "fireblast"sv, "nukeshot"sv, "joltbomb"sv, "spinattack"sv
+};
+
+inline static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
+{
+	{ ScriptEventType::CREATED, "created" },
+	{ ScriptEventType::INITIALIZED, "initialized" },
+	{ ScriptEventType::PLAYERLOGIN, "playerlogin" },
+	{ ScriptEventType::PLAYERLOGOUT, "playerlogout" },
+	{ ScriptEventType::PLAYERENTERS, "playerenters" },
+	{ ScriptEventType::PLAYERLEAVES, "playerleaves" },
+	{ ScriptEventType::PLAYERTOUCHSME, "playertouchsme" },
+	{ ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother" },
+	{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
+	{ ScriptEventType::PLAYERCHATS, "playerchats" },
+	{ ScriptEventType::PLAYERDIES, "playerdies" },
+	{ ScriptEventType::PLAYERENDREADING, "playerendreading" },
+	{ ScriptEventType::WEAPONFIRED, "weaponfired" },
+	{ ScriptEventType::FIREDONHORSE, "firedonhorse" },
+	{ ScriptEventType::COMPUSDIED, "compusdied" },
+	{ ScriptEventType::WARPED, "warped" },
+	{ ScriptEventType::NPCWARPED, "npcwarped" },
+	{ ScriptEventType::EXPLODED, "exploded" },
+	{ ScriptEventType::WASHIT, "washit" },
+	{ ScriptEventType::WASSHOT, "wasshot" },
+	{ ScriptEventType::WASPELT, "waspelt" },
+	{ ScriptEventType::TIMEOUT, "timeout" },
+	//
+	{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
