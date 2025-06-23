@@ -206,7 +206,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 
 	// Now look in the original source's store.
 	if (auto* sourceStore = getGameVariableStoreFromSource(getOriginalSource()); sourceStore != nullptr)
-		{
+	{
 		auto sourceStoreResult = sourceStore->get(identifier).lock();
 		switch (mergeWithBuiltInBoolean(sourceStoreResult, builtInResult))
 		{
@@ -784,13 +784,20 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 	return {};
 }
 
+std::any GS1Visitor::visitFunctionDefinition(GS1Parser::FunctionDefinitionContext* context)
+{
+	// Don't execute user functions while walking through the tree.
+	return {};
+}
+
 std::any GS1Visitor::visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context)
 {
 	if (m_parser == nullptr)
 		throw std::runtime_error("GS1Visitor is missing the link to the parser");
 
 	auto anyval = visit(context->identifier_literal());
-	auto* identifier = getReadOnlyGameValueFromAny(anyval).get_unsafe<std::string>();
+	auto value = getReadOnlyGameValueFromAny(anyval);
+	auto* identifier = value.get_unsafe<std::string>();
 	if (identifier == nullptr || identifier->empty())
 		throw std::runtime_error("UserFunctionCall has no valid identifier");
 

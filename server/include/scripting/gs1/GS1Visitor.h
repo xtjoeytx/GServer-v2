@@ -21,6 +21,7 @@
 namespace preagonal
 {
 class Level;
+class Character;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,6 +95,7 @@ public:
 	virtual std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
 	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
 	virtual std::any visitBuiltInCommand(GS1Parser::BuiltInCommandContext* context) override;
+	virtual std::any visitFunctionDefinition(GS1Parser::FunctionDefinitionContext* context) override;
 	virtual std::any visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context) override;
 	virtual std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
 	virtual std::any visitIfCondition(GS1Parser::IfConditionContext* context) override;
