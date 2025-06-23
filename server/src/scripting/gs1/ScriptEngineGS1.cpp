@@ -1,4 +1,5 @@
 #include <any>
+#include <format>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -13,6 +14,7 @@
 #include <GS1Parser.h>
 
 #include <BabyDI.h>
+#include <Server.h>
 #include <level/Level.h>
 #include <object/Character.h>
 #include <object/NPC.h>
@@ -25,7 +27,7 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
-#include <Server.h>
+#include <scripting/ScriptTypes.h>
 
 #ifdef DEBUG
 #include <utilities/Log.h>
@@ -36,6 +38,30 @@ using namespace preagonal::gs1::grammar;
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1
 {
+////////////////////////////////////////////////////////////////////////////////
+
+static std::string determineEventName(ScriptEvent& event)
+{
+	auto knownEventIter = eventFlagMap.find(event.type);
+	if (knownEventIter != eventFlagMap.end())
+		return std::string{ knownEventIter->second };
+
+	if (event.type == ScriptEventType::CUSTOM || event.type == ScriptEventType::TRIGGERACTION)
+	{
+		std::string action;
+		if (auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
+			action = *actionStr;
+		else if (auto* actionStr = std::any_cast<const char*>(&event.args[0]); actionStr != nullptr)
+			action = *actionStr;
+		else if (auto* actionStr = std::any_cast<std::string_view>(&event.args[0]); actionStr != nullptr)
+			action = std::string(*actionStr);
+
+		return std::format("{}{}", (event.type == ScriptEventType::TRIGGERACTION ? "action" : ""), action);
+	}
+
+	return {};
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 PlayerPtr getPlayerFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
@@ -154,16 +180,16 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (wrapper == nullptr)
 		return false;
 
+	auto* server = BabyDI::Get<Server>();
+
 #ifndef DEBUG
 	// If the event is not in the NPC script, don't bother executing it.
-	const auto& eventName = eventFlagMap.at(event.type);
-	if (!wrapper->parser->identifiers.contains(eventName))
+	const auto& eventName = determineEventName(event);
+	if (!wrapper->parser->identifiers.contains(eventName) &&!server->getSettings().getBool("runallscriptevents", false))
 		return false;
 #endif
 
-	auto* server = BabyDI::Get<Server>();
 	auto& [source_id, source_type] = source;
-
 	if (source_type != ScriptObjectSourceType::NPC && source_type != ScriptObjectSourceType::WEAPON)
 		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
 
@@ -199,8 +225,8 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 #ifdef DEBUG
 	// Log some testing stuff.
-	const auto& eventName = eventFlagMap.at(event.type);
-	if (!wrapper->parser->identifiers.contains(eventName))
+	const auto& eventName = determineEventName(event);
+	if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
 	{
 		log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
 		return false;

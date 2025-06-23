@@ -181,7 +181,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 			if (propsPacket.isEmpty()) continue;
 
 			player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
-			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getLevel());
+			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getLevel(), { player->getId() });
 		}
 	}
 
