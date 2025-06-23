@@ -77,6 +77,7 @@ players[index]		On gmaps, it includes players in a 3x3 area around the player.  
 void setReadOnlyGlobalVariables(GameVariableStore& variableStore);
 void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player);
 void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
+void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1

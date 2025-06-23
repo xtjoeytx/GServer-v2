@@ -161,6 +161,8 @@ void Account::bindVariablesToPlayer(std::shared_ptr<Player> player)
 	saysnumber
 	attachid
 	attachtype
+	lastdead
+	logintime
 	*/
 
 	auto playerPtr = player.get();

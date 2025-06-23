@@ -45,9 +45,7 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 		}, {}
 	});
 
-	/*
-		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
-	*/
+	// gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
 }
 
 void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player)
@@ -100,6 +98,12 @@ void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClien
 
 	// signs
 
+	// board[]
+
+	// tiles[x,y]
+
+	// paramscount
+
 	// levelorigx / levelorigy
 	variableStore.add(GameVariable{ "levelorigx",
 		[server, &player](auto) -> GameValue
@@ -115,6 +119,17 @@ void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClien
 			if (auto npc = server->getNPC(player->getAttachedNPC()); npc != nullptr)
 				return -npc->character.pixelY / 16.0;
 			return 0.0;
+		}, {}
+	});
+}
+
+void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)
+{
+	// paramscount
+	variableStore.add(GameVariable{ "paramscount",
+		[&event](auto) -> GameValue
+		{
+			return static_cast<double>(std::max(1ull, event.args.size()) - 1);
 		}, {}
 	});
 }
