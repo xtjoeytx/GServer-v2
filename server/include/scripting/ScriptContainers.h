@@ -31,6 +31,51 @@ using LevelPtr = std::shared_ptr<Level>;
 using WeaponPtr = std::shared_ptr<Weapon>;
 
 ////////////////////////////////////////////////////////////
+// ScriptObjectSource
+////////////////////////////////////////////////////////////
+
+/// @brief Identifies an object type that may be used by a scripting language.
+enum class ScriptObjectSourceType
+{
+	NPC,
+	WEAPON,
+	LEVEL,
+	PLAYER,
+	SERVER
+};
+
+/// @brief Binds a source object type with an identifier.
+/// 
+/// The first element is the identifier, which may be an id or a hash.
+using ScriptObjectSource = std::pair<size_t, ScriptObjectSourceType>;
+
+namespace source
+{
+/// @brief Creates a ScriptObjectSource for an NPC with the given id.
+constexpr ScriptObjectSource FromNPC(size_t id)
+{
+	return std::make_pair(id, ScriptObjectSourceType::NPC);
+}
+/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
+ScriptObjectSource FromWeapon(WeaponPtr weapon);
+
+/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
+ScriptObjectSource FromLevel(LevelPtr level);
+
+/// @brief Creates a ScriptObjectSource for a player with the given id.
+constexpr ScriptObjectSource FromPlayer(size_t id)
+{
+	return std::make_pair(id, ScriptObjectSourceType::PLAYER);
+}
+
+/// @brief Creates a ScriptObjectSource for the server.
+constexpr ScriptObjectSource FromServer()
+{
+	return std::make_pair(static_cast<size_t>(0), ScriptObjectSourceType::SERVER);
+}
+} // end namespace source
+
+////////////////////////////////////////////////////////////
 // GameValue
 ////////////////////////////////////////////////////////////
 
@@ -39,7 +84,8 @@ template<class T>
 concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
 	|| std::same_as<std::remove_cvref_t<T>, double>
 	|| std::same_as<std::remove_cvref_t<T>, std::string>
-	|| std::same_as<std::remove_cvref_t<T>, std::vector<double>>;
+	|| std::same_as<std::remove_cvref_t<T>, std::vector<double>>
+	|| std::same_as<std::remove_cvref_t<T>, std::vector<ScriptObjectSource>>;
 
 /// @brief A container that can hold one of three types: double, std::string, or std::vector<double>.
 ///
@@ -57,10 +103,10 @@ struct GameValue
 		insert(std::forward<decltype(value)>(value));
 	}
 	GameValue(const GameValue& other)
-		: m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_boolean(other.m_boolean)
+		: m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_boolean(other.m_boolean), m_source(other.m_source)
 	{}
 	GameValue(GameValue&& other) noexcept
-		: m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_boolean(std::move(other.m_boolean))
+		: m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_boolean(std::move(other.m_boolean)), m_source(std::move(other.m_source))
 	{}
 
 	GameValue& operator=(const GameValue& other) noexcept;
@@ -120,6 +166,8 @@ public:
 			m_text = std::nullopt;
 		if constexpr (std::same_as<Type, std::vector<double>>)
 			m_array = std::nullopt;
+		if constexpr (std::same_as<Type, std::vector<ScriptObjectSource>>)
+			m_source = std::nullopt;
 		return *this;
 	}
 
@@ -132,6 +180,7 @@ private:
 	std::optional<double> m_number;
 	std::optional<std::string> m_text;
 	std::optional<std::vector<double>> m_array;
+	std::optional<std::vector<ScriptObjectSource>> m_source;
 
 	[[inline]] GameValue& insert(const ValidGameValue auto& value, std::optional<size_t> index = std::nullopt);
 	[[inline]] GameValue& insert(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
@@ -168,6 +217,20 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 			return m_number.value() != 0.0;
 		return std::nullopt;
 	}
+	if constexpr (std::same_as<T, ScriptObjectSource>)
+	{
+		if (!m_source.has_value())
+			return std::nullopt;
+		if (index.has_value())
+		{
+			if (index.value() < m_source.value().size())
+				return m_source.value().at(index.value());
+			return m_source.value().at(0);
+		}
+		return m_source.value().at(0);
+	}
+	if constexpr (std::same_as<T, std::vector<ScriptObjectSource>>)
+		return m_source;
 	else [[unlikely]]
 		throw std::bad_variant_access();
 }
@@ -214,6 +277,22 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		if (!ptr) ptr = &empty_boolean;
 		return ptr;
 	}
+	if constexpr (std::same_as<T, ScriptObjectSource>)
+	{
+		if (!m_source.has_value()) return nullptr;
+		if (index.has_value())
+		{
+			if (index.value() < m_source.value().size())
+				return &m_source.value().at(index.value());
+			return &m_source.value().at(0);
+		}
+		return &m_source.value().at(0);
+	}
+	if constexpr (std::same_as<T, std::vector<ScriptObjectSource>>)
+	{
+		if (!m_source.has_value()) return nullptr;
+		return &m_source.value();
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
 }
@@ -224,6 +303,7 @@ inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<size
 	m_text = std::nullopt;
 	m_array = std::nullopt;
 	m_boolean = std::nullopt;
+	m_source = std::nullopt;
 	return insert(std::forward<decltype(value)>(value), index);
 }
 
@@ -255,6 +335,19 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_array = value;
 	else if constexpr (std::same_as<V, bool>)
 		m_boolean = value;
+	else if constexpr (std::same_as<V, ScriptObjectSource>)
+	{
+		if (m_source.has_value() && index.has_value())
+		{
+			if (index.value() < m_source.value().size())
+				m_source.value().at(index.value()) = value;
+			return *this;
+		}
+		m_source.value().clear();
+		m_source.value().push_back(value);
+	}
+	else if constexpr (std::same_as<V, std::vector<ScriptObjectSource>>)
+		m_source = value;
 	else [[unlikely]]
 		throw std::bad_variant_access();
 	return *this;
@@ -283,6 +376,19 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		m_array = std::move(value);
 	else if constexpr (std::same_as<V, bool>)
 		m_boolean = value;
+	else if constexpr (std::same_as<V, ScriptObjectSource>)
+	{
+		if (m_source.has_value() && index.has_value())
+		{
+			if (index.value() < m_source.value().size())
+				m_source.value().at(index.value()) = value;
+			return *this;
+		}
+		m_source.value().clear();
+		m_source.value().push_back(value);
+	}
+	else if constexpr (std::same_as<V, std::vector<ScriptObjectSource>>)
+		m_source = std::move(value);
 	else [[unlikely]]
 		throw std::bad_variant_access();
 	return *this;
@@ -565,6 +671,8 @@ inline bool GameVariable::has_many() const
 		++count;
 	if (auto* val = value.get_unsafe<std::vector<double>>(); val != nullptr)
 		++count;
+	if (auto* val = value.get_unsafe<std::vector<ScriptObjectSource>>(); val != nullptr)
+		++count;
 	return count < 2;
 }
 
@@ -670,51 +778,6 @@ public:
 private:
 	void stub_new(GameVariable& variable, const GameValue& value);
 };
-
-////////////////////////////////////////////////////////////
-// ScriptObjectSource
-////////////////////////////////////////////////////////////
-
-/// @brief Identifies an object type that may be used by a scripting language.
-enum class ScriptObjectSourceType
-{
-	NPC,
-	WEAPON,
-	LEVEL,
-	PLAYER,
-	SERVER
-};
-
-/// @brief Binds a source object type with an identifier.
-/// 
-/// The first element is the identifier, which may be an id or a hash.
-using ScriptObjectSource = std::pair<size_t, ScriptObjectSourceType>;
-
-namespace source
-{
-/// @brief Creates a ScriptObjectSource for an NPC with the given id.
-constexpr ScriptObjectSource FromNPC(size_t id)
-{
-	return std::make_pair(id, ScriptObjectSourceType::NPC);
-}
-/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
-ScriptObjectSource FromWeapon(WeaponPtr weapon);
-
-/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
-ScriptObjectSource FromLevel(LevelPtr level);
-
-/// @brief Creates a ScriptObjectSource for a player with the given id.
-constexpr ScriptObjectSource FromPlayer(size_t id)
-{
-	return std::make_pair(id, ScriptObjectSourceType::PLAYER);
-}
-
-/// @brief Creates a ScriptObjectSource for the server.
-constexpr ScriptObjectSource FromServer()
-{
-	return std::make_pair(static_cast<size_t>(0), ScriptObjectSourceType::SERVER);
-}
-} // end namespace source
 
 ////////////////////////////////////////////////////////////
 // ScriptEvent

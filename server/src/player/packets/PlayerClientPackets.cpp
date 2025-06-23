@@ -114,9 +114,6 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		packet2.readGChar(); // So msgPLI_ITEMADD works.
 
 		spawnLevelItem(packet2, false);
-
-		if (getVersion() <= CLVER_5_12)
-			sendPacket(CString() >> (char)PLO_ITEMADD << packet);
 	}
 
 	return HandlePacketResult::Handled;

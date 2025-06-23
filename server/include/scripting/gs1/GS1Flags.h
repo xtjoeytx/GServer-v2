@@ -16,7 +16,8 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player);
 void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc);
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level);
-void setOtherFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
+void setWeaponFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore);
+void setOtherFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1

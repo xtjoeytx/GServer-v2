@@ -172,7 +172,8 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setPlayerFlags(wrapper->variables, npc, player);
 	setNPCFlags(wrapper->variables, npc);
 	setLevelFlags(wrapper->variables, npc, level);
-	setOtherFlags(wrapper->variables, npc, player, level);
+	setWeaponFlags(event, source, wrapper->variables);
+	setOtherFlags(event, source, wrapper->variables, npc, player, level);
 
 	// Execute the script.
 	wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);

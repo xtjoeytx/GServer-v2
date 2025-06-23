@@ -122,7 +122,6 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 
 	// TODO(Nalin): playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
 	/*
-		playerlaysitem
 		playertrial
 	*/
 
@@ -172,21 +171,13 @@ void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 	*/
 }
 
-void setOtherFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+void setWeaponFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore)
 {
-	// Character based flags.
+	variableStore.add("isweapon", source.second == ScriptObjectSourceType::WEAPON);
+}
 
-	// Weapon based flags.
-	// isweapon       this npc is a weapon
-
-	// Actions
-	// actionprojectile		(serverside - projectile lands)
-	// actionsprojectile	(serverside - projectile lands) (how does this differ from actionprojectile?)
-	// actionprojectile2	(clientside - projectile lands)
-	// actionpushed
-	// actionpulled
-	// pm  #p(0) is account, #p(1) is the message
-
+void setOtherFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+{
 	// Others
 	// actionplayer
 
