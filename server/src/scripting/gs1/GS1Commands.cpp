@@ -399,8 +399,17 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	// Unset the expecting flag.
 	visitor->expectingFlag = false;
 
-	// Execute the command.
-	it->second(visitor, commandName, arguments);
+	try
+	{
+		// Execute the command.
+		it->second(visitor, commandName, arguments);
+	}
+	catch (...)
+	{
+		if (popContext)
+			visitor->popSource();
+		throw;
+	}
 
 	// If we pushed a context, we need to pop it after the command execution.
 	if (popContext)
@@ -412,7 +421,7 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 // addguildmember guild,account,nick;
 void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("addguildmember is not implemented yet.");
+	throw unimplemented_error("addguildmember is not implemented yet.");
 }
 
 // addstring list,text;
@@ -649,25 +658,25 @@ void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std
 // copyflags fromprefix,toprefix;
 void fn_copyflags(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("copyflags is not implemented yet.");
+	throw unimplemented_error("copyflags is not implemented yet.");
 }
 
 // copylevel oldfile,newfile;
 void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("copylevel is not implemented yet.");
+	throw unimplemented_error("copylevel is not implemented yet.");
 }
 
 // copystrings fromprefix,toprefix;
 void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("copystrings is not implemented yet.");
+	throw unimplemented_error("copystrings is not implemented yet.");
 }
 
 // deletelevel filename;
 void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("deletelevel is not implemented yet.");
+	throw unimplemented_error("deletelevel is not implemented yet.");
 }
 
 // deletestring list,index;
@@ -797,7 +806,7 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 // explodebomb index;
 void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("explodebomb is not implemented yet.");
+	throw unimplemented_error("explodebomb is not implemented yet.");
 }
 
 // freezeplayer2;
@@ -826,14 +835,14 @@ void fn_hide(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // hitcompu index,power,fromx,fromy;
 void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("hitcompu is not implemented yet.");
+	throw unimplemented_error("hitcompu is not implemented yet.");
 }
 
 // hitnpc index,halfhearts,fromx,fromy;
 void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// Could probably emulate with move().
-	throw std::runtime_error("hitnpc is not implemented yet.");
+	throw unimplemented_error("hitnpc is not implemented yet.");
 }
 
 // hitobjects power,x,y;
@@ -955,13 +964,13 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // lay itemname;
 void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("lay is not implemented yet.");
+	throw unimplemented_error("lay is not implemented yet.");
 }
 
 // lay2 itemname,x,y;
 void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("lay2 is not implemented yet.");
+	throw unimplemented_error("lay2 is not implemented yet.");
 }
 
 // message text;
@@ -1022,7 +1031,7 @@ void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const 
 // putbomb power,x,y;
 void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("putbomb is not implemented yet.");
+	throw unimplemented_error("putbomb is not implemented yet.");
 }
 
 // putcomp baddyname,x,y;
@@ -1044,19 +1053,19 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 // putexplosion radius,x,y;
 void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("putexplosion is not implemented yet.");
+	throw unimplemented_error("putexplosion is not implemented yet.");
 }
 
 // putexplosion2 power,radius,x,y;
 void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("putexplosion2 is not implemented yet.");
+	throw unimplemented_error("putexplosion2 is not implemented yet.");
 }
 
 // puthorse imagefile,x,y;
 void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("puthorse is not implemented yet.");
+	throw unimplemented_error("puthorse is not implemented yet.");
 }
 
 // putnewcomp baddyname,x,y,imagefile,power;
@@ -1080,25 +1089,25 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 // putnpc imagefile,scriptfile,x,y;
 void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("putnpc is not implemented yet.");
+	throw unimplemented_error("putnpc is not implemented yet.");
 }
 
 // putnpc2 x,y,{ script };
 void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("putnpc2 is not implemented yet.");
+	throw unimplemented_error("putnpc2 is not implemented yet.");
 }
 
 // removearrow index;
 void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removearrow is not implemented yet.");
+	throw unimplemented_error("removearrow is not implemented yet.");
 }
 
 // removebomb index;
 void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removebomb is not implemented yet.");
+	throw unimplemented_error("removebomb is not implemented yet.");
 }
 
 // removecompus;
@@ -1112,31 +1121,31 @@ void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const st
 // removeexplo index;
 void fn_removeexplo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removeexplo is not implemented yet.");
+	throw unimplemented_error("removeexplo is not implemented yet.");
 }
 
 // removeguild guild;
 void fn_removeguild(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removeguild is not implemented yet.");
+	throw unimplemented_error("removeguild is not implemented yet.");
 }
 
 // removeguildmember guild,account,nick;
 void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removeguildmember is not implemented yet.");
+	throw unimplemented_error("removeguildmember is not implemented yet.");
 }
 
 // removehorse index;
 void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removehorse is not implemented yet.");
+	throw unimplemented_error("removehorse is not implemented yet.");
 }
 
 // removeitem index;
 void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("removeitem is not implemented yet.");
+	throw unimplemented_error("removeitem is not implemented yet.");
 }
 
 // removestring list,text;
@@ -1211,19 +1220,19 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 // saveinfo text,text;
 void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("saveinfo is not implemented yet.");
+	throw unimplemented_error("saveinfo is not implemented yet.");
 }
 
 // savelog text;
 void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("savelog is not implemented yet.");
+	throw unimplemented_error("savelog is not implemented yet.");
 }
 
 // savelog2 filename,text;
 void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("savelog2 is not implemented yet.");
+	throw unimplemented_error("savelog2 is not implemented yet.");
 }
 
 // say signindex;
@@ -1628,13 +1637,13 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 // setmap imgfile,levelsfile,x,y;
 void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setmap is not implemented yet.");
+	throw unimplemented_error("setmap is not implemented yet.");
 }
 
 // setminimap imgfile,levelsfile,x,y;
 void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setminimap is not implemented yet.");
+	throw unimplemented_error("setminimap is not implemented yet.");
 }
 
 // setplayerdir dir;
@@ -1674,7 +1683,7 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 // setpm message;
 void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setpm is not implemented yet.");
+	throw unimplemented_error("setpm is not implemented yet.");
 }
 
 // setshape type,width,height;
@@ -1843,7 +1852,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 // setz x,y,width,height,a,b,c,d;
 void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("setz is not implemented yet.");
+	throw unimplemented_error("setz is not implemented yet.");
 }
 
 // shoot x,y,z,angle,zangle,power,gani,ganiparams;
@@ -1875,31 +1884,31 @@ void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vect
 // shootarrow dir;
 void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shootarrow is not implemented yet.");
+	throw unimplemented_error("shootarrow is not implemented yet.");
 }
 
 // shootball;
 void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shootball is not implemented yet.");
+	throw unimplemented_error("shootball is not implemented yet.");
 }
 
 // shootfireball dir;
 void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shootfireball is not implemented yet.");
+	throw unimplemented_error("shootfireball is not implemented yet.");
 }
 
 // shootfireblast dir;
 void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shootfireblast is not implemented yet.");
+	throw unimplemented_error("shootfireblast is not implemented yet.");
 }
 
 // shootnuke dir;
 void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("shootnuke is not implemented yet.");
+	throw unimplemented_error("shootnuke is not implemented yet.");
 }
 
 // show;
@@ -1917,13 +1926,13 @@ void fn_show(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // showani index,x,y,direction,gani,params;
 void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("showani is not implemented yet.");
+	throw unimplemented_error("showani is not implemented yet.");
 }
 
 // showani2 index,x,y,z,direction,gani,params;
 void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("showani2 is not implemented yet.");
+	throw unimplemented_error("showani2 is not implemented yet.");
 }
 
 // showcharacter;
@@ -1941,50 +1950,50 @@ void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const s
 // showimg index,filename,x,y;
 void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("showimg is not implemented yet.");
+	throw unimplemented_error("showimg is not implemented yet.");
 }
 
 // showimg2 index,filename,x,y,z;
 void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("showimg2 is not implemented yet.");
+	throw unimplemented_error("showimg2 is not implemented yet.");
 }
 
 // showstats bitflag;
 void fn_showstats(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("showstats is not implemented yet.");
+	throw unimplemented_error("showstats is not implemented yet.");
 }
 
 // sleep duration;
 void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("sleep is not implemented yet.");
+	throw unimplemented_error("sleep is not implemented yet.");
 }
 
 // spyfire length,power;
 void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("spyfire is not implemented yet.");
+	throw unimplemented_error("spyfire is not implemented yet.");
 }
 
 // take itemname;
 // Takes an item on the level in a 10-tile radius from the NPC.
 void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("take is not implemented yet.");
+	throw unimplemented_error("take is not implemented yet.");
 }
 
 // take2 index;
 void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("take2 is not implemented yet.");
+	throw unimplemented_error("take2 is not implemented yet.");
 }
 
 // takehorse index;
 void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("takehorse is not implemented yet.");
+	throw unimplemented_error("takehorse is not implemented yet.");
 }
 
 // takeplayercarry;
@@ -2031,7 +2040,7 @@ void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std:
 // timershow;
 void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("timershow is not implemented yet.");
+	throw unimplemented_error("timershow is not implemented yet.");
 }
 
 // tokenize text;
@@ -2131,19 +2140,19 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 // updateboard x,y,width,height;
 void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("updateboard is not implemented yet.");
+	throw unimplemented_error("updateboard is not implemented yet.");
 }
 
 // updateboard2 x,y,width,height;
 void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("updateboard2 is not implemented yet.");
+	throw unimplemented_error("updateboard2 is not implemented yet.");
 }
 
 // updateterrain;
 void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("updateterrain is not implemented yet.");
+	throw unimplemented_error("updateterrain is not implemented yet.");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

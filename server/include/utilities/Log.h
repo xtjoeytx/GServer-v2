@@ -177,7 +177,7 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 			std::cout << std::format(TimestampShort, localtime) << ' ';
 		else if (log.atLineStart && log.timestampCli == TimestampMode::Long)
 			std::cout << std::format(TimestampLong, localtime) << ' ';
-		std::cout << s;
+		std::cout << s << std::flush;
 	}
 
 	log.atLineStart = s.back() == '\n';

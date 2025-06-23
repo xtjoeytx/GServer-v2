@@ -3,7 +3,9 @@
 #include <optional>
 #include <stdexcept>
 #include <string_view>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <ANTLRInputStream.h>
 #include <CommonTokenStream.h>
@@ -15,7 +17,9 @@
 #include <level/Level.h>
 #include <object/Character.h>
 #include <object/NPC.h>
+#include <object/Weapon.h>
 #include <player/PlayerClient.h>
+#include <scripting/gs1/GS1ErrorListener.h>
 #include <scripting/gs1/GS1Flags.h>
 #include <scripting/gs1/GS1Variables.h>
 #include <scripting/gs1/GS1Visitor.h>
@@ -110,12 +114,18 @@ Character* getCharacterFromSource(const ScriptObjectSource& source, std::optiona
 
 ////////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptWrapper::GS1ScriptWrapper(std::string_view script)
+GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script)
 {
+	errorListener = std::make_shared<GS1ErrorListener>(who);
+
 	input = std::make_shared<antlr4::ANTLRInputStream>(script);
 	lexer = std::make_shared<GS1Lexer>(input.get());
 	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
+
 	parser = std::make_shared<GS1Parser>(tokens.get());
+	parser->removeErrorListeners();
+	parser->addErrorListener(errorListener.get());
+
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
 	setReadOnlyGlobalVariables(variables);
@@ -127,10 +137,10 @@ ScriptEngineGS1::ScriptEngineGS1()
 {
 }
 
-CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view script)
+CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
 {
 	ScriptExecutionContext result{ .engine = this };
-	result.script = std::make_shared<std::any>(std::make_any<GS1ScriptWrapper>(script));
+	result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script);
 	return result;
 }
 
@@ -148,6 +158,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 	PlayerClientPtr player = nullptr;
 	NPCPtr npc = nullptr;
+	WeaponPtr weapon = nullptr;
 	LevelPtr level = nullptr;
 
 	// Set the built-in store.
@@ -159,6 +170,11 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 		player = server->getPlayer<PlayerClient>(source_id);
 	if (source_type == ScriptObjectSourceType::NPC)
 		npc = server->getNPC(source_id);
+	if (source_type == ScriptObjectSourceType::WEAPON)
+	{
+		if (auto it = server->getWeaponList().find(source_id); it != server->getWeaponList().end())
+			weapon = it->second;
+	}
 	if (player != nullptr)
 		level = player->getLevel();
 	if (npc != nullptr)
@@ -175,8 +191,26 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setWeaponFlags(event, source, wrapper->variables);
 	setOtherFlags(event, source, wrapper->variables, npc, player, level);
 
-	// Execute the script.
-	wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
+	// Determine the "who" for error messages.
+	if (npc != nullptr)
+		wrapper->visitor->who = npc->name;
+	else if (player != nullptr)
+		wrapper->visitor->who = player->account.name;
+	else if (weapon != nullptr)
+		wrapper->visitor->who = weapon->name;
+	else
+		wrapper->visitor->who = "unknown";
+
+	try
+	{
+		// Execute the script.
+		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
+	}
+	catch (...)
+	{
+		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
+		context->script = nullptr;
+	}
 
 	return false;
 }

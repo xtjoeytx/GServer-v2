@@ -161,12 +161,12 @@ void Script::split(std::string& source) noexcept
 		auto npcServer = server->getNPCServer();
 		if (server->Generation == ServerGeneration::CLASSIC)
 		{
-			m_server_script = npcServer->scripting.getCompiledServerScript(m_serverside);
+			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		}
 		else if (server->Generation == ServerGeneration::NEWMAIN || server->Generation == ServerGeneration::MODERN)
 		{
-			m_client_script = npcServer->scripting.getCompiledClientScript(m_clientside);
-			m_server_script = npcServer->scripting.getCompiledServerScript(m_serverside);
+			m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
+			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		}
 	}
 }

@@ -718,7 +718,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	if (isClient() || !account.hasRight(PLPERM_RESETATTRIBUTES))
 	{
 		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to reset the account: {}", account.name, acc.text());
-		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to reset accounts.\n");
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to reset accounts.");
 		return HandlePacketResult::Handled;
 	}
 
@@ -850,7 +850,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	if (isClient() || !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
 		if (isClient()) log::printLine(log::rc, "[Hack] {} attempted to edit the account: {}", account.name, acc.text());
-		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to edit accounts.\n");
+		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to edit accounts.");
 		return HandlePacketResult::Handled;
 	}
 

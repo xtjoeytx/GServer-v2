@@ -33,7 +33,7 @@ public:
 	virtual ScriptExecutionType getExecutionType() = 0;
 
 public:
-	virtual CompiledScriptResult compileScript(std::string_view script) = 0;
+	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) = 0;
 	virtual bool reset() = 0;
 
 public:

@@ -25,7 +25,7 @@ namespace preagonal::gs2
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-CompiledScriptResult ScriptEngineGS2::compileScript(std::string_view script)
+CompiledScriptResult ScriptEngineGS2::compileScript(std::string_view who, std::string_view script)
 {
 	// Compile the script.
 	auto result = m_scriptManager.compileScript(std::string{ script });

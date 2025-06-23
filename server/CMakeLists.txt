@@ -70,6 +70,7 @@ set(
 	"include/scripting/ScriptTypes.h"
 	"include/scripting/Script.h"
 	"include/scripting/gs1/GS1Commands.h"
+	"include/scripting/gs1/GS1ErrorListener.h"
 	"include/scripting/gs1/GS1Flags.h"
 	"include/scripting/gs1/GS1Functions.h"
 	"include/scripting/gs1/GS1MessageCodes.h"

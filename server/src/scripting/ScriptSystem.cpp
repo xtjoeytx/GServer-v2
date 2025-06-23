@@ -25,7 +25,7 @@ void ScriptSystem::registerScriptEngine(std::string_view name, std::shared_ptr<I
 	m_script_engines.insert_or_assign(std::string{ name }, engine);
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view who, std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -34,14 +34,14 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view s
 
 	// We are using GS2.
 	if (auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
-		return getCompiledScript(it->second.get(), trimmed);
+		return getCompiledScript(it->second.get(), who, trimmed);
 
 	// Throw at this point.  We should always have a GS2 engine.
 	assert(false);
 	return {};
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view who, std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -61,14 +61,14 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view s
 
 	// Find the script engine.
 	if (auto it = m_script_engines.find(script_engine); it != m_script_engines.end())
-		return getCompiledScript(it->second.get(), trimmed);
+		return getCompiledScript(it->second.get(), who, trimmed);
 
 	return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source)
 {
 	// Check for a cached script.
 	size_t script_hash = string::string_hash{}(source);
@@ -76,7 +76,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, s
 		return it->second;
 
 	// Compile the script.
-	auto result = engine->compileScript(source);
+	auto result = engine->compileScript(who, source);
 	if (std::holds_alternative<ScriptExecutionContext>(result))
 	{
 		auto& context = std::get<ScriptExecutionContext>(result);

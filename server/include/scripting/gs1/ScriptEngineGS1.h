@@ -19,6 +19,7 @@
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include "scripting/gs1/GS1ErrorListener.h"
 
 // Forward declare.
 namespace preagonal::gs1::grammar
@@ -97,8 +98,9 @@ using GS1ObjectSourceWithStore = std::pair<ScriptObjectSource, GameVariableStore
 /// @brief Wraps the GS1 script components needed for parsing and execution.
 struct GS1ScriptWrapper
 {
-	GS1ScriptWrapper(std::string_view script);
+	GS1ScriptWrapper(std::string_view who, std::string_view script);
 
+	std::shared_ptr<grammar::GS1ErrorListener> errorListener;
 	std::shared_ptr<antlr4::ANTLRInputStream> input;
 	std::shared_ptr<grammar::GS1Lexer> lexer;
 	std::shared_ptr<antlr4::CommonTokenStream> tokens;
@@ -121,7 +123,7 @@ public:
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
 public:
-	virtual CompiledScriptResult compileScript(std::string_view script) override;
+	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
 	virtual bool reset() override { return false; }
 
 public:

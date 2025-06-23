@@ -26,14 +26,14 @@ class Script
 {
 public:
 	Script() = default;
-	Script(const std::string& src) noexcept : Script(std::move(std::string{ src })) {}
-	Script(std::string_view src) noexcept : Script(std::move(std::string{ src })) {}
+	Script(std::string_view who, const std::string& src) noexcept : Script(who, std::move(std::string{ src })) {}
+	Script(std::string_view who, std::string_view src) noexcept : Script(who, std::move(std::string{ src })) {}
 	Script(const Script& o) noexcept { *this = o; }
 	Script(Script&& o) noexcept { *this = std::move(o); }
 
-	Script(std::string&& src) noexcept
+	Script(std::string_view who, std::string&& src) noexcept
 	{
-		setOriginalSource(std::move(src));
+		setOriginalSource(who, std::move(src));
 	}
 
 	[[inline]] Script& operator=(const Script& o) noexcept;
@@ -48,8 +48,8 @@ public:
 	const ScriptByteCode& getClientByteCode() const noexcept;
 
 public:
-	[[inline]] Script& setOriginalSource(std::string&& source) noexcept;
-	[[inline]] Script& setOriginalSource(const std::string& source) noexcept;
+	[[inline]] Script& setOriginalSource(std::string_view who, std::string&& source) noexcept;
+	[[inline]] Script& setOriginalSource(std::string_view who, const std::string& source) noexcept;
 	[[inline]] Script& setModifiedSource(const std::string& source) noexcept;
 	[[inline]] Script& setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
 	[[inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
@@ -62,6 +62,7 @@ private:
 	static std::string minify(const std::string& src) noexcept;
 
 private:
+	std::string m_who;
 	std::string m_original_source;
 	std::string m_modified_source;
 	std::string_view m_clientside;
@@ -82,6 +83,7 @@ inline const size_t Script::getHash() const noexcept
 
 inline Script& Script::operator=(const Script& o) noexcept
 {
+	m_who = o.m_who;
 	m_original_source = o.m_original_source;
 	setModifiedSource(m_original_source);
 	m_client_script = o.m_client_script;
@@ -92,6 +94,7 @@ inline Script& Script::operator=(const Script& o) noexcept
 
 inline Script& Script::operator=(Script&& o) noexcept
 {
+	m_who = std::move(o.m_who);
 	m_original_source = std::move(o.m_original_source);
 	m_modified_source = std::move(o.m_modified_source);
 	m_clientside = std::move(o.m_clientside);
@@ -124,15 +127,17 @@ inline std::string_view Script::getServerSide() const noexcept
 
 //----------------------------
 
-inline Script& Script::setOriginalSource(std::string&& source) noexcept
+inline Script& Script::setOriginalSource(std::string_view who, std::string&& source) noexcept
 {
+	m_who = who;
 	m_original_source = std::move(source);
 	m_hash = string::string_hash{}(m_original_source);
 	return setModifiedSource(m_original_source);
 }
 
-inline Script& Script::setOriginalSource(const std::string& source) noexcept
+inline Script& Script::setOriginalSource(std::string_view who, const std::string& source) noexcept
 {
+	m_who = who;
 	m_original_source = source;
 	m_hash = string::string_hash{}(m_original_source);
 	return setModifiedSource(m_original_source);

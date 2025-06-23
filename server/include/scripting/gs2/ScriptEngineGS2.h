@@ -32,7 +32,7 @@ public:
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
 
 public:
-	virtual CompiledScriptResult compileScript(std::string_view script) override;
+	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
 	virtual bool reset() override { return false; }
 
 public:

@@ -40,16 +40,16 @@ public:
 public:
 	// Gets the compiled client script.
 	// Forces the script to be compiled with the GS2 engine, as the client only understands GS2 bytecode.
-	CompiledScriptResultPtr getCompiledClientScript(std::string_view source);
+	CompiledScriptResultPtr getCompiledClientScript(std::string_view who, std::string_view source);
 
 	// Gets the compiled server script.
-	CompiledScriptResultPtr getCompiledServerScript(std::string_view source);
+	CompiledScriptResultPtr getCompiledServerScript(std::string_view who, std::string_view source);
 
 public:
 	std::string defaultScriptEngine = "GS2";
 
 private:
-	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, std::string_view source);
+	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source);
 
 private:
 	string_map<std::shared_ptr<IScriptEngine>> m_script_engines;

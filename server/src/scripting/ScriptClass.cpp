@@ -25,7 +25,7 @@ ScriptClass::ScriptClass(std::string_view className, std::string_view classScrip
 
 ScriptClass& ScriptClass::setScript(std::string_view classScript)
 {
-	m_script = { classScript };
+	m_script = { name, classScript };
 
 	// Set the cryptographic key to be the script's hash.
 	string::string_hash hash{};

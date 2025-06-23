@@ -439,8 +439,20 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 	// Load NPCs.
 	{
 		auto* server = BabyDI::Get<Server>();
+
+		std::unique_ptr<log::Indent> indent;
+		if (server->hasNPCServer())
+		{
+			indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
+			log::printLine(log::server, "Loading NPCs for level '{}'...", level->getLevelName());
+		}
+
 		while (fileData.bytesLeft())
 		{
+			std::unique_ptr<log::Profile> profile;
+			if (server->hasNPCServer())
+				profile = std::make_unique<log::Profile>(log::server, "", " ({1:0.6} ms)");
+
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
@@ -451,6 +463,12 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 
 			auto npc = server->addNPC(image, code, x, y, level, NPCStorageType::LEVEL, false);
 			level->m_npcs.push_back(npc->id);
+
+			if (server->hasNPCServer())
+			{
+				auto indent2 = log::server.indent();
+				log::print(log::server, "[{}] {}", npc->id, npc->name);
+			}
 		}
 	}
 
@@ -497,6 +515,13 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 		return nullptr;
 
 	auto* server = BabyDI::Get<Server>();
+
+	std::unique_ptr<log::Indent> indent;
+	if (server->hasNPCServer() && fileData.contains("NPCEND"))
+	{
+		indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
+		log::printLine(log::server, "Loading NPCs for level '{}'...", level->getLevelName());
+	}
 
 	// Parse Level
 	for (auto i = fileLines.begin(); i != fileLines.end(); ++i)
@@ -575,6 +600,10 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			if (curLine.size() < 4)
 				continue;
 
+			std::unique_ptr<log::Profile> profile;
+			if (server->hasNPCServer())
+				profile = std::make_unique<log::Profile>(log::server, "", " ({1:0.6} ms)");
+
 			// Grab the image properties.
 			CString image(curLine[1]);
 			if (curLine.size() > 4)
@@ -605,6 +634,12 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			// Add the new NPC.
 			auto npc = server->addNPC(image, code, x, y, level, NPCStorageType::LEVEL, false);
 			level->m_npcs.push_back(npc->id);
+
+			if (server->hasNPCServer())
+			{
+				auto indent2 = log::server.indent();
+				log::print(log::server, "[{}] {}", npc->id, npc->name);
+			}
 		}
 		else if (curLine[0] == "SIGN")
 		{

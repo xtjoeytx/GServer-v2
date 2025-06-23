@@ -5,6 +5,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <string>
 #include <type_traits>
@@ -33,11 +34,13 @@ class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
 	void execute(const ScriptEvent& event, ScriptObjectSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode);
+	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
 public:
 	std::vector<std::string> tokenizeTokens;
 	GameVariableStore* builtInStore = nullptr;
 	bool expectingFlag = false;
+	std::string who;
 
 public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
@@ -196,6 +199,13 @@ inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
 	auto gameval = getReadOnlyGameValueFromAny(value);
 	return gameval.get<T>().value_or(makeDefault<T>());
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct unimplemented_error : public std::runtime_error
+{
+	using std::runtime_error::runtime_error;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1::grammar

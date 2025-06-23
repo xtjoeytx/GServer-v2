@@ -444,6 +444,28 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObjectSource source, GS
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* node, bool abort)
+{
+	std::vector<std::pair<uint8_t, std::string>> logbatch;
+
+	logbatch.emplace_back(0_ui8, std::format("* GS1 runtime script error for '{}':", who));
+	if (abort) logbatch.emplace_back(0_ui8, "* Aborting script execution due to fatal error. *");
+
+	logbatch.emplace_back(1_ui8, std::format("Error: {}", message));
+	if (node != nullptr) logbatch.emplace_back(1_ui8, std::format("Code: '{}'", node->getText()));
+
+	// Log the batch of messages.
+	log::batch(log::script, logbatch);
+
+	// Send the log messages to the server.
+	auto server = BabyDI::Get<Server>();
+	std::ranges::for_each(logbatch, [&server](const auto& kvp) { server->sendToNC(kvp.second); });
+
+	if (abort) throw std::runtime_error("Terminating GS1 script.");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::any GS1Visitor::visitMathExpression(GS1Parser::MathExpressionContext* context)
 {
 	auto results = visitChildrenAndCollect(context);
@@ -780,7 +802,20 @@ std::any GS1Visitor::visitBuiltInCommand(GS1Parser::BuiltInCommandContext* conte
 	auto command = context->COMMAND()->getText();
 	string::trimRightMutate(command);
 
-	processBuiltInCommand(this, context, command);
+	try
+	{
+		// Process the built-in command.
+		processBuiltInCommand(this, context, command);
+	}
+	catch (const unimplemented_error& e)
+	{
+		reportError(e.what(), context, false);
+	}
+	catch (const std::exception& e)
+	{
+		reportError(e.what(), context);
+	}
+
 	return {};
 }
 
@@ -816,7 +851,16 @@ std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallCont
 	auto command = context->FUNCTION()->getText();
 	string::trimRightMutate(command);
 
-	return processBuiltInFunction(this, context, command);
+	try
+	{
+		// Process the built-in function call.
+		return processBuiltInFunction(this, context, command);
+	}
+	catch (const std::exception& e)
+	{
+		reportError(e.what(), context);
+	}
+	return {};
 }
 
 std::any GS1Visitor::visitIfCondition(GS1Parser::IfConditionContext* context)
@@ -997,8 +1041,26 @@ std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 	if (messageCodeView.starts_with('#'))
 		messageCodeView.remove_prefix(1);
 
-	// Process the message code.
-	return processMessageCode(this, context, messageCodeView);
+	try
+	{
+		// Process the message code.
+		return processMessageCode(this, context, messageCodeView);
+	}
+	catch (const unimplemented_error& e)
+	{
+		reportError(e.what(), context, false);
+		return GS1ScriptValue{ ""s };
+	}
+	catch (const std::logic_error& e)
+	{
+		reportError(e.what(), context, false);
+		return GS1ScriptValue{ ""s };
+	}
+	catch (const std::exception& e)
+	{
+		reportError(e.what(), context);
+	}
+	return {};
 }
 
 std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)

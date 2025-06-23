@@ -239,7 +239,7 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 // Translates the string according to the client's language settings.
 GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function _ not implemented");
+	throw unimplemented_error("Built-in function _ not implemented");
 }
 
 // N_(string)
@@ -421,14 +421,14 @@ GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const
 // Decodes a Base64 encoded string.
 GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function base64decode not implemented");
+	throw unimplemented_error("Built-in function base64decode not implemented");
 }
 
 // base64encode(string)
 // Encodes a string to Base64 format.
 GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function base64encode not implemented");
+	throw unimplemented_error("Built-in function base64encode not implemented");
 }
 
 // startswith(prefix, string)
@@ -597,14 +597,14 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 // Probably not supported in GS1.
 GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function findnearestplayers not implemented");
+	throw unimplemented_error("Built-in function findnearestplayers not implemented");
 }
 
 // getangle(dx, dy)
 // Returns the angle in radians from the current position to the position specified by dx and dy.
 GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function getangle not implemented");
+	throw unimplemented_error("Built-in function getangle not implemented");
 }
 
 // getareanpcs(x, y, width, height)
@@ -778,12 +778,12 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the Z coordinate at the specified X and Y position in the world.
 GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function getz not implemented");
+	throw unimplemented_error("Built-in function getz not implemented");
 }
 
 GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function groundsheight not implemented");
+	throw unimplemented_error("Built-in function groundsheight not implemented");
 }
 
 // hasweapon(name)
@@ -932,33 +932,33 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function playersays not implemented");
+	throw unimplemented_error("Built-in function playersays not implemented");
 }
 
 GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function playersays2 not implemented");
+	throw unimplemented_error("Built-in function playersays2 not implemented");
 }
 
 // screenx(x, y)
 // Converts level coordinates (x, y) to the screen's X coordinate.
 GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function screenx is a clientside function");
+	throw std::logic_error("Built-in function screenx is a clientside function");
 }
 
 // screeny(x, y)
 // Converts level coordinates (x, y) to the screen's Y coordinate.
 GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function screeny is a clientside function");
+	throw std::logic_error("Built-in function screeny is a clientside function");
 }
 
 // testbomb(x, y)
 // The index of the bomb at level position (x, y), or -1 if there is no bomb at that position.
 GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testbomb not implemented");
+	throw unimplemented_error("Built-in function testbomb not implemented");
 }
 
 // testcompu(x, y)
@@ -980,28 +980,28 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 	return 0.0;
 	*/
 
-	throw std::runtime_error("Built-in function testcompu not implemented");
+	throw unimplemented_error("Built-in function testcompu not implemented");
 }
 
 // testexplo(x, y)
 // The index of the explosion at level position (x, y), or -1 if there is no explosion at that position.
 GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testexplo not implemented");
+	throw unimplemented_error("Built-in function testexplo not implemented");
 }
 
 // testhorse(x, y)
 // The index of the horse at level position (x, y), or -1 if there is no horse at that position.
 GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testhorse not implemented");
+	throw unimplemented_error("Built-in function testhorse not implemented");
 }
 
 // testitem(x, y)
 // The index of the item at level position (x, y), or -1 if there is no item at that position.
 GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function testitem not implemented");
+	throw unimplemented_error("Built-in function testitem not implemented");
 }
 
 // testnpc(x, y)
@@ -1086,21 +1086,21 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 // Returns the height of the text in pixels, given the zoom level, font name, and style.
 GS1ScriptValue fn_textheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function textheight is a clientside function");
+	throw unimplemented_error("Built-in function textheight is a clientside function");
 }
 
 // textwidth(zoom, font, style, text)
 // Returns the width of the text in pixels, given the zoom level, font name, style, and text.
 GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function textwidth is a clientside function");
+	throw unimplemented_error("Built-in function textwidth is a clientside function");
 }
 
 // tiletype(x, y)
 // Returns the "new order" tile type used for setshape2 on level position (x, y).
 GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function tiletype not implemented");
+	throw unimplemented_error("Built-in function tiletype not implemented");
 }
 
 // vecx(dir)
@@ -1130,21 +1130,21 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 // might just be a flag like gravity
 GS1ScriptValue fn_waterheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function waterheight not implemented");
+	throw unimplemented_error("Built-in function waterheight not implemented");
 }
 
 // worldx(x, y)
 // Converts screen (x, y) to level X.
 GS1ScriptValue fn_worldx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function worldx is a clientside function");
+	throw std::logic_error("Built-in function worldx is a clientside function");
 }
 
 // worldy(x, y)
 // Converts screen (x, y) to level Y.
 GS1ScriptValue fn_worldy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function worldy is a clientside function");
+	throw std::logic_error("Built-in function worldy is a clientside function");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

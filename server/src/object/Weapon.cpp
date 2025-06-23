@@ -191,7 +191,7 @@ bool Weapon::saveWeapon()
 
 Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 {
-	m_script = std::move(Script{ script });
+	m_script = std::move(Script{ name, script });
 	this->image = image;
 	modTime = clock::now();
 
@@ -317,7 +317,7 @@ void Weapon::joinClass(std::string_view className)
 	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
 	if (scriptClass.expired())
 	{
-		log::print(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+		log::printLine(log::npc, "Error: Weapon '{}' tried to join class '{}', but it does not exist.", name, className);
 		return;
 	}
 

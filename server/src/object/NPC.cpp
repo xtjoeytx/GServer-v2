@@ -208,7 +208,7 @@ void NPC::setScript(std::string_view script)
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
 	auto server = BabyDI::Get<Server>();
-	m_script = std::move(Script{ script });
+	m_script = std::move(Script{ name, script });
 
 	auto clientside = m_script.getClientSide();
 

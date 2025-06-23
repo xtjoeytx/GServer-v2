@@ -24,6 +24,7 @@
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
 #include <scripting/gs1/GS1MessageCodes.h>
@@ -513,7 +514,7 @@ GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std
 // Current file being downloaded | The download position of the specified file.
 GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #D is registered as a clientside message code");
+	throw std::logic_error("Message Code #D is registered as a clientside message code");
 }
 
 // #e(start_index, length, string)
@@ -581,7 +582,7 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 // player.upgradestatus #G(index)
 GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #G is not implemented yet");
+	throw unimplemented_error("Message Code #G is not implemented yet");
 }
 
 // #I(string_list, index)
@@ -603,21 +604,21 @@ GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 // Displays an image or part of an image when used in a sign.
 GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #i is registered as a clientside message code");
+	throw std::logic_error("Message Code #i is registered as a clientside message code");
 }
 
 // #K(key_index)
 // The name of the specified key.
 GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #K is registered as a clientside message code");
+	throw std::logic_error("Message Code #K is registered as a clientside message code");
 }
 
 // #k(key_index)
 // The description of the specified key (in client language/key assignments).
 GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #k is registered as a clientside message code");
+	throw std::logic_error("Message Code #k is registered as a clientside message code");
 }
 
 // #L  [Read]
@@ -689,7 +690,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 // The nickname for a player in a guild.
 GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Message Code #Q is not implemented yet");
+	throw unimplemented_error("Message Code #Q is not implemented yet");
 }
 
 // #R(string_list)
