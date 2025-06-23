@@ -29,6 +29,15 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	// TODO: Put extensions under a server option?
 	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
+
+	/*
+		playerhurt
+		exploded            the npc was exploded by a bomb
+		washit              the npc was slayed with a sword or axe
+		waspelt             the npc was pelt
+		wasshot             the npc was shot with arrows
+		wasthrown           the npc was carried and then thrown
+	*/
 }
 
 void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
@@ -114,11 +123,6 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 	// followsplayer - Client side only, unless we go sicko mode in the future.
 
 	/* TODO(Nalin): Hit events.
-		washit              the npc was slayed with a sword or axe
-		waspelt             the npc was pelt
-		wasshot             the npc was shot with arrows
-		wasthrown           the npc was carried and then thrown
-		exploded            the npc was exploded by a bomb
 		peltwithblackstone  the npc was pelt with a blackstone
 		peltwithbush        the npc was pelt with a bush
 		peltwithnpc         the npc was pelt with another npc
@@ -136,12 +140,6 @@ void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 	variableStore.add("nopkzone", level != nullptr && level->isNoPkZone());
 	variableStore.add("isonmap", level != nullptr && level->getMap() != nullptr);
 	variableStore.add("compsdead", level != nullptr && !level->hasLivingBaddies());
-
-	/*
-		levelorgx     level origin(x), can be different to 0, 0 if the player is attached to an npc
-		levelorgy     level origin(y)
-		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
-	*/
 }
 
 void setWeaponFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore)

@@ -45,13 +45,17 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 		}, {}
 	});
 
-	// gravity
+	/*
+		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
+	*/
 }
 
 void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player)
 {
 	// weaponscount
 	variableStore.add(GameVariable{ "weaponscount", [&player](auto) -> GameValue { return static_cast<double>(player->account.weapons.size()); }, {} });
+
+	// playerhurtpower
 }
 
 void setLevelVariables(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)

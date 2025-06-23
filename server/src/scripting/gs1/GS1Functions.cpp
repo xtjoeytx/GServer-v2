@@ -930,11 +930,13 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	return 0.0;
 }
 
+// playersays ???
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("Built-in function playersays not implemented");
 }
 
+// playersays2 ???
 GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("Built-in function playersays2 not implemented");

@@ -960,6 +960,22 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+		{
+			auto hitNPCs = level->findIntersectingNPCsForCollision({ static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) });
+			for (const auto& npcId : hitNPCs)
+			{
+				if (auto npc = m_server->getNPC(npcId); npc != nullptr && npc->isCharacter() && npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
+				{
+					npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, (int)npc->getProp<NPCProp::POWER>().value - int(power * 2))));
+					npc->scripting.events.addEvent(ScriptEventType::WASHIT, source::FromPlayer(m_id));
+				}
+			}
+		}
+	}
+
 	m_server->sendPacketToLevelOnlyGmapArea(nPacket, self(), {m_id});
 	return HandlePacketResult::Handled;
 }
