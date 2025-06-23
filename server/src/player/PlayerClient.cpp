@@ -28,6 +28,7 @@
 #include <level/Map.h>
 #include <misc/WordFilter.h>
 #include <network/IPacketHandler.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
@@ -606,8 +607,12 @@ bool PlayerClient::sendLogin()
 
 	m_fileQueue.sendCompress(true);
 
+	// Bind the player's variables.
+	account.bindVariablesToPlayer(shared_from_this());
+
 	// Queue up the login event.
-	m_server->queueNPCEvent({}, ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
+	if (m_server->hasNPCServer())
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
 
 	return true;
 }

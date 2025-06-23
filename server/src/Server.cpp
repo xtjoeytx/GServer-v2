@@ -1146,12 +1146,6 @@ void Server::recordPlayerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
-
-	// Bind the player's variables.
-	player->account.bindVariablesToPlayer(player);
-
-	if (hasNPCServer())
-		getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(player->getId()));
 }
 
 bool Server::warpPlayerToSafePlace(PlayerID playerId)

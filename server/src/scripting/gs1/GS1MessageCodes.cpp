@@ -485,8 +485,12 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() == 1)
 		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-	if (auto player = getPlayerFromSource(visitor->getCurrentSource(), index); player != nullptr)
-		return player->account.name;
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source->first); player != nullptr)
+			return player->account.name;
+	}
 
 	return std::string{};
 }

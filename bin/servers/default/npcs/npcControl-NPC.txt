@@ -30,20 +30,8 @@ SHAPETYPE 0
 SHAPE 32 48
 SAVEARR 0,0,0,0,0,0,0,0,0,0
 NPCSCRIPT
-function onCreated() {
-  server.sendtorc("Script Server Initialized!");
+if (playerlogin) {
+  sendpm Welcome to your brand new server!;
+  sendtorc #a has logged in!;
 }
-
-function onPlayerLogin(player) {
-  server.sendtorc(player.account + " has logged in!")
-}
-
-function onPlayerLogout(player) {
-  server.sendtorc(player.account + " has logged off!")
-}
-
-function onPlayerMessage(player, message) {
-  // not implemented yet
-}
-
 NPCSCRIPTEND
