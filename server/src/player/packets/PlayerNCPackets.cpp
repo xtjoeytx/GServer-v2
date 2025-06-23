@@ -74,16 +74,12 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCDELETE(CString& pPacket)
 
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
-		// TODO: NPCServer delete
-		bool result = m_server->deleteNPC(npc, true);
-		if (result)
-		{
-			m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
+		m_server->getNPCServer()->deleteNPC(npcId);
+		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
 
-			std::string logMsg = std::format("NPC {} deleted by {}", npc->name, account.name);
-			log::printLine(log::npc, logMsg);
-			m_server->sendToNC(logMsg);
-		}
+		std::string logMsg = std::format("NPC {} deleted by {}", npc->name, account.name);
+		log::printLine(log::npc, logMsg);
+		m_server->sendToNC(logMsg);
 	}
 
 	return HandlePacketResult::Handled;
@@ -344,9 +340,6 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 	auto newNPC = m_server->getNPCServer()->addNPC(npcName, npcId, npcType, npcScripter, level, { npcX, npcY });
 	if (newNPC != nullptr)
 	{
-		CString props = newNPC->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::CURLEVEL>();
-		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)newNPC->id << props);
-
 		// Persist NPC
 		m_server->getNPCLoader().saveNPC(newNPC);
 

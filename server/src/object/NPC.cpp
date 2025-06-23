@@ -262,9 +262,6 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 
 bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
 {
-	auto* server = BabyDI::Get<Server>();
-	server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
-
 	sendPropsFromResults(
 		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->getLevelName().toString()),
 		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
@@ -338,12 +335,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::IMAGE:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
+			if (strProp == nullptr || strProp->value == image)
 				SETPROP_RETURN_ERROR;
-
-			// No change.
-			if (strProp->value == image)
-				break;
 
 			// Make visible.
 			visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
@@ -364,25 +357,18 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::SCRIPT:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
+			if (strProp == nullptr || setBy != SetBy::SERVER)
 				SETPROP_RETURN_ERROR;
 
-			// Only allow the server to set the script.
-			if (setBy == props::SetBy::SERVER)
-			{
-				setScript(strProp->value);
-			}
+			setScript(strProp->value);
 			break;
 		}
 
 		case NPCProp::X:
 		{
 			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr)
+			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelX = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::X2));
@@ -395,11 +381,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::Y:
 		{
 			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr)
+			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelY = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
@@ -412,11 +395,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::Z:
 		{
 			PropertyTileCoordinateZ* zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
-			if (zProp == nullptr)
+			if (zProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelZ = zProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Z2));
@@ -522,7 +502,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (server->Generation == ServerGeneration::ORIGINAL)
 			{
 				if (!ganiProp->bowGif.has_value())
-					break;
+					SETPROP_RETURN_ERROR;
 
 				auto& [image, power] = ganiProp->bowGif.value();
 				character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
@@ -785,21 +765,18 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::CURLEVEL:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
+			if (strProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			// No change?  Don't do anything.
 			if (auto curLevel = level.lock(); curLevel != nullptr && curLevel->getLevelName() == strProp->value)
-				break;
+				SETPROP_RETURN_ERROR;
 
 			// See if the level exists.
 			auto server = BabyDI::Get<Server>();
 			auto newLevel = server->getLevel(strProp->value);
 			if (newLevel == nullptr)
-				break;
+				SETPROP_RETURN_ERROR;
 
 			// Tell everybody we are moving.
 			server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
@@ -873,11 +850,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::X2:
 		{
 			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
+			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelX = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::X));
@@ -890,11 +864,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::Y2:
 		{
 			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
+			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelY = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
@@ -907,11 +878,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::Z2:
 		{
 			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
+			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
-
-			if (!canUpdatePosition)
-				break;
 
 			character.pixelZ = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
@@ -923,7 +891,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	}
 
 	// If we are sending other ids, we need to update the mod time for them too.
-	if (!result.resultPropIds.empty())
+	if (!result.resultPropIds.empty() && !result.resultFlags.test(SetResults::wasInvalid))
 	{
 		for (const auto& id : result.resultPropIds)
 			modTime[id] = curTime;

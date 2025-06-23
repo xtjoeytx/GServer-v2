@@ -294,11 +294,17 @@ void NPCServer::processDeletedNPCs()
 {
 	for (const auto& npcId : m_deletedNPCs)
 	{
+		auto npc = m_server->getNPC(npcId);
+
 		// Remove from the global list.
 		m_globalNPCList.erase(npcId);
 
 		// Remove from the server's NPC list.
 		m_server->deleteNPC(npcId, true);
+
+		// Delete the NPC from the filesystem.
+		if (npc != nullptr)
+			std::filesystem::remove(std::filesystem::path{ "npcs" } / std::format("{}.txt", npc->name));
 	}
 	m_deletedNPCs.clear();
 }

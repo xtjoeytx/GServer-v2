@@ -34,6 +34,7 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
+#include <player/PlayerRC.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -1264,6 +1265,14 @@ bool PlayerClient::setLevel(std::shared_ptr<Level> level, time_t modTime)
 
 		player->sendPacket(minimap);
 	}
+
+	// Update RCs.
+	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
+		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::PSTATUSMSG << getProp<PlayerProp::PSTATUSMSG>().serialize()
+		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
+		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
+	m_server->sendPacketToType(PLTYPE_ANYCONTROL, myRCProps, this);
 
 	return true;
 }

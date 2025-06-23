@@ -24,6 +24,8 @@ protected:
 		std::set<T> manuallyUsedIds;
 	};
 
+	std::map<T, Segment> m_segments;
+
 public:
 	IdGenerator() { createSegment(T(0)); }
 	IdGenerator(T startId) { createSegment(startId); }
@@ -136,13 +138,15 @@ public:
 	}
 
 	// Reset the free IDs and set the next ID
-	/*
-	void resetAndSetNext(T nextId = 0)
+	void reset()
 	{
-		m_freeIds.clear();
-		m_nextId = nextId;
+		for (auto& [segmentStartId, segment] : m_segments)
+		{
+			segment.freeIds.clear();
+			segment.manuallyUsedIds.clear();
+			segment.nextId = segmentStartId;
+		}
 	}
-	*/
 
 protected:
 	Segment* getSegmentForId(T id)
@@ -178,9 +182,6 @@ protected:
 		}
 		return result;
 	}
-
-protected:
-	std::map<T, Segment> m_segments;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

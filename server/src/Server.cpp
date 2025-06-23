@@ -148,6 +148,16 @@ Server::Server(const CString& pName)
 Server::~Server()
 {
 	cleanup();
+
+	// Close our UPNP port forward.
+	// First, make sure the thread has completed already.
+	// This can cause an issue if the server is about to be deleted.
+#ifdef ENABLE_UPNP
+	if (m_upnpThread.joinable())
+		m_upnpThread.join();
+	if (m_upnp)
+		m_upnp->removeAllForwardedPorts();
+#endif
 }
 
 int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
@@ -211,7 +221,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 #ifdef ENABLE_UPNP
-	if (m_settings.getBool("upnp", true))
+	if (m_settings.getBool("upnp", true) && m_upnp == nullptr)
 	{
 		log::printLine(log::server, ":: Starting UPnP discovery thread.");
 		m_upnp = std::make_unique<UPNP>();
@@ -289,25 +299,20 @@ void Server::cleanupDeletedPlayers()
 
 void Server::cleanup()
 {
-	// Close our UPNP port forward.
-	// First, make sure the thread has completed already.
-	// This can cause an issue if the server is about to be deleted.
-#ifdef ENABLE_UPNP
-	if (m_upnpThread.joinable())
-		m_upnpThread.join();
-	if (m_upnp)
-		m_upnp->removeAllForwardedPorts();
-#endif
-
 	// Save translations.
 	this->TS_Save();
 
 	// Save server flags.
 	saveServerFlags();
 
+	// Save NPC-Server NPCs.
+	if (hasNPCServer())
+		m_npcServer->saveNPCs();
+
 	for (auto& [id, player]: m_playerList)
 		player->cleanup();
 
+	m_npcServer.reset();
 	m_playerList.clear();
 	m_deletedPlayers.clear();
 
@@ -316,17 +321,19 @@ void Server::cleanup()
 	m_groupLevels.clear();
 
 	m_npcList.clear();
+	m_shootParams.clear();
 
 	saveWeapons();
 	m_weaponList.clear();
+
+	m_npcIdGenerator.reset();
+	m_playerIdGenerator.reset();
 
 	m_playerSock.disconnect();
 	m_serverlist.getSocket().disconnect();
 
 	// Clean up the socket manager.  Pass false so we don't cause a crash.
 	m_sockManager.cleanup(false);
-
-	m_accountLoader.reset();
 	m_adminSettings.clear();
 
 	log::printLine(log::server, "-------------------------------------");
