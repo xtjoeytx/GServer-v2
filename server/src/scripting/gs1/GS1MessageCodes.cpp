@@ -289,6 +289,7 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 	Character* character = nullptr;
 	ScriptObjectSource currentSource;
 
+	// An index of -1 means we are looking at the source NPC.
 	if (index.value_or(0) == -1)
 	{
 		auto activeNPC = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC);
@@ -298,7 +299,8 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 			character = getCharacterFromSource(activeNPC.value());
 		}
 	}
-	else
+	// An index of 0 or greater means we are looking at the player.
+	else if (index.has_value() && index.value() >= 0)
 	{
 		auto activePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
 		if (activePlayer.has_value())
@@ -307,6 +309,17 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 			if (index.value_or(0) == 0)
 				character = getCharacterFromSource(activePlayer.value(), {});
 			else character = getCharacterFromSource(activePlayer.value(), index);
+		}
+	}
+	// No index means we try to get the  character from the current source, biasing to the initiator.
+	else
+	{
+		currentSource = visitor->getCurrentSource(true);
+		character = getCharacterFromSource(currentSource);
+		if (character == nullptr)
+		{
+			currentSource = visitor->getOriginalSource();
+			character = getCharacterFromSource(currentSource);
 		}
 	}
 

@@ -200,6 +200,7 @@ void NPCServer::loadClasses()
 	const std::map<CString, CString>& scriptFileList = scriptFS.getFileList();
 	for (auto& scriptFile : scriptFileList)
 	{
+		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 		std::string className = scriptFile.first.subString(0, scriptFile.first.length() - 4).text();
 
 		CString scriptData;
@@ -209,7 +210,7 @@ void NPCServer::loadClasses()
 		scriptClass->modTime = clock::from_time_t(scriptFS.getModTime(scriptFile.second));
 		m_classList[className] = scriptClass;
 
-		log::printLine(log::server, "{}", className);
+		log::print(log::server, "{}", className);
 		//updateClassForPlayers(getClass(className));
 	}
 }

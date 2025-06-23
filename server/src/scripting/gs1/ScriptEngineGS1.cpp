@@ -213,6 +213,14 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (npc != nullptr)
 		level = npc->level.lock();
 
+	// Try to get variables from the initiator now.
+	if (player == nullptr && event.initiator.second == ScriptObjectSourceType::PLAYER)
+		player = server->getPlayer<PlayerClient>(event.initiator.first);
+	if (npc == nullptr && event.initiator.second == ScriptObjectSourceType::NPC)
+		npc = server->getNPC(event.initiator.first);
+	if (level == nullptr)
+		level = (player != nullptr ? player->getLevel() : npc->level.lock());
+
 	// Determine the "who" for error messages.
 	if (npc != nullptr)
 		wrapper->visitor->who = npc->name;
@@ -253,16 +261,20 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setLevelVariables(wrapper->variables, level);
 	setOtherVariables(wrapper->variables, event);
 
+#ifndef DEBUG
 	try
 	{
+#endif
 		// Execute the script.
 		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
+#ifndef DEBUG
 	}
 	catch (...)
 	{
 		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
 		context->script = nullptr;
 	}
+#endif
 
 	return false;
 }

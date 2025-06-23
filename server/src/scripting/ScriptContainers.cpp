@@ -138,9 +138,10 @@ bool GameVariable::testAsFlag() const
 	return m_value.testAsFlag();
 }
 
-void GameVariable::update()
+GameVariable& GameVariable::update()
 {
 	m_value = game_value();
+	return *this;
 }
 
 //----------------------------

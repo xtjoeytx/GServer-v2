@@ -88,7 +88,6 @@ set(
 	"include/utilities/ResourceManager.h"
 	"include/utilities/StringUtils.h"
 	"include/utilities/TimeoutGenerator.h"
-	"src/Account.cpp"
 	"src/FileSystem.cpp"
 	"src/main.cpp"
 	"src/Server.cpp"

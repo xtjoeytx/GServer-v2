@@ -25,6 +25,7 @@
 #include <Account.h>
 #include <network/IPacketHandler.h>
 #include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/PropsContainer.h>
@@ -152,7 +153,7 @@ struct CachedLevel
 //----------------------------
 
 class Server;
-class Player : public CSocketStub, public IPacketHandler, public std::enable_shared_from_this<Player>
+class Player : public CSocketStub, public IPacketHandler, public IScriptObject, public std::enable_shared_from_this<Player>
 {
 public:
 	// Required by CSocketStub.
@@ -290,6 +291,11 @@ public:
 	/// @brief Gets a packet containing modified properties.
 	/// @return A packet of modified properties.
 	CString getModifiedPropsPacket() const;
+
+public:
+	void constructScriptObjectParameters();
+	virtual std::optional<GameVariable> getScriptObjectParameter(std::string_view name) override;
+	string_map<GameVariable> scriptObjectParameters;
 
 public:
 	bool deleteFlag(std::string_view flagName, bool sendToPlayer = false);

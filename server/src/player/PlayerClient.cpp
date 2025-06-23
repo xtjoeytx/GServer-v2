@@ -609,7 +609,7 @@ bool PlayerClient::sendLogin()
 	m_fileQueue.sendCompress(true);
 
 	// Bind the player's variables.
-	account.bindVariablesToPlayer(shared_from_this());
+	constructScriptObjectParameters();
 
 	// Queue up the login event.
 	if (m_server->hasNPCServer())

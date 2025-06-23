@@ -44,10 +44,11 @@ public:
 
 public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
-	[[inline]] const ScriptObjectSource& getCurrentSource() const;
+	[[inline]] const ScriptObjectSource& getCurrentSource(bool defaultToInitiator = false) const;
 	[[inline]] const ScriptObjectSource& popSource();
 	[[inline]] const void pushSource(ScriptObjectSource source);
 	[[inline]] const ScriptEvent& getEvent() const;
+	[[inline]] auto sourceStack() const;
 	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type) const;
 	std::shared_ptr<Level> findCurrentLevel() const;
 
@@ -60,6 +61,7 @@ public:
 
 	GameVariable* getGameVariableFromGS1ScriptValue(GS1ScriptValue& value);
 	GameVariable* getGameVariableFromVariant(GameVariableVariant& variant);
+	std::optional<GameVariable> getGameVariableFromSource(const ScriptObjectSource& source, std::string_view identifier);
 	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
@@ -79,7 +81,7 @@ protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
 
 protected:
-	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectSourceType type);
+	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectSourceType type) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
@@ -147,9 +149,9 @@ inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
 	return m_originalSource;
 }
 
-inline const ScriptObjectSource& GS1Visitor::getCurrentSource() const
+inline const ScriptObjectSource& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
 {
-	return m_currentSource.empty() ? m_originalSource : m_currentSource.back();
+	return m_currentSource.empty() ? (defaultToInitiator ? m_event->initiator : m_originalSource) : m_currentSource.back();
 }
 
 inline const ScriptObjectSource& GS1Visitor::popSource()
@@ -161,6 +163,15 @@ inline const ScriptObjectSource& GS1Visitor::popSource()
 inline const void GS1Visitor::pushSource(ScriptObjectSource source)
 {
 	m_currentSource.emplace_back(std::move(source));
+}
+
+inline auto GS1Visitor::sourceStack() const
+{
+	// Save me C++26...
+	std::vector<ScriptObjectSource> sources{ m_currentSource.rbegin(), m_currentSource.rend() };
+	sources.push_back(m_event->initiator);
+	sources.push_back(m_originalSource);
+	return sources;
 }
 
 inline const ScriptEvent& GS1Visitor::getEvent() const

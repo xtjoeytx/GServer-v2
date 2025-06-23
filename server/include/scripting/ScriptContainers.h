@@ -5,11 +5,13 @@
 #include <concepts>
 #include <format>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
 #include <queue>
 #include <ranges>
+#include <stdexcept>
 #include <string_view>
 #include <string>
 #include <type_traits>
@@ -18,6 +20,7 @@
 #include <vector>
 
 #include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -413,11 +416,20 @@ struct GameVariable
 	GameVariable(set_temporary_t, const std::string& name, GameValue&& value)
 		: identifier(name), temporary(true), m_value(std::move(value)) {}
 	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
-		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
+		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter)
+	{
+		update();
+	}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
-		: identifier(name), m_getter(getter), m_setter(setter) {}
+		: identifier(name), m_getter(getter), m_setter(setter)
+	{
+		update();
+	}
 	GameVariable(set_temporary_t, const std::string& name, func_get getter, func_set setter)
-		: identifier(name), temporary(true), m_getter(getter), m_setter(setter) {}
+		: identifier(name), temporary(true), m_getter(getter), m_setter(setter)
+	{
+		update();
+	}
 	GameVariable(const GameVariable& other)
 		: identifier(other.identifier), temporary(other.temporary), m_value(other.m_value),
 		  m_getter(other.m_getter), m_setter(other.m_setter) {}
@@ -445,7 +457,8 @@ struct GameVariable
 	bool testAsFlag() const;
 
 	/// @brief Updates the GameVariable's value by calling the getter function.
-	void update();
+	/// @return A reference to this GameVariable.
+	GameVariable& update();
 
 public:
 	/// @brief The identifier of the variable.
@@ -853,6 +866,24 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource 
 }
 
 ////////////////////////////////////////////////////////////
+// IScriptObject
+////////////////////////////////////////////////////////////
+
+/// @brief An interface for managing object parameters assigned to a script object.
+struct IScriptObject
+{
+	/// @brief Gets a GameVariable that contains the value of the specified parameter.
+	/// @param name The name of the parameter to retrieve.
+	/// @return A GameVariable containing the value of the specified parameter.
+	virtual std::optional<GameVariable> getScriptObjectParameter(std::string_view name) = 0;
+
+	/// @brief Sets the value of a script object parameter.
+	/// @param name The name of the parameter to set.
+	/// @param value The value to assign to the parameter.
+	//virtual void setScriptObjectParameter(std::string_view name, const GameValue& value) = 0;
+};
+
+////////////////////////////////////////////////////////////
 // ScriptContainer
 ////////////////////////////////////////////////////////////
 
@@ -910,6 +941,138 @@ void copyToArrayAs(const auto& vec, auto& propvalue)
 inline void stupid_ide()
 {
 	auto not_transitive = std::format("");
+}
+
+////////////////////////////////////////////////////////////
+// Prop helpers
+////////////////////////////////////////////////////////////
+
+/// @brief A getter function for a property that gets its results from another getter function.
+GameVariable::func_get gameVariableGetter(ValidGameValueCallable auto getter)
+{
+	return [getter](std::string_view identifier) -> GameValue
+	{
+		return GameValue{ getter() };
+	};
+}
+
+/// @brief A getter function for a property that gets its results from a property directly.
+GameVariable::func_get gameVariableGetter(auto& value)
+{
+	using V = std::remove_cvref_t<decltype(value)>;
+	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V> || std::same_as<V, ScriptObjectSource> || std::same_as<V, std::vector<ScriptObjectSource>>,
+		"gameVariableGetter called with an unsupported type. Supported types are integral, floats, string, ranges, or ScriptObjectSources.");
+
+	// Number.
+	if constexpr (std::integral<V> || std::floating_point<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ static_cast<double>(value) };
+		};
+	}
+	// String.
+	else if constexpr (string::StringVariant<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ std::string{ value } };
+		};
+	}
+	// ScriptObjectSource (and array variant).
+	else if constexpr (std::same_as<V, ScriptObjectSource> || std::same_as<V, std::vector<ScriptObjectSource>>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			return GameValue{ value };
+		};
+	}
+	// Array.
+	else if constexpr (std::ranges::forward_range<V>)
+	{
+		return [&value](std::string_view identifier) -> GameValue
+		{
+			// Transform the range to a vector of doubles.
+			return GameValue{ value | std::views::transform([](const auto& v) { return static_cast<double>(v); }) | std::ranges::to<std::vector<double>>() };
+		};
+	}
+
+	throw std::invalid_argument("gameVariableGetter called with an unsupported type.");
+}
+
+/// @brief A setter function for a property that needs an additional setter function to write the values.
+template<class Who, typename Prop>
+GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
+{
+	return [who, prop, setter](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+	{
+		// Call the setter function.
+		setter(value, index);
+
+		// Record the modification time for the property.
+		if (prop.has_value() && who != nullptr)
+			who->modTime[PROPID(prop.value())] = currentTime();
+	};
+}
+
+/// @brief A setter function for a property that can directly set to a value.
+template<class Who, typename Prop, typename Value>
+GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Value& propvalue)
+{
+	using V = std::remove_cvref_t<Value>;
+	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::random_access_range<V>,
+		"gameVariableSetter called with an unsupported type. Supported types are integral, floats, string, or ranges.");
+
+	// Number.
+	if constexpr (std::integral<V> || std::floating_point<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			propvalue = static_cast<V>(value.get<double>().value_or(0.0));
+			if (prop.has_value())
+				who->modTime[PROPID(prop.value())] = currentTime();
+		};
+	}
+	// String.
+	else if constexpr (string::StringVariant<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			propvalue = value.get<std::string>().value_or({});
+			if (prop.has_value())
+				who->modTime[PROPID(prop.value())] = currentTime();
+		};
+	}
+	// Array.
+	else if constexpr (std::ranges::random_access_range<V>)
+	{
+		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		{
+			size_t propvalue_size = std::ranges::size(propvalue);
+			if (propvalue_size > 0)
+			{
+				using value_type = std::remove_cvref_t<decltype(propvalue[0])>;
+
+				// Setting an individual index in an array.
+				if (index.has_value() && index.value() < propvalue_size)
+				{
+					propvalue[index.value()] = static_cast<value_type>(value.get<double>().value_or(0.0));
+					if (prop.has_value())
+						who->modTime[PROPID(prop.value()) + index.value()] = currentTime();
+				}
+				// Setting the whole array.
+				else if (!index.has_value())
+				{
+					const std::vector<double> vec = value.get<std::vector<double>>().value();
+					copyToArrayAs<value_type>(vec, propvalue);
+					if (prop.has_value())
+						who->modTime[PROPID(prop.value())] = currentTime();
+				}
+			}
+		};
+	}
+
+	throw std::invalid_argument("gameVariableSetter called with an unsupported type.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

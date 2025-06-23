@@ -5,6 +5,7 @@
 #include <chrono>
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <tuple>
@@ -72,6 +73,18 @@ inline constexpr uint8_t operator""_ui8(unsigned long long val)
 inline static constexpr uint8_t PROPID(auto prop)
 {
 	return static_cast<uint8_t>(prop);
+}
+
+template<typename T>
+inline static constexpr std::optional<T> PROPOPT(T prop)
+{
+	return std::make_optional<T>(prop);
+}
+
+template<typename T>
+inline static constexpr std::optional<T> PROPOPT(std::optional<T> prop)
+{
+	return prop;
 }
 
 //----------------------------
