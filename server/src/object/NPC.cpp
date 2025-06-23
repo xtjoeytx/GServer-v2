@@ -65,23 +65,6 @@ constexpr std::array<std::string_view, NPCPROP_COUNT> npcPropNames =
 
 //----------------------------
 
-template<typename T>
-concept ValidGameValueCallable = requires(T t)
-{
-	{ t() } -> std::convertible_to<GameValue>;
-};
-
-template <typename T>
-void copyToArrayAs(const auto& vec, auto& propvalue)
-{
-	size_t count = std::min(vec.size(), propvalue.size());
-	auto it = std::begin(vec);
-	for (size_t i = 0; i < count; ++i, ++it)
-	{
-		propvalue[i] = static_cast<T>(*it);
-	}
-}
-
 /// @brief A getter function for a property that gets its results from another getter function.
 static GameVariable::func_get prop_get(ValidGameValueCallable auto getter)
 {
@@ -1126,6 +1109,16 @@ std::string NPC::getJoinedClasses() const
 	return result;
 }
 
+bool NPC::hasJoinedClass(std::string_view className) const
+{
+	for (const auto& classPtr : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
+			return true;
+	}
+	return false;
+}
+
 void NPC::setJoinedClasses(std::string_view classes)
 {
 	auto server = BabyDI::Get<Server>();
@@ -1216,6 +1209,7 @@ void NPC::resetToInitialState()
 	scripting.variables.add(GameVariable{ set_temporary, "gralats", prop_get(character.gralats), prop_set(this, NPCProp::RUPEES, character.gralats) });
 	scripting.variables.add(GameVariable{ set_temporary, "bombs", prop_get(character.bombs), prop_set(this, NPCProp::BOMBS, character.bombs) });
 	scripting.variables.add(GameVariable{ set_temporary, "darts", prop_get(character.arrows), prop_set(this, NPCProp::ARROWS, character.arrows) });
+	scripting.variables.add(GameVariable{ set_temporary, "hearts", prop_get(character.hitpointsInHalves), prop_set(this, NPCProp::POWER, character.hitpointsInHalves) });
 	scripting.variables.add(GameVariable{ set_temporary, "glovepower", prop_get(character.glovePower), prop_set(this, NPCProp::GLOVEPOWER, character.glovePower) });
 	scripting.variables.add(GameVariable{ set_temporary, "swordpower", prop_get(character.swordPower), prop_set(this, NPCProp::SWORDIMAGE, character.swordPower) });
 	scripting.variables.add(GameVariable{ set_temporary, "shieldpower", prop_get(character.shieldPower), prop_set(this, NPCProp::SHIELDIMAGE, character.shieldPower) });

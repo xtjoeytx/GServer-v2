@@ -496,6 +496,7 @@ static GameVariable GameVariable::deserialize(std::string identifier, std::strin
 			array.emplace_back(string::toDouble(number));
 		return GameVariable{ std::move(identifier), std::move(array) };
 	}
+	return GameVariable{};
 }
 
 //----------------------------
@@ -591,6 +592,7 @@ inline std::string GameVariable::serialize() const
 		}
 		return array;
 	}
+	return {};
 }
 
 ////////////////////////////////////////////////////////////
@@ -779,6 +781,9 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource 
 
 inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, string::ForwardRangeNotString auto&& range)
 {
+	static_assert(!string::PointerToConstCharString<decltype(range)>,
+		"Don't use a const char* in the ranged variant of ScriptEventQueue::addEvent, pass in a std::string_view instead.");
+
 	ScriptEvent event{ .type = type, .initiator = initiator };
 	event.args.append_range(range | std::views::transform([](const auto& arg) -> std::any { return std::any{ arg }; }));
 	addEvent(std::move(event));
@@ -815,8 +820,29 @@ inline constexpr auto only_flags = std::views::filter([](const decltype(GameVari
 } // end namespace preagonal::variables
 
 ////////////////////////////////////////////////////////////
+// Concepts
+////////////////////////////////////////////////////////////
+
+template<typename T>
+concept ValidGameValueCallable = requires(T t)
+{
+	{ t() } -> std::convertible_to<GameValue>;
+};
+
+////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////
+
+template <typename T>
+void copyToArrayAs(const auto& vec, auto& propvalue)
+{
+	size_t count = std::min(vec.size(), propvalue.size());
+	auto it = std::begin(vec);
+	for (size_t i = 0; i < count; ++i, ++it)
+	{
+		propvalue[i] = static_cast<T>(*it);
+	}
+}
 
 inline void stupid_ide()
 {

@@ -26,16 +26,19 @@ namespace preagonal::string
 ///////////////////////////////////////////////////////////////////////////////
 
 // A concept that checks if a type is a string.
-template <typename T>
+template<typename T>
 concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string>; // || std::same_as<T, std::u8string>;
 
 // A concept that checks if a type is a string or string_view.
-template <typename T>
+template<typename T>
 concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view>; // || std::same_as<T, std::u8string_view>;
 
+template<typename T>
+concept PointerToConstCharString = std::is_bounded_array_v<std::remove_cvref_t<T>> && std::is_same_v<std::remove_all_extents_t<std::remove_cvref_t<T>>, char>;
+
 // A concept that checks if a type is a forward range, but not a string.
-template <typename T>
-concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVariant<T>;
+template<typename T>
+concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVariant<T> && !PointerToConstCharString<T>;
 
 template<typename T>
 concept NotForwardRangeNotString = !ForwardRangeNotString<T>;

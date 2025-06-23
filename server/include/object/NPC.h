@@ -179,6 +179,7 @@ enum class NPCStorageType
 };
 
 inline constexpr std::string_view NPCTYPE_LOCAL = "LOCALN"sv;
+inline constexpr std::string_view NPCTYPE_OBJECT = "OBJECT"sv;
 inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------
@@ -276,6 +277,7 @@ public:
 
 public:
 	std::string getJoinedClasses() const;
+	bool hasJoinedClass(std::string_view className) const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);

@@ -129,7 +129,7 @@ builtin_command_expression
 
 function_definition
 	: KW_FUNCTION identifier_literal TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block
-		{add_user_function($identifier_literal.ctx->getText(), $block.ctx);}
+		{add_user_function($identifier_literal.ctx->getText(), $block.ctx);}				# FunctionDefinition
 	;
 
 user_function

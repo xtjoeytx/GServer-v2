@@ -22,6 +22,7 @@
 #include <BabyDI.h>
 #include <Server.h>
 #include <level/LevelBaddy.h>
+#include <npcserver/NPCServer.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -699,7 +700,11 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 // destroy;
 void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("destroy is not implemented yet.");
+	if (auto source = visitor->getOriginalSource().second; source == ScriptObjectSourceType::NPC)
+	{
+		auto* server = BabyDI::Get<Server>();
+		server->getNPCServer()->deleteNPC(visitor->getOriginalSource().first);
+	}
 }
 
 // detachplayer;

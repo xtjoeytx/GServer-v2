@@ -22,8 +22,8 @@
 #include <player/PlayerClient.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/gs2/ScriptEngineGS2.h>
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptClass.h>
+#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -140,13 +140,17 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	// Run all weapon scripts.
 	for (auto& [name, weapon] : m_server->getWeaponList())
 	{
-		weapon->executeEvents(weapon->scripting.events, source::FromWeapon(weapon));
+		// Copy the shared_ptr so if we "destroy" gets called, the weapon isn't immediately deleted while we are running the script.
+		WeaponPtr copy = weapon;
+		copy->executeEvents(weapon->scripting.events, source::FromWeapon(weapon));
 	}
 
 	// Run all NPC scripts.
 	for (auto& [id, npc] : m_server->getNPCList())
 	{
-		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
+		// Copy the shared_ptr so if we "destroy" gets called, the NPC isn't immediately deleted while we are running the script.
+		NPCPtr copy = npc;
+		copy->executeEvents(npc->scripting.events, source::FromNPC(id));
 	}
 
 	// Send all changed NPC props.
@@ -180,6 +184,9 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getLevel());
 		}
 	}
+
+	// Process deleted NPCs.
+	processDeletedNPCs();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -244,6 +251,19 @@ void NPCServer::saveNPCs()
 
 //////////////////////////////////////////////////////////////////////////////
 
+std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
+{
+	for (const auto& [_, npc] : m_globalNPCList)
+	{
+		if (npc.lock()->name == name)
+		{
+			return npc;
+		}
+	}
+
+	return {};
+}
+
 std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location)
 {
 	NPCPtr npc = nullptr;
@@ -265,17 +285,22 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	return npc;
 }
 
-std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
+void NPCServer::deleteNPC(NPCID id)
 {
-	for (const auto& [_, npc] : m_globalNPCList)
-	{
-		if (npc.lock()->name == name)
-		{
-			return npc;
-		}
-	}
+	m_deletedNPCs.insert(id);
+}
 
-	return {};
+void NPCServer::processDeletedNPCs()
+{
+	for (const auto& npcId : m_deletedNPCs)
+	{
+		// Remove from the global list.
+		m_globalNPCList.erase(npcId);
+
+		// Remove from the server's NPC list.
+		m_server->deleteNPC(npcId, true);
+	}
+	m_deletedNPCs.clear();
 }
 
 //----------------------------

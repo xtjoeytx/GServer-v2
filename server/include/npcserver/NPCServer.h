@@ -8,6 +8,7 @@
 #include <string_view>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <BabyDI.h>
 #include <level/Level.h>
@@ -46,17 +47,6 @@ public:
 public:
 	void update(TimeoutGenerator::time_point currentTime = std::chrono::high_resolution_clock::now());
 
-private:
-	void run(TimeoutGenerator::time_delta delta);
-
-private:
-	void loadClasses();
-	void loadDatabaseNPCs();
-
-public:
-	void saveNPCs();
-	//std::vector<std::pair<double, std::string>> calculateNPCStats();
-
 public:
 	[[inline]] std::shared_ptr<Player> getPlayer() const;
 	[[inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
@@ -72,8 +62,11 @@ public:
 	[[inline]] void addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, std::ranges::forward_range auto&& range);
 
 public:
-	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location);
 	std::weak_ptr<NPC> getNPCByName(const std::string& name);
+	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location);
+	void deleteNPC(NPCID id);
+	void saveNPCs();
+	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
 public:
 	bool hasClass(std::string_view name) const;
@@ -86,6 +79,14 @@ public:
 	ScriptSystem scripting;
 
 private:
+	void run(TimeoutGenerator::time_delta delta);
+	void processDeletedNPCs();
+
+private:
+	void loadClasses();
+	void loadDatabaseNPCs();
+
+private:
 	BabyDI_INJECT(Server, m_server);
 
 	std::shared_ptr<PlayerNPCServer> m_npcServerPlayer;
@@ -96,6 +97,7 @@ private:
 	TimeoutGenerator m_timedSave{ 5min, true };
 
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
+	std::unordered_set<NPCID> m_deletedNPCs;
 	string_map<std::shared_ptr<ScriptClass>> m_classList;
 };
 
