@@ -456,7 +456,7 @@ void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, con
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, id, objecttype));
+			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, id, objecttype);
 	}
 }
 
@@ -709,7 +709,7 @@ void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const st
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8));
+			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8);
 	}
 }
 
@@ -1371,7 +1371,7 @@ void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vec
 				}
 			}
 
-			player->sendPropsFromResults(results);
+			//player->sendPropsFromResults(results);
 		}
 	}
 }
@@ -1405,7 +1405,7 @@ void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const st
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[4] = static_cast<uint8_t>(color);
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
+			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
 }
@@ -1419,7 +1419,7 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::BODYIMG>(SetBy::SERVER, filename));
+			player->setPropWith<PlayerProp::BODYIMG>(SetBy::SERVER, filename);
 	}
 }
 
@@ -1503,7 +1503,7 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[1] = static_cast<uint8_t>(color);
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
+			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
 }
@@ -1524,7 +1524,7 @@ void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::
 			else
 				status &= ~PLSTATUS_MALE;
 
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::STATUS>(SetBy::SERVER, status));
+			player->setPropWith<PlayerProp::STATUS>(SetBy::SERVER, status);
 		}
 	}
 }
@@ -1543,7 +1543,12 @@ void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::HEADGIF>(SetBy::SERVER, filename));
+		{
+			// This needs to go to everybody (for the player list), so we have to send it immediately.
+			auto results = player->setPropWith<PlayerProp::HEADGIF>(SetBy::SERVER, filename);
+			results.resultFlags = results.sendToAll;
+			player->sendPropsFromResults(results);
+		}
 	}
 }
 
@@ -1642,7 +1647,7 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 			uint8_t currentDir = sprite % 4;
 			uint8_t newDir = currentDir + (dir - currentDir);
 
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::SPRITE>(SetBy::SERVER, newDir));
+			player->setPropWith<PlayerProp::SPRITE>(SetBy::SERVER, newDir);
 		}
 	}
 }
@@ -1700,7 +1705,7 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto power = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::SHIELDPOWER>(SetBy::SERVER, image, power));
+			player->setPropWith<PlayerProp::SHIELDPOWER>(SetBy::SERVER, image, power);
 	}
 }
 
@@ -1719,7 +1724,7 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[3] = static_cast<uint8_t>(color);
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
+			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
 }
@@ -1751,7 +1756,7 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[0] = static_cast<uint8_t>(color);
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
+			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
 }
@@ -1771,7 +1776,7 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[2] = static_cast<uint8_t>(color);
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors));
+			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
 }
@@ -1826,7 +1831,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto power = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-			player->sendPropsFromResults(player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power));
+			player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power);
 	}
 }
 
@@ -1959,6 +1964,7 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // take itemname;
+// Takes an item on the level in a 10-tile radius from the NPC.
 void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::runtime_error("take is not implemented yet.");

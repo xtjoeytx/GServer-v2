@@ -79,7 +79,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
 	auto curTime = currentTime();
-	m_modTime[PROPID(prop)] = curTime;
+	modTime[PROPID(prop)] = curTime;
 
 #define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); return result; } while(false)
 
@@ -921,7 +921,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	if (!result.resultPropIds.empty())
 	{
 		for (const auto& id : result.resultPropIds)
-			m_modTime[id] = curTime;
+			modTime[id] = curTime;
 	}
 
 	return result;
@@ -1146,6 +1146,21 @@ CString Player::getPropsForRCPacket()
 		ret >> (char)weapon.length() << weapon;
 
 	return ret;
+}
+
+CString Player::getModifiedPropsPacket() const
+{
+	CString result;
+	for (auto i = 0; i < PLAYERPROP_COUNT; ++i)
+	{
+		if (modTime[i] != m_savedModTime[i])
+		{
+			auto prop = getProp((PlayerProp)i);
+			CString data = prop->serialize();
+			result >> (char)i << data;
+		}
+	}
+	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

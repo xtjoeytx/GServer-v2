@@ -19,6 +19,7 @@
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
+#include <player/PlayerClient.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/gs2/ScriptEngineGS2.h>
 #include <scripting/ScriptContainers.h>
@@ -165,6 +166,19 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 
 	// Send all changed player props.
 	{
+		CString propsPacket;
+		for (auto& [id, player] : m_server->getPlayerList())
+		{
+			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(player);
+			if (playerClient == nullptr) continue;
+
+			propsPacket.clear();
+			propsPacket.write(player->getModifiedPropsPacket());
+			if (propsPacket.isEmpty()) continue;
+
+			player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
+			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getLevel());
+		}
 	}
 }
 

@@ -216,7 +216,9 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 				{
 					auto prop = player->getProp(propId);
 					prop->apply(val);
-					player->sendPropsFromResults(player->setProp(propId, SetBy::SERVER, prop));
+					auto results = player->setProp(propId, SetBy::SERVER, prop);
+					if (results.resultFlags.test(results.sendToAll))
+						player->sendPropsFromResults(results);
 				}
 				else
 				{
@@ -229,7 +231,7 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
 
 					colors.values[std::max(0, propIndex - 20)] = colorVal;
-					player->sendPropsFromResults(player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors));
+					player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors);
 				}
 			}
 		}
@@ -279,12 +281,34 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 
 static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments, pickerFunc picker)
 {
-	std::optional<size_t> index = std::nullopt;
+	std::optional<int32_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-	const auto& currentSource = visitor->getCurrentSource();
-	Character* character = getCharacterFromSource(currentSource, index);
+	Character* character = nullptr;
+	ScriptObjectSource currentSource;
+
+	if (index.value_or(0) == -1)
+	{
+		auto activeNPC = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC);
+		if (activeNPC.has_value())
+		{
+			currentSource = activeNPC.value();
+			character = getCharacterFromSource(activeNPC.value());
+		}
+	}
+	else
+	{
+		auto activePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
+		if (activePlayer.has_value())
+		{
+			currentSource = activePlayer.value();
+			if (index.value_or(0) == 0)
+				character = getCharacterFromSource(activePlayer.value(), {});
+			else character = getCharacterFromSource(activePlayer.value(), index);
+		}
+	}
+
 	if (character == nullptr)
 		return std::string{};
 

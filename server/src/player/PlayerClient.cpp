@@ -598,7 +598,7 @@ bool PlayerClient::sendLogin()
 
 	// Record prop mod time.
 	auto curTime = currentTime();
-	std::ranges::for_each(m_modTime, [&curTime](auto& modTime) { modTime = curTime; });
+	std::ranges::for_each(modTime, [&curTime](auto& modTime) { modTime = curTime; });
 
 	// Ask for processes. This causes windows v6 clients to crash
 	if (m_versionId < CLVER_6_015)

@@ -287,6 +287,10 @@ public:
 	/// @brief Exchanges the properties of the current player with other players.
 	void exchangeMyPropsWithOthers();
 
+	/// @brief Gets a packet containing modified properties.
+	/// @return A packet of modified properties.
+	CString getModifiedPropsPacket() const;
+
 public:
 	bool deleteFlag(std::string_view flagName, bool sendToPlayer = false);
 	bool setFlag(std::string_view flagPair, bool sendToPlayers = false);
@@ -342,6 +346,7 @@ public:
 
 public:
 	Account account;
+	std::array<clock::time_point, PLAYERPROP_COUNT> modTime;
 
 protected:
 	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);
@@ -442,7 +447,6 @@ protected:
 	int64_t m_accountIp = 0;
 	uint16_t m_udpport = 0;
 	int64_t m_deviceId = 0;
-	std::array<clock::time_point, PLAYERPROP_COUNT> m_modTime;
 	std::array<clock::time_point, PLAYERPROP_COUNT> m_savedModTime;
 
 	uint8_t m_horseBombCount = 0;
@@ -526,7 +530,7 @@ inline bool Player::removeChatChannel(const std::string& channel)
 
 inline void Player::recordCurrentPropModTime()
 {
-	m_savedModTime = m_modTime;
+	m_savedModTime = modTime;
 }
 
 //----------------------------

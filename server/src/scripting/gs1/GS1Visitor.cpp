@@ -164,42 +164,78 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	}
 
 	std::weak_ptr<GameVariable> builtIn;
+	auto mergeWithBuiltInBoolean = [](std::shared_ptr<GameVariable>& existing, std::shared_ptr<GameVariable>& builtIn) -> int
+	{
+		// No built-in variable, return 0: stub existing.
+		if (builtIn == nullptr)
+			return 0;
+		// Built-in variable is not a boolean, or we have no existing, return 1: use built-in.
+		if (!builtIn->has<bool>() || existing == nullptr)
+			return 1;
+		// Merge the boolean value from the built-in variable into the existing variable, return 2: use existing.
+		existing->assign(builtIn->get<bool>().value_or(false), std::nullopt);
+		return 2;
+	};
 
 	// First, try to get a built-in variable.
 	if (builtInStore != nullptr)
 		builtIn = builtInStore->get(identifier);
 
-	// Now look in the original source store.
-	if (auto* store = getGameVariableStoreFromSource(getOriginalSource()); store != nullptr)
+	// Lock the built-in variable.
+	auto builtInResult = builtIn.lock();
+
+	// Look in the current source's store.
+	if (auto* currentStore = getGameVariableStoreFromSource(getCurrentSource()); currentStore != nullptr)
 	{
-		// Since we have no built-in variable, we can just return the store's variable.
-		if (builtIn.expired())
-			return store->get_or_stub(identifier);
-
-		// If we have a built-in variable, and the built-in store had a boolean version of it, add the boolean version to the result.
-		// This is required because flags like 'timeout' are also variables on the NPC and the result of the flag might differ from the value.
-		if (auto builtInVar = builtIn.lock(); builtInVar != nullptr)
+		// For the current store, we only want to return a variable if it exists.
+		// If the variable does not exist, it will be added to the source store.
+		if (currentStore->contains(identifier))
 		{
-			// If the built-in variable is not a boolean, use the built-in.
-			if (!builtInVar->has<bool>())
-				return builtInVar;
-
-			// Get the variable from the store.
-			// If none was found, we can return the built-in variable.
-			auto sourceResult = store->get(identifier);
-			if (sourceResult.expired())
-				return builtIn;
-
-			// Add the boolean version to the result.
-			if (auto sourceVar = sourceResult.lock(); sourceVar != nullptr)
+			// If we have a built-in variable, and the current store had a boolean version of it, add the boolean version to the result.
+			auto currentStoreResult = currentStore->get(identifier).lock();
+			switch (mergeWithBuiltInBoolean(currentStoreResult, builtInResult))
 			{
-				sourceVar->assign(builtInVar->get<bool>().value_or(false), std::nullopt);
-				return sourceVar;
+				case 0: return currentStore->get_or_stub(identifier);
+				case 1: return builtInResult;
+				case 2: return currentStoreResult;
 			}
 		}
 	}
 
-	// We have a built-in variable, but our original source doesn't have a store, just return it.
+	GameVariableStore* targetStoreForStub = nullptr;
+
+	// Now look in the original source's store.
+	if (auto* sourceStore = getGameVariableStoreFromSource(getOriginalSource()); sourceStore != nullptr)
+		{
+		auto sourceStoreResult = sourceStore->get(identifier).lock();
+		switch (mergeWithBuiltInBoolean(sourceStoreResult, builtInResult))
+		{
+			case 0: targetStoreForStub = sourceStore; break;
+			case 1: return builtInResult;
+			case 2: return sourceStoreResult;
+		}
+	}
+
+	// Now look at the initiator's store.
+	if (m_event->initiator != getOriginalSource())
+	{
+		if (auto* initiatorStore = getGameVariableStoreFromSource(m_event->initiator); initiatorStore != nullptr)
+		{
+			auto initiatorStoreResult = initiatorStore->get(identifier).lock();
+			switch (mergeWithBuiltInBoolean(initiatorStoreResult, builtInResult))
+			{
+				case 0: targetStoreForStub = initiatorStore; break;
+				case 1: return builtInResult;
+				case 2: return initiatorStoreResult;
+			}
+		}
+	}
+
+	// If we found a target store to stub our variable in, do it now.
+	if (targetStoreForStub != nullptr)
+		return targetStoreForStub->get_or_stub(identifier);
+
+	// We have a built-in variable, but our sources don't have a store, just return it.
 	if (!builtIn.expired())
 		return builtIn;
 
@@ -392,8 +428,13 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObjectSource source, GS
 	m_originalSource = source;
 	m_currentSource.push_back(m_originalSource);
 
+	// If we have an initiator, make sure they are on the stack.
+	// But don't have them be on top of the stack.
 	if (event.initiator != source)
+	{
 		m_currentSource.push_back(event.initiator);
+		m_currentSource.push_back(m_originalSource);
+	}
 
 	m_serverStore = getGameVariableStoreFromSource(source::FromServer());
 

@@ -979,7 +979,9 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 		});
 
 		newNPC->name = std::format("{}{}", npcNamePrefix, (count + 1));
+		newNPC->scriptType = NPCTYPE_LOCAL;
 	}
+	else newNPC->scriptType = NPCTYPE_OBJECT;
 
 	// Set NPC props.
 	newNPC->level = level;
@@ -1144,6 +1146,9 @@ void Server::recordPlayerLoggedIn(PlayerPtr player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
+
+	// Bind the player's variables.
+	player->account.bindVariablesToPlayer(player);
 
 	if (hasNPCServer())
 		getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(player->getId()));
