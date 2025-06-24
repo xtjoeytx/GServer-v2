@@ -463,8 +463,6 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			CString code = line.readString("").replaceAll("\xa7", "\n");
 
 			auto npc = server->addNPC(image, code, x, y, level, NPCStorageType::LEVEL, false);
-			level->m_npcs.push_back(npc->id);
-
 			if (server->hasNPCServer())
 			{
 				auto indent2 = log::server.indent();
@@ -634,8 +632,6 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			//printf( "image: %s, x: %.2f, y: %.2f, code: %s\n", image.text(), x, y, code.text() );
 			// Add the new NPC.
 			auto npc = server->addNPC(image, code, x, y, level, NPCStorageType::LEVEL, false);
-			level->m_npcs.push_back(npc->id);
-
 			if (server->hasNPCServer())
 			{
 				auto indent2 = log::server.indent();

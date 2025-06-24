@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -900,6 +901,9 @@ bool Level::isPlayerLeader(PlayerID id)
 
 bool Level::addNPC(std::shared_ptr<NPC> npc)
 {
+	if (std::ranges::contains(m_npcs, npc->id))
+		return false;
+
 	m_npcs.push_back(npc->id);
 
 	auto script = string::trimLeft(npc->getScript().getClientSide());
