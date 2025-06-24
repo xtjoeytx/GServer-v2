@@ -146,6 +146,7 @@ inc_dec_expression
 in_expression
 	: range_literal
 	| array_literal
+	| identifier_access
 	;
 
 assignment
