@@ -233,7 +233,8 @@ void NPCServer::loadDatabaseNPCs()
 		{
 			log::print(log::server, "[{}] {}", npc->id, npcName);
 			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
-			m_globalNPCList[npc->id] = npc;
+			if (npc->scriptType != NPCTYPE_LOCAL)
+				m_globalNPCList[npc->id] = npc;
 		}
 	}
 }
