@@ -502,7 +502,10 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 	{
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source->first); player != nullptr)
-			return player->account.name;
+		{
+			// Explicitly place it in another string as the return will trigger move semantics.
+			return std::string{ player->account.name };
+		}
 	}
 
 	return std::string{};
@@ -575,7 +578,10 @@ GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	auto npc = getNPCFromSource(visitor->getCurrentSource());
 	if (npc != nullptr)
-		return npc->image;
+	{
+		// Explicitly place it in another string as the return will trigger move semantics.
+		return std::string{ npc->image };
+	}
 
 	return std::string{};
 }
@@ -681,12 +687,15 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto npc = getNPCFromSource(visitor->getCurrentSource(), index); npc != nullptr)
-		return npc->name;
+	{
+		// Explicitly place it in another string as the return will trigger move semantics.
+		return std::string{ npc->name };
+	}
 
 	return std::string{};
 }
 
-// #p(index)  [Read / Write]
+// #p(index)  [Read]
 // The action parameter of the specified index.
 GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -698,7 +707,10 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (index < visitor->getEvent().args.size())
 	{
 		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)
-			return *arg;
+		{
+			// Explicitly place it in another string as the return will trigger move semantics.
+			return std::string{ *arg };
+		}
 	}
 	return std::string{};
 }
@@ -733,7 +745,7 @@ GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std
 	return visitor->getGameValueAs<std::string>(*arguments[0]);
 }
 
-// #t(index)  [Read / Write]
+// #t(index)  [Read]
 // The token at the specified index as created via tokenize.
 GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -744,7 +756,8 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (index >= visitor->tokenizeTokens.size())
 		return std::string{};
 
-	return visitor->tokenizeTokens[index];
+	// Explicitly place it in another string as the return will trigger move semantics.
+	return std::string{ visitor->tokenizeTokens[index] };
 }
 
 // #T(string)
@@ -790,7 +803,10 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (index < weaponList.size())
 			{
 				if (auto weapon = server->getWeapon(weaponList[index]); weapon != nullptr)
-					return weapon->image;
+				{
+					// Explicitly place it in another string as the return will trigger move semantics.
+					return std::string{ weapon->image };
+				}
 			}
 		}
 	}
@@ -815,7 +831,10 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 				index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 			if (index < weaponList.size())
-				return weaponList[index];
+			{
+				// Explicitly place it in another string as the return will trigger move semantics.
+				return std::string{ weaponList[index] };
+			}
 		}
 	}
 	return std::string{};
