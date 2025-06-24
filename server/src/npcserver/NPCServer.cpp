@@ -211,7 +211,6 @@ void NPCServer::loadClasses()
 		m_classList[className] = scriptClass;
 
 		log::print(log::server, "{}", className);
-		//updateClassForPlayers(getClass(className));
 	}
 }
 
@@ -245,9 +244,7 @@ void NPCServer::saveNPCs()
 	for (const auto& [npcId, npcPtr] : m_globalNPCList)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr)
-		{
 			m_server->getNPCLoader().saveNPC(npc);
-		}
 	}
 }
 
@@ -258,9 +255,7 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 	for (const auto& [_, npc] : m_globalNPCList)
 	{
 		if (npc.lock()->name == name)
-		{
 			return npc;
-		}
 	}
 
 	return {};

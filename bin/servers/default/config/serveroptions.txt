@@ -183,6 +183,16 @@ onlystaff = false
 # Set to true to disable the folder configuration.
 nofoldersconfig = false
 
+# Sets the server generation.
+# The server version controls certain aspects of the server, like how data is sent and saved.
+# This option will restrict which clients can join the server, taking precedence over allowedversions.txt.
+# GS2 is only usable on newmain and modern.
+#   original - 1.x
+#   classic  - 2.x/3.x
+#   newmain  - 4.x to 5.007
+#   modern   - 5.1+
+generation = classic
+
 # Determines whether the server handles certain things like signs and links.
 # Don't set to true.
 serverside = false

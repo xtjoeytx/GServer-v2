@@ -550,6 +550,12 @@ void Server::loadSettings()
 	// Load staff list
 	m_staffList = m_settings.getStr("staff").tokenize(",");
 
+	// Load the generation.
+	auto generation = m_settings.getStr("generation", "classic").toLower();
+	if (auto it = std::ranges::find(ServerGenerationNames, generation.toStringView()); it != std::ranges::end(ServerGenerationNames))
+		Generation = static_cast<ServerGeneration>(std::distance(ServerGenerationNames.begin(), it));
+	log::printLine(log::server, "- Server generation: {}", generation);
+
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	getServerList().sendServerHQ();
 }
@@ -572,24 +578,66 @@ void Server::loadAllowedVersions()
 	versions.removeAllI("\r");
 	versions.removeAllI("\t");
 	versions.removeAllI(" ");
-	m_allowedVersions = versions.tokenize("\n");
+	m_allowedVersions.clear();
 	m_allowedVersionString.clear();
-	for (auto& allowedVersion: m_allowedVersions)
-	{
-		if (!m_allowedVersionString.isEmpty())
-			m_allowedVersionString << ", ";
 
-		int loc = allowedVersion.find(":");
-		if (loc == -1)
-			m_allowedVersionString << getVersionString(allowedVersion, PLTYPE_ANYCLIENT);
-		else
+	// New version.
+	if (versions.contains("[generation-range]"))
+	{
+		const auto& generation = ServerGenerationNames.at(static_cast<size_t>(Generation));
+		if (auto line = versions.find(generation); line != -1)
 		{
-			CString s = allowedVersion.subString(0, loc);
-			CString f = allowedVersion.subString(loc + 1);
-			int vid = getVersionID(s);
-			int vid2 = getVersionID(f);
-			if (vid != -1 && vid2 != -1)
-				m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
+			if (auto sep = versions.find("=", line); sep != -1)
+			{
+				versions.setRead(sep + 1);
+				std::string versionRange = string::trimMutate(versions.readString("\n").toString());
+
+				std::vector<std::string> formattedVersions;
+				for (const auto& version : string::splitHard(versionRange, ","sv))
+				{
+					m_allowedVersions.push_back(version);
+					auto rangeParts = string::splitHard(version, ":"sv);
+					if (rangeParts.size() == 1)
+					{
+						if (int id = getVersionID(rangeParts[0]); id != 0)
+							formattedVersions.push_back(getVersionString(id, PLTYPE_ANYCLIENT));
+					}
+					else if (rangeParts.size() == 2)
+					{
+						int startId = getVersionID(rangeParts[0]);
+						int endId = getVersionID(rangeParts[1]);
+						if (startId != 0 && endId != 0)
+							formattedVersions.emplace_back(std::format("{} - {}", getVersionString(rangeParts[0], PLTYPE_ANYCLIENT), getVersionString(rangeParts[1], PLTYPE_ANYCLIENT)));
+					}
+				}
+				m_allowedVersionString = string::join(formattedVersions, ", "sv);
+			}
+		}
+
+		if (m_allowedVersions.empty())
+			log::printLine(log::server, "** [Error] Could not find generation range for '{}' in allowedversions.txt.", generation);
+	}
+	// Old version.
+	else
+	{
+		m_allowedVersions = versions.tokenize("\n");
+		for (auto& allowedVersion : m_allowedVersions)
+		{
+			if (!m_allowedVersionString.isEmpty())
+				m_allowedVersionString << ", ";
+
+			int loc = allowedVersion.find(":");
+			if (loc == -1)
+				m_allowedVersionString << getVersionString(allowedVersion, PLTYPE_ANYCLIENT);
+			else
+			{
+				CString s = allowedVersion.subString(0, loc);
+				CString f = allowedVersion.subString(loc + 1);
+				int vid = getVersionID(s);
+				int vid2 = getVersionID(f);
+				if (vid != -1 && vid2 != -1)
+					m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
+			}
 		}
 	}
 }

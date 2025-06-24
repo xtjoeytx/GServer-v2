@@ -1,6 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <array>
 #include <chrono>
 #include <climits>
 #include <concepts>
@@ -78,7 +79,7 @@ constexpr int FS_COUNT = 7;
 enum class ServerGeneration
 {
 	// 1.x
-	ORIGINAL,
+	ORIGINAL = 0,
 
 	// 2.x/3.x
 	CLASSIC,
@@ -88,6 +89,14 @@ enum class ServerGeneration
 
 	// 5.1 and up
 	MODERN
+};
+
+inline constexpr std::array<std::string_view, 4> ServerGenerationNames =
+{
+	"original",
+	"classic",
+	"newmain",
+	"modern"
 };
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
