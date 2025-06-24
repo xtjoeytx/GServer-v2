@@ -1539,6 +1539,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	if (folderMap.find(account.lastFolderAccessed) == folderMap.end())
 		account.lastFolderAccessed = folderMap.begin()->first.toStringView();
 
+	// We want to end with a path separator.
+	if (!account.lastFolderAccessed.ends_with('/'))
+		account.lastFolderAccessed += '/';
+
 	// Create the file system.
 	FileSystem fs;
 	fs.addDir(account.lastFolderAccessed);
@@ -1612,6 +1616,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	else
 		account.lastFolderAccessed = newFolder.toStringView();
+
+	// We want to end with a path separator.
+	if (!account.lastFolderAccessed.ends_with('/'))
+		account.lastFolderAccessed += '/';
 
 	// Create the file system.
 	FileSystem fs;
