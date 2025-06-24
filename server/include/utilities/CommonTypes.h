@@ -55,8 +55,9 @@ inline constexpr PlayerID PLAYERID_GEN_EXTERNAL = 16000;
 
 // NPC IDs under 1000 can't be deleted, so require manual assignment.
 inline constexpr NPCID NPCID_GEN_MANUAL = 3;
-inline constexpr NPCID NPCID_GEN_LOCAL = 1000;
+inline constexpr NPCID NPCID_GEN_LOCAL = 300;
 inline constexpr NPCID NPCID_GEN_DATABASE = 10000;
+inline constexpr NPCID NPCID_GEN_DATABASE_LOCALN = 100000;
 inline constexpr uint8_t BADDYID_GEN = 1;
 
 //----------------------------

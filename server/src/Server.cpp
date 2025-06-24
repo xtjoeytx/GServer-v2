@@ -94,6 +94,7 @@ Server::Server(const CString& pName)
 
 	m_npcIdGenerator.createSegment(NPCID_GEN_LOCAL);
 	m_npcIdGenerator.createSegment(NPCID_GEN_DATABASE);
+	m_npcIdGenerator.createSegment(NPCID_GEN_MANUAL);
 	//m_playerIdGenerator.createSegment(PLAYERID_GEN_EXTERNAL);
 
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
@@ -1008,8 +1009,13 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	if (storageType == NPCStorageType::LEVEL && levelPtr == nullptr)
 		return nullptr;
 
+	// Pick the ID range for the NPC ID.
+	auto startId = NPCID_GEN_LOCAL;
+	if (storageType == NPCStorageType::DATABASE)
+		startId = NPCID_GEN_DATABASE_LOCALN;
+
 	// Get available NPC ID.
-	NPCID newId = m_npcIdGenerator.getAvailableId();
+	NPCID newId = m_npcIdGenerator.getAvailableId(startId);
 
 	// New NPC
 	auto newNPC = std::make_shared<NPC>(newId, storageType);
@@ -1041,6 +1047,16 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	newNPC->character.pixelX = x * 16;
 	newNPC->character.pixelY = y * 16;
 	newNPC->image = image;
+
+	// If the level is a gmap, set the modTime on the level props.
+	if (auto map = levelPtr->getMap(); map && map->isGmap())
+	{
+		auto now = currentTime();
+		newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
+		newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
+	}
+
+	// Set the script and record the initial state.
 	newNPC->setScript(script);
 	newNPC->recordInitialState();
 
@@ -1101,16 +1117,19 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		// Tell the clients to delete the NPC.
 		auto map = level->getMap();
 		bool isOnMap = map != nullptr;
-		CString tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName());
+		std::string tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName().toString());
 
 		for (auto& [pid, p]: m_playerList)
 		{
-			if (p->isClient())
+			if (auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p); playerClient != nullptr)
 			{
-				if (isOnMap || p->getVersion() < CLVER_2_1)
-					p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->id);
-				else
+				if (playerClient->getComputedLevelName() != tmpLvlName)
 					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->id);
+				else p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->id);
+			}
+			else if (p->isNC())
+			{
+				p->sendPacket(CString() >> (char)PLO_NC_NPCDELETE >> (int)npc->id);
 			}
 		}
 	}

@@ -321,7 +321,7 @@ private:
 
 	string_map<std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
-	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_MANUAL };
+	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_DATABASE_LOCALN };
 
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;

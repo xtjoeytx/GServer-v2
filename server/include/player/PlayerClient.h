@@ -85,6 +85,7 @@ public:
 	void setMap(const std::shared_ptr<Map>& map);
 
 	// Level manipulation
+	std::string getComputedLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
 	std::pair<int, int> getMapPosition() const;
 	bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);

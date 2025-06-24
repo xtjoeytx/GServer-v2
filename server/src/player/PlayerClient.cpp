@@ -1136,6 +1136,18 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 	return true;
 }
 
+std::string PlayerClient::getComputedLevelName() const
+{
+	auto level = getLevel();
+	if (level == nullptr)
+		return {};
+
+	if (auto map = level->getMap(); map != nullptr)
+		return map->getMapName();
+
+	return level->getLevelName().toString();
+}
+
 std::shared_ptr<Level> PlayerClient::getLevel() const
 {
 	if (isHiddenClient()) return {};

@@ -14,6 +14,7 @@
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
 #include <level/LevelTiles.h>
+#include <level/Map.h>
 #include <loader/LevelLoader.h>
 #include <object/NPC.h>
 #include <scripting/ScriptContainers.h>
@@ -249,6 +250,17 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 	level->m_fileName = levelPath;
 	level->m_modTime = fileSystem->getModTime(levelName.string());
 	level->m_actualLevelName = level->m_levelName = levelName.string();
+
+	// If the level is on a map, record that now.
+	for (const auto& map : server->getMapList())
+	{
+		int mx, my;
+		if (map->isLevelOnMap(levelName.string(), mx, my))
+		{
+			level->setMap(map, mx, my);
+			break;
+		}
+	}
 
 	// Load the level.
 	if (fileVersion == "GLEVNW01")

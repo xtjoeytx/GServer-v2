@@ -142,7 +142,11 @@ bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
 std::string NPC::getLevelName() const
 {
 	if (auto levelPtr = level.lock(); levelPtr != nullptr)
+	{
+		if (auto map = levelPtr->getMap(); map != nullptr && map->isGmap())
+			return map->getMapName();
 		return levelPtr->getLevelName().toString();
+	}
 	return {};
 }
 
@@ -190,10 +194,11 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToLevel, true);
 	result.resultFlags.set(props::SetResults::sendToSource, false);
 
-	auto curTime = currentTime();
+	clock::time_point curTime = currentTime();
+	clock::time_point oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); return result; } while(false)
+#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = curTime; return result; } while(false)
 
 	switch (prop)
 	{
@@ -204,7 +209,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// Make visible.
-			visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
+			visFlags |= (uint8_t)NPCVisFlags::VISIBLE | (int8_t)NPCVisFlags::UNKNOWNBIT5;
 			result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 
 			// If we are changing to a character, set the gani to idle.
@@ -1032,7 +1037,7 @@ void NPC::resetToInitialState()
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::CURLEVEL, NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
+	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
 	std::ranges::for_each(props, [this, now = currentTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
@@ -1196,6 +1201,8 @@ void NPC::testForLinks(SetResults& result)
 			{
 				if (auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy)); newLevel != nullptr)
 				{
+					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
+					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
 					level = newLevel;
 					character.pixelX = mapPixelX % 1024;
 					character.pixelY = mapPixelY % 1024;
@@ -1220,6 +1227,11 @@ void NPC::testForLinks(SetResults& result)
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
 			{
+				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
+				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+				if (newLevel->getMap() != map)
+					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
+
 				level = newLevel;
 				auto pos = linkTouched.value()->getDestinationForCharacter(character);
 				character.pixelX = pos.x();

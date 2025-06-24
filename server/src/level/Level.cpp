@@ -407,17 +407,6 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 	if (level == nullptr)
 		return nullptr;
 
-	auto& mapList = server->getMapList();
-	for (const auto& map: mapList)
-	{
-		int mx, my;
-		if (map->isLevelOnMap(levelName.text(), mx, my))
-		{
-			level->setMap(map, mx, my);
-			break;
-		}
-	}
-
 	// Return Level
 	levelList.insert(std::make_pair(levelName.toString(), level));
 	return level;
