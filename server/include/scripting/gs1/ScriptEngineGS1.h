@@ -91,7 +91,6 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::WEAPONFIRED, "weaponfired" },
 	{ ScriptEventType::FIREDONHORSE, "firedonhorse" },
 	{ ScriptEventType::COMPUSDIED, "compusdied" },
-	{ ScriptEventType::WARPED, "warped" },
 	{ ScriptEventType::NPCWARPED, "npcwarped" },
 	{ ScriptEventType::EXPLODED, "exploded" },
 	{ ScriptEventType::WASHIT, "washit" },

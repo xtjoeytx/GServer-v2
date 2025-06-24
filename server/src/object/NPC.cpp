@@ -134,8 +134,6 @@ bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
 		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
 		setPropWith<NPCProp::Y2>(SetBy::SERVER, y)
 		);
-
-	scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
 	return true;
 }
 
@@ -646,7 +644,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// Tell everybody we are moving.
-			server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
+			// This should technically only be sent to players in the level or those who had been in the level.
+			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id);
 
 			// Remove ourself from the old level.
 			auto oldLevel = level.lock();
@@ -661,6 +660,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Tell NCs about our new position.
 			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
 			server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+
+			// Send the NPCWARPED event to the NPC.
+			scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
 			break;
 		}
 

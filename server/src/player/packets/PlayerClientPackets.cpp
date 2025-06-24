@@ -1245,19 +1245,6 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			// Trigger on level NPCs.
 			if (m_server->hasNPCServer())
 				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), level, pixelLoc, actions);
-
-			// If the event touches players, trigger their weapons.
-			for (const auto& playerId : level->getPlayers())
-			{
-				if (auto player = m_server->getPlayer(playerId, PLTYPE_ANYPLAYER); player != nullptr && positionInRectangle(pixelLoc, player->getBoundingBox()))
-				{
-					for (const auto& weaponName : account.weapons)
-					{
-						if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
-							weapon->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), actions);
-					}
-				}
-			}
 		}
 	}
 

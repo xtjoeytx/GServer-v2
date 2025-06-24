@@ -103,8 +103,8 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	variableStore.add("playerisfemale", (player->account.status & PLSTATUS_MALE) == 0);
 	variableStore.add("playeronhorse", !player->account.character.horseImage.empty());
 
-	// TODO(Nalin): playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
-	/*
+	/* TODO(Nalin): Player flags.
+		playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
 		playertrial
 	*/
 
@@ -121,9 +121,7 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 
 	variableStore.add("visible", npc->visFlags != PROPID(NPCVisFlags::HIDDEN));
 
-	// followsplayer - Client side only, unless we go sicko mode in the future.
-
-	/* TODO(Nalin): Hit events.
+	/* TODO(Nalin): NPC flags.
 		peltwithblackstone  the npc was pelt with a blackstone
 		peltwithbush        the npc was pelt with a bush
 		peltwithnpc         the npc was pelt with another npc
@@ -132,6 +130,7 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 		peltwithvase        the npc was pelt with a vase
 		shotbybaddy         the npc was shot by a computer opponent
 		shotbyplayer        the npc was shot by the player
+		followsplayer - Client side only, unless we go sicko mode in the future.
 	*/
 }
 

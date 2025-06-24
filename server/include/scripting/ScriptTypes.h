@@ -40,7 +40,6 @@ enum class ScriptEventType : uint8_t
 	WEAPONFIRED,
 	FIREDONHORSE,
 	COMPUSDIED,
-	WARPED,
 	NPCWARPED,
 	EXPLODED,
 	WASHIT,
@@ -72,7 +71,6 @@ constexpr ScriptEventType scriptEventTypeFromName(std::string_view name)
 	if (name == "weaponfired") return ScriptEventType::WEAPONFIRED;
 	if (name == "firedonhorse") return ScriptEventType::FIREDONHORSE;
 	if (name == "compusdied") return ScriptEventType::COMPUSDIED;
-	if (name == "warped") return ScriptEventType::WARPED;
 	if (name == "npcwarped") return ScriptEventType::NPCWARPED;
 	if (name == "exploded") return ScriptEventType::EXPLODED;
 	if (name == "washit") return ScriptEventType::WASHIT;

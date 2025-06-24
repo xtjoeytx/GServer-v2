@@ -40,11 +40,20 @@ using WeaponPtr = std::shared_ptr<Weapon>;
 /// @brief Identifies an object type that may be used by a scripting language.
 enum class ScriptObjectSourceType
 {
+	SERVER,
 	NPC,
+	PLAYER,
 	WEAPON,
 	LEVEL,
-	PLAYER,
-	SERVER
+	BADDY,
+	BOMB,
+	ARROW,
+	ITEM,
+	EXPLOSION,
+	HORSE,
+	SIGN,
+
+	COUNT
 };
 
 /// @brief Binds a source object type with an identifier.
@@ -59,7 +68,7 @@ constexpr ScriptObjectSource FromNPC(size_t id)
 {
 	return std::make_pair(id, ScriptObjectSourceType::NPC);
 }
-/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
+/// @brief Creates a ScriptObjectSource from a Weapon by hashing the weapon's name.
 ScriptObjectSource FromWeapon(WeaponPtr weapon);
 
 /// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.

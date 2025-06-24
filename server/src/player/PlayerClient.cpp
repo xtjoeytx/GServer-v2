@@ -1133,13 +1133,6 @@ bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t mo
 		setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, newLevel->getMapY())
 	);
 
-	// TODO(Nalin): Should this happen on any warp?  Should it only trigger the player's weapons?
-	for (const auto& weaponName : account.weapons)
-	{
-		if (auto weapon = m_server->getWeapon(weaponName); weapon != nullptr)
-			weapon->scripting.events.addEvent(ScriptEventType::WARPED, source::FromPlayer(m_id));
-	}
-
 	return true;
 }
 
