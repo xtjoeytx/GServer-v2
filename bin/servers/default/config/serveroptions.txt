@@ -228,9 +228,6 @@ triggerhack_levels = false	# gr.updatelevel
 flaghack_movement = true	# -gr_movement weapon.
 flaghack_ip = false			# gr.ip
 
-# If putnpc doesn't find the file, and finds a class with the same name, it creates a database NPC joined to that class.
-scripthack_putnpc_class = false
-
 # If true, the server will process all script events, even if the NPC doesn't check for the event flag.
 runallscriptevents = false
 

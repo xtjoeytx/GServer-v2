@@ -1087,6 +1087,7 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // putnpc imagefile,scriptfile,x,y;
+// Creates a new level NPC with the specified parameters.
 void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
@@ -1107,25 +1108,28 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 			{
 				auto script = fs->load(filepath);
 				server->addNPC(imagefile, script.toStringView(), x, y, level, NPCStorageType::LEVEL, true);
-				return;
-			}
-		}
-
-		if (server->getSettings().getBool("scripthack_putnpc_class", false) == true)
-		{
-			if (server->getNPCServer()->hasClass(scriptfile))
-			{
-				auto script = std::format("if (created) join {};", scriptfile);
-				server->getNPCServer()->addNPC(imagefile, script, level, { (float)x, (float)y });
 			}
 		}
 	}
 }
 
 // putnpc2 x,y,{ script };
+// Creates a new database NPC at the location and with the specified script.
 void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("putnpc2 is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("putnpc2 requires exactly three arguments: x, y, and {script}.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = visitor->getGameValueAs<double>(*arguments[0]);
+		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+		auto script = visitor->getGameValueAs<std::string>(*arguments[2]);
+		string::trimMutate(script);
+
+		auto* server = BabyDI::Get<Server>();
+		server->getNPCServer()->addNPC({}, script, level, { (float)x, (float)y });
+	}
 }
 
 // removearrow index;
