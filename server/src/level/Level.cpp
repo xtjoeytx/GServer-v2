@@ -1228,6 +1228,32 @@ bool Level::isOnWater(const Position<uint8_t>& tilePosition)
 	return (tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] == 11);
 }
 
+bool Level::isOnPlayer(const Position<uint8_t>& tilePosition)
+{
+	for (const auto& playerId : m_players)
+	{
+		if (auto player = BabyDI::Get<Server>()->getPlayer(playerId); player != nullptr)
+		{
+			if (positionInRectangle(tilePosition, player->getBoundingBox()))
+				return true;
+		}
+	}
+	return false;
+}
+
+bool Level::isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea)
+{
+	for (const auto& playerId : m_players)
+	{
+		if (auto player = BabyDI::Get<Server>()->getPlayer(playerId); player != nullptr)
+		{
+			if (rectanglesIntersect(tileArea, player->getBoundingBox()))
+				return true;
+		}
+	}
+	return false;
+}
+
 std::vector<NPCID> Level::findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible)
 {
 	return findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible);

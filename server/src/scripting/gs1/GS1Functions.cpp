@@ -884,8 +884,16 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (level->isOnWall({ x, y }))
-			return 1.0;
+		if (!level->isOnWall({ x, y }))
+			return 0.0;
+
+		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+		{
+			auto server = BabyDI::Get<Server>();
+			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
+				return level->isOnPlayer({ x, y }) ? 1.0 : 0.0;
+		}
+		return 1.0;
 	}
 	return 0.0;
 }
@@ -905,8 +913,16 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (level->isOnWall2({ { x, y }, { width, height } }))
-			return 1.0;
+		if (!level->isOnWall2({ { x, y }, { width, height } }))
+			return 0.0;
+
+		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+		{
+			auto server = BabyDI::Get<Server>();
+			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
+				return level->isOnPlayer({ { x, y }, { width, height } }) ? 1.0 : 0.0;
+		}
+		return 1.0;
 	}
 	return 0.0;
 }

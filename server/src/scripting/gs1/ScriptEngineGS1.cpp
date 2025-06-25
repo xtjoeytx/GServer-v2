@@ -158,6 +158,15 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
+
+#ifdef DEBUG
+	//if (who == "")
+	if (false)
+	{
+		log::printLine(log::script, program->toStringTree(parser.get(), true));
+	}
+#endif
+
 	setReadOnlyGlobalVariables(variables);
 }
 
@@ -268,14 +277,6 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setPlayerVariables(wrapper->variables, player);
 	setLevelVariables(wrapper->variables, level);
 	setOtherVariables(wrapper->variables, event);
-
-#ifdef DEBUG
-	//if (event.args.size() > 0 && event.type == ScriptEventType::CUSTOM)
-	if (false)
-	{
-		log::printLine(log::script, wrapper->program->toStringTree(wrapper->parser.get(), true));
-	}
-#endif
 
 	try
 	{
