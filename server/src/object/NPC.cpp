@@ -889,7 +889,6 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
 
 	auto server = BabyDI::Get<Server>();
-	bool oldcreated = server->getSettings().getBool("oldcreated", "false");
 	CString retVal;
 	int pmax = NPCPROP_COUNT;
 
@@ -897,12 +896,7 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 	{
 		if (modTime[i] != clock::time_point::min() && modTime[i] >= newTime)
 		{
-			/*
-			if (oldcreated && i == PROPID(NPCProp::VISFLAGS) && newTime == clock::time_point::min())
-			{
-				retVal >> (char)i >> (char)(visFlags | (uint8_t)NPCVisFlags::VISIBLE);
-			}
-			else*/ if (i == PROPID(NPCProp::GANI) && !isCharacter())
+			if (i == PROPID(NPCProp::GANI) && !isCharacter())
 			{
 				DO_PACKETLOG(log::printBlock(log::networkdump, "  NPCProp::GANI: (empty)\n"));
 				retVal >> (char)i >> (char)0;

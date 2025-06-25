@@ -231,10 +231,6 @@ flaghack_ip = false			# gr.ip
 # If true, the server will process all script events, even if the NPC doesn't check for the event flag.
 runallscriptevents = false
 
-# Determines whether or not to use the old "if (created)" style.
-# In the old style, "if (created)" is called for each player that enters the level for their first time.
-oldcreated = true
-
 # Scripting
 gs2default = false
 
