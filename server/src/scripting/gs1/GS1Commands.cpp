@@ -1388,7 +1388,7 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 }
 
 // setani gani;
-// setani gani,params;
+// setani gani,attribs;
 // Sets the animation for the player.
 void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -1397,26 +1397,7 @@ void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto gani = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-			std::vector<SetResults> results;
-			results.push_back(player->setPropWith<PlayerProp::GANI>(SetBy::SERVER, gani));
-
-			// If there are additional parameters, set them as gani attributes.
-			if (arguments.size() > 1)
-			{
-				for (size_t i = 1; i < arguments.size(); ++i)
-				{
-					if (arguments[i] == nullptr)
-						continue;
-					auto param = visitor->getGameValueAs<std::string>(*arguments[i]);
-					auto propId = static_cast<PlayerProp>(GaniAttributePropList.at(i - 1));
-					auto prop = std::make_shared<PropertyString>(param);
-					results.push_back(player->setProp(propId, SetBy::SERVER, prop));
-				}
-			}
-
-			//player->sendPropsFromResults(results);
-		}
+			player->setPropWith<PlayerProp::GANI>(SetBy::SERVER, gani);
 	}
 }
 
@@ -1468,7 +1449,7 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // setcharani gani;
-// setcharani gani,params;
+// setcharani gani,attribs;
 // Sets the NPC character's animation.
 void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -1480,20 +1461,7 @@ void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto gani = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-		{
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, gani);
-			if (arguments.size() > 1)
-			{
-				auto params = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[1]));
-				for (auto i = 0; i < params.size() && i < 30; ++i)
-				{
-					auto propId = static_cast<NPCProp>(NPCGaniAttrPackets.at(i));
-					auto prop = npc->getProp(propId);
-					prop->apply(params[i]);
-					npc->setProp(propId, SetBy::SERVER, prop);
-				}
-			}
-		}
 	}
 }
 
