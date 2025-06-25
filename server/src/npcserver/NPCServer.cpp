@@ -315,7 +315,7 @@ void NPCServer::processDeletedNPCs()
 
 		// Delete the NPC from the filesystem.
 		if (npc != nullptr)
-			std::filesystem::remove(std::filesystem::path{ "npcs" } / std::format("{}.txt", npc->name));
+			std::filesystem::remove(std::filesystem::path{ "npcs" } / std::format("npc{}.txt", npc->name));
 	}
 	m_deletedNPCs.clear();
 }
