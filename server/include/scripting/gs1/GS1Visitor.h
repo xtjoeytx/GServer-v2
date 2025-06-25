@@ -88,36 +88,39 @@ protected:
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
 	
 public:
-	virtual std::any visitMathExpression(GS1Parser::MathExpressionContext* context) override;
-	virtual std::any visitComparisonExpression(GS1Parser::ComparisonExpressionContext* context);
-	virtual std::any visitLogicExpression(GS1Parser::LogicExpressionContext* context) override;
-	virtual std::any visitTernaryExpression(GS1Parser::TernaryExpressionContext* context) override;
-	virtual std::any visitInExpression(GS1Parser::InExpressionContext* context) override;
-	virtual std::any visitParenthesesExpression(GS1Parser::ParenthesesExpressionContext* context) override;
+	virtual std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;
+	virtual std::any visitStatementFor(GS1Parser::StatementForContext* context) override;
+	virtual std::any visitStatementWhile(GS1Parser::StatementWhileContext* context) override;
+	virtual std::any visitStatementWith(GS1Parser::StatementWithContext* context) override;
+	virtual std::any visitStatementFunctionDefinition(GS1Parser::StatementFunctionDefinitionContext* context) override;
+	virtual std::any visitStatementUserFunctionCall(GS1Parser::StatementUserFunctionCallContext* context) override;
+	virtual std::any visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCommandContext* context) override;
+	virtual std::any visitStatementAssignment(GS1Parser::StatementAssignmentContext* context) override;
+	//
+	virtual std::any visitExpressionIn(GS1Parser::ExpressionInContext* context) override;
+	virtual std::any visitExpressionTernary(GS1Parser::ExpressionTernaryContext* context) override;
+	virtual std::any visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext* context) override;
+	virtual std::any visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContext* context) override;
+	virtual std::any visitExpressionEquality(GS1Parser::ExpressionEqualityContext* context) override;
+	virtual std::any visitExpressionRelational(GS1Parser::ExpressionRelationalContext* context) override;
+	virtual std::any visitExpressionAdditive(GS1Parser::ExpressionAdditiveContext* context) override;
+	virtual std::any visitExpressionMultiplicative(GS1Parser::ExpressionMultiplicativeContext* context) override;
+	virtual std::any visitExpressionExponentiation(GS1Parser::ExpressionExponentiationContext* context) override;
+	virtual std::any visitExpressionUnary(GS1Parser::ExpressionUnaryContext* context) override;
+	virtual std::any visitExpressionPostfix(GS1Parser::ExpressionPostfixContext* context) override;
+	//
+	virtual std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
 	virtual std::any visitIdentifierAccess(GS1Parser::IdentifierAccessContext* context) override;
 	virtual std::any visitIdentifierValue(GS1Parser::IdentifierValueContext* context) override;
 	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
 	virtual std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
-	virtual std::any visitIncDecOperation(GS1Parser::IncDecOperationContext* context) override;
-	virtual std::any visitBuiltInCommand(GS1Parser::BuiltInCommandContext* context) override;
-	virtual std::any visitFunctionDefinition(GS1Parser::FunctionDefinitionContext* context) override;
-	virtual std::any visitUserFunctionCall(GS1Parser::UserFunctionCallContext* context) override;
-	virtual std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
-	virtual std::any visitIfCondition(GS1Parser::IfConditionContext* context) override;
-	virtual std::any visitForLoop(GS1Parser::ForLoopContext* context) override;
-	virtual std::any visitWhileLoop(GS1Parser::WhileLoopContext* context) override;
-	virtual std::any visitWithStatement(GS1Parser::WithStatementContext* context) override;
+	virtual std::any visitMessageCode(GS1Parser::MessageCodeContext* context) override;
+	//
 	virtual std::any visitFlowReturn(GS1Parser::FlowReturnContext* context) override;
 	virtual std::any visitFlowBreak(GS1Parser::FlowBreakContext* context) override;
 	virtual std::any visitFlowContinue(GS1Parser::FlowContinueContext* context) override;
-	virtual std::any visitAssignmentOperation(GS1Parser::AssignmentOperationContext* context) override;
-	virtual std::any visitUnaryOperation(GS1Parser::UnaryOperationContext* context) override;
-	virtual std::any visitMessageCode(GS1Parser::MessageCodeContext* context) override;
+	//
 	virtual std::any visitLiteral(GS1Parser::LiteralContext* context) override;
-	virtual std::any visitLiteralAllFeatures(GS1Parser::LiteralAllFeaturesContext* context) override;
-	virtual std::any visitLiteralAllStats(GS1Parser::LiteralAllStatsContext* context) override;
-	virtual std::any visitStringLiteral(GS1Parser::StringLiteralContext* context) override;
-	virtual std::any visitIdentifierLiteral(GS1Parser::IdentifierLiteralContext* context) override;
 	virtual std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
 	virtual std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
 	virtual std::any visitItemLiteral(GS1Parser::ItemLiteralContext* context) override;

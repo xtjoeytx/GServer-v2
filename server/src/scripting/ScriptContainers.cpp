@@ -14,6 +14,7 @@
 #include <object/Weapon.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,7 +74,7 @@ GameValue::operator bool() const
 	if (m_boolean.has_value())
 		return m_boolean.value();
 	if (m_number.has_value())
-		return m_number.value() != 0.0;
+		return !DoubleIsZero(m_number.value());
 	return false;
 }
 

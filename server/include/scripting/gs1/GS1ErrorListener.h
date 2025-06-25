@@ -46,6 +46,10 @@ public:
 		// Log the batch of messages.
 		log::batch(log::script, logbatch);
 
+#ifdef DEBUG
+		std::rethrow_exception(e);
+#endif
+
 		// Send the log messages to the server.
 		auto server = BabyDI::Get<Server>();
 		std::ranges::for_each(logbatch, [&server](const auto& kvp) { server->sendToNC(kvp.second); });

@@ -1,4 +1,5 @@
 #include <any>
+#include <exception>
 #include <format>
 #include <memory>
 #include <optional>
@@ -28,10 +29,7 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
-
-#ifdef DEBUG
 #include <utilities/Log.h>
-#endif
 
 using namespace preagonal::gs1::grammar;
 
@@ -150,8 +148,10 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 
 	input = std::make_shared<antlr4::ANTLRInputStream>(script);
 	lexer = std::make_shared<GS1Lexer>(input.get());
-	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
+	lexer->removeErrorListeners();
+	lexer->addErrorListener(errorListener.get());
 
+	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	parser->removeErrorListeners();
 	parser->addErrorListener(errorListener.get());
@@ -170,7 +170,15 @@ ScriptEngineGS1::ScriptEngineGS1()
 CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
 {
 	ScriptExecutionContext result{ .engine = this };
-	result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script);
+	try
+	{
+		result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script);
+	}
+	catch (const std::exception& ex)
+	{
+		log::printLine(log::script, "GS1 script compilation SUPER failed: {}", ex.what());
+	}
+
 	return result;
 }
 
@@ -261,20 +269,28 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setLevelVariables(wrapper->variables, level);
 	setOtherVariables(wrapper->variables, event);
 
-#ifndef DEBUG
+#ifdef DEBUG
+	//if (event.args.size() > 0 && event.type == ScriptEventType::CUSTOM)
+	if (false)
+	{
+		log::printLine(log::script, wrapper->program->toStringTree(wrapper->parser.get(), true));
+	}
+#endif
+
 	try
 	{
-#endif
 		// Execute the script.
 		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
-#ifndef DEBUG
 	}
 	catch (...)
 	{
+#ifdef DEBUG
+		log::printLine(log::script, wrapper->program->toStringTree(wrapper->parser.get(), true));
+		throw;
+#endif
 		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
 		context->script = nullptr;
 	}
-#endif
 
 	return false;
 }

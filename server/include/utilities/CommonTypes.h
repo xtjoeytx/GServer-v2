@@ -5,6 +5,8 @@
 #include <chrono>
 #include <concepts>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -151,6 +153,19 @@ struct visit_functions : Ts...
 auto toRange(AllSame auto&&... range)
 {
 	return std::array{ std::forward<decltype(range)>(range)... };
+}
+
+//----------------------------
+// Floating point helpers
+
+inline static bool DoubleIsZero(double value)
+{
+	return std::abs(value) < std::numeric_limits<double>::epsilon();
+}
+
+inline static bool DoublesAreSame(double left, double right)
+{
+	return std::abs(left - right) < std::numeric_limits<double>::epsilon();
 }
 
 //----------------------------

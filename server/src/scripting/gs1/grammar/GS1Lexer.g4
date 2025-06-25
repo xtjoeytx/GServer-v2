@@ -381,7 +381,7 @@ CMD_SETBODY              : 'setbody'              -> type(COMMAND), pushMode(IN_
 CMD_SETHEAD              : 'sethead'              -> type(COMMAND), pushMode(IN_S);
 CMD_SETSWORD             : 'setsword'             -> type(COMMAND), pushMode(IN_SP);
 CMD_SETSHIELD            : 'setshield'            -> type(COMMAND), pushMode(IN_SP);
-CMD_SETANI               : 'setani'               -> type(COMMAND), pushMode(IN_SS);
+CMD_SETANI               : 'setani'               -> type(COMMAND), pushMode(IN_S);
 CMD_SETPLAYERDIR         : 'setplayerdir'         -> type(COMMAND), pushMode(IN_DIRECTION);
 CMD_SETGENDER            : 'setgender'            -> type(COMMAND), pushMode(IN_GENDER);
 CMD_SETSKINCOLOR         : 'setskincolor'         -> type(COMMAND), pushMode(IN_COLOR);
@@ -564,15 +564,15 @@ FUNC_GROUP_4 : ('textwidth' | 'textheight') -> type(FUNCTION), pushMode(IN_F_1ES
 FUNC_GROUP_5 : 'lindexof' -> type(FUNCTION), pushMode(IN_F_1SV);
 FUNC_GROUP_6 : 'sarraylen' { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(FUNCTION), pushMode(IN_F_1V);
 
-MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE);
-MC_SIMPLE		: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) WS* '(' -> type(MESSAGECODE), pushMode(IN_F_P);
-MC_COMPUTED_S	: '#' [s] WS* '(' { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-MC_COMPUTED_V	: '#' [v] WS* '(' { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-MC_I			: '#I' WS* '('    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-MC_T			: '#T' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_S);
-MC_e			: '#e' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_EES);
-MC_i			: '#i' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_SO);
-MC_R			: '#R' WS* '(' -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) WS* {_input->LA(1) != '('}? -> type(MESSAGECODE);
+MC_SIMPLE		: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE), pushMode(IN_F_1P);
+MC_COMPUTED_S	: '#s'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MC_COMPUTED_V	: '#v'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MC_I			: '#I'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+MC_T			: '#T' -> type(MESSAGECODE), pushMode(IN_F_1S);
+MC_e			: '#e' -> type(MESSAGECODE), pushMode(IN_F_1EES);
+MC_i			: '#i' -> type(MESSAGECODE), pushMode(IN_F_1SO);
+MC_R			: '#R' -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 
 // TODO: Some string lists are CSV.
 
@@ -842,14 +842,14 @@ mode IN_MS;
 MS_WS    : WHITESPACE+ -> skip;
 MS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 MS_MC_NOINDEX    : MC_NOINDEX -> type(MESSAGECODE);
-MS_MC_SIMPLE     : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-MS_MC_COMPUTED_S : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-MS_MC_COMPUTED_V : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-MS_MC_I          : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-MS_MC_T          : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-MS_MC_e          : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-MS_MC_i          : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-MS_MC_R          : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+MS_MC_SIMPLE     : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+MS_MC_COMPUTED_S : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MS_MC_COMPUTED_V : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MS_MC_I          : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+MS_MC_T          : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+MS_MC_e          : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+MS_MC_i          : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+MS_MC_R          : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 MS_FUNC_GROUP_1  : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 MS_FUNC_GROUP_2  : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
 MS_FUNC_GROUP_3  : FUNC_GROUP_3 -> type(FUNCTION), pushMode(IN_F_1SS);
@@ -1534,14 +1534,14 @@ mode IN_SSP;
 
 SSP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SP);
 SSP_MC_NOINDEX     : MC_NOINDEX -> type(MESSAGECODE);
-SSP_MC_SIMPLE      : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-SSP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SSP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SSP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-SSP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-SSP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-SSP_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-SSP_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+SSP_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+SSP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+SSP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+SSP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+SSP_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+SSP_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 SSP_STRING_ESCAPE  : '##' -> type(STRING);
 SSP_STRING_LITERAL : ~[#,]+ -> type(STRING);
 
@@ -1550,14 +1550,14 @@ mode IN_SP;
 
 SP_POP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
 SP_MC_NOINDEX     : MC_NOINDEX -> type(MESSAGECODE);
-SP_MC_SIMPLE      : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-SP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-SP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-SP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-SP_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-SP_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+SP_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+SP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+SP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+SP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+SP_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+SP_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 SP_STRING_ESCAPE  : '##' -> type(STRING);
 SP_STRING_LITERAL : ~[#,]+ -> type(STRING);
 
@@ -1567,14 +1567,14 @@ mode IN_VES;
 VES_WS              : WHITESPACE+ -> skip;
 VES_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ES);
 VES_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-VES_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-VES_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-VES_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-VES_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-VES_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-VES_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-VES_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-VES_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+VES_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+VES_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VES_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VES_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+VES_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+VES_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+VES_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+VES_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 VES_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 VES_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 VES_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1593,14 +1593,14 @@ mode IN_VS;
 VS_WS              : WHITESPACE+ -> skip;
 VS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 VS_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-VS_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-VS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-VS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-VS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-VS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-VS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-VS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-VS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+VS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+VS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+VS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+VS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+VS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+VS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 VS_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 VS_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 VS_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1620,14 +1620,14 @@ V_WS          : WHITESPACE+ -> skip;
 V_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 V_POP_END         : END -> type(END), popMode;
 V_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-V_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-V_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-V_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+V_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+V_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+V_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 V_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 V_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 V_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1662,14 +1662,14 @@ mode IN_SSS;
 
 SSS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SS);
 SSS_MC_NOINDEX     : MC_NOINDEX -> type(MESSAGECODE);
-SSS_MC_SIMPLE      : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-SSS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SSS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SSS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-SSS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-SSS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-SSS_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-SSS_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+SSS_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+SSS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+SSS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+SSS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+SSS_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+SSS_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 SSS_STRING_ESCAPE  : '##' -> type(STRING);
 SSS_STRING_LITERAL : ~[#,]+ -> type(STRING);
 
@@ -1678,16 +1678,33 @@ mode IN_SS;
 
 SS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 SS_MC_NOINDEX     : MC_NOINDEX -> type(MESSAGECODE);
-SS_MC_SIMPLE      : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-SS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-SS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-SS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-SS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-SS_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-SS_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+SS_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+SS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+SS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+SS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+SS_MC_i           : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+SS_MC_R           : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 SS_STRING_ESCAPE  : '##' -> type(STRING);
 SS_STRING_LITERAL : ~[#,]+ -> type(STRING);
+
+// --------------------------------------------------------
+mode IN_SO;
+
+SO_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
+SO_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
+SO_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
+SO_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+SO_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SO_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+SO_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+SO_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+SO_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+SO_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
+SO_STRING_ESCAPE   : '##' -> type(STRING);
+SO_STRING_LITERAL  :  ~[#),]+ -> type(STRING);
 
 // --------------------------------------------------------
 mode IN_S;
@@ -1695,14 +1712,14 @@ mode IN_S;
 S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 S_POP_END         : END -> type(END), popMode;
 S_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-S_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-S_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-S_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+S_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_1P);
+S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+S_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+S_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 S_STRING_ESCAPE   : '##' -> type(STRING);
 S_STRING_LITERAL  : ~[#};]+ -> type(STRING);
 
@@ -1713,14 +1730,14 @@ STRINGLIST_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMo
 STRINGLIST_POP_END         : END -> type(END), popMode;
 STRINGLIST_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA);
 STRINGLIST_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-STRINGLIST_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-STRINGLIST_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-STRINGLIST_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+STRINGLIST_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+STRINGLIST_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+STRINGLIST_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 STRINGLIST_STRING_ESCAPE   : '##' -> type(STRING);
 STRINGLIST_STRING_LITERAL  : ~[#};,]+ -> type(STRING);
 
@@ -1729,10 +1746,22 @@ STRINGLIST_STRING_LITERAL  : ~[#};,]+ -> type(STRING);
 ///////////////////////////////////////////////////////////
 
 // --------------------------------------------------------
+mode IN_F_1STRINGLIST;
+
+F_1STRINGLIST_WS               : WHITESPACE+ -> skip;
+F_1STRINGLIST_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_STRINGLIST);
+
+// --------------------------------------------------------
 mode IN_F_1ESSS;
 
 F_1ESSS_WS               : WHITESPACE+ -> skip;
 F_1ESSS_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_ESSS);
+
+// --------------------------------------------------------
+mode IN_F_1EES;
+
+F_1EES_WS               : WHITESPACE+ -> skip;
+F_1EES_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_EES);
 
 // --------------------------------------------------------
 mode IN_F_1SV;
@@ -1747,10 +1776,22 @@ F_1SS_WS               : WHITESPACE+ -> skip;
 F_1SS_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_SS);
 
 // --------------------------------------------------------
+mode IN_F_1SO;
+
+F_1SO_WS               : WHITESPACE+ -> skip;
+F_1SO_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_SO);
+
+// --------------------------------------------------------
 mode IN_F_1S;
 
 F_1S_WS               : WHITESPACE+ -> skip;
 F_1S_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_S);
+
+// --------------------------------------------------------
+mode IN_F_1VP;
+
+F_1VP_WS               : WHITESPACE+ -> skip;
+F_1VP_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_VP);
 
 // --------------------------------------------------------
 mode IN_F_1V;
@@ -1936,14 +1977,14 @@ F_VP_WS         : WHITESPACE+ -> skip;
 F_VP_POP_PAREN_RIGHT  : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_VP_COMMA            : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_P);
 F_VP_MC_NOINDEX       : MC_NOINDEX -> type(MESSAGECODE);
-F_VP_MC_SIMPLE        : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_VP_MC_COMPUTED_S    : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_VP_MC_COMPUTED_V    : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_VP_MC_I             : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_VP_MC_T             : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_VP_MC_e             : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_VP_MC_i             : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_VP_MC_R             : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_VP_MC_SIMPLE        : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_VP_MC_COMPUTED_S    : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_VP_MC_COMPUTED_V    : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_VP_MC_I             : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_VP_MC_T             : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_VP_MC_e             : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_VP_MC_i             : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_VP_MC_R             : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_VP_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 F_VP_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 F_VP_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1968,14 +2009,14 @@ F_V_FUNC_GROUP_4    : FUNC_GROUP_4 -> type(FUNCTION), pushMode(IN_F_1ESSS);
 F_V_FUNC_GROUP_5    : FUNC_GROUP_5 -> type(FUNCTION), pushMode(IN_F_1SV);
 F_V_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 F_V_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_V_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_V_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_V_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_V_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_V_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_V_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_V_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 F_V_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 F_V_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1994,16 +2035,16 @@ F_V_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
 mode IN_F_SO;
 
 F_SO_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
-F_SO_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
+F_SO_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_V);
 F_SO_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_SO_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_SO_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SO_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_SO_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_SO_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_SO_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_SO_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_SO_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_SO_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SO_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_SO_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_SO_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_SO_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_SO_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_SO_STRING_ESCAPE   : '##' -> type(STRING);
 F_SO_STRING_LITERAL  :  ~[#),]+ -> type(STRING);
 
@@ -2013,14 +2054,14 @@ mode IN_F_SV;
 F_SV_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_SV_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_V);
 F_SV_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_SV_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_SV_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SV_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SV_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_SV_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_SV_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_SV_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_SV_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_SV_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_SV_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SV_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SV_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_SV_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_SV_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_SV_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_SV_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_SV_STRING_ESCAPE   : '##' -> type(STRING);
 F_SV_STRING_LITERAL  : ~[#),]+ -> type(STRING);
 
@@ -2030,14 +2071,14 @@ mode IN_F_SSS;
 F_SSS_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_SSS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_SS);
 F_SSS_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_SSS_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_SSS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SSS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SSS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_IS);
-F_SSS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_SSS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_SSS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_SSS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_SSS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_SSS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SSS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SSS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_SSS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_SSS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_SSS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_SSS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_SSS_STRING_ESCAPE   : '##' -> type(STRING);
 F_SSS_STRING_LITERAL  : ~[#),]+ -> type(STRING);
 
@@ -2047,14 +2088,14 @@ mode IN_F_SS;
 F_SS_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_SS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_S);
 F_SS_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_SS_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_SS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_SS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_SS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_SS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_SS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_SS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_SS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_SS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_SS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_SS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_SS_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_SS_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_SS_STRING_ESCAPE   : '##' -> type(STRING);
 F_SS_STRING_LITERAL  : ~[#),]+ -> type(STRING);
 
@@ -2063,14 +2104,14 @@ mode IN_F_S;
 
 F_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_S_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_S_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_S_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_S_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_S_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_S_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_S_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_S_STRING_ESCAPE   : '##' -> type(STRING);
 F_S_STRING_LITERAL  : ~[#)]+ -> type(STRING);
 
@@ -2129,13 +2170,13 @@ mode IN_F_STRINGLIST;
 F_STRINGLIST_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_STRINGLIST_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA);
 F_STRINGLIST_MC_NOINDEX      : MC_NOINDEX -> type(MESSAGECODE);
-F_STRINGLIST_MC_SIMPLE       : MC_SIMPLE -> type(MESSAGECODE), pushMode(IN_F_P);
-F_STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_V);
-F_STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_VP);
-F_STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_S);
-F_STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_EES);
-F_STRINGLIST_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_SO);
-F_STRINGLIST_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_STRINGLIST);
+F_STRINGLIST_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
+F_STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
+F_STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
+F_STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
+F_STRINGLIST_MC_i            : MC_i -> type(MESSAGECODE), pushMode(IN_F_1SO);
+F_STRINGLIST_MC_R            : MC_R -> type(MESSAGECODE), pushMode(IN_F_1STRINGLIST);
 F_STRINGLIST_STRING_ESCAPE   : '##' -> type(STRING);
 F_STRINGLIST_STRING_LITERAL  : ~[#),]+ -> type(STRING);

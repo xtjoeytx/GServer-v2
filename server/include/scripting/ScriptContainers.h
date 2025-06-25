@@ -226,7 +226,7 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 		if (m_boolean.has_value())
 			return m_boolean.value();
 		if (m_number.has_value())
-			return m_number.value() != 0.0;
+			return !DoubleIsZero(m_number.value());
 		return std::nullopt;
 	}
 	if constexpr (std::same_as<T, ScriptObjectSource>)

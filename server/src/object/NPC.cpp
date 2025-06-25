@@ -209,7 +209,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// Make visible.
-			visFlags |= (uint8_t)NPCVisFlags::VISIBLE | (int8_t)NPCVisFlags::UNKNOWNBIT5;
+			visFlags |= (uint8_t)NPCVisFlags::VISIBLE; // | (int8_t)NPCVisFlags::UNKNOWNBIT5;
 			result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 
 			// If we are changing to a character, set the gani to idle.
