@@ -7,6 +7,7 @@
 #include <ctime>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -34,7 +35,6 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
-#include <player/PlayerRC.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -1839,13 +1839,16 @@ bool PlayerClient::spawnLevelItem(CString& pPacket, bool playerDrop)
 	LevelItemType itemType = LevelItem::getItemId(item);
 	if (itemType != LevelItemType::INVALID)
 	{
-		if (removeItem(itemType) || !playerDrop)
+		if (!playerDrop || removeItem(itemType))
 		{
 			if (auto level = getLevel(); level && level->addItem(loc[0], loc[1], itemType))
 			{
+				std::set<PlayerID> exclude;
+				if (playerDrop) exclude.insert(m_id);
+
 				// TODO(NPCServer): Does 5.1+ really not support this?
 				if (m_server->Generation != ServerGeneration::MODERN)
-					m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, { m_id });
+					m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, exclude);
 			}
 			else
 			{

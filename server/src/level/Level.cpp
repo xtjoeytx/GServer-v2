@@ -699,8 +699,8 @@ bool Level::addItem(float pX, float pY, LevelItemType pItem)
 			// Update rupees
 			gralatNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, gralatNPC->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(pItem));
 			gralatNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(gralatNPC->id), "updategani");
+			return false;
 		}
-		return false;
 	}
 
 	m_items.push_back(LevelItem(pX, pY, pItem));
