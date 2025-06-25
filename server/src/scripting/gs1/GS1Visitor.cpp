@@ -189,7 +189,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	std::weak_ptr<GameVariable> builtIn;
 	auto mergeWithBuiltInBoolean = [](std::shared_ptr<GameVariable>& existing, std::shared_ptr<GameVariable>& builtIn) -> int
 	{
-		// No built-in variable, return 0: stub existing.
+		// No built-in variable, return 0: stub built-in.
 		if (builtIn == nullptr)
 			return 0;
 		// Built-in variable is not a boolean, or we have no existing, return 1: use built-in.
@@ -236,7 +236,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 			auto sourceStoreResult = sourceStore->get(identifier).lock();
 			switch (mergeWithBuiltInBoolean(sourceStoreResult, builtInResult))
 			{
-				case 0: targetStoreForStub = sourceStore; break;
+				case 0: break;
 				case 1: return builtInResult;
 				case 2: return sourceStoreResult;
 			}
@@ -256,7 +256,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 			auto initiatorStoreResult = initiatorStore->get(identifier).lock();
 			switch (mergeWithBuiltInBoolean(initiatorStoreResult, builtInResult))
 			{
-				case 0: targetStoreForStub = initiatorStore; break;
+				case 0: break;
 				case 1: return builtInResult;
 				case 2: return initiatorStoreResult;
 			}
@@ -268,13 +268,17 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 		}
 	}
 
-	// If we found a target store to stub our variable in, do it now.
+	// Stub our variable.
 	if (targetStoreForStub != nullptr)
 		return targetStoreForStub->get_or_stub(identifier);
 
 	// We have a built-in variable, but our sources don't have a store, just return it.
 	if (!builtIn.expired())
 		return builtIn;
+
+	// If we still don't have a store, use the built-in store.
+	if (builtInStore != nullptr)
+		return builtInStore->get_or_stub(identifier);
 
 	// Still nothing?  Just return empty.
 	return {};
