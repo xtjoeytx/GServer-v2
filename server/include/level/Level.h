@@ -65,11 +65,11 @@ public:
 	CString getLayerPacket(int i);
 	CString getBoardChangesPacket(time_t time);
 	CString getBoardChangesPacket2(time_t time);
-	CString getChestPacket(Player* pPlayer);
-	CString getHorsePacket();
-	CString getLinksPacket();
-	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time);
-	CString getSignsPacket(Player* pPlayer);
+	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
+	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
+	void sendLinksToPlayer(std::shared_ptr<Player> player) const;
+	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
+	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
 
 	//! Gets the actual level name.
 	//! \return The actual level name.

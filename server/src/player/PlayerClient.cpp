@@ -1312,11 +1312,11 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		// Send links (if applicable).
 		// We need to send links for bigmaps due to the overflow issues.
 		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false) || (map && map->getType() == MapType::BIGMAP))
-			sendPacket(CString() << pLevel->getLinksPacket());
+			pLevel->sendLinksToPlayer(shared_from_this());
 
 		// Send signs (if applicable).
 		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidesigns", false))
-			sendPacket(CString() << pLevel->getSignsPacket(this));
+			pLevel->sendSignsToPlayer(shared_from_this());
 
 		// Send the level mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
@@ -1326,8 +1326,8 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	if (!fromAdjacent)
 	{
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
-		sendPacket(CString() << pLevel->getChestPacket(this));
-		sendPacket(CString() << pLevel->getHorsePacket());
+		pLevel->sendChestsToPlayer(shared_from_this());
+		pLevel->sendHorsesToPlayer(shared_from_this());
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
 
@@ -1446,8 +1446,8 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 			// Send links, signs, and mod time.
 			if (!settings.getBool("serverside", false)) // TODO: NPC server check instead.
 			{
-				sendPacket(CString() << pLevel->getLinksPacket());
-				sendPacket(CString() << pLevel->getSignsPacket(this));
+				pLevel->sendLinksToPlayer(shared_from_this());
+				pLevel->sendSignsToPlayer(shared_from_this());
 			}
 			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
 		}
@@ -1457,14 +1457,14 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 		if (!fromAdjacent)
 		{
 			sendPacket(CString() << pLevel->getBoardChangesPacket2(l_time));
-			sendPacket(CString() << pLevel->getChestPacket(this));
+			pLevel->sendChestsToPlayer(shared_from_this());
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		sendPacket(CString() << pLevel->getHorsePacket());
+		pLevel->sendHorsesToPlayer(shared_from_this());
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
 
@@ -1721,12 +1721,18 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 	if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false))
 		return false;
 
+	// If we have no level, we can't test anything!
 	auto level = getLevel();
 	if (level == nullptr)
 		return false;
 
-	// Test for links.
+	// If this is a bigmap, we forced clientside links to fix issues where the client wraps the X/Y values and ends up in weird spots.
+	// So don't check.
 	auto map = level->getMap();
+	if (map && map->isBigMap())
+		return false;
+
+	// Test for links.
 	Position<uint8_t> testPosTiles = { (uint8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (uint8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
 	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
 	{

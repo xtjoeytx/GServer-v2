@@ -185,49 +185,39 @@ CString Level::getBoardChangesPacket2(time_t time)
 	return retVal;
 }
 
-CString Level::getChestPacket(Player* pPlayer)
+void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
 {
-	CString retVal;
-
-	if (pPlayer)
+	CString packet;
+	for (auto& chest: m_chests)
 	{
-		for (auto& chest: m_chests)
-		{
-			bool hasChest = pPlayer->account.hasChest(m_levelName.toStringView(), chest->getX(), chest->getY());
+		bool hasChest = player->account.hasChest(m_levelName.toStringView(), chest->getX(), chest->getY());
 
-			retVal >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
-			if (!hasChest) retVal >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
-			retVal << "\n";
-		}
+		packet = CString() >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
+		if (!hasChest) packet >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
+		player->sendPacket(packet);
 	}
-
-	return retVal;
 }
 
-CString Level::getHorsePacket()
+void Level::sendHorsesToPlayer(std::shared_ptr<Player> player) const
 {
-	CString retVal;
 	for (auto& horse: m_horses)
-	{
-		retVal >> (char)PLO_HORSEADD << horse.getHorseStr() << "\n";
-	}
-
-	return retVal;
+		player->sendPacket(CString() >> (char)PLO_HORSEADD << horse.getHorseStr());
 }
 
-CString Level::getLinksPacket()
+void Level::sendLinksToPlayer(std::shared_ptr<Player> player) const
 {
-	CString retVal;
-	for (const auto& link: m_links)
-	{
-		retVal >> (char)PLO_LEVELLINK << link->getLinkStr() << "\n";
-	}
+	for (const auto& link : m_links)
+		player->sendPacket(CString() >> (char)PLO_LEVELLINK << link->getLinkStr());
+}
 
-	return retVal;
+void Level::sendSignsToPlayer(std::shared_ptr<Player> player) const
+{
+	for (const auto& sign : m_signs)
+		player->sendPacket(CString() >> (char)PLO_LEVELSIGN << sign->getSignStr(player.get()));
 }
 
 // TODO: Replace with a function in server that sends npc props from a list of ids.
-void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time)
+void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const
 {
 	auto server = BabyDI::Get<Server>();
 	for (const auto& npcId : m_npcs)
@@ -248,16 +238,6 @@ void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point t
 			player->sendPacket(byteCodePacket);
 		}
 	}
-}
-
-CString Level::getSignsPacket(Player* pPlayer = 0)
-{
-	CString retVal;
-	for (const auto& sign: m_signs)
-	{
-		retVal >> (char)PLO_LEVELSIGN << sign->getSignStr(pPlayer) << "\n";
-	}
-	return retVal;
 }
 
 uint8_t Level::getGmapX() const

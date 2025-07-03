@@ -16,12 +16,15 @@ public:
 		: m_lifetime(horselife), m_image(pImage), m_x(pX), m_y(pY), m_dir(pDir), m_bushes(pBushes)
 	{
 		timeout.setTimeout(m_lifetime);
+
+		char dir_bush = (m_bushes << 2) | (m_dir & 0x03);
+		m_horsePacket = CString() << (char)(m_x * 2) >> (char)(m_y * 2) >> (char)dir_bush << m_image;
 	}
 
-	CString getHorseStr();
+	const CString& getHorseStr() const;
 
 	// get private variables
-	CString getImage() const { return m_image; }
+	const CString& getImage() const { return m_image; }
 	float getX() const { return m_x; }
 	float getY() const { return m_y; }
 	char getDir() const { return m_dir; }
@@ -37,14 +40,8 @@ private:
 	int m_lifetime;
 };
 
-inline CString LevelHorse::getHorseStr()
+inline const CString& LevelHorse::getHorseStr() const
 {
-	if (m_horsePacket.isEmpty())
-	{
-		char dir_bush = (m_bushes << 2) | (m_dir & 0x03);
-		m_horsePacket = CString() << (char)(m_x * 2) >> (char)(m_y * 2) >> (char)dir_bush << m_image;
-	}
-
 	return m_horsePacket;
 }
 

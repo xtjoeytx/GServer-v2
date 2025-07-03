@@ -248,7 +248,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	else
 		wrapper->visitor->who = "unknown";
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
 	// Log some testing stuff.
 	const auto& eventName = determineEventName(event);
 	if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))

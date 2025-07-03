@@ -21,7 +21,7 @@ LevelLink::LevelLink(const std::vector<CString>& pLink)
 
 CString LevelLink::getLinkStr() const
 {
-	return std::format("{} {} {} {} {} {}", m_destinationLevel,
+	return std::format("{} {} {} {} {} {} {}", m_destinationLevel,
 		m_boundingBox.position.x(), m_boundingBox.position.y(),
 		m_boundingBox.size.width(), m_boundingBox.size.height(),
 		m_destinationX, m_destinationY
