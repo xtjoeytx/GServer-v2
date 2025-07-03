@@ -674,6 +674,7 @@ BLOCKCOMMENT
 
 REAL
 	: DIGITS+ ('.' DIGITS+)?
+	| '.' DIGITS+
 	| '0x' HEXDIGITS+
 	;
 
