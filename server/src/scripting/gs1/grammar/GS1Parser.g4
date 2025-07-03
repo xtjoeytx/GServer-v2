@@ -97,7 +97,7 @@ forStatement
     : KW_FOR TOKEN_PAREN_LEFT
 		assignmentStatement? END
 		expression? END
-		expression? TOKEN_PAREN_RIGHT
+		(assignmentStatement | expression)? TOKEN_PAREN_RIGHT
 		block																				# StatementFor
     ;
 

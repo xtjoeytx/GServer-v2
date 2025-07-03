@@ -33,7 +33,7 @@ public:
 	{
 		std::vector<std::pair<uint8_t, std::string>> logbatch;
 		logbatch.emplace_back(0_ui8, std::format("* GS1 script compilation failed for '{}':", m_name));
-		logbatch.emplace_back(1_ui8, std::format("Line: {}, Column: {}", line, charPositionInLine));
+		logbatch.emplace_back(1_ui8, std::format("Line: {}, Column: {}", line + 1, charPositionInLine + 1));
 
 		// If we have an offending token, log its details.
 		if (offendingSymbol != nullptr)

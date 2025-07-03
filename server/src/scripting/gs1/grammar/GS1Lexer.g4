@@ -569,7 +569,7 @@ FUNC_GROUP_6 : 'sarraylen' { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } 
 MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MC_SIMPLE		: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) -> type(MESSAGECODE), pushMode(IN_F_1P);
 MC_COMPUTED_S	: '#s'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-MC_COMPUTED_V	: '#v'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MC_COMPUTED_V	: '#v'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 MC_I			: '#I'    { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 MC_T			: '#T' -> type(MESSAGECODE), pushMode(IN_F_1S);
 MC_e			: '#e' -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -683,7 +683,7 @@ END
 	;
 
 WS
-	: WHITESPACE+ -> skip
+	: WHITESPACE+ -> channel(HIDDEN)
 	;
 
 fragment BADDY
@@ -798,7 +798,7 @@ fragment WHITESPACE
 
 mode IN_ITEM;
 
-ITEM_WS              : WHITESPACE+ -> skip;
+ITEM_WS              : WHITESPACE+ -> channel(HIDDEN);
 ITEM_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 ITEM_POP_END         : END -> type(END), popMode;
 ITEM_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
@@ -807,7 +807,7 @@ ITEM                 : ITEMNAMES;
 // --------------------------------------------------------
 mode IN_CARRY;
 
-CARRY_WS              : WHITESPACE+ -> skip;
+CARRY_WS              : WHITESPACE+ -> channel(HIDDEN);
 CARRY_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 CARRY_POP_END         : END -> type(END), popMode;
 CARRY                 : CARRYNAMES;
@@ -815,18 +815,62 @@ CARRY                 : CARRYNAMES;
 // --------------------------------------------------------
 mode IN_DIRECTION;
 
-DIRECTION_WS              : WHITESPACE+ -> skip;
+DIRECTION_WS              : WHITESPACE+ -> channel(HIDDEN);
 DIRECTION_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 DIRECTION_POP_END         : END -> type(END), popMode;
 DIRECTION
 	: DIR
 	| [0123]
 	;
+DIRECTION_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
+DIRECTION_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
+DIRECTION_FUNC_GROUP_3 : FUNC_GROUP_3 -> type(FUNCTION), pushMode(IN_F_1SS);
+DIRECTION_FUNC_GROUP_4 : FUNC_GROUP_4 -> type(FUNCTION), pushMode(IN_F_1ESSS);
+DIRECTION_FUNC_GROUP_5 : FUNC_GROUP_5 -> type(FUNCTION), pushMode(IN_F_1SV);
+DIRECTION_FUNC_GROUP_6 : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
+DIRECTION_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
+DIRECTION_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
+DIRECTION_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
+DIRECTION_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
+DIRECTION_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
+DIRECTION_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
+DIRECTION_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
+DIRECTION_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
+DIRECTION_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
+DIRECTION_LITERAL         : LITERAL -> type(LITERAL);
+DIRECTION_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
+DIRECTION_OP_ASSIGN         : OP_ASSIGN -> type(OP_ASSIGN);
+DIRECTION_OP_ADD            : OP_ADD -> type(OP_ADD);
+DIRECTION_OP_SUB            : OP_SUB -> type(OP_SUB);
+DIRECTION_OP_MUL            : OP_MUL -> type(OP_MUL);
+DIRECTION_OP_DIV            : OP_DIV -> type(OP_DIV);
+DIRECTION_OP_MOD            : OP_MOD -> type(OP_MOD);
+DIRECTION_OP_POW            : OP_POW -> type(OP_POW);
+DIRECTION_OP_EQUAL          : OP_EQUAL -> type(OP_EQUAL);
+DIRECTION_OP_NOTEQ          : OP_NOTEQ -> type(OP_NOTEQ);
+DIRECTION_OP_LESS           : OP_LESS -> type(OP_LESS);
+DIRECTION_OP_GREAT          : OP_GREAT -> type(OP_GREAT);
+DIRECTION_OP_LESS_EQ        : OP_LESS_EQ -> type(OP_LESS_EQ);
+DIRECTION_OP_GREAT_EQ       : OP_GREAT_EQ -> type(OP_GREAT_EQ);
+DIRECTION_OP_IN             : OP_IN -> type(OP_IN);
+DIRECTION_OP_INC            : OP_INC -> type(OP_INC);
+DIRECTION_OP_DEC            : OP_DEC -> type(OP_DEC);
+DIRECTION_OP_LOGICALAND     : OP_LOGICALAND -> type(OP_LOGICALAND);
+DIRECTION_OP_LOGICALOR      : OP_LOGICALOR -> type(OP_LOGICALOR);
+DIRECTION_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
+DIRECTION_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
+DIRECTION_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
+DIRECTION_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT);
+DIRECTION_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT);
+DIRECTION_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
+DIRECTION_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
+DIRECTION_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
+DIRECTION_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 
 // --------------------------------------------------------
 mode IN_GENDER;
 
-GENDER_WS              : WHITESPACE+ -> skip;
+GENDER_WS              : WHITESPACE+ -> channel(HIDDEN);
 GENDER_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 GENDER_POP_END         : END -> type(END), popMode;
 GENDER                 : GENDERS;
@@ -834,7 +878,7 @@ GENDER                 : GENDERS;
 // --------------------------------------------------------
 mode IN_COLOR;
 
-COLOR_WS              : WHITESPACE+ -> skip;
+COLOR_WS              : WHITESPACE+ -> channel(HIDDEN);
 COLOR_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 COLOR_POP_END         : END -> type(END), popMode;
 COLOR                 : COLORS;
@@ -842,12 +886,12 @@ COLOR                 : COLORS;
 // --------------------------------------------------------
 mode IN_MS;
 
-MS_WS    : WHITESPACE+ -> skip;
+MS_WS    : WHITESPACE+ -> channel(HIDDEN);
 MS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 MS_MC_NOINDEX    : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MS_MC_SIMPLE     : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 MS_MC_COMPUTED_S : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-MS_MC_COMPUTED_V : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+MS_MC_COMPUTED_V : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 MS_MC_I          : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 MS_MC_T          : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 MS_MC_e          : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -884,7 +928,7 @@ MS_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT);
 // --------------------------------------------------------
 mode IN_EEEESSS;
 
-EEEESSS_WS           : WHITESPACE+ -> skip;
+EEEESSS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EEEESSS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EEESSS);
 EEEESSS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EEEESSS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -934,7 +978,7 @@ EEEESSS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EEESSS;
 
-EEESSS_WS           : WHITESPACE+ -> skip;
+EEESSS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EEESSS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EESSS);
 EEESSS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EEESSS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -984,7 +1028,7 @@ EEESSS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EESSS;
 
-EESSS_WS           : WHITESPACE+ -> skip;
+EESSS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EESSS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ESSS);
 EESSS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EESSS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1034,7 +1078,7 @@ EESSS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_ESSS;
 
-ESSS_WS           : WHITESPACE+ -> skip;
+ESSS_WS           : WHITESPACE+ -> channel(HIDDEN);
 ESSS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SSS);
 ESSS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 ESSS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1084,7 +1128,7 @@ ESSS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EEEEESS;
 
-EEEEESS_WS           : WHITESPACE+ -> skip;
+EEEEESS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EEEEESS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EEEESS);
 EEEEESS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EEEEESS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1134,7 +1178,7 @@ EEEEESS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EEEESS;
 
-EEEESS_WS           : WHITESPACE+ -> skip;
+EEEESS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EEEESS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EEESS);
 EEEESS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EEEESS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1184,7 +1228,7 @@ EEEESS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EEESS;
 
-EEESS_WS           : WHITESPACE+ -> skip;
+EEESS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EEESS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EESS);
 EEESS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EEESS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1234,7 +1278,7 @@ EEESS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EESS;
 
-EESS_WS           : WHITESPACE+ -> skip;
+EESS_WS           : WHITESPACE+ -> channel(HIDDEN);
 EESS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ESS);
 EESS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EESS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1284,7 +1328,7 @@ EESS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_ESS;
 
-ESS_WS           : WHITESPACE+ -> skip;
+ESS_WS           : WHITESPACE+ -> channel(HIDDEN);
 ESS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SS);
 ESS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 ESS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1334,7 +1378,7 @@ ESS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_EES;
 
-EES_WS           : WHITESPACE+ -> skip;
+EES_WS           : WHITESPACE+ -> channel(HIDDEN);
 EES_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ES);
 EES_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EES_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1384,7 +1428,7 @@ EES_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_ES;
 
-ES_WS           : WHITESPACE+ -> skip;
+ES_WS           : WHITESPACE+ -> channel(HIDDEN);
 ES_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 ES_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 ES_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1434,21 +1478,21 @@ ES_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_BP;
 
-BP_WS    : WHITESPACE+ -> skip;
+BP_WS    : WHITESPACE+ -> channel(HIDDEN);
 BP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
 BP_BADDY : BADDY -> type(BADDY);
 
 // --------------------------------------------------------
 mode IN_BEESP;
 
-BEESP_WS    : WHITESPACE+ -> skip;
+BEESP_WS    : WHITESPACE+ -> channel(HIDDEN);
 BEESP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_EESP);
 BEESP_BADDY : BADDY -> type(BADDY);
 
 // --------------------------------------------------------
 mode IN_EESP;
 
-EESP_WS           : WHITESPACE+ -> skip;
+EESP_WS           : WHITESPACE+ -> channel(HIDDEN);
 EESP_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ESP);
 EESP_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 EESP_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1498,7 +1542,7 @@ EESP_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_ESP;
 
-ESP_WS           : WHITESPACE+ -> skip;
+ESP_WS           : WHITESPACE+ -> channel(HIDDEN);
 ESP_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SP);
 ESP_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 ESP_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1552,7 +1596,7 @@ SSP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SP);
 SSP_MC_NOINDEX     : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 SSP_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 SSP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-SSP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 SSP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 SSP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 SSP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1568,7 +1612,7 @@ SP_POP_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), popMode;
 SP_MC_NOINDEX     : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 SP_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 SP_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-SP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SP_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 SP_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 SP_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 SP_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1580,7 +1624,7 @@ SP_STRING_LITERAL : ~[#,]+ -> type(STRING);
 // --------------------------------------------------------
 mode IN_VES;
 
-VES_WS              : WHITESPACE+ -> skip;
+VES_WS              : WHITESPACE+ -> channel(HIDDEN);
 VES_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_ES);
 VES_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 VES_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1591,7 +1635,7 @@ VES_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 VES_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 VES_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 VES_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-VES_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VES_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 VES_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 VES_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 VES_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1618,7 +1662,7 @@ VES_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_VVC;
 
-VVC_WS              : WHITESPACE+ -> skip;
+VVC_WS              : WHITESPACE+ -> channel(HIDDEN);
 VVC_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_VC);
 VVC_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 VVC_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1629,7 +1673,7 @@ VVC_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 VVC_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 VVC_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 VVC_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-VVC_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VVC_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 VVC_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 VVC_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 VVC_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1656,7 +1700,7 @@ VVC_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_VC;
 
-VC_WS              : WHITESPACE+ -> skip;
+VC_WS              : WHITESPACE+ -> channel(HIDDEN);
 VC_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_C);
 VC_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 VC_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1667,7 +1711,7 @@ VC_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 VC_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 VC_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 VC_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-VC_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VC_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 VC_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 VC_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 VC_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1694,7 +1738,7 @@ VC_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_VS;
 
-VS_WS              : WHITESPACE+ -> skip;
+VS_WS              : WHITESPACE+ -> channel(HIDDEN);
 VS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 VS_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 VS_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1705,7 +1749,7 @@ VS_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 VS_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 VS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 VS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-VS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+VS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 VS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 VS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 VS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1732,7 +1776,7 @@ VS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_V;
 
-V_WS              : WHITESPACE+ -> skip;
+V_WS              : WHITESPACE+ -> channel(HIDDEN);
 V_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT -> type(TOKEN_BRACE_RIGHT), popMode;
 V_POP_END         : END -> type(END), popMode;
 V_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
@@ -1744,7 +1788,7 @@ V_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 V_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 V_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1786,7 +1830,7 @@ SSS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_SS);
 SSS_MC_NOINDEX     : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 SSS_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 SSS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-SSS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SSS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 SSS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 SSS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 SSS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1802,7 +1846,7 @@ SS_COMMA : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 SS_MC_NOINDEX     : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 SS_MC_SIMPLE      : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 SS_MC_COMPUTED_S  : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-SS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SS_MC_COMPUTED_V  : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 SS_MC_I           : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 SS_MC_T           : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 SS_MC_e           : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1819,7 +1863,7 @@ SO_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_S);
 SO_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 SO_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 SO_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 SO_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 SO_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 SO_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1836,7 +1880,7 @@ S_POP_END         : END -> type(END), popMode;
 S_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 S_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1854,7 +1898,7 @@ STRINGLIST_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA);
 STRINGLIST_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 STRINGLIST_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -1870,67 +1914,73 @@ STRINGLIST_STRING_LITERAL  : ~[#};,]+ -> type(STRING);
 // --------------------------------------------------------
 mode IN_F_1STRINGLIST;
 
-F_1STRINGLIST_WS               : WHITESPACE+ -> skip;
+F_1STRINGLIST_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1STRINGLIST_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_STRINGLIST);
 
 // --------------------------------------------------------
 mode IN_F_1ESSS;
 
-F_1ESSS_WS               : WHITESPACE+ -> skip;
+F_1ESSS_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1ESSS_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_ESSS);
 
 // --------------------------------------------------------
 mode IN_F_1EES;
 
-F_1EES_WS               : WHITESPACE+ -> skip;
+F_1EES_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1EES_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_EES);
 
 // --------------------------------------------------------
 mode IN_F_1SV;
 
-F_1SV_WS               : WHITESPACE+ -> skip;
+F_1SV_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1SV_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_SV);
 
 // --------------------------------------------------------
 mode IN_F_1SS;
 
-F_1SS_WS               : WHITESPACE+ -> skip;
+F_1SS_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1SS_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_SS);
 
 // --------------------------------------------------------
 mode IN_F_1SO;
 
-F_1SO_WS               : WHITESPACE+ -> skip;
+F_1SO_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1SO_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_SO);
 
 // --------------------------------------------------------
 mode IN_F_1S;
 
-F_1S_WS               : WHITESPACE+ -> skip;
+F_1S_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1S_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_S);
 
 // --------------------------------------------------------
 mode IN_F_1VP;
 
-F_1VP_WS               : WHITESPACE+ -> skip;
+F_1VP_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1VP_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_VP);
 
 // --------------------------------------------------------
 mode IN_F_1V;
 
-F_1V_WS               : WHITESPACE+ -> skip;
+F_1V_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1V_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_V);
 
 // --------------------------------------------------------
 mode IN_F_1P;
 
-F_1P_WS               : WHITESPACE+ -> skip;
+F_1P_WS               : WHITESPACE+ -> channel(HIDDEN);
 F_1P_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_P);
+
+// --------------------------------------------------------
+mode IN_F_1E;
+
+F_1E_WS               : WHITESPACE+ -> channel(HIDDEN);
+F_1E_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT), mode(IN_F_E);
 
 // --------------------------------------------------------
 mode IN_F_EES;
 
-F_EES_WS           : WHITESPACE+ -> skip;
+F_EES_WS           : WHITESPACE+ -> channel(HIDDEN);
 F_EES_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_ES);
 F_EES_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 F_EES_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -1980,7 +2030,7 @@ F_EES_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_F_ES;
 
-F_ES_WS           : WHITESPACE+ -> skip;
+F_ES_WS           : WHITESPACE+ -> channel(HIDDEN);
 F_ES_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_S);
 F_ES_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 F_ES_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -2028,9 +2078,59 @@ F_ES_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
 F_ES_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 
 // --------------------------------------------------------
+mode IN_F_E;
+
+F_E_WS              : WHITESPACE+ -> channel(HIDDEN);
+F_E_POP_PAREN_RIGHT     : {m_putNPCBracketCount == 0}? TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
+F_E_START_PAREN_LEFT    : {m_putNPCBracketCount == 0}? TOKEN_PAREN_LEFT  {++m_putNPCBracketCount;} -> type(TOKEN_PAREN_LEFT);
+F_E_END_PAREN_RIGHT     : {m_putNPCBracketCount != 0}? TOKEN_PAREN_RIGHT {--m_putNPCBracketCount;} -> type(TOKEN_PAREN_RIGHT);
+F_E_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
+F_E_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
+F_E_FUNC_GROUP_3    : FUNC_GROUP_3 -> type(FUNCTION), pushMode(IN_F_1SS);
+F_E_FUNC_GROUP_4    : FUNC_GROUP_4 -> type(FUNCTION), pushMode(IN_F_1ESSS);
+F_E_FUNC_GROUP_5    : FUNC_GROUP_5 -> type(FUNCTION), pushMode(IN_F_1SV);
+F_E_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
+F_E_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
+F_E_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
+F_E_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
+F_E_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
+F_E_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
+F_E_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
+F_E_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
+F_E_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
+F_E_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
+F_E_LITERAL         : LITERAL -> type(LITERAL);
+F_E_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
+F_E_OP_ASSIGN         : OP_ASSIGN -> type(OP_ASSIGN);
+F_E_OP_ADD            : OP_ADD -> type(OP_ADD);
+F_E_OP_SUB            : OP_SUB -> type(OP_SUB);
+F_E_OP_MUL            : OP_MUL -> type(OP_MUL);
+F_E_OP_DIV            : OP_DIV -> type(OP_DIV);
+F_E_OP_MOD            : OP_MOD -> type(OP_MOD);
+F_E_OP_POW            : OP_POW -> type(OP_POW);
+F_E_OP_EQUAL          : OP_EQUAL -> type(OP_EQUAL);
+F_E_OP_NOTEQ          : OP_NOTEQ -> type(OP_NOTEQ);
+F_E_OP_LESS           : OP_LESS -> type(OP_LESS);
+F_E_OP_GREAT          : OP_GREAT -> type(OP_GREAT);
+F_E_OP_LESS_EQ        : OP_LESS_EQ -> type(OP_LESS_EQ);
+F_E_OP_GREAT_EQ       : OP_GREAT_EQ -> type(OP_GREAT_EQ);
+F_E_OP_IN             : OP_IN -> type(OP_IN);
+F_E_OP_INC            : OP_INC -> type(OP_INC);
+F_E_OP_DEC            : OP_DEC -> type(OP_DEC);
+F_E_OP_LOGICALAND     : OP_LOGICALAND -> type(OP_LOGICALAND);
+F_E_OP_LOGICALOR      : OP_LOGICALOR -> type(OP_LOGICALOR);
+F_E_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
+F_E_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
+F_E_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
+F_E_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
+F_E_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
+F_E_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
+F_E_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
+
+// --------------------------------------------------------
 mode IN_F_ESSS;
 
-F_ESSS_WS           : WHITESPACE+ -> skip;
+F_ESSS_WS           : WHITESPACE+ -> channel(HIDDEN);
 F_ESSS_COMMA        : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_SSS);
 F_ESSS_FUNC_GROUP_1 : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 F_ESSS_FUNC_GROUP_2 : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -2080,7 +2180,7 @@ F_ESSS_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_F_VP;
 
-F_VP_WS         : WHITESPACE+ -> skip;
+F_VP_WS         : WHITESPACE+ -> channel(HIDDEN);
 F_VP_POP_PAREN_RIGHT  : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_VP_COMMA            : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_P);
 F_VP_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
@@ -2092,7 +2192,7 @@ F_VP_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 F_VP_MC_NOINDEX       : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_VP_MC_SIMPLE        : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_VP_MC_COMPUTED_S    : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_VP_MC_COMPUTED_V    : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_VP_MC_COMPUTED_V    : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_VP_MC_I             : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_VP_MC_T             : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_VP_MC_e             : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2119,7 +2219,7 @@ F_VP_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_F_V;
 
-F_V_WS              : WHITESPACE+ -> skip;
+F_V_WS              : WHITESPACE+ -> channel(HIDDEN);
 F_V_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_V_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
 F_V_FUNC_GROUP_2    : FUNC_GROUP_2 -> type(FUNCTION), pushMode(IN_F_1S);
@@ -2130,7 +2230,7 @@ F_V_FUNC_GROUP_6    : FUNC_GROUP_6 -> type(FUNCTION), pushMode(IN_F_1V);
 F_V_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_V_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_V_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_V_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_V_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_V_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_V_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2162,7 +2262,7 @@ F_SO_POP_COMMA       : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_V);
 F_SO_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_SO_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_SO_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SO_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_SO_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_SO_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_SO_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2179,7 +2279,7 @@ F_SV_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_V);
 F_SV_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_SV_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_SV_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_SV_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SV_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_SV_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_SV_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_SV_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2196,7 +2296,7 @@ F_SSS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_SS);
 F_SSS_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_SSS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_SSS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_SSS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SSS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_SSS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_SSS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_SSS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2213,7 +2313,7 @@ F_SS_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA), mode(IN_F_S);
 F_SS_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_SS_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_SS_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_SS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_SS_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_SS_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_SS_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_SS_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2229,7 +2329,7 @@ F_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_S_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_S_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_S_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_S_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_S_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_S_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_S_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);
@@ -2241,7 +2341,7 @@ F_S_STRING_LITERAL  : ~[#)]+ -> type(STRING);
 // --------------------------------------------------------
 mode IN_F_P;
 
-F_P_WS           : WHITESPACE+ -> skip;
+F_P_WS           : WHITESPACE+ -> channel(HIDDEN);
 F_P_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT), popMode;
 F_P_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA);
 F_P_FUNC_GROUP_1    : FUNC_GROUP_1 -> type(FUNCTION), pushMode(IN_F_1P);
@@ -2296,7 +2396,7 @@ F_STRINGLIST_COMMA           : TOKEN_COMMA -> type(TOKEN_COMMA);
 F_STRINGLIST_MC_NOINDEX      : MC_NOINDEX { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 F_STRINGLIST_MC_SIMPLE       : MC_SIMPLE  -> type(MESSAGECODE), pushMode(IN_F_1P);
 F_STRINGLIST_MC_COMPUTED_S   : MC_COMPUTED_S { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
-F_STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1V);
+F_STRINGLIST_MC_COMPUTED_V   : MC_COMPUTED_V { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1E);
 F_STRINGLIST_MC_I            : MC_I          { emitIdentifier(GS1Lexer::IDENTIFIER, getText()); } -> type(MESSAGECODE), pushMode(IN_F_1VP);
 F_STRINGLIST_MC_T            : MC_T -> type(MESSAGECODE), pushMode(IN_F_1S);
 F_STRINGLIST_MC_e            : MC_e -> type(MESSAGECODE), pushMode(IN_F_1EES);

@@ -517,7 +517,7 @@ std::any GS1Visitor::visitStatementIf(GS1Parser::StatementIfContext* context)
 std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 {
 	// Assignment.
-	safeVisit(context->assignmentStatement());
+	safeVisit(context->assignmentStatement(0));
 
 	// Condition.
 	size_t loopCount = 0;
@@ -533,6 +533,7 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 
 		// Increment.
 		safeVisit(context->expression(1));
+		safeVisit(context->assignmentStatement(1));
 	}
 
 	return {};
