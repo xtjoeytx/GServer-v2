@@ -73,8 +73,7 @@ block
 
 statement
 	: TOKEN_BRACE_LEFT (statement END?)* TOKEN_BRACE_RIGHT
-	| END?
-		( END
+	| ( END
 		| ifStatement
 		| forStatement
 		| whileStatement
@@ -133,7 +132,7 @@ userFunctionStatement
 
 builtinCommandStatement
 	: COMMAND builtInCommandExpression (TOKEN_COMMA builtInCommandExpression?)*				# StatementBuiltInCommand
-	| COMMAND END																			# StatementBuiltInCommand
+	| COMMAND																				# StatementBuiltInCommand
 	;
 
 builtInCommandExpression
