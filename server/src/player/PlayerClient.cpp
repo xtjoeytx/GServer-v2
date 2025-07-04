@@ -613,7 +613,10 @@ bool PlayerClient::sendLogin()
 
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
+	{
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");
 		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
+	}
 
 	return true;
 }
