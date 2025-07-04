@@ -18,6 +18,8 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
+
 const ScriptByteCode& Script::getClientByteCode() const noexcept
 {
 	static ScriptByteCode empty;
@@ -55,9 +57,16 @@ std::string Script::minify(const std::string& src) noexcept
 		return src;
 
 	std::string minified;
+	std::string_view srcView{ src };
+
+	// We don't want to trim serverside code so check if we have any.
+	auto server = BabyDI::Get<Server>();
+	bool hasServerSide = true;
+	if (server && !server->hasNPCServer())
+		hasServerSide = false;
+	bool inServerSide = true;
 
 	// Trim the lines.
-	std::string_view srcView{ src };
 	while (!srcView.empty())
 	{
 		// Find the next newline character.
@@ -81,10 +90,16 @@ std::string Script::minify(const std::string& src) noexcept
 		{
 			if (comment + 2 < line.size() && line[comment + 2] != '#')
 				line = line.substr(0, comment);
+			else if (line.find(clientSideTerminator) != std::string_view::npos)
+			{
+				// If we have a clientside terminator, we are now in clientside code.
+				inServerSide = false;
+			}
 		}
 
 		// Trim the line.
-		line = string::trim(line);
+		if (!hasServerSide || !inServerSide)
+			line = string::trim(line);
 
 		// Append the line to minified.
 		if (!line.empty())
@@ -110,8 +125,6 @@ std::string Script::minify(const std::string& src) noexcept
 
 void Script::split(std::string& source) noexcept
 {
-	static constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
-
 	// Check if we have an npc-server or not.
 	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
 	auto server = BabyDI::Get<Server>();

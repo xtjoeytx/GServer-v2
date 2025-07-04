@@ -154,6 +154,16 @@ name = My Server
 description = My Server
 url = http://www.graal.in/
 
+# Sets the server generation.
+# The server version controls certain aspects of the server, like how data is sent and saved.
+# This option will restrict which clients can join the server, taking precedence over allowedversions.txt.
+# GS2 is only usable on newmain and modern.
+#   original - 1.x
+#   classic  - 2.x/3.x
+#   newmain  - 4.x to 5.007
+#   modern   - 5.1+
+generation = classic
+
 # The NPC-Server nickname.
 nickname = NPC-Server
 
@@ -183,25 +193,8 @@ onlystaff = false
 # Set to true to disable the folder configuration.
 nofoldersconfig = false
 
-# Sets the server generation.
-# The server version controls certain aspects of the server, like how data is sent and saved.
-# This option will restrict which clients can join the server, taking precedence over allowedversions.txt.
-# GS2 is only usable on newmain and modern.
-#   original - 1.x
-#   classic  - 2.x/3.x
-#   newmain  - 4.x to 5.007
-#   modern   - 5.1+
-generation = classic
-
 # Determines whether the server handles certain things like signs and links.
-# Don't set to true.
 serverside = false
-
-# If true, level signs are sent to players (only takes effect if serverside is true).
-clientsidesigns = false
-
-# If true, level links are sent to players (only takes effect if serverside is true).
-clientsidelinks = false
 
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
@@ -214,19 +207,25 @@ language = English
 # --- Private Graal Reborn non-standard extensions.                                  ---
 # --------------------------------------------------------------------------------------
 
+# If true, level signs are sent to players (only takes effect if serverside is true).
+clientsidesigns = false
+
+# If true, level links are sent to players (only takes effect if serverside is true).
+clientsidelinks = false
+
 # Enables triggeraction hacks.
-triggerhack_weapons = false	# gr.addweapon, gr.deleteweapon
-triggerhack_guilds = false	# gr.addguildmember, gr.removeguildmember, gr.removeguild, gr.setguild
-triggerhack_groups = true	# gr.setgroup, gr.setlevelgroup
-triggerhack_files = false	# gr.appendfile, gr.writefile
-triggerhack_rc = false		# gr.rcchat
+triggerhack_weapons = false		# gr.addweapon, gr.deleteweapon
+triggerhack_guilds = false		# gr.addguildmember, gr.removeguildmember, gr.removeguild, gr.setguild
+triggerhack_groups = true		# gr.setgroup, gr.setlevelgroup
+triggerhack_files = false		# gr.appendfile, gr.writefile
+triggerhack_rc = false			# gr.rcchat
 triggerhack_execscript = false	# gr.es_clear, gr.es_set, gr.es_append, gr.es
-triggerhack_props = false	# gr.attr1-gr.attr30
-triggerhack_levels = false	# gr.updatelevel
+triggerhack_props = false		# gr.attr1-gr.attr30
+triggerhack_levels = false		# gr.updatelevel
 
 # Enables flag hacks.
-flaghack_movement = true	# -gr_movement weapon.
-flaghack_ip = false			# gr.ip
+flaghack_movement = true		# -gr_movement weapon.
+flaghack_ip = false				# gr.ip
 
 # If true, the server will process all script events, even if the NPC doesn't check for the event flag.
 runallscriptevents = false
