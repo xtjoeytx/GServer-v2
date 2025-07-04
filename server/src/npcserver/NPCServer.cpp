@@ -132,7 +132,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	}
 
 	// Save all player prop mod times.
-	for (auto& [id, player] : m_server->getPlayerList())
+	for (auto& [id, player] : m_playerList)
 	{
 		player->recordCurrentPropModTime();
 	}
@@ -171,7 +171,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	// Send all changed player props.
 	{
 		CString propsPacket;
-		for (auto& [id, player] : m_server->getPlayerList())
+		for (auto& [id, player] : m_playerList)
 		{
 			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(player);
 			if (playerClient == nullptr) continue;
@@ -185,8 +185,9 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 		}
 	}
 
-	// Process deleted NPCs.
+	// Process deleted NPCs and players.
 	processDeletedNPCs();
+	processDeletedPlayers();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -246,6 +247,27 @@ void NPCServer::saveNPCs()
 		if (auto npc = npcPtr.lock(); npc != nullptr)
 			m_server->getNPCLoader().saveNPC(npc);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void NPCServer::playerLogin(std::shared_ptr<Player> player)
+{
+	m_playerList[player->getId()] = player;
+}
+
+void NPCServer::playerLogout(std::shared_ptr<Player> player)
+{
+	m_deletedPlayers.insert(player);
+	addEventToControlNPC(ScriptEventType::PLAYERLOGOUT, source::FromPlayer(player->getId()));
+}
+
+void NPCServer::processDeletedPlayers()
+{
+	for (const auto& player : m_deletedPlayers)
+		m_playerList.erase(player->getId());
+
+	m_deletedPlayers.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////////

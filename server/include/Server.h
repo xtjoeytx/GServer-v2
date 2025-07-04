@@ -176,6 +176,7 @@ public:
 	auto& getPlayerList() { return m_playerList; }
 	auto& getNPCList() { return m_npcList; }
 	auto& getLevelList() { return m_levelList; }
+	auto& getPlayerIdGenerator() { return m_playerIdGenerator; }
 	const auto& getMapList() const { return m_mapList; }
 	const auto& getStatusList() const { return m_statusList; }
 	const auto& getAllowedVersions() const { return m_allowedVersions; }
@@ -296,7 +297,6 @@ public:
 
 private:
 	bool doTimedEvents(int iterations);
-	void cleanupDeletedPlayers();
 
 	bool m_doRestart;
 
@@ -324,7 +324,6 @@ private:
 	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_DATABASE_LOCALN };
 
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
-	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_GEN };
 
 	TimeoutGenerator m_timedEvents{ 1s, true };

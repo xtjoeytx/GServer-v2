@@ -23,6 +23,7 @@
 #include <IEnums.h>
 
 #include <Server.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <scripting/gs1/GS1Functions.h>
@@ -576,7 +577,7 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 		auto* server = BabyDI::Get<Server>();
 		for (const auto& id : level->getPlayers())
 		{
-			if (auto player = server->getPlayer(id); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				auto distance = std::hypot(player->getX() - x, player->getY() - y);
 				if (distance < std::get<1>(nearestPlayer))
@@ -678,7 +679,7 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 		auto* server = BabyDI::Get<Server>();
 		for (const auto& id : level->getPlayers())
 		{
-			if (auto player = server->getPlayer(id); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				auto distance = std::hypot(player->getX() - x, player->getY() - y);
 				if (distance < std::get<1>(nearestPlayer))
@@ -714,7 +715,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 		auto* server = BabyDI::Get<Server>();
 		for (const auto& id : level->getPlayers())
 		{
-			if (auto player = server->getPlayer(id); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				if (!flag.empty() && !player->account.variables.contains(flag))
 					continue;
@@ -766,7 +767,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 	auto playerName = visitor->getGameValueAs<std::string>(*arguments[0]);
 
 	auto* server = BabyDI::Get<Server>();
-	if (auto player = server->getPlayer(playerName, PLTYPE_ANYPLAYER); player != nullptr)
+	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYPLAYER); player != nullptr)
 	{
 		return ScriptObjectSource{ player->getId(), ScriptObjectSourceType::PLAYER };
 	}
@@ -798,7 +799,7 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 	if (player.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (auto playerObject = server->getPlayer(player.value().first); playerObject != nullptr)
+		if (auto playerObject = server->getNPCServer()->getPlayer(player.value().first); playerObject != nullptr)
 			return playerObject->account.hasWeapon(weaponName) ? 1.0 : 0.0;
 	}
 
@@ -1065,7 +1066,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < players.size(); ++i)
 		{
-			if (auto player = server->getPlayer(players[i]); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(players[i]); player != nullptr)
 			{
 				auto bbox = player->getBoundingBox();
 				if (positionInRectangle(Position<int16_t>{ x, y }, bbox))

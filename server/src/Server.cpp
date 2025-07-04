@@ -255,9 +255,6 @@ void Server::operator()()
 		// Do a server loop.
 		doMain();
 
-		// Clean up deleted players here.
-		cleanupDeletedPlayers();
-
 		// Check if we should do a restart.
 		if (m_doRestart)
 		{
@@ -271,31 +268,6 @@ void Server::operator()()
 		if (shutdownProgram)
 			running = false;
 	}
-}
-
-void Server::cleanupDeletedPlayers()
-{
-	if (m_deletedPlayers.empty()) return;
-	for (auto i = std::begin(m_deletedPlayers); i != std::end(m_deletedPlayers);)
-	{
-		// Value copy so the shared_ptr exists until the end.
-		PlayerPtr player = *i;
-
-		/* TODO(Nalin): The player needs to stay in memory until this runs, find some way to keep the shared_ptr alive (and don't call Player::cleanup() yet).
-		if (hasNPCServer())
-			getNPCServer()->addEventToControlNPC(ScriptEventType::PLAYERLOGOUT, source::FromPlayer(player->getId()));
-		*/
-
-		// Get rid of the player now.
-		m_playerIdGenerator.freeId(player->getId());
-		if (player->getSocket() != nullptr)
-			m_sockManager.unregisterSocket(player.get());
-		m_playerList.erase(player->getId());
-		player->cleanup();
-
-		i = m_deletedPlayers.erase(i);
-	}
-	//m_deletedPlayers.clear();
 }
 
 void Server::cleanup()
@@ -315,7 +287,6 @@ void Server::cleanup()
 
 	m_npcServer.reset();
 	m_playerList.clear();
-	m_deletedPlayers.clear();
 
 	m_levelList.clear();
 	m_mapList.clear();
@@ -1173,6 +1144,11 @@ bool Server::addPlayer(PlayerPtr player, PlayerID id)
 	player->setId(id);
 	m_playerList[id] = player;
 
+	// If we have an NPC-Server, let it process the player first.
+	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
+	if (hasNPCServer())
+		m_npcServer->playerLogin(player);
+
 	return true;
 }
 
@@ -1181,12 +1157,14 @@ bool Server::deletePlayer(PlayerPtr player)
 	if (player == nullptr)
 		return true;
 
+	// If we have an NPC-Server, let it process the player first.
+	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
+	if (hasNPCServer())
+		m_npcServer->playerLogout(player);
+
 	// Add the player to the set of players to delete.
-	if (m_deletedPlayers.insert(player).second)
-	{
-		// Remove the player from the serverlist.
-		getServerList().deletePlayer(player);
-	}
+	getServerList().deletePlayer(player);
+	m_playerList.erase(player->getId());
 
 	return true;
 }
@@ -1216,6 +1194,11 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 		new_player->setId(NPCServerPlayerID);
 		m_playerList[NPCServerPlayerID] = new_player;
 	}
+
+	// If we have an NPC-Server, let it process the player first.
+	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
+	if (hasNPCServer())
+		m_npcServer->playerLogin(new_player);
 
 	return true;
 }

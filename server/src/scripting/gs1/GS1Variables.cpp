@@ -7,6 +7,7 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
@@ -31,14 +32,14 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 	variableStore.add(GameVariable{ "allplayerscount",
 		[server](auto) -> GameValue
 		{
-			auto size = std::ranges::distance(server->getPlayerList() | std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; }));
+			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; }));
 			return static_cast<double>(size);
 		}, {}
 	});
 	variableStore.add(GameVariable{ "allplayers",
 		[server](auto) -> GameValue
 		{
-			auto playerObjects = server->getPlayerList()
+			auto playerObjects = server->getNPCServer()->getPlayerList()
 					| std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; })
 					| std::views::transform([](auto& kvp) { return ScriptObjectSource{ std::make_pair((size_t)kvp.first, ScriptObjectSourceType::PLAYER)}; });
 			std::vector<ScriptObjectSource> players{ std::from_range, playerObjects };

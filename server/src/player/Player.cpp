@@ -363,6 +363,11 @@ void Player::cleanup()
 			log::printLine(log::server, ":: RC disconnected: {}", account.name);
 		else if (isNC())
 			log::printLine(log::server, ":: NC disconnected: {}", account.name);
+
+		// Get rid of the player now.
+		m_server->getPlayerIdGenerator().freeId(m_id);
+		m_server->getSocketManager().unregisterSocket(this);
+		m_server->getPlayerList().erase(m_id);
 	}
 
 	if (m_playerSock)

@@ -465,7 +465,7 @@ auto split(std::string_view str, std::string_view delim = "\n"sv)
 /// @param delims A set of delimiter characters used to split the string. Defaults to whitespace characters (space, tab, newline, carriage return).
 /// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
 template <typename T = std::string>
-std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims = " \t\n\r"sv)
+std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -495,6 +495,12 @@ std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant au
 	}
 
 	return tokens;
+}
+
+template <typename T = std::string>
+std::vector<T> splitHard(StringViewVariant auto const& str)
+{
+	return splitHard(str, " \t\n\r"sv);
 }
 
 /// @brief Joins the elements of a range into a single string, separated by a specified delimiter.

@@ -22,6 +22,7 @@
 
 #include <Server.h>
 #include <level/Level.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <scripting/gs1/GS1Commands.h>
@@ -79,7 +80,7 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource sour
 	switch (source.second)
 	{
 		case ScriptObjectSourceType::PLAYER:
-			if (auto player = server->getPlayer(source.first); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return &player->account.variables;
 			break;
 		case ScriptObjectSourceType::NPC:
@@ -169,7 +170,7 @@ std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptOb
 	switch (source.second)
 	{
 		case ScriptObjectSourceType::PLAYER:
-			if (auto player = server->getPlayer(source.first); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				scriptObject = player.get();
 			break;
 		case ScriptObjectSourceType::NPC:
@@ -345,7 +346,7 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 		}
 		else if (source.second == ScriptObjectSourceType::PLAYER)
 		{
-			if (auto player = server->getPlayer(source.first); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return server->getLevel(player->account.level);
 		}
 		else if (source.second == ScriptObjectSourceType::LEVEL)

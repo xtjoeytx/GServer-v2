@@ -2,6 +2,7 @@
 #define NPCSERVER_H
 
 #include <chrono>
+#include <concepts>
 #include <cstdint>
 #include <memory>
 #include <ranges>
@@ -48,18 +49,25 @@ public:
 	void update(TimeoutGenerator::time_point currentTime = std::chrono::high_resolution_clock::now());
 
 public:
-	[[inline]] std::shared_ptr<Player> getPlayer() const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(const std::string& account, int type) const;
 	[[inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
 
 public:
 	[[inline]] const auto& getGlobalNPCList() const noexcept;
 	[[inline]] const auto& getClassList() const noexcept;
+	[[inline]] auto& getPlayerList() noexcept;
 
 public:
 	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::NotForwardRangeNotString auto&&... args);
 	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::ForwardRangeNotString auto&& range);
 	[[inline]] void addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, auto&& arg1, auto&&... args);
 	[[inline]] void addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, std::ranges::forward_range auto&& range);
+
+public:
+	void playerLogin(std::shared_ptr<Player> player);
+	void playerLogout(std::shared_ptr<Player> player);
 
 public:
 	std::weak_ptr<NPC> getNPCByName(const std::string& name);
@@ -82,6 +90,7 @@ public:
 private:
 	void run(TimeoutGenerator::time_delta delta);
 	void processDeletedNPCs();
+	void processDeletedPlayers();
 
 private:
 	void loadClasses();
@@ -99,12 +108,54 @@ private:
 
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	std::unordered_set<NPCID> m_deletedNPCs;
+	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
+	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	string_map<std::shared_ptr<ScriptClass>> m_classList;
 };
 
-inline std::shared_ptr<Player> NPCServer::getPlayer() const
+template<class T>
+inline std::shared_ptr<T> NPCServer::getPlayer(const PlayerID id) const
 {
-	return std::dynamic_pointer_cast<Player>(m_npcServerPlayer);
+	auto iter = m_playerList.find(id);
+	if (iter == std::end(m_playerList))
+		return nullptr;
+
+	if constexpr (std::same_as<T, Player>)
+		return iter->second;
+
+	return std::dynamic_pointer_cast<T>(iter->second);
+}
+
+template<class T>
+inline std::shared_ptr<T> NPCServer::getPlayer(const PlayerID id, int type) const
+{
+	auto player = getPlayer<T>(id);
+	if (player == nullptr || !(player->getType() & type))
+		return nullptr;
+
+	return player;
+}
+
+template<class T>
+inline std::shared_ptr<T> NPCServer::getPlayer(const std::string& account, int type) const
+{
+	for (const auto& [id, player] : m_playerList)
+	{
+		// Check if its the type of player we are looking for
+		if (!player || !(player->getType() & type))
+			continue;
+
+		// Compare account names.
+		if (string::comparei(player->account.name, account) == 0)
+		{
+			if constexpr (std::same_as<T, Player>)
+				return player;
+
+			return std::dynamic_pointer_cast<T>(player);
+		}
+	}
+
+	return nullptr;
 }
 
 inline std::shared_ptr<PlayerNPCServer> NPCServer::getPlayerNPCServer() const
@@ -120,6 +171,11 @@ inline const auto& NPCServer::getGlobalNPCList() const noexcept
 inline const auto& NPCServer::getClassList() const noexcept
 {
 	return m_classList;
+}
+
+inline auto& NPCServer::getPlayerList() noexcept
+{
+	return m_playerList;
 }
 
 inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::NotForwardRangeNotString auto&&... args)

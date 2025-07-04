@@ -21,6 +21,7 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <npcserver/NPCServer.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -211,7 +212,7 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 		[visitor, playerId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
 		{
 			auto* server = BabyDI::Get<Server>();
-			if (auto player = server->getPlayer(playerId); player != nullptr)
+			if (auto player = server->getNPCServer()->getPlayer(playerId); player != nullptr)
 			{
 				if (propId != PlayerProp::COLORS)
 				{
@@ -501,7 +502,7 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source->first); player != nullptr)
+		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
 		{
 			// Explicitly place it in another string as the return will trigger move semantics.
 			return std::string{ player->account.name };
@@ -790,7 +791,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source->first); player != nullptr)
+		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
 		{
 			auto& weaponList = player->account.weapons;
 			if (weaponList.empty())
@@ -820,7 +821,7 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source->first); player != nullptr)
+		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
 		{
 			auto& weaponList = player->account.weapons;
 			if (weaponList.empty())
