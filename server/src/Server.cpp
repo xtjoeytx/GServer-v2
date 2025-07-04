@@ -1339,7 +1339,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	}
 
 	// And share it.
-	if (pSendToPlayers)
+	if (pSendToPlayers && (!hasNPCServer() || flagName.starts_with("serverr.")))
 	{
 		if (!flagValue.has_value())
 			sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagName);

@@ -508,6 +508,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	std::vector<std::string> removedFlags;
+	bool hasNPCServer = m_server->hasNPCServer();
 
 	// Iterate through all the server flags finding deleted flags and sending changes.
 	for (auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
@@ -524,13 +525,15 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 			{
 				value->unassign<std::string>();
 				value->assign<bool>(true);
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
+				if (!hasNPCServer || flag.starts_with("serverr."))
+					m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
 			}
 			else
 			{
 				value->unassign<bool>();
 				value->assign<std::string>(search->second);
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
+				if (!hasNPCServer || flag.starts_with("serverr."))
+					m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
 			}
 			flagMap.erase(search);
 		}
@@ -542,7 +545,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		auto& store = m_server->Scripting.variables.store;
 		if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
 		{
-			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
+			if (!hasNPCServer || flag.starts_with("serverr."))
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
 			store.erase(search);
 		}
 	}
@@ -551,8 +555,17 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	for (auto& [flag, value] : flagMap)
 	{
 		if (value.empty())
+		{
 			m_server->Scripting.variables.add(flag, true);
-		else m_server->Scripting.variables.add(flag, value);
+			if (!hasNPCServer || flag.starts_with("serverr."))
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
+		}
+		else
+		{
+			m_server->Scripting.variables.add(flag, value);
+			if (!hasNPCServer || flag.starts_with("serverr."))
+				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+		}
 	}
 
 	log::printLine(log::rc, "{} has updated the server flags.", account.name);

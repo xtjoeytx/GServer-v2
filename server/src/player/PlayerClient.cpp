@@ -435,6 +435,7 @@ bool PlayerClient::sendLogin()
 		return false;
 
 	auto& settings = m_server->getSettings();
+	bool hasNPCServer = m_server->hasNPCServer();
 
 	// Recalculate player spar deviation.
 	{
@@ -487,6 +488,7 @@ bool PlayerClient::sendLogin()
 	// Send the server's flags to the player.
 	for (const auto& [flag, value] : m_server->Scripting.variables.store)
 	{
+		if (hasNPCServer && !flag.starts_with("serverr.")) continue;
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
 			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
 	}
