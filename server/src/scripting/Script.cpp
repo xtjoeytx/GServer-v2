@@ -1,11 +1,16 @@
 #include <algorithm>
 #include <any>
+#include <format>
 #include <iterator>
-#include <string>
 #include <string_view>
+#include <string>
+#include <vector>
 
 #include <BabyDI.h>
+#include <CString.h>
+#include <IUtil.h>
 
+#include <FileSystem.h>
 #include <Server.h>
 #include <npcserver/NPCServer.h>
 #include <scripting/IScriptEngine.h>
@@ -19,6 +24,107 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
+
+//----------------------------
+
+static std::string performClientSideJoinHack(std::string_view code)
+{
+	std::string result;
+	std::vector<std::string_view> joins;
+
+	size_t start = 0, end = 0;
+	while (start < code.length())
+	{
+		// Find the next join.
+		// If we don't find one, copy the rest of the code and break.
+		end = code.find("join ", start);
+		if (end == std::string_view::npos)
+		{
+			result += code.substr(start);
+			break;
+		}
+
+		// Look for a newline or the start of a code block so we don't capture the word join in a string.
+		bool join_is_start_of_block = true;
+		if (end != 0)
+		{
+			size_t block_start = end - 1;
+			while (block_start > 0)
+			{
+				// Skip any whitespace before the join.
+				if (code[block_start] == ' ' || code[block_start] == '\t')
+				{
+					--block_start;
+					continue;
+				}
+				// Look for the start of a block or a newline.
+				else if (!(code[block_start] == '\n' || code[block_start] == '\xa7' || code[block_start] == '{'))
+				{
+					join_is_start_of_block = false;
+					break;
+				}
+
+				// We found a new line or a block start.
+				break;
+			}
+			if (!join_is_start_of_block)
+			{
+				result += code.substr(start, end);
+				start = end + 5; // 5 = strlen("join ")
+				continue;
+			}
+		}
+
+		// Copy the code before the join.
+		// Then, add a semi-colon.  We are going to remove the join entirely.
+		result += code.substr(start, end - start);
+		result += ";";
+
+		// Get the name of the join.
+		start = end + 5; // 5 = strlen("join ")
+		end = code.find(";", start);
+		if (end == std::string_view::npos)
+			break;
+
+		// Save the join to the list of joins.
+		std::string_view join = string::trim(code.substr(start, end - start));
+		if (!join.empty())
+			joins.push_back(join);
+
+		start = end + 1;
+	}
+
+	// Load the files and append them to the result.
+	auto server = BabyDI::Get<Server>();
+	if (server && server->hasNPCServer())
+	{
+		for (const auto& className : joins)
+		{
+			if (auto classObject = server->getNPCServer()->getClass(className).lock(); classObject != nullptr)
+			{
+				if (result.back() != '\n')
+					result += '\n';
+				result += classObject->getScript().getClientSide();
+			}
+		}
+	}
+	else
+	{
+		std::string classScript;
+		for (const auto& fileName : joins)
+		{
+			classScript = Script::minify(server->getFileSystem()->load(std::format("{}.txt", fileName)).toString());
+			string::replaceMutate(classScript, "\r", "");
+			if (result.back() != '\n')
+				result += '\n';
+			result += classScript;
+		}
+	}
+
+	return result;
+}
+
+//----------------------------
 
 const ScriptByteCode& Script::getClientByteCode() const noexcept
 {
@@ -119,12 +225,24 @@ std::string Script::minify(const std::string& src) noexcept
 		minified.erase(start, end - start + 2);
 	}
 
+	// Final trim.
+	string::trimMutate(minified);
+
 	// Return the minified code.
 	return minified;
 }
 
 void Script::split(std::string& source) noexcept
 {
+	auto determineClientSideLocation = [](std::string& source) -> std::string::iterator
+	{
+		auto clientside = source.begin();
+		if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
+			std::advance(clientside, clientSep);
+		else clientside = source.end();
+		return clientside;
+	};
+
 	// Check if we have an npc-server or not.
 	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
 	auto server = BabyDI::Get<Server>();
@@ -137,10 +255,14 @@ void Script::split(std::string& source) noexcept
 	// The serverside code will be fed into a compiler so it should have normal line endings.
 	auto clientside = source.begin();
 	if (hasServerSide)
+		clientside = determineClientSideLocation(source);
+
+	// Do clientside script joins.
+	if (server->getSettings().getBool("clientsidejoins", true) && clientside != source.end())
 	{
-		if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
-			std::advance(clientside, clientSep);
-		else clientside = source.end();
+		auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
+		source.replace(clientside, source.end(), joinedScript);
+		clientside = determineClientSideLocation(source);
 	}
 
 	// Mangle the line terminators.

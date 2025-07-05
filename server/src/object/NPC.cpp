@@ -43,7 +43,6 @@ namespace preagonal
 static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 
 static std::string_view toWeaponName(std::string_view code);
-static std::string performClientSideJoinHack(std::string_view code, FileSystem* fs);
 
 //----------------------------
 
@@ -82,14 +81,6 @@ void NPC::setScript(std::string_view script)
 	// Check for position update blocking.
 	if (server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
-
-	// If there is no npc-server, emulate script joins.
-	if (!server->hasNPCServer() && server->Generation == ServerGeneration::CLASSIC)
-	{
-		auto joinedScript = performClientSideJoinHack(clientside, server->getFileSystem());
-		m_script.setModifiedSource(joinedScript);
-		clientside = m_script.getClientSide();
-	}
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
 	if (!server->hasNPCServer())
@@ -1268,86 +1259,6 @@ std::string_view toWeaponName(std::string_view code)
 		return {};
 
 	return string::trim(code.substr(name_start, name_pos - name_start));
-}
-
-std::string performClientSideJoinHack(std::string_view code, FileSystem* fs)
-{
-	std::string result;
-	std::vector<std::string_view> joins;
-
-	size_t start = 0, end = 0;
-	while (start < code.length())
-	{
-		// Find the next join.
-		// If we don't find one, copy the rest of the code and break.
-		end = code.find("join ", start);
-		if (end == std::string_view::npos)
-		{
-			result += code.substr(start);
-			break;
-		}
-
-		// Look for a newline or the start of a code block so we don't capture the word join in a string.
-		bool join_is_start_of_block = true;
-		if (end != 0)
-		{
-			size_t block_start = end - 1;
-			while (block_start > 0)
-			{
-				// Skip any whitespace before the join.
-				if (code[block_start] == ' ' || code[block_start] == '\t')
-				{
-					--block_start;
-					continue;
-				}
-				// Look for the start of a block or a newline.
-				else if (!(code[block_start] == '\n' || code[block_start] == '\xa7' || code[block_start] == '{'))
-				{
-					join_is_start_of_block = false;
-					break;
-				}
-
-				// We found a new line or a block start.
-				break;
-			}
-			if (!join_is_start_of_block)
-			{
-				result += code.substr(start, end);
-				start = end + 5; // 5 = strlen("join ")
-				continue;
-			}
-		}
-
-		// Copy the code before the join.
-		// Then, add a semi-colon.  We are going to remove the join entirely.
-		result += code.substr(start, end - start);
-		result += ";";
-
-		// Get the name of the join.
-		start = end + 5; // 5 = strlen("join ")
-		end = code.find(";", start);
-		if (end == std::string_view::npos)
-			break;
-
-		// Save the join to the list of joins.
-		std::string_view join = string::trim(code.substr(start, end - start));
-		if (!join.empty())
-			joins.push_back(join);
-
-		start = end + 1;
-	}
-
-	// Load the files and append them to the result.
-	CString c;
-	for (const auto& fileName : joins)
-	{
-		c = removeComments(fs->load(std::format("{}.txt", fileName)));
-		c.removeAllI("\r");
-		result += "\n";
-		result += c.toStringView();
-	}
-
-	return result;
 }
 
 std::vector<std::string> NPC::getVariableDump() const

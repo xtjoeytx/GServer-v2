@@ -213,6 +213,11 @@ clientsidesigns = false
 # If true, level links are sent to players (only takes effect if serverside is true).
 clientsidelinks = false
 
+# If true, emulates joins on clientside code.
+# If serverside is true, it joins a class (the class code will become clientside).
+# If serverside is false, the server looks for a .txt file with the same name as the join.
+clientsidejoins = true
+
 # Enables triggeraction hacks.
 triggerhack_weapons = false		# gr.addweapon, gr.deleteweapon
 triggerhack_guilds = false		# gr.addguildmember, gr.removeguildmember, gr.removeguild, gr.setguild

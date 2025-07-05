@@ -58,7 +58,7 @@ public:
 	void executeEvents(ScriptContainer& container, ScriptObjectSource source) const;
 	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
-private:
+public:
 	static std::string minify(const std::string& src) noexcept;
 
 private:
