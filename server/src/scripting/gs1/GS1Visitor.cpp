@@ -625,12 +625,20 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 	if (m_parser == nullptr)
 		throw std::runtime_error("GS1Visitor is missing the link to the parser");
 
-	auto identifier = context->IDENTIFIER()->getText();
+	auto identifier = context->compound_identifier()->getText();
 	auto function = m_parser->userFunctions.find(identifier);
 	if (function == m_parser->userFunctions.end())
 		RECOVERABLE_PARSE_ERROR(std::format("Could not find user function '{}'.", identifier), {});
 
-	return visit(function->second);
+	try
+	{
+		visit(function->second);
+	}
+	catch (return_exception&)
+	{
+	}
+
+	return {};
 }
 
 std::any GS1Visitor::visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCommandContext* context)
@@ -720,7 +728,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 		return visitChildren(context);
 
 	std::vector<double> values;
-	for (auto& be : context->conditionalExpression())
+	for (auto& be : context->exponentiationExpression())
 		values.emplace_back(getReadOnlyGameValueFromAnyAs<double>(visit(be)));
 
 		std::any right_any;

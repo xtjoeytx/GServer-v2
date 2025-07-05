@@ -118,14 +118,14 @@ flowStatement
 //----------------------------------------------------------
 
 functionDefinition
-	: KW_FUNCTION IDENTIFIER TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block
-		{add_user_function($IDENTIFIER->getText(), $block.ctx);}							# StatementFunctionDefinition
+	: KW_FUNCTION compound_identifier TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT block
+		{ add_user_function($compound_identifier.ctx->getText(), $block.ctx); }				# StatementFunctionDefinition
 	;
 
 //----------------------------------------------------------
 
 userFunctionStatement
-	: IDENTIFIER TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT											# StatementUserFunctionCall
+	: compound_identifier TOKEN_PAREN_LEFT TOKEN_PAREN_RIGHT								# StatementUserFunctionCall
 	;
 
 //----------------------------------------------------------
@@ -149,12 +149,7 @@ assignmentStatement
 //----------------------------------------------------------
 
 expression
-	: inExpression
-	;
-
-inExpression
 	: conditionalExpression
-		((TOKEN_COMMA conditionalExpression)* OP_IN (range_literal | primaryExpression))?	# ExpressionIn
 	;
 
 conditionalExpression
@@ -183,7 +178,13 @@ additiveExpression
 	;
 
 multiplicativeExpression
-	: exponentiationExpression ((OP_MUL | OP_DIV | OP_MOD) exponentiationExpression)*		# ExpressionMultiplicative
+	: inExpression ((OP_MUL | OP_DIV | OP_MOD) inExpression)*								# ExpressionMultiplicative
+	;
+
+inExpression
+	: exponentiationExpression
+		((TOKEN_COMMA exponentiationExpression)*
+			OP_IN (range_literal | primaryExpression))?										# ExpressionIn
 	;
 
 exponentiationExpression
@@ -220,15 +221,15 @@ identifier_access
 	;
 
 identifier_value
-	: storage_token compound_identifier
+	: (storage_token | IDENTIFIER storage_token) compound_identifier
 		(TOKEN_BRACKET_LEFT conditionalExpression TOKEN_BRACKET_RIGHT)?
-		{add_identifier($compound_identifier.ctx->getText());}								# IdentifierValue
+		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
 	| compound_identifier (TOKEN_BRACKET_LEFT conditionalExpression TOKEN_BRACKET_RIGHT)?
-		{add_identifier($compound_identifier.ctx->getText());}								# IdentifierValue
+		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
 	;
 
 compound_identifier
-	: IDENTIFIER (IDENTIFIER | messagecode_string)*											# CompoundIdentifier
+	: IDENTIFIER (IDENTIFIER | messagecode_string | REAL)*									# CompoundIdentifier
 	;
 
 compound_string
