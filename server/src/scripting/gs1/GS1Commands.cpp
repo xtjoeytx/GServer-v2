@@ -350,7 +350,7 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	auto it = map.find(hash);
 	if (it == map.end())
 	{
-		log::printLine(log::script, "processBuiltInCommand received an unknown command: {}", commandName);
+		log::printLine(log::script, "Unknown command in NPC '{}': {}", visitor->who, commandName);
 		return;
 	}
 

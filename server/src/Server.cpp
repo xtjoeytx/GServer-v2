@@ -702,6 +702,8 @@ void Server::loadWeapons(bool print)
 	auto& weaponFileList = weaponFS.getFileList();
 	for (auto& weaponFile: weaponFileList)
 	{
+		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
+
 		auto weapon = Weapon::loadWeapon(weaponFile.first);
 		if (weapon == nullptr) continue;
 
@@ -716,7 +718,7 @@ void Server::loadWeapons(bool print)
 		if (m_weaponList.find(weapon->name) == m_weaponList.end())
 		{
 			m_weaponList[weapon->name] = weapon;
-			if (print) log::printLine(log::server, weapon->name);
+			if (print) log::print(log::server, weapon->name);
 		}
 		else
 		{
@@ -728,7 +730,7 @@ void Server::loadWeapons(bool print)
 				updateWeaponForPlayers(weapon);
 				if (print)
 				{
-					log::printLine(log::server, "{} [updated]", weapon->name);
+					log::print(log::server, "{} [updated]", weapon->name);
 					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->name << " ");
 				}
 			}
@@ -736,7 +738,7 @@ void Server::loadWeapons(bool print)
 			{
 				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
 				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) log::printLine(log::server, "{} [skipped]", weapon->name);
+				if (print) log::print(log::server, "{} [skipped]", weapon->name);
 			}
 		}
 	}

@@ -33,6 +33,7 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 
@@ -394,7 +395,8 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 			return it->second(visitor, messageCode, arguments);
 	}
 
-	throw std::invalid_argument("processMessageCode received an unknown message code");
+	log::printLine(log::script, "Unknown message code in NPC '{}': {}", visitor->who, messageCode);
+	return std::string{};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

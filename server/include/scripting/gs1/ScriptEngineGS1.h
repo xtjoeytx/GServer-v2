@@ -129,7 +129,8 @@ struct GS1ScriptWrapper
 {
 	GS1ScriptWrapper(std::string_view who, std::string_view script);
 
-	std::shared_ptr<grammar::GS1ErrorListener> errorListener;
+	std::shared_ptr<grammar::GS1ErrorListener> errorListenerLexer;
+	std::shared_ptr<grammar::GS1ErrorListener> errorListenerParser;
 	std::shared_ptr<antlr4::ANTLRInputStream> input;
 	std::shared_ptr<grammar::GS1Lexer> lexer;
 	std::shared_ptr<antlr4::CommonTokenStream> tokens;

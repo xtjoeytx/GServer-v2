@@ -206,7 +206,7 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 	auto it = map.find(hash);
 	if (it == map.end())
 	{
-		log::printLine(log::script, "processBuiltInFunction received an unknown function: {}", functionName);
+		log::printLine(log::script, "Unknown function in NPC '{}': {}", visitor->who, functionName);
 		return {};
 	}
 

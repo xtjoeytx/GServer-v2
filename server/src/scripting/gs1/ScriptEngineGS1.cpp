@@ -144,17 +144,18 @@ Character* getCharacterFromSource(const ScriptObjectSource& source, std::optiona
 
 GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script)
 {
-	errorListener = std::make_shared<GS1ErrorListener>(who);
+	errorListenerLexer = std::make_shared<GS1ErrorListener>("lexing", who);
+	errorListenerParser = std::make_shared<GS1ErrorListener>("parsing", who);
 
 	input = std::make_shared<antlr4::ANTLRInputStream>(script);
 	lexer = std::make_shared<GS1Lexer>(input.get());
 	lexer->removeErrorListeners();
-	lexer->addErrorListener(errorListener.get());
+	lexer->addErrorListener(errorListenerLexer.get());
 
 	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	parser->removeErrorListeners();
-	parser->addErrorListener(errorListener.get());
+	parser->addErrorListener(errorListenerParser.get());
 
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
@@ -199,10 +200,10 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 	auto* server = BabyDI::Get<Server>();
 
-#ifndef DEBUG
+#if !defined(DEBUG) || 1
 	// If the event is not in the NPC script, don't bother executing it.
 	const auto& eventName = determineEventName(event);
-	if (!wrapper->parser->identifiers.contains(eventName) &&!server->getSettings().getBool("runallscriptevents", false))
+		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
 		return false;
 #endif
 
@@ -283,9 +284,10 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 		// Execute the script.
 		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
 	}
-	catch (...)
+	catch (std::exception& e)
 	{
 #ifdef DEBUG
+		log::printLine(log::script, "Script execution failure: {}", e.what());
 		log::printLine(log::script, wrapper->program->toStringTree(wrapper->parser.get(), true));
 		throw;
 #endif
