@@ -202,9 +202,12 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 #if !defined(DEBUG) || 1
 	// If the event is not in the NPC script, don't bother executing it.
-	const auto& eventName = determineEventName(event);
+	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
+	{
+		const auto& eventName = determineEventName(event);
 		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
-		return false;
+			return false;
+	}
 #endif
 
 	auto& [source_id, source_type] = source;
@@ -251,11 +254,14 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 #if defined(DEBUG) && 0
 	// Log some testing stuff.
-	const auto& eventName = determineEventName(event);
-	if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
+	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
 	{
-		log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
-		return false;
+		const auto& eventName = determineEventName(event);
+		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
+		{
+			log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
+			return false;
+		}
 	}
 #endif
 
