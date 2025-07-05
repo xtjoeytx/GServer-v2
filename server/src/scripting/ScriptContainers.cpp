@@ -48,6 +48,7 @@ GameValue& GameValue::operator=(const GameValue& other) noexcept
 		m_text = other.m_text;
 		m_array = other.m_array;
 		m_boolean = other.m_boolean;
+		m_source = other.m_source;
 	}
 	return *this;
 }
@@ -60,6 +61,7 @@ GameValue& GameValue::operator=(GameValue&& other) noexcept
 		m_text = std::move(other.m_text);
 		m_array = std::move(other.m_array);
 		m_boolean = std::move(other.m_boolean);
+		m_source = std::move(other.m_source);
 	}
 	return *this;
 }
@@ -317,6 +319,12 @@ void GameVariableStore::clearTemporary() noexcept
 {
 	if (store.empty()) return;
 	std::erase_if(store, [](const auto& pair) { return pair.second->temporary; });
+}
+
+void GameVariableStore::clearTemporary(std::string_view prefix) noexcept
+{
+	if (store.empty()) return;
+	std::erase_if(store, [prefix](const auto& pair) { return pair.second->temporary && pair.first.starts_with(prefix); });
 }
 
 std::optional<std::string> GameVariableStore::serializeModern(std::string_view name) const noexcept

@@ -97,6 +97,7 @@ concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
 	|| std::same_as<std::remove_cvref_t<T>, double>
 	|| std::same_as<std::remove_cvref_t<T>, std::string>
 	|| std::same_as<std::remove_cvref_t<T>, std::vector<double>>
+	|| std::same_as<std::remove_cvref_t<T>, ScriptObjectSource>
 	|| std::same_as<std::remove_cvref_t<T>, std::vector<ScriptObjectSource>>;
 
 /// @brief A container that can hold one of three types: double, std::string, or std::vector<double>.
@@ -779,6 +780,10 @@ public:
 
 	/// @brief Clears all temporary variables from the store.
 	virtual void clearTemporary() noexcept;
+
+	/// @brief Cleras temporary variables with a specific prefix from the store.
+	/// @param prefix The prefix to match for temporary variables to clear.
+	virtual void clearTemporary(std::string_view prefix) noexcept;
 
 	/// @brief Serializes a variable for distribution.
 	/// @param name The name of the game variable to serialize.

@@ -86,7 +86,11 @@ protected:
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
-	
+	std::optional<ScriptObjectSource> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
+
+protected:
+	void setCurrentPlayerVariables(std::optional<ScriptObjectSource> source);
+
 public:
 	virtual std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;
 	virtual std::any visitStatementFor(GS1Parser::StatementForContext* context) override;

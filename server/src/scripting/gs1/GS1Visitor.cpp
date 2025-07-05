@@ -469,6 +469,38 @@ GameValue GS1Visitor::getReadOnlyGameValueFromAny(const std::any& value)
 	return {};
 }
 
+std::optional<ScriptObjectSource> GS1Visitor::getSourceFromGS1ScriptValue(GS1ScriptValue& value)
+{
+	if (auto* scriptObject = std::get_if<ScriptObjectSource>(&value); scriptObject != nullptr)
+		return *scriptObject;
+	else if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
+	{
+		auto* gameVariable = getGameVariableFromVariant(gs1GameVariable->first);
+		auto* scriptObject = gameVariable->get_unsafe<ScriptObjectSource>(gs1GameVariable->second);
+		if (scriptObject != nullptr)
+			return *scriptObject;
+	}
+	return std::nullopt;
+}
+
+void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObjectSource> source)
+{
+	if (!source.has_value() || source.value().second != ScriptObjectSourceType::PLAYER)
+	{
+		builtInStore->clearTemporary("player");
+		return;
+	}
+
+	auto server = BabyDI::Get<Server>();
+	auto player = server->getNPCServer()->getPlayer(source.value().first);
+	if (player == nullptr)
+		return;
+
+	// all the player property shortcuts
+	for (const auto& [name, variable] : player->scriptObjectParameters)
+		builtInStore->add(GameVariable{ set_temporary, std::format("player{}", name), variable.getCallbackGetter(), variable.getCallbackSetter() });
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GS1Visitor::execute(const ScriptEvent& event, ScriptObjectSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode)
@@ -562,20 +594,22 @@ std::any GS1Visitor::visitStatementWith(GS1Parser::StatementWithContext* context
 {
 	auto expression = visit(context->expression());
 	auto value = getGS1ScriptValueFromAny(expression);
-	auto* object = std::get_if<ScriptObjectSource>(&value);
+	auto scriptObject = getSourceFromGS1ScriptValue(value);
 
 	// No object?  Don't execute the block.
-	if (object == nullptr)
+	if (!scriptObject.has_value())
 		return {};
 
 	// Push the source object onto the source stack.
-	m_currentSource.emplace_back(*object);
+	m_currentSource.emplace_back(*scriptObject);
+	setCurrentPlayerVariables(*scriptObject);
 
 	// Execute the block with the new source.
 	auto result = visit(context->block());
 
 	// Pop the source off the source stack.
 	m_currentSource.pop_back();
+	setCurrentPlayerVariables(findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER));
 
 	return result;
 }
@@ -973,8 +1007,6 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 
 std::any GS1Visitor::visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context)
 {
-	auto results = visitChildrenAndCollect(context);
-
 	// Get the command.
 	auto command = context->FUNCTION()->getText();
 	string::trimRightMutate(command);

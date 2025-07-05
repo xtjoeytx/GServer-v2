@@ -121,7 +121,10 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 			// TODO(Nalin): Replace with TimeoutGenerator.
 			if (npc->timeout.count() != 0)
 			{
-				npc->timeout -= delta;
+				if (delta < npc->timeout)
+					npc->timeout -= delta;
+				else npc->timeout = -1ms;
+
 				if (npc->timeout < std::chrono::milliseconds::zero())
 				{
 					npc->timeout = 0ms;
