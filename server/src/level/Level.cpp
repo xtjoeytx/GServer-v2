@@ -912,12 +912,14 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 
 	std::erase(m_npcs, npc->id);
 
+	/*
 	if (npc->isCharacter())
 	{
 		// Set the player leaves event on all the NPCs.
 		auto server = BabyDI::Get<Server>();
 		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromNPC(npc->id));
 	}
+	*/
 }
 
 void Level::removeNPC(NPCID npcId)

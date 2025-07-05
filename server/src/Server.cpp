@@ -1043,11 +1043,15 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 		newNPC->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 	}
 
+#ifdef DEBUG
+	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.pixelX, newNPC->character.pixelY, levelPtr ? levelPtr->getLevelName().toString() : "null");
+#endif
+
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket();
-		sendPacketToLevelOnlyGmapArea(packet, level);
+		sendPacketToLevelOrGmap(packet, level);
 	}
 
 	return newNPC;
@@ -1062,7 +1066,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
-		sendPacketToLevelOnlyGmapArea(packet, npc->level);
+		sendPacketToLevelOrGmap(packet, npc->level);
 	}
 
 	return npc;
@@ -1089,8 +1093,8 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 
 		// Tell the clients to delete the NPC.
 		auto map = level->getMap();
-		bool isOnMap = map != nullptr;
-		std::string tmpLvlName = (isOnMap ? map->getMapName() : level->getLevelName().toString());
+		bool isOnGmap = map != nullptr && map->isGmap();
+		std::string tmpLvlName = (isOnGmap ? map->getMapName() : level->getLevelName().toString());
 
 		for (auto& [pid, p]: m_playerList)
 		{
@@ -1127,7 +1131,7 @@ void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duratio
 		packet >> (short)timeIn50msIncrements;
 		packet >> (char)options;
 
-		//sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
+		//sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
 		sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
 	}
 }
@@ -1435,10 +1439,16 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 			auto othermap = other->getMap().lock();
 			if (!othermap || othermap != map) continue;
 
-			// Check if they are nearby before sending the packet.
 			auto ogmap{ other->getMapPosition() };
+			bool differentLevel = !othermap->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
+
+			// Check if they are nearby before sending the packet.
 			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
+			{
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelp->getLevelName());
 				other->sendPacket(packet);
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
+			}
 		}
 	}
 }
@@ -1477,64 +1487,21 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerCl
 			if (!othermap || othermap != map) continue;
 			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
 
-			// Check if they are nearby before sending the packet.
 			auto ogmap{ other->getMapPosition() };
-			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-				other->sendPacket(packet);
-		}
-	}
-}
-
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto playerp = player.lock();
-	if (!playerp) return;
-
-	auto level = playerp->getLevel();
-	if (!level) return;
-
-	auto sourcelevel = source_level.lock();
-	if (!sourcelevel) return;
-
-	// If we have no map, just send to the level players.
-	auto map = level->getMap();
-	if (!map)
-	{
-		for (auto id: level->getPlayers())
-		{
-			if (exclude.contains(id)) continue;
-			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
-				other->sendPacket(packet);
-		}
-	}
-	else
-	{
-		auto isGroupMap = map->isGroupMap();
-		auto sgmap{ playerp->getMapPosition() };
-
-		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
-		{
-			if (exclude.contains(id)) continue;
-			if (!other->isClient()) continue;
-			if (sendIf != nullptr && !sendIf(other.get())) continue;
-
-			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != map) continue;
-			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
+			bool differentLevel = !othermap->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
 
 			// Check if they are nearby before sending the packet.
-			auto ogmap{ other->getMapPosition() };
 			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
 			{
-				other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << sourcelevel->getLevelName());
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->getLevelName());
 				other->sendPacket(packet);
-				other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->account.level);
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
 			}
 		}
 	}
 }
 
-void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1572,7 +1539,7 @@ void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<
 	}
 }
 
-void Server::sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto playerp = player.lock();
 	if (!playerp) return;

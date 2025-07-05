@@ -234,9 +234,8 @@ public:
 	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, std::weak_ptr<Level> source_level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOnlyGmapArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;

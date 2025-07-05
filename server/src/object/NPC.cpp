@@ -850,7 +850,7 @@ CString NPC::getModifiedPropsPacket() const
 	{
 		if (modTime[i] != m_savedModTime[i])
 		{
-			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); });
+			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); log::printBlock(log::networkdump, "  NPCProp::ID: value {}\n", id); });
 
 			if (i == PROPID(NPCProp::GANI) && !isCharacter())
 			{

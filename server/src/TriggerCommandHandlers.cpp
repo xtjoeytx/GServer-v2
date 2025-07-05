@@ -285,7 +285,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 			packet >> (short)(duration / 0.05f);
 			packet >> (char)options;
-			sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
+			sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 
 			npc->character.pixelX += dx * 16;
 			npc->character.pixelY += dy * 16;
@@ -313,7 +313,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 			CString packet;
 			packet >> (char)NPCProp::X >> (char)(x * 2.0f);
 			packet >> (char)NPCProp::Y >> (char)(y * 2.0f);
-			sendPacketToLevelOnlyGmapArea(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
+			sendPacketToLevelOrGmap(CString() >> (char)PLO_NPCPROPS >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 		}
 		return true;
 	});

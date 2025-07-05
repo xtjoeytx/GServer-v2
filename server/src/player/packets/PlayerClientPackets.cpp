@@ -940,7 +940,7 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	else
 		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevel()->getLevelName());
 
-	if (getLevel()->isPlayerLeader(m_id))
+	if (!m_server->hasNPCServer() && getLevel()->isPlayerLeader(m_id))
 		sendPacket(CString() >> (char)PLO_ISLEADER);
 
 	return HandlePacketResult::Handled;
@@ -976,7 +976,7 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 		}
 	}
 
-	m_server->sendPacketToLevelOnlyGmapArea(nPacket, self(), {m_id});
+	m_server->sendPacketToLevelOrGmap(nPacket, self(), {m_id});
 	return HandlePacketResult::Handled;
 }
 

@@ -1147,7 +1147,7 @@ std::string PlayerClient::getComputedLevelName() const
 	if (level == nullptr)
 		return {};
 
-	if (auto map = level->getMap(); map != nullptr)
+	if (auto map = level->getMap(); map != nullptr && map->isGmap())
 		return map->getMapName();
 
 	return level->getLevelName().toString();
@@ -1344,16 +1344,6 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
 	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
-	if (!m_server->hasNPCServer())
-	{
-		if (!fromAdjacent || !m_pmap.expired())
-		{
-			// If we are the leader, send it now.
-			if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true)
-				sendPacket(CString() >> (char)PLO_ISLEADER);
-		}
-	}
-
 	// Send new world time.
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
 
@@ -1365,7 +1355,14 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		else
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
 
+		// If we are the leader, send it now.
+		if (!m_server->hasNPCServer() && (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true))
+			sendPacket(CString() >> (char)PLO_ISLEADER);
+
 		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+
+		// Reset active level.
+		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << getComputedLevelName());
 	}
 
 	// Move the carry NPC to the new level.
@@ -1380,7 +1377,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			if (!pLevel->isSingleplayer())
 			{
 				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
-				m_server->sendPacketToLevelArea(carryNPCProps, self(), { m_id });
+				m_server->sendPacketToLevelOrGmap(carryNPCProps, self(), { m_id });
 			}
 		}
 	}
