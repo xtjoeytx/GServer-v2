@@ -824,7 +824,13 @@ GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view messageCode, co
 // Returns the key code for the specified key.
 GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function keycode is a clientside function");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function keycode requires exactly one argument");
+
+	auto key = visitor->getGameValueAs<std::string>(*arguments[0]);
+	uint8_t code = static_cast<uint8_t>(key.front());
+
+	return static_cast<double>(code);
 }
 
 // keydown(key)
