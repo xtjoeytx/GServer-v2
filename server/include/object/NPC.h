@@ -367,7 +367,7 @@ inline Rectangle<int16_t, uint16_t> NPC::getBoundingBox() const noexcept
 inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcept
 {
 	// Character NPCs have a specific bounding box.
-	if (isCharacter())
+	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
 		return { { character.pixelX + 8, character.pixelY + 16 }, { 32, 32 } };
 
 	return { { character.pixelX, character.pixelY }, shape };
