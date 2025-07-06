@@ -33,6 +33,9 @@
       "architecture": {
         "value": "x64",
         "strategy": "external"
+      },
+      "cacheVariables": {
+        "PACKET_LOGGING": false
       }
     },
 	{
