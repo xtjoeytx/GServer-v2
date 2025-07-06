@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -63,6 +64,9 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 {
+	// Bushes, grass, swamp, snow, dead grass.
+	constexpr std::array<uint8_t, 6> dropTiles = { 0x002, 0x1a4, 0x1ff, 0x3ff, 0x5d9, 0x34f };
+
 	CSettings& settings = m_server->getSettings();
 	signed char loc[2] = { pPacket.readGChar(), pPacket.readGChar() };
 	signed char dim[2] = { pPacket.readGChar(), pPacket.readGChar() };
@@ -87,10 +91,8 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	int tiledroprate = settings.getInt("tiledroprate", 50);
 	LevelItemType dropItem = LevelItemType::INVALID;
 
-	// Bushes, grass, swamp.
-	if ((oldTile == 2 || oldTile == 0x1a4 || oldTile == 0x1ff ||
-		oldTile == 0x3ff) &&
-		bushitems)
+	// If we support item drops and the tile is in the allowed list, drop the item.
+	if (std::ranges::contains(dropTiles, oldTile) && bushitems)
 	{
 		if (tiledroprate > 0)
 		{
@@ -100,7 +102,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 			}
 		}
 	}
-	// Vase.
+	// Vases drop hearts.
 	else if (oldTile == 0x2ac && vasesdrop)
 		dropItem = LevelItemType::HEART;
 
