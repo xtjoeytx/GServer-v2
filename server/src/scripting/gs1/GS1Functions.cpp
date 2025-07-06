@@ -767,7 +767,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 	auto playerName = visitor->getGameValueAs<std::string>(*arguments[0]);
 
 	auto* server = BabyDI::Get<Server>();
-	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYPLAYER); player != nullptr)
+	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYCLIENT); player != nullptr)
 	{
 		return ScriptObjectSource{ player->getId(), ScriptObjectSourceType::PLAYER };
 	}
