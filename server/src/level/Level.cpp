@@ -55,17 +55,18 @@ namespace preagonal
 */
 //CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 short respawningTiles[] = {
-	0x1ff,
-	0x3ff,
-	0x2ac,
-	0x002,
-	0x200,
-	0x022,
-	0x3de,
-	0x1a4,
-	0x14a,
-	0x674,
-	0x72a,
+	0x1ff, // grass
+	0x3ff, // grass
+	0x7ff, // grass
+	0x2ac, // vase
+	0x002, // bush
+	0x200, // sign
+	0x022, // stone
+	0x3de, // blackstone
+	0x1a4, // swamp
+	0x14a, // stake 1
+	0x674, // stake 2
+	0x72a, // hole
 };
 
 /*
@@ -616,6 +617,13 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 			++i;
 	}
 
+	// Any 2x2 tile change can respawn.
+	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
+	// TODO: Develop a way to specify valid tile replacements.
+	int respawnTime = settings.getInt("respawntime", 15);
+	bool doRespawn = (pWidth == 2 && pHeight == 2);
+
+	/*
 	// Check if the tiles should be respawned.
 	// Only tiles in the respawningTiles array are allowed to respawn.
 	// These are things like signs, bushes, pots, etc.
@@ -625,6 +633,7 @@ bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeig
 	int tileCount = sizeof(respawningTiles) / sizeof(short);
 	for (int i = 0; i < tileCount; ++i)
 		if (testTile == respawningTiles[i]) doRespawn = true;
+	*/
 
 	// Grab old tiles for the respawn.
 	CString oldTiles;
