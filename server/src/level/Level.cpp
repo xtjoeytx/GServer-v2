@@ -843,10 +843,10 @@ void Level::removeAllBaddies()
 
 LevelBaddy* Level::getBaddy(uint8_t id)
 {
-	if (id >= m_baddies.size())
+	if (id > m_baddies.size() || id == 0)
 		return nullptr;
 
-	auto& baddy = m_baddies.at(id);
+	auto& baddy = m_baddies.at(static_cast<size_t>(id) - 1);
 	return baddy.get();
 }
 
@@ -1002,6 +1002,7 @@ bool Level::doTimedEvents()
 		{
 			if (baddy->type == BaddyType::SWAMPSOLDIER && baddy->mode == BaddyMode::HURT)
 			{
+				/*
 				if (baddy->power == 1)
 				{
 					// Unset the hurt mode on the baddy.
@@ -1013,6 +1014,7 @@ bool Level::doTimedEvents()
 						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
 					}
 				}
+				*/
 			}
 			else if (baddy->mode == BaddyMode::DIE)
 			{
@@ -1030,7 +1032,7 @@ bool Level::doTimedEvents()
 
 				// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 				if (!hasLivingBaddies())
-					server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLAYSITEM, source::FromLevel(shared_from_this()));
+					server->queueNPCEvent(shared_from_this(), ScriptEventType::COMPUSDIED, source::FromLevel(shared_from_this()));
 			}
 			else
 			{

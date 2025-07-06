@@ -940,7 +940,7 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	else
 		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevel()->getLevelName());
 
-	if (!m_server->hasNPCServer() && getLevel()->isPlayerLeader(m_id))
+	if (getLevel()->isPlayerLeader(m_id) && (map == nullptr || !map->isGmap()))
 		sendPacket(CString() >> (char)PLO_ISLEADER);
 
 	return HandlePacketResult::Handled;

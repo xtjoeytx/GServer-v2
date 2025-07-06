@@ -1449,7 +1449,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 			if (!othermap || othermap != map) continue;
 
 			auto ogmap{ other->getMapPosition() };
-			bool differentLevel = !othermap->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
+			bool differentLevel = !map->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
 
 			// Check if they are nearby before sending the packet.
 			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)

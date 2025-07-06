@@ -429,7 +429,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				result.resultFlags.set(props::SetResults::sendToSource);
 
 				// TODO(Nalin): There could be a race condition on when this packet is sent.  Do we delay until after props are sent to the client?
-				if (!m_server->hasNPCServer() && level != nullptr && level->isPlayerLeader(m_id))
+				if ((level != nullptr && level->isPlayerLeader(m_id)) && (level->getMap() == nullptr || !level->getMap()->isGmap()))
 					sendPacket(CString() >> (char)PLO_ISLEADER);
 
 				/*
@@ -456,7 +456,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					level->removePlayer(m_id);
 					level->addPlayer(m_id);
 
-					if (!m_server->hasNPCServer())
+					if (auto map = level->getMap(); map == nullptr || !map->isGmap())
 					{
 						auto leader = m_server->getPlayer(level->getPlayers().front());
 						if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);

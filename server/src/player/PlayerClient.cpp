@@ -1353,7 +1353,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
 
 	// Send NPCs.
-	if (!fromAdjacent || !m_pmap.expired())
+	if (!fromAdjacent || map != nullptr)
 	{
 		if (map != nullptr && map->getType() == MapType::GMAP)
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
@@ -1361,7 +1361,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
 
 		// If we are the leader, send it now.
-		if (!m_server->hasNPCServer() && (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true))
+		if ((pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true) && (map == nullptr || !map->isGmap()))
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 
 		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
@@ -1530,12 +1530,12 @@ bool PlayerClient::leaveLevel(bool resetCache)
 	levelp->removePlayer(m_id);
 
 	// Send PLO_ISLEADER to new level leader.
-	if (!m_server->hasNPCServer())
+	if (auto map = levelp->getMap(); map == nullptr || !map->isGmap())
 	{
 		if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
 		{
-			auto leader = m_server->getPlayer(levelPlayerList.front());
-			leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+			if (auto leader = m_server->getPlayer(levelPlayerList.front()); leader != nullptr)
+				leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 		}
 	}
 
