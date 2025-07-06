@@ -419,8 +419,6 @@ bool Player::onSend()
 
 void Player::onUnregister()
 {
-	// Called when onSend() or onRecv() returns false.
-	m_server->deletePlayer(shared_from_this());
 }
 
 bool Player::canRecv()
@@ -447,12 +445,8 @@ bool Player::doTimedEvents()
 {
 	time_t currTime = time(0);
 
-	// If we are disconnected, delete ourself!
 	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
-	{
-		m_server->deletePlayer(shared_from_this());
 		return false;
-	}
 	
 	m_fileQueue.sendCompress();
 
@@ -710,9 +704,9 @@ bool Player::sendLogin()
 		}
 	}
 
-	// TODO(joey): Placing this here so warp doesn't queue events for this player before
-	//	the login is finished. The server should get first dibs on the player.
-	m_server->recordPlayerLoggedIn(shared_from_this());
+	// Tell the serverlist the player is logged in.
+	if (!isNPCServer())
+		m_server->recordPlayerLoggedIn(shared_from_this());
 
 	// Set loaded to true so our account is saved when we leave.
 	// This also lets us send data.

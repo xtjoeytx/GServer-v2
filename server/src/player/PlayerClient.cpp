@@ -150,6 +150,11 @@ PlayerClient::PlayerClient(CSocket* pSocket, PlayerID pId)
 	m_lastMovement = m_lastSave = m_last1m = time(0);
 }
 
+PlayerClient::~PlayerClient()
+{
+	cleanup();
+}
+
 void PlayerClient::cleanup()
 {
 	if (m_id >= 0 && m_server != nullptr && m_loaded)
@@ -1549,7 +1554,7 @@ bool PlayerClient::leaveLevel(bool resetCache)
 	// This prop isn't used at all???  Maybe it is required for 1.41?
 	//	if (m_pmap && m_pmap->getType() != MAPTYPE_GMAP)
 	{
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, self(), { m_id });
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, m_currentLevel, { m_id });
 
 		for (const auto& [pid, player] : players_of_type<PlayerClient>(m_server->getPlayerList()))
 		{

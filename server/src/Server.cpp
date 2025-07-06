@@ -346,15 +346,18 @@ bool Server::doTimedEvents(int)
 
 	// Do player events.
 	{
+		std::vector<PlayerPtr> deletePlayers;
 		for (auto& [id, player]: m_playerList)
 		{
 			assert(player);
 			if (!player->isNPCServer())
 			{
 				if (!player->doTimedEvents())
-					this->deletePlayer(player);
+					deletePlayers.push_back(player);
 			}
 		}
+		std::ranges::for_each(deletePlayers, [this](PlayerPtr& player) { deletePlayer(player); });
+		deletePlayers.clear();
 	}
 
 	// Do level events.
@@ -1591,7 +1594,7 @@ void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> le
 	for (auto id: levelp->getPlayers())
 	{
 		if (exclude.contains(id)) continue;
-		if (auto player = this->getPlayer(id); player->isClient())
+		if (auto player = this->getPlayer(id); player && player->isClient())
 			player->sendPacket(packet);
 	}
 }

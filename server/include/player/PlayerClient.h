@@ -63,7 +63,7 @@ class PlayerClient : public Player
 
 public:
 	PlayerClient(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerClient() {}
+	virtual ~PlayerClient();
 	virtual void cleanup() override;
 
 public:

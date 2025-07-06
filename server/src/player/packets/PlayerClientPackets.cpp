@@ -1352,14 +1352,13 @@ HandlePacketResult PlayerClient::msgPLI_PROCESSLIST(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_UNKNOWN46(CString& pPacket)
 {
 #ifdef DEBUG
-	printf("TODO: PlayerClient::msgPLI_UNKNOWN46: ");
+	log::print(log::server, "TODO: PlayerClient::msgPLI_UNKNOWN46: ");
 	CString packet = pPacket.readString("");
-	for (int i = 0; i < packet.length(); ++i) printf("%02x ", (unsigned char)packet[i]);
-	printf("\n");
+	for (int i = 0; i < packet.length(); ++i) log::print(log::server, "{:02x} ", (unsigned char)packet[i]);
+	log::print(log::server, "\n");
 #endif
 	return HandlePacketResult::Handled;
 }
-
 
 HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
