@@ -172,7 +172,11 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
-			account.character.sprite = toByte(val);
+		{
+			auto sprite = toByte(val);
+			account.character.sprite = sprite >> 2;
+			account.character.direction = sprite & 0b11;
+		}
 		else if (section == "STATUS")
 			account.status = toByte(val);
 		else if (section == "MP")
@@ -310,7 +314,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
 	writeLine(newFile, "HP", account.character.hitpointsInHalves / 2.0f);
 	writeLine(newFile, "ANI", account.character.gani);
-	writeLine(newFile, "SPRITE", account.character.sprite, 2);
+	writeLine(newFile, "SPRITE", (account.character.sprite << 2 | account.character.direction), 2);
 	writeLine(newFile, "GRALATS", account.character.gralats);
 	writeLine(newFile, "ARROWS", account.character.arrows);
 	writeLine(newFile, "BOMBS", account.character.bombs);

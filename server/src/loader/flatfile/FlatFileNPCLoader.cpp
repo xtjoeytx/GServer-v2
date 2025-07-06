@@ -92,7 +92,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
 
-	auto updateTime = currentTime();
+	const auto& updateTime = server->getServerStartTime();
 	CString npcLevel;
 	std::string script;
 
@@ -253,7 +253,9 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "SPRITE")
 		{
-			npc->character.sprite = strtoint(curLine.readString(""));
+			auto sprite = strtoint(curLine.readString(""));
+			npc->character.sprite = sprite >> 2;
+			npc->character.direction = sprite & 0b11;
 			npc->modTime[PROPID(NPCProp::SPRITE)] = updateTime;
 		}
 		else if (curCommand == "AP")
@@ -394,16 +396,6 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	else if (npc->visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
 		layer = 1;
 
-	// Create a list of our gani and all of its attributes.
-	std::vector<std::string> ganis = { npc->character.gani };
-	for (const auto& attr : npc->character.ganiAttributes)
-		ganis.push_back(attr);
-
-	// Find last non-empty string in the ganis vector and erase everything after it.
-	auto lastNonEmpty = std::find_if(ganis.rbegin(), ganis.rend(), [](const std::string& str) { return !str.empty(); });
-	if (lastNonEmpty != ganis.rend())
-		ganis.erase(lastNonEmpty.base(), ganis.end());
-
 	static const char* NL = "\r\n";
 	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
@@ -430,7 +422,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		fileData << "Z " << CString((float)npc->character.pixelZ / 16.0f) << NL;
 	}
 	fileData << "NICK " << npc->character.nickName << NL;
-	fileData << "ANI " << string::toCSV(ganis) << NL;
+	fileData << "ANI " << npc->character.gani << NL;
 	fileData << "HP " << CString(npc->character.hitpointsInHalves / 2.0f) << NL;
 	fileData << "GRALATS " << CString(npc->character.gralats) << NL;
 	fileData << "ARROWS " << CString(npc->character.arrows) << NL;
@@ -446,7 +438,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "SHIELD " << npc->character.shieldImage << NL;
 	fileData << "HORSE " << npc->character.horseImage << NL;
 	fileData << "COLORS " << CString((int)npc->character.colors[0]) << "," << CString((int)npc->character.colors[1]) << "," << CString((int)npc->character.colors[2]) << "," << CString((int)npc->character.colors[3]) << "," << CString((int)npc->character.colors[4]) << NL;
-	fileData << "SPRITE " << CString(npc->character.sprite) << NL;
+	fileData << "SPRITE " << CString(npc->character.sprite << 2 | npc->character.direction) << NL;
 	fileData << "AP " << CString(npc->character.ap) << NL;
 	fileData << "TIMEOUT " << CString(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
 	fileData << "LAYER " << CString(layer) << NL;
