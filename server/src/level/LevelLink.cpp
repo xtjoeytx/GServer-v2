@@ -75,8 +75,8 @@ Position<int16_t> LevelLink::getDestinationForCharacter(Character& character) co
 	Position<int16_t> result;
 	auto& [x, y] = result.data;
 
-	x = (m_destinationX == "playerx" ? character.pixelX : static_cast<int16_t>(string::toNumber(m_destinationX) * 16));
-	y = (m_destinationY == "playery" ? character.pixelY : static_cast<int16_t>(string::toNumber(m_destinationY) * 16));
+	x = (m_destinationX == "playerx" ? character.pixelX : static_cast<int16_t>(string::toFloat(m_destinationX) * 16));
+	y = (m_destinationY == "playery" ? character.pixelY : static_cast<int16_t>(string::toFloat(m_destinationY) * 16));
 
 	return result;
 }
