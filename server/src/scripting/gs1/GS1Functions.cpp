@@ -442,7 +442,7 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return str.starts_with(prefix) ? 1.0 : 0.0;
+	return GameValue{ str.starts_with(prefix) };
 }
 
 // strcontains(string, substring)
@@ -455,7 +455,7 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return str.find(substring) != std::string::npos ? 1.0 : 0.0;
+	return GameValue{ str.find(substring) != std::string::npos };
 }
 
 // strequals(string1, string2)
@@ -468,7 +468,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return str1 == str2 ? 1.0 : 0.0;
+	return GameValue{ str1 == str2 };
 }
 
 // strlen(string)
@@ -800,10 +800,10 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto playerObject = server->getNPCServer()->getPlayer(player.value().first); playerObject != nullptr)
-			return playerObject->account.hasWeapon(weaponName) ? 1.0 : 0.0;
+			return GameValue{ playerObject->account.hasWeapon(weaponName) };
 	}
 
-	return 0.0;
+	return GameValue{ false };
 }
 
 // imgheight(image)
@@ -886,17 +886,17 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (!level->isOnWall({ x, y }))
-			return 0.0;
+			return GameValue{ false };
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return level->isOnPlayer({ x, y }) ? 1.0 : 0.0;
+				return GameValue{ level->isOnPlayer({ x, y }) };
 		}
-		return 1.0;
+		return GameValue{ true };
 	}
-	return 0.0;
+	return GameValue{ false };
 }
 
 // onwall2(x, y, width, height)
@@ -915,17 +915,17 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (!level->isOnWall2({ { x, y }, { width, height } }))
-			return 0.0;
+			return GameValue{ false };
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return level->isOnPlayer({ { x, y }, { width, height } }) ? 1.0 : 0.0;
+				return GameValue{ level->isOnPlayer({ { x, y }, { width, height } }) };
 		}
-		return 1.0;
+		return GameValue{ true };
 	}
-	return 0.0;
+	return GameValue{ false };
 }
 
 // onwater(x, y)
@@ -942,9 +942,9 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (level->isOnWater({ x, y }))
-			return 1.0;
+			return GameValue{ true };
 	}
-	return 0.0;
+	return GameValue{ false };
 }
 
 // playersays ???

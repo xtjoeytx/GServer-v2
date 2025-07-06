@@ -686,7 +686,12 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 	{
 		if (left.second.has_value())
 			left_var->assign<double>(right, left.second);
-		else left_var->assign<double, std::vector<double>>(right);
+		else
+		{
+			if (auto vec = right.get_unsafe<std::vector<double>>(); vec != nullptr)
+				left_var->assign<std::vector<double>>(right);
+			else left_var->assign<double>(right);
+		}
 		return {};
 	}
 
@@ -749,7 +754,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	}
 	// Check for an early exit.
 	else if (right_vector == nullptr)
-		return std::make_any<GS1ScriptValue>(0.0);
+		return std::make_any<GS1ScriptValue>(false);
 
 	bool range_met = true;
 	for (const auto& check : values)
@@ -773,7 +778,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 			break;
 	}
 
-	return std::make_any<GS1ScriptValue>(range_met ? 1.0 : 0.0);
+	return std::make_any<GS1ScriptValue>(range_met);
 }
 
 std::any GS1Visitor::visitExpressionTernary(GS1Parser::ExpressionTernaryContext* context)
@@ -796,18 +801,16 @@ std::any GS1Visitor::visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext*
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getReadOnlyGameValueFromAnyAs<double>(visit(context->logicalAndExpression(0)));
-	if (!DoubleIsZero(left))
-		return std::make_any<GS1ScriptValue>(1.0);
+	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->logicalAndExpression(0)));
+	if (left) return std::make_any<GS1ScriptValue>(true);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[i]));
-		if (!DoubleIsZero(right))
-			return std::make_any<GS1ScriptValue>(1.0);
+		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
+		if (right) return std::make_any<GS1ScriptValue>(true);
 	}
 
-	return std::make_any<GS1ScriptValue>(0.0);
+	return std::make_any<GS1ScriptValue>(false);
 }
 
 std::any GS1Visitor::visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContext* context)
@@ -815,18 +818,16 @@ std::any GS1Visitor::visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getReadOnlyGameValueFromAnyAs<double>(visit(context->equalityExpression(0)));
-	if (DoubleIsZero(left))
-		return std::make_any<GS1ScriptValue>(0.0);
+	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->equalityExpression(0)));
+	if (!left) return std::make_any<GS1ScriptValue>(false);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[i]));
-		if (DoubleIsZero(right))
-			return std::make_any<GS1ScriptValue>(0.0);
+		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
+		if (!right) return std::make_any<GS1ScriptValue>(false);
 	}
 
-	return std::make_any<GS1ScriptValue>(1.0);
+	return std::make_any<GS1ScriptValue>(true);
 }
 
 std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContext* context)
@@ -851,9 +852,9 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 		{
 			case GS1Parser::OP_EQUAL:
 			case GS1Parser::OP_ASSIGN:
-				return std::make_any<GS1ScriptValue>((*left_vector == *right_vector) ? 1.0 : 0.0);
+				return std::make_any<GS1ScriptValue>(*left_vector == *right_vector);
 			case GS1Parser::OP_NOTEQ:
-				return std::make_any<GS1ScriptValue>((*left_vector != *right_vector) ? 1.0 : 0.0);
+				return std::make_any<GS1ScriptValue>(*left_vector != *right_vector);
 		}
 	}
 
@@ -866,9 +867,9 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 	{
 		case GS1Parser::OP_EQUAL:
 		case GS1Parser::OP_ASSIGN:
-			return std::make_any<GS1ScriptValue>(DoublesAreSame(left_double, right_double) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(DoublesAreSame(left_double, right_double));
 		case GS1Parser::OP_NOTEQ:
-			return std::make_any<GS1ScriptValue>(!DoublesAreSame(left_double, right_double) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(!DoublesAreSame(left_double, right_double));
 	}
 
 	throw std::runtime_error("ExpressionEquality has an unknown operator");
@@ -890,13 +891,13 @@ std::any GS1Visitor::visitExpressionRelational(GS1Parser::ExpressionRelationalCo
 	switch (op.value())
 	{
 		case GS1Parser::OP_LESS:
-			return std::make_any<GS1ScriptValue>((left < right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(left < right);
 		case GS1Parser::OP_GREAT:
-			return std::make_any<GS1ScriptValue>((left > right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(left > right);
 		case GS1Parser::OP_LESS_EQ:
-			return std::make_any<GS1ScriptValue>((left <= right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(left <= right);
 		case GS1Parser::OP_GREAT_EQ:
-			return std::make_any<GS1ScriptValue>((left >= right) ? 1.0 : 0.0);
+			return std::make_any<GS1ScriptValue>(left >= right);
 	}
 
 	throw std::runtime_error("ExpressionRelational has an unknown operator");
@@ -974,10 +975,10 @@ std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* con
 		throw std::runtime_error("ExpressionUnary does not have an operator");
 
 	if (op.value() == GS1Parser::OP_LOGICALNOT)
-		return DoubleIsZero(getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression())));
+		return std::make_any<GS1ScriptValue>(DoubleIsZero(getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression()))));
 
 	if (op.value() == GS1Parser::OP_SUB)
-		return -getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression()));
+		return std::make_any<GS1ScriptValue>(-getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression())));
 
 	return visit(context->unaryExpression());
 }
@@ -1225,8 +1226,8 @@ std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)
 	if (context->LITERAL() != nullptr)
 	{
 		auto text = context->LITERAL()->getText();
-		if (text == "true") return std::make_any<GS1ScriptValue>(1.0);
-		if (text == "false") return std::make_any<GS1ScriptValue>(0.0);
+		if (text == "true") return std::make_any<GS1ScriptValue>(true);
+		if (text == "false") return std::make_any<GS1ScriptValue>(false);
 		return std::make_any<GS1ScriptValue>(std::stod(text));
 	}
 	else if (context->ALLFEATURES() != nullptr)
@@ -1320,6 +1321,13 @@ std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
 std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)
 {
 	return visitChildren(context);
+}
+
+std::any GS1Visitor::visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context)
+{
+	if (context->children.size() == 1)
+	return visitChildren(context);
+	return visit(context->expression());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

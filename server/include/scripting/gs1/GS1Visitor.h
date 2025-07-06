@@ -134,6 +134,8 @@ public:
 	virtual std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
 	virtual std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
 	virtual std::any visitStorageToken(GS1Parser::StorageTokenContext* context) override;
+	//
+	virtual std::any visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context) override;
 };
 
 //----------------------------

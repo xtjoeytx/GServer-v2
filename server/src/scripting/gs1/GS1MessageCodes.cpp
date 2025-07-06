@@ -395,8 +395,8 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 			return it->second(visitor, messageCode, arguments);
 	}
 
-	log::printLine(log::script, "Unknown message code in NPC '{}': {}", visitor->who, messageCode);
-	return std::string{};
+	// Not a known message code, so just return the string.
+	return GameValue{ node->getText() };
 }
 
 ///////////////////////////////////////////////////////////////////////////////

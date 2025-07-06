@@ -275,7 +275,7 @@ struct CommandState
 {
 	std::string_view arguments;
 	POPMODE popMode;
-	bool commaNoPop = false;
+	bool commaPop = true;
 };
 
 bool canFuncPop() const
@@ -290,7 +290,7 @@ bool canCmdPop() const
 
 bool canCommaPop() const
 {
-	return m_commandStates.empty() || !m_commandStates.back().commaNoPop;
+	return m_commandStates.empty() || m_commandStates.back().commaPop;
 }
 
 bool isNextArgLeftParen() const
@@ -300,12 +300,12 @@ bool isNextArgLeftParen() const
 
 bool isNotDefaultMode() const
 {
-	return !m_commandStates.empty() && !m_commandStates.back().arguments.empty();
+	return !m_commandStates.empty();
 }
 
 void pushCommand(std::string_view arguments)
 {
-	m_commandStates.emplace_back(CommandState{ arguments, POPMODE_COMMAND, false });
+	m_commandStates.emplace_back(CommandState{ arguments, POPMODE_COMMAND, true });
 	pushMode(IN_PARAM_1);	// Just a dummy state that gets immediately cleared.
 	popNextMode();
 }
@@ -328,13 +328,13 @@ void popNextMode(bool terminateEarly = false)
 
 		// Last string?  Commas are included!
 		if (mode == 'S' && (currentState.arguments.empty() || currentState.arguments.front() == '('))
-			currentState.commaNoPop = true;
+			currentState.commaPop = false;
 
 		switch (mode)
 		{
 			case 'V': setMode(IN_PARAM_V); emitIdentifier(GS1Lexer::IDENTIFIER, getText()); break;
 			case 'E': setMode(IN_PARAM_E); break;
-			case 'P': setMode(IN_PARAM_E); currentState.commaNoPop = true; break;
+			case 'P': setMode(IN_PARAM_E); currentState.commaPop = false; break;
 			case 'S': setMode(IN_PARAM_S); emitIdentifier(GS1Lexer::STRING, getText()); break;
 			case 'L': setMode(IN_PARAM_L); emitIdentifier(GS1Lexer::STRING, getText()); break;
 			case 'M': setMode(IN_PARAM_M); break;
@@ -378,6 +378,7 @@ tokens { COMMAND, FUNCTION, MESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CAR
 	- U  carry item name
 	- D  direction name or number
 	- Z  code (putnpc2 special case)
+	- X  storage special case
 	- (  left parenthesis
 	- )  right parenthesis
 */
@@ -424,7 +425,7 @@ CMD_SHOWCHARACTER        : 'showcharacter'        -> type(COMMAND);
 CMD_SETCHARPROP          : 'setcharprop'          { pushCommand("MS"); } -> type(COMMAND);
 CMD_SETCHARANI           : 'setcharani'           { pushCommand("S"); } -> type(COMMAND);
 CMD_SETCHARGENDER        : 'setchargender'        { pushCommand("G"); } -> type(COMMAND);
-CMD_TRIGGERACTION        : 'triggeraction'        { pushCommand("EESS"); } -> type(COMMAND);
+CMD_TRIGGERACTION        : 'triggeraction'        { pushCommand("EEL"); } -> type(COMMAND);
 CMD_PUTNPC               : 'putnpc'               { pushCommand("SSEE"); } -> type(COMMAND);
 CMD_PUTNPC2              : 'putnpc2'              { pushCommand("VVZ"); } -> type(COMMAND);
 CMD_CALLNPC              : 'callnpc'              { pushCommand("ES"); } -> type(COMMAND);
@@ -1194,7 +1195,7 @@ PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
 // --------------------------------------------------------
 mode IN_PARAM_X;
 
-PARAM_X_IDENTIFIER    : IDENTIFIER -> type(IDENTIFIER), popMode;
+PARAM_X_IDENTIFIER    : IDENTIFIER    { popNextMode(); }        -> type(IDENTIFIER);
 PARAM_X_MC_NOINDEX    : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_X_MC_SIMPLE     : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_COMPUTED_S : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
