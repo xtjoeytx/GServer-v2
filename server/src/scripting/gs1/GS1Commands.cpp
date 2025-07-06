@@ -1299,6 +1299,8 @@ void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+		string::eraseCharsMutate(message, "\r\n"sv);
+
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendSignMessage(message);

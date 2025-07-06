@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <memory>
 #include <ranges>
 #include <sstream>
 #include <string_view>
@@ -359,6 +360,34 @@ inline std::string& replaceMutate(std::string& in, std::string_view from, std::s
 	return in;
 }
 
+/// @brief Removes all occurrences of specified characters from a string.
+/// @param in The input string to process.
+/// @param chars A string containing the characters to remove from the input.
+/// @return A new string with all characters from 'chars' removed from the input string.
+inline std::string eraseChars(std::string_view in, std::string_view chars)
+{
+	if (chars.empty())
+		return std::string{ in };
+
+	std::string result{ std::from_range, in | std::views::filter([&chars](char c) { return chars.find(c) == std::string_view::npos; }) };
+	return result;
+}
+
+/// @brief Removes all occurrences of specified characters from a string, modifying the original string.
+/// @param in The string to be modified by removing specified characters.
+/// @param chars A string view containing the characters to remove from the input string.
+/// @return A reference to the modified input string with the specified characters removed.
+inline std::string& eraseCharsMutate(std::string& in, std::string_view chars)
+{
+	if (chars.empty())
+		return in;
+
+	auto erased = std::ranges::remove_if(in, [&chars](char c) { return chars.find(c) != std::string_view::npos; });
+	in.erase(erased.begin(), erased.end());
+
+	return in;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Escapes quotes in a string using a CSV-like format.
@@ -535,8 +564,6 @@ auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 	for (const auto wordFromRange : range)
 	{
 		std::string_view word{ wordFromRange };
-		if (word.empty())
-			continue;
 
 		// Check if the word contains any complex characters.
 		bool complex = std::ranges::any_of(word,
