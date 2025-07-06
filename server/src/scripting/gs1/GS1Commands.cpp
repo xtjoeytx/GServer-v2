@@ -1008,11 +1008,7 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-		{
 			server->moveNPC(npc, dx, dy, time, options);
-			npc->setPropWith<NPCProp::X2>(SetBy::SERVER, static_cast<int16_t>(npc->character.pixelX + pixelDX));
-			npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, static_cast<int16_t>(npc->character.pixelY + pixelDY));
-		}
 	}
 }
 

@@ -1140,6 +1140,9 @@ void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duratio
 		packet >> (short)timeIn50msIncrements;
 		packet >> (char)options;
 
+		npc->character.pixelX += dx * 16;
+		npc->character.pixelY += dy * 16;
+
 		//sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
 		sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
 	}
