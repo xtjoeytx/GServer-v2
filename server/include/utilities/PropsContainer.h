@@ -37,7 +37,7 @@ namespace preagonal::props
 using GBYTE1  = uint8_t;
 using GBYTE2 = uint16_t;
 using GBYTE3 = uint32_t;
-using GBYTE5  = int64_t;
+using GBYTE5  = long long int;
 using GBYTE1_signed = int8_t;
 using GBYTE2_signed = int16_t;
 using GBYTE3_signed = int32_t;
@@ -217,11 +217,11 @@ struct PropertyVoid : public PropertyBase
 template<std::integral T>
 struct PropertyNumeric : public PropertyBase
 {
-	PropertyNumeric(T value = T{}) : value(value) {}
+	explicit PropertyNumeric(T value = T{}) : value(value) {}
 
 	virtual CString serialize() const override
 	{
-		return CString() >> (T)value;
+		return CString() >> static_cast<T>(value);
 	}
 
 	virtual void deserialize(CString& data) override

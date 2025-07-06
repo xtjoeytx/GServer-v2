@@ -35,12 +35,12 @@
         "strategy": "external"
       }
     },
-    {
-      "name": "Debug x64",
-      "inherits": "Debug",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
+	{
+	  "name": "Debug x64",
+	  "inherits": "Debug",
+	  "architecture": {
+		"value": "x64",
+		"strategy": "external"
 	  },
 	  "cacheVariables": {
 		"PACKET_LOGGING": false

@@ -116,16 +116,16 @@ struct GameValue
 		insert(std::forward<decltype(value)>(value));
 	}
 	GameValue(const GameValue& other)
-		: m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_boolean(other.m_boolean), m_source(other.m_source)
+		: m_boolean(other.m_boolean), m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_source(other.m_source)
 	{}
 	GameValue(GameValue&& other) noexcept
-		: m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_boolean(std::move(other.m_boolean)), m_source(std::move(other.m_source))
+		: m_boolean(std::move(other.m_boolean)), m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_source(std::move(other.m_source))
 	{}
 
 	GameValue& operator=(const GameValue& other) noexcept;
 	GameValue& operator=(GameValue&& other) noexcept;
 	bool operator==(const GameValue& other) noexcept;
-	operator bool() const;
+	explicit operator bool() const;
 
 public:
 	/// @brief Retrieves the stored value of the specified type, if present.
@@ -484,12 +484,12 @@ public:
 	/// @param data The data to deserialize.
 	/// @return A reference to this.
 	template<ValidGameValue T = std::string>
-	static GameVariable deserialize(std::string identifier, std::string_view data);
+	static GameVariable deserialize(std::string identifier, const std::string_view data);
 
 	/// @brief Deserializes a variable.
 	/// @param line The data to deserialize (should include the full data line, e.g.: VAR identifier=1,2,3).
 	/// @return A reference to this.
-	static std::optional<GameVariable> deserialize(std::string_view line);
+	static std::optional<GameVariable> deserialize(const std::string_view line);
 
 public:
 	/// @brief Sets the callbacks for getting and setting the variable's value.
@@ -610,20 +610,20 @@ using GameVariableVariant = std::variant<std::weak_ptr<GameVariable>, GameVariab
 //----------------------------
 
 template<ValidGameValue T>
-static GameVariable GameVariable::deserialize(std::string identifier, std::string_view data)
+GameVariable GameVariable::deserialize(std::string identifier, const std::string_view data)
 {
 	if constexpr (std::same_as<T, bool>)
-		return GameVariable{ std::move(identifier), true };
+		return GameVariable{ std::move(identifier), GameValue{ true } };
 	if constexpr (std::same_as<T, double>)
-		return GameVariable{ std::move(identifier), string::toNumber(data) };
+		return GameVariable{ std::move(identifier), GameValue{ string::toNumber(std::string{ data }) } };
 	if constexpr (std::same_as<T, std::string>)
-		return GameVariable{ std::move(identifier), std::string{ data } };
+		return GameVariable{ std::move(identifier), GameValue{ std::string{ data } } };
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::vector<double> array;
 		for (auto& number : string::splitHard(data, ","sv))
 			array.emplace_back(string::toDouble(number));
-		return GameVariable{ std::move(identifier), std::move(array) };
+		return GameVariable{ std::move(identifier), GameValue{ std::move(array) } };
 	}
 	return GameVariable{};
 }
@@ -708,7 +708,7 @@ inline std::string GameVariable::serialize() const
 	if constexpr (std::same_as<T, double>)
 		return std::format("{}", value.get<double>().value_or(0.0));
 	if constexpr (std::same_as<T, std::string>)
-		return value.get<std::string>().value_or({});
+		return value.get<std::string>().value_or(std::string{});
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::string array;
@@ -875,7 +875,8 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource 
 		"Don't use a const char* in the ranged variant of ScriptEventQueue::addEvent, pass in a std::string_view instead.");
 
 	ScriptEvent event{ .type = type, .initiator = initiator };
-	event.args.append_range(range | std::views::transform([](const auto& arg) -> std::any { return std::any{ arg }; }));
+	auto transformed = range | std::views::transform([](const auto& arg) -> std::any { return std::any{ arg }; });
+	event.args.insert(event.args.end(), std::ranges::begin(transformed), std::ranges::end(transformed));
 	addEvent(std::move(event));
 }
 
@@ -1052,7 +1053,7 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 	{
 		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
 		{
-			propvalue = value.get<std::string>().value_or({});
+			propvalue = value.get<std::string>().value_or(std::string{});
 			if (prop.has_value())
 				who->modTime[PROPID(prop.value())] = currentTime();
 		};

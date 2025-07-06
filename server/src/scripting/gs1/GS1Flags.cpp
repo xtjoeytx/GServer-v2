@@ -73,7 +73,7 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 				if (tokens.size() > 1)
 				{
 					event.args.erase(event.args.begin() + 1);
-					event.args.append_range(tokens);
+					event.args.insert(event.args.end(), std::ranges::begin(tokens), std::ranges::end(tokens));
 				}
 			}
 		}

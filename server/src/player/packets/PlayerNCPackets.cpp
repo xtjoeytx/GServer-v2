@@ -170,7 +170,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 			if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
 				flagList.push_back(flag);
 			else if (value->has<std::string>())
-				flagList.push_back(std::format("{}={}", flag, value->get<std::string>().value_or({})));
+				flagList.push_back(std::format("{}={}", flag, value->get<std::string>().value_or(std::string{})));
 		}
 
 		sendPacket(CString() >> (char)PLO_NC_NPCFLAGS >> (int)npcId << string::toCSV(flagList));
@@ -239,13 +239,13 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 				// Not in range, delete it.
 				if (flagBeingSet == std::ranges::end(npcFlags))
 				{
-					deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", it->first, it->second->get<std::string>().value_or({})));
+					deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", it->first, it->second->get<std::string>().value_or(std::string{})));
 					it = npc->scripting.variables.store.erase(it);
 				}
 				// Is in range, check if updated.
 				else
 				{
-					auto existingValue = it->second->get<std::string>().value_or({});
+					auto existingValue = it->second->get<std::string>().value_or(std::string{});
 					auto equalPos = flagBeingSet->find('=');
 					std::string flagValue{ string::trimMutate(flagBeingSet->substr(equalPos + 1)) };
 					if (existingValue != flagValue)

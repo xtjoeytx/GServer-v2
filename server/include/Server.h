@@ -282,7 +282,7 @@ public:
 		requires std::same_as<std::ranges::range_value_t<decltype(params)>, std::string>
 	{
 		m_shootParams.clear();
-		m_shootParams.assign_range(params);
+		m_shootParams.assign(std::ranges::begin(params), std::ranges::end(params));
 	}
 
 	const std::vector<std::string>& getShootParams() const

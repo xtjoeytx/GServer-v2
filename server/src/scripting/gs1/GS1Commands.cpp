@@ -503,7 +503,10 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		std::vector<std::string> eventAndParams;
 		eventAndParams.emplace_back(visitor->getGameValueAs<std::string>(*arguments[1]));
 		if (arguments.size() > 2)
-			eventAndParams.append_range(string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[2])));
+		{
+			auto params = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[2]));
+			eventAndParams.insert(eventAndParams.end(), std::ranges::begin(params), std::ranges::end(params));
+		}
 
 		auto* server = BabyDI::Get<Server>();
 		auto& levelNPCs = level->getNPCs();
@@ -687,7 +690,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or({}), ","sv);
+		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
 		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 
 		// Check for out of bounds.
@@ -911,7 +914,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or({}), ","sv);
+		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
 		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 
@@ -1186,7 +1189,7 @@ void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = listVar->get<std::string>().value_or({});
+		auto list = listVar->get<std::string>().value_or(std::string{});
 		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 
 		size_t textLength = text.size();
@@ -1228,7 +1231,7 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = listVar->get<std::string>().value_or({});
+		auto list = listVar->get<std::string>().value_or(std::string{});
 		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 

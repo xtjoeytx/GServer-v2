@@ -185,7 +185,7 @@ const GameValue& GameVariable::game_value() const
 
 //----------------------------
 
-std::optional<GameVariable> GameVariable::deserialize(std::string_view line)
+std::optional<GameVariable> GameVariable::deserialize(const std::string_view line)
 {
 	if (line.starts_with("FLAG"))
 	{

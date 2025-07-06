@@ -810,8 +810,7 @@ bool toNumber(const std::string& str, T& result)
 template <std::integral T = int32_t>
 T toNumber(const std::string& str)
 {
-	T result{};
-	if (toNumber(str, result))
+	if (T result{}; toNumber(str, result))
 		return result;
 
 	return static_cast<T>(0);
@@ -837,8 +836,7 @@ inline bool toFloat(const std::string& str, float& result)
 /// @return The float value represented by the string, or 0.0f if the conversion fails.
 inline float toFloat(const std::string& str)
 {
-	float result;
-	if (toFloat(str, result))
+	if (float result; toFloat(str, result))
 		return result;
 
 	return 0.0f;
@@ -864,8 +862,7 @@ inline bool toDouble(const std::string& str, double& result)
 /// @return The converted double value if the conversion is successful; otherwise, returns 0.0.
 inline double toDouble(const std::string& str)
 {
-	double result;
-	if (toDouble(str, result))
+	if (double result; toDouble(str, result))
 		return result;
 
 	return 0.0f;
@@ -879,7 +876,7 @@ inline double toDouble(const std::string& str)
 /// @return A string containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the remainder of the string.
 inline std::string extractLine(std::string_view& str, char delim = '\n')
 {
-	auto pos = str.find(delim);
+	const auto pos = str.find(delim);
 	if (pos == std::string::npos)
 	{
 		std::string_view line = str;
@@ -887,7 +884,7 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 		return std::string(line);
 	}
 
-	auto line = str.substr(0, pos);
+	const auto line = str.substr(0, pos);
 	str.remove_prefix(pos + 1);
 	return std::string(line);
 }
@@ -901,7 +898,7 @@ namespace preagonal::range
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Transforms a range of std::string_view to std::string.
-const auto as_string = std::views::transform([](std::string_view s) { return std::string(s); });
+constexpr auto as_string = std::views::transform([](std::string_view s) { return std::string(s); });
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::range

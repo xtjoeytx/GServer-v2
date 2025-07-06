@@ -1350,8 +1350,8 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	else
 	{
 		if (!flagValue.has_value())
-			Scripting.variables.add(flagName, true);
-		else Scripting.variables.add(flagName, cropFlag(flagValue.value()));
+			Scripting.variables.add(flagName, GameValue{ true });
+		else Scripting.variables.add(flagName, GameValue{ cropFlag(flagValue.value()) });
 	}
 
 	// And share it.
@@ -1648,7 +1648,7 @@ bool Server::NC_DelWeapon(std::string_view pWeaponName)
 	remove(filePath.text());
 
 	// Delete from Memory
-	m_weaponList.erase(pWeaponName);
+	m_weaponList.erase(std::string{ pWeaponName });
 
 	// Delete from Players
 	sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);

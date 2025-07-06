@@ -1430,7 +1430,7 @@ std::vector<std::string> NPC::getVariableDump() const
 	{
 		if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
 			result.emplace_back(std::format("{}.flags[{}]: true", npcname, flag));
-		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, value->get<std::string>().value_or({})));
+		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, value->get<std::string>().value_or(std::string{})));
 	}
 
 	result.emplace_back();

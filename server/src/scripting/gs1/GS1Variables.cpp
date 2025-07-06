@@ -135,7 +135,8 @@ void setLevelVariables(GameVariableStore& variableStore, LevelPtr level)
 		[&level](auto) -> GameValue
 		{
 			std::vector<double> tiles;
-			tiles.append_range(level->getTiles(0).tiles());
+			const auto& levelTiles = level->getTiles(0).tiles();
+			tiles.insert(tiles.end(), std::ranges::begin(levelTiles), std::ranges::end(levelTiles));
 			return tiles;
 		}, {}
 	});

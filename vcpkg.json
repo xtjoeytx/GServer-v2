@@ -3,7 +3,9 @@
     "antlr4",
     "bzip2",
     "miniupnpc",
-	"zlib",
-	"wolfssl"
-  ]
+    "zlib",
+    "wolfssl"
+  ],
+  "version": "4.0.0",
+  "name": "gserver"
 }

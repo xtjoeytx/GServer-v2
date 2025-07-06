@@ -4,6 +4,7 @@
 	#define rmdir _rmdir
 #else
 	#include <unistd.h>
+	#include <sys/stat.h>
 #endif
 
 #include <algorithm>

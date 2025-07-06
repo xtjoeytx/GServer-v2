@@ -189,7 +189,7 @@ inline const ScriptEvent& GS1Visitor::getEvent() const
 }
 
 template<ValidGameValue T>
-inline static T GS1Visitor::getGameValueAs(const GS1ScriptValue& value)
+inline T GS1Visitor::getGameValueAs(const GS1ScriptValue& value)
 {
 	if (const auto* gs1Pair = std::get_if<GS1GameVariable>(&value); gs1Pair != nullptr)
 	{
