@@ -736,7 +736,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	for (auto& be : context->exponentiationExpression())
 		values.emplace_back(getReadOnlyGameValueFromAnyAs<double>(visit(be)));
 
-		std::any right_any;
+	std::any right_any;
 	if (context->primaryExpression() != nullptr)
 		right_any = visit(context->primaryExpression());
 	else right_any = visit(context->range_literal());
@@ -1125,7 +1125,13 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	auto variable = getGameVariableFromStorage(*identifier, storage);
 	auto* gameVariable = getGameVariableFromVariant(variable);
 	if (gameVariable != nullptr)
+	{
+		// If it is temp storage, make sure the variable is marked as temporary so it isn't saved.
+		if (storage.value_or(GS1Parser::STORAGE_THIS) == GS1Parser::STORAGE_TEMP)
+			gameVariable->temporary = true;
+
 		return std::make_any<GS1ScriptValue>(std::make_pair(variable, index));
+	}
 
 	// Return a default value if the identifier is not found.
 	return std::make_any<GS1ScriptValue>(0.0);
@@ -1335,7 +1341,7 @@ std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)
 std::any GS1Visitor::visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context)
 {
 	if (context->children.size() == 1)
-	return visitChildren(context);
+		return visitChildren(context);
 	return visit(context->expression());
 }
 
