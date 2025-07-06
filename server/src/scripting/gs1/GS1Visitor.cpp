@@ -763,8 +763,17 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 		{
 			double first = getReadOnlyGameValueFromAnyAs<double>(right_range->first);
 			double second = getReadOnlyGameValueFromAnyAs<double>(right_range->second);
-			bool test_left = (range_op_left == GS1Parser::TOKEN_PIPE) ? (first <= check) : (first < check);
-			bool test_right = (range_op_right == GS1Parser::TOKEN_PIPE) ? (check <= second) : (check < second);
+			bool test_left = false, test_right = false;
+			if (first < second)
+			{
+				test_left = (range_op_left == GS1Parser::TOKEN_PIPE) ? (first <= check) : (first < check);
+				test_right = (range_op_right == GS1Parser::TOKEN_PIPE) ? (check <= second) : (check < second);
+			}
+			else
+			{
+				test_left = (range_op_left == GS1Parser::TOKEN_PIPE) ? (first >= check) : (first > check);
+				test_right = (range_op_right == GS1Parser::TOKEN_PIPE) ? (check >= second) : (check > second);
+			}
 			bool in_range = test_left && test_right;
 			range_met = range_met && in_range;
 		}
