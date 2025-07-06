@@ -262,7 +262,9 @@ void Script::split(std::string& source) noexcept
 	{
 		auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
 		source.replace(clientside, source.end(), joinedScript);
-		clientside = determineClientSideLocation(source);
+		if (hasServerSide)
+			clientside = determineClientSideLocation(source);
+		else clientside = source.begin();
 	}
 
 	// Mangle the line terminators.

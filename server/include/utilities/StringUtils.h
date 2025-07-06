@@ -267,9 +267,9 @@ inline std::string& trimMutate(std::string& str)
 	// Find first and last non-space.
 	const auto p = str.c_str();
 	size_t front = 0, back = str.length();
-	while (front < str.length() && std::isspace(static_cast<int>(p[front])))
+	while (front < str.length() && std::isspace(static_cast<int>(static_cast<uint8_t>(p[front]))))
 		++front;
-	while (front < back && std::isspace(static_cast<int>(p[back - 1])))
+	while (front < back && std::isspace(static_cast<int>(static_cast<uint8_t>(p[back - 1]))))
 		--back;
 
 	// No whitespace.
