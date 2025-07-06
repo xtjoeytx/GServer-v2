@@ -376,6 +376,13 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
+			// If we aren't a character, do that now.
+			if (!isCharacter())
+			{
+				image = "#c#";
+				result.resultPropIds.push_back(PROPID(NPCProp::IMAGE));
+			}
+
 			// If we are not in a legacy sprite gani and our sprite is not 0, reset the sprite.
 			if (!character.gani.starts_with("def[") && character.sprite != 0)
 			{
@@ -388,9 +395,12 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Hack to allow spin to hurt things.
 			if (character.gani == "spin")
 			{
-				float tX = static_cast<float>(character.pixelX / 16.0f);
-				float tY = static_cast<float>(character.pixelY / 16.0f);
-				server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, character.swordPower, level, nullptr);
+				float tX = static_cast<float>(character.pixelX / 16.0f) + 1.5f;
+				float tY = static_cast<float>(character.pixelY / 16.0f) + 2.0f;
+				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, level, nullptr);
+				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, level, nullptr);
+				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, level, nullptr);
+				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, level, nullptr);
 			}
 			break;
 		}

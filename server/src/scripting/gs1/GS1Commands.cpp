@@ -856,7 +856,7 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 
 		auto* server = BabyDI::Get<Server>();
-		server->hitObjectsAtPoint({ x, y }, power, level);
+		server->hitObjectsAtPoint({ x, y }, power * 2, level);
 	}
 }
 

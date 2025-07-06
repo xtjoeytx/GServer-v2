@@ -1364,14 +1364,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 
 void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
 {
-	CString nPacket = CString() >> (char)PLO_HITOBJECTS;
-	nPacket.writeGShort(source ? source->getId() : 0);
-	nPacket.writeGChar(power);
-
-	sendPacketToOneLevel(CString() << nPacket >> (char)(pos.x() * 2) >> (char)((pos.y() - 2) * 2), level);
-	sendPacketToOneLevel(CString() << nPacket >> (char)(pos.x() * 2) >> (char)((pos.y() + 2) * 2), level);
-	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() - 2) * 2) >> (char)(pos.y() * 2), level);
-	sendPacketToOneLevel(CString() << nPacket >> (char)((pos.x() + 2) * 2) >> (char)(pos.y() * 2), level);
+	sendPacketToOneLevel(CString() >> (char)PLO_HITOBJECTS >> (short)(source ? source->getId() : 0) >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), level);
 }
 
 void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const

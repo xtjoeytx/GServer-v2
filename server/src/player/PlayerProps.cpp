@@ -247,9 +247,12 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Hack to allow spin to hurt things.
 			if (account.character.gani == "spin")
 			{
-				float tX = static_cast<float>(account.character.pixelX / 16.0f);
-				float tY = static_cast<float>(account.character.pixelY / 16.0f);
-				m_server->hitObjectsAtPoint({ tX + 1.5f, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
+				float tX = static_cast<float>(account.character.pixelX / 16.0f) + 1.5f;
+				float tY = static_cast<float>(account.character.pixelY / 16.0f) + 2.0f;
+				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({ tX - 2.0f, tY }, account.character.swordPower, level, shared_from_this());
 			}
 			break;
 		}
