@@ -1070,7 +1070,7 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 				// Setting an individual index in an array.
 				if (index.has_value() && index.value() < propvalue_size)
 				{
-					propvalue[index.value()] = static_cast<value_type>(value.get<double>().value_or(0.0));
+					propvalue[index.value()] = static_cast<value_type>(value.get<double>(index).value_or(0.0));
 					if (prop.has_value())
 						who->modTime[PROPID(prop.value()) + index.value()] = currentTime();
 				}
