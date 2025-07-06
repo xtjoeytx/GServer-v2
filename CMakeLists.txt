@@ -43,17 +43,17 @@ endif()
 
 # Enable Hot Reload for MSVC compilers if supported.
 if(POLICY CMP0141)
-	set(CMAKE_POLICY_DEFAULT_CMP0141 NEW)	# CMP0141: MSVC debug information format.
+	cmake_policy(SET CMP0141 NEW)	# CMP0141: MSVC debug information format.
 	set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
 # Policies.
-set(CMAKE_POLICY_DEFAULT_CMP0054 NEW)	# CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
-set(CMAKE_POLICY_DEFAULT_CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
-set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)	# CMP0077: option() honors normal variables.
-set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
-set(CMAKE_POLICY_DEFAULT_CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
-set(CMAKE_POLICY_DEFAULT_CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
+cmake_policy(SET CMP0054 NEW)	# CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
+cmake_policy(SET CMP0077 NEW)	# CMP0077: option() honors normal variables.
+cmake_policy(SET CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
+cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
+cmake_policy(SET CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
 
 # Get submodules.
 find_package(Git QUIET)
