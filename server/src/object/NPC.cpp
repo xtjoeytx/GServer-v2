@@ -1292,9 +1292,10 @@ std::vector<std::string> NPC::getVariableDump() const
 		"joinedclasses", "xprecise", "yprecise", "zprecise"
 	};
 
-	constexpr std::array<NPCProp, 57> propSendOrder =
+	constexpr std::array<NPCProp, 58> propSendOrder =
 	{
-		NPCProp::ID, NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::VISFLAGS, NPCProp::BLOCKFLAGS,
+		NPCProp::ID, NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::CLASS,
+		NPCProp::VISFLAGS, NPCProp::BLOCKFLAGS,
 		NPCProp::HEADIMAGE, NPCProp::BODYIMAGE, NPCProp::SWORDIMAGE, NPCProp::SHIELDIMAGE,
 		NPCProp::NICKNAME, NPCProp::SPRITE, NPCProp::GANI,
 		NPCProp::GATTRIB1, NPCProp::GATTRIB2, NPCProp::GATTRIB3, NPCProp::GATTRIB4, NPCProp::GATTRIB5,
@@ -1308,8 +1309,19 @@ std::vector<std::string> NPC::getVariableDump() const
 		NPCProp::GMAPLEVELX, NPCProp::GMAPLEVELY, NPCProp::X2, NPCProp::Y2, NPCProp::Z2
 	};
 
-	std::vector<std::string> result;
+	constexpr std::array<NPCProp, 37> characterProps =
+	{
+		NPCProp::HEADIMAGE, NPCProp::BODYIMAGE, NPCProp::SWORDIMAGE, NPCProp::SHIELDIMAGE,
+		NPCProp::NICKNAME, NPCProp::SPRITE, NPCProp::GANI,
+		NPCProp::GATTRIB1, NPCProp::GATTRIB2, NPCProp::GATTRIB3, NPCProp::GATTRIB4, NPCProp::GATTRIB5,
+		NPCProp::GATTRIB6, NPCProp::GATTRIB7, NPCProp::GATTRIB8, NPCProp::GATTRIB9, NPCProp::GATTRIB10,
+		NPCProp::GATTRIB11, NPCProp::GATTRIB12, NPCProp::GATTRIB13, NPCProp::GATTRIB14, NPCProp::GATTRIB15,
+		NPCProp::GATTRIB16, NPCProp::GATTRIB17, NPCProp::GATTRIB18, NPCProp::GATTRIB19, NPCProp::GATTRIB20,
+		NPCProp::GATTRIB21, NPCProp::GATTRIB22, NPCProp::GATTRIB23, NPCProp::GATTRIB24, NPCProp::GATTRIB25,
+		NPCProp::GATTRIB26, NPCProp::GATTRIB27, NPCProp::GATTRIB28, NPCProp::GATTRIB29, NPCProp::GATTRIB30
+	};
 
+	std::vector<std::string> result;
 	std::string npcname = (!name.empty() ? name : std::format("npcs[{}]", id));
 
 	result.emplace_back(std::format("Variables dump from npc {}", npcname));
@@ -1327,12 +1339,24 @@ std::vector<std::string> NPC::getVariableDump() const
 	for (const auto& prop : propSendOrder)
 	{
 		auto propId = PROPID(prop);
-		nameprop.assign(std::format("{}.{}", npcname, propNames[propId]));
 
+		// Don't show character props if the NPC is not a character.
+		if (!isCharacter() && std::ranges::contains(characterProps, prop))
+			continue;
+
+		// Don't show props that haven't changed.
+		if (modTime[propId] == clock::time_point::min())
+			continue;
+
+		nameprop.assign(std::format("{}.{}", npcname, propNames[propId]));
 		switch (prop)
 		{
 			case NPCProp::SCRIPT:
 				result.emplace_back(std::format("{}: size: {}", nameprop, m_script.getOriginalSource().length()));
+				break;
+
+			case NPCProp::CLASS:
+				result.emplace_back(std::format("{}: {}", nameprop, getJoinedClasses()));
 				break;
 
 			case NPCProp::SWORDIMAGE:
@@ -1407,6 +1431,25 @@ std::vector<std::string> NPC::getVariableDump() const
 		if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
 			result.emplace_back(std::format("{}.flags[{}]: true", npcname, flag));
 		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, value->get<std::string>().value_or({})));
+	}
+
+	result.emplace_back();
+	result.emplace_back("npc.Vars:");
+
+	for (const auto& [flag, value] : scripting.variables.store | variables::no_temporary)
+	{
+		if (value->has<double>())
+			result.emplace_back(std::format("{}.vars[{}]: {}", npcname, flag, value->get<double>().value_or(0.0)));
+		if (value->has<std::vector<double>>())
+		{
+			auto* values = value->get_unsafe<std::vector<double>>();
+			if (values != nullptr && !values->empty())
+			{
+				auto valuesAsStrings = *values | std::views::transform([](const double& val) { return std::format("{}", val); });
+				auto valueString = string::join(valuesAsStrings, ", ");
+				result.emplace_back(std::format("{}.vars[{}]: {{{}}}", npcname, flag, valueString));
+			}
+		}
 	}
 
 	return result;
