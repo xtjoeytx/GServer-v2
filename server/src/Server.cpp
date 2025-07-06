@@ -243,6 +243,10 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_timedSave.start();
 	m_timedMaintenance.start();
 
+#ifdef PACKETLOGGING
+	log::printLine(log::networkdump, "------------------------------ START ------------------------------");
+#endif
+
 	return 0;
 }
 
@@ -322,19 +326,20 @@ bool Server::doMain()
 	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
-	auto currentTimer = std::chrono::high_resolution_clock::now();
+	auto curTime = std::chrono::high_resolution_clock::now();
+	m_frameStartTime = currentTime();
 
 	// Update the NPC server.
 	if (hasNPCServer())
 	{
-		m_npcServer->update(currentTimer);
+		m_npcServer->update(curTime);
 	}
 
 	// Update our events.
-	m_timedEvents.update(currentTimer);
-	m_timedSave.update(currentTimer);
-	m_timedNWTime.update(currentTimer);
-	m_timedMaintenance.update(currentTimer);
+	m_timedEvents.update(curTime);
+	m_timedSave.update(curTime);
+	m_timedNWTime.update(curTime);
+	m_timedMaintenance.update(curTime);
 
 	return true;
 }
@@ -1029,9 +1034,8 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// If the level is a gmap, set the modTime on the level props.
 	if (auto map = levelPtr->getMap(); map && map->isGmap())
 	{
-		auto now = currentTime();
-		newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
-		newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
+		newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = m_frameStartTime;
+		newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = m_frameStartTime;
 	}
 
 	// Set the script and record the initial state.

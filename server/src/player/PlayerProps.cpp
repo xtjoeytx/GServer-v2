@@ -78,10 +78,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
 	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
-	auto curTime = currentTime();
+	const auto& curTime = m_server->getFrameStartTime();
+	clock::time_point oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); return result; } while(false)
+#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; return result; } while(false)
 
 	switch (prop)
 	{
@@ -392,7 +393,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
-			if (m_server->Generation != ServerGeneration::ORIGINAL && account.character.sprite != 0)
+			if (m_server->Generation != ServerGeneration::ORIGINAL && account.character.sprite != 0 && (!account.character.gani.starts_with("def[") || modTime[PROPID(PlayerProp::GANI)] < curTime))
 			{
 				auto gani = std::format("def[{}]", account.character.sprite);
 				result.resultPropIds.push_back(PROPID(PlayerProp::GANI));

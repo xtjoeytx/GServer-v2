@@ -17,9 +17,7 @@
 #include <BabyDI.h>
 #include <CString.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
-#include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
 #include <level/Map.h>
@@ -185,11 +183,12 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToLevel, true);
 	result.resultFlags.set(props::SetResults::sendToSource, false);
 
-	clock::time_point curTime = currentTime();
+	auto server = BabyDI::Get<Server>();
+	const auto& curTime = server->getFrameStartTime();
 	clock::time_point oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = curTime; return result; } while(false)
+#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; return result; } while(false)
 
 	switch (prop)
 	{
@@ -359,7 +358,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
-			auto server = BabyDI::Get<Server>();
 			if (server->Generation == ServerGeneration::ORIGINAL)
 			{
 				if (!ganiProp->bowGif.has_value())
@@ -452,7 +450,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
-			auto server = BabyDI::Get<Server>();
 			if (server->Generation != ServerGeneration::ORIGINAL && character.sprite != 0)
 			{
 				auto gani = std::format("def[{}]", character.sprite);
@@ -491,7 +488,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.horseImage = strProp->value;
 
-			auto server = BabyDI::Get<Server>();
 			if (server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
 				character.horseImage += ".gif";
 			break;
@@ -503,7 +499,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (headProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			auto server = BabyDI::Get<Server>();
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
 				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
@@ -634,7 +629,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// See if the level exists.
-			auto server = BabyDI::Get<Server>();
 			auto newLevel = server->getLevel(strProp->value);
 			if (newLevel == nullptr)
 				SETPROP_RETURN_ERROR;
@@ -841,7 +835,7 @@ CString NPC::getModifiedPropsPacket() const
 	{
 		if (modTime[i] != m_savedModTime[i])
 		{
-			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); log::printBlock(log::networkdump, "  NPCProp::ID: value {}\n", id); });
+			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); log::printBlock(log::networkdump, "  NPCProp::ID: value: {}\n", id); });
 
 			if (i == PROPID(NPCProp::GANI) && !isCharacter())
 			{
@@ -963,7 +957,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 		if (!scriptClass.expired())
 			m_joinedClasses.push_back(scriptClass);
 
-		modTime[PROPID(NPCProp::CLASS)] = currentTime();
+		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 	}
 }
 
@@ -985,7 +979,7 @@ void NPC::joinClass(std::string_view className)
 	}
 
 	m_joinedClasses.push_back(scriptClass);
-	modTime[PROPID(NPCProp::CLASS)] = currentTime();
+	modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 }
 
 void NPC::leaveClass(std::string_view className)
@@ -999,7 +993,7 @@ void NPC::leaveClass(std::string_view className)
 		return;
 
 	m_joinedClasses.erase(it);
-	modTime[PROPID(NPCProp::CLASS)] = currentTime();
+	modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 }
 
 void NPC::resetToInitialState()
@@ -1013,6 +1007,7 @@ void NPC::resetToInitialState()
 	hurtY = 0.0f;
 	noPlayerOnWall = false;
 	timeout = 0ms;
+	m_initialCharacter.nickName.clear();
 	character = m_initialCharacter;
 	saves.fill(0);
 	modTime.fill(clock::time_point::min());
@@ -1023,7 +1018,7 @@ void NPC::resetToInitialState()
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now = currentTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	std::ranges::for_each(props, [this, now = server->getServerStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
 
@@ -1112,7 +1107,8 @@ void NPC::constructScriptObjectParameters()
 				if (character.sprite >= 4 && BabyDI::Get<Server>()->Generation != ServerGeneration::ORIGINAL)
 				{
 					character.gani = std::format("def[{}]", character.sprite);
-					this->modTime[PROPID(NPCProp::GANI)] = currentTime();
+					auto server = BabyDI::Get<Server>();
+					this->modTime[PROPID(NPCProp::GANI)] = server->getFrameStartTime();
 				}
 			})
 	);

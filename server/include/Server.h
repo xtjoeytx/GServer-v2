@@ -16,7 +16,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -184,7 +183,8 @@ public:
 	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
 	INPCLoader& getNPCLoader() { return *m_npcLoader; }
 	FileSystem* getFileSystemByType(CString& type);
-	std::chrono::system_clock::time_point getServerStartTime() const { return m_serverStartTime; }
+	const auto& getServerStartTime() const { return m_serverStartTime; }
+	const auto& getFrameStartTime() const { return m_frameStartTime; }
 	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 
 public:
@@ -330,6 +330,7 @@ private:
 	TimeoutGenerator m_timedSave{ 1min, true };
 	TimeoutGenerator m_timedMaintenance{ 5min, true };
 	std::chrono::system_clock::time_point m_serverStartTime;
+	std::chrono::system_clock::time_point m_frameStartTime;
 	unsigned int m_serverTime;
 
 	// Trigger dispatcher
