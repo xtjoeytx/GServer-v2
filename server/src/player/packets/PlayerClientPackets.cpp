@@ -64,8 +64,8 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 {
-	// Bushes, grass, swamp, snow, dead grass.
-	constexpr std::array<uint8_t, 6> dropTiles = { 0x002, 0x1a4, 0x1ff, 0x3ff, 0x5d9, 0x34f };
+	// Bushes, grasses, swamp, snow grass, desert grass.
+	constexpr std::array<uint16_t, 7> dropTiles = { 0x002, 0x1a4, 0x1ff, 0x7ff, 0x3ff, 0x5d9, 0x34f };
 
 	CSettings& settings = m_server->getSettings();
 	signed char loc[2] = { pPacket.readGChar(), pPacket.readGChar() };
@@ -85,7 +85,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Lay items when you destroy objects.
-	short oldTile = (getLevel()->getTiles())[loc[0] + static_cast<size_t>(loc[1] * 64)];
+	uint16_t oldTile = static_cast<uint16_t>((getLevel()->getTiles())[loc[0] + static_cast<size_t>(loc[1] * 64)]);
 	bool bushitems = settings.getBool("bushitems", true);
 	bool vasesdrop = settings.getBool("vasesdrop", true);
 	int tiledroprate = settings.getInt("tiledroprate", 50);
