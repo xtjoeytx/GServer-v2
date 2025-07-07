@@ -391,7 +391,7 @@ CMD_REMOVESTRING         : 'removestring'         { pushCommand("VS"); } -> type
 CMD_DELETESTRING         : 'deletestring'         { pushCommand("VE"); } -> type(COMMAND);
 CMD_SET                  : 'set '                 { pushCommand("V"); } -> type(COMMAND);
 CMD_UNSET                : 'unset '               { pushCommand("V"); } -> type(COMMAND);
-CMD_SLEEP                : 'sleep'                { pushCommand("V"); } -> type(COMMAND);
+CMD_SLEEP                : 'sleep'                { pushCommand("E"); } -> type(COMMAND);
 CMD_SETARRAY             : 'setarray'             { pushCommand("VE"); } -> type(COMMAND);
 CMD_TIMEREVERYWHERE      : 'timereverywhere'      -> type(COMMAND);
 CMD_SETGIF               : 'setgif '              { pushCommand("S"); } -> type(COMMAND);
@@ -427,7 +427,7 @@ CMD_SETCHARANI           : 'setcharani'           { pushCommand("S"); } -> type(
 CMD_SETCHARGENDER        : 'setchargender'        { pushCommand("G"); } -> type(COMMAND);
 CMD_TRIGGERACTION        : 'triggeraction'        { pushCommand("EEL"); } -> type(COMMAND);
 CMD_PUTNPC               : 'putnpc'               { pushCommand("SSEE"); } -> type(COMMAND);
-CMD_PUTNPC2              : 'putnpc2'              { pushCommand("VVZ"); } -> type(COMMAND);
+CMD_PUTNPC2              : 'putnpc2'              { pushCommand("EEZ"); } -> type(COMMAND);
 CMD_CALLNPC              : 'callnpc'              { pushCommand("ES"); } -> type(COMMAND);
 CMD_CALLWEAPON           : 'callweapon'           { pushCommand("ESS"); } -> type(COMMAND);
 CMD_DESTROY              : 'destroy'              -> type(COMMAND);

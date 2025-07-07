@@ -563,7 +563,12 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 
 	const auto picker = visit_functions
 	{
-		[](PlayerPtr& player) -> std::string { return player->account.level; },
+		[](PlayerPtr& player) -> std::string
+		{
+			if (player != nullptr)
+				return player->account.level;
+			return std::string{};
+		},
 		[](NPCPtr& npc) -> std::string
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
