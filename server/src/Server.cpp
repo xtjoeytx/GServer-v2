@@ -1234,7 +1234,7 @@ bool Server::warpPlayerToSafePlace(PlayerID playerId)
 	CString unstickLevel = m_settings.getStr("unstickmelevel", "onlinestartlocal.nw");
 	float unstickX = m_settings.getFloat("unstickmex", 30.0f);
 	float unstickY = m_settings.getFloat("unstickmey", 30.5f);
-	return player->warp(unstickLevel, unstickX, unstickY);
+	return player->warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
 
 	// TODO: Maybe try the default account level?
 }

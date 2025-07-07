@@ -1221,11 +1221,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	auto p = m_server->getPlayer<PlayerClient>(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
-	float loc[2] = { (float)(pPacket.readGChar()) / 2.0f, (float)(pPacket.readGChar()) / 2.0f };
+	Position<int16_t> pos = { static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8) };
 	CString wLevel = pPacket.readString("");
-	p->warp(wLevel, loc[0], loc[1]);
+	p->warp(wLevel, pos);
 
-	log::printLine(log::rc, "{} has warped {} to {} (:.2f, :.2f)", account.name, p->account.name, wLevel.text(), loc[0], loc[1]);
+	log::printLine(log::rc, "{} has warped {} to {} ({:.2f}, {:.2f})", account.name, p->account.name, wLevel.text(), pos.x(), pos.y());
 	return HandlePacketResult::Handled;
 }
 

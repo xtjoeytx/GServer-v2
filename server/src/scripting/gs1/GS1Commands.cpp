@@ -1617,7 +1617,7 @@ void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, player->getX(), player->getY());
+			player->warp(filename, { player->account.character.pixelX, player->account.character.pixelY });
 	}
 }
 
@@ -1633,7 +1633,7 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, static_cast<float>(x), static_cast<float>(y));
+			player->warp(filename, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
 	}
 }
 

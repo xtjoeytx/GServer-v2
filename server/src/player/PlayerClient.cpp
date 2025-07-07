@@ -543,7 +543,7 @@ bool PlayerClient::sendLogin()
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	if (!warp(account.level, getX(), getY()) && m_currentLevel.expired())
+	if (!warp(account.level, { account.character.pixelX, account.character.pixelY }) && m_currentLevel.expired())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		log::printLine(log::server, "** Cannot find level for {}.", account.name);
@@ -914,7 +914,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 			auto player = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
 			if (player && player->getLevel())
-				warp(player->getLevel()->getLevelName(), player->getX(), player->getY());
+				warp(player->getLevel()->getLevelName(), { player->account.character.pixelX, player->account.character.pixelY });
 		}
 		// To x/y location
 		else if (chatParse.size() == 3)
@@ -938,7 +938,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				return true;
 			}
 
-			warp(chatParse[3], (float)strtofloat(chatParse[1]), (float)strtofloat(chatParse[2]));
+			warp(chatParse[3], { static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f) });
 		}
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
@@ -953,7 +953,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		auto p = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
-		if (p) p->warp(account.level, getX(), getY());
+		if (p) p->warp(account.level, { account.character.pixelX, account.character.pixelY });
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -973,7 +973,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
 				float unstickX = m_server->getSettings().getFloat("unstickmex", 30.0f);
 				float unstickY = m_server->getSettings().getFloat("unstickmey", 30.5f);
-				warp(unstickLevel, unstickX, unstickY);
+				warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
 				setChat("Warped!");
 			}
 			else
@@ -1087,65 +1087,6 @@ bool PlayerClient::processChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PlayerClient::warp(const CString& pLevelName, float pX, float pY, time_t modTime)
-{
-	CSettings& settings = m_server->getSettings();
-
-	// Save our current level.
-	auto currentLevel = m_currentLevel.lock();
-
-	// Find the level.
-	auto newLevel = Level::findLevel(pLevelName, m_server);
-
-	// If we are warping to the same level, just update the player's location.
-	if (currentLevel != nullptr && newLevel == currentLevel)
-	{
-		sendPropsFromResults(
-			setPropWith<PlayerProp::X>(props::SetBy::SERVER, (int16_t)(pX * 16)),
-			setPropWith<PlayerProp::Y>(props::SetBy::SERVER, (int16_t)(pY * 16))
-		);
-		return true;
-	}
-
-	// Check if the new level exists.
-	if (newLevel == nullptr)
-	{
-		sendPacket(CString() >> (char)PLO_WARPFAILED << pLevelName);
-		return false;
-	}
-
-	// See if the new level is on a gmap.
-	m_pmap.reset();
-	if (newLevel)
-		m_pmap = newLevel->getMap();
-
-	// Set x/y location.
-	float oldX = getX(), oldY = getY();
-	account.character.pixelX = pX * 16;
-	account.character.pixelY = pY * 16;
-
-	// Tell the client their new level.
-	// TODO(Nalin): Need to refactor all of this for the NPC-Server.
-	//if (modTime == 0 || m_versionId < CLVER_2_1 || (m_server->hasNPCServer() && !m_server->getSettings().getBool("clientsidelinks", false)))
-	{
-		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
-		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << pLevelName);
-	}
-
-	// Set the level.
-	setLevel(newLevel, modTime);
-
-	// Tell the player their current map position.
-	sendPropsFromResults(
-		setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, newLevel->getMapX()),
-		setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, newLevel->getMapY())
-	);
-
-	return true;
-}
-
 std::string PlayerClient::getComputedLevelName() const
 {
 	auto level = getLevel();
@@ -1177,7 +1118,64 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 	return {};
 }
 
-bool PlayerClient::setLevel(std::shared_ptr<Level> level, time_t modTime)
+bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_t modTime)
+{
+	CSettings& settings = m_server->getSettings();
+
+	// Save our current level.
+	auto currentLevel = m_currentLevel.lock();
+
+	// Find the level.
+	auto newLevel = Level::findLevel(levelName, m_server);
+
+	// If we are warping to the same level, just update the player's location.
+	if (currentLevel != nullptr && newLevel == currentLevel)
+	{
+		sendPropsFromResults(
+			setPropWith<PlayerProp::X>(props::SetBy::SERVER, pos.x()),
+			setPropWith<PlayerProp::Y>(props::SetBy::SERVER, pos.y())
+		);
+		return true;
+	}
+
+	// Check if the new level exists.
+	if (newLevel == nullptr)
+	{
+		sendPacket(CString() >> (char)PLO_WARPFAILED << levelName);
+		return false;
+	}
+
+	// See if the new level is on a gmap.
+	m_pmap.reset();
+	if (newLevel)
+		m_pmap = newLevel->getMap();
+
+	// Set the player's position.
+	account.character.pixelX = pos.x();
+	account.character.pixelY = pos.y();
+
+	// Tell the client their new level.
+	if (modTime == 0 || m_versionId < CLVER_2_1)
+	{
+		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
+			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
+		else
+			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << levelName);
+	}
+
+	// Set the level.
+	enterLevel(newLevel, pos, modTime);
+
+	// Tell the player their current map position.
+	sendPropsFromResults(
+		setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, newLevel->getMapX()),
+		setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, newLevel->getMapY())
+	);
+
+	return true;
+}
+
+bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime)
 {
 	leaveLevel();
 	m_currentLevel = level;
@@ -1242,6 +1240,10 @@ bool PlayerClient::setLevel(std::shared_ptr<Level> level, time_t modTime)
 	// Add myself to the level playerlist.
 	level->addPlayer(m_id);
 	account.level = level->getLevelName().toStringView();
+
+	// Set the player's position.
+	account.character.pixelX = pos.x();
+	account.character.pixelY = pos.y();
 
 	// Send the level now.
 	bool succeed = true;
@@ -1330,13 +1332,15 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 
 		// Send the level mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+
+		// Send chests.
+		pLevel->sendChestsToPlayer(shared_from_this());
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
 		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
-		pLevel->sendChestsToPlayer(shared_from_this());
 		pLevel->sendHorsesToPlayer(shared_from_this());
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
@@ -1360,11 +1364,11 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		else
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
 
+		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+
 		// If we are the leader, send it now.
 		if ((pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true) && (map == nullptr || !map->isGmap()))
 			sendPacket(CString() >> (char)PLO_ISLEADER);
-
-		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
 
 		// Reset active level.
 		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << getComputedLevelName());
@@ -1746,7 +1750,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
 		{
 			auto pos = linkTouched.value()->getDestinationForCharacter(account.character);
-			warp(newLevel->getLevelName(), pos.x() / 16.0f, pos.y() / 16.0f, getCachedLevelModTime(newLevel.get()));
+			warp(newLevel->getLevelName(), pos, getCachedLevelModTime(newLevel.get()));
 			return true;
 		}
 	}

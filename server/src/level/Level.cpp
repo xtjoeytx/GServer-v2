@@ -343,7 +343,7 @@ bool Level::reload()
 	for (auto& id: oldplayers)
 	{
 		if (auto p = server->getPlayer<PlayerClient>(id); p)
-			p->warp((ret ? m_levelName : uLevel), (ret ? p->getX() : uX), (ret ? p->getY() : uY));
+			p->warp((ret ? m_levelName : uLevel), { static_cast<int16_t>((ret ? p->getX() : uX) * 16), static_cast<int16_t>((ret ? p->getY() : uY) * 16) });
 	}
 
 	return ret;

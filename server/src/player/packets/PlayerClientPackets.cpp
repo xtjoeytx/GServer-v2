@@ -55,9 +55,19 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
 		modTime = (time_t)pPacket.readGUInt5();
 
-	float loc[2] = { (float)(pPacket.readGChar() / 2.0f), (float)(pPacket.readGChar() / 2.0f) };
+	Position<int16_t> pos = { static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8) };
 	CString newLevel = pPacket.readString("");
-	warp(newLevel, loc[0], loc[1], modTime);
+	if (auto level = m_server->getLevel(newLevel.toStringView()); level != nullptr)
+		enterLevel(level, pos, modTime);
+	else if (auto level = getLevel(); level != nullptr)
+		warp(level->getLevelName(), {account.character.pixelX, account.character.pixelY});
+	else
+	{
+		CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
+		float unstickX = m_server->getSettings().getFloat("unstickmex", 30.0f);
+		float unstickY = m_server->getSettings().getFloat("unstickmey", 30.5f);
+		warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
+	}
 
 	return HandlePacketResult::Handled;
 }

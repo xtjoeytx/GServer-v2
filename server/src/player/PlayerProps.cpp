@@ -710,7 +710,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, level->getMapY());
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					setLevel(m_server->getLevel(newLevelName), player->getCachedLevelModTime(newLevel.get()));
+					enterLevel(m_server->getLevel(newLevelName), { account.character.pixelX, account.character.pixelY }, player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}
@@ -728,7 +728,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), numProp->value);
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					setLevel(m_server->getLevel(newLevelName), player->getCachedLevelModTime(newLevel.get()));
+					enterLevel(m_server->getLevel(newLevelName), { account.character.pixelX, account.character.pixelY }, player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}
@@ -1095,7 +1095,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	if (isLoaded() && isClient())
 	{
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
-			player->warp(account.level, getX(), getY(), 0);
+			player->warp(account.level, { static_cast<int16_t>(getX() * 16), static_cast<int16_t>(getY() * 16) }, 0);
 	}
 }
 

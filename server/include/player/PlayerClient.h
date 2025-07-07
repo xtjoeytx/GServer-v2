@@ -88,8 +88,13 @@ public:
 	std::string getComputedLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
 	std::pair<int, int> getMapPosition() const;
-	bool warp(const CString& pLevelName, float pX, float pY, time_t modTime = 0);
-	virtual bool setLevel(std::shared_ptr<Level> level, time_t modTime = 0) override;
+
+	// Forcibly move a player (the client doesn't know it is transitioning levels).
+	bool warp(std::string_view levelName, Position<int16_t> pos, time_t modTime = 0);
+
+	// Place the player in a new level (the client knows it is transitioning levels).
+	virtual bool enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime = 0) override;
+
 	bool sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
 	bool sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
 	bool leaveLevel(bool resetCache = false);
