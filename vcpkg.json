@@ -1,11 +1,12 @@
 {
   "dependencies": [
-    "antlr4",
+	{ "name": "antlr4", "version>=": "4.13.2#1" },
     "bzip2",
     "miniupnpc",
     "zlib",
-    "wolfssl"
+    { "name": "wolfssl", "version>=": "5.8.0" }
   ],
   "version": "4.0.0",
-  "name": "gserver"
+  "name": "gserver",
+  "builtin-baseline": "5a874b05fb981e2643fd0c1c9ad63e19dfe76b27"
 }
