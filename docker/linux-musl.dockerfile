@@ -44,15 +44,14 @@ RUN apk add --update --virtual .gserver-build-dependencies \
     && chmod 777 -R /tmp/gserver/build \
     && apk del --purge .gserver-build-dependencies
 
-# - USER -
-USER 1001
-
 # GServer Run Environment
 FROM alpine:3.22
-ARG CACHE_DATE=2024-06-07
-COPY --from=build-env /tmp/gserver/bin /gserver
+USER 0
+ARG CACHE_DATE=2025-07-08
+COPY --from=build-env --chown=1001:1001 /tmp/gserver/bin /gserver
 COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
+USER 1001
 WORKDIR /gserver
 VOLUME /gserver/servers
 ENTRYPOINT ["/gserver/entrypoint.sh"]
