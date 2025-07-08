@@ -27,6 +27,7 @@ function(set_default_compiler_options target)
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(${target} PRIVATE
 			-Wno-attributes
+			-Wno-narrowing
 		)
 	endif()
 

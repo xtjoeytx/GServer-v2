@@ -42,7 +42,7 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 			auto playerObjects = server->getNPCServer()->getPlayerList()
 					| std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; })
 					| std::views::transform([](auto& kvp) { return ScriptObjectSource{ std::make_pair((size_t)kvp.first, ScriptObjectSourceType::PLAYER)}; });
-			std::vector<ScriptObjectSource> players{ std::from_range, playerObjects };
+			std::vector<ScriptObjectSource> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
 			return players;
 		}, {}
 	});
@@ -99,7 +99,7 @@ void setLevelVariables(GameVariableStore& variableStore, LevelPtr level)
 		{
 			auto playerObjects = level->getPlayers()
 				| std::views::transform([](const PlayerID& id) { return ScriptObjectSource{ std::make_pair((size_t)id, ScriptObjectSourceType::PLAYER) }; });
-			std::vector<ScriptObjectSource> players{ std::from_range, playerObjects };
+			std::vector<ScriptObjectSource> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
 			return players;
 		}, {}
 	});
@@ -111,7 +111,7 @@ void setLevelVariables(GameVariableStore& variableStore, LevelPtr level)
 		{
 			auto npcObjects = level->getNPCs()
 				| std::views::transform([](const NPCID& id) { return ScriptObjectSource{ std::make_pair((size_t)id, ScriptObjectSourceType::NPC) }; });
-			std::vector<ScriptObjectSource> npcs{ std::from_range, npcObjects };
+			std::vector<ScriptObjectSource> npcs{ std::ranges::begin(npcObjects), std::ranges::end(npcObjects) };
 			return npcs;
 		}, {}
 	});
@@ -150,7 +150,7 @@ void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)
 	variableStore.add(GameVariable{ "paramscount",
 		[&event](auto) -> GameValue
 		{
-			return static_cast<double>(std::max(1ull, event.args.size()) - 1);
+			return static_cast<double>(std::max<std::vector<std::any>::size_type>(1, event.args.size()) - 1);
 		}, {}
 	});
 }

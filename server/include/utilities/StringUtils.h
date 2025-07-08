@@ -369,7 +369,11 @@ inline std::string eraseChars(std::string_view in, std::string_view chars)
 	if (chars.empty())
 		return std::string{ in };
 
-	std::string result{ std::from_range, in | std::views::filter([&chars](char c) { return chars.find(c) == std::string_view::npos; }) };
+	auto filtered = in | std::views::filter([&chars](char c) {
+		return chars.find(c) == std::string_view::npos;
+	});
+	std::string result(std::ranges::begin(filtered), std::ranges::end(filtered));
+
 	return result;
 }
 
