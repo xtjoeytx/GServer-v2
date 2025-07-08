@@ -1052,11 +1052,10 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 
 	// The first identifier value should be a ScriptObjectSource.
 	auto value = getGS1ScriptValueFromAny(first);
-	if (!std::holds_alternative<ScriptObjectSource>(value))
-		RECOVERABLE_PARSE_ERROR(std::format("Unknown variable storage: {}.", context->children[0]->getText()), 0.0);
+	auto objectSource = getSourceFromGS1ScriptValue(value);
+	if (!objectSource.has_value())
+		RECOVERABLE_PARSE_ERROR(std::format("Identifier did not contain a script object: {}.", context->children[0]->getText()), 0.0);
 
-	auto* object = std::get_if<ScriptObjectSource>(&value);
-	std::any result;
 	size_t pos = 1;
 	size_t identifierCount = context->identifier_value().size();
 
@@ -1065,20 +1064,20 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 	{
 		// Temporarily push the current source onto the stack and get the next identifier value.
 		// We don't need to keep it on the stack so pop it after we're done.
-		m_currentSource.push_back(*object);
+		m_currentSource.push_back(objectSource.value());
 		{
-			result = std::move(visit(context->identifier_value(pos++)));
+			first = std::move(visit(context->identifier_value(pos++)));
 		}
 		m_currentSource.pop_back();
 
 		// Check if the result is a ScriptObjectSource.
-		value = getGS1ScriptValueFromAny(result);
-		object = std::get_if<ScriptObjectSource>(&value);
+		value = getGS1ScriptValueFromAny(first);
+		objectSource = getSourceFromGS1ScriptValue(value);
 
 		// If not, we might be done.
-		if (object == nullptr)
+		if (!objectSource.has_value())
 		{
-			if (pos == identifierCount)
+			if (pos > identifierCount)
 				throw std::runtime_error("IdentifierAccess has no valid identifier value.");
 			return std::make_any<GS1ScriptValue>(std::move(value));
 		}

@@ -380,20 +380,27 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		popContext = true;
 	}
 
-	// Record if we are expecting a flag.
+	// Record if we are expecting a flag for the next argument.
 	visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
 
 	// Collect the arguments from the node.
 	std::vector<GS1ScriptValue*> arguments;
-	auto children = visitor->visitChildrenAndCollect(node);
-	for (auto& result : children)
+	std::vector<std::any> results;
+	for (size_t i = 0; i < node->children.size(); ++i)
 	{
-		auto* container = std::any_cast<GS1ScriptValue>(&result);
-		if (container == nullptr)
-			throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
+		auto ret = node->children[i]->accept(visitor);
+		if (ret.has_value())
+		{
+			results.emplace_back(std::move(ret));
+			auto* container = std::any_cast<GS1ScriptValue>(&results.back());
+			if (container == nullptr)
+				throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
 
-		// Add to the arguments.
-		arguments.push_back(container);
+			arguments.push_back(std::move(container));
+
+			// Unset the expecting flag.
+			visitor->expectingFlag = false;
+		}
 	}
 
 	// Unset the expecting flag.

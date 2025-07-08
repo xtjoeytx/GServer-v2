@@ -216,15 +216,22 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 
 	// Collect the arguments from the node.
 	std::vector<GS1ScriptValue*> arguments;
-	auto children = visitor->visitChildrenAndCollect(node);
-	for (auto& result : children)
+	std::vector<std::any> results;
+	for (size_t i = 0; i < node->children.size(); ++i)
 	{
-		auto* container = std::any_cast<GS1ScriptValue>(&result);
-		if (container == nullptr)
-			throw std::runtime_error("BuiltInFunction argument is not a valid GS1ScriptValue");
+		auto ret = node->children[i]->accept(visitor);
+		if (ret.has_value())
+		{
+			results.emplace_back(std::move(ret));
+			auto* container = std::any_cast<GS1ScriptValue>(&results.back());
+			if (container == nullptr)
+				throw std::runtime_error("BuiltInFunction argument is not a valid GS1ScriptValue");
 
-		// Add to the arguments.
-		arguments.push_back(container);
+			arguments.push_back(std::move(container));
+
+			// Reset the expectingFlag toggle back to normal.
+			visitor->expectingFlag = oldExpectingFlag;
+		}
 	}
 
 	// Reset the expectingFlag toggle back to normal.
