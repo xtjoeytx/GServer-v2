@@ -3,6 +3,7 @@ ARG VER_EXTRA=""
 # GServer Build Environment
 FROM alpine:3.22 AS build-env
 ARG VER_EXTRA
+ARG TARGETARCH
 
 # - ROOT -
 USER 0
@@ -13,7 +14,8 @@ ENV VCPKG_DISABLE_METRICS=1
 
 COPY --chown=1001:1001 ./ /tmp/gserver
 
-RUN apk add --update --virtual .gserver-build-dependencies \
+RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
+    && apk add --update --virtual .gserver-build-dependencies \
 		cmake \
         gcc \
         g++ \
@@ -35,7 +37,7 @@ RUN apk add --update --virtual .gserver-build-dependencies \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
 	&& cd /tmp/gserver \
-	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Release x64" -DVCPKG_TARGET_TRIPLET:STRING=x64-linux -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Release x64" -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --config Release --target clean \
 	&& cmake --build /tmp/gserver/build --config Release --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& chmod 777 -R /tmp/gserver/dist \
