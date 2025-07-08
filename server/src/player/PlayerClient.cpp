@@ -1155,13 +1155,10 @@ bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_
 	account.character.pixelY = pos.y();
 
 	// Tell the client their new level.
-	if (modTime == 0 || m_versionId < CLVER_2_1)
-	{
-		if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
-			sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
-		else
-			sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << levelName);
-	}
+	if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
+		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->getMapX() >> (char)newLevel->getMapY() << map->getMapName());
+	else
+		sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << levelName);
 
 	// Set the level.
 	enterLevel(newLevel, pos, modTime);
@@ -1611,11 +1608,11 @@ std::pair<int, int> PlayerClient::getMapPosition() const
 
 	switch (map->getType())
 	{
-	case MapType::BIGMAP:
-		return { level->getMapX(), level->getMapY() };
-	default:
-	case MapType::GMAP:
-		return { getProp<PlayerProp::GMAPLEVELX>().value, getProp<PlayerProp::GMAPLEVELY>().value };
+		case MapType::BIGMAP:
+			return { level->getMapX(), level->getMapY() };
+		default:
+		case MapType::GMAP:
+			return { getProp<PlayerProp::GMAPLEVELX>().value, getProp<PlayerProp::GMAPLEVELY>().value };
 	}
 
 	return { 0, 0 };
@@ -1652,7 +1649,6 @@ void PlayerClient::sendRPGMessage(std::string_view message)
 
 void PlayerClient::sendSignMessage(std::string message)
 {
-	
 	sendPacket(CString() >> (char)PLO_SAY2 << string::replaceMutate(message, "\n", "#b"));
 }
 
