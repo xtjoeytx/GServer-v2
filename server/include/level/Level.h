@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -39,25 +40,30 @@ class Level : public std::enable_shared_from_this<Level>
 {
 	friend class LevelLoader;
 
+private:
+	Level(uint16_t fillTile = 0);
+
 public:
 	//! Destructor.
 	~Level();
 
+public:
 	//! Finds a level with the specified level name and returns it.  If not found, it tries to load it from the disk.
 	//! \param pLevelName The name of the level to search for.
 	//! \param server The server the level belongs to.
 	//! \return A pointer to the level found.
-	static std::shared_ptr<Level> findLevel(const CString& pLevelName, bool loadAbsolute = false);
-	static std::shared_ptr<Level> createLevel(short fillTile = 511, const std::string& levelName = "");
+	static std::shared_ptr<Level> findLevel(std::string_view levelName, bool loadAbsolute = false);
+	static std::shared_ptr<Level> createLevel(uint16_t fillTile = 511, std::string_view levelName = ""sv);
 
+	//! Returns a clone of the level.
+	static std::shared_ptr<Level> clone(LevelPtr level);
+
+public:
 	//! Re-loads the level.
 	//! \return True if it succeeds in re-loading the level.
 	bool reload();
 
 	void saveLevel(const std::string& filename);
-
-	//! Returns a clone of the level.
-	std::shared_ptr<Level> clone() const;
 
 	// get crafted packets
 	CString getBaddyPacket(int clientVersion = CLVER_2_17);
@@ -71,25 +77,14 @@ public:
 	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
 	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
 
-	//! Gets the actual level name.
-	//! \return The actual level name.
-	CString getActualLevelName() const { return m_actualLevelName; }
-
-	//! Gets the level name.
-	//! \return The level name.
-	CString getLevelName() const { return m_levelName; }
-
-	//! Sets the level name.
-	//! \param pLevelName The new name of the level.
-	void setLevelName(CString pLevelName) { m_levelName = pLevelName; }
+public:
+	//! Gets the original level name.
+	//! \return The original level name.
+	const auto& getOriginalLevelName() const { return m_originalLevelName; }
 
 	//! Gets the raw level tile data.
 	//! \return A pointer to all 4096 raw level tiles.
 	LevelTiles& getTiles(int layer = 0) { return m_tiles[layer]; }
-
-	//! Gets the level mod time.
-	//! \return The modified time of the level when it was first loaded from the disk.
-	time_t getModTime() const { return m_modTime; }
 
 	//! Gets a vector full of all the level chests.
 	//! \return The level chests.
@@ -138,30 +133,6 @@ public:
 	//! Gets the status on whether players are on the level.
 	//! \return The level has players.  If true, the level has players on it.
 	bool hasPlayers() const { return !m_players.empty(); }
-
-	//! Gets the sparring zone status of the level.
-	//! \return The sparring zone status.  If true, the level is a sparring zone.
-	bool isSparringZone() const { return m_isSparringZone; }
-
-	//! Sets the sparring zone status of the level.
-	//! \param pLevelSpar If true, the level becomes a sparring zone level.
-	void setSparringZone(bool pLevelSpar) { m_isSparringZone = pLevelSpar; }
-
-	//! Gets the no player killing status of the level.
-	//! \return The no player killing status.  If true, the level is a no player killing zone.
-	bool isNoPkZone() const { return m_isNoPkZone; }
-
-	//! Sets the no player killing status of the level.
-	//! \param levelNoPk If true, the level becomes a no player killing level.
-	void setNoPkZone(bool levelNoPk) { m_isNoPkZone = levelNoPk; }
-
-	//! Gets the singleplayer status of the level.
-	//! \return The singleplayer status.  If true, the level is singleplayer.
-	bool isSingleplayer() const { return m_isSingleplayer; }
-
-	//! Sets the singleplayer status of the level.
-	//! \param pLevelSingleplayer If true, the level becomes a singleplayer level.
-	void setSingleplayer(bool pLevelSingleplayer) { m_isSingleplayer = pLevelSingleplayer; }
 
 	//! Adds a board change to the level.
 	//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
@@ -326,21 +297,22 @@ public:
 	std::vector<NPCID> findIntersectingNPCsForCollision(const Position<int16_t>& position);
 	std::vector<NPCID> findIntersectingNPCsForCollision(const Rectangle<int16_t, uint16_t>& area);
 
+public:
+	std::string levelName;
+	bool isSparringZone = false;
+	bool isNoPkZone = false;
+	bool isSingleplayer = false;
+	clock::time_point modTime;
 	ScriptContainer scripting;
 
 private:
-	Level(short fillTile = 0);
-
-private:
-	time_t m_modTime = 0;
-	bool m_isSparringZone = false;
-	bool m_isNoPkZone = false;
-	bool m_isSingleplayer = false;
 	uint8_t m_mapX = 0;
 	uint8_t m_mapY = 0;
 	std::map<uint8_t, LevelTiles> m_tiles;
 	std::weak_ptr<Map> m_map;
-	CString m_fileName, m_fileVersion, m_actualLevelName, m_levelName;
+	std::string m_originalLevelName;
+	std::string m_fileVersion;
+	std::filesystem::path m_filePath;
 
 	std::vector<LevelBaddyPtr> m_baddies;
 	std::vector<LevelBoardChange> m_boardChanges;

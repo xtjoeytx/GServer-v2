@@ -1011,7 +1011,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Set the NPC's name.
 	{
-		std::string npcNamePrefix = std::format("localnpc_{}_{}_", removeExtension(levelPtr->getLevelName()), m_serverTime);
+		std::string npcNamePrefix = std::format("localnpc_{}_{}_", removeExtension(levelPtr->levelName), m_serverTime);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
 		{
 			return pair.second->name.starts_with(npcNamePrefix);
@@ -1053,7 +1053,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	}
 
 #ifdef DEBUG
-	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.pixelX, newNPC->character.pixelY, levelPtr ? levelPtr->getLevelName().toString() : "null");
+	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.pixelX, newNPC->character.pixelY, levelPtr ? levelPtr->levelName : "null");
 #endif
 
 	// Send the NPC's props to everybody in range.
@@ -1103,7 +1103,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		// Tell the clients to delete the NPC.
 		auto map = level->getMap();
 		bool isOnGmap = map != nullptr && map->isGmap();
-		std::string tmpLvlName = (isOnGmap ? map->getMapName() : level->getLevelName().toString());
+		std::string tmpLvlName = (isOnGmap ? map->getMapName() : level->levelName);
 
 		for (auto& [pid, p]: m_playerList)
 		{
@@ -1450,7 +1450,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> l
 			// Check if they are nearby before sending the packet.
 			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
 			{
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelp->getLevelName());
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelp->levelName);
 				other->sendPacket(packet);
 				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
 			}
@@ -1498,7 +1498,7 @@ void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerCl
 			// Check if they are nearby before sending the packet.
 			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
 			{
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->getLevelName());
+				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 				other->sendPacket(packet);
 				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
 			}

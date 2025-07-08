@@ -243,7 +243,7 @@ bool PlayerClient::doTimedEvents()
 		auto level = getLevel();
 		if (level)
 		{
-			if (!(account.status & PLSTATUS_PAUSED) && !level->isSparringZone())
+			if (!(account.status & PLSTATUS_PAUSED) && !level->isSparringZone)
 				--account.apCounter;
 
 			if (account.apCounter <= 0)
@@ -914,7 +914,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 			auto player = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
 			if (player && player->getLevel())
-				warp(player->getLevel()->getLevelName(), { player->account.character.pixelX, player->account.character.pixelY });
+				warp(player->getLevel()->levelName, { player->account.character.pixelX, player->account.character.pixelY });
 		}
 		// To x/y location
 		else if (chatParse.size() == 3)
@@ -1096,7 +1096,7 @@ std::string PlayerClient::getComputedLevelName() const
 	if (auto map = level->getMap(); map != nullptr && map->isGmap())
 		return map->getMapName();
 
-	return level->getLevelName().toString();
+	return level->levelName;
 }
 
 std::shared_ptr<Level> PlayerClient::getLevel() const
@@ -1182,14 +1182,14 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> po
 
 	// Check if the level is a singleplayer level.
 	// If so, see if we have been there before.  If not, duplicate it.
-	if (level->isSingleplayer())
+	if (level->isSingleplayer)
 	{
-		auto nl = (m_singleplayerLevels.find(level->getLevelName()) != m_singleplayerLevels.end() ? m_singleplayerLevels[level->getLevelName()] : nullptr);
+		auto nl = (m_singleplayerLevels.find(level->levelName) != m_singleplayerLevels.end() ? m_singleplayerLevels[level->levelName] : nullptr);
 		if (nl == nullptr)
 		{
-			level = level->clone();
+			level = Level::clone(level);
 			m_currentLevel = level;
-			m_singleplayerLevels[level->getLevelName()] = level;
+			m_singleplayerLevels[level->levelName] = level;
 		}
 		else
 			m_currentLevel = nl;
@@ -1206,20 +1206,20 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> po
 			{
 				auto p = m_server->getPlayer(id);
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId()
-					>> (char)PlayerProp::CURLEVEL >> (char)(level->getLevelName().length() + 1 + 7) << level->getLevelName() << ".unknown"
+					>> (char)PlayerProp::CURLEVEL >> (char)(level->levelName.length() + 1 + 7) << level->levelName << ".unknown"
 					>> (char)PlayerProp::X << p->getProp<PlayerProp::X>().serialize()
 					>> (char)PlayerProp::Y << p->getProp<PlayerProp::Y>().serialize());
 			}
 
 			// Set the correct level now.
-			const auto& levelName = level->getLevelName();
+			const auto& levelName = level->levelName;
 			auto& groupLevels = m_server->getGroupLevels();
-			auto [start, end] = groupLevels.equal_range(levelName.toString());
+			auto [start, end] = groupLevels.equal_range(levelName);
 			while (start != end)
 			{
 				if (auto nl = start->second.lock(); nl)
 				{
-					if (nl->getLevelName() == levelName)
+					if (nl->levelName == levelName)
 					{
 						m_currentLevel = nl;
 						break;
@@ -1229,17 +1229,17 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> po
 			}
 			if (start == end)
 			{
-				level = level->clone();
+				level = Level::clone(level);
 				m_currentLevel = level;
-				level->setLevelName(levelName);
-				groupLevels.insert(std::make_pair(levelName.toString(), level));
+				level->levelName = levelName;
+				groupLevels.insert(std::make_pair(levelName, level));
 			}
 		}
 	}
 
 	// Add myself to the level playerlist.
 	level->addPlayer(m_id);
-	account.level = level->getLevelName().toStringView();
+	account.level = level->levelName;
 
 	// Set the player's position.
 	account.character.pixelX = pos.x();
@@ -1255,13 +1255,13 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> po
 	if (!succeed)
 	{
 		leaveLevel();
-		sendPacket(CString() >> (char)PLO_WARPFAILED << level->getLevelName());
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->levelName);
 		return false;
 	}
 
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
-	if (level->isSparringZone() && account.character.ap == 100)
+	if (level->isSparringZone && account.character.ap == 100)
 	{
 		account.apCounter = 1;
 		sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, 99_ui8));
@@ -1299,15 +1299,16 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	if (pLevel == nullptr) return false;
 
 	CSettings& settings = m_server->getSettings();
-	time_t l_time = getCachedLevelModTime(pLevel.get());
-	if (modTime == -1) modTime = pLevel->getModTime();
+	time_t levelModTime = clock::to_time_t(pLevel->modTime);
+	time_t cachedModTime = getCachedLevelModTime(pLevel.get());
+	if (modTime == -1) modTime = levelModTime;
 	auto map = m_pmap.lock();
 
 	// Send board data.
-	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
-	if (l_time == 0)
+	sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->levelName);
+	if (cachedModTime == 0)
 	{
-		if (modTime != pLevel->getModTime())
+		if (modTime != levelModTime)
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)((1 + (64 * 64 * 2) + 1)));
 			sendPacket(CString() << pLevel->getBoardPacket());
@@ -1331,7 +1332,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			pLevel->sendSignsToPlayer(shared_from_this());
 
 		// Send the level mod time.
-		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 
 		// Send chests.
 		pLevel->sendChestsToPlayer(shared_from_this());
@@ -1340,7 +1341,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
+		sendPacket(CString() << pLevel->getBoardChangesPacket(cachedModTime));
 		pLevel->sendHorsesToPlayer(shared_from_this());
 		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
 	}
@@ -1362,12 +1363,12 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 		if (map != nullptr && map->getType() == MapType::GMAP)
 			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << map->getMapName());
 		else
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->getLevelName());
+			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << pLevel->levelName);
 
-		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(cachedModTime));
 
 		// If we are the leader, send it now.
-		if ((pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true) && (map == nullptr || !map->isGmap()))
+		if ((pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer == true) && (map == nullptr || !map->isGmap()))
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 
 		// Reset active level.
@@ -1383,7 +1384,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 			npc->level = pLevel;
 
 			// Send the carry NPC props to other players.
-			if (!pLevel->isSingleplayer())
+			if (!pLevel->isSingleplayer)
 			{
 				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
 				m_server->sendPacketToLevelOrGmap(carryNPCProps, self(), { m_id });
@@ -1392,10 +1393,10 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	}
 
 	// Send connecting player props to players in nearby levels.
-	if (!pLevel->isSingleplayer())
+	if (!pLevel->isSingleplayer)
 	{
 		// Send my props.
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << this->getPropsPacketFromList(loginPropsClientOthers), self(), {m_id});
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << this->getPropsPacketFromList(loginPropsClientOthers), self(), { m_id });
 
 		// Get other player props.
 		if (auto map = m_pmap.lock(); map)
@@ -1437,21 +1438,22 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 	if (pLevel == nullptr) return false;
 	CSettings& settings = m_server->getSettings();
 
-	time_t l_time = getCachedLevelModTime(pLevel.get());
-	if (modTime == -1) modTime = pLevel->getModTime();
-	if (l_time != 0)
+	time_t levelModTime = clock::to_time_t(pLevel->modTime);
+	time_t cachedModTime = getCachedLevelModTime(pLevel.get());
+	if (modTime == -1) modTime = levelModTime;
+	if (cachedModTime != 0)
 	{
-		sendPacket(CString() << pLevel->getBoardChangesPacket(l_time));
+		sendPacket(CString() << pLevel->getBoardChangesPacket(cachedModTime));
 	}
 	else
 	{
-		if (modTime != pLevel->getModTime())
+		if (modTime != levelModTime)
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(1 + (64 * 64 * 2) + 1));
 			sendPacket(CString() << pLevel->getBoardPacket());
 
 			if (m_firstLevel)
-				sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->getLevelName());
+				sendPacket(CString() >> (char)PLO_LEVELNAME << pLevel->levelName);
 			m_firstLevel = false;
 
 			// Send links, signs, and mod time.
@@ -1460,14 +1462,14 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 				pLevel->sendLinksToPlayer(shared_from_this());
 				pLevel->sendSignsToPlayer(shared_from_this());
 			}
-			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)pLevel->getModTime());
+			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 		}
 		else
 			sendPacket(CString() >> (char)PLO_LEVELBOARD);
 
 		if (!fromAdjacent)
 		{
-			sendPacket(CString() << pLevel->getBoardChangesPacket2(l_time));
+			sendPacket(CString() << pLevel->getBoardChangesPacket2(cachedModTime));
 			pLevel->sendChestsToPlayer(shared_from_this());
 		}
 	}
@@ -1482,7 +1484,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 	if (fromAdjacent == false)
 	{
 		// If we are the leader, send it now.
-		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer() == true)
+		if (pLevel->isPlayerLeader(getId()) || pLevel->isSingleplayer == true)
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1491,12 +1493,12 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 
 	// Send NPCs.
 	if (!fromAdjacent)
-		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(l_time));
+		pLevel->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(cachedModTime));
 
 	// Send connecting player props to players in nearby levels.
-	if (!pLevel->isSingleplayer() && !fromAdjacent)
+	if (!pLevel->isSingleplayer && !fromAdjacent)
 	{
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers), self(), {m_id});
+		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers), self(), { m_id });
 
 		for (auto id : pLevel->getPlayers())
 		{
@@ -1750,7 +1752,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
 		{
 			auto pos = linkTouched.value()->getDestinationForCharacter(account.character);
-			warp(newLevel->getLevelName(), pos, getCachedLevelModTime(newLevel.get()));
+			warp(newLevel->levelName, pos, getCachedLevelModTime(newLevel.get()));
 			return true;
 		}
 	}

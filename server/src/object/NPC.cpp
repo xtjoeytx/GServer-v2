@@ -119,7 +119,7 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
 {
 	sendPropsFromResults(
-		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->getLevelName().toString()),
+		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->levelName),
 		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
 		setPropWith<NPCProp::Y2>(SetBy::SERVER, y)
 		);
@@ -134,7 +134,7 @@ std::string NPC::getLevelName() const
 	{
 		if (auto map = levelPtr->getMap(); map != nullptr && map->isGmap())
 			return map->getMapName();
-		return levelPtr->getLevelName().toString();
+		return levelPtr->levelName;
 	}
 	return {};
 }
@@ -635,7 +635,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// No change?  Don't do anything.
-			if (auto curLevel = level.lock(); curLevel != nullptr && curLevel->getLevelName() == strProp->value)
+			if (auto curLevel = level.lock(); curLevel != nullptr && curLevel->levelName == strProp->value)
 				SETPROP_RETURN_ERROR;
 
 			// See if the level exists.
@@ -1331,7 +1331,7 @@ std::vector<std::string> NPC::getVariableDump() const
 	if (!scripter.empty())
 		result.emplace_back(std::format("{}.scripter: {}", npcname, scripter));
 	if (auto curLevel = level.lock(); curLevel != nullptr)
-		result.emplace_back(std::format("{}.level: {}", npcname, curLevel->getLevelName()));
+		result.emplace_back(std::format("{}.level: {}", npcname, curLevel->levelName));
 	result.emplace_back();
 	result.emplace_back("Attributes:");
 

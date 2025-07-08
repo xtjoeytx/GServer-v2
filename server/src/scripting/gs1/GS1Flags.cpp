@@ -136,8 +136,8 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 {
-	variableStore.add("issparringzone", level != nullptr && level->isSparringZone());
-	variableStore.add("nopkzone", level != nullptr && level->isNoPkZone());
+	variableStore.add("issparringzone", level != nullptr && level->isSparringZone);
+	variableStore.add("nopkzone", level != nullptr && level->isNoPkZone);
 	variableStore.add("isonmap", level != nullptr && level->getMap() != nullptr);
 	variableStore.add("compsdead", level != nullptr && !level->hasLivingBaddies());
 }

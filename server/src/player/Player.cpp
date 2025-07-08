@@ -1051,7 +1051,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 bool Player::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime)
 {
 	// TODO: Check if level exists.
-	account.level = level->getLevelName().toString();
+	account.level = level->levelName;
 	return true;
 }
 

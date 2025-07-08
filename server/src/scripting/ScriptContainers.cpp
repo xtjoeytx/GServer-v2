@@ -31,7 +31,7 @@ ScriptObjectSource FromWeapon(WeaponPtr weapon)
 }
 ScriptObjectSource FromLevel(LevelPtr level)
 {
-	size_t hash = string::string_hash{}(level->getLevelName());
+	size_t hash = string::string_hash{}(level->levelName);
 	return std::make_pair(hash, ScriptObjectSourceType::LEVEL);
 }
 } // end namespace source

@@ -247,9 +247,9 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 
 	// Save level details.
 	level->m_fileVersion = fileVersion;
-	level->m_fileName = levelPath;
-	level->m_modTime = fileSystem->getModTime(levelName.string());
-	level->m_actualLevelName = level->m_levelName = levelName.string();
+	level->m_filePath = std::filesystem::path{ levelPath.toString() };
+	level->modTime = clock::from_time_t(fileSystem->getModTime(levelName.string()));
+	level->m_originalLevelName = level->levelName = levelName.string();
 
 	// If the level is on a map, record that now.
 	for (const auto& map : server->getMapList())
@@ -457,7 +457,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 		if (server->hasNPCServer())
 		{
 			indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-			log::printLine(log::server, "Loading NPCs for level '{}'...", level->getLevelName());
+			log::printLine(log::server, "Loading NPCs for level '{}'...", level->levelName);
 		}
 
 		while (fileData.bytesLeft())
@@ -531,7 +531,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 	if (server->hasNPCServer() && fileData.contains("NPCEND"))
 	{
 		indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-		log::printLine(log::server, "Loading NPCs for level '{}'...", level->getLevelName());
+		log::printLine(log::server, "Loading NPCs for level '{}'...", level->levelName);
 	}
 
 	// Parse Level

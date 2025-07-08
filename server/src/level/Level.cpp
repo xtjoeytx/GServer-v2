@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
 #include <ctime>
 #include <deque>
 #include <filesystem>
@@ -69,10 +68,9 @@ short respawningTiles[] = {
 	0x72a, // hole
 };
 
-/*
-	Level: Constructor - Deconstructor
-*/
-Level::Level(short fillTile)
+//----------------------------
+
+Level::Level(uint16_t fillTile)
 {
 	m_tiles[0] = LevelTiles(fillTile);
 }
@@ -84,7 +82,7 @@ Level::~Level()
 	// Delete NPCs.
 	{
 		// Remove every NPC in the level.
-		for (auto& levelNPC: m_npcs)
+		for (auto& levelNPC : m_npcs)
 		{
 			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
 			if (auto npc = server->getNPC(levelNPC); npc && npc->storageType == NPCStorageType::LEVEL)
@@ -106,10 +104,10 @@ Level::~Level()
 	m_signs.clear();
 
 	// Delete items.
-	for (auto& item: m_items)
+	for (auto& item : m_items)
 	{
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
-		for (auto& player: m_players)
+		for (auto& player : m_players)
 		{
 			if (auto p = server->getPlayer(player); p)
 				p->sendPacket(packet);
@@ -191,7 +189,7 @@ void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
 	CString packet;
 	for (auto& chest: m_chests)
 	{
-		bool hasChest = player->account.hasChest(m_levelName.toStringView(), chest->getX(), chest->getY());
+		bool hasChest = player->account.hasChest(levelName, chest->getX(), chest->getY());
 
 		packet = CString() >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
 		if (!hasChest) packet >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
@@ -299,10 +297,10 @@ bool Level::reload()
 	m_signs.clear();
 
 	// Delete items.
-	for (const auto& item: m_items)
+	for (const auto& item : m_items)
 	{
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
-		for (auto& playerId: m_players)
+		for (auto& playerId : m_players)
 		{
 			if (auto player = server->getPlayer(playerId); player)
 				player->sendPacket(packet);
@@ -314,12 +312,12 @@ bool Level::reload()
 	m_boardChanges.clear();
 
 	// Clean up the rest.
-	m_isSparringZone = false;
-	m_isSingleplayer = false;
+	isSparringZone = false;
+	isSingleplayer = false;
 
 	// Remove all the players from the level.
 	std::deque<PlayerID> oldplayers = m_players;
-	for (auto& id: oldplayers)
+	for (auto& id : oldplayers)
 	{
 		if (auto p = server->getPlayer<PlayerClient>(id); p)
 			p->leaveLevel(true);
@@ -327,37 +325,38 @@ bool Level::reload()
 
 	// Reset the level cache for all the players on the server.
 	auto& playerList = server->getPlayerList();
-	for (const auto& [id, p]: players_of_type<PlayerClient>(playerList))
+	for (const auto& [id, p] : players_of_type<PlayerClient>(playerList))
 	{
 		p->resetLevelCache(this);
 	}
 
 	// Re-load the level now.
-	auto level = LevelLoader::loadLevelInto(shared_from_this(), std::filesystem::path{ m_levelName.toStringView() });
+	auto level = LevelLoader::loadLevelInto(shared_from_this(), std::filesystem::path{ levelName });
 	bool ret = level != nullptr;
 
 	// Warp all players back to the level (or to unstick me if loadLevel failed).
 	CString uLevel = server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
 	float uX = server->getSettings().getFloat("unstickmex", 30.0f);
 	float uY = server->getSettings().getFloat("unstickmey", 35.0f);
-	for (auto& id: oldplayers)
+	for (auto& id : oldplayers)
 	{
 		if (auto p = server->getPlayer<PlayerClient>(id); p)
-			p->warp((ret ? m_levelName : uLevel), { static_cast<int16_t>((ret ? p->getX() : uX) * 16), static_cast<int16_t>((ret ? p->getY() : uY) * 16) });
+			p->warp((ret ? levelName : uLevel), { static_cast<int16_t>((ret ? p->getX() : uX) * 16), static_cast<int16_t>((ret ? p->getY() : uY) * 16) });
 	}
 
 	return ret;
 }
 
-std::shared_ptr<Level> Level::clone() const
+std::shared_ptr<Level> Level::clone(LevelPtr level)
 {
-	return LevelLoader::loadLevel(std::filesystem::path{ m_levelName.toStringView() });
+	if (level == nullptr) return nullptr;
+	return LevelLoader::loadLevel(std::filesystem::path{ level->levelName });
 }
 
 /*
 	Level: Find Level
 */
-std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbsolute)
+std::shared_ptr<Level> Level::findLevel(std::string_view levelName, bool loadAbsolute)
 {
 	auto server = BabyDI::Get<Server>();
 	auto& levelList = server->getLevelList();
@@ -366,8 +365,8 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 	// 	this is still going to break on the first occurrence.
 
 	// Find Appropriate Level by Name
-	CString levelName = pLevelName.toLower();
-	if (auto it = levelList.find(levelName.toStringView()); it != levelList.end())
+	std::string lowerCaseLevel = string::toLower(levelName);
+	if (auto it = levelList.find(lowerCaseLevel); it != levelList.end())
 		return it->second;
 
 	if (loadAbsolute)
@@ -376,34 +375,34 @@ std::shared_ptr<Level> Level::findLevel(const CString& pLevelName, bool loadAbso
 		if (!server->getSettings().getBool("nofoldersconfig", false))
 			fileSystem = server->getFileSystem(FS_LEVEL);
 
-		if (fileSystem->find(pLevelName).trim().length() == 0)
+		if (fileSystem->find(levelName).trim().length() == 0)
 		{
-			fileSystem->addFile(pLevelName);
-			fileSystem->addDir(getPath(pLevelName), "*", true);
+			fileSystem->addFile(levelName);
+			fileSystem->addDir(getPath(levelName), "*", true);
 		}
 	}
 
 	// Load New Level
-	auto level = LevelLoader::loadLevel(std::filesystem::path{ pLevelName.toStringView() });
+	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
 	if (level == nullptr)
 		return nullptr;
 
 	// Return Level
-	levelList.insert(std::make_pair(levelName.toString(), level));
+	levelList.insert(std::make_pair(lowerCaseLevel, level));
 	return level;
 }
 
 /*
 	Level: Create Level
 */
-std::shared_ptr<Level> Level::createLevel(short fillTile, const std::string& levelName)
+std::shared_ptr<Level> Level::createLevel(uint16_t fillTile, std::string_view levelName)
 {
 	auto server = BabyDI::Get<Server>();
 	auto& levelList = server->getLevelList();
 
 	// Load New Level
 	auto level = std::shared_ptr<Level>(new Level(fillTile));
-	level->setLevelName(levelName);
+	level->levelName = levelName;
 
 	// Return Level
 	levelList.insert(std::make_pair(string::toLower(levelName), level));
@@ -475,7 +474,7 @@ void Level::saveLevel(const std::string& filename)
 				chunks.emplace_back(currentStart, data);
 
 			/* Draw one BOARD entry for each chunk so transparent tile-data is culled */
-			for (const auto& chunk: chunks)
+			for (const auto& chunk : chunks)
 			{
 				fileStream << "BOARD" << s << chunk.first << s << y << s << chunk.second.length() / 2 << s << layer // x, y, width, layer
 						   << s << chunk.second << std::endl;
@@ -483,7 +482,7 @@ void Level::saveLevel(const std::string& filename)
 		}
 	}
 
-	for (const auto& link: getLinks())
+	for (const auto& link : getLinks())
 	{
 		auto& bbox = link->getBoundingBox();
 		fileStream
@@ -496,23 +495,23 @@ void Level::saveLevel(const std::string& filename)
 			<< std::endl;
 	}
 
-	for (const auto& sign: getSigns())
+	for (const auto& sign : getSigns())
 	{
 		fileStream << "SIGN" << s << sign->getX() << s << sign->getY() << std::endl;
 		fileStream << sign->getUText().text() << std::endl;
 		fileStream << "SIGNEND" << std::endl;
 	}
 
-	for (const auto& chest: getChests())
+	for (const auto& chest : getChests())
 	{
 		fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s << LevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
 	}
 
-	for (const auto& baddy: m_baddies)
+	for (const auto& baddy : m_baddies)
 	{
 		fileStream << "BADDY" << s << baddy->x << s << baddy->y << s << PROPID(baddy->type) << std::endl;
 
-		for (const auto& verse: baddy->verses)
+		for (const auto& verse : baddy->verses)
 		{
 			fileStream << verse << std::endl;
 		}
@@ -520,7 +519,7 @@ void Level::saveLevel(const std::string& filename)
 		fileStream << "BADDYEND" << std::endl;
 	}
 
-	for (const auto& npcId: getNPCs())
+	for (const auto& npcId : getNPCs())
 	{
 		auto npc = server->getNPC(npcId);
 
@@ -887,22 +886,13 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 	auto script = string::trimLeft(npc->getScript().getClientSide());
 
 	if (script.starts_with("sparringzone"))
-		setSparringZone(true);
+		isSparringZone = true;
 
 	if (script.starts_with("noplayerkilling"))
-		setNoPkZone(true);
+		isNoPkZone = true;
 
 	if (script.starts_with("singleplayer"))
-		setSingleplayer(true);
-
-	/*
-	if (npc->isCharacter())
-	{
-		// Set the player enters event on all the NPCs.
-		auto server = BabyDI::Get<Server>();
-		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromNPC(npc->id));
-	}
-	*/
+		isSingleplayer = true;
 
 	return true;
 }
@@ -920,15 +910,6 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 		return;
 
 	std::erase(m_npcs, npc->id);
-
-	/*
-	if (npc->isCharacter())
-	{
-		// Set the player leaves event on all the NPCs.
-		auto server = BabyDI::Get<Server>();
-		server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromNPC(npc->id));
-	}
-	*/
 }
 
 void Level::removeNPC(NPCID npcId)
@@ -1080,9 +1061,7 @@ std::optional<LevelChest*> Level::getChest(int x, int y) const
 
 CString Level::getChestStr(LevelChest* chest) const
 {
-	static char retVal[500];
-	sprintf(retVal, "%i:%i:%s", chest->getX(), chest->getY(), m_levelName.text());
-	return retVal;
+	return std::format("{}:{}:{}", chest->getX(), chest->getY(), levelName);
 }
 
 LevelLink* Level::addLink()
@@ -1212,7 +1191,6 @@ bool Level::isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags
 				return true;
 		}
 	}
-
 	return false;
 }
 

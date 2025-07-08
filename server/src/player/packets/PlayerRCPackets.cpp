@@ -1046,8 +1046,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 				auto level = m_server->getLevel(l);
 				if (level)
 				{
-					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated level: " << level->getLevelName());
-					log::printLine(log::rc, "{} updated level: {}", account.name, level->getLevelName().text());
+					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated level: " << level->levelName);
+					log::printLine(log::rc, "{} updated level: {}", account.name, level->levelName);
 					level->reload();
 				}
 			}

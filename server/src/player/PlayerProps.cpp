@@ -446,7 +446,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// When they die, increase deaths and make somebody else level leader.
 			if ((oldStatus & PLSTATUS_DEAD) == 0 && (account.status & PLSTATUS_DEAD) > 0 && level != nullptr)
 			{
-				if (level->isSparringZone() == false)
+				if (level->isSparringZone == false)
 				{
 					++account.deaths;
 					player->dropItemsOnDeath();
@@ -568,7 +568,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 								// Somebody else got this NPC first.  Force the player to throw his down
 								// and tell the player to remove the NPC from memory.
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPC >> (int)0);
-								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->getLevelName().length() << level->getLevelName() >> (int)newNPCID);
+								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)newNPCID);
 								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player, { m_id });
 								isOwner = false;
 								newNPCID = 0;

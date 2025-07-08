@@ -387,8 +387,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	auto level = npc->level.lock();
 	auto initialLevel = npc->m_initialLevel.lock();
 
-	CString levelName = level ? level->getLevelName() : "";
-	CString initialLevelName = initialLevel ? initialLevel->getLevelName() : "";
+	CString levelName = level ? level->levelName : "";
+	CString initialLevelName = initialLevel ? initialLevel->levelName : "";
 
 	int layer = 0;
 	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
@@ -416,7 +416,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.pixelZ / 16.0f) << NL;
 	if (level)
 	{
-		fileData << "LEVEL " << level->getLevelName() << NL;
+		fileData << "LEVEL " << level->levelName << NL;
 		fileData << "X " << CString((float)npc->character.pixelX / 16.0f) << NL;
 		fileData << "Y " << CString((float)npc->character.pixelY / 16.0f) << NL;
 		fileData << "Z " << CString((float)npc->character.pixelZ / 16.0f) << NL;

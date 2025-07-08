@@ -60,7 +60,7 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	if (auto level = m_server->getLevel(newLevel.toStringView()); level != nullptr)
 		enterLevel(level, pos, modTime);
 	else if (auto level = getLevel(); level != nullptr)
-		warp(level->getLevelName(), {account.character.pixelX, account.character.pixelY});
+		warp(level->levelName, {account.character.pixelX, account.character.pixelY});
 	else
 	{
 		CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -297,7 +297,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	// Uses the glicko rating system.
 	auto level = getLevel();
 	if (level == nullptr) return HandlePacketResult::Handled;
-	if (level->isSparringZone())
+	if (level->isSparringZone)
 	{
 		// Get some stats we are going to use.
 		// Need to parse the other player's PlayerProp::RATING.
@@ -425,7 +425,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 	// Add the baddy.
 	auto level = getLevel();
 	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], static_cast<BaddyType>(bType));
-	if (baddy == 0) return HandlePacketResult::Handled;
+	if (baddy == nullptr) return HandlePacketResult::Handled;
 
 	// Set the baddy props.
 	baddy->setRespawn(false);
@@ -593,13 +593,12 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 	{
 		if (auto chest = level->getChest(cX, cY); chest.has_value())
 		{
-			std::string_view levelName = level->getLevelName().toStringView();
-			if (!account.hasChest(levelName, cX, cY))
+			if (!account.hasChest(level->levelName, cX, cY))
 			{
 				LevelItemType chestItem = chest.value()->getItemIndex();
 				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), props::SetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
-				account.savedChests.insert(std::make_pair(levelName, std::make_pair(cX, cY)));
+				account.savedChests.insert(std::make_pair(level->levelName, std::make_pair(cX, cY)));
 			}
 		}
 	}
@@ -857,7 +856,7 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 
 		// Check and see if the weapon has changed recently.  If it has, we should
 		// send the new NPC to everybody on the server.  After updating the script, of course.
-		if (weapon->modTime < clock::from_time_t(level->getModTime()))
+		if (weapon->modTime < level->modTime)
 		{
 			// Update Weapon
 			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getClientSide() }).saveWeapon();
@@ -945,12 +944,12 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 		sendLevel141(adjacentLevel, modTime, true);
 
 	// Set our old level back to normal.
-	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->getLevelName());
+	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->levelName);
 	auto map = m_pmap.lock();
 	if (map && map->getType() == MapType::GMAP)
 		sendPacket(CString() >> (char)PLO_LEVELNAME << map->getMapName());
 	else
-		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevel()->getLevelName());
+		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevel()->levelName);
 
 	if (getLevel()->isPlayerLeader(m_id) && (map == nullptr || !map->isGmap()))
 		sendPacket(CString() >> (char)PLO_ISLEADER);
