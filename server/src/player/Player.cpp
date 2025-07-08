@@ -712,6 +712,10 @@ bool Player::sendLogin()
 	// This also lets us send data.
 	m_loaded = true;
 
+	// Mark our login time.
+	loginTime = m_server->getNWTime();
+	lastDeadTime = loginTime;
+
 	return true;
 }
 
@@ -1055,12 +1059,10 @@ bool Player::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, tim
 
 void Player::constructScriptObjectParameters()
 {
-	/* TODO: Add these.
-	lastdead
-	logintime
-	*/
 
 	scriptObjectParameters.try_emplace("id", set_temporary, "id", gameVariableGetter([this]() { return static_cast<double>(getId()); }), GameVariable::func_set{});
+	scriptObjectParameters.try_emplace("logintime", set_temporary, "logintime", gameVariableGetter(loginTime), GameVariable::func_set{});
+	scriptObjectParameters.try_emplace("lastdead", set_temporary, "lastdead", gameVariableGetter(lastDeadTime), GameVariable::func_set{});
 	scriptObjectParameters.try_emplace("rupees", set_temporary, "rupees", gameVariableGetter(account.character.gralats), gameVariableSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
 	scriptObjectParameters.try_emplace("gralats", set_temporary, "gralats", gameVariableGetter(account.character.gralats), gameVariableSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
 	scriptObjectParameters.try_emplace("bombs", set_temporary, "bombs", gameVariableGetter(account.character.bombs), gameVariableSetter(this, PROPOPT(PlayerProp::BOMBSCOUNT), account.character.bombs));

@@ -466,6 +466,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					}
 				}
 
+				// Update our last dead time.
+				lastDeadTime = m_server->getNWTime();
+
+				// Queue up the playerdies event.
 				m_server->queueNPCEvent(level, ScriptEventType::PLAYERDIES, source::FromPlayer(m_id));
 			}
 			break;

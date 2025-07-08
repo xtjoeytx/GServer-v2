@@ -353,6 +353,8 @@ public:
 public:
 	Account account;
 	std::array<clock::time_point, PLAYERPROP_COUNT> modTime;
+	uint32_t loginTime = 0;
+	uint32_t lastDeadTime = 0;
 
 protected:
 	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);

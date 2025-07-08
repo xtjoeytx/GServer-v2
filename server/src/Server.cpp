@@ -1243,7 +1243,7 @@ void Server::calculateNWTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000
 	// this is likely the actual start time of timevar
-	m_serverTime = ((unsigned int)time(nullptr) - 981048814) / 5;
+	m_serverTime = static_cast<uint32_t>((time(nullptr) - 981048814) / 5);
 }
 
 bool Server::isIpBanned(const CString& ip)

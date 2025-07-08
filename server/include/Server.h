@@ -170,7 +170,7 @@ public:
 	ServerList& getServerList() { return m_serverlist; }
 	AnimationManager& getAnimationManager() { return m_animationManager; }
 	PackageManager& getPackageManager() { return m_packageManager; }
-	unsigned int getNWTime() const { return m_serverTime; }
+	const auto& getNWTime() const { return m_serverTime; }
 	auto& getWeaponList() { return m_weaponList; }
 	auto& getPlayerList() { return m_playerList; }
 	auto& getNPCList() { return m_npcList; }
@@ -264,6 +264,7 @@ public:
 
 	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source, auto&&... args)
 	{
+		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
 		for (auto& npcid : level->getNPCs())
 		{
@@ -331,7 +332,7 @@ private:
 	TimeoutGenerator m_timedMaintenance{ 5min, true };
 	std::chrono::system_clock::time_point m_serverStartTime;
 	std::chrono::system_clock::time_point m_frameStartTime;
-	unsigned int m_serverTime;
+	uint32_t m_serverTime;
 
 	// Trigger dispatcher
 	TriggerDispatcher m_triggerActionDispatcher;
