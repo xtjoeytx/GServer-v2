@@ -1,45 +1,45 @@
 {
   "builds": [
     {
-      "Title": "Docker Linux Alpine x86_64",
+      "Title": "Docker Linux Alpine",
       "Description": "",
       "Type": "docker",
       "OS": "linux",
       "Config": {
         "DockerRoot": "xtjoeytx",
         "DockerImage": "gserver-v2",
-        "Tag": "-beta4-linux64",
-        "Dockerfile": "docker/gserver-x86_64-linux-musl.dockerfile",
+        "Tag": "-linux64",
+        "Dockerfile": "docker/linux-musl.dockerfile",
         "BuildIfSuccessful": "image",
         "BuildEnv": "",
         "RunTests": false
       }
     },
     {
-      "Title": "Linux x86_64 GNU",
+      "Title": "Linux GNU",
       "Description": "",
       "Type": "docker",
       "OS": "linux",
       "Config": {
         "DockerRoot": "xtjoeytx",
         "DockerImage": "gserver-v2",
-        "Tag": "-beta4-linux64-gnu",
-        "Dockerfile": "docker/gserver-x86_64-linux-gnu.dockerfile",
+        "Tag": "-linux64-gnu",
+        "Dockerfile": "docker/linux-gnu.dockerfile",
         "BuildIfSuccessful": "artifact",
         "BuildEnv": "",
         "RunTests": true
       }
     },
     {
-      "Title": "Windows x86_64",
+      "Title": "Windows",
       "Description": "",
       "Type": "docker",
       "OS": "linux",
       "Config": {
         "DockerRoot": "xtjoeytx",
         "DockerImage": "gserver-v2",
-        "Tag": "-beta4-win64",
-        "Dockerfile": "docker/gserver-x86_64-w64-mingw.dockerfile",
+        "Tag": "-win64",
+        "Dockerfile": "docker/windows-mingw.dockerfile",
         "BuildIfSuccessful": "artifact",
         "BuildEnv": "",
         "RunTests": false

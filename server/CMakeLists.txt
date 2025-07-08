@@ -161,6 +161,14 @@ if(PACKET_LOGGING)
 	target_compile_definitions(${TARGET_NAME} PUBLIC PACKETLOGGING)
 endif()
 
+# Dependency: zlib.
+find_package(ZLIB REQUIRED)
+target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
+
+# Dependency: bzip2
+find_package(BZip2 REQUIRED)
+target_link_libraries(${TARGET_NAME} PRIVATE BZip2::BZip2)
+
 # Dependency: antlr4.
 find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(antlr4-generator CONFIG REQUIRED)

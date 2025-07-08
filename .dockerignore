@@ -1,5 +1,10 @@
 dependencies/v8
 .git
 build
-cmake-build-debug/
-cmake-build-release/
+cmake-build-*/
+vcpkg/
+docker/
+dependencies/fc/
+v8.tar
+mingw-v8.tar
+*.diff
