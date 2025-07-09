@@ -371,13 +371,13 @@ GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
-	auto value1 = static_cast<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto value2 = static_cast<int64_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
 
 	using namespace std::chrono;
 	auto seed = static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 	std::minstd_rand rng(seed);
-	std::uniform_int_distribution<int32_t> dist(value1, value2 - 1);
+	std::uniform_real_distribution dist(std::min(value1, value2), std::max(value1, value2));
 
 	return static_cast<double>(dist(rng));
 }
