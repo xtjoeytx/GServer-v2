@@ -81,6 +81,7 @@ project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.411 to v6.037 compatib
 
 # Lowercase project name for binaries and packaging.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+string(TOLOWER ${PROJECT_NAME} PACKAGE_NAME)
 
 # Adhere to GNU filesystem layout conventions.
 include(GNUInstallDirs)
@@ -159,9 +160,9 @@ else()
 endif()
 
 # More packaging.
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
-set(CPACK_PACKAGE_VENDOR "OpenGraal Team")
-set(CPACK_PACKAGE_CONTACT "opengraal")
+set(CPACK_PACKAGE_NAME ${PACKAGE_NAME})
+set(CPACK_PACKAGE_VENDOR "Preagonal Team")
+set(CPACK_PACKAGE_CONTACT "preagonal")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}")
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_Y})
