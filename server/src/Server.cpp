@@ -1671,7 +1671,8 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
 		if (player->account.hasWeapon(weapon->name))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->name);
-			player->sendPacket(weaponPacket);
+			if (!weaponPacket.isEmpty())
+				player->sendPacket(weaponPacket);
 		}
 	}
 }
@@ -1680,6 +1681,8 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
 void Server::updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass)
 {
 	CString classPacket = scriptClass->getClassPacket();
+	if (classPacket.isEmpty())
+		return;
 
 	// Update players.
 	for (auto& [id, player] : m_playerList)

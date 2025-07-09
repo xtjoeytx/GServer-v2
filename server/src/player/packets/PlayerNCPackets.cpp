@@ -385,20 +385,20 @@ HandlePacketResult PlayerNC::msgPLI_NC_CLASSADD(CString& pPacket)
 
 	// {113}{CHAR name length}{name}{GSTRING script}
 	std::string className = pPacket.readChars(pPacket.readGUChar()).toString();
-	CString classCode = pPacket.readString("").guntokenize();
+	auto classCode = string::join(string::fromCSV(pPacket.readString("").toString()), "\n"sv);
 
 	bool hasClass = false;
 	if (auto classObj = m_server->getNPCServer()->getClass(className).lock(); classObj != nullptr)
 	{
 		hasClass = true;
-		classObj->setScript(classCode.toStringView());
-		m_server->getNPCServer()->updateClass(className, classCode.toString());
+		classObj->setScript(classCode);
+		m_server->getNPCServer()->updateClass(className, classCode);
 		m_server->updateClassForPlayers(classObj);
 	}
 
 	if (!hasClass)
 	{
-		m_server->getNPCServer()->addClass(className, classCode.toStringView());
+		m_server->getNPCServer()->addClass(className, classCode);
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSADD << className);
 	}
 

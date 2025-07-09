@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
-#include <memory>
+#include <optional>
 #include <ranges>
 #include <sstream>
 #include <string_view>
@@ -523,6 +523,8 @@ std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant au
 		// Add the token to the vector.
 		if (end > start)
 			tokens.push_back(T{ strview.substr(start, end - start) });
+		else
+			tokens.push_back(T{});
 
 		start = end + 1;
 	}
@@ -644,21 +646,20 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 		}
 
 		// Check for an escaped character.
-		if (wordQuoted && (c == '\\' || c == '"'))
+		if (wordQuoted)
 		{
-			if (i + 1 >= str.length())
-				break;
-
-			const auto& next = str[i + 1];
+			std::optional<char> next;
+			if (i + 1 < str.length())
+				next = str[i + 1];
 
 			// Escaped backslash.
-			if (c == '\\' && next == '\\')
+			if (c == '\\' && next.has_value() && next.value() == '\\')
 			{
 				token += '\\';
 				++i;
 			}
 			// Escaped quote.
-			else if (c == '"' && next == '"')
+			else if (c == '"' && next.has_value() && next.value() == '"')
 			{
 				token += '"';
 				++i;
@@ -701,6 +702,7 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 			{
 				// Add the current character to the token.
 				token += c;
+				wordStart = false;
 			}
 		}
 	}
