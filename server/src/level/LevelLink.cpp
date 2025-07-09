@@ -72,12 +72,11 @@ void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
 Position<int16_t> LevelLink::getDestinationForCharacter(Character& character) const
 {
 	// TODO: Level links can use math, so we need to eventually throw this into the script engine.  Yikes.
-	Position<int16_t> result;
-	auto& [x, y] = result.data;
-
-	x = (m_destinationX == "playerx" ? character.pixelX : static_cast<int16_t>(string::toFloat(m_destinationX) * 16));
-	y = (m_destinationY == "playery" ? character.pixelY : static_cast<int16_t>(string::toFloat(m_destinationY) * 16));
-
+	Position<int16_t> result =
+	{
+		(m_destinationX == "playerx" ? character.pixelX : static_cast<int16_t>(string::toFloat(m_destinationX) * 16)),
+		(m_destinationY == "playery" ? character.pixelY : static_cast<int16_t>(string::toFloat(m_destinationY) * 16))
+	};
 	return result;
 }
 

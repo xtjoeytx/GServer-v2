@@ -7,7 +7,6 @@
 #include <ctime>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -614,9 +613,6 @@ bool PlayerClient::sendLogin()
 		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
 
 	m_fileQueue.sendCompress(true);
-
-	// Bind the player's variables.
-	constructScriptObjectParameters();
 
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
@@ -1340,7 +1336,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 	{
 		sendPacket(CString() << pLevel->getBoardChangesPacket(cachedModTime));
 		pLevel->sendHorsesToPlayer(shared_from_this());
-		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
+		sendPacket(CString() << pLevel->getBaddyPacket());
 	}
 
 	// If we are on a gmap, change our level back to the gmap.
@@ -1475,7 +1471,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, b
 	if (!fromAdjacent)
 	{
 		pLevel->sendHorsesToPlayer(shared_from_this());
-		sendPacket(CString() << pLevel->getBaddyPacket(m_versionId));
+		sendPacket(CString() << pLevel->getBaddyPacket());
 	}
 
 	if (fromAdjacent == false)
@@ -1711,10 +1707,10 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 		{
 			for (const auto& sign : level->getSigns())
 			{
-				Position<float> signTilePos = { static_cast<float>(sign->getX()), static_cast<float>(sign->getY()) };
+				TilePosition signTilePos = toTilePosition(sign.position);
 				if (getY() == signTilePos.y() && getX() >= signTilePos.x() - 1.5f && getX() <= signTilePos.x() + 0.5f)
 				{
-					sendSignMessage(sign->getUText().toString());
+					sendSignMessage(sign.unformattedText);
 					return true;
 				}
 			}
@@ -1742,7 +1738,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		return false;
 
 	// Test for links.
-	Position<uint8_t> testPosTiles = { (uint8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (uint8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
+	Position<int8_t> testPosTiles = { (int8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (int8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
 	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
 	{
 		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
@@ -1845,34 +1841,17 @@ void PlayerClient::dropItemsOnDeath()
 	}
 }
 
-// TODO(Nalin): This should be on the Level.  The client version should be something like dropItem.
-bool PlayerClient::spawnLevelItem(CString& pPacket, bool playerDrop)
+bool PlayerClient::dropItem(const PixelPosition& position, LevelItemType item)
 {
-	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
-	unsigned char item = pPacket.readGUChar();
-
-	LevelItemType itemType = LevelItem::getItemId(item);
-	if (itemType != LevelItemType::INVALID)
+	if (removeItem(item))
 	{
-		if (!playerDrop || removeItem(itemType))
+		if (auto level = getLevel(); level && level->addItem(position, item))
 		{
-			if (auto level = getLevel(); level && level->addItem(loc[0], loc[1], itemType))
-			{
-				std::set<PlayerID> exclude;
-				if (playerDrop) exclude.insert(m_id);
-
-				// TODO(NPCServer): Does 5.1+ really not support this?
-				if (m_server->Generation != ServerGeneration::MODERN)
-					m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD << (pPacket.text() + 1), level, exclude);
-			}
-			else
-			{
-				sendPacket(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1));
-			}
+			level->addItem(position, item);
+			return true;
 		}
 	}
-
-	return true;
+	return false;
 }
 
 bool PlayerClient::removeItem(LevelItemType itemType)

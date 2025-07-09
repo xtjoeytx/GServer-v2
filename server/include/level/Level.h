@@ -13,11 +13,13 @@
 #include <vector>
 
 #include <CString.h>
-#include <IUtil.h>
 
+#include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelBoardChange.h>
+#include <level/LevelBomb.h>
 #include <level/LevelChest.h>
+#include <level/LevelExplosion.h>
 #include <level/LevelHorse.h>
 #include <level/LevelItem.h>
 #include <level/LevelLink.h>
@@ -65,42 +67,39 @@ public:
 
 	void saveLevel(const std::string& filename);
 
-	// get crafted packets
-	CString getBaddyPacket(int clientVersion = CLVER_2_17);
-	CString getBoardPacket();
-	CString getLayerPacket(int i);
-	CString getBoardChangesPacket(time_t time);
-	CString getBoardChangesPacket2(time_t time);
-	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
-	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
-	void sendLinksToPlayer(std::shared_ptr<Player> player) const;
-	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
-	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
+	//! Does special events that should happen every second.
+	void doTimedEvents();
 
 public:
 	//! Gets the original level name.
 	//! \return The original level name.
 	const auto& getOriginalLevelName() const { return m_originalLevelName; }
 
-	//! Gets the raw level tile data.
-	//! \return A pointer to all 4096 raw level tiles.
-	LevelTiles& getTiles(int layer = 0) { return m_tiles[layer]; }
-
-	//! Gets a vector full of all the level chests.
-	//! \return The level chests.
-	auto& getChests() { return m_chests; }
+	//! Gets a vector full of the players on the level.
+	//! \return The players on the level.
+	std::deque<PlayerID>& getPlayers() { return m_players; }
 
 	//! Gets a vector full of the level npc ids.
 	//! \return The level npcs.
 	auto& getNPCs() { return m_npcs; }
 
-	//! Gets a vector full of the level signs.
-	//! \return The level signs.
+	auto& getArrows() { return m_arrows; }
+	auto& getBaddies() { return m_baddies; }
+	auto& getBombs() { return m_bombs; }
+	auto& getChests() { return m_chests; }
+	auto& getExplosions() { return m_explosions; }
+	auto& getHorses() { return m_horses; }
+	auto& getItems() { return m_items; }
+	auto& getLinks() { return m_links; }
 	auto& getSigns() { return m_signs; }
 
-	//! Gets a vector full of the level links.
-	//! \return The level links.
-	auto& getLinks() { return m_links; }
+	//! Gets the raw level tile data.
+	//! \return A pointer to all 4096 raw level tiles.
+	LevelTiles& getTiles(int layer = 0) { return m_tiles[layer]; }
+
+	//! Gets the tile data for all layers.
+	//! \return A map of all the layers and their tile data.
+	std::map<uint8_t, LevelTiles> getLayers() const { return m_tiles; }
 
 	//! Gets the gmap this level belongs to.
 	//! \return The gmap this level belongs to.
@@ -122,90 +121,30 @@ public:
 	//! \return The gmap y of this level on the map or 0 if it doesn't belong to a gmap.
 	uint8_t getGmapY() const;
 
-	//! Gets a vector full of the players on the level.
-	//! \return The players on the level.
-	std::deque<PlayerID>& getPlayers() { return m_players; }
-
-	//! Gets the tile data for all layers.
-	//! \return A map of all the layers and their tile data.
-	std::map<uint8_t, LevelTiles> getLayers() const { return m_tiles; }
-
 	//! Gets the status on whether players are on the level.
 	//! \return The level has players.  If true, the level has players on it.
 	bool hasPlayers() const { return !m_players.empty(); }
 
-	//! Adds a board change to the level.
-	//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
-	//! \param pX X location of the top-left tile.
-	//! \param pY Y location of the top-left tile.
-	//! \param pWidth How many tiles wide we are altering.
-	//! \param pHeight How many tiles high we are altering.
-	//! \param player The player who initiated this board change.
-	//! \return True if it succeeds, false if it doesn't.
-	bool alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, Player* player);
+	//! Gets if the player is the current level leader.
+	//! \param id The player id to check.
+	//! \return True if the player is the leader.
+	bool isPlayerLeader(PlayerID id) const;
 
-	//! Adds an item to the level.
-	//! \param pX X location of the item to add.
-	//! \param pY Y location of the item to add.
-	//! \param pItem The item we are adding.  Use LevelItem::getItemId() to get the item type from an item name.
-	//! \return True if it succeeds, false if it doesn't.
-	bool addItem(float pX, float pY, LevelItemType pItem);
+	bool hasLivingBaddies() const;
 
-	//! Removes an item from the level.
-	//! \param pX X location of the item to remove.
-	//! \param pY Y location of the item to remove.
-	//! \return The type of item removed.  Use LevelItem::getItemId() to get the item type from an item name.
-	LevelItemType removeItem(float pX, float pY);
+public:
+	CString getBaddyPacket();
+	CString getBoardPacket();
+	CString getLayerPacket(int i);
+	CString getBoardChangesPacket(time_t time);
+	CString getBoardChangesPacket2(time_t time);
+	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
+	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
+	void sendLinksToPlayer(std::shared_ptr<Player> player) const;
+	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
+	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
 
-	//! Adds a new horse to the level.
-	//! \param pImage The image of the horse.
-	//! \param pX X location of the horse.
-	//! \param pY Y location of the horse.
-	//! \param pDir The direction of the horse.
-	//! \param pBushes The bushes the horse has eaten.
-	//! \return Returns true if it succeeds.
-	bool addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes);
-
-	//! Removes a horse from the level.
-	//! \param pX X location of the horse to remove.
-	//! \param pY Y location of the horse to remove.
-	void removeHorse(float pX, float pY);
-
-	//! Adds a baddy to the level.
-	//! \param pX X location of the baddy to add.
-	//! \param pY Y location of the baddy to add.
-	//! \param pType The type of baddy to add.
-	//! \return A pointer to the new LevelBaddy.
-	LevelBaddy* addBaddy(float pX, float pY, BaddyType pType);
-
-	/// @brief Adds a new baddy to the level and sends it to the players inside.
-	//! \param pX X location of the baddy to add.
-	//! \param pY Y location of the baddy to add.
-	//! \param pType The type of baddy to add.
-	//! \return A pointer to the new LevelBaddy.
-	LevelBaddy* putNewBaddy(float x, float y, BaddyType type);
-
-	/// @brief Adds a new baddy to the level and sends it to the players inside.
-	/// @param x The X position of the baddy.
-	/// @param y The Y position of the baddy.
-	/// @param type The type of baddy to add.
-	/// @param power The power of the baddy.
-	/// @param image The custom image to use for the baddy, if any.
-	/// @return A pointer to the new LevelBaddy.
-	LevelBaddy* putNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image = {});
-
-	//! Removes a baddy from the level.
-	//! \param pId ID of the baddy to remove.
-	void removeBaddy(uint8_t pId);
-
-	//! Removes all baddies from the level.
-	void removeAllBaddies();
-
-	//! Finds a baddy by the specified id number.
-	//! \param pId The ID number of the baddy to find.
-	//! \return A pointer to the found LevelBaddy.
-	LevelBaddy* getBaddy(uint8_t id);
-
+public:
 	//! Adds a player to the level.
 	//! \param player The player to add.
 	//! \return The id number of the player in the level.
@@ -215,77 +154,95 @@ public:
 	//! \param player The player to remove.
 	void removePlayer(PlayerID id);
 
-	//! Gets if the player is the current level leader.
-	//! \param id The player id to check.
-	//! \return True if the player is the leader.
-	bool isPlayerLeader(PlayerID id);
-
+public:
 	//! Adds an NPC to the level.
 	//! \param npc NPC to add to the level.
 	//! \return True if the NPC was successfully added or false if it already exists in the level.
 	bool addNPC(std::shared_ptr<NPC> npc);
 	bool addNPC(NPCID npcId);
 
-	//! Adds a level link to the level.
-	//! \return A pointer to the new LevelLink.
-	LevelLink* addLink();
-
-	//! Adds a level link to the level.
-	//! \param pLink link string to parse
-	//! \return A pointer to the new LevelLink.
-	LevelLink* addLink(const std::vector<CString>& pLink);
-
-	//! Removes a level link from the level.
-	//! \param index link index to remove
-	//! \return true if removed, false otherwise
-	bool removeLink(uint32_t index);
-
-	//! Adds a level sign to the level.
-	//! \param pX x position
-	//! \param pY y position
-	//! \param pSign sign text
-	//! \param encoded true if the sign text is encoded
-	//! \return A pointer to the new LevelSign.
-	LevelSign* addSign(const int pX, const int pY, const CString& pSign, bool encoded = false);
-
-	//! Adds a level sign to the level.
-	//! \param index x position
-	//! \return true if removed, false otherwise.
-	bool removeSign(uint32_t index);
-
-	//! Adds a level chest to the level.
-	//! \param pX x position
-	//! \param pY y position
-	//! \param itemType which type of item the chest contains
-	//! \param signIndex signIndex of sign to pop when chest is opened
-	//! \return A pointer to the new LevelChest.
-	LevelChest* addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex);
-
-	//! Adds a level chest to the level.
-	//! \param index x position
-	//! \return true if removed, false otherwise.
-	bool removeChest(uint32_t index);
-
 	//! Removes an NPC from the level.
 	//! \param npc The NPC to remove.
 	void removeNPC(std::shared_ptr<NPC> npc);
 	void removeNPC(NPCID npcId);
 
-	//! Sets the map for the current level.
-	//! \param pMap Map the level is on.
-	//! \param pMapX X location on the map.
-	//! \param pMapY Y location on the map.
+public:
+	//! Adds a board change to the level.
+	//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
+	//! \param pX X location of the top-left tile.
+	//! \param pY Y location of the top-left tile.
+	//! \param pWidth How many tiles wide we are altering.
+	//! \param pHeight How many tiles high we are altering.
+	//! \param player The player who initiated this board change.
+	//! \return True if it succeeds, false if it doesn't.
+	bool alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player);
+
+public:
+	bool addArrow();
+
+public:
+	LevelBaddy* addBaddy(const PixelPosition& position, BaddyType type);
+	LevelBaddy* putNewBaddy(const PixelPosition& position, BaddyType type);
+	LevelBaddy* putNewBaddy(const PixelPosition& position, BaddyType type, uint8_t power, std::string_view image = {});
+	bool removeBaddy(uint8_t pId);
+	bool removeAllBaddies();
+	LevelBaddy* getBaddy(uint8_t id);
+
+public:
+	LevelBomb* addBomb(inform_client_t, const PixelPosition& position, uint8_t power);
+	LevelBomb* addBomb(const PixelPosition& position, uint8_t power);
+	bool removeBomb(inform_client_t, size_t index);
+	bool removeBomb(size_t index);
+	bool removeBomb(const PixelPosition& position);
+	LevelBomb* getBomb(size_t index);
+
+public:
+	LevelChest* addChest(const WholeTilePosition& position, const LevelItemType itemType, const int signIndex);
+	bool removeChest(size_t index);
+	LevelChest* getChest(size_t index);
+	std::optional<const LevelChest*> getChest(const WholeTilePosition& position) const;
+	CString getChestStr(LevelChest* chest) const;
+
+public:
+	void addExplosion(inform_client_t, const PixelPosition& position, uint8_t radius, uint8_t power);
+	void addExplosion(const PixelPosition& position, uint8_t radius, uint8_t power);
+	void addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t length, uint8_t power);
+	LevelExplosion* addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power);
+	bool removeExplosion(size_t index);
+	bool removeExplosion(const PixelPosition& position);
+	LevelExplosion* getExplosion(size_t index);
+
+public:
+	LevelHorse* addHorse(inform_client_t, std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes);
+	LevelHorse* addHorse(std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes);
+	bool removeHorse(inform_client_t, size_t index);
+	bool removeHorse(size_t index);
+	bool removeHorse(const PixelPosition& position);
+	LevelHorse* getHorse(size_t index);
+
+public:
+	LevelItem* addItem(inform_client_t, const PixelPosition& position, LevelItemType item);
+	LevelItem* addItem(const PixelPosition& position, LevelItemType item);
+	bool removeItem(inform_client_t, size_t index);
+	bool removeItem(size_t index);
+	LevelItemType removeItem(const PixelPosition& position);
+	LevelItem* getItem(size_t index);
+
+public:
+	LevelLink* addLink();
+	LevelLink* addLink(const std::vector<CString>& pLink);
+	bool removeLink(uint32_t index);
+	std::optional<const LevelLink*> getLink(const WholeTilePosition& position, bool excludeOverworld = false) const;
+
+public:
+	LevelSign* addSign(const WholeTilePosition& position, const CString& sign, bool encoded = false);
+	bool removeSign(uint32_t index);
+	LevelSign* getSign(size_t index);
+
+public:
 	void setMap(std::weak_ptr<Map> pMap, int pMapX = 0, int pMapY = 0);
 
-	//! Does special events that should happen every second.
-	//! \return Currently, it always returns true.
-	bool doTimedEvents();
-
-	std::optional<LevelChest*> getChest(int x, int y) const;
-	std::optional<LevelLink*> getLink(const Position<uint8_t>& position, bool excludeOverworld = false) const;
-	CString getChestStr(LevelChest* chest) const;
-	bool hasLivingBaddies() const;
-
+public:
 	bool isOnWall(const Position<uint8_t>& tilePosition);
 	bool isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags = 0);
 	bool isOnWater(const Position<uint8_t>& tilePosition);
@@ -314,13 +271,16 @@ private:
 	std::string m_fileVersion;
 	std::filesystem::path m_filePath;
 
-	std::vector<LevelBaddyPtr> m_baddies;
+	std::vector<LevelBaddy> m_baddies;
 	std::vector<LevelBoardChange> m_boardChanges;
-	std::vector<LevelChestPtr> m_chests;
+	std::vector<LevelArrow> m_arrows;
+	std::vector<LevelBomb> m_bombs;
+	std::vector<LevelChest> m_chests;
+	std::vector<LevelExplosion> m_explosions;
 	std::vector<LevelHorse> m_horses;
 	std::vector<LevelItem> m_items;
-	std::vector<LevelLinkPtr> m_links;
-	std::vector<LevelSignPtr> m_signs;
+	std::vector<LevelLink> m_links;
+	std::vector<LevelSign> m_signs;
 	std::vector<NPCID> m_npcs;
 	std::deque<PlayerID> m_players;
 };

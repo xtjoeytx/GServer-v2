@@ -1,13 +1,16 @@
 #ifndef LEVELITEM_H
 #define LEVELITEM_H
 
+#include <chrono>
 #include <cstdint>
-#include <ctime>
 #include <string>
 #include <type_traits>
 
 #include <CString.h>
-#include <CTimeout.h>
+
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -45,43 +48,34 @@ enum class LevelItemType
 	SPINATTACK = 24
 };
 
+/// @brief Level items disappear after 8.2 seconds;
+constexpr clock::duration LevelItemTimeout = std::chrono::milliseconds(8200);
+
 class Player;
-class LevelItem
+struct LevelItem
 {
-public:
-	LevelItem(float pX, float pY, LevelItemType pItem) : m_x(pX), m_y(pY), m_item(pItem)
-	{
-		timeout.setTimeout(10);
-	}
-
-	// Return the packet to be sent to the player.
-	CString getItemStr() const;
-
-	// Get functions.
-	float getX() const { return m_x; }
-	float getY() const { return m_y; }
-	LevelItemType getItem() const { return m_item; }
-	time_t getModTime() const { return m_modTime; }
-
-	CTimeout timeout;
-
-	// Static functions.
 	static LevelItemType getItemId(signed char itemId);
 	static LevelItemType getItemId(const std::string& pItemName);
 	static std::string getItemName(LevelItemType itemId);
 	static CString getItemPlayerProp(LevelItemType itemType, Player* player);
 	static CString getItemPlayerProp(const std::string& pItemName, Player* player);
 	static constexpr auto getItemTypeId(LevelItemType val);
-
 	static bool isRupeeType(LevelItemType itemType);
 	static uint16_t GetRupeeCount(LevelItemType type);
 
-private:
-	float m_x;
-	float m_y;
-	LevelItemType m_item;
-	time_t m_modTime = time(0);
+	float getTileX() const { return position.x() / 16.0f; }
+	float getTileY() const { return position.y() / 16.0f; }
+
+	PixelPosition position;
+	LevelItemType item;
+	clock::time_point modTime;
+	TimeoutGenerator timeout;
+
+	[[inline]] void constructScriptParameters();
+	string_map<GameVariable> scriptParameters;
 };
+
+//----------------------------
 
 inline CString LevelItem::getItemPlayerProp(const std::string& pItemName, Player* player)
 {
@@ -113,6 +107,18 @@ inline uint16_t LevelItem::GetRupeeCount(LevelItemType type)
 inline bool LevelItem::isRupeeType(LevelItemType itemType)
 {
 	return GetRupeeCount(itemType) > 0;
+}
+
+//----------------------------
+
+inline void LevelItem::constructScriptParameters()
+{
+	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)item; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("time", set_temporary, "time",
+		gameVariableGetter([this]() { return std::chrono::duration_cast<duration_seconds_double>(timeout.getRemainingTime()).count(); }),
+		GameVariable::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

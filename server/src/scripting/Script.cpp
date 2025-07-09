@@ -149,9 +149,9 @@ void Script::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) 
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
 
-	for (; !events.queue().empty(); events.queue().pop())
+	for (; !events.queue().empty(); events.queue().pop_back())
 	{
-		auto& event = events.queue().front();
+		auto& event = events.queue().back();
 		auto* engine = m_server_script->engine;
 		engine->execute(event, source, m_server_script);
 	}

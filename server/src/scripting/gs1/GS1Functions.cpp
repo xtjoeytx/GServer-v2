@@ -23,6 +23,7 @@
 #include <IEnums.h>
 
 #include <Server.h>
+#include <level/LevelBaddy.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -990,7 +991,25 @@ GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, con
 // The index of the bomb at level position (x, y), or -1 if there is no bomb at that position.
 GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function testbomb not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& bombs = level->getBombs();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < bombs.size(); ++i)
+		{
+			auto& bomb = bombs[i];
+			if (bomb.position.x() == x && bomb.position.y() == y)
+				return static_cast<double>(i);
+		}
+	}
+
+	return -1.0;
 }
 
 // testcompu(x, y)
@@ -998,42 +1017,99 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testcompu requires exactly two arguments");
+		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	/*
-	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
+		auto& baddies = level->getBaddies();
 		auto* server = BabyDI::Get<Server>();
-		// TODO: Need a way to iterate through the level baddies.
+		for (size_t i = 0; i < baddies.size(); ++i)
+		{
+			auto& baddy = baddies[i];
+			if (baddy.position.x() == x && baddy.position.y() == y && baddy.mode != BaddyMode::DEAD)
+				return static_cast<double>(i);
+		}
 	}
-	return 0.0;
-	*/
 
-	throw unimplemented_error("Built-in function testcompu not implemented");
+	return -1.0;
 }
 
 // testexplo(x, y)
 // The index of the explosion at level position (x, y), or -1 if there is no explosion at that position.
 GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function testexplo not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& explos = level->getExplosions();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < explos.size(); ++i)
+		{
+			auto& explo = explos[i];
+			if (explo.position.x() == x && explo.position.y() == y)
+				return static_cast<double>(i);
+		}
+	}
+
+	return -1.0;
 }
 
 // testhorse(x, y)
 // The index of the horse at level position (x, y), or -1 if there is no horse at that position.
 GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function testhorse not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testhorse requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& horses = level->getHorses();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < horses.size(); ++i)
+		{
+			auto& horse = horses[i];
+			if (horse.position.x() == x && horse.position.y() == y)
+				return static_cast<double>(i);
+		}
+	}
+
+	return -1.0;
 }
 
 // testitem(x, y)
 // The index of the item at level position (x, y), or -1 if there is no item at that position.
 GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function testitem not implemented");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+
+	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto& items = level->getItems();
+		auto* server = BabyDI::Get<Server>();
+		for (size_t i = 0; i < items.size(); ++i)
+		{
+			auto& item = items[i];
+			if (item.position.x() == x && item.position.y() == y)
+				return static_cast<double>(i);
+		}
+	}
+
+	return -1.0;
 }
 
 // testnpc(x, y)
@@ -1097,8 +1173,8 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1107,7 +1183,7 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 		for (size_t i = 0; i < signs.size(); ++i)
 		{
 			auto& sign = signs[i];
-			if (sign->getX() == x && sign->getY() == y)
+			if (sign.position.x() == x && sign.position.y() == y)
 				return static_cast<double>(i);
 		}
 	}

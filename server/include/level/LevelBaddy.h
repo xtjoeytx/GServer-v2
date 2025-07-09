@@ -8,8 +8,11 @@
 #include <vector>
 
 #include <CString.h>
-#include <CTimeout.h>
 #include <IUtil.h>
+
+#include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -79,7 +82,7 @@ class Level;
 class LevelBaddy
 {
 public:
-	LevelBaddy(float x, float y, BaddyType type, std::weak_ptr<Level> level);
+	LevelBaddy(const PixelPosition& position, BaddyType type, std::weak_ptr<Level> level);
 
 	void reset();
 	void dropItem() const;
@@ -87,8 +90,8 @@ public:
 	bool canBeReplaced() const { return !m_canRespawn && mode == BaddyMode::DEAD; }
 
 public:
-	CString getProp(BaddyProp propId, int clientVersion = CLVER_2_17) const;
-	CString getProps(int clientVersion = CLVER_2_17) const;
+	CString getProp(BaddyProp propId) const;
+	CString getProps() const;
 	void setPropsFromPacket(CString& pProps);
 
 public:
@@ -96,27 +99,47 @@ public:
 	void setImage(std::string_view image);
 
 public:
+	float getTileX() const { return position.x() / 16.0f; }
+	float getTileY() const { return position.y() / 16.0f; }
+
+public:
 	uint8_t id;
 	BaddyType type;
-	int8_t x;
-	int8_t y;
+	PixelPosition position;
 	BaddyMode mode;
 	uint8_t power;
 	uint8_t animation;
 	uint8_t direction;
+	uint8_t headDirection;
 	std::string image;
 	std::vector<std::string> verses;
 
-	CTimeout timeout;
+	TimeoutGenerator timeout;
+
+public:
+	[[inline]] void constructScriptParameters();
+	string_map<GameVariable> scriptParameters;
 
 private:
 	std::weak_ptr<Level> m_level;
-	int8_t m_originalX, m_originalY;
+	Position<int16_t> m_originalPosition;
 	bool m_canRespawn = true;
 	bool m_hasCustomImage = false;
 };
 
-using LevelBaddyPtr = std::unique_ptr<LevelBaddy>;
+//----------------------------
+
+inline void LevelBaddy::constructScriptParameters()
+{
+	// TODO: headdir
+	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)type; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("dir", set_temporary, "dir", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("headdir", set_temporary, "headdir", gameVariableGetter([this]() { return (double)headDirection; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("power", set_temporary, "power", gameVariableGetter([this]() { return (double)power; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("mode", set_temporary, "mode", gameVariableGetter([this]() { return (double)mode; }), GameVariable::func_set{});
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

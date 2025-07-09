@@ -524,8 +524,8 @@ void PropertyImagePart::deserialize(CString& data)
 	width = data.readGUChar();
 	height = data.readGUChar();
 
-	imagePart.position.data = std::make_tuple(x, y);
-	imagePart.size.data = std::make_tuple(width, height);
+	imagePart.position = { x ,y };
+	imagePart.size = { width, height };
 }
 
 void PropertyImagePart::apply(const GameValue& gameValue)
@@ -535,8 +535,8 @@ void PropertyImagePart::apply(const GameValue& gameValue)
 		return;
 
 	auto& values = array.value();
-	imagePart.position.data = std::make_tuple(static_cast<uint16_t>(values[0]), static_cast<uint16_t>(values[1]));
-	imagePart.size.data = std::make_tuple(static_cast<uint8_t>(values[2]), static_cast<uint8_t>(values[3]));
+	imagePart.position = { static_cast<uint16_t>(values[0]), static_cast<uint16_t>(values[1]) };
+	imagePart.size = { static_cast<uint8_t>(values[2]), static_cast<uint8_t>(values[3]) };
 }
 
 std::format_context::iterator PropertyImagePart::format(std::format_context& ctx) const

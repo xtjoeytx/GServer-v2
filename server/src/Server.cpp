@@ -326,20 +326,18 @@ bool Server::doMain()
 	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
-	auto curTime = std::chrono::high_resolution_clock::now();
+	m_frameStartTimeHighPrecision = std::chrono::high_resolution_clock::now();
 	m_frameStartTime = currentTime();
 
 	// Update the NPC server.
 	if (hasNPCServer())
-	{
-		m_npcServer->update(curTime);
-	}
+		m_npcServer->update(m_frameStartTimeHighPrecision);
 
 	// Update our events.
-	m_timedEvents.update(curTime);
-	m_timedSave.update(curTime);
-	m_timedNWTime.update(curTime);
-	m_timedMaintenance.update(curTime);
+	m_timedEvents.update(m_frameStartTimeHighPrecision);
+	m_timedSave.update(m_frameStartTimeHighPrecision);
+	m_timedNWTime.update(m_frameStartTimeHighPrecision);
+	m_timedMaintenance.update(m_frameStartTimeHighPrecision);
 
 	return true;
 }

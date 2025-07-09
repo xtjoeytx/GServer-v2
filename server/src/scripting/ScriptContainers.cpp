@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 #include <functional>
 #include <map>
@@ -360,25 +361,40 @@ std::vector<std::string> GameVariableStore::serialize(std::string_view name) con
 // ScriptEventQueue
 ////////////////////////////////////////////////////////////
 
+bool ScriptEventQueue::hasEvent(ScriptEventType type, ScriptObjectSource initiator)
+{
+	return std::ranges::find_if(m_eventQueue,
+		[type, initiator](ScriptEvent& event)
+		{
+			return event.type == type && event.initiator == initiator && event.args.size() == 0;
+		}) != m_eventQueue.end();
+}
+
 void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator)
 {
-	auto* server = BabyDI::Get<Server>();
-	if (server != nullptr && server->hasNPCServer())
-		m_eventQueue.push(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
+	if (hasEvent(type, initiator))
+		return;
+	
+	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+		m_eventQueue.push_back(std::move(ScriptEvent{ .type = type, .initiator = initiator }));
 }
 
 void ScriptEventQueue::addEvent(const ScriptEvent& event)
 {
-	auto* server = BabyDI::Get<Server>();
-	if (server != nullptr && server->hasNPCServer())
-		m_eventQueue.push(event);
+	if (hasEvent(event.type, event.initiator))
+		return;
+
+	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+		m_eventQueue.push_back(event);
 }
 
 void ScriptEventQueue::addEvent(ScriptEvent&& event)
 {
-	auto* server = BabyDI::Get<Server>();
-	if (server != nullptr && server->hasNPCServer())
-		m_eventQueue.push(std::move(event));
+	if (hasEvent(event.type, event.initiator))
+		return;
+
+	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+		m_eventQueue.push_back(std::move(event));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

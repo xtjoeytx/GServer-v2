@@ -1,7 +1,10 @@
+#include <string_view>
+
 #include <CString.h>
 
 #include <level/LevelSign.h>
 #include <object/Player.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -116,42 +119,43 @@ CString encodeSign(const CString& pSignText)
 	return retVal;
 }
 
-LevelSign::LevelSign(const int pX, const int pY, const CString& pSign, bool encoded)
-	: m_x(pX), m_y(pY), m_unformattedText(pSign)
+LevelSign::LevelSign(const WholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
+	: position(position), unformattedText(signText)
 {
-	if (encoded)
+	if (signTextIsEncoded)
 	{
-		m_text = m_unformattedText;
-		m_unformattedText = decodeSignCode(m_unformattedText);
+		text = unformattedText;
+		unformattedText = decodeSignCode(unformattedText);
 	}
-	else
-		m_text = encodeSign(m_unformattedText);
+	else text = encodeSign(unformattedText);
 }
 
-CString LevelSign::getSignStr(Player* pPlayer) const
+CString LevelSign::getSignPacket(Player* pPlayer) const
 {
 	CString outText;
 
 	// Write the x and y location to the packet.
-	outText.writeGChar(m_x);
-	outText.writeGChar(m_y);
+	outText.writeGChar(position.x());
+	outText.writeGChar(position.y());
 
 	// Write the text to the packet.
-	outText.write(pPlayer ? encodeSign(pPlayer->translate(m_unformattedText)) : m_text);
+	outText.write(pPlayer ? encodeSign(pPlayer->translate(unformattedText)) : text);
 
 	return outText;
 }
 
-void LevelSign::setText(const CString& value)
+void LevelSign::setText(std::string_view signText, bool signTextIsEncoded)
 {
-	m_text = value;
-	m_unformattedText = decodeSignCode(value);
-}
-
-void LevelSign::setUText(const CString& value)
-{
-	m_text = encodeSign(value);
-	m_unformattedText = value;
+	if (signTextIsEncoded)
+	{
+		text = signText;
+		unformattedText = decodeSignCode(signText);
+	}
+	else
+	{
+		text = encodeSign(signText);
+		unformattedText = signText;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,12 +1,10 @@
 #ifndef LEVELLINK_H
 #define LEVELLINK_H
 
-#include <memory>
-#include <vector>
 #include <cstdint>
-#include <string>
 #include <string_view>
-#include <tuple>
+#include <string>
+#include <vector>
 
 #include <CString.h>
 
@@ -18,7 +16,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class LevelLink : public std::enable_shared_from_this<LevelLink>
+class LevelLink
 {
 public:
 	// constructor - destructor
@@ -55,11 +53,8 @@ private:
 	bool m_constantY = false;
 };
 
-using LevelLinkPtr = std::shared_ptr<LevelLink>;
+//----------------------------
 
-/*
-	LevelLink: Get Private Variables
-*/
 inline const std::string& LevelLink::getDestinationLevel() const
 {
 	return m_destinationLevel;
@@ -74,7 +69,6 @@ inline const std::string& LevelLink::getDestinationY() const
 {
 	return m_destinationY;
 }
-
 
 inline const Rectangle<uint8_t, uint8_t>& LevelLink::getBoundingBox() const
 {
@@ -98,22 +92,22 @@ inline void LevelLink::setDestinationY(std::string_view newY)
 
 inline void LevelLink::setX(uint8_t posX)
 {
-	std::get<0>(m_boundingBox.position.data) = posX;
+	m_boundingBox.position.x() = posX;
 }
 
 inline void LevelLink::setY(uint8_t posY)
 {
-	std::get<1>(m_boundingBox.position.data) = posY;
+	m_boundingBox.position.y() = posY;
 }
 
 inline void LevelLink::setWidth(uint8_t width)
 {
-	std::get<0>(m_boundingBox.size.data) = width;
+	m_boundingBox.size.width() = width;
 }
 
 inline void LevelLink::setHeight(uint8_t height)
 {
-	std::get<1>(m_boundingBox.size.data) = height;
+	m_boundingBox.size.height() = height;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

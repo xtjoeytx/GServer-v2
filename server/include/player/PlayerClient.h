@@ -169,7 +169,7 @@ public:
 	HandlePacketResult msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 
 protected:
-	bool spawnLevelItem(CString& pPacket, bool playerDrop = true);
+	bool dropItem(const PixelPosition& position, LevelItemType item);
 	bool removeItem(LevelItemType itemType);
 
 protected:

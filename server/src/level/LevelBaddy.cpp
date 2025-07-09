@@ -33,8 +33,8 @@ constexpr const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-LevelBaddy::LevelBaddy(float x, float y, BaddyType type, std::weak_ptr<Level> level)
-	: m_level(level), type(type), m_originalX(x), m_originalY(y)
+LevelBaddy::LevelBaddy(const PixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
+	: type(type), position(position), m_level(level), m_originalPosition(position)
 {
 	if (PROPID(type) > baddytypes) type = BaddyType::GRAYSOLDIER;
 	verses.resize(3);
@@ -44,11 +44,10 @@ LevelBaddy::LevelBaddy(float x, float y, BaddyType type, std::weak_ptr<Level> le
 void LevelBaddy::reset()
 {
 	mode = baddyStartMode[PROPID(type)];
-	x = m_originalX;
-	y = m_originalY;
 	power = baddyPower[PROPID(type)];
 	image = baddyImages[PROPID(type)];
-	direction = (2 << 2) | 2; // Both head/body direction is encoded in dir.
+	direction = 2;
+	headDirection = 2;
 	animation = 0;
 	m_hasCustomImage = false;
 }
@@ -81,17 +80,11 @@ void LevelBaddy::dropItem() const
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (auto lvl = m_level.lock(); lvl)
-		{
-			if (lvl->addItem(this->x, this->y, itemType))
-			{
-				auto server = BabyDI::Get<Server>();
-				server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(this->x * 2) >> (char)(this->y * 2) >> (char)LevelItem::getItemTypeId(itemType), m_level);
-			}
-		}
+			lvl->addItem(inform_client, position, itemType);
 	}
 }
 
-CString LevelBaddy::getProp(BaddyProp propId, int clientVersion) const
+CString LevelBaddy::getProp(BaddyProp propId) const
 {
 	switch (propId)
 	{
@@ -99,17 +92,18 @@ CString LevelBaddy::getProp(BaddyProp propId, int clientVersion) const
 			return CString() >> (char)id;
 
 		case BaddyProp::X:
-			return CString() >> (char)(x * 2);
+			return CString() >> (char)(position.x() / 8);
 
 		case BaddyProp::Y:
-			return CString() >> (char)(y * 2);
+			return CString() >> (char)(position.y() / 8);
 
 		case BaddyProp::TYPE:
 			return CString() >> (char)PROPID(type);
 
 		case BaddyProp::POWERIMAGE:
 		{
-			if (clientVersion < CLVER_2_1 && image == baddyImages[PROPID(type)])
+			auto server = BabyDI::Get<Server>();
+			if (server->Generation == ServerGeneration::ORIGINAL && image == baddyImages[PROPID(type)])
 				return CString() >> (char)power >> (char)image.length() << string::replace(image, ".png", ".gif");
 			else
 				return CString() >> (char)power >> (char)image.length() << image;
@@ -122,7 +116,7 @@ CString LevelBaddy::getProp(BaddyProp propId, int clientVersion) const
 			return CString() >> (char)animation;
 
 		case BaddyProp::DIR:
-			return CString() >> (char)direction;
+			return CString() >> (char)(headDirection << 2 | direction);
 
 		case BaddyProp::VERSESIGHT:
 		case BaddyProp::VERSEHURT:
@@ -138,11 +132,11 @@ CString LevelBaddy::getProp(BaddyProp propId, int clientVersion) const
 	return CString();
 }
 
-CString LevelBaddy::getProps(int clientVersion) const
+CString LevelBaddy::getProps() const
 {
 	CString retVal;
 	for (int i = 1; i < BADDYPROP_COUNT; i++)
-		retVal >> (char)i << getProp(static_cast<BaddyProp>(i), clientVersion);
+		retVal >> (char)i << getProp(static_cast<BaddyProp>(i));
 	return retVal;
 }
 
@@ -160,13 +154,11 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				break;
 
 			case BaddyProp::X:
-				x = (float)pProps.readGChar() / 2.0f;
-				x = clip(x, 0.0f, 63.5f);
+				position.x() = static_cast<int16_t>(std::clamp(pProps.readGChar() * 8, 0, 1016)); // 0 - 63.5
 				break;
 
 			case BaddyProp::Y:
-				y = (float)pProps.readGChar() / 2.0f;
-				y = clip(y, 0.0f, 63.5f);
+				position.y() = static_cast<int16_t>(std::clamp(pProps.readGChar() * 8, 0, 1016)); // 0 - 63.5
 				break;
 
 			case BaddyProp::TYPE:
@@ -197,27 +189,70 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 			break;
 
 			case BaddyProp::MODE:
+			{
 				mode = static_cast<BaddyMode>(pProps.readGChar());
+
+				// Swamp soldiers can get stuck in a hurt animation and become invulnerable.
+				auto fixStuckSwampSolder = [this, server](int)
+				{
+					if (power == 1)
+					{
+						mode = BaddyMode::SWAMPSHOT;
+						server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, m_level);
+					}
+				};
+
+				// Reset and respawn baddies.
+				auto respawnBaddy = [this, server](int)
+				{
+					if (!canRespawn()) return;
+					reset();
+					server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), m_level);
+				};
+
+				// Set baddies to dead.
+				auto setDead = [this, server, respawnBaddy](int)
+				{
+					mode = BaddyMode::DEAD;
+					if (canRespawn())
+					{
+						timeout.callbackIterations = respawnBaddy;
+						timeout.startFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
+					}
+
+					// Set the baddy as dead for all the other players in the level.
+					server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, m_level);
+
+					// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
+					if (auto level = m_level.lock(); level != nullptr)
+					{
+						if (!level->hasLivingBaddies())
+							server->queueNPCEvent(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
+					}
+				};
+
 				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
-					// Workaround for buggy client.  In 2 seconds, set us back to BaddyMode::SWAMPSHOT from inside Level.cpp.
-					timeout.setTimeout(2);
+					timeout.callbackIterations = fixStuckSwampSolder;
+					timeout.startFor(2s);
 				}
 				else if (mode == BaddyMode::DIE)
 				{
-					// In 2 seconds, set our mode to BaddyMode::DEAD inside Level.cpp.
-					timeout.setTimeout(2);
-
 					// Drop items when dead.
 					if (server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
+
+					// Set the baddy to dead after 2 seconds.
+					timeout.callbackIterations = setDead;
+					timeout.startFor(2s);
 				}
-				else if (mode == BaddyMode::DEAD)
+				else if (mode == BaddyMode::DEAD && m_canRespawn)
 				{
-					if (m_canRespawn)
-						timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
+					timeout.callbackIterations = respawnBaddy;
+					timeout.startFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
 				}
 				break;
+			}
 
 			case BaddyProp::ANI:
 				animation = pProps.readGChar();
@@ -225,6 +260,8 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 
 			case BaddyProp::DIR:
 				direction = pProps.readGChar();
+				headDirection = direction >> 2;
+				direction &= 0b11;
 				break;
 
 			case BaddyProp::VERSESIGHT:

@@ -25,7 +25,9 @@
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelBoardChange.h>
+#include <level/LevelBomb.h>
 #include <level/LevelChest.h>
+#include <level/LevelExplosion.h>
 #include <level/LevelHorse.h>
 #include <level/LevelItem.h>
 #include <level/LevelLink.h>
@@ -43,6 +45,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -106,7 +109,7 @@ Level::~Level()
 	// Delete items.
 	for (auto& item : m_items)
 	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.position.x() / 8) >> (char)(item.position.y() / 8);
 		for (auto& player : m_players)
 		{
 			if (auto p = server->getPlayer(player); p)
@@ -121,141 +124,66 @@ Level::~Level()
 	// TODO: Warp players out?
 }
 
-/*
-	Level: Get Crafted Packets
-*/
-CString Level::getBaddyPacket(int clientVersion)
-{
-	CString retVal;
-	for (const auto& baddy: m_baddies)
-	{
-		if (baddy == nullptr)
-			continue;
+//----------------------------
 
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(clientVersion) << "\n";
-	}
-	return retVal;
-}
-
-CString Level::getBoardPacket()
-{
-	CString retVal;
-	retVal.writeGChar(PLO_BOARDPACKET);
-	retVal.write((char*)m_tiles[0], sizeof(short[4096]));
-	retVal << "\n";
-
-	return retVal;
-}
-
-CString Level::getLayerPacket(int layer)
-{
-	CString retVal;
-	retVal.writeGChar(PLO_BOARDLAYER);
-
-	// TODO: Only send the tiles that has been placed on the layer
-	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
-	retVal.write((char*)m_tiles[layer], sizeof(short[4096]));
-	retVal << "\n";
-
-	return retVal;
-}
-
-CString Level::getBoardChangesPacket(time_t time)
-{
-	CString retVal;
-	retVal >> (char)PLO_LEVELBOARD;
-	for (const auto& change: m_boardChanges)
-	{
-		if (change.getModTime() >= time)
-			retVal << change.getBoardStr();
-	}
-	return retVal;
-}
-
-CString Level::getBoardChangesPacket2(time_t time)
-{
-	CString retVal;
-	retVal >> (char)PLO_BOARDMODIFY;
-	for (const auto& change: m_boardChanges)
-	{
-		if (change.getModTime() >= time)
-			retVal << change.getBoardStr();
-	}
-	return retVal;
-}
-
-void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
-{
-	CString packet;
-	for (auto& chest: m_chests)
-	{
-		bool hasChest = player->account.hasChest(levelName, chest->getX(), chest->getY());
-
-		packet = CString() >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest->getX() >> (char)chest->getY();
-		if (!hasChest) packet >> (char)chest->getItemIndex() >> (char)chest->getSignIndex();
-		player->sendPacket(packet);
-	}
-}
-
-void Level::sendHorsesToPlayer(std::shared_ptr<Player> player) const
-{
-	for (auto& horse: m_horses)
-		player->sendPacket(CString() >> (char)PLO_HORSEADD << horse.getHorseStr());
-}
-
-void Level::sendLinksToPlayer(std::shared_ptr<Player> player) const
-{
-	for (const auto& link : m_links)
-		player->sendPacket(CString() >> (char)PLO_LEVELLINK << link->getLinkStr());
-}
-
-void Level::sendSignsToPlayer(std::shared_ptr<Player> player) const
-{
-	for (const auto& sign : m_signs)
-		player->sendPacket(CString() >> (char)PLO_LEVELSIGN << sign->getSignStr(player.get()));
-}
-
-// TODO: Replace with a function in server that sends npc props from a list of ids.
-void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const
+std::shared_ptr<Level> Level::findLevel(std::string_view levelName, bool loadAbsolute)
 {
 	auto server = BabyDI::Get<Server>();
-	for (const auto& npcId : m_npcs)
+	auto& levelList = server->getLevelList();
+
+	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
+	// 	this is still going to break on the first occurrence.
+
+	// Find Appropriate Level by Name
+	std::string lowerCaseLevel = string::toLower(levelName);
+	if (auto it = levelList.find(lowerCaseLevel); it != levelList.end())
+		return it->second;
+
+	if (loadAbsolute)
 	{
-		auto npc = server->getNPC(npcId);
-		if (!npc) continue;
+		FileSystem* fileSystem = server->getFileSystem();
+		if (!server->getSettings().getBool("nofoldersconfig", false))
+			fileSystem = server->getFileSystem(FS_LEVEL);
 
-		auto packet = npc->getAllPropsPacket(time);
-		if (packet.isEmpty())
-			continue;
-
-		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
-		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+		if (fileSystem->find(levelName).trim().length() == 0)
 		{
-			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
-			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
-			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
-			player->sendPacket(byteCodePacket);
+			fileSystem->addFile(levelName);
+			fileSystem->addDir(getPath(levelName), "*", true);
 		}
 	}
+
+	// Load New Level
+	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
+	if (level == nullptr)
+		return nullptr;
+
+	// Return Level
+	levelList.insert(std::make_pair(lowerCaseLevel, level));
+	return level;
 }
 
-uint8_t Level::getGmapX() const
+std::shared_ptr<Level> Level::createLevel(uint16_t fillTile, std::string_view levelName)
 {
-	if (auto map = m_map.lock(); map && map->isGmap())
-		return m_mapX;
-	return 0;
+	auto server = BabyDI::Get<Server>();
+	auto& levelList = server->getLevelList();
+
+	// Load New Level
+	auto level = std::shared_ptr<Level>(new Level(fillTile));
+	level->levelName = levelName;
+
+	// Return Level
+	levelList.insert(std::make_pair(string::toLower(levelName), level));
+	return level;
 }
 
-uint8_t Level::getGmapY() const
+std::shared_ptr<Level> Level::clone(LevelPtr level)
 {
-	if (auto map = m_map.lock(); map && map->isGmap())
-		return m_mapY;
-	return 0;
+	if (level == nullptr) return nullptr;
+	return LevelLoader::loadLevel(std::filesystem::path{ level->levelName });
 }
 
-/*
-	Level: Level-Loading Functions
-*/
+//----------------------------
+
 bool Level::reload()
 {
 	auto server = BabyDI::Get<Server>();
@@ -283,8 +211,8 @@ bool Level::reload()
 	// Kill off all the baddies and disable respawn.
 	for (size_t i = 0; i < m_baddies.size(); ++i)
 	{
-		m_baddies[i]->setRespawn(false);
-		m_baddies[i]->mode = BaddyMode::DEAD;
+		m_baddies[i].setRespawn(false);
+		m_baddies[i].mode = BaddyMode::DEAD;
 	}
 
 	// Delete chests.
@@ -299,7 +227,7 @@ bool Level::reload()
 	// Delete items.
 	for (const auto& item : m_items)
 	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.getX() * 2) >> (char)(item.getY() * 2);
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.position.x() / 8) >> (char)(item.position.y() / 8);
 		for (auto& playerId : m_players)
 		{
 			if (auto player = server->getPlayer(playerId); player)
@@ -347,71 +275,6 @@ bool Level::reload()
 	return ret;
 }
 
-std::shared_ptr<Level> Level::clone(LevelPtr level)
-{
-	if (level == nullptr) return nullptr;
-	return LevelLoader::loadLevel(std::filesystem::path{ level->levelName });
-}
-
-/*
-	Level: Find Level
-*/
-std::shared_ptr<Level> Level::findLevel(std::string_view levelName, bool loadAbsolute)
-{
-	auto server = BabyDI::Get<Server>();
-	auto& levelList = server->getLevelList();
-
-	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
-	// 	this is still going to break on the first occurrence.
-
-	// Find Appropriate Level by Name
-	std::string lowerCaseLevel = string::toLower(levelName);
-	if (auto it = levelList.find(lowerCaseLevel); it != levelList.end())
-		return it->second;
-
-	if (loadAbsolute)
-	{
-		FileSystem* fileSystem = server->getFileSystem();
-		if (!server->getSettings().getBool("nofoldersconfig", false))
-			fileSystem = server->getFileSystem(FS_LEVEL);
-
-		if (fileSystem->find(levelName).trim().length() == 0)
-		{
-			fileSystem->addFile(levelName);
-			fileSystem->addDir(getPath(levelName), "*", true);
-		}
-	}
-
-	// Load New Level
-	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
-	if (level == nullptr)
-		return nullptr;
-
-	// Return Level
-	levelList.insert(std::make_pair(lowerCaseLevel, level));
-	return level;
-}
-
-/*
-	Level: Create Level
-*/
-std::shared_ptr<Level> Level::createLevel(uint16_t fillTile, std::string_view levelName)
-{
-	auto server = BabyDI::Get<Server>();
-	auto& levelList = server->getLevelList();
-
-	// Load New Level
-	auto level = std::shared_ptr<Level>(new Level(fillTile));
-	level->levelName = levelName;
-
-	// Return Level
-	levelList.insert(std::make_pair(string::toLower(levelName), level));
-	return level;
-}
-
-/*
-	Level: Save Level
-*/
 void Level::saveLevel(const std::string& filename)
 {
 	auto server = BabyDI::Get<Server>();
@@ -477,41 +340,41 @@ void Level::saveLevel(const std::string& filename)
 			for (const auto& chunk : chunks)
 			{
 				fileStream << "BOARD" << s << chunk.first << s << y << s << chunk.second.length() / 2 << s << layer // x, y, width, layer
-						   << s << chunk.second << std::endl;
+					<< s << chunk.second << std::endl;
 			}
 		}
 	}
 
 	for (const auto& link : getLinks())
 	{
-		auto& bbox = link->getBoundingBox();
+		auto& bbox = link.getBoundingBox();
 		fileStream
 			<< std::format("LINK {} {} {} {} {} {} {}",
-				link->getDestinationLevel(),
+				link.getDestinationLevel(),
 				bbox.position.x(), bbox.position.y(),
 				bbox.size.width(), bbox.size.height(),
-				link->getDestinationX(), link->getDestinationY()
+				link.getDestinationX(), link.getDestinationY()
 			)
 			<< std::endl;
 	}
 
 	for (const auto& sign : getSigns())
 	{
-		fileStream << "SIGN" << s << sign->getX() << s << sign->getY() << std::endl;
-		fileStream << sign->getUText().text() << std::endl;
+		fileStream << "SIGN" << s << sign.getTileX() << s << sign.getTileY() << std::endl;
+		fileStream << sign.unformattedText << std::endl;
 		fileStream << "SIGNEND" << std::endl;
 	}
 
 	for (const auto& chest : getChests())
 	{
-		fileStream << "CHEST" << s << chest->getX() << s << chest->getY() << s << LevelItem::getItemName(chest->getItemIndex()) << s << chest->getSignIndex() << std::endl;
+		fileStream << "CHEST" << s << chest.getTileX() << s << chest.getTileY() << s << LevelItem::getItemName(chest.item) << s << chest.sign << std::endl;
 	}
 
 	for (const auto& baddy : m_baddies)
 	{
-		fileStream << "BADDY" << s << baddy->x << s << baddy->y << s << PROPID(baddy->type) << std::endl;
+		fileStream << "BADDY" << s << baddy.getTileX() << s << baddy.getTileY() << s << PROPID(baddy.type) << std::endl;
 
-		for (const auto& verse : baddy->verses)
+		for (const auto& verse : baddy.verses)
 		{
 			fileStream << verse << std::endl;
 		}
@@ -538,316 +401,196 @@ void Level::saveLevel(const std::string& filename)
 	}
 }
 
-bool Level::alterBoard(CString& pTileData, int pX, int pY, int pWidth, int pHeight, Player* player)
+void Level::doTimedEvents()
 {
-	if (pX < 0 || pY < 0 || pX > 63 || pY > 63 ||
-		pWidth < 1 || pHeight < 1 ||
-		pX + pWidth > 64 || pY + pHeight > 64)
-		return false;
-
 	auto server = BabyDI::Get<Server>();
-	auto& settings = server->getSettings();
 
-	// Do the check for the push-pull block.
-	if (pWidth == 4 && pHeight == 4 && settings.getBool("clientsidepushpull", true))
+	// Check if we should revert any board changes.
+	for (auto& change : m_boardChanges)
 	{
-		// Try to find the top-left corner tile.
-		int i;
-		for (i = 0; i < 16; ++i)
+		int respawnTimer = change.timeout.doTimeout();
+		if (respawnTimer == 0)
 		{
-			short stoneCheck = pTileData.readGShort();
-			if (stoneCheck == 0x06E4 || stoneCheck == 0x07CE)
-				break;
-		}
-
-		// Check if we found a possible push-pull block.
-		if (i != 16 && i < 11)
-		{
-			// Go back one full short so the first readByte2() returns the top-left corner.
-			pTileData.setRead(i * 2);
-
-			int foundCount = 0;
-			for (int j = 0; j < 6; ++j)
-			{
-				// Read a piece.
-				short stoneCheck = pTileData.readGShort();
-
-				// A valid stone will have pieces at the following j locations.
-				if (j == 0 || j == 1 || j == 4 || j == 5)
-				{
-					switch (stoneCheck)
-					{
-						// red
-						case 0x6E4:
-						case 0x6E5:
-						case 0x6F4:
-						case 0x6F5:
-						// blue
-						case 0x7CE:
-						case 0x7CF:
-						case 0x7DE:
-						case 0x7DF:
-							foundCount++;
-							break;
-					}
-				}
-			}
-			pTileData.setRead(0);
-
-			// Check if we found a full tile.  If so, don't accept the change.
-			if (foundCount == 4)
-			{
-				player->sendPacket(CString() >> (char)PLO_BOARDMODIFY >> (char)pX >> (char)pY >> (char)pWidth >> (char)pHeight << pTileData);
-				return false;
-			}
+			// Put the old data back in.  DON'T DELETE THE CHANGE.
+			// The client remembers board changes and if we delete the
+			// change, the client won't get the new data.
+			change.swapTiles();
+			change.setModTime(time(0));
+			server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
 		}
 	}
 
-	// Delete any existing changes within the same region.
-	for (auto i = m_boardChanges.begin(); i != m_boardChanges.end();)
-	{
-		LevelBoardChange& change = *i;
-		if ((change.getX() >= pX && change.getX() + change.getWidth() <= pX + pWidth) &&
-			(change.getY() >= pY && change.getY() + change.getHeight() <= pY + pHeight))
-		{
-			i = m_boardChanges.erase(i);
-		}
-		else
-			++i;
-	}
+	// Run arrow events.
 
-	// Any 2x2 tile change can respawn.
-	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
-	// TODO: Develop a way to specify valid tile replacements.
-	int respawnTime = settings.getInt("respawntime", 15);
-	bool doRespawn = (pWidth == 2 && pHeight == 2);
+	// Run bomb events.
+	for (auto& bomb : m_bombs) bomb.timeout.update();
+	std::erase_if(m_bombs, [](const LevelBomb& bomb) { return !bomb.timeout.isRunning(); });
 
-	/*
-	// Check if the tiles should be respawned.
-	// Only tiles in the respawningTiles array are allowed to respawn.
-	// These are things like signs, bushes, pots, etc.
-	int respawnTime = settings.getInt("respawntime", 15);
-	bool doRespawn = false;
-	short testTile = m_tiles[0][pX + (static_cast<size_t>(pY) * 64)];
-	int tileCount = sizeof(respawningTiles) / sizeof(short);
-	for (int i = 0; i < tileCount; ++i)
-		if (testTile == respawningTiles[i]) doRespawn = true;
-	*/
+	// Run explosion events.
+	for (auto& explosion : m_explosions) explosion.timeout.update();
+	std::erase_if(m_explosions, [](const LevelExplosion& explosion) { return !explosion.timeout.isRunning(); });
 
-	// Grab old tiles for the respawn.
-	CString oldTiles;
-	if (doRespawn)
-	{
-		for (int j = pY; j < pY + pHeight; ++j)
-		{
-			for (int i = pX; i < pX + pWidth; ++i)
-				oldTiles.writeGShort(m_tiles[0][i + (static_cast<size_t>(j) * 64)]);
-		}
-	}
+	// Run item events.
+	for (auto& item : m_items) item.timeout.update();
+	std::erase_if(m_items, [](const LevelItem& item) { return !item.timeout.isRunning(); });
 
-	// TODO: old gserver didn't save the board change if oldTiles.length() == 0.
-	// Should we do it that way still?
-	m_boardChanges.push_back(LevelBoardChange(pX, pY, pWidth, pHeight, pTileData, oldTiles, (doRespawn ? respawnTime : -1)));
-	return true;
-}
+	// Run horse events.
+	for (auto& horse : m_horses) horse.timeout.update();
+	std::erase_if(m_horses, [](const LevelHorse& horse) { return !horse.timeout.isRunning(); });
 
-bool Level::addItem(float pX, float pY, LevelItemType pItem)
-{
-	auto server = BabyDI::Get<Server>();
-	if (server->hasNPCServer())
-	{
-		if (LevelItem::isRupeeType(pItem))
-		{
-			if (server->getNPCServer()->getClass("gralats").expired())
-				return false;
-
-			NPC* gralatNPC = nullptr;
-
-			// Determine the NPC location.
-			float loc[2] = { pX - 0.5f, pY - 1.0f };
-
-			// Find existing rupees, and add to the npc
-			auto pixelX = static_cast<int16_t>((loc[0] - 2) * 16);
-			auto pixelY = static_cast<int16_t>((loc[1] - 2) * 16);
-
-			auto npcList = findIntersectingNPCs({ { pixelX, pixelY }, { 6 * 16, 6 * 16 } });
-			for (auto& npcId : npcList)
-			{
-				if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass("gralats"))
-					gralatNPC = npc.get();
-			}
-
-			// Create a new gralat npc for these rupees
-			if (!gralatNPC)
-			{
-				auto npc = server->getNPCServer()->addNPC("", "if (created) join gralats;", shared_from_this(), { loc[0], loc[1] });
-				gralatNPC = npc.get();
-			}
-
-			// Update rupees
-			gralatNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, gralatNPC->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(pItem));
-			gralatNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(gralatNPC->id), "updategani");
-			return false;
-		}
-	}
-
-	m_items.push_back(LevelItem(pX, pY, pItem));
-	return true;
-}
-
-LevelItemType Level::removeItem(float pX, float pY)
-{
-	for (auto i = m_items.begin(); i != m_items.end(); ++i)
-	{
-		LevelItem& item = *i;
-		if (item.getX() == pX && item.getY() == pY)
-		{
-			LevelItemType itemType = item.getItem();
-			m_items.erase(i);
-			return itemType;
-		}
-	}
-
-	return LevelItemType::INVALID;
-}
-
-bool Level::addHorse(CString& pImage, float pX, float pY, char pDir, char pBushes)
-{
-	auto server = BabyDI::Get<Server>();
-	auto horseLife = server->getSettings().getInt("horselifetime", 30);
-	m_horses.push_back(LevelHorse(horseLife, pImage, pX, pY, pDir, pBushes));
-	return true;
-}
-
-void Level::removeHorse(float pX, float pY)
-{
-	for (auto it = m_horses.begin(); it != m_horses.end(); ++it)
-	{
-		LevelHorse& horse = *it;
-		if (horse.getX() == pX && horse.getY() == pY)
-		{
-			m_horses.erase(it);
-			return;
-		}
-	}
-}
-
-LevelBaddy* Level::addBaddy(float pX, float pY, BaddyType pType)
-{
-	// Find the next available baddy that can be used.
-	size_t nextId = 0;
-	for (nextId = 0; nextId < m_baddies.size(); ++nextId)
-	{
-		if (m_baddies[nextId] == nullptr || m_baddies[nextId]->canBeReplaced())
-			break;
-	}
-
-	// Limit of 50 baddies per level.
-	if ((nextId + 1) > 50)
-		return nullptr;
-
-	// New Baddy
-	auto newBaddy = std::make_unique<LevelBaddy>(pX, pY, pType, this->shared_from_this());
-
-	// Assign the new id.
-	newBaddy->id = nextId + 1;
-
-	auto* baddy = newBaddy.get();
-	if (nextId >= m_baddies.size())
-		m_baddies.push_back(std::move(newBaddy));
-	else
-		m_baddies[nextId] = std::move(newBaddy);
-
-	return baddy;
-}
-
-LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type)
-{
-	auto baddy = addBaddy(x, y, type);
-	if (baddy == nullptr)
-		return nullptr;
-
-	auto server = BabyDI::Get<Server>();
-	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
-	for (auto& player : m_players)
-	{
-		if (auto p = server->getPlayer(player); p)
-			p->sendPacket(packet);
-	}
-
-	return baddy;
-}
-
-LevelBaddy* Level::putNewBaddy(float x, float y, BaddyType type, uint8_t power, std::string_view image)
-{
-	auto baddy = addBaddy(x, y, type);
-	if (baddy == nullptr)
-		return nullptr;
-
-	baddy->setImage(image);
-	baddy->power = power;
-
-	auto server = BabyDI::Get<Server>();
-	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
-	for (auto& player : m_players)
-	{
-		if (auto p = server->getPlayer(player); p)
-			p->sendPacket(packet);
-	}
-
-	return baddy;
-}
-
-void Level::removeBaddy(uint8_t pId)
-{
-	// Don't allow us to remove id 0 or any id over 50.
-	if (pId < 1 || pId > 50 || (pId >= m_baddies.size())) return;
-
-	// Find the baddy.
-	auto& baddy = m_baddies.at(static_cast<size_t>(pId) - 1);
-
-	// Erase the baddy.
-	baddy->mode = BaddyMode::DEAD;
-	baddy->setRespawn(false);
-
-	// Set the baddy as dead for all the other players in the level.
-	auto server = BabyDI::Get<Server>();
-	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
-	for (const auto& playerId : m_players)
-	{
-		auto player = server->getPlayer(playerId);
-		player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
-	}
-}
-
-void Level::removeAllBaddies()
-{
-	auto server = BabyDI::Get<Server>();
-	CString propsPacket;
+	// Run baddy events.
 	for (auto& baddy : m_baddies)
-	{
-		baddy->mode = BaddyMode::DEAD;
-		baddy->setRespawn(false);
+		baddy.timeout.update();
+}
 
-		// Set the baddy as dead for all the other players in the level.
-		propsPacket.clear();
-		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy->id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
-		for (const auto& playerId : m_players)
+//----------------------------
+
+uint8_t Level::getGmapX() const
+{
+	if (auto map = m_map.lock(); map && map->isGmap())
+		return m_mapX;
+	return 0;
+}
+
+uint8_t Level::getGmapY() const
+{
+	if (auto map = m_map.lock(); map && map->isGmap())
+		return m_mapY;
+	return 0;
+}
+
+bool Level::isPlayerLeader(PlayerID id) const
+{
+	if (m_players.empty())
+		return false;
+	return m_players.front() == id;
+}
+
+bool Level::hasLivingBaddies() const
+{
+	for (const auto& baddy : m_baddies)
+	{
+		if (baddy.mode != BaddyMode::DEAD)
+			return true;
+	}
+	return false;
+}
+
+//----------------------------
+
+CString Level::getBaddyPacket()
+{
+	CString retVal;
+	for (const auto& baddy : m_baddies)
+	{
+		retVal >> (char)PLO_BADDYPROPS >> (char)baddy.id << baddy.getProps() << "\n";
+	}
+	return retVal;
+}
+
+CString Level::getBoardPacket()
+{
+	CString retVal;
+	retVal.writeGChar(PLO_BOARDPACKET);
+	retVal.write((char*)m_tiles[0], sizeof(short[4096]));
+	retVal << "\n";
+
+	return retVal;
+}
+
+CString Level::getLayerPacket(int layer)
+{
+	CString retVal;
+	retVal.writeGChar(PLO_BOARDLAYER);
+
+	// TODO: Only send the tiles that has been placed on the layer
+	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
+	retVal.write((char*)m_tiles[layer], sizeof(short[4096]));
+	retVal << "\n";
+
+	return retVal;
+}
+
+CString Level::getBoardChangesPacket(time_t time)
+{
+	CString retVal;
+	retVal >> (char)PLO_LEVELBOARD;
+	for (const auto& change : m_boardChanges)
+	{
+		if (change.getModTime() >= time)
+			retVal << change.getBoardStr();
+	}
+	return retVal;
+}
+
+CString Level::getBoardChangesPacket2(time_t time)
+{
+	CString retVal;
+	retVal >> (char)PLO_BOARDMODIFY;
+	for (const auto& change : m_boardChanges)
+	{
+		if (change.getModTime() >= time)
+			retVal << change.getBoardStr();
+	}
+	return retVal;
+}
+
+void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
+{
+	CString packet;
+	for (auto& chest : m_chests)
+	{
+		bool hasChest = player->account.hasChest(levelName, chest.getTileX(), chest.getTileY());
+
+		packet = CString() >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getTileX() >> (char)chest.getTileY();
+		if (!hasChest) packet >> (char)chest.item >> (char)chest.sign;
+		player->sendPacket(packet);
+	}
+}
+
+void Level::sendHorsesToPlayer(std::shared_ptr<Player> player) const
+{
+	for (auto& horse : m_horses)
+		player->sendPacket(CString() >> (char)PLO_HORSEADD << horse.getPacket());
+}
+
+void Level::sendLinksToPlayer(std::shared_ptr<Player> player) const
+{
+	for (const auto& link : m_links)
+		player->sendPacket(CString() >> (char)PLO_LEVELLINK << link.getLinkStr());
+}
+
+void Level::sendSignsToPlayer(std::shared_ptr<Player> player) const
+{
+	for (const auto& sign : m_signs)
+		player->sendPacket(CString() >> (char)PLO_LEVELSIGN << sign.getSignPacket(player.get()));
+}
+
+// TODO: Replace with a function in server that sends npc props from a list of ids.
+void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const
+{
+	auto server = BabyDI::Get<Server>();
+	for (const auto& npcId : m_npcs)
+	{
+		auto npc = server->getNPC(npcId);
+		if (!npc) continue;
+
+		auto packet = npc->getAllPropsPacket(time);
+		if (packet.isEmpty())
+			continue;
+
+		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
+		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
 		{
-			auto player = server->getPlayer(playerId);
-			player->sendPacket(propsPacket);
+			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
+			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
+			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
+			player->sendPacket(byteCodePacket);
 		}
 	}
 }
 
-LevelBaddy* Level::getBaddy(uint8_t id)
-{
-	if (id > m_baddies.size() || id == 0)
-		return nullptr;
-
-	auto& baddy = m_baddies.at(static_cast<size_t>(id) - 1);
-	return baddy.get();
-}
+//----------------------------
 
 int Level::addPlayer(PlayerID id)
 {
@@ -869,12 +612,7 @@ void Level::removePlayer(PlayerID id)
 	server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 }
 
-bool Level::isPlayerLeader(PlayerID id)
-{
-	if (m_players.empty())
-		return false;
-	return m_players.front() == id;
-}
+//----------------------------
 
 bool Level::addNPC(std::shared_ptr<NPC> npc)
 {
@@ -919,141 +657,347 @@ void Level::removeNPC(NPCID npcId)
 	removeNPC(npc);
 }
 
-void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
-{
-	m_map = pMap;
-	m_mapX = pMapX;
-	m_mapY = pMapY;
-}
+//----------------------------
 
-bool Level::doTimedEvents()
+bool Level::alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player)
 {
+	if (area.position.x() > 63 || area.position.y() > 63 ||
+		area.size.width() < 1 || area.size.height() < 1 ||
+		area.position.x() + area.size.width() > 64 || area.position.y() + area.size.height() > 64)
+		return false;
+
 	auto server = BabyDI::Get<Server>();
+	auto& settings = server->getSettings();
 
-	// Check if we should revert any board changes.
-	for (auto& change: m_boardChanges)
+	// Do the check for the push-pull block.
+	if (area.size.width() == 4 && area.size.height() == 4 && settings.getBool("clientsidepushpull", true))
 	{
-		int respawnTimer = change.timeout.doTimeout();
-		if (respawnTimer == 0)
+		// Try to find the top-left corner tile.
+		int i;
+		for (i = 0; i < 16; ++i)
 		{
-			// Put the old data back in.  DON'T DELETE THE CHANGE.
-			// The client remembers board changes and if we delete the
-			// change, the client won't get the new data.
-			change.swapTiles();
-			change.setModTime(time(0));
-			server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
+			short stoneCheck = tileData.readGShort();
+			if (stoneCheck == 0x06E4 || stoneCheck == 0x07CE)
+				break;
 		}
-	}
 
-	// Check if any items have timed out.
-	// This allows us to delete items that have disappeared if nobody is in the level to send
-	// the PLI_ITEMDEL packet.
-	for (auto i = m_items.begin(); i != m_items.end();)
-	{
-		LevelItem& item = *i;
-		int deleteTimer = item.timeout.doTimeout();
-		if (deleteTimer == 0)
+		// Check if we found a possible push-pull block.
+		if (i != 16 && i < 11)
 		{
-			i = m_items.erase(i);
-		}
-		else
-			++i;
-	}
+			// Go back one full short so the first readByte2() returns the top-left corner.
+			tileData.setRead(i * 2);
 
-	// Check if any horses need to be deleted.
-	for (auto i = m_horses.begin(); i != m_horses.end();)
-	{
-		LevelHorse& horse = *i;
-		int deleteTimer = horse.timeout.doTimeout();
-		if (deleteTimer == 0)
-		{
-			server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL >> (char)(horse.getX() * 2) >> (char)(horse.getY() * 2), this->shared_from_this());
-			i = m_horses.erase(i);
-		}
-		else
-			++i;
-	}
-
-	// Check if any baddies need to be marked as dead or respawned.
-	for (auto& baddy : m_baddies)
-	{
-		// See if we can respawn him.
-		int respawnTimer = baddy->timeout.doTimeout();
-		if (respawnTimer == 0)
-		{
-			if (baddy->type == BaddyType::SWAMPSOLDIER && baddy->mode == BaddyMode::HURT)
+			int foundCount = 0;
+			for (int j = 0; j < 6; ++j)
 			{
-				/*
-				if (baddy->power == 1)
+				// Read a piece.
+				short stoneCheck = tileData.readGShort();
+
+				// A valid stone will have pieces at the following j locations.
+				if (j == 0 || j == 1 || j == 4 || j == 5)
 				{
-					// Unset the hurt mode on the baddy.
-					CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::SWAMPSHOT;
-					baddy->setPropsFromPacket(props);
-					for (unsigned int i = 1; i < m_players.size(); ++i)
+					switch (stoneCheck)
 					{
-						auto player = server->getPlayer(m_players[i]);
-						player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
+						// red
+						case 0x6E4:
+						case 0x6E5:
+						case 0x6F4:
+						case 0x6F5:
+						// blue
+						case 0x7CE:
+						case 0x7CF:
+						case 0x7DE:
+						case 0x7DF:
+							foundCount++;
+							break;
 					}
 				}
-				*/
 			}
-			else if (baddy->mode == BaddyMode::DIE)
-			{
-				baddy->mode = BaddyMode::DEAD;
-				if (baddy->canRespawn())
-					baddy->timeout.setTimeout(server->getSettings().getInt("baddyrespawntime", 60));
+			tileData.setRead(0);
 
-				// Set the baddy as dead for all the other players in the level.
-				CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
-				for (unsigned int i = 1; i < m_players.size(); ++i)
-				{
-					auto player = server->getPlayer(m_players[i]);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << props);
-				}
-
-				// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
-				if (!hasLivingBaddies())
-					server->queueNPCEvent(shared_from_this(), ScriptEventType::COMPUSDIED, source::FromLevel(shared_from_this()));
-			}
-			else
+			// Check if we found a full tile.  If so, don't accept the change.
+			if (foundCount == 4)
 			{
-				baddy->reset();
-				for (auto p: m_players)
-				{
-					auto player = server->getPlayer(p);
-					player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(player->getVersion()));
-				}
+				player->sendPacket(CString() >> (char)PLO_BOARDMODIFY >> (char)area.position.x() >> (char)area.position.y() >> (char)area.size.width() >> (char)area.size.height() << tileData);
+				return false;
 			}
 		}
 	}
 
+	// Delete any existing changes within the same region.
+	for (auto i = m_boardChanges.begin(); i != m_boardChanges.end();)
+	{
+		LevelBoardChange& change = *i;
+		if ((change.getX() >= area.position.x() && change.getX() + change.getWidth() <= area.position.x() + area.size.width()) &&
+			(change.getY() >= area.position.y() && change.getY() + change.getHeight() <= area.position.y() + area.size.height()))
+		{
+			i = m_boardChanges.erase(i);
+		}
+		else
+			++i;
+	}
+
+	// Any 2x2 tile change can respawn.
+	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
+	// TODO: Develop a way to specify valid tile replacements.
+	int respawnTime = settings.getInt("respawntime", 15);
+	bool doRespawn = (area.size.width() == 2 && area.size.height() == 2);
+
+	/*
+	// Check if the tiles should be respawned.
+	// Only tiles in the respawningTiles array are allowed to respawn.
+	// These are things like signs, bushes, pots, etc.
+	int respawnTime = settings.getInt("respawntime", 15);
+	bool doRespawn = false;
+	short testTile = m_tiles[0][area.position.x() + (static_cast<size_t>(area.position.y()) * 64)];
+	int tileCount = sizeof(respawningTiles) / sizeof(short);
+	for (int i = 0; i < tileCount; ++i)
+		if (testTile == respawningTiles[i]) doRespawn = true;
+	*/
+
+	// Grab old tiles for the respawn.
+	CString oldTiles;
+	if (doRespawn)
+	{
+		for (int j = area.position.y(); j < area.position.y() + area.size.height(); ++j)
+		{
+			for (int i = area.position.x(); i < area.position.x() + area.size.width(); ++i)
+				oldTiles.writeGShort(m_tiles[0][i + (static_cast<size_t>(j) * 64)]);
+		}
+	}
+
+	// TODO: old gserver didn't save the board change if oldTiles.length() == 0.
+	// Should we do it that way still?
+	m_boardChanges.push_back(LevelBoardChange(area.position.x(), area.position.y(), area.size.width(), area.size.height(), tileData, oldTiles, (doRespawn ? respawnTime : -1)));
 	return true;
 }
 
-std::optional<LevelLink*> Level::getLink(const Position<uint8_t>& position, bool excludeOverworld) const
+//----------------------------
+
+bool Level::addArrow()
 {
-	for (const auto& link: m_links)
-	{
-		if (excludeOverworld && link->isProbableMapLink())
-			continue;
-
-		auto& bbox = link->getBoundingBox();
-		if ((position.x() >= bbox.position.x() && position.x() <= bbox.position.x() + bbox.size.width())
-			&& (position.y() >= bbox.position.y() && position.y() <= bbox.position.y() + bbox.size.height()))
-		{
-			return std::make_optional(link.get());
-		}
-	}
-
-	return std::nullopt;
+	return true;
 }
 
-std::optional<LevelChest*> Level::getChest(int x, int y) const
+//----------------------------
+
+LevelBaddy* Level::addBaddy(const PixelPosition& position, BaddyType type)
 {
-	for (const auto& chest: m_chests)
+	// Find the next available baddy that can be used.
+	size_t nextIndex = 0;
+	for (nextIndex = 0; nextIndex < m_baddies.size(); ++nextIndex)
 	{
-		if (chest->getX() == x && chest->getY() == y)
-			return std::make_optional(chest.get());
+		if (m_baddies[nextIndex].canBeReplaced())
+			break;
+	}
+
+	// Limit of 50 baddies per level.
+	if (nextIndex >= 50)
+		return nullptr;
+
+	// Clamp the index to the size of the baddy list, just in case.
+	nextIndex = std::clamp(nextIndex, static_cast<size_t>(0), m_baddies.size());
+
+	// New Baddy
+	LevelBaddy newBaddy{ position, type, this->shared_from_this() };
+	newBaddy.id = nextIndex + 1;
+
+	if (nextIndex == m_baddies.size())
+		m_baddies.emplace_back(std::move(newBaddy));
+	else
+		m_baddies[nextIndex] = std::move(newBaddy);
+
+	return &m_baddies[nextIndex];
+}
+
+LevelBaddy* Level::putNewBaddy(const PixelPosition& position, BaddyType type)
+{
+	auto baddy = addBaddy(position, type);
+	if (baddy == nullptr)
+		return nullptr;
+
+	auto server = BabyDI::Get<Server>();
+	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
+	for (auto& player : m_players)
+	{
+		if (auto p = server->getPlayer(player); p)
+			p->sendPacket(packet);
+	}
+
+	return baddy;
+}
+
+LevelBaddy* Level::putNewBaddy(const PixelPosition& position, BaddyType type, uint8_t power, std::string_view image)
+{
+	auto baddy = addBaddy(position, type);
+	if (baddy == nullptr)
+		return nullptr;
+
+	baddy->setImage(image);
+	baddy->power = power;
+
+	auto server = BabyDI::Get<Server>();
+	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
+	for (auto& player : m_players)
+	{
+		if (auto p = server->getPlayer(player); p)
+			p->sendPacket(packet);
+	}
+
+	return baddy;
+}
+
+bool Level::removeBaddy(uint8_t pId)
+{
+	// Don't allow us to remove id 0 or any id over 50.
+	if (pId < 1 || pId > 50 || (pId > m_baddies.size())) return false;
+
+	// Find the baddy.
+	auto& baddy = m_baddies.at(static_cast<size_t>(pId) - 1);
+	if (baddy.mode == BaddyMode::DEAD)
+		return false;
+
+	// Erase the baddy.
+	baddy.mode = BaddyMode::DEAD;
+	baddy.setRespawn(false);
+
+	// Set the baddy as dead for all the other players in the level.
+	auto server = BabyDI::Get<Server>();
+	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
+	for (const auto& playerId : m_players)
+	{
+		auto player = server->getPlayer(playerId);
+		player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy.id << props);
+	}
+	return true;
+}
+
+bool Level::removeAllBaddies()
+{
+	auto server = BabyDI::Get<Server>();
+	CString propsPacket;
+	for (auto& baddy : m_baddies)
+	{
+		if (baddy.mode == BaddyMode::DEAD)
+			continue;
+
+		baddy.mode = BaddyMode::DEAD;
+		baddy.setRespawn(false);
+
+		// Set the baddy as dead for all the other players in the level.
+		propsPacket.clear();
+		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy.id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
+		for (const auto& playerId : m_players)
+		{
+			auto player = server->getPlayer(playerId);
+			player->sendPacket(propsPacket);
+		}
+	}
+	return true;
+}
+
+LevelBaddy* Level::getBaddy(uint8_t id)
+{
+	if (id > m_baddies.size() || id == 0)
+		return nullptr;
+
+	auto& baddy = m_baddies.at(static_cast<size_t>(id) - 1);
+	return &baddy;
+}
+
+//----------------------------
+
+LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_t power)
+{
+	auto result = addBomb(position, power);
+	if (result != nullptr)
+	{
+		char x = static_cast<char>(result->position.x() / 8.0f);
+		char y = static_cast<char>(result->position.y() / 8.0f);
+		uint8_t timeToExplode = static_cast<uint8_t>(std::min(223ll, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
+		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, shared_from_this());
+	}
+	return result;
+}
+
+LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
+{
+	LevelBomb newBomb{ .position = position, .power = power, .timeout = TimeoutGenerator(3s) };
+	newBomb.timeout.start();
+	m_bombs.emplace_back(std::move(newBomb));
+	return &m_bombs.back();
+}
+
+bool Level::removeBomb(inform_client_t, size_t index)
+{
+	if (index < m_bombs.size())
+	{
+		CString packet = CString() >> (char)PLO_BOMBDEL >> (char)(m_bombs[index].position.x() / 8) >> (char)(m_bombs[index].position.y() / 8);
+		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
+	}
+	return removeBomb(index);
+}
+
+bool Level::removeBomb(size_t index)
+{
+	if (index >= m_bombs.size())
+		return false;
+
+	m_bombs.erase(m_bombs.begin() + index);
+	return true;
+}
+
+bool Level::removeBomb(const PixelPosition& position)
+{
+	for (auto it = m_bombs.begin(); it != m_bombs.end(); ++it)
+	{
+		if (it->position == position)
+		{
+			m_bombs.erase(it);
+			return true;
+		}
+	}
+	return false;
+}
+
+LevelBomb* Level::getBomb(size_t index)
+{
+	if (index >= m_bombs.size())
+		return nullptr;
+	return &m_bombs[index];
+}
+
+//----------------------------
+
+LevelChest* Level::addChest(const WholeTilePosition& position, const LevelItemType itemType, const int signIndex)
+{
+	LevelChest newChest{ .position = position, .item = itemType, .sign = (uint8_t)signIndex };
+	m_chests.push_back(std::move(newChest));
+	return &m_chests.back();
+}
+
+bool Level::removeChest(size_t index)
+{
+	if (m_chests.empty() || index < 0 || index > m_chests.size())
+		return false;
+
+	m_chests.erase(m_chests.begin() + index);
+	return true;
+}
+
+LevelChest* Level::getChest(size_t index)
+{
+	if (index >= m_chests.size())
+		return nullptr;
+	return &m_chests[index];
+}
+
+std::optional<const LevelChest*> Level::getChest(const WholeTilePosition& position) const
+{
+	for (const auto& chest : m_chests)
+	{
+		if (chest.position == position)
+			return std::make_optional(&chest);
 	}
 
 	return std::nullopt;
@@ -1061,117 +1005,370 @@ std::optional<LevelChest*> Level::getChest(int x, int y) const
 
 CString Level::getChestStr(LevelChest* chest) const
 {
-	return std::format("{}:{}:{}", chest->getX(), chest->getY(), levelName);
+	return std::format("{}:{}:{}", chest->getTileX(), chest->getTileY(), levelName);
 }
+
+//----------------------------
+
+void Level::addExplosion(inform_client_t, const PixelPosition& position, uint8_t radius, uint8_t power)
+{
+	addExplosion(position, radius, power);
+
+	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)radius >> (char)(position.x() / 8) >> (char)(position.y() / 8) >> (char)power;
+	BabyDI::Get<Server>()->sendPacketToOneLevel(packet, shared_from_this());
+}
+
+void Level::addExplosion(const PixelPosition& position, uint8_t radius, uint8_t power)
+{
+	addExplosionPart(position, 2, power);
+	for (size_t i = 0; i < (static_cast<size_t>(radius) * 4); ++i)
+	{
+		uint8_t dir = i / radius;
+		int16_t step = (((i % radius) + 1) * 2) * 16;
+		PixelPosition partPosition = position.translate(
+			(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -step : step),
+			(dir == 1 || dir == 3) ? 0 : (dir == 0 ? -step : step));
+		addExplosionPart(partPosition, dir, power);
+	}
+
+	// Add exploded events to NPCs in the level.
+	if (auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	{
+		Rectangle<int16_t, uint16_t> vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
+		Rectangle<int16_t, uint16_t> horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
+		auto vertNPCs = findIntersectingNPCsForCollision(vertTest);
+		auto horzNPCs = findIntersectingNPCsForCollision(horzTest);
+		for (const NPCID& npcId : vertNPCs)
+		{
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+		}
+		for (const NPCID& npcId : horzNPCs)
+		{
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+		}
+	}
+}
+
+void Level::addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t length, uint8_t power)
+{
+	/*
+	spyfire 3,1;
+
+	up:    x+0.5,y-1.5  2 0 0 0
+	down:  x+0.5,y+2.2  0 2 2 2
+	left:  x-2.0,y+0.2  3 1 1 1
+	right: x+3.0,y+0.2  1 3 3 3
+	*/
+
+	const PixelPosition startingPosition = position.translate(
+		(direction == 0 || direction == 2) ? 8 : (direction == 1 ? -32 : 48),
+		(direction == 1 || direction == 3) ? 3 : (direction == 0 ? -24 : 35));
+
+	for (size_t i = 0; i < static_cast<size_t>(length + 1); ++i)
+	{
+		uint8_t dir = (i != 0 ? direction : (direction + 2) % 4);
+		int16_t stepX = (direction == 0 || direction == 2) ? 0 : (direction == 1 ? -i * 32 : i * 32);
+		int16_t stepY = (direction == 1 || direction == 3) ? 0 : (direction == 0 ? -i * 32 : i * 32);
+		PixelPosition partPosition = startingPosition.translate(stepX, stepY);
+		addExplosionPart(partPosition, dir, power);
+	}
+
+	// Add exploded events to NPCs in the level.
+	if (auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	{
+		int16_t lengthInPixels = (length + 1) * 32;
+		PixelPosition testPosition = startingPosition.translate(
+			static_cast<int16_t>((direction == 1) ? -lengthInPixels : 0),
+			static_cast<int16_t>((direction == 0) ? -lengthInPixels : 0));
+		Dimension<uint16_t> testDimension{
+			static_cast<uint16_t>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
+			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels) };
+
+		auto npcs = findIntersectingNPCsForCollision({ testPosition, testDimension });
+		for (const NPCID& npcId : npcs)
+		{
+			// TODO: We need the player ID!
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+		}
+	}
+}
+
+LevelExplosion* Level::addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power)
+{
+	LevelExplosion explo{ .position = position, .power = power, .direction = direction, .timeout = TimeoutGenerator(ExplosionDuration) };
+	explo.timeout.start();
+	m_explosions.emplace_back(std::move(explo));
+	return &m_explosions.back();
+}
+
+bool Level::removeExplosion(size_t index)
+{
+	if (index >= m_explosions.size())
+		return false;
+
+	m_explosions.erase(m_explosions.begin() + index);
+	return true;
+}
+
+bool Level::removeExplosion(const PixelPosition& position)
+{
+	for (size_t i = 0; i < m_explosions.size(); ++i)
+	{
+		LevelExplosion& explosion = m_explosions[i];
+		if (explosion.position == position)
+			return removeExplosion(i);
+	}
+	return false;
+}
+
+LevelExplosion* Level::getExplosion(size_t index)
+{
+	if (index >= m_explosions.size())
+		return nullptr;
+	return &m_explosions[index];
+}
+
+//----------------------------
+
+LevelHorse* Level::addHorse(inform_client_t, std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes)
+{
+	auto result = addHorse(image, position, direction, bushes);
+	if (result != nullptr)
+	{
+		CString packet = CString() >> (char)PLO_HORSEADD << result->getPacket();
+		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, shared_from_this());
+	}
+	return result;
+}
+
+LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes)
+{
+	auto server = BabyDI::Get<Server>();
+	auto horseLife = server->getSettings().getInt("horselifetime", 30);
+
+	LevelHorse newHorse{ .position = position, .image = std::string{ image }, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife)) };
+	newHorse.timeout.start();
+	m_horses.emplace_back(std::move(newHorse));
+	return &m_horses.back();
+}
+
+bool Level::removeHorse(inform_client_t, size_t index)
+{
+	if (index < m_horses.size())
+	{
+		CString packet = CString() >> (char)PLO_HORSEDEL >> (char)(m_horses[index].position.x() / 8) >> (char)(m_horses[index].position.y() / 8);
+		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
+	}
+	return removeHorse(index);
+}
+
+bool Level::removeHorse(size_t index)
+{
+	if (index >= m_horses.size())
+		return false;
+
+	m_horses.erase(m_horses.begin() + index);
+	return true;
+}
+
+bool Level::removeHorse(const PixelPosition& position)
+{
+	for (size_t i = 0; i < m_horses.size(); ++i)
+	{
+		LevelHorse& horse = m_horses[i];
+		if (horse.position == position)
+			return removeHorse(i);
+	}
+	return false;
+}
+
+LevelHorse* Level::getHorse(size_t index)
+{
+	if (index >= m_horses.size())
+		return nullptr;
+	return &m_horses[index];
+}
+
+//----------------------------
+
+LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelItemType item)
+{
+	auto result = addItem(position, item);
+	if (result != nullptr)
+	{
+		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD
+			>> (char)(result->position.x() / 8) >> (char)(result->position.y() / 8) >> (char)LevelItem::getItemTypeId(result->item),
+			shared_from_this());
+	}
+	return result;
+}
+
+LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server->hasNPCServer())
+	{
+		if (LevelItem::isRupeeType(item))
+		{
+			if (server->getNPCServer()->getClass("gralats").expired())
+				return nullptr;
+
+			NPC* gralatNPC = nullptr;
+
+			// Determine the NPC location.
+			TilePosition loc = toTilePosition(position).translate(-0.5f, -1.0f);
+
+			// Find existing rupees, and add to the npc.
+			Rectangle<int16_t, uint16_t> searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+			auto npcList = findIntersectingNPCs(searchArea);
+			for (auto& npcId : npcList)
+			{
+				if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass("gralats"))
+					gralatNPC = npc.get();
+			}
+
+			// Create a new gralat npc for these rupees.
+			if (!gralatNPC)
+			{
+				auto npc = server->getNPCServer()->addNPC("", "if (created) join gralats;", shared_from_this(), { loc[0], loc[1] });
+				gralatNPC = npc.get();
+			}
+
+			// Update rupees
+			gralatNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, gralatNPC->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item));
+			gralatNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(gralatNPC->id), "updategani");
+			return nullptr;
+		}
+	}
+
+	LevelItem newItem{ .position = position, .item = item, .modTime = server->getFrameStartTime(), .timeout = TimeoutGenerator(LevelItemTimeout) };
+	newItem.timeout.start();
+	m_items.emplace_back(std::move(newItem));
+	return &m_items.back();
+}
+
+bool Level::removeItem(inform_client_t, size_t index)
+{
+	if (index < m_items.size())
+	{
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(m_items[index].position.x() / 8) >> (char)(m_items[index].position.y() / 8);
+		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
+	}
+	return removeItem(index);
+}
+
+bool Level::removeItem(size_t index)
+{
+	if (index >= m_items.size())
+		return false;
+
+	m_items.erase(m_items.begin() + index);
+	return true;
+}
+
+LevelItemType Level::removeItem(const PixelPosition& position)
+{
+	for (auto i = m_items.begin(); i != m_items.end(); ++i)
+	{
+		LevelItem& item = *i;
+		if (item.position == position)
+		{
+			LevelItemType itemType = item.item;
+			m_items.erase(i);
+			return itemType;
+		}
+	}
+
+	return LevelItemType::INVALID;
+}
+
+LevelItem* Level::getItem(size_t index)
+{
+	if (index >= m_items.size())
+		return nullptr;
+	return &m_items[index];
+}
+
+//----------------------------
 
 LevelLink* Level::addLink()
 {
-	// New level link
-	auto newLink = std::make_shared<LevelLink>();
-	auto* link = newLink.get();
-
-	m_links.push_back(std::move(newLink));
-
-	return link;
+	m_links.emplace_back();
+	return &m_links.back();
 }
 
 LevelLink* Level::addLink(const std::vector<CString>& pLink)
 {
-	// New level link
-	auto newLink = std::make_unique<LevelLink>(pLink);
-	auto* link = newLink.get();
-
-	m_links.push_back(std::move(newLink));
-
-	return link;
+	LevelLink newLink{ pLink };
+	m_links.emplace_back(std::move(newLink));
+	return &m_links.back();
 }
 
 bool Level::removeLink(uint32_t index)
 {
-	if (m_links.empty())
+	if (m_links.empty() || index < 0 || index > m_links.size())
 		return false;
-	if (index < 0 || index > m_links.size())
-	{
-		return false;
-	}
-	else
-	{
-		m_links.erase(m_links.begin() + index);
-		return true;
-	}
 
-	return false;
+	m_links.erase(m_links.begin() + index);
+	return true;
 }
 
-LevelSign* Level::addSign(const int pX, const int pY, const CString& pSign, bool encoded)
+std::optional<const LevelLink*> Level::getLink(const WholeTilePosition& position, bool excludeOverworld) const
 {
-	// New level link
-	auto newSign = std::make_unique<LevelSign>(pX, pY, pSign, encoded);
-	auto* sign = newSign.get();
+	for (const auto& link : m_links)
+	{
+		if (excludeOverworld && link.isProbableMapLink())
+			continue;
 
-	m_signs.push_back(std::move(newSign));
+		auto& bbox = link.getBoundingBox();
+		if ((position.x() >= bbox.position.x() && position.x() <= bbox.position.x() + bbox.size.width())
+			&& (position.y() >= bbox.position.y() && position.y() <= bbox.position.y() + bbox.size.height()))
+		{
+			return std::make_optional(&link);
+		}
+	}
 
-	return sign;
+	return std::nullopt;
+}
+
+//----------------------------
+
+LevelSign* Level::addSign(const WholeTilePosition& position, const CString& sign, bool encoded)
+{
+	LevelSign newSign{ position, sign, encoded };
+	m_signs.emplace_back(std::move(newSign));
+	return &m_signs.back();
 }
 
 bool Level::removeSign(uint32_t index)
 {
-	if (m_signs.empty())
+	if (m_signs.empty() || index < 0 || index > m_signs.size())
 		return false;
 
-	if (index < 0 || index > getSigns().size())
-	{
-		return false;
-	}
-	else
-	{
-		getSigns().erase(getSigns().begin() + index);
-
-		return true;
-	}
-
-	return false;
+	m_signs.erase(m_signs.begin() + index);
+	return true;
 }
 
-LevelChest* Level::addChest(const int pX, const int pY, const LevelItemType itemType, const int signIndex)
+LevelSign* Level::getSign(size_t index)
 {
-	// New level link
-	auto newChest = std::make_unique<LevelChest>(pX, pY, itemType, signIndex);
-	auto* chest = newChest.get();
-
-	m_chests.push_back(std::move(newChest));
-
-	return chest;
+	if (index >= m_signs.size())
+		return nullptr;
+	return &m_signs[index];
 }
 
-bool Level::removeChest(uint32_t index)
+//----------------------------
+
+void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
 {
-	if (getChests().empty())
-		return false;
-
-	if (index < 0 || index > getChests().size())
-	{
-		return false;
-	}
-	else
-	{
-		getChests().erase(getChests().begin() + index);
-
-		return true;
-	}
-
-	return false;
+	m_map = pMap;
+	m_mapX = pMapX;
+	m_mapY = pMapY;
 }
 
-bool Level::hasLivingBaddies() const
-{
-	for (const auto& baddy: m_baddies)
-	{
-		if (baddy->mode != BaddyMode::DEAD)
-			return true;
-	}
-	return false;
-}
+//----------------------------
 
 bool Level::isOnWall(const Position<uint8_t>& tilePosition)
 {

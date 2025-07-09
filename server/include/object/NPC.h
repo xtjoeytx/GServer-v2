@@ -5,7 +5,6 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string_view>
@@ -185,7 +184,7 @@ inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------
 
-class NPC : public IScriptObject
+class NPC
 {
 	friend class FlatFileNPCLoader;
 
@@ -284,11 +283,8 @@ public:
 	void leaveClass(std::string_view className);
 
 public:
-	void constructScriptObjectParameters();
-	virtual std::optional<GameVariable> getScriptObjectParameter(std::string_view name) override;
-
-private:
-	string_map<GameVariable> m_scriptObjectParameters;
+	void constructScriptParameters();
+	string_map<GameVariable> scriptParameters;
 
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }

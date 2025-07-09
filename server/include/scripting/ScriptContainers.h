@@ -3,13 +3,13 @@
 
 #include <any>
 #include <concepts>
+#include <deque>
 #include <format>
 #include <functional>
 #include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <ranges>
 #include <stdexcept>
 #include <string_view>
@@ -428,17 +428,17 @@ struct GameVariable
 	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
 		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter)
 	{
-		update();
+		//update();
 	}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
 		: identifier(name), m_getter(getter), m_setter(setter)
 	{
-		update();
+		//update();
 	}
 	GameVariable(set_temporary_t, const std::string& name, func_get getter, func_set setter)
 		: identifier(name), temporary(true), m_getter(getter), m_setter(setter)
 	{
-		update();
+		//update();
 	}
 	GameVariable(const GameVariable& other)
 		: identifier(other.identifier), temporary(other.temporary), m_value(other.m_value),
@@ -828,9 +828,15 @@ class ScriptEventQueue
 public:
 	/// @brief Gets the underlying queue of script events.
 	/// @return The queue of script events.
-	[[inline]] std::queue<ScriptEvent>& queue();
+	[[inline]] std::deque<ScriptEvent>& queue();
 
 public:
+	/// @brief Determines whether a specific event exists for a given initiator.
+	/// @param type The type of script event to check for.
+	/// @param initiator Who initiated the event.
+	/// @return True if the event exists for the given initiator; otherwise, false.
+	bool hasEvent(ScriptEventType type, ScriptObjectSource initiator);
+
 	/// @brief Adds an event to the queue with the specified type and initiator.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
@@ -853,12 +859,12 @@ private:
 	void addEvent(ScriptEvent&& event);
 
 private:
-	std::queue<ScriptEvent> m_eventQueue;
+	std::deque<ScriptEvent> m_eventQueue;
 };
 
 //----------------------------
 
-inline std::queue<ScriptEvent>& ScriptEventQueue::queue()
+inline std::deque<ScriptEvent>& ScriptEventQueue::queue()
 {
 	return m_eventQueue;
 }
@@ -881,22 +887,36 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource 
 }
 
 ////////////////////////////////////////////////////////////
-// IScriptObject
+// ScriptParameters
 ////////////////////////////////////////////////////////////
 
-/// @brief An interface for managing object parameters assigned to a script object.
-struct IScriptObject
+template<class T>
+concept HasScriptParameters = requires(T t)
 {
-	/// @brief Gets a GameVariable that contains the value of the specified parameter.
-	/// @param name The name of the parameter to retrieve.
-	/// @return A GameVariable containing the value of the specified parameter.
-	virtual std::optional<GameVariable> getScriptObjectParameter(std::string_view name) = 0;
-
-	/// @brief Sets the value of a script object parameter.
-	/// @param name The name of the parameter to set.
-	/// @param value The value to assign to the parameter.
-	//virtual void setScriptObjectParameter(std::string_view name, const GameValue& value) = 0;
+	{ T::scriptParameters } -> std::convertible_to<string_map<GameVariable>>;
 };
+
+template<class T>
+concept HasConstructibleScriptParameters = requires(T t)
+{
+	{ T::scriptParameters } -> std::convertible_to<string_map<GameVariable>>;
+	{ t.constructScriptParameters() } -> std::same_as<void>;
+};
+
+template<HasScriptParameters T>
+inline std::optional<GameVariable> getScriptParameter(T& source, std::string_view name)
+{
+	if constexpr (HasConstructibleScriptParameters<T>)
+	{
+		if (source.scriptParameters.empty())
+			source.constructScriptParameters();
+	}
+
+	auto it = source.scriptParameters.find(name);
+	if (it == source.scriptParameters.end())
+		return std::nullopt;
+	return it->second;
+}
 
 ////////////////////////////////////////////////////////////
 // ScriptContainer

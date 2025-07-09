@@ -75,6 +75,7 @@ players[index]		On gmaps, it includes players in a 3x3 area around the player.  
 */
 
 void setReadOnlyGlobalVariables(GameVariableStore& variableStore);
+void setNPCVariables(GameVariableStore& variableStore, NPCPtr npc);
 void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player);
 void setLevelVariables(GameVariableStore& variableStore, LevelPtr level);
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event);

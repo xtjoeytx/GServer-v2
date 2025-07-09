@@ -425,7 +425,7 @@ CMD_SHOWCHARACTER        : 'showcharacter'        -> type(COMMAND);
 CMD_SETCHARPROP          : 'setcharprop'          { pushCommand("MS"); } -> type(COMMAND);
 CMD_SETCHARANI           : 'setcharani'           { pushCommand("S"); } -> type(COMMAND);
 CMD_SETCHARGENDER        : 'setchargender'        { pushCommand("G"); } -> type(COMMAND);
-CMD_TRIGGERACTION        : 'triggeraction'        { pushCommand("EEL"); } -> type(COMMAND);
+CMD_TRIGGERACTION        : 'triggeraction'        { pushCommand("EESL"); } -> type(COMMAND);
 CMD_PUTNPC               : 'putnpc'               { pushCommand("SSEE"); } -> type(COMMAND);
 CMD_PUTNPC2              : 'putnpc2'              { pushCommand("EEZ"); } -> type(COMMAND);
 CMD_CALLNPC              : 'callnpc'              { pushCommand("ES"); } -> type(COMMAND);

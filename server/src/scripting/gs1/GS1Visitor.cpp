@@ -165,22 +165,69 @@ GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& varian
 std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptObjectSource& source, std::string_view identifier)
 {
 	auto* server = BabyDI::Get<Server>();
-	IScriptObject* scriptObject = nullptr;
 
 	switch (source.second)
 	{
-		case ScriptObjectSourceType::PLAYER:
-			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
-				scriptObject = player.get();
-			break;
 		case ScriptObjectSourceType::NPC:
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
-				scriptObject = npc.get();
+				return getScriptParameter(*npc, identifier);
+			break;
+		case ScriptObjectSourceType::PLAYER:
+			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+				return getScriptParameter(*player, identifier);
+			break;
+		case ScriptObjectSourceType::BADDY:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto baddy = level->getBaddy(source.first); baddy != nullptr)
+					return getScriptParameter(*baddy, identifier);
+			}
+			break;
+		case ScriptObjectSourceType::BOMB:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto bomb = level->getBomb(source.first); bomb != nullptr)
+					return getScriptParameter(*bomb, identifier);
+			}
+			break;
+		/*
+		case ScriptObjectSourceType::ARROW:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto arrow = level->getArrow(source.first); arrow != nullptr)
+					return getScriptParameter(*arrow, identifier);
+			}
+			break;
+		*/
+		case ScriptObjectSourceType::ITEM:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto item = level->getItem(source.first); item != nullptr)
+					return getScriptParameter(*item, identifier);
+			}
+			break;
+		case ScriptObjectSourceType::EXPLOSION:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto explo = level->getExplosion(source.first); explo != nullptr)
+					return getScriptParameter(*explo, identifier);
+			}
+			break;
+		case ScriptObjectSourceType::HORSE:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto horse = level->getHorse(source.first); horse != nullptr)
+					return getScriptParameter(*horse, identifier);
+			}
+			break;
+		case ScriptObjectSourceType::SIGN:
+			if (auto level = findCurrentLevel(); level != nullptr)
+			{
+				if (auto sign = level->getSign(source.first); sign != nullptr)
+					return getScriptParameter(*sign, identifier);
+			}
 			break;
 	}
-
-	if (scriptObject != nullptr)
-		return scriptObject->getScriptObjectParameter(identifier);
 
 	return std::nullopt;
 }
@@ -216,11 +263,11 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	auto builtInResult = builtIn.lock();
 
 	// Look in the current source's store.
-	if (auto* currentStore = getGameVariableStoreFromSource(getCurrentSource()); currentStore != nullptr)
+	auto* currentStore = getGameVariableStoreFromSource(getCurrentSource());
 	{
 		// For the current store, we only want to return a variable if it exists.
 		// If the variable does not exist, it will be added to the source store.
-		if (currentStore->contains(identifier))
+		if (currentStore != nullptr && currentStore->contains(identifier))
 		{
 			// If we have a built-in variable, and the current store had a boolean version of it, add the boolean version to the result.
 			auto currentStoreResult = currentStore->get(identifier).lock();
@@ -497,7 +544,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObjectSource> sou
 		return;
 
 	// all the player property shortcuts
-	for (const auto& [name, variable] : player->scriptObjectParameters)
+	for (const auto& [name, variable] : player->scriptParameters)
 		builtInStore->add(GameVariable{ set_temporary, std::format("player{}", name), variable.getCallbackGetter(), variable.getCallbackSetter() });
 }
 

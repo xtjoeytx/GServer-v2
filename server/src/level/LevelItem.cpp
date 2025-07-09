@@ -42,11 +42,6 @@ const char* __itemList[] = {
 };
 const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
 
-CString LevelItem::getItemStr() const
-{
-	return CString() >> (char)PLO_ITEMADD >> (char)m_x >> (char)m_y >> (char)m_item;
-}
-
 LevelItemType LevelItem::getItemId(signed char itemId)
 {
 	if (itemId < 0 || itemId >= __itemCount)

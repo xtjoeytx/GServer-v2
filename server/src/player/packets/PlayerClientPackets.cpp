@@ -78,13 +78,16 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	constexpr std::array<uint16_t, 7> dropTiles = { 0x002, 0x1a4, 0x1ff, 0x7ff, 0x3ff, 0x5d9, 0x34f };
 
 	CSettings& settings = m_server->getSettings();
-	signed char loc[2] = { pPacket.readGChar(), pPacket.readGChar() };
-	signed char dim[2] = { pPacket.readGChar(), pPacket.readGChar() };
+	uint8_t loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
+	uint8_t dim[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
 	CString tiles = pPacket.readString("");
 
-	// Alter level data.
 	auto level = getLevel();
-	if (level->alterBoard(tiles, loc[0], loc[1], dim[0], dim[1], this))
+	if (level == nullptr)
+		return HandlePacketResult::Handled;
+
+	// Alter level data.
+	if (level->alterBoard(tiles, { { loc[0], loc[1] }, { dim[0], dim[1] } }, this))
 		m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << (pPacket.text() + 1), level);
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63)
@@ -119,14 +122,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	// Send the item now.
 	// TODO: Make this a more generic function.
 	if (dropItem != LevelItemType::INVALID)
-	{
-		// TODO: GS2 replacement of item drops. How does it work?
-		CString packet = CString() >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)LevelItem::getItemTypeId(dropItem);
-		CString packet2 = CString() >> (char)PLI_ITEMADD << packet;
-		packet2.readGChar(); // So msgPLI_ITEMADD works.
-
-		spawnLevelItem(packet2, false);
-	}
+		level->addItem(inform_client, toPixelPosition(loc[0], loc[1]), dropItem);
 
 	return HandlePacketResult::Handled;
 }
@@ -180,11 +176,10 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
 	// TODO(joey): gmap support
 	unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
-	//float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
 	unsigned char player_power = pPacket.readGUChar();
 	unsigned char player = player_power >> 2;
 	unsigned char power = player_power & 0x03;
-	unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (2.75 seconds.)
+	unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too)
 
 	/*
 	printf("Place bomb\n");
@@ -203,6 +198,11 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 {
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
+
+	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+	if (auto level = getLevel(); level != nullptr)
+		level->removeBomb(toPixelPosition(loc[0], loc[1]));
+
 	return HandlePacketResult::Handled;
 }
 
@@ -211,13 +211,13 @@ HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), m_currentLevel, { m_id });
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
-	unsigned char dir_bush = pPacket.readGUChar();
-	char hdir = dir_bush & 0x03;
-	char hbushes = dir_bush >> 2;
+	uint8_t dir_bush = pPacket.readGUChar();
+	uint8_t hdir = dir_bush & 0x03;
+	uint8_t hbushes = dir_bush >> 2;
 	CString image = pPacket.readString("");
 
 	auto level = getLevel();
-	level->addHorse(image, loc[0], loc[1], hdir, hbushes);
+	level->addHorse(image, toPixelPosition(loc[0], loc[1]), hdir, hbushes);
 	return HandlePacketResult::Handled;
 }
 
@@ -227,8 +227,9 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
-	auto level = getLevel();
-	level->removeHorse(loc[0], loc[1]);
+	if (auto level = getLevel(); level != nullptr)
+		level->removeHorse(toPixelPosition(loc[0], loc[1]));
+
 	return HandlePacketResult::Handled;
 }
 
@@ -249,6 +250,12 @@ HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 {
+	/*
+	uint8_t length_power = pPacket.readGUChar();
+	uint8_t power = length_power & 0b111; // Power is the last three bits.
+	uint8_t length = length_power >> 3;   // Length is the first five bits.
+	*/
+
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
 	return HandlePacketResult::Handled;
 }
@@ -263,7 +270,18 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 {
 	m_server->queueNPCEvent(m_currentLevel.lock(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
 
-	spawnLevelItem(pPacket, true);
+	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+	uint8_t item = pPacket.readGUChar();
+	LevelItemType itemType = LevelItem::getItemId(item);
+
+	if (m_server->hasNPCServer())
+		dropItem(toPixelPosition(loc[0], loc[1]), itemType);
+	else if (auto level = getLevel(); level != nullptr)
+	{
+		level->addItem(toPixelPosition(loc[0], loc[1]), itemType);
+		m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, m_currentLevel, { m_id });
+	}
+
 	return HandlePacketResult::Handled;
 }
 
@@ -275,7 +293,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 
 	// Remove the item from the level, getting the type of the item in the process.
 	auto level = getLevel();
-	LevelItemType item = level->removeItem(loc[0], loc[1]);
+	LevelItemType item = level->removeItem(toPixelPosition(loc[0], loc[1]));
 	if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
@@ -413,10 +431,10 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
-	unsigned char bType = pPacket.readGUChar();
-	unsigned char bPower = pPacket.readGUChar();
+	uint8_t bType = pPacket.readGUChar();
+	uint8_t bPower = pPacket.readGUChar();
 	CString bImage = pPacket.readString("");
-	bPower = MIN(bPower, 12); // Hard-limit to 6 hearts.
+	bPower = std::min(bPower, 12_ui8); // Hard-limit to 6 hearts.
 
 	// Fix the image for 1.41 clients.
 	if (!bImage.isEmpty() && getExtension(bImage).isEmpty())
@@ -424,7 +442,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 
 	// Add the baddy.
 	auto level = getLevel();
-	LevelBaddy* baddy = level->addBaddy(loc[0], loc[1], static_cast<BaddyType>(bType));
+	LevelBaddy* baddy = level->addBaddy(toPixelPosition(loc[0], loc[1]), static_cast<BaddyType>(bType));
 	if (baddy == nullptr) return HandlePacketResult::Handled;
 
 	// Set the baddy props.
@@ -586,16 +604,16 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 {
-	unsigned char cX = pPacket.readGUChar();
-	unsigned char cY = pPacket.readGUChar();
+	int8_t cX = pPacket.readGChar();
+	int8_t cY = pPacket.readGChar();
 
 	if (auto level = getLevel(); level)
 	{
-		if (auto chest = level->getChest(cX, cY); chest.has_value())
+		if (auto chest = level->getChest(WholeTilePosition{ cX, cY }); chest.has_value())
 		{
 			if (!account.hasChest(level->levelName, cX, cY))
 			{
-				LevelItemType chestItem = chest.value()->getItemIndex();
+				LevelItemType chestItem = chest.value()->item;
 				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), props::SetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				account.savedChests.insert(std::make_pair(level->levelName, std::make_pair(cX, cY)));

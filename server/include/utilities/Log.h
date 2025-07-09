@@ -231,11 +231,9 @@ struct Profile
 
 	~Profile() noexcept
 	{
-		using double_nano = std::chrono::duration<double, std::nano>;
-		using double_milli = std::chrono::duration<double, std::milli>;
 		auto end = std::chrono::high_resolution_clock::now();
-		auto duration_ns = double_nano(end - m_start);
-		auto duration_ms = std::chrono::duration_cast<double_milli>(duration_ns);
+		auto duration_ns = duration_nano_double(end - m_start);
+		auto duration_ms = std::chrono::duration_cast<duration_milli_double>(duration_ns);
 		printLine(m_log, m_format, m_message, duration_ms.count());
 	}
 

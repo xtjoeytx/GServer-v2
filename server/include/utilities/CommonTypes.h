@@ -9,6 +9,8 @@
 #include <limits>
 #include <optional>
 #include <ranges>
+#include <ratio>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -95,6 +97,10 @@ inline static constexpr std::optional<T> PROPOPT(std::optional<T> prop)
 
 namespace chrono = std::chrono;
 using clock = std::chrono::system_clock;
+using clock_duration_double = std::chrono::duration<double, std::chrono::system_clock::period>;
+using duration_seconds_double = std::chrono::duration<double>;
+using duration_milli_double = std::chrono::duration<double, std::milli>;
+using duration_nano_double = std::chrono::duration<double, std::nano>;
 
 inline clock::time_point currentTime()
 {
@@ -175,21 +181,103 @@ inline static bool DoublesAreSame(double left, double right)
 template<typename T>
 struct Position
 {
-	Position() : data(T{}, T{}) {}
-	Position(T x, T y) : data(x, y) {}
-	std::tuple<T, T> data;
-	T x() const { return std::get<0>(data); }
-	T y() const { return std::get<1>(data); }
+	Position() : data(T{}, T{}, T{}) {}
+	Position(T x, T y) : data(x, y, T{}) {}
+	Position(T x, T y, T z) : data(x, y, z) {}
+
+	bool operator==(const Position<T>& other) const
+	{
+		return data == other.data;
+	}
+	bool operator!=(const Position<T>& other) const
+	{
+		return data != other.data;
+	}
+
+	T& operator[](size_t index)
+	{
+		if (index >= 3) throw std::out_of_range("Index out of range for Position");
+		return data[index];
+	}
+	const T& operator[](size_t index) const
+	{
+		if (index >= 3) throw std::out_of_range("Index out of range for Position");
+		return data[index];
+	}
+
+	T& x() { return data[0]; }
+	T& y() { return data[1]; }
+	T& z() { return data[2]; }
+	const T& x() const { return data[0]; }
+	const T& y() const { return data[1]; }
+	const T& z() const { return data[2]; }
+
+	Position<T>& translate(T dx, T dy)
+	{
+		data[0] += dx;
+		data[1] += dy;
+		return *this;
+	}
+	Position<T>& translate(T dx, T dy, T dz)
+	{
+		data[0] += dx;
+		data[1] += dy;
+		data[2] += dz;
+		return *this;
+	}
+
+	Position<T> translate(T dx, T dy) const
+	{
+		Position<T> result = *this;
+		result.translate(dx, dy);
+		return result;
+	}
+	Position<T> translate(T dx, T dy, T dz) const
+	{
+		Position<T> result = *this;
+		result.translate(dx, dy, dz);
+		return result;
+	}
+
+	std::array<T, 3> data;
 };
+
+using PixelPosition = Position<int16_t>;
+using TilePosition = Position<float>;
+using WholeTilePosition = Position<int8_t>;
 
 template<typename T>
 struct Dimension
 {
 	Dimension() : data(T{}, T{}) {}
 	Dimension(T width, T height) : data(width, height) {}
-	std::tuple<T, T> data;
-	T width() const { return std::get<0>(data); }
-	T height() const { return std::get<1>(data); }
+
+	bool operator==(const Dimension<T>& other) const
+	{
+		return data == other.data;
+	}
+	bool operator!=(const Dimension<T>& other) const
+	{
+		return data != other.data;
+	}
+
+	T& operator[](size_t index)
+	{
+		if (index >= 2) throw std::out_of_range("Index out of range for Dimension");
+		return data[index];
+	}
+	const T& operator[](size_t index) const
+	{
+		if (index >= 2) throw std::out_of_range("Index out of range for Dimension");
+		return data[index];
+	}
+
+	T& width() { return data[0]; }
+	T& height() { return data[1]; }
+	const T& width() const { return data[0]; }
+	const T& height() const { return data[1]; }
+
+	std::array<T, 2> data;
 };
 
 template<typename P, typename S>
@@ -211,8 +299,92 @@ inline constexpr bool positionInRectangle(const Position<Pos>& pos, const Rectan
 template<typename RectPosL, typename RectDimL, typename RectPosR, typename RectDimR>
 inline constexpr bool rectanglesIntersect(const Rectangle<RectPosL, RectDimL>& left, const Rectangle<RectPosR, RectDimR>& right)
 {
-	return positionInRectangle(left.position, right) || positionInRectangle(right.position, left);
+	if (left.position.x() + left.size.width() < right.position.x()
+		|| right.position.x() + right.size.width() < left.position.x()
+		|| left.position.y() + left.size.height() < right.position.y()
+		|| right.position.y() + right.size.height() < left.position.y())
+	{
+		return false;
+	}
+	return true;
 }
+
+template<typename T>
+inline Position<T> translatePosition(const Position<T>& position, T x, T y)
+{
+	return position.translate(x, y);
+}
+
+template<typename T>
+inline Position<T> translatePosition(const Position<T>& position, T x, T y, T z)
+{
+	return position.translate(x, y, z);
+}
+
+inline PixelPosition toPixelPosition(float x, float y)
+{
+	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
+	int16_t halfTileX = static_cast<int16_t>(x * 2);
+	int16_t halfTileY = static_cast<int16_t>(y * 2);
+	return PixelPosition{ static_cast<int16_t>(halfTileX * 8), static_cast<int16_t>(halfTileY * 8) };
+}
+
+template<typename Type>
+inline constexpr PixelPosition toPixelPosition(const Position<Type>& position)
+{
+	if constexpr (std::same_as<Type, int16_t>)
+	{
+		return position;
+	}
+	else if constexpr (std::same_as<Type, int8_t> || std::same_as<Type, float>)
+	{
+		return PixelPosition{ static_cast<int16_t>(position.x() * 16), static_cast<int16_t>(position.y() * 16) };
+	}
+	else
+	{
+		return PixelPosition{ static_cast<int16_t>(position.x()), static_cast<int16_t>(position.y()) };
+	}
+}
+
+template<typename Type>
+inline constexpr TilePosition toTilePosition(const Position<Type>& position)
+{
+	if constexpr (std::same_as<Type, int16_t>)
+	{
+		return TilePosition{ static_cast<float>(position.x()) / 16.0f, static_cast<float>(position.y()) / 16.0f };
+	}
+	else if constexpr (std::same_as<Type, float>)
+	{
+		return position;
+	}
+	else
+	{
+		return TilePosition{ static_cast<float>(position.x()), static_cast<float>(position.y()) };
+	}
+}
+
+template<typename Type>
+inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& position)
+{
+	if constexpr (std::same_as<Type, int16_t>)
+	{
+		return WholeTilePosition{ static_cast<int8_t>(position.x()) / 16.0f, static_cast<int8_t>(position.y()) / 16.0f };
+	}
+	else if constexpr (std::same_as<Type, int8_t>)
+	{
+		return position;
+	}
+	else
+	{
+		return WholeTilePosition{ static_cast<int8_t>(position.x()), static_cast<int8_t>(position.y()) };
+	}
+}
+
+//----------------------------
+// Tags
+
+struct inform_client_t { explicit inform_client_t() = default; };
+inline constexpr inform_client_t inform_client{};
 
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal

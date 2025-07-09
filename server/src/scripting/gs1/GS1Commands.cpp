@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <any>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -22,6 +23,7 @@
 #include <BabyDI.h>
 #include <Server.h>
 #include <level/LevelBaddy.h>
+#include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
 #include <object/Character.h>
 #include <object/NPC.h>
@@ -816,7 +818,7 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 // explodebomb index;
 void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("explodebomb is not implemented yet.");
+	throw std::logic_error("explodebomb is clientside only.");
 }
 
 // freezeplayer2;
@@ -974,13 +976,41 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // lay itemname;
 void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("lay is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("lay requires exactly one argument: itemname.");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			PixelPosition layPosition{ npc->character.pixelX, npc->character.pixelY };
+
+			// Characters lay (+0.5, +3) no matter which direction they are looking.
+			if (npc->isCharacter())
+				layPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
+
+			if (auto level = npc->level.lock(); level != nullptr)
+				level->addItem(inform_client, layPosition, static_cast<LevelItemType>(itemname));
+		}
+	}
 }
 
 // lay2 itemname,x,y;
 void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("lay2 is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("lay2 requires exactly three arguments: itemname, x, y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+		level->addItem(inform_client, toPixelPosition((float)x, (float)y), static_cast<LevelItemType>(itemname));
+	}
 }
 
 // message text;
@@ -1035,9 +1065,19 @@ void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const 
 }
 
 // putbomb power,x,y;
+// Creates a bomb at the specified location with the given power.
 void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("putbomb is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("putbomb requires exactly three arguments: power, x, y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto power = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+		level->addBomb(inform_client, toPixelPosition((float)x, (float)y), power);
+	}
 }
 
 // putcomp baddyname,x,y;
@@ -1052,26 +1092,57 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname));
+		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname));
 	}
 }
 
 // putexplosion radius,x,y;
+// Creates an explosion at the specified location with the given radius.
 void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("putexplosion is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("putexplosion requires exactly three arguments: radius, x, y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto radius = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), radius, 1);
+	}
 }
 
 // putexplosion2 power,radius,x,y;
+// Creates an explosion at the specified location with the given power and radius.
 void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("putexplosion2 is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("putexplosion2 requires exactly four arguments: power, radius, x, y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto power = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
+		auto radius = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto x = visitor->getGameValueAs<double>(*arguments[2]);
+		auto y = visitor->getGameValueAs<double>(*arguments[3]);
+		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), radius, power);
+	}
 }
 
 // puthorse imagefile,x,y;
+// Creates a new horse at the specified location with the given image file.
 void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("puthorse is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("puthorse requires exactly three arguments: imagefile, x, y.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+		level->addHorse(inform_client, imagefile, toPixelPosition((float)x, (float)y), 2, 0);
+	}
 }
 
 // putnewcomp baddyname,x,y,imagefile,power;
@@ -1088,7 +1159,7 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[3]);
 		auto power = visitor->getGameValueAs<double>(*arguments[4]);
-		level->putNewBaddy((float)x, (float)y, static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
+		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
 	}
 }
 
@@ -1145,9 +1216,17 @@ void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std
 }
 
 // removebomb index;
+// Removes a bomb from the level.
 void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removebomb is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("removebomb requires exactly one arguments: index.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		level->removeBomb(inform_client, index);
+	}
 }
 
 // removecompus;
@@ -1161,7 +1240,7 @@ void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const st
 // removeexplo index;
 void fn_removeexplo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removeexplo is not implemented yet.");
+	throw std::logic_error("removeexplo is clientside only.");
 }
 
 // removeguild guild;
@@ -1179,13 +1258,27 @@ void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, con
 // removehorse index;
 void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removehorse is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("removehorse requires exactly one arguments: index.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		level->removeHorse(inform_client, index);
+	}
 }
 
 // removeitem index;
 void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removeitem is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("removeitem requires exactly one arguments: index.");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		level->removeItem(inform_client, index);
+	}
 }
 
 // removestring list,text;
@@ -1292,7 +1385,7 @@ void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector
 			{
 				auto* server = BabyDI::Get<Server>();
 				if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-					player->sendSignMessage(sign->getUText().toString());
+					player->sendSignMessage(sign.unformattedText);
 			}
 		}
 	}
@@ -1645,15 +1738,37 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // setmap imgfile,levelsfile,x,y;
+// Sets the big map for the player with the specified image file, levels file, and coordinates (x, y).
 void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("setmap is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto imgfile = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto levelsfile = visitor->getGameValueAs<std::string>(*arguments[1]);
+		auto x = visitor->getGameValueAs<double>(*arguments[2]);
+		auto y = visitor->getGameValueAs<double>(*arguments[3]);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+			player->sendPacket(CString() >> (char)PLO_BIGMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
+	}
 }
 
 // setminimap imgfile,levelsfile,x,y;
+// Sets the minimap for the player with the specified image file, levels file, and coordinates (x, y).
 void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("setminimap is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto imgfile = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto levelsfile = visitor->getGameValueAs<std::string>(*arguments[1]);
+		auto x = visitor->getGameValueAs<double>(*arguments[2]);
+		auto y = visitor->getGameValueAs<double>(*arguments[3]);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+			player->sendPacket(CString() >> (char)PLO_MINIMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
+	}
 }
 
 // setplayerdir dir;
@@ -1982,22 +2097,110 @@ void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vect
 }
 
 // spyfire length,power;
+// Sends a spyfire explosion from the player.
 void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("spyfire is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		auto length = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])) & 0b11111;
+		auto power = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1])) & 0b111;
+		uint8_t length_power = (length << 3) | power;
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		{
+			server->sendPacketToLevelArea(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player);
+			if (auto level = player->getLevel(); level != nullptr)
+				level->addSpyFire({ player->account.character.pixelX, player->account.character.pixelY }, player->account.character.direction, length, power);
+		}
+	}
 }
 
 // take itemname;
 // Takes an item on the level in a 10-tile radius from the NPC.
 void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("take is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+
+				// Get our search position.
+				PixelPosition searchPosition = { npc->character.pixelX, npc->character.pixelY };
+				if (npc->isCharacter())
+					searchPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
+
+				// Find all the items within 10 tiles of the NPC.
+				std::vector<uint8_t> itemIndices;
+				auto& levelItems = level->getItems();
+				for (size_t i = levelItems.size(); i > 0; --i)
+				{
+					auto& item = levelItems[i - 1];
+					if (PROPID(item.item) != itemname)
+						continue;
+
+					auto distance = static_cast<int32_t>(std::hypot(item.position.x() - searchPosition.x(), item.position.y() - searchPosition.y()));
+					if (distance <= (10 * 16))
+					{
+						itemIndices.push_back(static_cast<uint8_t>(i - 1));
+						if (LevelItem::isRupeeType(item.item))
+							npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, npc->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item.item));
+						else if (item.item == LevelItemType::HEART)
+							npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::POWER>().value + 2));
+						else if (item.item == LevelItemType::DARTS)
+							npc->setPropWith<NPCProp::ARROWS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::ARROWS>().value + 5));
+						else if (item.item == LevelItemType::BOMBS)
+							npc->setPropWith<NPCProp::BOMBS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::BOMBS>().value + 5));
+						else if (item.item == LevelItemType::GLOVE1)
+							npc->setPropWith<NPCProp::GLOVEPOWER>(SetBy::SERVER, std::max(npc->getProp<NPCProp::GLOVEPOWER>().value, 1_ui8));
+						else if (item.item == LevelItemType::GLOVE2)
+							npc->setPropWith<NPCProp::GLOVEPOWER>(SetBy::SERVER, std::max(npc->getProp<NPCProp::GLOVEPOWER>().value, 2_ui8));
+					}
+				}
+
+				// Remove all taken items.
+				for (auto& index : itemIndices)
+					level->removeItem(inform_client, index);
+			}
+		}
+	}
 }
 
 // take2 index;
 void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("take2 is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				if (auto item = level->getItem(index); item != nullptr)
+				{
+					if (LevelItem::isRupeeType(item->item))
+						npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, npc->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item->item));
+					else if (item->item == LevelItemType::HEART)
+						npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::POWER>().value + 2));
+					else if (item->item == LevelItemType::DARTS)
+						npc->setPropWith<NPCProp::ARROWS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::ARROWS>().value + 5));
+					else if (item->item == LevelItemType::BOMBS)
+						npc->setPropWith<NPCProp::BOMBS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::BOMBS>().value + 5));
+					else if (item->item == LevelItemType::GLOVE1)
+						npc->setPropWith<NPCProp::GLOVEPOWER>(SetBy::SERVER, std::max(npc->getProp<NPCProp::GLOVEPOWER>().value, 1_ui8));
+					else if (item->item == LevelItemType::GLOVE2)
+						npc->setPropWith<NPCProp::GLOVEPOWER>(SetBy::SERVER, std::max(npc->getProp<NPCProp::GLOVEPOWER>().value, 2_ui8));
+
+					level->removeItem(inform_client, index);
+				}
+			}
+		}
+	}
 }
 
 // takehorse index;

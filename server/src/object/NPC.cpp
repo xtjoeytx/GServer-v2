@@ -62,7 +62,6 @@ NPC::NPC(NPCID id, NPCStorageType storageType)
 	: id(id), storageType(storageType), m_savedModTime()
 {
 	resetToInitialState();
-	constructScriptObjectParameters();
 }
 
 //----------------------------
@@ -111,7 +110,7 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 
 	// Erase the event queue.
 	while (!events.queue().empty())
-		events.queue().pop();
+		events.queue().pop_back();
 }
 
 //----------------------------
@@ -206,7 +205,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp->value == "#c#" && image != "#c")
 			{
 				character.gani = "idle";
-				shape = { 48, 48 };
 				result.resultPropIds.push_back(PROPID(NPCProp::GANI));
 			}
 
@@ -1044,54 +1042,46 @@ void NPC::resetToInitialState()
 
 //----------------------------
 
-void NPC::constructScriptObjectParameters()
+void NPC::constructScriptParameters()
 {
-	/* TODO: Add these.
-	*/
+	scriptParameters.try_emplace("id", set_temporary, "id", gameVariableGetter([this]() { return static_cast<double>(id); }), GameVariable::func_set{});
+	scriptParameters.try_emplace("width", set_temporary, "width", gameVariableGetter([this]() { return static_cast<double>(shape.width()); }), GameVariable::func_set{});
+	scriptParameters.try_emplace("height", set_temporary, "height", gameVariableGetter([this]() { return static_cast<double>(shape.height()); }), GameVariable::func_set{});
+	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameVariableGetter(character.gralats), gameVariableSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
+	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameVariableGetter(character.gralats), gameVariableSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
+	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameVariableGetter(character.bombs), gameVariableSetter(this, PROPOPT(NPCProp::BOMBS), character.bombs));
+	scriptParameters.try_emplace("darts", set_temporary, "darts", gameVariableGetter(character.arrows), gameVariableSetter(this, PROPOPT(NPCProp::ARROWS), character.arrows));
+	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameVariableGetter(character.glovePower), gameVariableSetter(this, PROPOPT(NPCProp::GLOVEPOWER), character.glovePower));
+	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameVariableGetter(character.swordPower), gameVariableSetter(this, PROPOPT(NPCProp::SWORDIMAGE), character.swordPower));
+	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameVariableGetter(character.shieldPower), gameVariableSetter(this, PROPOPT(NPCProp::SHIELDIMAGE), character.shieldPower));
+	scriptParameters.try_emplace("ap", set_temporary, "ap", gameVariableGetter(character.ap), gameVariableSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
+	scriptParameters.try_emplace("hurtdx", set_temporary, "hurtdx", gameVariableGetter(hurtX), gameVariableSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtX));
+	scriptParameters.try_emplace("hurtdy", set_temporary, "hurtdy", gameVariableGetter(hurtY), gameVariableSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtY));
+	scriptParameters.try_emplace("save", set_temporary, "save", gameVariableGetter(saves), gameVariableSetter(this, PROPOPT(NPCProp::SAVE0), saves));
 
-	m_scriptObjectParameters.try_emplace("id", set_temporary, "id", gameVariableGetter([this]() { return static_cast<double>(id); }), GameVariable::func_set{});
-	m_scriptObjectParameters.try_emplace("width", set_temporary, "width", gameVariableGetter([this]() { return static_cast<double>(shape.width()); }), GameVariable::func_set{});
-	m_scriptObjectParameters.try_emplace("height", set_temporary, "height", gameVariableGetter([this]() { return static_cast<double>(shape.height()); }), GameVariable::func_set{});
-	m_scriptObjectParameters.try_emplace("rupees", set_temporary, "rupees", gameVariableGetter(character.gralats), gameVariableSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	m_scriptObjectParameters.try_emplace("gralats", set_temporary, "gralats", gameVariableGetter(character.gralats), gameVariableSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	m_scriptObjectParameters.try_emplace("bombs", set_temporary, "bombs", gameVariableGetter(character.bombs), gameVariableSetter(this, PROPOPT(NPCProp::BOMBS), character.bombs));
-	m_scriptObjectParameters.try_emplace("darts", set_temporary, "darts", gameVariableGetter(character.arrows), gameVariableSetter(this, PROPOPT(NPCProp::ARROWS), character.arrows));
-	m_scriptObjectParameters.try_emplace("glovepower", set_temporary, "glovepower", gameVariableGetter(character.glovePower), gameVariableSetter(this, PROPOPT(NPCProp::GLOVEPOWER), character.glovePower));
-	m_scriptObjectParameters.try_emplace("swordpower", set_temporary, "swordpower", gameVariableGetter(character.swordPower), gameVariableSetter(this, PROPOPT(NPCProp::SWORDIMAGE), character.swordPower));
-	m_scriptObjectParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameVariableGetter(character.shieldPower), gameVariableSetter(this, PROPOPT(NPCProp::SHIELDIMAGE), character.shieldPower));
-	m_scriptObjectParameters.try_emplace("ap", set_temporary, "ap", gameVariableGetter(character.ap), gameVariableSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
-	m_scriptObjectParameters.try_emplace("hurtdx", set_temporary, "hurtdx", gameVariableGetter(hurtX), gameVariableSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtX));
-	m_scriptObjectParameters.try_emplace("hurtdy", set_temporary, "hurtdy", gameVariableGetter(hurtY), gameVariableSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtY));
-	m_scriptObjectParameters.try_emplace("save", set_temporary, "save", gameVariableGetter(saves), gameVariableSetter(this, PROPOPT(NPCProp::SAVE0), saves));
-
-	m_scriptObjectParameters.try_emplace("hearts", set_temporary, "hearts",
+	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
 		gameVariableGetter([this]() { return character.hitpointsInHalves / 2.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	m_scriptObjectParameters.try_emplace("x", set_temporary, "x",
+	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameVariableGetter([this]() { return character.pixelX / 16.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::X2), [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }));
-	m_scriptObjectParameters.try_emplace("y", set_temporary, "y",
+	scriptParameters.try_emplace("y", set_temporary, "y",
 		gameVariableGetter([this]() { return character.pixelY / 16.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::Y2), [this](const GameValue& value, std::optional<size_t>) { character.pixelY = value.get<double>().value_or(0.0) * 16; }));
-	m_scriptObjectParameters.try_emplace("z", set_temporary, "z",
+	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameVariableGetter([this]() { return character.pixelZ / 16.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }));
 
-	scripting.variables.add(GameVariable{ set_temporary, "timeout",
-		gameVariableGetter(
-			[this]()
-			{
-				return timeout.count() / 1000.0;
-			}),
+	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
+		gameVariableGetter([this]() { return timeout.count() / 1000.0; }),
 		gameVariableSetter(this, PROPOPT<NPCProp>(std::nullopt),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				if (auto* doubleValue = value.get_unsafe<double>(); doubleValue != nullptr)
 					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
 			})
-		});
-
-	m_scriptObjectParameters.try_emplace("headset", set_temporary, "headset",
+		);
+	scriptParameters.try_emplace("headset", set_temporary, "headset",
 		gameVariableGetter(
 			[this]()
 			{
@@ -1107,8 +1097,8 @@ void NPC::constructScriptObjectParameters()
 				if (headSet < 0) return;
 				character.headImage = std::format("head{}.{}", headSet, (BabyDI::Get<Server>()->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
 			})
-	);
-	m_scriptObjectParameters.try_emplace("sprite", set_temporary, "sprite",
+		);
+	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
 		gameVariableGetter(character.sprite),
 		gameVariableSetter(this, PROPOPT(NPCProp::SPRITE),
 			[this](const GameValue& value, std::optional<size_t>)
@@ -1121,23 +1111,15 @@ void NPC::constructScriptObjectParameters()
 					this->modTime[PROPID(NPCProp::GANI)] = server->getFrameStartTime();
 				}
 			})
-	);
-	m_scriptObjectParameters.try_emplace("dir", set_temporary, "dir",
+		);
+	scriptParameters.try_emplace("dir", set_temporary, "dir",
 		gameVariableGetter([this]() { return static_cast<double>(character.direction); }),
 		gameVariableSetter(this, PROPOPT(NPCProp::SPRITE),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
 			})
-	);
-}
-
-std::optional<GameVariable> NPC::getScriptObjectParameter(std::string_view name)
-{
-	auto it = m_scriptObjectParameters.find(name);
-	if (it == m_scriptObjectParameters.end())
-		return std::nullopt;
-	return it->second;
+		);
 }
 
 //----------------------------
@@ -1213,7 +1195,7 @@ void NPC::testForLinks(SetResults& result)
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
 	{
 		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
-		Position<uint8_t> testPos{ (uint8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (uint8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
+		Position<int8_t> testPos{ (int8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (int8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
 		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)

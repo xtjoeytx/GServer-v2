@@ -1,33 +1,26 @@
-#ifndef LEVELSIGN_H
-#define LEVELSIGN_H
+#ifndef LEVELBOMB_H
+#define LEVELBOMB_H
 
-#include <string>
-#include <string_view>
-
-#include <CString.h>
+#include <chrono>
+#include <cstdint>
 
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class Player;
-
-struct LevelSign
+struct LevelBomb
 {
-	LevelSign(const WholeTilePosition& position, std::string_view signText, bool signTextIsEncoded = false);
-	CString getSignPacket(Player* player = nullptr) const;
-	void setText(std::string_view signText, bool signTextIsEncoded = false);
+	float getTileX() const { return position.x() / 16.0f; }
+	float getTileY() const { return position.y() / 16.0f; }
 
-	float getTileX() const { return (float)position.x(); }
-	float getTileY() const { return (float)position.y(); }
-
-	WholeTilePosition position;
-	std::string text;
-	std::string unformattedText;
+	PixelPosition position;
+	uint8_t power;
+	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
@@ -35,13 +28,17 @@ struct LevelSign
 
 //----------------------------
 
-inline void LevelSign::constructScriptParameters()
+inline void LevelBomb::constructScriptParameters()
 {
 	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
 	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("power", set_temporary, "power", gameVariableGetter([this]() { return (double)power; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("time", set_temporary, "time",
+		gameVariableGetter([this]() { return std::chrono::duration_cast<duration_seconds_double>(timeout.getRemainingTime()).count(); }),
+		GameVariable::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
 
-#endif // LEVELSIGN_H
+#endif // LEVELBOMB_H

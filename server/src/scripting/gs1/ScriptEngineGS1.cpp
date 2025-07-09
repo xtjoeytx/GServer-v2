@@ -266,7 +266,6 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 #endif
 
 	// Set the built-in store.
-	wrapper->variables.clearTemporary();
 	wrapper->visitor->builtInStore = &wrapper->variables;
 
 	// Set events.
@@ -281,6 +280,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	setOtherFlags(event, source, wrapper->variables, npc, player, level);
 
 	// Set variables.
+	setNPCVariables(wrapper->variables, npc);
 	setPlayerVariables(wrapper->variables, player);
 	setLevelVariables(wrapper->variables, level);
 	setOtherVariables(wrapper->variables, event);
@@ -300,6 +300,9 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
 		context->script = nullptr;
 	}
+
+	// Clear the variables (to clear reference counted pointers, just in case).
+	wrapper->variables.clearTemporary();
 
 	return false;
 }

@@ -185,6 +185,7 @@ public:
 	FileSystem* getFileSystemByType(CString& type);
 	const auto& getServerStartTime() const { return m_serverStartTime; }
 	const auto& getFrameStartTime() const { return m_frameStartTime; }
+	const auto& getFrameStartTimeHighPrecision() const { return m_frameStartTimeHighPrecision; }
 	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 
 public:
@@ -332,6 +333,7 @@ private:
 	TimeoutGenerator m_timedMaintenance{ 5min, true };
 	std::chrono::system_clock::time_point m_serverStartTime;
 	std::chrono::system_clock::time_point m_frameStartTime;
+	std::chrono::high_resolution_clock::time_point m_frameStartTimeHighPrecision;
 	uint32_t m_serverTime;
 
 	// Trigger dispatcher
