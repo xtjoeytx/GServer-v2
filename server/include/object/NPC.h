@@ -191,7 +191,7 @@ class NPC
 
 public:
 	NPC(NPCID id, NPCStorageType storageType);
-	~NPC() = default;
+	~NPC();
 
 public:
 	void setScript(std::string_view script);

@@ -65,6 +65,13 @@ NPC::NPC(NPCID id, NPCStorageType storageType)
 	resetToInitialState();
 }
 
+NPC::~NPC()
+{
+#ifdef DEBUG
+	log::printLine(log::server, "Destroying NPC [{}] '{}' in level '{}'.", id, name, (level.expired() ? "unknown" : level.lock()->levelName));
+#endif
+}
+
 //----------------------------
 
 void NPC::setScript(std::string_view script)

@@ -1094,6 +1094,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 
 	// Erase NPC from the list.
 	m_npcList.erase(npc->id);
+	m_npcIdGenerator.freeId(npc->id);
 
 	if (auto level = npc->level.lock(); level)
 	{
@@ -1182,6 +1183,7 @@ bool Server::deletePlayer(PlayerPtr player)
 	// Add the player to the set of players to delete.
 	getServerList().deletePlayer(player);
 	m_playerList.erase(player->getId());
+	m_playerIdGenerator.freeId(player->getId());
 
 	return true;
 }

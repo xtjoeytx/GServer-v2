@@ -101,12 +101,12 @@ public:
 			}
 
 			// Find a free ID.
-			auto searchId = segment.nextId + 1;
+			auto searchId = segment.nextId;
 			while (true)
 			{
 				if (!segment.manuallyUsedIds.contains(searchId))
 				{
-					segment.nextId = searchId;
+					segment.nextId = searchId + 1;
 					return searchId;
 				}
 				++searchId;
@@ -185,11 +185,11 @@ protected:
 		// See if we can condense the free IDs.
 		if (!segment.freeIds.empty())
 		{
-			auto searchId = segment.nextId - 1;
+			auto searchId = segment.nextId;
 			auto it = segment.freeIds.rbegin();
 			while (it != segment.freeIds.rend())
 			{
-				if (*it == searchId)
+				if (*it == searchId - 1)
 				{
 					--searchId;
 					++it;
@@ -199,9 +199,12 @@ protected:
 			}
 
 			// Erase the IDs.
-			if (it != segment.freeIds.rend())
+			if (searchId != segment.nextId)
 			{
-				segment.freeIds.erase(*(++it).base());
+				if (it == segment.freeIds.rend())
+					segment.freeIds.clear();
+				else segment.freeIds.erase(*it.base());
+				segment.nextId = searchId;
 			}
 		}
 	}
