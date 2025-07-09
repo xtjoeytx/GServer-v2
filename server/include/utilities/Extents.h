@@ -19,9 +19,9 @@ namespace preagonal
 template<typename T>
 struct Position
 {
-	Position() : data(T{}, T{}, T{}) {}
-	Position(T x, T y) : data(x, y, T{}) {}
-	Position(T x, T y, T z) : data(x, y, z) {}
+	Position() : data{ T{}, T{}, T{} } {}
+	Position(T x, T y) : data{ x, y, T{} } {}
+	Position(T x, T y, T z) : data{ x, y, z } {}
 
 	bool operator==(const Position<T>& other) const
 	{
@@ -90,8 +90,8 @@ using WholeTilePosition = Position<int8_t>;
 template<typename T>
 struct Dimension
 {
-	Dimension() : data(T{}, T{}) {}
-	Dimension(T width, T height) : data(width, height) {}
+	Dimension() : data{ T{}, T{} } {}
+	Dimension(T width, T height) : data{ width, height } {}
 
 	bool operator==(const Dimension<T>& other) const
 	{
