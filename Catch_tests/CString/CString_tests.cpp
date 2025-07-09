@@ -59,7 +59,7 @@ SCENARIO( "CString", "[string]" ) {
 		}
 		
 		WHEN("escape string") {
-			CString originalStr = CString("Test string's, hope it works out \\\\, \\, \", \', \"\" - / lol");
+			auto originalStr = CString("Test string's, hope it works out \\\\, \\, \", \', \"\" - / lol");
 			CString stringEscaped = originalStr.escape();
 			
 			THEN("check escaped result") {

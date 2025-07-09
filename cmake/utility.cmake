@@ -40,6 +40,10 @@ function(set_default_compiler_options target)
 		target_compile_definitions(${target} PUBLIC NDEBUG _NDEBUG)
 	endif()
 
+	if(TESTS)
+		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
+	endif()
+
 	# If windows, set the standard defines.
 	if(WIN32)
 		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX)
@@ -108,6 +112,7 @@ function(add_test_og TARGET_NAME TARGET_PATH)
 	target_compile_features(${TARGET_NAME} PUBLIC cxx_std_23)
 	set_target_properties(${TARGET_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 	target_link_libraries(${TARGET_NAME} PRIVATE gs2lib ${APP_LIBRARY_NAME_TESTREF} Catch2::Catch2WithMain)
+	add_dependencies(${TARGET_NAME} gs2lib ${APP_LIBRARY_NAME_TESTREF})
 	target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
 	target_include_directories(${APP_LIBRARY_NAME_TESTREF} PRIVATE "${gs2lib_SOURCE_DIR}/include")
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)

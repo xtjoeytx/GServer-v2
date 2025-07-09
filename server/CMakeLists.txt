@@ -159,6 +159,21 @@ target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PRO
 # Configure our compiler options.
 set_default_compiler_options(${TARGET_NAME})
 
+if (TESTS)
+	set(APP_LIBRARY_NAME "lib${TARGET_NAME}")
+	set(APP_LIBRARY_NAME_TESTREF "${APP_LIBRARY_NAME}" PARENT_SCOPE)
+	add_library(${APP_LIBRARY_NAME})
+	set_target_properties(${APP_LIBRARY_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+	target_link_directories(${APP_LIBRARY_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+	# Add the sources.
+	target_sources(${APP_LIBRARY_NAME} PUBLIC ${SOURCES})
+	target_sources(${APP_LIBRARY_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
+
+	# Configure our compiler options.
+	set_default_compiler_options(${APP_LIBRARY_NAME})
+endif()
+
 # Packet logging.
 option(PACKET_LOGGING "Enable debug packet logging." OFF)
 if(PACKET_LOGGING)
@@ -179,6 +194,11 @@ find_package(antlr4-generator CONFIG REQUIRED)
 target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIBRARY_DIR})
 target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR})
 target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static)
+if(TESTS)
+	target_link_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_LIBRARY_DIR})
+	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR})
+	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC antlr4_static)
+endif()
 FetchContent_Declare(AntlrJar
 	URL				https://www.antlr.org/download/antlr-4.13.2-complete.jar
 	DOWNLOAD_DIR	"${FETCHCONTENT_BASE_DIR}/antlr-jar"
@@ -206,6 +226,11 @@ FetchContent_MakeAvailable(gs2lib)
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
+
+if(TESTS)
+	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC gs2lib)
+	target_include_directories(${APP_LIBRARY_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
+endif ()
 
 # Dependency: libtommath
 #[[
@@ -245,6 +270,10 @@ antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar
 )
 target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
 target_sources(${TARGET_NAME} PRIVATE ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
+if(TESTS)
+	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
+	target_sources(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
+endif()
 
 # Windows libraries.
 if(WIN32)
@@ -301,6 +330,13 @@ target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY
 
 add_dependencies(${TARGET_NAME} gs2compiler)
 target_link_libraries(${TARGET_NAME} PRIVATE gs2compiler)
+
+if(TESTS)
+	target_link_libraries(${APP_LIBRARY_NAME} PRIVATE gs2compiler)
+	target_link_libraries(${APP_LIBRARY_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
+	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
+endif()
 
 if (MINGW)
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
