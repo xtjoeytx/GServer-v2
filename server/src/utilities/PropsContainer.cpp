@@ -17,6 +17,7 @@
 #include <Server.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/PropsContainer.h>
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@
 
 #include <level/LevelItem.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

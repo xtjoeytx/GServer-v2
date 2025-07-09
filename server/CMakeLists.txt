@@ -83,6 +83,7 @@ set(
 	"include/scripting/gs2/ScriptEngineGS2.h"
 	"include/utilities/CommandDispatcher.h"
 	"include/utilities/CommonTypes.h"
+	"include/utilities/Extents.h"
 	"include/utilities/FilePermissions.h"
 	"include/utilities/IdGenerator.h"
 	"include/utilities/inplace_vector.h"

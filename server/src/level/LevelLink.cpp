@@ -7,6 +7,7 @@
 #include <level/LevelLink.h>
 #include <object/Character.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -27,6 +27,7 @@
 #include <player/PlayerProps.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/IdGenerator.h>
 #include <utilities/PropsContainer.h>
 

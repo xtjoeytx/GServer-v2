@@ -1,6 +1,9 @@
 #ifndef GS1VARIABLES_H
 #define GS1VARIABLES_H
 
+#include <memory>
+
+#include <level/Level.h>
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/ScriptContainers.h>
@@ -75,9 +78,9 @@ players[index]		On gmaps, it includes players in a 3x3 area around the player.  
 */
 
 void setReadOnlyGlobalVariables(GameVariableStore& variableStore);
-void setNPCVariables(GameVariableStore& variableStore, NPCPtr npc);
-void setPlayerVariables(GameVariableStore& variableStore, PlayerClientPtr player);
-void setLevelVariables(GameVariableStore& variableStore, LevelPtr level);
+void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc);
+void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerClient> player);
+void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> level);
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event);
 
 ///////////////////////////////////////////////////////////////////////////////

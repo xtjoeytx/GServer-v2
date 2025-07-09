@@ -47,6 +47,7 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -286,7 +287,9 @@ void Server::cleanup()
 	if (hasNPCServer())
 		m_npcServer->saveNPCs();
 
-	for (auto& [id, player]: m_playerList)
+	auto players = m_playerList | std::views::transform([](const auto& pair) { return pair.second; });
+	std::vector<PlayerPtr> deletePlayers{ std::ranges::begin(players), std::ranges::end(players) };
+	for (auto& player: deletePlayers)
 		player->cleanup();
 
 	m_npcServer.reset();

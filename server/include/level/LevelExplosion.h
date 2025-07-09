@@ -6,6 +6,7 @@
 
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,7 @@
 #include <scripting/ScriptContainers.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 using namespace preagonal::props;
 

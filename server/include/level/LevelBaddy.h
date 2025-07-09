@@ -8,10 +8,10 @@
 #include <vector>
 
 #include <CString.h>
-#include <IUtil.h>
 
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////

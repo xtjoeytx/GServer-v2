@@ -10,6 +10,7 @@
 
 #include <object/Character.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

@@ -32,6 +32,7 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -836,8 +837,10 @@ GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, con
 		throw std::invalid_argument("Built-in function keycode requires exactly one argument");
 
 	auto key = visitor->getGameValueAs<std::string>(*arguments[0]);
-	uint8_t code = static_cast<uint8_t>(key.front());
+	if (key.empty())
+		return 0.0;
 
+	uint8_t code = static_cast<uint8_t>(key.front());
 	return static_cast<double>(code);
 }
 

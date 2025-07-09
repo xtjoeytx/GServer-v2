@@ -572,7 +572,7 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 		[](NPCPtr& npc) -> std::string
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
-				return level->levelName;
+				return std::string{ level->levelName };
 			return std::string{};
 		},
 	};
@@ -660,7 +660,7 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (npc != nullptr)
 	{
 		if (auto level = npc->level.lock(); level != nullptr)
-			return level->levelName;
+			return std::string{ level->levelName };
 	}
 
 	return std::string{};

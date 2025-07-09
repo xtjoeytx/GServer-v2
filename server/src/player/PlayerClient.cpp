@@ -37,6 +37,7 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>

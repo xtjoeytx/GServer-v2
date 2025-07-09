@@ -23,6 +23,7 @@
 #include <scripting/ScriptContainers.h>
 #include <utilities/inplace_vector.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 namespace preagonal
 {

@@ -20,6 +20,7 @@
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
 #include <utilities/TimeoutGenerator.h>
 

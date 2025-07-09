@@ -12,6 +12,7 @@
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@
 #include <level/LevelSign.h>
 #include <object/Player.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
