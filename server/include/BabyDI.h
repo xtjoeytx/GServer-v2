@@ -93,6 +93,7 @@ namespace BabyDI
 			m_provisions.erase(itr);
 		}
 
+		/*
 		template<typename F>
 		static void AssertAllProvided(F&& assertCallback)
 		{
@@ -108,6 +109,7 @@ namespace BabyDI
 				assertCallback(interfaceNames);
 			}
 		}
+		*/
 
 		template<typename T>
 		static T* Get(size_t hash)
@@ -131,7 +133,7 @@ namespace BabyDI
 	template<typename T>
 	struct InjectMeta : public InjectMetaBase
 	{
-		constexpr InjectMeta(T** injectAddress, const char* interfaceName) : m_injectAddress(injectAddress), m_interfaceName(interfaceName)
+		constexpr InjectMeta(T** injectAddress, const char* interfaceName) : m_interfaceName(interfaceName), m_injectAddress(injectAddress)
 		{
 			::BabyDI::InjectionRepository::AddInjectMeta(this);
 		}
@@ -169,11 +171,13 @@ namespace BabyDI
 		T** const m_injectAddress;
 	};
 
+	/*
 	template<typename F>
 	static void AssertAllProvided(F&& assertCallback)
 	{
 		InjectionRepository::AssertAllProvided(assertCallback);
 	}
+	*/
 
 	/**
      * Gets an injected implementation, returning null if it's unprovided.
@@ -185,6 +189,7 @@ namespace BabyDI
 	}
 
 #ifndef BABYDI_EMBEDDED
+	/*
 	static void AssertAllProvided()
 	{
 		AssertAllProvided([](const std::vector<const char*>& interfaceNames)
@@ -199,6 +204,7 @@ namespace BabyDI
 							  std::terminate();
 						  });
 	}
+	*/
 #endif
 }; // namespace BabyDI
 

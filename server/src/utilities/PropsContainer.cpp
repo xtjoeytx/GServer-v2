@@ -474,7 +474,7 @@ CString PropertyHurtDxDy::serialize() const
 	// This encodes the floating point in steps of 1/32.
 	// Whether this represents pixels for 2 tiles, or just a way to encode floats, I am not sure.
 
-	return CString() >> (char)((hurtDX * 32) + 32) >> (char)((hurtDY * 32) + 32);
+	return CString() >> (char)((clampedDX * 32) + 32) >> (char)((clampedDY * 32) + 32);
 }
 
 void PropertyHurtDxDy::deserialize(CString& data)

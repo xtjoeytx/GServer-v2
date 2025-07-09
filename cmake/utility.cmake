@@ -30,6 +30,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 		target_compile_options(${target} PRIVATE
 			-Wno-attributes
 			-Wno-narrowing
+			-Wno-switch
 		)
 	endif()
 

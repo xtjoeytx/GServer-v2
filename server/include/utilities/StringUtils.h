@@ -567,7 +567,7 @@ auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 	constexpr std::array<char, 3> complexChars = { '"', ',', '\\' };
 	std::ostringstream oss;
 
-	for (const auto wordFromRange : range)
+	for (const auto& wordFromRange : range)
 	{
 		std::string_view word{ wordFromRange };
 

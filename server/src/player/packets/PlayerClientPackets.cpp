@@ -176,11 +176,11 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
 	// TODO(joey): gmap support
-	unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
-	unsigned char player_power = pPacket.readGUChar();
-	unsigned char player = player_power >> 2;
-	unsigned char power = player_power & 0x03;
-	unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too)
+	[[maybe_unused]] unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
+	[[maybe_unused]] unsigned char player_power = pPacket.readGUChar();
+	[[maybe_unused]] unsigned char player = player_power >> 2;
+	[[maybe_unused]] unsigned char power = player_power & 0x03;
+	[[maybe_unused]] unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too)
 
 	/*
 	printf("Place bomb\n");
@@ -946,16 +946,6 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	if (m_currentLevel.expired())
 		return HandlePacketResult::Handled;
 
-	bool alreadyVisited = false;
-	for (const auto& cl : m_cachedLevels)
-	{
-		if (auto clevel = cl->level.lock(); clevel == adjacentLevel)
-		{
-			alreadyVisited = true;
-			break;
-		}
-	}
-
 	// Send the level.
 	if (m_versionId >= CLVER_2_1)
 		sendLevel(adjacentLevel, modTime, true);
@@ -1013,7 +1003,7 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 {
 	// Read packet data
-	unsigned int npcId = pPacket.readGUInt();
+	[[maybe_unused]] unsigned int npcId = pPacket.readGUInt();
 	float loc[2] = {
 		(float)pPacket.readGUChar() / 2.0f,
 		(float)pPacket.readGUChar() / 2.0f
@@ -1291,7 +1281,7 @@ HandlePacketResult PlayerClient::msgPLI_MAPINFO(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 {
 	ShootPacketNew newPacket{};
-	int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
+	[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
 
 	newPacket.pixelx = 16 * pPacket.readGChar();        // 16 * ((float)pPacket.readGUChar() / 2.0f);
 	newPacket.pixely = 16 * pPacket.readGChar();        // 16 * ((float)pPacket.readGUChar() / 2.0f);
@@ -1310,7 +1300,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 	newPacket.speed = pPacket.readGUChar();   // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
 	newPacket.gravity = 8;
 	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
-	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
@@ -1353,7 +1343,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 	newPacket.speed = pPacket.readGUChar();   // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
 	newPacket.gravity = pPacket.readGUChar();
 	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
-	unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 	newPacket.shootParams = pPacket.readString("");
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();

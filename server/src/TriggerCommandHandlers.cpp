@@ -27,7 +27,7 @@ namespace preagonal
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
-	auto& dispatcher = m_triggerActionDispatcher;
+	//auto& dispatcher = m_triggerActionDispatcher;
 
 	builder.registerCommand("serverside", [&](Player* player, std::vector<std::string>& triggerData)
 	{
@@ -80,7 +80,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (!getSettings().getBool("triggerhack_weapons", false))
 			return false;
 
-		for (auto i = 1; i < triggerData.size(); ++i)
+		for (size_t i = 1; i < triggerData.size(); ++i)
 			player->addWeapon(string::trim(triggerData[i]));
 		return true;
 	});
@@ -90,7 +90,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (!getSettings().getBool("triggerhack_weapons", false))
 			return false;
 
-		for (auto i = 1; i < triggerData.size(); ++i)
+		for (size_t i = 1; i < triggerData.size(); ++i)
 			player->deleteWeapon(string::trim(triggerData[i]));
 		return true;
 	});
@@ -259,7 +259,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		auto p = getPlayer(player->getId());
 
 		CString msg;
-		for (auto i = 1; i < triggerData.size(); ++i)
+		for (size_t i = 1; i < triggerData.size(); ++i)
 			msg << triggerData[i] << ",";
 		sendToRC(msg, p);
 		return true;

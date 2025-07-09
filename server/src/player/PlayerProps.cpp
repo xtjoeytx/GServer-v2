@@ -557,7 +557,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				// TODO: Remove when an npcserver is created.
 				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
 				{
-					bool isOwner = true;
+					[[maybe_unused]] bool isOwner = true;
 					{
 						auto& playerList = m_server->getPlayerList();
 						for (auto& [otherId, other] : playerList)
@@ -994,7 +994,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 {
-	bool hadBomb = false, hadBow = false;
+	[[maybe_unused]] bool hadBomb = false, hadBow = false;
 	CString outPacket;
 
 	// Skip playerworld

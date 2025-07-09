@@ -804,13 +804,13 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			int32_t index = 0;
+			ssize_t index = 0;
 			if (arguments.size() == 1)
-				index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				index = static_cast<ssize_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-			if (index < weaponList.size())
+			if (index >= 0 && index < (ssize_t)weaponList.size())
 			{
-				if (auto weapon = server->getWeapon(weaponList[index]); weapon != nullptr)
+				if (auto weapon = server->getWeapon(weaponList[(size_t)index]); weapon != nullptr)
 				{
 					// Explicitly place it in another string as the return will trigger move semantics.
 					return std::string{ weapon->image };
@@ -834,14 +834,14 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			int32_t index = 0;
+			ssize_t index = 0;
 			if (arguments.size() == 1)
-				index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				index = static_cast<ssize_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-			if (index < weaponList.size())
+			if (index >= 0 && index < (ssize_t)weaponList.size())
 			{
 				// Explicitly place it in another string as the return will trigger move semantics.
-				return std::string{ weaponList[index] };
+				return std::string{ weaponList[(size_t)index] };
 			}
 		}
 	}

@@ -321,8 +321,8 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "GLOVEP", account.character.glovePower);
 	writeLine(newFile, "SWORDP", account.character.swordPower);
 	writeLine(newFile, "SHIELDP", account.character.shieldPower);
-	writeLine(newFile, "BOMBP", account.character.bombPower, 1);
-	writeLine(newFile, "BOWP", account.character.bowPower, 1);
+	writeLine(newFile, "BOMBP", account.character.bombPower, 1_ui8);
+	writeLine(newFile, "BOWP", account.character.bowPower, 1_ui8);
 	writeLine(newFile, "BOW", account.character.bowImage, "");
 	writeLine(newFile, "HEAD", account.character.headImage);
 	writeLine(newFile, "BODY", account.character.bodyImage);
@@ -330,17 +330,17 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "SHIELD", account.character.shieldImage);
 	writeLine(newFile, "COLORS", colorStr, defaultColorStr);
 	writeLine(newFile, "STATUS", account.status);
-	writeLine(newFile, "MP", account.character.mp, 0);
+	writeLine(newFile, "MP", account.character.mp, 0_ui8);
 	writeLine(newFile, "AP", account.character.ap);
-	writeLine(newFile, "APCOUNTER", account.apCounter, 0);
-	writeLine(newFile, "ONSECS", account.onlineSeconds, 0);
+	writeLine(newFile, "APCOUNTER", account.apCounter, 0_ui8);
+	writeLine(newFile, "ONSECS", account.onlineSeconds, (uint32_t)0);
 	writeLine(newFile, "IP", account.ipAddress);
 	writeLine(newFile, "LANGUAGE", account.language, "English"sv);
-	writeLine(newFile, "KILLS", account.kills, 0);
-	writeLine(newFile, "DEATHS", account.deaths, 0);
+	writeLine(newFile, "KILLS", account.kills, (uint32_t)0);
+	writeLine(newFile, "DEATHS", account.deaths, (uint32_t)0);
 	writeLine(newFile, "RATING", account.eloRating, 1500.0f);
 	writeLine(newFile, "DEVIATION", account.eloDeviation, 350.0f);
-	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), 0);
+	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), (time_t)0);
 
 	// Attributes
 	for (size_t i = 0; i < 30; i++)
@@ -368,7 +368,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "BANLENGTH", account.banLength, "");
 	writeLine(newFile, "COMMENTS", account.comments, "");
 	writeLine(newFile, "EMAIL", account.email, "");
-	writeLine(newFile, "LOCALRIGHTS", account.adminRights, 0);
+	writeLine(newFile, "LOCALRIGHTS", account.adminRights, (uint32_t)0);
 	writeLine(newFile, "IPRANGE", string::join(account.adminIpRange), "");
 	writeLine(newFile, "LOADONLY", account.loadOnly ? 1 : 0, 0);
 
@@ -411,8 +411,8 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 	for (const auto& search : searches)
 	{
 		// Find the condition.
-		int condition = -1;
-		for (int i = 0; i < conditions.size(); ++i)
+		ssize_t condition = -1;
+		for (ssize_t i = 0; i < (ssize_t)conditions.size(); ++i)
 		{
 			if (search.find(conditions[i]) != std::string::npos)
 			{

@@ -38,7 +38,7 @@ static char toLower(char c)
 	return c;
 }
 
-static char toUpper(char c)
+[[maybe_unused]] static char toUpper(char c)
 {
 	if (c >= 97 && c <= 122)
 		return c - 32;
@@ -262,7 +262,7 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 					if (wordpos + chatpos == wordStart)
 					{
 						bool found = false;
-						for (int b = 0; b < sizeof(bypass); ++b)
+						for (size_t b = 0; b < sizeof(bypass); ++b)
 						{
 							if (chat[wordpos + chatpos] == bypass[b])
 							{
@@ -278,7 +278,7 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 					while (true)
 					{
 						bool found = false;
-						for (int b = 0; b < sizeof(bypass); ++b)
+						for (size_t b = 0; b < sizeof(bypass); ++b)
 						{
 							if (chat[wordpos + chatpos] == bypass[b])
 							{

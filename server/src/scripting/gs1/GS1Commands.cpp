@@ -1046,9 +1046,6 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto time = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto options = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 
-		auto pixelDX = static_cast<int16_t>(dx * 16);
-		auto pixelDY = static_cast<int16_t>(dy * 16);
-
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			server->moveNPC(npc, dx, dy, time, options);
@@ -1605,7 +1602,6 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 
 	if (auto* messagecode = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
 		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 		messagecode->assign(text);
 	}

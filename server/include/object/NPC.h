@@ -293,6 +293,7 @@ public:
 	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
 	[[inline]] Rectangle<int16_t, uint16_t> getCollisionBoundingBox() const noexcept;
 	std::string getLevelName() const;
+	Position<uint16_t> getGmapPosition() const;
 	std::vector<std::string> getVariableDump() const;
 
 	// Records the current state as the initial state of the NPC.
@@ -415,8 +416,8 @@ inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcep
 	DO(NPCProp::GATTRIB3,	PropertyString,				character.ganiAttributes[2]) \
 	DO(NPCProp::GATTRIB4,	PropertyString,				character.ganiAttributes[3]) \
 	DO(NPCProp::GATTRIB5,	PropertyString,				character.ganiAttributes[4]) \
-	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0_ui8 : static_cast<uint8_t>(level.lock()->getGmapX()))) \
-	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	(level.expired() ? 0_ui8 : static_cast<uint8_t>(level.lock()->getGmapY()))) \
+	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	getGmapPosition().x()) \
+	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	getGmapPosition().y()) \
 	DO(NPCProp::Z,			PropertyTileCoordinateZ,	character.pixelZ) \
 	DO(NPCProp::GATTRIB6,	PropertyString,				character.ganiAttributes[5]) \
 	DO(NPCProp::GATTRIB7,	PropertyString,				character.ganiAttributes[6]) \

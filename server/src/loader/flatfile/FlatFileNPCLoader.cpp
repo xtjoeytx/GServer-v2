@@ -248,7 +248,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "COLORS")
 		{
 			auto tokens = curLine.readString("").tokenize(",");
-			for (size_t idx = 0; idx < std::min((int)tokens.size(), 5); idx++)
+			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)5); idx++)
 				npc->character.colors[idx] = strtoint(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}

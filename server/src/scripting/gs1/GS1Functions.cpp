@@ -547,7 +547,7 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
 	auto listItems = string::splitHard(list, ","sv);
-	for (auto i = 0; i < listItems.size(); ++i)
+	for (size_t i = 0; i < listItems.size(); ++i)
 	{
 		if (string::trim(listItems[i]) == string::trim(str))
 			return static_cast<double>(i);
@@ -901,7 +901,6 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
 		if (!level->isOnWall({ x, y }))
 			return GameValue{ false };
 
@@ -930,7 +929,6 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
 		if (!level->isOnWall2({ { x, y }, { width, height } }))
 			return GameValue{ false };
 
@@ -957,7 +955,6 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
 		if (level->isOnWater({ x, y }))
 			return GameValue{ true };
 	}
@@ -1003,7 +1000,6 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& bombs = level->getBombs();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < bombs.size(); ++i)
 		{
 			auto& bomb = bombs[i];
@@ -1028,7 +1024,6 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& baddies = level->getBaddies();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < baddies.size(); ++i)
 		{
 			auto& baddy = baddies[i];
@@ -1053,7 +1048,6 @@ GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, c
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& explos = level->getExplosions();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < explos.size(); ++i)
 		{
 			auto& explo = explos[i];
@@ -1078,7 +1072,6 @@ GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, c
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& horses = level->getHorses();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < horses.size(); ++i)
 		{
 			auto& horse = horses[i];
@@ -1103,7 +1096,6 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& items = level->getItems();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < items.size(); ++i)
 		{
 			auto& item = items[i];
@@ -1182,7 +1174,6 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto& signs = level->getSigns();
-		auto* server = BabyDI::Get<Server>();
 		for (size_t i = 0; i < signs.size(); ++i)
 		{
 			auto& sign = signs[i];

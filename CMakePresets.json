@@ -38,15 +38,15 @@
         "PACKET_LOGGING": false
       }
     },
-	{
-	  "name": "Debug x64",
-	  "inherits": "Debug",
-	  "architecture": {
-		"value": "x64",
-		"strategy": "external"
-	  },
-	  "cacheVariables": {
-		"PACKET_LOGGING": false
+    {
+      "name": "Debug x64",
+      "inherits": "Debug",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "PACKET_LOGGING": false
       }
     },
     {
@@ -58,6 +58,32 @@
       },
       "cacheVariables": {
         "PACKET_LOGGING": true
+      }
+    },
+    {
+      "name": "Linux Debug x64",
+      "inherits": "Debug",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "VCPKG_FORCE_DOWNLOADED_BINARIES": true
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
+          "copySourcesOptions": {
+            "exclusionList": [
+              ".vs",
+              ".git",
+              "out",
+              "build",
+              "dependencies/fc"
+            ]
+          }
+        }
       }
     }
   ]

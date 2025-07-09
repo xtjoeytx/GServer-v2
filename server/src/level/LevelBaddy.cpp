@@ -123,7 +123,7 @@ CString LevelBaddy::getProp(BaddyProp propId) const
 		case BaddyProp::VERSEHURT:
 		case BaddyProp::VERSEATTACK:
 		{
-			auto verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
+			size_t verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
 			if (verseId < verses.size())
 				return CString() >> (char)verses[verseId].length() << verses[verseId];
 			else
@@ -136,7 +136,7 @@ CString LevelBaddy::getProp(BaddyProp propId) const
 CString LevelBaddy::getProps() const
 {
 	CString retVal;
-	for (int i = 1; i < BADDYPROP_COUNT; i++)
+	for (size_t i = 1; i < BADDYPROP_COUNT; i++)
 		retVal >> (char)i << getProp(static_cast<BaddyProp>(i));
 	return retVal;
 }
@@ -270,7 +270,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 			case BaddyProp::VERSEATTACK:
 			{
 				len = pProps.readGUChar();
-				auto verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
+				size_t verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
 				if (verseId < verses.size())
 					verses[verseId] = pProps.readChars(len);
 			}

@@ -448,13 +448,10 @@ void Player::doMain()
 
 bool Player::doTimedEvents()
 {
-	time_t currTime = time(0);
-
 	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 	
 	m_fileQueue.sendCompress();
-
 	return true;
 }
 

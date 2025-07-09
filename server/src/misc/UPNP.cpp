@@ -125,7 +125,7 @@ void UPNP::removePortForward(std::string_view port)
 
 	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", 0);
 	log::printLine(log::server, ":: [UPnP] Removing forward on port {}.", port);
-	m_portsForwarded.erase(port);
+	m_portsForwarded.erase(std::string{ port });
 #endif
 }
 

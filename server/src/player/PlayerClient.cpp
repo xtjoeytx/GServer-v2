@@ -170,7 +170,6 @@ void PlayerClient::cleanup()
 		{
 			if (auto npc = m_server->getNPC(m_carryNPC); npc)
 			{
-				auto curtime = time(0);
 				npc->sendPropsFromResults(
 					npc->setPropWith<NPCProp::X2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelX + 8)),
 					npc->setPropWith<NPCProp::Y2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelY + 16))
@@ -1117,8 +1116,6 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 
 bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_t modTime)
 {
-	CSettings& settings = m_server->getSettings();
-
 	// Save our current level.
 	auto currentLevel = m_currentLevel.lock();
 
@@ -1318,11 +1315,11 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool
 
 		// Send links (if applicable).
 		// We need to send links for bigmaps due to the overflow issues.
-		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false) || (map && map->getType() == MapType::BIGMAP))
+		if (!m_server->hasNPCServer() || settings.getBool("clientsidelinks", false) || (map && map->getType() == MapType::BIGMAP))
 			pLevel->sendLinksToPlayer(shared_from_this());
 
 		// Send signs (if applicable).
-		if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidesigns", false))
+		if (!m_server->hasNPCServer() || settings.getBool("clientsidesigns", false))
 			pLevel->sendSignsToPlayer(shared_from_this());
 
 		// Send the level mod time.
@@ -1758,15 +1755,15 @@ void PlayerClient::dropItemsOnDeath()
 	if (!m_server->getSettings().getBool("dropitemsdead", true))
 		return;
 
-	int mindeathgralats = m_server->getSettings().getInt("mindeathgralats", 1);
-	int maxdeathgralats = m_server->getSettings().getInt("maxdeathgralats", 50);
+	uint32_t mindeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("mindeathgralats", 1));
+	uint32_t maxdeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("maxdeathgralats", 50));
 
 	// Determine how many gralats to remove from the account.
-	int drop_gralats = 0;
+	uint32_t drop_gralats = 0;
 	if (maxdeathgralats > 0)
 	{
 		drop_gralats = rand() % maxdeathgralats;
-		clip(drop_gralats, mindeathgralats, maxdeathgralats);
+		drop_gralats = std::clamp(drop_gralats, mindeathgralats, maxdeathgralats);
 		if (drop_gralats > account.character.gralats) drop_gralats = account.character.gralats;
 	}
 
@@ -1864,7 +1861,7 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 		case LevelItemType::REDRUPEE:   // redrupee
 		case LevelItemType::GOLDRUPEE:  // goldrupee
 		{
-			int gralatsRequired;
+			uint32_t gralatsRequired;
 			if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
 			else if (itemType == LevelItemType::REDRUPEE)
 				gralatsRequired = 30;

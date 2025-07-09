@@ -111,7 +111,6 @@ PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObjectSource& source, std::opti
 	if (source.second == ScriptObjectSourceType::SERVER)
 		return std::nullopt;
 
-	auto* server = BabyDI::Get<Server>();
 	if (source.second == ScriptObjectSourceType::PLAYER)
 		return getPlayerFromSource(source, index);
 	else if (source.second == ScriptObjectSourceType::NPC)
@@ -125,7 +124,6 @@ Character* getCharacterFromSource(const ScriptObjectSource& source, std::optiona
 	if (source.second == ScriptObjectSourceType::SERVER)
 		return nullptr;
 
-	auto* server = BabyDI::Get<Server>();
 	if (source.second == ScriptObjectSourceType::PLAYER)
 	{
 		if (auto player = getPlayerFromSource(source, index); player != nullptr)

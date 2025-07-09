@@ -61,8 +61,8 @@ const std::string& Map::getLevelAt(int mx, int my) const
 {
 	static const std::string emptyStr;
 
-	if (mx < m_width && my < m_height)
-		return m_levelList[mx + my * m_width];
+	if (static_cast<size_t>(mx) < m_width && static_cast<size_t>(my) < m_height)
+		return m_levelList[static_cast<size_t>(mx + my * m_width)];
 
 	return emptyStr;
 }
@@ -103,7 +103,7 @@ bool Map::loadBigMap(const CString& pFileName)
 		for (const auto& lvl: levelList)
 		{
 			// dont calculate the width based on any extra padding
-			empty = (lvl.isEmpty() ? ++empty : 0);
+			empty += (lvl.isEmpty() ? 1 : 0);
 		}
 
 		// calculate width/height
@@ -195,7 +195,7 @@ bool Map::loadGMap(const CString& pFileName)
 		else if (curLine[0] == "LEVELNAMES")
 		{
 			++it;
-			int gmapy = 0;
+			size_t gmapy = 0;
 
 			std::vector<std::string> levelMap(m_width * m_height);
 
@@ -211,7 +211,7 @@ bool Map::loadGMap(const CString& pFileName)
 
 				if (gmapy < m_height)
 				{
-					int gmapx = 0;
+					size_t gmapx = 0;
 
 					// Untokenize the level names and put them into a vector for easy loading.
 					line.guntokenizeI();

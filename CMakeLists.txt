@@ -52,10 +52,16 @@ cmake_policy(SET CMP0054 NEW)	# CMP0054: Only interpret if() arguments as variab
 cmake_policy(SET CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
 cmake_policy(SET CMP0077 NEW)	# CMP0077: option() honors normal variables.
 cmake_policy(SET CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
-cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
 cmake_policy(SET CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
-cmake_policy(SET CMP0156 NEW)	# CMP0156: De-duplicate libraries on link lines based on linker capabilities
-cmake_policy(SET CMP0179 NEW)	# CMP0179: De-duplication of static libraries on link lines keeps first occurrence
+if (POLICY CMP0177)
+	cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
+endif()
+if (POLICY CMP0156)
+	cmake_policy(SET CMP0156 NEW)	# CMP0156: De-duplicate libraries on link lines based on linker capabilities
+endif()
+if (POLICY CMP0179)
+	cmake_policy(SET CMP0179 NEW)	# CMP0179: De-duplication of static libraries on link lines keeps first occurrence
+endif()
 
 # Get submodules.
 find_package(Git QUIET)

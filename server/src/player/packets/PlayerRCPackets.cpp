@@ -1324,7 +1324,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	// Remove any invalid directories.
 	for (auto i = folders.begin(); i != folders.end();)
 	{
-		if ((*i).find(":") != -1 || (*i).find("..") != -1 || (*i).find(" /*") != -1)
+		if ((*i).find(":") != std::string::npos || (*i).find("..") != std::string::npos || (*i).find(" /*") != std::string::npos)
 			i = folders.erase(i);
 		else
 			++i;
@@ -1754,8 +1754,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 	// Check if this is a protected file.
 	bool isProtected = false;
-	int fileID = -1;
-	for (int i = 0; i < ImportantFiles.size(); ++i)
+	size_t fileID = ~0;
+	for (size_t i = 0; i < ImportantFiles.size(); ++i)
 	{
 		if (checkFile == ImportantFiles[i])
 		{
@@ -2065,7 +2065,7 @@ HandlePacketResult PlayerRC::msgPLI_NPCSERVERQUERY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Read Packet Data
-	PlayerID pid = static_cast<PlayerID>(pPacket.readGUShort());
+	[[maybe_unused]] PlayerID pid = static_cast<PlayerID>(pPacket.readGUShort());
 	CString message = pPacket.readString("");
 
 	// Enact upon the message.

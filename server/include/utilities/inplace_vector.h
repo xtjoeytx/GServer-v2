@@ -97,7 +97,7 @@ template <ranges::random_access_range __Rng, integral __Index>
 static constexpr decltype(auto) __index(__Rng&& __rng, __Index __i) noexcept
   requires(ranges::sized_range<__Rng>)
 {
-    __IV_EXPECT(static_cast<ptrdiff_t>(__i) < ranges::size(__rng));
+    __IV_EXPECT(static_cast<ptrdiff_t>(__i) < static_cast<ptrdiff_t>(ranges::size(__rng)));
     return begin(::std::forward<__Rng>(__rng))[::std::forward<__Index>(__i)];
 }
 

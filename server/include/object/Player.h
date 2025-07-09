@@ -490,7 +490,6 @@ concept DerivedFromPlayer = std::is_base_of_v<Player, T>;
 template<DerivedFromPlayer P>
 auto players_of_type(const std::unordered_map<PlayerID, PlayerPtr>& range)
 {
-	using oldpair = std::unordered_map<PlayerID, PlayerPtr>::value_type;
 	using newpair = std::pair<const PlayerID, std::shared_ptr<P>>;
 	return range
 		| std::views::filter([](auto& kvp) { return dynamic_cast<P*>(kvp.second.get()) != nullptr; })

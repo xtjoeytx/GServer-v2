@@ -81,14 +81,14 @@ auto methodstub(T* t, R (T::*m)(Args...))
 }
 
 // I don't want to deal with adding this to the gs2lib.
-static CString operator<<(const CString& first, const CString& second)
+[[maybe_unused]] static CString operator<<(const CString& first, const CString& second)
 {
 	CString result{ first };
 	return result << second;
 }
 
 Server::Server(const CString& pName)
-	: running(false), m_doRestart(false), m_name(pName), m_animationManager(this), m_packageManager(this), m_serverStartTime(),
+	: m_animationManager(this), m_packageManager(this), m_name(pName),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	calculateNWTime();
@@ -919,7 +919,7 @@ void Server::saveWeapons()
 {
 	FileSystem weaponFS;
 	weaponFS.addDir("weapons", "weapon*.txt");
-	const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
+	//const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
 
 	for (auto& [weaponName, weapon]: m_weaponList)
 	{
@@ -936,21 +936,6 @@ void Server::saveWeapons()
 			weaponFS.setModTime(weaponFS.find(weaponFile), weapon->modTime.time_since_epoch().count());
 		}
 	}
-}
-
-static std::string transformString(const std::string& str)
-{
-	std::string newStr;
-	for (char ch: str)
-	{
-		if (ch == '"' || ch == '\\')
-			newStr += "\\";
-		else if (ch == '%')
-			newStr += '%';
-		newStr += ch;
-	}
-
-	return newStr;
 }
 
 /////////////////////////////////////////////////////
@@ -1335,7 +1320,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	auto existing = Scripting.variables.get(flagName).lock();
 	if (existing != nullptr)
 	{
-		bool isFlag = existing->has<bool>() && !existing->has<std::string>();
+		//bool isFlag = existing->has<bool>() && !existing->has<std::string>();
 		bool isStringFlag = existing->has<std::string>();
 
 		// No change.

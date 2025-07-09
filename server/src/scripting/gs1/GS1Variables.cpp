@@ -120,8 +120,6 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 	if (level.expired())
 		return;
 
-	auto* server = BabyDI::Get<Server>();
-
 	// players
 	variableStore.add(GameVariable{ "playerscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getPlayers().size()); }, {} });
 	variableStore.add(GameVariable{ "players",

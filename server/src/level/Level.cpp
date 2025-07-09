@@ -302,7 +302,7 @@ void Level::saveLevel(const std::string& filename)
 	// white space separator
 	std::string s = " ";
 	// write tiles
-	for (int layer = 0; layer < getLayers().size(); layer++)
+	for (size_t layer = 0; layer < getLayers().size(); layer++)
 	{
 		auto& tiles = getTiles(layer);
 		for (int y = 0; y < 64 /*tiles.get_height()*/; y++)

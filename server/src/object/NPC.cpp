@@ -150,6 +150,15 @@ std::string NPC::getLevelName() const
 	return {};
 }
 
+Position<uint16_t> NPC::getGmapPosition() const
+{
+	if (auto levelPtr = level.lock(); levelPtr != nullptr)
+	{
+		return { (uint16_t)levelPtr->getGmapX(), (uint16_t)levelPtr->getGmapY() };
+	}
+	return { (uint16_t)0, (uint16_t)0 };
+}
+
 //----------------------------
 
 std::shared_ptr<PropertyBase> NPC::constructPropFor(NPCProp prop) const
@@ -893,7 +902,6 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 {
 	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
 
-	auto server = BabyDI::Get<Server>();
 	CString retVal;
 	int pmax = NPCPROP_COUNT;
 

@@ -393,7 +393,7 @@ void ServerList::handleText(const CString& data)
 				{
 					std::string serverName = params[3].guntokenize().text();
 
-					for (int i = 4; i < params.size(); i++)
+					for (size_t i = 4; i < params.size(); i++)
 					{
 						params[i].guntokenizeI();
 						while (params[i].bytesLeft())
@@ -689,7 +689,7 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 {
 	CString account = pPacket.readChars(pPacket.readGUChar());
 	unsigned short id = pPacket.readGUShort();
-	unsigned char type = pPacket.readGUChar();
+	[[maybe_unused]] unsigned char type = pPacket.readGUChar();
 	CString message = pPacket.readString("");
 
 	// Get the player.
@@ -771,7 +771,7 @@ void ServerList::msgSVI_FILESTART3(CString& pPacket)
 
 void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
-	unsigned char pTy = pPacket.readGUChar();
+	[[maybe_unused]] unsigned char pTy = pPacket.readGUChar();
 	CString filename = m_server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
 	if (filename.length() == 0) return;
 	CString filedata;

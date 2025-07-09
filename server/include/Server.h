@@ -119,11 +119,11 @@ public:
 	bool canSend() { return false; }
 
 	Server(const CString& pName);
-	~Server();
+	virtual ~Server();
 	void operator()();
 	void cleanup();
 	void restart();
-	bool running;
+	bool running = false;
 
 	int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
 	bool doMain();
@@ -300,7 +300,7 @@ public:
 private:
 	bool doTimedEvents(int iterations);
 
-	bool m_doRestart;
+	bool m_doRestart = false;
 
 	FileSystem m_filesystem[FS_COUNT], m_filesystemAccounts;
 	CSettings m_adminSettings, m_settings;

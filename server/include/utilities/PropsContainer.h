@@ -365,7 +365,7 @@ struct PropertyArray : public PropertyBase
 	{
 		for (size_t i = 0; i < N; ++i)
 		{
-			if (data.bytesLeft() < sizeof(T))
+			if (static_cast<size_t>(data.bytesLeft()) < sizeof(T))
 				throw std::runtime_error("Not enough data to deserialize PropertyArray.");
 			data.readGInto(values[i]);
 
