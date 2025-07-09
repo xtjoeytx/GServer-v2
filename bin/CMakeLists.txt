@@ -21,7 +21,7 @@
 
 if(V8NPCSERVER)
 	file(GLOB DOCS
-		 ../docs/npcserver.txt
+		 ../docs/v8-npcserver.txt
 		 )
 
 	install(FILES ${DOCS} DESTINATION "./docs")
@@ -45,8 +45,9 @@ endif()
 file(GLOB TEXT
 	 changelog.txt
 	 miniupnp_licence.txt
-	 startupserver.txt
+	 readme.gs1-npc-server.txt
 	 readme.txt
+	 startupserver.txt
 	 )
 
 install(FILES ${TEXT} DESTINATION ".")
@@ -58,6 +59,7 @@ file(GLOB SERVERS_DEFAULT
 install(FILES ${SERVERS_DEFAULT} DESTINATION "./servers/default")
 
 file(GLOB SERVERS_DEFAULT_ACCOUNTS
+	 servers/default/accounts/(npcserver).txt
 	 servers/default/accounts/defaultaccount.txt
 	 servers/default/accounts/YOURACCOUNT.txt
 	 )
@@ -65,16 +67,16 @@ file(GLOB SERVERS_DEFAULT_ACCOUNTS
 install(FILES ${SERVERS_DEFAULT_ACCOUNTS} DESTINATION "./servers/default/accounts")
 
 file(GLOB SERVERS_DEFAULT_CONFIG
-	 servers/default/config/rcmessage.txt
 	 servers/default/config/adminconfig.txt
-	 servers/default/config/serveroptions.txt
-	 servers/default/config/foldersconfig.txt
 	 servers/default/config/allowedversions.txt
-	 servers/default/config/rules.txt
+	 servers/default/config/foldersconfig.txt
 	 servers/default/config/ipbans.txt
 	 servers/default/config/rchelp.txt
+	 servers/default/config/rcmessage.txt
 	 servers/default/config/rules.example.txt
+	 servers/default/config/rules.txt
 	 servers/default/config/servermessage.html
+	 servers/default/config/serveroptions.txt
 	 )
 install(FILES ${SERVERS_DEFAULT_CONFIG} DESTINATION "./servers/default/config")
 
@@ -116,8 +118,8 @@ file(GLOB SERVERS_DEFAULT_WEAPONS
 install(FILES ${SERVERS_DEFAULT_WEAPONS} DESTINATION "./servers/default/weapons")
 
 file(GLOB SERVERS_DEFAULT_WORLD
-	 servers/default/world/readme.txt
 	 servers/default/world/onlinestartlocal.nw
+	 servers/default/world/readme.txt
 	 )
 
 install(FILES ${SERVERS_DEFAULT_WORLD} DESTINATION "./servers/default/world")
