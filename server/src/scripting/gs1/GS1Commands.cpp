@@ -819,7 +819,7 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 // explodebomb index;
 void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("explodebomb is clientside only.");
+	throw unimplemented_error("explodebomb is not implemented yet.");
 }
 
 // freezeplayer2;
