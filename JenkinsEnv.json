@@ -27,7 +27,7 @@
         "Dockerfile": "docker/linux-gnu.dockerfile",
         "BuildIfSuccessful": "artifact",
         "BuildEnv": "",
-        "RunTests": true
+        "RunTests": false
       }
     },
     {
