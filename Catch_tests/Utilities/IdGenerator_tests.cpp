@@ -36,7 +36,8 @@ SCENARIO("IdGenerator")
 
 			AND_WHEN("reseting back to defaults")
 			{
-				generator.resetAndSetNext(0);
+				generator.reset();
+				generator.createSegment(0);
 				THEN("peeking next id should be 0")
 				{
 					REQUIRE(generator.peekNextId() == 0);
@@ -79,7 +80,8 @@ SCENARIO("IdGenerator")
 
 			AND_WHEN("reseting back to defaults")
 			{
-				generator.resetAndSetNext(10001);
+				generator.reset();
+				generator.createSegment(10001);
 				THEN("peeking next id should be 10001")
 				{
 					REQUIRE(generator.peekNextId() == 10001);

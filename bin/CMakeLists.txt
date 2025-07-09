@@ -45,7 +45,7 @@ endif()
 file(GLOB TEXT
 	 changelog.txt
 	 miniupnp_licence.txt
-	 servers.txt
+	 startupserver.txt
 	 readme.txt
 	 )
 
@@ -76,46 +76,38 @@ file(GLOB SERVERS_DEFAULT_CONFIG
 	 servers/default/config/rules.example.txt
 	 servers/default/config/servermessage.html
 	 )
-
 install(FILES ${SERVERS_DEFAULT_CONFIG} DESTINATION "./servers/default/config")
 
 file(GLOB SERVERS_DEFAULT_DOCUMENTS
 	 servers/default/documents/docu_wordfilter.txt
 	 servers/default/documents/rules.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_DOCUMENTS} DESTINATION "./servers/default/documents")
 
 file(GLOB SERVERS_DEFAULT_EXECSCRIPTS
 	 servers/default/execscripts/readme.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_EXECSCRIPTS} DESTINATION "./servers/default/execscripts")
 
 file(GLOB SERVERS_DEFAULT_GUILDS
 	 servers/default/guilds/guildExample.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_GUILDS} DESTINATION "./servers/default/guilds")
 
 file(GLOB SERVERS_DEFAULT_LOGS
 	 servers/default/logs/rclog.txt
 	 servers/default/logs/serverlog.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_LOGS} DESTINATION "./servers/default/logs")
 
+file(GLOB SERVERS_DEFAULT_NPCS
+	servers/default/npcs/npcControl-NPC.txt
+	)
+install(FILES ${SERVERS_DEFAULT_NPCS} DESTINATION "./servers/default/npcs")
 
-file(GLOB SERVERS_DEFAULT_TRANSLATIONS
-	 servers/default/translations/english.po
-	 servers/default/translations/deutsch.po
-	 servers/default/translations/italiano.po
-	 servers/default/translations/nederlands.po
-	 servers/default/translations/norsk.po
-	 servers/default/translations/svenska.po
-	 )
-
-install(FILES ${SERVERS_DEFAULT_TRANSLATIONS} DESTINATION "./servers/default/translations")
+install(DIRECTORY "./servers/default/translations"
+		DESTINATION "./servers/default/"
+		FILES_MATCHING PATTERN "*.po")
 
 file(GLOB SERVERS_DEFAULT_WEAPONS
 	 servers/default/weapons/weapon-gr_movement.txt

@@ -4,7 +4,8 @@
     "bzip2",
     "miniupnpc",
     "zlib",
-    { "name": "wolfssl", "version>=": "5.8.0" }
+    { "name": "wolfssl", "version>=": "5.8.0" },
+    { "name": "catch2", "version>=": "3.4.0" }
   ],
   "version": "4.0.0",
   "name": "gserver",

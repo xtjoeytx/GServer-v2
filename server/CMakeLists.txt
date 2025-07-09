@@ -203,8 +203,9 @@ FetchContent_Declare(gs2lib
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)
-target_link_libraries(${TARGET_NAME} PRIVATE gs2lib)
-target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
+add_dependencies(${TARGET_NAME} gs2lib)
+target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
+target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
 
 # Dependency: libtommath
 #[[
@@ -360,3 +361,7 @@ if (MINGW)
 		endforeach()
 	]])
 endif()
+
+set(INSTALL_DEST .)
+
+install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION ${INSTALL_DEST})

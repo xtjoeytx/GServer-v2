@@ -54,6 +54,8 @@ cmake_policy(SET CMP0077 NEW)	# CMP0077: option() honors normal variables.
 cmake_policy(SET CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
 cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
 cmake_policy(SET CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
+cmake_policy(SET CMP0156 NEW)	# CMP0156: De-duplicate libraries on link lines based on linker capabilities
+cmake_policy(SET CMP0179 NEW)	# CMP0179: De-duplication of static libraries on link lines keeps first occurrence
 
 # Get submodules.
 find_package(Git QUIET)
@@ -81,7 +83,6 @@ project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.411 to v6.037 compatib
 
 # Lowercase project name for binaries and packaging.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
-string(TOLOWER ${PROJECT_NAME} PACKAGE_NAME)
 
 # Adhere to GNU filesystem layout conventions.
 include(GNUInstallDirs)
@@ -91,7 +92,6 @@ set(CMAKE_DEBUG_POSTFIX _d)
 set(BUILD_SHARED_LIBS OFF)
 
 # Directories.
-set(CMAKE_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
@@ -108,13 +108,23 @@ if(MSVC)
 	add_compile_definitions(UNICODE)
 endif()
 
+# Set up version data
+setup_versioning_data()
+
+# Print version data
+message(STATUS "[${PROJECT_NAME}] Configuring version ${VER_FULL}")
+
+
 # Generate the IConfig.h file.
 generate_iconfig()
+
+# Unit testing
+option(TESTS "Compile tests" OFF)
 
 # Static runtime.
 option(STATIC "Compile as a static runtime." ON)
 if(STATIC)
-	message("Compile as static runtime")
+	message(STATUS "[${PROJECT_NAME}] Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
 else()
@@ -149,20 +159,20 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 
 # Packaging.
 if(APPLE)
-	set(CPACK_GENERATOR DragNDrop)
+	set(CPACK_GENERATOR "DragNDrop")
 	set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} ${VER_FULL}")
 	set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt)
 	set(CPACK_DMG_BACKGROUND_IMAGE ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif)
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP")
 else()
-	set(CPACK_GENERATOR TGZ)
+	set(CPACK_GENERATOR "TGZ")
 endif()
 
 # More packaging.
-set(CPACK_PACKAGE_NAME ${PACKAGE_NAME})
-set(CPACK_PACKAGE_VENDOR "Preagonal Team")
-set(CPACK_PACKAGE_CONTACT "preagonal")
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME_LOWER}")
+set(CPACK_PACKAGE_VENDOR "${APP_VENDOR} Team")
+set(CPACK_PACKAGE_CONTACT "preagonal.net")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}")
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_Y})

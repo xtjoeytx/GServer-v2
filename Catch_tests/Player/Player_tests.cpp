@@ -1,10 +1,13 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch_all.hpp"
+#include "player/PlayerClient.h"
+
 #include <BabyDI.h>
 #include <Server.h>
 #include <object/Player.h>
 
 using namespace preagonal;
+using preagonal::Player;
 
 SCENARIO( "Player", "[object]" ) {
 
@@ -13,7 +16,7 @@ SCENARIO( "Player", "[object]" ) {
 		auto* server = BabyDI_PROVIDE(Server, new Server("test"));
 
 		auto* socket = new CSocket();
-		auto* player = new Player((CSocket*)socket, id);
+		const auto* player = new Player(socket, id);
 
 		WHEN( "getting player id" ) {
 			THEN( "id should be " << id ) {
