@@ -1226,7 +1226,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	CString wLevel = pPacket.readString("");
 	p->warp(wLevel, pos);
 
-	log::printLine(log::rc, "{} has warped {} to {} ({:.2f}, {:.2f})", account.name, p->account.name, wLevel.text(), pos.x(), pos.y());
+	log::printLine(log::rc, "{} has warped {} to {} ({:.2f}, {:.2f})", account.name, p->account.name, wLevel.text(), pos.x() / 16.0f, pos.y() / 16.0f);
 	return HandlePacketResult::Handled;
 }
 

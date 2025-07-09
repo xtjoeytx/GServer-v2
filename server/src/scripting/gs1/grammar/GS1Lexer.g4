@@ -14,7 +14,7 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 200> builtInCommands = {
+constexpr std::array<std::string_view, 201> builtInCommands = {
     "addguildmember",
     "addstring",
     "addtiledef",
@@ -213,6 +213,7 @@ constexpr std::array<std::string_view, 200> builtInCommands = {
     "updateboard ",
     "updateboard2 ",
     "updateterrain",
+	"warpto",
     "wraptext",
     "wraptext2",
 };
@@ -583,6 +584,7 @@ CMD_DELETELEVEL          : 'deletelevel'          { pushCommand("S"); } -> type(
 CMD_SAVEINFO             : 'saveinfo'             { pushCommand("SS"); } -> type(COMMAND);
 CMD_SAVELOG              : 'savelog '             { pushCommand("S"); } -> type(COMMAND);
 CMD_SAVELOG2             : 'savelog2'             { pushCommand("SS"); } -> type(COMMAND);
+CMD_WARPTO               : 'warpto'               { pushCommand("SEE"); } -> type(COMMAND);
 
 FUNC_GROUP_1
 	: (

@@ -199,7 +199,7 @@ public:
 	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
 public:
-	bool warp(LevelPtr level, int16_t x, int16_t y);
+	bool warp(LevelPtr level, const PixelPosition& position);
 
 public:
 	/// @brief Records the current modification time of all properties.

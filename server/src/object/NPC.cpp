@@ -123,13 +123,17 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 
 //----------------------------
 
-bool NPC::warp(LevelPtr newLevel, int16_t x, int16_t y)
+bool NPC::warp(LevelPtr newLevel, const PixelPosition& position)
 {
+	if (newLevel == nullptr)
+		return false;
+
 	sendPropsFromResults(
 		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->levelName),
-		setPropWith<NPCProp::X2>(SetBy::SERVER, x),
-		setPropWith<NPCProp::Y2>(SetBy::SERVER, y)
+		setPropWith<NPCProp::X2>(SetBy::SERVER, position.x()),
+		setPropWith<NPCProp::Y2>(SetBy::SERVER, position.y())
 		);
+
 	return true;
 }
 
@@ -1044,7 +1048,7 @@ void NPC::resetToInitialState()
 	// Warp.
 	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
 	{
-		warp(initialLevel, character.pixelX, character.pixelY);
+		warp(initialLevel, { character.pixelX, character.pixelY });
 	}
 }
 

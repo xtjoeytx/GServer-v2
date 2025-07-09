@@ -182,6 +182,7 @@ static void fn_unset(GS1Visitor* visitor, std::string_view commandName, const st
 static void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 
 static BuiltInCommandHandleMap GenerateMap()
 {
@@ -321,6 +322,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("updateboard"), &fn_updateboard },
 		{ hash("updateboard2"), &fn_updateboard2 },
 		{ hash("updateterrain"), &fn_updateterrain },
+		{ hash("warpto"), &fn_warpto },
 	};
 	return map;
 }
@@ -2367,6 +2369,25 @@ void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const st
 void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("updateterrain is not implemented yet.");
+}
+
+// warpto levelname,x,y;
+// Warps an NPC to a new level.
+void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto x = visitor->getGameValueAs<double>(*arguments[1]);
+		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto level = server->getLevel(filename); level != nullptr)
+		{
+			if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+				npc->warp(level, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

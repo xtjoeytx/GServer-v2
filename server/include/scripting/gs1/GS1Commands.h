@@ -10,7 +10,7 @@ namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr std::array<std::string_view, 200> serverSideCommands =
+constexpr std::array<std::string_view, 201> serverSideCommands =
 {
 	"addguildmember",
 	"addstring",
@@ -210,6 +210,7 @@ constexpr std::array<std::string_view, 200> serverSideCommands =
 	"updateboard ",
 	"updateboard2 ",
 	"updateterrain",
+	"warpto",
 	//"wraptext",
 	//"wraptext2",
 };

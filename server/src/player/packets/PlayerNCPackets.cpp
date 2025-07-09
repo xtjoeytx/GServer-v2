@@ -146,7 +146,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	if (npc != nullptr)
 	{
 		if (auto newLevel = m_server->getLevel(npcLevel.toString()); newLevel != nullptr)
-			npc->warp(newLevel, npcX, npcY);
+			npc->warp(newLevel, { npcX, npcY });
 	}
 
 	return HandlePacketResult::Handled;
