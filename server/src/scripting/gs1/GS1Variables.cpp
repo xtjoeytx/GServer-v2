@@ -157,7 +157,7 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 			auto objects = level.lock()->getBaddies()
 				| std::views::filter([](const LevelBaddy& baddy) { return baddy.mode != BaddyMode::DEAD; })
 				| std::views::transform([](const LevelBaddy& baddy) { return ScriptObjectSource{ std::make_pair((size_t)baddy.id, ScriptObjectSourceType::BADDY) }; });
-			std::vector<ScriptObjectSource> objectList{ std::from_range, objects };
+			std::vector<ScriptObjectSource> objectList{ std::begin(objects), std::end(objects) };
 			return objectList;
 		}, {}
 	});

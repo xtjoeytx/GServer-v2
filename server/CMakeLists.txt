@@ -157,7 +157,7 @@ target_sources(${TARGET_NAME} PUBLIC ${SOURCES})
 target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
 
 # Configure our compiler options.
-set_default_compiler_options(${TARGET_NAME})
+set_default_compiler_options(${TARGET_NAME} FALSE)
 
 if (TESTS)
 	set(APP_LIBRARY_NAME "lib${TARGET_NAME}")
@@ -171,7 +171,7 @@ if (TESTS)
 	target_sources(${APP_LIBRARY_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
 
 	# Configure our compiler options.
-	set_default_compiler_options(${APP_LIBRARY_NAME})
+	set_default_compiler_options(${APP_LIBRARY_NAME} TRUE)
 endif()
 
 # Packet logging.

@@ -915,7 +915,7 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 	{
 		char x = static_cast<char>(result->position.x() / 8.0f);
 		char y = static_cast<char>(result->position.y() / 8.0f);
-		uint8_t timeToExplode = static_cast<uint8_t>(std::min(223ll, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
+		uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(223, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
 		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, shared_from_this());
 	}
 	return result;

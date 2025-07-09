@@ -1,4 +1,4 @@
-function(set_default_compiler_options target)
+function(set_default_compiler_options target ISTESTTARGET)
 	# C++23 mode.
 	set(CMAKE_CXX_STANDARD 23)
 	set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -40,7 +40,7 @@ function(set_default_compiler_options target)
 		target_compile_definitions(${target} PUBLIC NDEBUG _NDEBUG)
 	endif()
 
-	if(TESTS)
+	if(TESTS AND ISTESTTARGET)
 		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
 	endif()
 
