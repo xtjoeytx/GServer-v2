@@ -369,6 +369,7 @@ tokenize
 tokenize2
 unfreezeplayer
 unset
+warpto
 
 //-------------------------------//
 // Not implemented commands      //
