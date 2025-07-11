@@ -39,6 +39,19 @@
       }
     },
     {
+      "name": "Release x64 MINGW",
+      "inherits": "Release",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "PACKET_LOGGING": false,
+        "§": "Windows",
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": true
+      }
+    },
+    {
       "name": "Debug x64",
       "inherits": "Debug",
       "architecture": {

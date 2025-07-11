@@ -16,6 +16,12 @@ function(set_default_compiler_options target ISTESTTARGET)
 		endif()
 	endif()
 
+	if(MINGW)
+		target_compile_options(${target} PUBLIC "-mthreads")
+		target_link_options(${target} PUBLIC "-mthreads")
+		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D__USE_MINGW_ANSI_STDIO=1 -D_BSD_SOURCE=1)
+	endif()
+
 	# Compiler options.
 	set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 	if(MSVC)

@@ -193,7 +193,7 @@ find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(antlr4-generator CONFIG REQUIRED)
 target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIBRARY_DIR})
 target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR})
-target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static)
+target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static Threads::Threads)
 if(TESTS)
 	target_link_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_LIBRARY_DIR})
 	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR})
@@ -307,6 +307,8 @@ elseif(WIN32)
 			${PROJECT_BINARY_DIR}/windresrc.h
 			${PROJECT_BINARY_DIR}/main.rc
 		)
+
+		target_compile_definitions(${TARGET_NAME} PRIVATE _WIN32_WINNT=0x600)
 		set(CMAKE_RC_COMPILER_INIT windres)
 
 		ENABLE_LANGUAGE(RC)
@@ -340,11 +342,12 @@ endif()
 
 if (MINGW)
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME} PRIVATE -static-libgcc -static-libstdc++)
-	#target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
-	#target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+	target_link_libraries(${TARGET_NAME} PRIVATE -static-libgcc)
 
-	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
+	#target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+	#target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc)
+
+	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.exe\")")
 
 	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 	install(CODE "set(MY_DEPENDENCY_PATHS \"${CMAKE_FIND_DLL_PATH}\")")
@@ -399,5 +402,4 @@ if (MINGW)
 endif()
 
 set(INSTALL_DEST .)
-
 install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION ${INSTALL_DEST})

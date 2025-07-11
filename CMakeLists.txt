@@ -53,13 +53,13 @@ cmake_policy(SET CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT vari
 cmake_policy(SET CMP0077 NEW)	# CMP0077: option() honors normal variables.
 cmake_policy(SET CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
 cmake_policy(SET CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
-if (POLICY CMP0177)
+if(POLICY CMP0177)
 	cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
 endif()
-if (POLICY CMP0156)
+if(POLICY CMP0156)
 	cmake_policy(SET CMP0156 NEW)	# CMP0156: De-duplicate libraries on link lines based on linker capabilities
 endif()
-if (POLICY CMP0179)
+if(POLICY CMP0179)
 	cmake_policy(SET CMP0179 NEW)	# CMP0179: De-duplication of static libraries on link lines keeps first occurrence
 endif()
 
@@ -83,9 +83,12 @@ endif()
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "vcpkg triplet")
 set(VCPKG_INSTALLED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	set(CMAKE_EXECUTABLE_SUFFIX ".exe")
+endif()
 
 # GS2 project.
-project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.411 to v6.037 compatible server" LANGUAGES C CXX)
+project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.380 to v6.037 compatible server" LANGUAGES C CXX)
 
 # Lowercase project name for binaries and packaging.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
@@ -139,7 +142,7 @@ else()
 endif()
 
 # Dependency: Threads.
-if(NOT WIN32)
+if(NOT MSVC)
 	# Prefer static linkage.
 	if(STATIC)
 		set(SUFFIXES_ORIG ${CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -164,12 +167,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/server)
 ###-----------------------###
 
 # Packaging.
-if(APPLE)
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set(CPACK_GENERATOR "DragNDrop")
 	set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} ${VER_FULL}")
 	set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGSetup.scpt)
 	set(CPACK_DMG_BACKGROUND_IMAGE ${PROJECT_SOURCE_DIR}/resources/packaging/osx/DMGBackground.tif)
-elseif(WIN32)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CPACK_GENERATOR "ZIP")
 else()
 	set(CPACK_GENERATOR "TGZ")
@@ -190,6 +193,7 @@ set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE.md)
 set(CPACK_SOURCE_GENERATOR TGZ)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VER_CPACK}-src")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.bzr/;~$;${CPACK_SOURCE_IGNORE_FILES}")
+set(CPACK_INSTALL_EXECUTABLES "${PROJECT_NAME_LOWER}${CMAKE_EXECUTABLE_SUFFIX}")
 
 include(CPack)
 
