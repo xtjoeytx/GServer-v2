@@ -293,7 +293,7 @@ public:
 	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
 	[[inline]] Rectangle<int16_t, uint16_t> getCollisionBoundingBox() const noexcept;
 	std::string getLevelName() const;
-	Position<uint16_t> getGmapPosition() const;
+	Position<uint8_t> getGmapPosition() const;
 	std::vector<std::string> getVariableDump() const;
 
 	// Records the current state as the initial state of the NPC.

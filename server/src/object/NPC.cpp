@@ -150,13 +150,13 @@ std::string NPC::getLevelName() const
 	return {};
 }
 
-Position<uint16_t> NPC::getGmapPosition() const
+Position<uint8_t> NPC::getGmapPosition() const
 {
 	if (auto levelPtr = level.lock(); levelPtr != nullptr)
 	{
-		return { (uint16_t)levelPtr->getGmapX(), (uint16_t)levelPtr->getGmapY() };
+		return { levelPtr->getGmapX(), levelPtr->getGmapY() };
 	}
-	return { (uint16_t)0, (uint16_t)0 };
+	return { 0_ui8, 0_ui8 };
 }
 
 //----------------------------
@@ -1215,7 +1215,7 @@ void NPC::testForLinks(SetResults& result)
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
 	{
 		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
-		Position<int8_t> testPos{ (int8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (int8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
+		WholeTilePosition testPos{ (uint8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (uint8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
 		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)

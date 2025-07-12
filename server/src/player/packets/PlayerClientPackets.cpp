@@ -605,8 +605,8 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 {
-	int8_t cX = pPacket.readGChar();
-	int8_t cY = pPacket.readGChar();
+	uint8_t cX = pPacket.readGChar();
+	uint8_t cY = pPacket.readGChar();
 
 	if (auto level = getLevel(); level)
 	{

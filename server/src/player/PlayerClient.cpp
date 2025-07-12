@@ -1736,7 +1736,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		return false;
 
 	// Test for links.
-	Position<int8_t> testPosTiles = { (int8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (int8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
+	WholeTilePosition testPosTiles = { (uint8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (uint8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
 	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
 	{
 		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)

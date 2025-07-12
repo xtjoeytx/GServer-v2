@@ -72,6 +72,16 @@ inline constexpr uint8_t operator""_ui8(unsigned long long val)
 	return static_cast<uint8_t>(val);
 }
 
+inline constexpr uint16_t operator""_ui16(unsigned long long val)
+{
+	return static_cast<uint16_t>(val);
+}
+
+inline constexpr int16_t operator""_i16(unsigned long long val)
+{
+	return static_cast<int16_t>(val);
+}
+
 //----------------------------
 // Property helpers
 
@@ -97,6 +107,7 @@ inline static constexpr std::optional<T> PROPOPT(std::optional<T> prop)
 
 namespace chrono = std::chrono;
 using clock = std::chrono::system_clock;
+using precise_clock = std::chrono::high_resolution_clock;
 using clock_duration_double = std::chrono::duration<double, std::chrono::system_clock::period>;
 using duration_seconds_double = std::chrono::duration<double>;
 using duration_milli_double = std::chrono::duration<double, std::milli>;

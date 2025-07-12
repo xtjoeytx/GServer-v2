@@ -89,8 +89,6 @@ struct Account
 	std::vector<std::string> folderList;
 	std::string lastFolderAccessed;
 
-	void bindVariablesToPlayer(std::shared_ptr<Player> player);
-
 	[[inline]] bool hasRight(uint32_t right) const;
 	[[inline]] bool hasChest(std::string_view level, int8_t x, int8_t y) const;
 	[[inline]] bool hasWeapon(std::string_view weapon) const;

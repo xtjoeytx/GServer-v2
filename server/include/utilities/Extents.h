@@ -82,7 +82,7 @@ struct Position
 
 using PixelPosition = Position<int16_t>;
 using TilePosition = Position<float>;
-using WholeTilePosition = Position<int8_t>;
+using WholeTilePosition = Position<uint8_t>;
 
 //----------------------------
 // Dimension
@@ -132,6 +132,8 @@ struct Rectangle
 	Position<P> position{};
 	Dimension<S> size{};
 };
+
+using PixelRectangleArea = Rectangle<int16_t, uint16_t>;
 
 //----------------------------
 // Intersections
@@ -189,7 +191,7 @@ inline constexpr PixelPosition toPixelPosition(const Position<Type>& position)
 	{
 		return position;
 	}
-	else if constexpr (std::same_as<Type, int8_t> || std::same_as<Type, float>)
+	else if constexpr (std::same_as<Type, uint8_t> || std::same_as<Type, float>)
 	{
 		return PixelPosition{ static_cast<int16_t>(position.x() * 16), static_cast<int16_t>(position.y() * 16) };
 	}
@@ -221,15 +223,15 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 {
 	if constexpr (std::same_as<Type, int16_t>)
 	{
-		return WholeTilePosition{ static_cast<int8_t>(position.x()) / 16.0f, static_cast<int8_t>(position.y()) / 16.0f };
+		return WholeTilePosition{ static_cast<uint8_t>(position.x() / 16.0f), static_cast<uint8_t>(position.y() / 16.0f) };
 	}
-	else if constexpr (std::same_as<Type, int8_t>)
+	else if constexpr (std::same_as<Type, uint8_t>)
 	{
 		return position;
 	}
 	else
 	{
-		return WholeTilePosition{ static_cast<int8_t>(position.x()), static_cast<int8_t>(position.y()) };
+		return WholeTilePosition{ static_cast<uint8_t>(position.x()), static_cast<uint8_t>(position.y()) };
 	}
 }
 

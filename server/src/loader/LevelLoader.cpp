@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <span>
 #include <vector>
@@ -157,7 +158,7 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 		{
 			// Extra layer tiles are 0xFFFF.
 			if (isExtraLayer && code == 0xFFF)
-				code = ~0;
+				code = std::numeric_limits<uint16_t>::max();
 
 			outputTiles[boardWriteIndex++] = code;
 			continue;
@@ -179,12 +180,12 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 
 			// Determine the actual tiles we are going to write.
 			// Tiles on additional layers are 0xFFFF if not set, so handle that.
-			uint16_t first = ~0;
+			uint16_t first = std::numeric_limits<uint16_t>::max();
 			uint16_t second = rleTiles[1];
 			if (!isExtraLayer || rleTiles[0] != 0xFFF)
 				first = rleTiles[0];
 			if (isExtraLayer && rleTiles[1] == 0xFFF)
-				second = ~0;
+				second = std::numeric_limits<uint16_t>::max();
 
 			// Add the tiles now.
 			for (int i = 0; i < tileReadAmount && boardWriteIndex < MAX_TILE_COUNT - 1; ++i)
@@ -205,7 +206,7 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 			{
 				// Extra layer tiles are 0xFFFF.
 				if (isExtraLayer && code == 0xFFF)
-					code = ~0;
+					code = std::numeric_limits<uint16_t>::max();
 
 				outputTiles[boardWriteIndex++] = code;
 			}
@@ -355,8 +356,8 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 			CString line = fileData.readString("\n");
 			if (line.length() == 0) break;
 
-			int8_t x = line.readGChar();
-			int8_t y = line.readGChar();
+			uint8_t x = line.readGChar();
+			uint8_t y = line.readGChar();
 			CString text = line.readString("");
 
 			level->addSign(WholeTilePosition{ x, y }, text, true);
@@ -492,8 +493,8 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			int8_t x = line.readGChar();
-			int8_t y = line.readGChar();
+			uint8_t x = line.readGChar();
+			uint8_t y = line.readGChar();
 			char item = line.readGChar();
 			char signindex = line.readGChar();
 
@@ -508,8 +509,8 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			CString line = fileData.readString("\n");
 			if (line.length() == 0) break;
 
-			int8_t x = line.readGChar();
-			int8_t y = line.readGChar();
+			uint8_t x = line.readGChar();
+			uint8_t y = line.readGChar();
 			CString text = line.readString("");
 
 			level->addSign(WholeTilePosition{ x, y }, text, true);
@@ -578,8 +579,8 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			LevelItemType itemType = LevelItem::getItemId(curLine[3].toString());
 			if (itemType != LevelItemType::INVALID)
 			{
-				int8_t chestx = strtoint(curLine[1]);
-				int8_t chesty = strtoint(curLine[2]);
+				uint8_t chestx = strtoint(curLine[1]);
+				uint8_t chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
 				level->addChest(WholeTilePosition{ chestx, chesty }, itemType, signidx);
 			}
@@ -656,8 +657,8 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			if (curLine.size() != 3)
 				continue;
 
-			int8_t x = strtoint(curLine[1]);
-			int8_t y = strtoint(curLine[2]);
+			uint8_t x = strtoint(curLine[1]);
+			uint8_t y = strtoint(curLine[2]);
 
 			// Grab the sign code.
 			CString text;

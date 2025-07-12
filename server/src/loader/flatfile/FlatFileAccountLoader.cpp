@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <format>
+#include <limits>
 #include <ranges>
 #include <string_view>
 #include <string>
@@ -411,7 +412,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 	for (const auto& search : searches)
 	{
 		// Find the condition.
-		size_t condition = ~0;
+		size_t condition = std::numeric_limits<size_t>::max();
 		for (size_t i = 0; i < (size_t)conditions.size(); ++i)
 		{
 			if (search.find(conditions[i]) != std::string::npos)
@@ -422,7 +423,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 		}
 
 		// If we didn't find a condition, fail out completely.
-		if (condition == ~0)
+		if (condition == std::numeric_limits<size_t>::max())
 			return false;
 
 		// Split the search up into the components.

@@ -16,6 +16,7 @@
 #include <format>
 #include <functional>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string_view>
@@ -1754,7 +1755,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 	// Check if this is a protected file.
 	bool isProtected = false;
-	size_t fileID = ~0;
+	size_t fileID = std::numeric_limits<size_t>::max();
 	for (size_t i = 0; i < ImportantFiles.size(); ++i)
 	{
 		if (checkFile == ImportantFiles[i])
