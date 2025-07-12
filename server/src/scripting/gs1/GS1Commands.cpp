@@ -473,8 +473,8 @@ void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, con
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto objecttype = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto id = static_cast<NPCID>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto objecttype = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto id = DoubleAsIntegralFloor<NPCID>(visitor->getGameValueAs<double>(*arguments[1]));
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
@@ -510,7 +510,7 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		std::vector<std::string> eventAndParams;
 		eventAndParams.emplace_back(visitor->getGameValueAs<std::string>(*arguments[1]));
@@ -662,7 +662,7 @@ void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std
 	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto carryObjectTypeId = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, carryObjectTypeId);
@@ -703,7 +703,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
-		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 
 		// Check for out of bounds.
 		if (index >= list.size())
@@ -866,7 +866,7 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 {
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto power = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 
@@ -881,8 +881,8 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto halfhearts = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto halfhearts = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto fromx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto fromy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
 
@@ -906,7 +906,7 @@ void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto halfhearts = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto halfhearts = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto npcId = visitor->getOriginalSource().first;
 		if (visitor->getOriginalSource().second != ScriptObjectSourceType::NPC)
 			npcId = 0;
@@ -927,7 +927,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
-		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 
 		// Insert blank strings to fill the space.
@@ -984,7 +984,7 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 
 		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
@@ -1009,7 +1009,7 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		level->addItem(inform_client, toPixelPosition((float)x, (float)y), static_cast<LevelItemType>(itemname));
@@ -1044,7 +1044,7 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto dx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto dy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto time = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-		auto options = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+		auto options = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
@@ -1073,7 +1073,7 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto power = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
+		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		level->addBomb(inform_client, toPixelPosition((float)x, (float)y), power);
@@ -1089,7 +1089,7 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname));
@@ -1105,10 +1105,10 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto radius = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), radius, 1);
+		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1121,11 +1121,11 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto power = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
-		auto radius = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
+		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto x = visitor->getGameValueAs<double>(*arguments[2]);
 		auto y = visitor->getGameValueAs<double>(*arguments[3]);
-		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), radius, power);
+		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1154,12 +1154,12 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		uint8_t baddyname = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[3]);
-		auto power = visitor->getGameValueAs<double>(*arguments[4]);
-		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), static_cast<uint8_t>(power), imagefile);
+		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
+		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), power, imagefile);
 	}
 }
 
@@ -1224,7 +1224,7 @@ void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std:
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		level->removeBomb(inform_client, index);
 	}
 }
@@ -1263,7 +1263,7 @@ void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		level->removeHorse(inform_client, index);
 	}
 }
@@ -1276,7 +1276,7 @@ void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std:
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		level->removeItem(inform_client, index);
 	}
 }
@@ -1332,7 +1332,7 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = listVar->get<std::string>().value_or(std::string{});
-		auto index = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 
 		auto start = std::ranges::begin(list);
@@ -1377,7 +1377,7 @@ void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto signIndex = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto signIndex = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		if (signIndex < level->getSigns().size())
 		{
 			auto& sign = level->getSigns()[signIndex];
@@ -1515,7 +1515,7 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 	
 	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
-		auto size = static_cast<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto size = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		std::vector<double> arrayValues;
 		arrayValues.assign(size, 0.0);
 
@@ -1579,7 +1579,7 @@ void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto gender = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto gender = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
@@ -1630,7 +1630,7 @@ void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto gender = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto gender = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
@@ -1693,10 +1693,10 @@ void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto x = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto y = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
-		auto width = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
-		auto height = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
+		auto x = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto width = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+		auto height = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
@@ -1776,7 +1776,7 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto dir = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
@@ -1819,12 +1819,12 @@ void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto type = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto type = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		if (type != 1)
 			return;
 
-		auto width = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto height = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->shape = { width, height };
@@ -1840,7 +1840,7 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto power = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SHIELDPOWER>(SetBy::SERVER, image, power);
@@ -1966,7 +1966,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto power = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power);
@@ -2101,8 +2101,8 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto length = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])) & 0b11111;
-		auto power = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1])) & 0b111;
+		auto length = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])) & 0b11111;
+		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1])) & 0b111;
 		uint8_t length_power = (length << 3) | power;
 
 		auto* server = BabyDI::Get<Server>();
@@ -2126,7 +2126,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
 			{
-				auto itemname = std::clamp(static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
+				auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 
 				// Get our search position.
 				PixelPosition searchPosition = { npc->character.pixelX, npc->character.pixelY };
@@ -2179,7 +2179,7 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
 			{
-				auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 				if (auto item = level->getItem(index); item != nullptr)
 				{
 					if (LevelItem::isRupeeType(item->item))

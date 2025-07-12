@@ -627,10 +627,10 @@ GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode,
 	std::vector<double> result;
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-		auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-		auto width = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
-		auto height = static_cast<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+		auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+		auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+		auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
+		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
 
 		auto npcs = level->findIntersectingNPCs({ { x, y }, { width, height } }, true);
 		for (auto id : npcs)
@@ -896,8 +896,8 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwall requires exactly two arguments");
 
-	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -922,10 +922,10 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwall2 requires exactly four arguments");
 
-	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
-	auto width = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[2]));
-	auto height = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto width = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[2]));
+	auto height = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -950,8 +950,8 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwater requires exactly two arguments");
 
-	auto x = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -994,8 +994,8 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1018,8 +1018,8 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1042,8 +1042,8 @@ GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1066,8 +1066,8 @@ GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testhorse requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1090,8 +1090,8 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1114,8 +1114,8 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testnpc requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1141,8 +1141,8 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testplayer requires exactly two arguments");
 
-	auto x = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = static_cast<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1168,8 +1168,8 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
 
-	auto x = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1213,7 +1213,7 @@ GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const 
 		throw std::invalid_argument("Built-in function vecx requires exactly one argument");
 
 	static double vecValues[] = { 0.0, -1.0, 0.0, 1.0 };
-	auto dir = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
 	return vecValues[dir];
 }
 
@@ -1225,7 +1225,7 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 		throw std::invalid_argument("Built-in function vecy requires exactly one argument");
 
 	static double vecValues[] = { -1.0, 0.0, 1.0, 0.0 };
-	auto dir = static_cast<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
 	return vecValues[dir];
 }
 

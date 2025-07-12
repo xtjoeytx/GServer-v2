@@ -174,6 +174,12 @@ inline static bool DoublesAreSame(double left, double right)
 	return std::abs(left - right) < std::numeric_limits<double>::epsilon();
 }
 
+template<std::integral T>
+inline static T DoubleAsIntegralFloor(double value)
+{
+	return static_cast<T>(value + std::numeric_limits<double>::epsilon());
+}
+
 //----------------------------
 // Pointer helpers
 

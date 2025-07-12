@@ -231,7 +231,7 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 					auto strVal = val.get<std::string>();
 					if (strVal.has_value())
 						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
+					else colorVal = DoubleAsIntegralFloor<uint8_t>(val.get<double>().value_or(0));
 
 					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors);
@@ -263,7 +263,7 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 					auto strVal = val.get<std::string>();
 					if (strVal.has_value())
 						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = static_cast<uint8_t>(val.get<double>().value_or(0));
+					else colorVal = DoubleAsIntegralFloor<uint8_t>(val.get<double>().value_or(0));
 
 					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
@@ -286,7 +286,7 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 {
 	std::optional<int32_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	Character* character = nullptr;
 	ScriptObjectSource currentSource;
@@ -449,7 +449,7 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(), index);
 	if (!result.has_value())
@@ -499,7 +499,7 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
@@ -547,8 +547,8 @@ GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() != 3)
 		throw std::invalid_argument("Message Code #e requires exactly 3 arguments");
 
-	auto startIndex = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto length = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto startIndex = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto length = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
 	auto str = visitor->getGameValueAs<std::string>(*arguments[2]);
 	return str.substr(startIndex, length);
 }
@@ -600,7 +600,7 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
 		return client->getGuild().toString();
@@ -624,7 +624,7 @@ GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 		throw std::invalid_argument("Message Code #I requires exactly 2 arguments");
 
 	auto csvStringList = string::fromCSV(visitor->getGameValueAs<std::string>(*arguments[0]));
-	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[1]));
 	if (index < csvStringList.size())
 		return csvStringList[index];
 
@@ -692,7 +692,7 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	std::optional<size_t> index = std::nullopt;
 	if (arguments.size() == 1)
-		index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	if (auto npc = getNPCFromSource(visitor->getCurrentSource(), index); npc != nullptr)
 	{
@@ -711,7 +711,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 		throw std::invalid_argument("Message Code #p requires exactly 1 argument");
 
 	// The first event argument is the name of the triggeraction, so add +1 to get to the params.
-	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0])) + 1;
+	auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0])) + 1;
 	if (index < visitor->getEvent().args.size())
 	{
 		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)
@@ -760,7 +760,7 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Message Code #t requires exactly 1 argument");
 
-	auto index = static_cast<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 	if (index >= visitor->tokenizeTokens.size())
 		return std::string{};
 
@@ -804,11 +804,11 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			ssize_t index = 0;
+			int64_t index = 0;
 			if (arguments.size() == 1)
-				index = static_cast<ssize_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-			if (index >= 0 && index < (ssize_t)weaponList.size())
+			if (index >= 0 && index < (int64_t)weaponList.size())
 			{
 				if (auto weapon = server->getWeapon(weaponList[(size_t)index]); weapon != nullptr)
 				{
@@ -834,11 +834,11 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			ssize_t index = 0;
+			int64_t index = 0;
 			if (arguments.size() == 1)
-				index = static_cast<ssize_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-			if (index >= 0 && index < (ssize_t)weaponList.size())
+			if (index >= 0 && index < (int64_t)weaponList.size())
 			{
 				// Explicitly place it in another string as the return will trigger move semantics.
 				return std::string{ weaponList[(size_t)index] };
