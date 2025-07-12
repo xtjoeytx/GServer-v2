@@ -309,7 +309,6 @@ elseif(WIN32)
 			${PROJECT_BINARY_DIR}/main.rc
 		)
 
-		target_compile_definitions(${TARGET_NAME} PRIVATE _WIN32_WINNT=0x600)
 		set(CMAKE_RC_COMPILER_INIT windres)
 
 		ENABLE_LANGUAGE(RC)

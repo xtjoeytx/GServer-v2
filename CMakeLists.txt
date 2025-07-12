@@ -86,9 +86,6 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 endif()
-if(MINGW)
-	message(STATUS "Compiling with MinGW")
-endif()
 
 # GS2 project.
 project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.380 to v6.037 compatible server" LANGUAGES C CXX)
@@ -118,6 +115,10 @@ set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 # System defines.
 if(MSVC)
 	add_compile_definitions(UNICODE)
+endif()
+if(MINGW)
+	message(STATUS "Compiling with MinGW")
+	add_compile_definitions(_WIN32_WINNT=0x600 __GXX_TYPEINFO_EQUALITY_INLINE=1)
 endif()
 
 # Set up version data
