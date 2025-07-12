@@ -149,8 +149,13 @@ void setWeaponFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableS
 
 void setOtherFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
 {
-	// Others
 	// actionplayer
+	if (event.type == ScriptEventType::TRIGGERACTION && event.initiator.second == ScriptObjectSourceType::PLAYER && level != nullptr)
+	{
+		auto& players = level->getPlayers();
+		if (auto playerIter = std::ranges::find(players, source.first); playerIter != players.end())
+			variableStore.add("actionplayer", GameValue{ (double)std::distance(players.begin(), playerIter) });
+	}
 
 	/* Older flags:
 	* 'gotbow' and 'gotsword' are older pre-1.3 flags.
