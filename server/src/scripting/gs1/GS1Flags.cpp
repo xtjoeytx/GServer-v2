@@ -32,10 +32,8 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 
 	/*
 		playerhurt
-		exploded            the npc was exploded by a bomb
 		washit              the npc was slayed with a sword or axe
 		waspelt             the npc was pelt
-		wasshot             the npc was shot with arrows
 		wasthrown           the npc was carried and then thrown
 	*/
 }

@@ -70,6 +70,11 @@ public:
 
 	//! Does special events that should happen every second.
 	void doTimedEvents();
+	void doFrameEvents(precise_clock::time_point time);
+
+private:
+	precise_clock::time_point m_lastFrameTime = precise_clock::now();
+	precise_clock::duration m_frameEventDuration = 0ns;
 
 public:
 	//! Gets the original level name.
@@ -179,7 +184,10 @@ public:
 	bool alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player);
 
 public:
-	bool addArrow();
+	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
+	LevelArrow* addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
+	bool removeArrow(uint8_t index);
+	LevelArrow* getArrow(uint8_t index) const;
 
 public:
 	LevelBaddy* addBaddy(const PixelPosition& position, BaddyType type);
@@ -187,7 +195,7 @@ public:
 	LevelBaddy* putNewBaddy(const PixelPosition& position, BaddyType type, uint8_t power, std::string_view image = {});
 	bool removeBaddy(uint8_t pId);
 	bool removeAllBaddies();
-	LevelBaddy* getBaddy(uint8_t id);
+	LevelBaddy* getBaddy(uint8_t id) const;
 
 public:
 	LevelBomb* addBomb(inform_client_t, const PixelPosition& position, uint8_t power);
@@ -195,23 +203,23 @@ public:
 	bool removeBomb(inform_client_t, size_t index);
 	bool removeBomb(size_t index);
 	bool removeBomb(const PixelPosition& position);
-	LevelBomb* getBomb(size_t index);
+	LevelBomb* getBomb(size_t index) const;
 
 public:
 	LevelChest* addChest(const WholeTilePosition& position, const LevelItemType itemType, const int signIndex);
 	bool removeChest(size_t index);
-	LevelChest* getChest(size_t index);
+	LevelChest* getChest(size_t index) const;
 	std::optional<const LevelChest*> getChest(const WholeTilePosition& position) const;
 	CString getChestStr(LevelChest* chest) const;
 
 public:
-	void addExplosion(inform_client_t, const PixelPosition& position, uint8_t radius, uint8_t power);
-	void addExplosion(const PixelPosition& position, uint8_t radius, uint8_t power);
-	void addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t length, uint8_t power);
+	void addExplosion(inform_client_t, const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power);
+	void addExplosion(const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power);
+	void addSpyFire(const PixelPosition& position, ScriptObjectSource from, uint8_t direction, uint8_t length, uint8_t power);
 	LevelExplosion* addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power);
 	bool removeExplosion(size_t index);
 	bool removeExplosion(const PixelPosition& position);
-	LevelExplosion* getExplosion(size_t index);
+	LevelExplosion* getExplosion(size_t index) const;
 
 public:
 	LevelHorse* addHorse(inform_client_t, std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes);
@@ -219,7 +227,7 @@ public:
 	bool removeHorse(inform_client_t, size_t index);
 	bool removeHorse(size_t index);
 	bool removeHorse(const PixelPosition& position);
-	LevelHorse* getHorse(size_t index);
+	LevelHorse* getHorse(size_t index) const;
 
 public:
 	LevelItem* addItem(inform_client_t, const PixelPosition& position, LevelItemType item);
@@ -227,7 +235,7 @@ public:
 	bool removeItem(inform_client_t, size_t index);
 	bool removeItem(size_t index);
 	LevelItemType removeItem(const PixelPosition& position);
-	LevelItem* getItem(size_t index);
+	LevelItem* getItem(size_t index) const;
 
 public:
 	LevelLink* addLink();
@@ -238,22 +246,25 @@ public:
 public:
 	LevelSign* addSign(const WholeTilePosition& position, const CString& sign, bool encoded = false);
 	bool removeSign(uint32_t index);
-	LevelSign* getSign(size_t index);
+	LevelSign* getSign(size_t index) const;
 
 public:
 	void setMap(std::weak_ptr<Map> pMap, int pMapX = 0, int pMapY = 0);
 
 public:
-	bool isOnWall(const Position<uint8_t>& tilePosition);
+	bool moveArrow(LevelArrow* arrow, int iterations);
+
+public:
+	bool isOnWall(const WholeTilePosition& tilePosition);
 	bool isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags = 0);
-	bool isOnWater(const Position<uint8_t>& tilePosition);
-	bool isOnPlayer(const Position<uint8_t>& tilePosition);
+	bool isOnWater(const WholeTilePosition& tilePosition);
+	bool isOnPlayer(const WholeTilePosition& tilePosition);
 	bool isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea);
 
-	std::vector<NPCID> findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible = false);
-	std::vector<NPCID> findIntersectingNPCs(const Rectangle<int16_t, uint16_t>& area, bool includeInvisible = false);
-	std::vector<NPCID> findIntersectingNPCsForCollision(const Position<int16_t>& position);
-	std::vector<NPCID> findIntersectingNPCsForCollision(const Rectangle<int16_t, uint16_t>& area);
+	std::vector<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false);
+	std::vector<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false);
+	std::vector<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position);
+	std::vector<NPCID> findIntersectingNPCsForCollision(const PixelRectangleArea& area);
 
 public:
 	std::string levelName;

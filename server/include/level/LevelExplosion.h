@@ -38,6 +38,7 @@ struct LevelExplosion
 	PixelPosition position;
 	uint8_t power;
 	uint8_t direction;
+	ScriptObjectSource from;
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();

@@ -237,14 +237,16 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 {
 	/*
-	1 [SHORT ID]
-	3 [CHAR X]
-	4 [CHAR Y]
-	5 [CHAR ?] & 4 = removes mirror shots, some sort of bit flag, might store "from" information?
-	6 [CHAR ?] dir
-	7 [CHAR ?] power
+	[[maybe_unused]] float loc[] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+	[[maybe_unused]] uint8_t flags = pPacket.readGUChar();
+	[[maybe_unused]] uint8_t sprite = pPacket.readGUChar();
+	[[maybe_unused]] uint8_t power = pPacket.readGUChar();
+
+	[[maybe_unused]] uint8_t direction = flags & 0b11;
+	[[maybe_unused]] bool reflect = (flags & 0b100) != 0;
+	[[maybe_unused]] bool fromPlayer = (flags & 0b1000) != 0;
 	*/
-	// TODO(Nalin): Figure this out!
+
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
 	return HandlePacketResult::Handled;
 }

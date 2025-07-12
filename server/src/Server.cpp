@@ -329,7 +329,7 @@ bool Server::doMain()
 	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
-	m_frameStartTimeHighPrecision = std::chrono::high_resolution_clock::now();
+	m_frameStartTimeHighPrecision = precise_clock::now();
 	m_frameStartTime = currentTime();
 
 	// Update the NPC server.
@@ -341,6 +341,13 @@ bool Server::doMain()
 	m_timedSave.update(m_frameStartTimeHighPrecision);
 	m_timedNWTime.update(m_frameStartTimeHighPrecision);
 	m_timedMaintenance.update(m_frameStartTimeHighPrecision);
+
+	// Do level frame events.
+	for (auto& [name, level]: m_levelList)
+	{
+		if (level != nullptr)
+			level->doFrameEvents(m_frameStartTimeHighPrecision);
+	}
 
 	return true;
 }

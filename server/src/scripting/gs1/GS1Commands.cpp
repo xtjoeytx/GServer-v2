@@ -430,6 +430,34 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static std::optional<PixelPosition> getPlayerOrNPCPositionForArrow(const ScriptObjectSource& source, uint8_t dir)
+{
+	auto server = BabyDI::Get<Server>();
+	if (source.second == ScriptObjectSourceType::PLAYER)
+	{
+		if (auto player = server->getPlayer(source.first); player != nullptr)
+			return PixelPosition{ player->account.character.pixelX, player->account.character.pixelY };
+	}
+	else if (source.second == ScriptObjectSourceType::NPC)
+	{
+		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		{
+			PixelPosition sourcePosition = { npc->character.pixelX, npc->character.pixelY };
+			if (npc->isCharacter())
+			{
+				int16_t dX = (dir == 1 ? -24 : (dir == 3 ? 24 : 0));
+				int16_t dY = (dir == 0 ? -24 : (dir == 2 ? 24 : 0));
+				sourcePosition.translate(16 + dX, 24 + dY);
+			}
+			return sourcePosition;
+		}
+	}
+
+	return std::nullopt;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 // addguildmember guild,account,nick;
 void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -821,7 +849,20 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 // explodebomb index;
 void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("explodebomb is not implemented yet.");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		if (auto bomb = level->getBomb(index); bomb != nullptr)
+		{
+			auto power = bomb->power;
+			auto position = bomb->position;
+			level->removeBomb(inform_client, index);
+
+			if (power != 2)
+				level->addExplosion(inform_client, position, source::FromServer(), 1, power);
+			// TODO: superbomb
+		}
+	}
 }
 
 // freezeplayer2;
@@ -1212,7 +1253,7 @@ void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::ve
 // removearrow index;
 void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removearrow is not implemented yet.");
+	throw std::logic_error("removearrow is clientside only.");
 }
 
 // removebomb index;
@@ -2006,9 +2047,23 @@ void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vect
 }
 
 // shootarrow dir;
+// Shoots an arrow in the specified direction.
 void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("shootarrow is not implemented yet.");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+
+		auto server = BabyDI::Get<Server>();
+		const auto& source = visitor->getCurrentSource();
+		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+
+		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		if (!sourcePosition.has_value())
+			return;
+
+		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeNormal, source);
+	}
 }
 
 // shootball;
@@ -2018,21 +2073,63 @@ void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // shootfireball dir;
+// Shoots a fireball in the specified direction.
 void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("shootfireball is not implemented yet.");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+
+		auto server = BabyDI::Get<Server>();
+		const auto& source = visitor->getCurrentSource();
+		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+
+		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		if (!sourcePosition.has_value())
+			return;
+
+		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeFireball, source);
+	}
 }
 
 // shootfireblast dir;
+// Shoots a fireblast in the specified direction.
 void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("shootfireblast is not implemented yet.");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+
+		auto server = BabyDI::Get<Server>();
+		const auto& source = visitor->getCurrentSource();
+		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+
+		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		if (!sourcePosition.has_value())
+			return;
+
+		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeFireblast, source);
+	}
 }
 
 // shootnuke dir;
+// Shoots a nuke in the specified direction.
 void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("shootnuke is not implemented yet.");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+
+		auto server = BabyDI::Get<Server>();
+		const auto& source = visitor->getCurrentSource();
+		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+
+		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		if (!sourcePosition.has_value())
+			return;
+
+		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeNukeshot, source);
+	}
 }
 
 // show;
@@ -2110,7 +2207,7 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		{
 			server->sendPacketToLevelArea(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player);
 			if (auto level = player->getLevel(); level != nullptr)
-				level->addSpyFire({ player->account.character.pixelX, player->account.character.pixelY }, player->account.character.direction, length, power);
+				level->addSpyFire({ player->account.character.pixelX, player->account.character.pixelY }, source.value(), player->account.character.direction, length, power);
 		}
 	}
 }

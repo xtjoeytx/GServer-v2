@@ -190,7 +190,6 @@ std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptOb
 					return getScriptParameter(*bomb, identifier);
 			}
 			break;
-		/*
 		case ScriptObjectSourceType::ARROW:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
@@ -198,7 +197,6 @@ std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptOb
 					return getScriptParameter(*arrow, identifier);
 			}
 			break;
-		*/
 		case ScriptObjectSourceType::ITEM:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{

@@ -23,6 +23,7 @@
 #include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
+#include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelBoardChange.h>
 #include <level/LevelBomb.h>
@@ -94,6 +95,9 @@ Level::~Level()
 		}
 		m_npcs.clear();
 	}
+
+	// Delete arrows.
+	m_arrows.clear();
 
 	// Delete baddies.
 	m_baddies.clear();
@@ -208,6 +212,9 @@ bool Level::reload()
 			}
 		}
 	}
+
+	// Delete arrows.
+	m_arrows.clear();
 
 	// Kill off all the baddies and disable respawn.
 	for (size_t i = 0; i < m_baddies.size(); ++i)
@@ -421,8 +428,6 @@ void Level::doTimedEvents()
 		}
 	}
 
-	// Run arrow events.
-
 	// Run bomb events.
 	for (auto& bomb : m_bombs) bomb.timeout.update();
 	std::erase_if(m_bombs, [](const LevelBomb& bomb) { return !bomb.timeout.isRunning(); });
@@ -442,6 +447,39 @@ void Level::doTimedEvents()
 	// Run baddy events.
 	for (auto& baddy : m_baddies)
 		baddy.timeout.update();
+}
+
+void Level::doFrameEvents(precise_clock::time_point time)
+{
+	// Don't bother with arrow processing if we don't have an npc-server.
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return;
+
+	// Determine elapsed time.
+	auto elapsed = time - m_lastFrameTime;
+	m_frameEventDuration += elapsed;
+	m_lastFrameTime = time;
+
+	// Count the iterations.
+	int iterations = m_frameEventDuration / 50ms;
+	if (iterations == 0)
+		return;
+
+	// Subtract our iterations.
+	m_frameEventDuration -= iterations * 50ms;
+
+	// Run arrow events.
+	std::vector<size_t> deletedArrows;
+	for (size_t i = 0; i < m_arrows.size(); ++i)
+	{
+		if (!moveArrow(&m_arrows[i], iterations))
+			deletedArrows.push_back(i);
+	}
+	std::erase_if(m_arrows, [this, &deletedArrows](const LevelArrow& arrow)
+	{
+		return std::find(deletedArrows.begin(), deletedArrows.end(), &arrow - &m_arrows[0]) != deletedArrows.end();
+	});
+	deletedArrows.clear();
 }
 
 //----------------------------
@@ -775,9 +813,47 @@ bool Level::alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& are
 
 //----------------------------
 
-bool Level::addArrow()
+LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from)
 {
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	auto result = addArrow(position, speed, direction, type, from);
+	if (result != nullptr)
+	{
+		char x = static_cast<char>(result->position.x() / 8.0f);
+		char y = static_cast<char>(result->position.y() / 8.0f);
+		uint8_t sprite = (result->type == 0 ? ballSpriteIndex : arrowSpriteIndex) + (result->direction & 0b11);
+		uint8_t flags = (result->direction & 0b11) | (result->getPacketFrom() << 3);
+		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)0 >> (char)x >> (char)y >> (char)flags >> (char)sprite >> (char)type, shared_from_this());
+	}
+	return result;
+}
+
+LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from)
+{
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	LevelArrow newArrow{ .position = position, .speed = speed, .direction = direction, .type = type, .from = from };
+	m_arrows.emplace_back(std::move(newArrow));
+	return &m_arrows.back();
+}
+
+bool Level::removeArrow(uint8_t index)
+{
+	if (index >= m_arrows.size())
+		return false;
+
+	m_arrows.erase(m_arrows.begin() + index);
 	return true;
+}
+
+LevelArrow* Level::getArrow(uint8_t index) const
+{
+	if (index >= m_arrows.size())
+		return nullptr;
+	return const_cast<LevelArrow*>(&m_arrows[index]);
 }
 
 //----------------------------
@@ -897,19 +973,22 @@ bool Level::removeAllBaddies()
 	return true;
 }
 
-LevelBaddy* Level::getBaddy(uint8_t id)
+LevelBaddy* Level::getBaddy(uint8_t id) const
 {
 	if (id > m_baddies.size() || id == 0)
 		return nullptr;
 
 	auto& baddy = m_baddies.at(static_cast<size_t>(id) - 1);
-	return &baddy;
+	return const_cast<LevelBaddy*>(&baddy);
 }
 
 //----------------------------
 
 LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_t power)
 {
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
 	auto result = addBomb(position, power);
 	if (result != nullptr)
 	{
@@ -923,6 +1002,9 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 
 LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
 {
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
 	LevelBomb newBomb{ .position = position, .power = power, .timeout = TimeoutGenerator(3s) };
 	newBomb.timeout.start();
 	m_bombs.emplace_back(std::move(newBomb));
@@ -961,11 +1043,11 @@ bool Level::removeBomb(const PixelPosition& position)
 	return false;
 }
 
-LevelBomb* Level::getBomb(size_t index)
+LevelBomb* Level::getBomb(size_t index) const
 {
 	if (index >= m_bombs.size())
 		return nullptr;
-	return &m_bombs[index];
+	return const_cast<LevelBomb*>(&m_bombs[index]);
 }
 
 //----------------------------
@@ -986,11 +1068,11 @@ bool Level::removeChest(size_t index)
 	return true;
 }
 
-LevelChest* Level::getChest(size_t index)
+LevelChest* Level::getChest(size_t index) const
 {
 	if (index >= m_chests.size())
 		return nullptr;
-	return &m_chests[index];
+	return const_cast<LevelChest*>(&m_chests[index]);
 }
 
 std::optional<const LevelChest*> Level::getChest(const WholeTilePosition& position) const
@@ -1011,16 +1093,22 @@ CString Level::getChestStr(LevelChest* chest) const
 
 //----------------------------
 
-void Level::addExplosion(inform_client_t, const PixelPosition& position, uint8_t radius, uint8_t power)
+void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power)
 {
-	addExplosion(position, radius, power);
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return;
+
+	addExplosion(position, from, radius, power);
 
 	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)radius >> (char)(position.x() / 8) >> (char)(position.y() / 8) >> (char)power;
 	BabyDI::Get<Server>()->sendPacketToOneLevel(packet, shared_from_this());
 }
 
-void Level::addExplosion(const PixelPosition& position, uint8_t radius, uint8_t power)
+void Level::addExplosion(const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power)
 {
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return;
+
 	addExplosionPart(position, 2, power);
 	for (size_t i = 0; i < (static_cast<size_t>(radius) * 4); ++i)
 	{
@@ -1035,24 +1123,24 @@ void Level::addExplosion(const PixelPosition& position, uint8_t radius, uint8_t 
 	// Add exploded events to NPCs in the level.
 	if (auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
 	{
-		Rectangle<int16_t, uint16_t> vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
-		Rectangle<int16_t, uint16_t> horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
+		PixelRectangleArea vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
+		PixelRectangleArea horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
 		auto vertNPCs = findIntersectingNPCsForCollision(vertTest);
 		auto horzNPCs = findIntersectingNPCsForCollision(horzTest);
 		for (const NPCID& npcId : vertNPCs)
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 		for (const NPCID& npcId : horzNPCs)
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 	}
 }
 
-void Level::addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t length, uint8_t power)
+void Level::addSpyFire(const PixelPosition& position, ScriptObjectSource from, uint8_t direction, uint8_t length, uint8_t power)
 {
 	/*
 	spyfire 3,1;
@@ -1062,6 +1150,9 @@ void Level::addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t
 	left:  x-2.0,y+0.2  3 1 1 1
 	right: x+3.0,y+0.2  1 3 3 3
 	*/
+
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return;
 
 	const PixelPosition startingPosition = position.translate(
 		(direction == 0 || direction == 2) ? 8 : (direction == 1 ? -32 : 48),
@@ -1090,15 +1181,17 @@ void Level::addSpyFire(const PixelPosition& position, uint8_t direction, uint8_t
 		auto npcs = findIntersectingNPCsForCollision({ testPosition, testDimension });
 		for (const NPCID& npcId : npcs)
 		{
-			// TODO: We need the player ID!
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, source::FromServer());
+				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 	}
 }
 
 LevelExplosion* Level::addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power)
 {
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
 	LevelExplosion explo{ .position = position, .power = power, .direction = direction, .timeout = TimeoutGenerator(ExplosionDuration) };
 	explo.timeout.start();
 	m_explosions.emplace_back(std::move(explo));
@@ -1125,11 +1218,11 @@ bool Level::removeExplosion(const PixelPosition& position)
 	return false;
 }
 
-LevelExplosion* Level::getExplosion(size_t index)
+LevelExplosion* Level::getExplosion(size_t index) const
 {
 	if (index >= m_explosions.size())
 		return nullptr;
-	return &m_explosions[index];
+	return const_cast<LevelExplosion*>(&m_explosions[index]);
 }
 
 //----------------------------
@@ -1186,11 +1279,11 @@ bool Level::removeHorse(const PixelPosition& position)
 	return false;
 }
 
-LevelHorse* Level::getHorse(size_t index)
+LevelHorse* Level::getHorse(size_t index) const
 {
 	if (index >= m_horses.size())
 		return nullptr;
-	return &m_horses[index];
+	return const_cast<LevelHorse*>(&m_horses[index]);
 }
 
 //----------------------------
@@ -1223,7 +1316,7 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 			TilePosition loc = toTilePosition(position).translate(-0.5f, -1.0f);
 
 			// Find existing rupees, and add to the npc.
-			Rectangle<int16_t, uint16_t> searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+			PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
 			auto npcList = findIntersectingNPCs(searchArea);
 			for (auto& npcId : npcList)
 			{
@@ -1286,11 +1379,11 @@ LevelItemType Level::removeItem(const PixelPosition& position)
 	return LevelItemType::INVALID;
 }
 
-LevelItem* Level::getItem(size_t index)
+LevelItem* Level::getItem(size_t index) const
 {
 	if (index >= m_items.size())
 		return nullptr;
-	return &m_items[index];
+	return const_cast<LevelItem*>(&m_items[index]);
 }
 
 //----------------------------
@@ -1353,11 +1446,11 @@ bool Level::removeSign(uint32_t index)
 	return true;
 }
 
-LevelSign* Level::getSign(size_t index)
+LevelSign* Level::getSign(size_t index) const
 {
 	if (index >= m_signs.size())
 		return nullptr;
-	return &m_signs[index];
+	return const_cast<LevelSign*>(&m_signs[index]);
 }
 
 //----------------------------
@@ -1371,7 +1464,57 @@ void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
 
 //----------------------------
 
-bool Level::isOnWall(const Position<uint8_t>& tilePosition)
+bool Level::moveArrow(LevelArrow* arrow, int iterations)
+{
+	if (arrow == nullptr)
+		return false;
+
+	for (int i = 0; i < iterations; ++i)
+	{
+		// Move the arrow.
+		arrow->position.translate(arrow->speed.x(), arrow->speed.y());
+
+		// If the arrow has gone out of bounds, delete it.
+		if (arrow->position.x() < 0 || arrow->position.x() > 1024 || arrow->position.y() < 0 || arrow->position.y() > 1024)
+			return false;
+
+		bool produceExplosion = false;
+
+		// Check for NPC collision.
+		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i16, 0_i16), { 32_ui16, 32_ui16  } };
+		auto npcs = findIntersectingNPCsForCollision(searchBox);
+		for (const auto& npc : npcs)
+		{
+			if (arrow->from.second == ScriptObjectSourceType::NPC && arrow->from.first == npc)
+				continue;
+			if (auto npcPtr = BabyDI::Get<Server>()->getNPC(npc); npcPtr != nullptr)
+			{
+				npcPtr->scripting.events.addEvent(ScriptEventType::WASSHOT, arrow->from);
+				produceExplosion = (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot);
+			}
+		}
+
+		// If the arrow is a fireblast or nukeshot, check for walls.
+		if (!produceExplosion && (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot))
+		{
+			if (isOnWall(toWholeTilePosition(arrow->position).translate(1_ui8, 0_ui8)))
+				produceExplosion = true;
+		}
+
+		// If we are producing an explosion, add it and remove the arrow.
+		if (produceExplosion)
+		{
+			addExplosion(arrow->position, arrow->from, 1_ui8, 1_ui8);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+//----------------------------
+
+bool Level::isOnWall(const WholeTilePosition& tilePosition)
 {
 	if (tilePosition.x() > 63 || tilePosition.y() > 63)
 		return true;
@@ -1392,12 +1535,12 @@ bool Level::isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags
 	return false;
 }
 
-bool Level::isOnWater(const Position<uint8_t>& tilePosition)
+bool Level::isOnWater(const WholeTilePosition& tilePosition)
 {
 	return (tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] == 11);
 }
 
-bool Level::isOnPlayer(const Position<uint8_t>& tilePosition)
+bool Level::isOnPlayer(const WholeTilePosition& tilePosition)
 {
 	for (const auto& playerId : m_players)
 	{
@@ -1423,12 +1566,12 @@ bool Level::isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea)
 	return false;
 }
 
-std::vector<NPCID> Level::findIntersectingNPCs(const Position<int16_t>& position, bool includeInvisible)
+std::vector<NPCID> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible)
 {
 	return findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible);
 }
 
-std::vector<NPCID> Level::findIntersectingNPCs(const Rectangle<int16_t, uint16_t>& area, bool includeInvisible)
+std::vector<NPCID> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible)
 {
 	std::vector<NPCID> results;
 
@@ -1450,12 +1593,12 @@ std::vector<NPCID> Level::findIntersectingNPCs(const Rectangle<int16_t, uint16_t
 	return results;
 }
 
-std::vector<NPCID> Level::findIntersectingNPCsForCollision(const Position<int16_t>& position)
+std::vector<NPCID> Level::findIntersectingNPCsForCollision(const PixelPosition& position)
 {
 	return findIntersectingNPCsForCollision({ { position.x(), position.y() }, { 0, 0 } });
 }
 
-std::vector<NPCID> Level::findIntersectingNPCsForCollision(const Rectangle<int16_t, uint16_t>& area)
+std::vector<NPCID> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area)
 {
 	std::vector<NPCID> results;
 

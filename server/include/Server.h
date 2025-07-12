@@ -332,9 +332,9 @@ private:
 	TimeoutGenerator m_timedNWTime{ 5s, true };
 	TimeoutGenerator m_timedSave{ 1min, true };
 	TimeoutGenerator m_timedMaintenance{ 5min, true };
-	std::chrono::system_clock::time_point m_serverStartTime;
-	std::chrono::system_clock::time_point m_frameStartTime;
-	std::chrono::high_resolution_clock::time_point m_frameStartTimeHighPrecision;
+	clock::time_point m_serverStartTime;
+	clock::time_point m_frameStartTime;
+	precise_clock::time_point m_frameStartTimeHighPrecision;
 	uint32_t m_serverTime;
 
 	// Trigger dispatcher
