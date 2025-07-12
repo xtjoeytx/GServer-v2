@@ -561,7 +561,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::ID,			PropertyNumeric<GBYTE2>,	m_id) \
 	DO(PlayerProp::X,			PropertyTileCoordinate,		account.character.pixelX) \
 	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.pixelY) \
-	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite) \
+	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
 	DO(PlayerProp::CARRYSPRITE,	PropertyNumeric<GBYTE1>,	m_carrySprite) \
 	DO(PlayerProp::CURLEVEL,	PropertyString,				account.level) \
