@@ -38,6 +38,7 @@ public:
 
 public:
 	std::vector<std::string> tokenizeTokens;
+	GameVariableStore flagStore;
 	GameVariableStore* builtInStore = nullptr;
 	bool expectingFlag = false;
 	std::string who;
@@ -86,6 +87,7 @@ protected:
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
+	bool getFlagOrBooleanFromAny(const std::any& value);
 	std::optional<ScriptObjectSource> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
 
 protected:
@@ -160,6 +162,8 @@ inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
 
 inline const ScriptObjectSource& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
 {
+	if (m_event->initiator.second == ScriptObjectSourceType::NPC)
+		defaultToInitiator = false;
 	return m_currentSource.empty() ? (defaultToInitiator ? m_event->initiator : m_originalSource) : m_currentSource.back();
 }
 
@@ -178,7 +182,8 @@ inline auto GS1Visitor::sourceStack() const
 {
 	// Save me C++26...
 	std::vector<ScriptObjectSource> sources{ m_currentSource.rbegin(), m_currentSource.rend() };
-	sources.push_back(m_event->initiator);
+	if (m_event->initiator.second != ScriptObjectSourceType::NPC)
+		sources.push_back(m_event->initiator);
 	sources.push_back(m_originalSource);
 	return sources;
 }

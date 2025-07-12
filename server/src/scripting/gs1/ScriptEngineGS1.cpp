@@ -267,8 +267,8 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	wrapper->visitor->builtInStore = &wrapper->variables;
 
 	// Set events.
-	setTriggerActionAndCustomEventFlags(event, wrapper->variables);
-	setEventFlags(event.type, wrapper->variables);
+	setTriggerActionAndCustomEventFlags(event, wrapper->visitor->flagStore);
+	setEventFlags(event.type, wrapper->visitor->flagStore);
 
 	// Set flags.
 	setPlayerFlags(wrapper->variables, npc, player);
@@ -301,6 +301,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 
 	// Clear the variables (to clear reference counted pointers, just in case).
 	wrapper->variables.clearTemporary();
+	wrapper->visitor->flagStore.clearTemporary();
 
 	return false;
 }

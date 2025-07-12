@@ -63,6 +63,7 @@ void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)
 		return;
 
 	// Explicit timeout variable on the npc to avoid issues with it also being a flag.
+	/*
 	npcPtr->scripting.variables.add(GameVariable{ set_temporary, "timeout",
 		gameVariableGetter([npc]() { return npc.expired() ? 0.0 : npc.lock()->timeout.count() / 1000.0; }),
 		gameVariableSetter(npcPtr.get(), PROPOPT<NPCProp>(std::nullopt),
@@ -72,6 +73,7 @@ void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)
 					npc.lock()->timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
 			})
 		});
+	*/
 }
 
 void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerClient> player)
@@ -174,7 +176,6 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 	});
 
 	// arrows
-	/*
 	variableStore.add(GameVariable{ "arrowscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getArrows().size()); } , {} });
 	variableStore.add(GameVariable{ "arrows",
 		[level](auto) -> GameValue
@@ -186,7 +187,6 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 			return objectList;
 		}, {}
 	});
-	*/
 
 	// items
 	variableStore.add(GameVariable{ "itemscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getItems().size()); } , {} });

@@ -516,6 +516,34 @@ GameValue GS1Visitor::getReadOnlyGameValueFromAny(const std::any& value)
 	return {};
 }
 
+bool GS1Visitor::getFlagOrBooleanFromAny(const std::any& value)
+{
+	if (auto* gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	{
+		if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(gs1ScriptValue); gs1GameVariable != nullptr && !gs1GameVariable->second.has_value())
+		{
+			// Get the identifier.
+			std::optional<std::string> identifier;
+			if (auto* byVal = std::get_if<GameVariable>(&gs1GameVariable->first); byVal != nullptr)
+				identifier = byVal->identifier;
+			else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&gs1GameVariable->first); byPtr != nullptr)
+			{
+				if (auto var = byPtr->lock(); var != nullptr)
+					identifier = var->identifier;
+			}
+
+			// If we have an identifier, and the flag store has a value, return that.
+			if (identifier.has_value() && flagStore.contains(identifier.value()))
+			{
+				if (auto flag = flagStore.get(identifier.value()).lock(); flag != nullptr)
+					return flag->get<bool>().value_or(false);
+			}
+		}
+		return (bool)getReadOnlyGameValueFromGS1ScriptValue(*gs1ScriptValue);
+	}
+	return (bool)getReadOnlyGameValueFromAny(value);
+}
+
 std::optional<ScriptObjectSource> GS1Visitor::getSourceFromGS1ScriptValue(GS1ScriptValue& value)
 {
 	if (auto* scriptObject = std::get_if<ScriptObjectSource>(&value); scriptObject != nullptr)
@@ -588,7 +616,7 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 
 std::any GS1Visitor::visitStatementIf(GS1Parser::StatementIfContext* context)
 {
-	if ((bool)getReadOnlyGameValueFromAny(visit(context->expression())))
+	if (getFlagOrBooleanFromAny(visit(context->expression())))
 		return visit(context->block(0));
 	else
 		return safeVisit(context->block(1));
@@ -601,7 +629,7 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(safeVisit(context->expression(0))))
+	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(safeVisit(context->expression(0))))
 	{
 		// Block.
 		try
@@ -623,7 +651,7 @@ std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* conte
 {
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(visit(context->expression())))
+	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(visit(context->expression())))
 	{
 		// Block.
 		try
@@ -845,7 +873,7 @@ std::any GS1Visitor::visitExpressionTernary(GS1Parser::ExpressionTernaryContext*
 	std::any result = visit(context->logicalOrExpression());
 	for (size_t i = 1; i < context->children.size(); i += 4)
 	{
-		if ((bool)getReadOnlyGameValueFromAny(result))
+		if (getFlagOrBooleanFromAny(result))
 			result = std::move(visit(context->children[i + 1]));
 		else result = std::move(visit(context->children[i + 3]));
 	}
@@ -857,12 +885,12 @@ std::any GS1Visitor::visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext*
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->logicalAndExpression(0)));
+	auto left = getFlagOrBooleanFromAny(visit(context->logicalAndExpression(0)));
 	if (left) return std::make_any<GS1ScriptValue>(true);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
+		auto right = getFlagOrBooleanFromAny(visit(context->children[i]));
 		if (right) return std::make_any<GS1ScriptValue>(true);
 	}
 
@@ -874,12 +902,12 @@ std::any GS1Visitor::visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->equalityExpression(0)));
+	auto left = getFlagOrBooleanFromAny(visit(context->equalityExpression(0)));
 	if (!left) return std::make_any<GS1ScriptValue>(false);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
+		auto right = getFlagOrBooleanFromAny(visit(context->children[i]));
 		if (!right) return std::make_any<GS1ScriptValue>(false);
 	}
 
