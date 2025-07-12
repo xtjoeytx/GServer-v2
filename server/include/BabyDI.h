@@ -1,10 +1,8 @@
 #ifndef BABYDI_H
 #define BABYDI_H
 
-#include <algorithm>
-#include <functional>
 #include <memory>
-#include <tuple>
+#include <typeinfo>
 #include <unordered_map>
 #include <vector>
 

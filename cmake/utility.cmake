@@ -19,7 +19,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 	if(MINGW)
 		target_compile_options(${target} PUBLIC "-mthreads")
 		target_link_options(${target} PUBLIC "-mthreads")
-		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D__USE_MINGW_ANSI_STDIO=1 -D_BSD_SOURCE=1)
+		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D__USE_MINGW_ANSI_STDIO=1 -D_DEFAULT_SOURCE=1)
 	endif()
 
 	# Compiler options.
@@ -126,17 +126,8 @@ function(add_test_og TARGET_NAME TARGET_PATH)
 	target_link_libraries(${TARGET_NAME} PUBLIC -static-libgcc -static-libstdc++)
 
 	target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
-
 	target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
-
 	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/level)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting/v8)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting/interface)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/misc)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/utilities)
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/animation)
 
 	add_dependencies(${TARGET_NAME} gs2lib ${APP_LIBRARY_NAME_TESTREF})
 

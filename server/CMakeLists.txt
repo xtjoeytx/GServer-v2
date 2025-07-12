@@ -341,11 +341,14 @@ if(TESTS)
 endif()
 
 if (MINGW)
+	# Erase the INTERFACE_LINK_LIBRARIES from the miniupnpc::miniupnpc-private target.
+	# They are linked normally and the cmake configuration for miniupnpc causes bad compiler flags.
+	if(UPNP)
+		set_target_properties(miniupnpc::miniupnpc-private PROPERTIES INTERFACE_LINK_LIBRARIES "")
+	endif()
+
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
 	target_link_libraries(${TARGET_NAME} PRIVATE -static-libgcc)
-
-	#target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
-	#target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc)
 
 	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.exe\")")
 

@@ -11,7 +11,9 @@
           "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         },
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
+        "PACKET_LOGGING": false
       }
     },
     {
@@ -24,7 +26,9 @@
           "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         },
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
+        "PACKET_LOGGING": false
       }
     },
     {
@@ -33,9 +37,6 @@
       "architecture": {
         "value": "x64",
         "strategy": "external"
-      },
-      "cacheVariables": {
-        "PACKET_LOGGING": false
       }
     },
     {
@@ -46,8 +47,10 @@
         "strategy": "external"
       },
       "cacheVariables": {
-        "PACKET_LOGGING": false,
-        "§": "Windows",
+		"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
+		  "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
+		  "type": "FILEPATH"
+		},
         "CMAKE_BUILD_WITH_INSTALL_RPATH": true
       }
     },
@@ -57,9 +60,6 @@
       "architecture": {
         "value": "x64",
         "strategy": "external"
-      },
-      "cacheVariables": {
-        "PACKET_LOGGING": false
       }
     },
     {
