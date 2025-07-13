@@ -13,7 +13,6 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
-
 (20, 30), shooting default arrow up:
 	dir=0 dx=0 dy=-1 dz=0 from=1 type=0 x=21.1875 y=29.0625 z=0  (+19 pixels, -16 pixels)
 
@@ -31,7 +30,6 @@ type 1 = fireball  arrow.x=21.5625
 type 2 = fireblast arrow.x=21.5625
 type 3 = nukeshot  arrow.x=21.5625
 type -1 = ball (shot from center of the npc calculating dx/dy to travel towards the player)
-
 */
 
 inline constexpr uint8_t arrowSpriteIndex = 107;

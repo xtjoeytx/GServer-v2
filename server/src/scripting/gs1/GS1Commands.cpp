@@ -430,15 +430,10 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::optional<PixelPosition> getPlayerOrNPCPositionForArrow(const ScriptObjectSource& source, uint8_t dir)
+static std::optional<PixelPosition> getPositionForArrow(const ScriptObjectSource& source, uint8_t dir)
 {
 	auto server = BabyDI::Get<Server>();
-	if (source.second == ScriptObjectSourceType::PLAYER)
-	{
-		if (auto player = server->getPlayer(source.first); player != nullptr)
-			return PixelPosition{ player->account.character.pixelX, player->account.character.pixelY };
-	}
-	else if (source.second == ScriptObjectSourceType::NPC)
+	if (source.second == ScriptObjectSourceType::NPC)
 	{
 		if (auto npc = server->getNPC(source.first); npc != nullptr)
 		{
@@ -2052,13 +2047,13 @@ void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std:
 {
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		auto server = BabyDI::Get<Server>();
-		const auto& source = visitor->getCurrentSource();
+		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
-		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2067,9 +2062,28 @@ void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // shootball;
+// (gr) shootball dir;
 void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("shootball is not implemented yet.");
+	// TODO(GS1): Conformance modes.
+
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: shootball dir");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+		auto server = BabyDI::Get<Server>();
+		const auto& source = visitor->getOriginalSource();
+		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+
+		auto sourcePosition = getPositionForArrow(source, dir);
+		if (!sourcePosition.has_value())
+			return;
+
+		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeBall, source);
+	}
 }
 
 // shootfireball dir;
@@ -2078,13 +2092,13 @@ void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const s
 {
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		auto server = BabyDI::Get<Server>();
-		const auto& source = visitor->getCurrentSource();
+		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
-		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2098,13 +2112,13 @@ void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		auto server = BabyDI::Get<Server>();
-		const auto& source = visitor->getCurrentSource();
+		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
-		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2118,13 +2132,13 @@ void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::
 {
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]) + 0.25);
+		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		auto server = BabyDI::Get<Server>();
-		const auto& source = visitor->getCurrentSource();
+		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
-		auto sourcePosition = getPlayerOrNPCPositionForArrow(source, dir);
+		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 

@@ -823,7 +823,12 @@ LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, cons
 	{
 		char x = static_cast<char>(result->position.x() / 8.0f);
 		char y = static_cast<char>(result->position.y() / 8.0f);
-		uint8_t sprite = (result->type == 0 ? ballSpriteIndex : arrowSpriteIndex) + (result->direction & 0b11);
+
+		// Get the sprite for the arrow.
+		uint8_t sprite = (result->type == 0 ? ballSpriteIndex : arrowSpriteIndex);
+		if (result->type != 0)
+			sprite += (result->direction & 0b11);
+
 		uint8_t flags = (result->direction & 0b11) | (result->getPacketFrom() << 3);
 		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)0 >> (char)x >> (char)y >> (char)flags >> (char)sprite >> (char)type, shared_from_this());
 	}
