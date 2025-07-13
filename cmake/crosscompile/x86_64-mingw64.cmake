@@ -1,5 +1,10 @@
 # the name of the target operating system
 SET(CMAKE_SYSTEM_NAME Windows)
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE static)
+
+set(VCPKG_CMAKE_SYSTEM_NAME MinGW)
 
 # which compilers to use for C and C++
 SET(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc-posix)

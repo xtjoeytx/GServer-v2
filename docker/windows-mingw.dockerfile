@@ -17,9 +17,15 @@ ENV CMAKE_TOOLCHAIN_FILE=/tmp/gserver/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 COPY --chown=1001:1001 ./ /tmp/gserver
 
+
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apt update \
-    && apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre \
+    && apt install -y wget \
+    && wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
+    && apt -y install ./packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
+    && apt update \
+    && apt install -y powershell libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre \
     && ln -s /usr/x86_64-w64-mingw32/include/wincrypt.h /usr/x86_64-w64-mingw32/include/Wincrypt.h \
     && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
 	&& cd $VCPKG_ROOT \
