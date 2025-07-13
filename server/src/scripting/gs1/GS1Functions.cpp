@@ -614,7 +614,33 @@ GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messa
 // Returns the angle in radians from the current position to the position specified by dx and dy.
 GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function getangle not implemented");
+	/*
+	( 0,-1) up:    1.570796 (pi/2)
+	(-1, 0) left:  3.141593 (pi)
+	( 0, 1) down:  4.712389 (3pi/2)
+	( 1, 0) right: 0.000000 (0)
+	*/
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function getangle requires exactly two arguments");
+
+	auto dx = visitor->getGameValueAs<double>(*arguments[0]);
+	auto dy = visitor->getGameValueAs<double>(*arguments[1]);
+
+	// No angle if no direction is specified.
+	if (DoubleIsZero(dx) && DoubleIsZero(dy))
+		return 0.0;
+
+	// Flip the Y coordinate to match the game's coordinate system.
+	dy = -dy;
+
+	// Get the angle.
+	auto angle = std::atan2(dy, dx);
+
+	// If the angle is negative, we need to adjust it to be in the range [0, 2π).
+	if (angle < 0.0)
+		angle += std::numbers::pi * 2;
+
+	return angle;
 }
 
 // getareanpcs(x, y, width, height)
